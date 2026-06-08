@@ -21,6 +21,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
+import type { InsightPriority } from '@/lib/coachhelm/insight-types';
 import { getCounterfactualConfig } from '@/lib/coachhelm/v3/counterfactual/lookup-tables';
 
 type Sb = SupabaseClient<Database>;
@@ -79,6 +80,41 @@ export interface RankableInsight {
   metric?: string;
   /** From golf_coach_insights.category. Optional for back-compat. */
   category?: string;
+  /** Row priority. Drives the rank floor when strokes_impact rounds to 0.
+   *  Optional for back-compat — absent is treated as 'low'.
+   *  Consumed by Phase A2 (priorityFloorScore) — added here in A1 so A2 imports
+   *  without a follow-up edit. */
+  priority?: InsightPriority;
+  /** From evidence.sample_n — observation count behind the metric. Optional;
+   *  absent → no damping (treated as fully-sampled).
+   *  Consumed by Phase A2 (sampleDamping) — added here in A1 so A2 imports
+   *  without a follow-up edit. */
+  sample_n?: number;
+}
+
+/**
+ * Metrics whose `strokes_impact` is intentionally 0 / descriptive and must NOT
+ * receive a priority rank floor — flooring them would let the par-scoring family
+ * (par-4 carries a ×10 holes/round leverage) and the warmup opening-hole row
+ * crowd out the actionable diagnostic feed. They keep their generator priority
+ * for the Alert Center but rank by their honest (zero) impact in the main feed.
+ * Per-engine phases that add a purely-descriptive metric extend this set.
+ *
+ * Consumed by Phase A: A2 (priorityFloorScore / sampleDamping) and A3
+ * (scoreInsight rewrite). Exported in A1 so A2/A3 can import without a
+ * follow-up edit here — intentionally unused until then (not dead code).
+ */
+export const EXEMPT_FROM_FLOOR: ReadonlyArray<string | RegExp> = [
+  /^scoring_par_\d$/, // scoring_par_3 / _4 / _5 — descriptive standing rows
+  'opening_hole_delta', // warmup-hole tax — keep priority, no impact floor
+];
+
+/** True when a metric is exempt from the rank floor (see EXEMPT_FROM_FLOOR). */
+export function isFloorExemptMetric(metric: string | undefined): boolean {
+  if (!metric) return false;
+  return EXEMPT_FROM_FLOOR.some((p) =>
+    typeof p === 'string' ? p === metric : p.test(metric),
+  );
 }
 
 /** Map of insight_type → resolved weight (already-validated against MIN_SAMPLES). */
