@@ -75,6 +75,11 @@ export type WindowResult =
 
 const PRE_WINDOW_DAYS = 14;
 const POST_WINDOW_DAYS = 21;
+/** Days of player history BEFORE the pre-window used to estimate ambient drift. */
+const AMBIENT_HISTORY_DAYS = 90;
+/** Minimum rounds in the ambient window before we trust it to net out drift.
+ *  A 1-round ambient average is noise, not a trend — below this, lift is null. */
+const MIN_AMBIENT_ROUNDS = 2;
 
 /** Average a denormalised `golf_rounds` column across completed rounds in a window. */
 async function averageGolfRoundsColumn(
@@ -223,9 +228,9 @@ async function averageHoleLevelByPar(
     diffs.push(score - par);
     if (typeof roundId === 'string') roundIds.add(roundId);
   }
-  if (diffs.length === 0) return { ok: false, reason: 'no-data' };
+  if (diffs.length === 0 || roundIds.size === 0) return { ok: false, reason: 'no-data' };
   const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
-  return { ok: true, avg, n: roundIds.size || 1 };
+  return { ok: true, avg, n: roundIds.size };
 }
 
 /**
@@ -321,16 +326,32 @@ export async function computeAttribution(
 
   const delta = post.avg - base.avg;
 
-  // Ambient trend: compare a 90-day window centered on surfaced_at
-  // (excluding the immediate pre/post) so we can subtract ambient drift.
+  // Ambient counterfactual: the player's level over the 90 days of history
+  // BEFORE the pre-window — strictly OUTSIDE [preStart, postEnd]. A window that
+  // overlaps the post period would absorb the very improvement the insight
+  // caused and cancel the lift (the W35 bug). Ambient drift = (ambient.avg −
+  // base.avg) is "how much the player was already trending"; lift subtracts it
+  // so we only credit movement BEYOND that trend.
+  const ambientStart = new Date(
+    surfacedTs - (PRE_WINDOW_DAYS + AMBIENT_HISTORY_DAYS) * 86400_000,
+  ).toISOString();
+  const ambientEnd = new Date(
+    surfacedTs - (PRE_WINDOW_DAYS + 1) * 86400_000,
+  ).toISOString();
   const ambient = await dispatchWindow(
     sb,
     input.player_id,
     source,
-    new Date(surfacedTs - 90 * 86400_000).toISOString(),
-    new Date(surfacedTs + 90 * 86400_000).toISOString(),
+    ambientStart,
+    ambientEnd,
   );
-  const lift = ambient.ok ? delta - (ambient.avg - base.avg) : null;
+  // Min-rounds gate: a thin ambient sample is noise, not a trend. Below the
+  // gate we record delta but leave lift null (nextWeight no-ops on null, so the
+  // attribution row is still logged for observability without moving weights).
+  const lift =
+    ambient.ok && ambient.n >= MIN_AMBIENT_ROUNDS
+      ? delta - (ambient.avg - base.avg)
+      : null;
 
   return {
     ok: true,

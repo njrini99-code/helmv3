@@ -578,3 +578,143 @@ describe('computeAttribution (W35 follow-up integration)', () => {
     expect(result).toEqual({ ok: false, reason: 'no-data' });
   });
 });
+
+/**
+ * Phase H/H3 — ambient counterfactual must be computed STRICTLY OUTSIDE the
+ * [preStart, postEnd] window, so post-window improvement can't leak into the
+ * ambient average and cancel the lift it is supposed to isolate.
+ */
+function buildWindowAwareSupabase(
+  rowsByCall: (startIso: string, endIso: string) => Array<Record<string, unknown>>,
+) {
+  // Records every (start,end) pair averageGolfRoundsColumn queries so the test
+  // can assert the ambient window never overlaps the post window.
+  const windows: Array<{ start: string; end: string }> = [];
+  const from = () => {
+    let start = '';
+    let end = '';
+    const builder: Record<string, unknown> = {};
+    const self = () => builder;
+    builder.select = self;
+    builder.eq = self;
+    builder.gte = (_col: string, v: string) => {
+      start = v;
+      return builder;
+    };
+    builder.lte = (_col: string, v: string) => {
+      end = v;
+      return builder;
+    };
+    builder.order = self;
+    builder.range = self;
+    builder.then = (
+      resolve: (v: { data: Array<Record<string, unknown>>; error: null }) => void,
+    ) => {
+      windows.push({ start, end });
+      resolve({ data: rowsByCall(start, end), error: null });
+    };
+    return builder;
+  };
+  const sb = { from } as unknown as Parameters<typeof computeAttribution>[0];
+  return { sb, windows };
+}
+
+describe('Phase H/H3: ambient counterfactual isolation', () => {
+  it('computes ambient strictly OUTSIDE [preStart, postEnd]', async () => {
+    const surfaced = '2026-04-01T00:00:00.000Z';
+    const surfacedTs = new Date(surfaced).getTime();
+    const preStartDate = new Date(surfacedTs - 14 * 86400_000)
+      .toISOString()
+      .slice(0, 10);
+    const postEndDate = new Date(surfacedTs + 21 * 86400_000)
+      .toISOString()
+      .slice(0, 10);
+
+    const { sb, windows } = buildWindowAwareSupabase((start, _end) => {
+      // Pre window: baseline avg sg_total = 0. Post window: avg = +2 (improved).
+      // Ambient (pre-pre history): avg = 0 (flat). gte/lte are date-only.
+      const s = start.slice(0, 10);
+      if (s >= preStartDate.slice(0, 10) && s < surfaced.slice(0, 10)) {
+        return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
+      }
+      if (s > surfaced.slice(0, 10) && s <= postEndDate) {
+        return [{ strokes_gained_total: 2 }, { strokes_gained_total: 2 }];
+      }
+      // ambient (history before preStart)
+      return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
+    });
+
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-1',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'sg_total',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+
+    // The ambient window the code queried must END no later than preStart.
+    const ambientWindow = windows.find(
+      (w) => w.end.slice(0, 10) <= preStartDate,
+    );
+    expect(
+      ambientWindow,
+      'an ambient window ending at/before preStart must have been queried',
+    ).toBeTruthy();
+    // And NO queried window may extend into the post period while also reaching
+    // before the pre window (i.e. the old [-90d, +90d] straddling window).
+    const straddles = windows.some(
+      (w) => w.start.slice(0, 10) < preStartDate && w.end.slice(0, 10) > postEndDate,
+    );
+    expect(straddles, 'ambient must NOT straddle the post window').toBe(false);
+  });
+
+  it('credits the full delta when ambient trend is flat (lift ≈ delta)', async () => {
+    // Flat ambient (0) + flat baseline (0) + improved post (+2) → lift ≈ +2,
+    // NOT cancelled. With the old straddling window the post leaked into ambient
+    // and lift collapsed toward 0.
+    const surfaced = '2026-04-01T00:00:00.000Z';
+    const surfacedTs = new Date(surfaced).getTime();
+    const { sb } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      const postStart = new Date(surfacedTs + 1).toISOString().slice(0, 10);
+      if (s >= postStart) return [{ strokes_gained_total: 2 }, { strokes_gained_total: 2 }];
+      return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
+    });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-2',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'sg_total',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+    expect(result.row.delta).toBeCloseTo(2, 5);
+    expect(result.row.lift).not.toBeNull();
+    expect(result.row.lift!).toBeCloseTo(2, 5); // ambient drift = 0 → no subtraction
+  });
+
+  it('returns lift=null (but still records delta) when ambient has too few rounds', async () => {
+    const surfaced = '2026-04-01T00:00:00.000Z';
+    const surfacedTs = new Date(surfaced).getTime();
+    const postStart = new Date(surfacedTs + 1).toISOString().slice(0, 10);
+    const preStartDate = new Date(surfacedTs - 14 * 86400_000)
+      .toISOString()
+      .slice(0, 10);
+    const { sb } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      if (s >= postStart) return [{ strokes_gained_total: 1 }, { strokes_gained_total: 1 }];
+      if (s >= preStartDate && s < surfaced.slice(0, 10)) {
+        return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
+      }
+      return [{ strokes_gained_total: 0 }]; // ambient: only 1 round → below gate
+    });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-3',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'sg_total',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+    expect(result.row.delta).toBeCloseTo(1, 5);
+    expect(result.row.lift).toBeNull(); // gated — 1 ambient round is noise
+  });
+});
