@@ -66,38 +66,48 @@ const rule: CompositeRule = {
     const lag = insights.find(isWeakLagPutt);
     const short = insights.find(isWeakShortPutt);
     if (!lag || !short) return null;
+    const lagMakePct = Number(lag.evidence.your_value ?? 0);
+    const shortMakePct = Number(short.evidence.your_value ?? 0);
+    // Expected 3-putt rate on 15+ ft looks attributable to the short-putt leak:
+    // lag didn't finish (1 − lagMake) AND the comebacker is missed at the player's
+    // own 3-5 ft rate (1 − shortMake). Conservative floor — not a measured stat.
+    const threePuttRate = (1 - lagMakePct / 100) * (1 - shortMakePct / 100);
     return {
       source_insight_ids: [lag.id, short.id],
       signals: {
         lag_signature: lag.signature,
-        lag_value: Number(lag.evidence.your_value ?? 0),
-        short_value: Number(short.evidence.your_value ?? 0),
+        lag_value: lagMakePct,
+        short_value: shortMakePct,
+        three_putt_rate: threePuttRate,
       },
     };
   },
 
   compose(match: CompositeMatch): CompositeContent {
-    const lagPct = Math.round(Number(match.signals.lag_value ?? 0));
     const shortPct = Math.round(Number(match.signals.short_value ?? 0));
+    const threePuttRate = Number(match.signals.three_putt_rate ?? 0);
+    const threePuttPct = Math.round(threePuttRate * 100);
     return {
       title: 'Lag putts → 3-putt cascade',
       content:
-        `Your long putts (15+ ft) are leaving makeable comebackers — ` +
-        `${lagPct}% conversion isn't the problem, distance control is. ` +
-        `Combined with ${shortPct}% from 3-5 ft, you're paying twice for ` +
-        `each long miss. Practice 30-foot lag drills with a 3-foot ` +
-        `circle around the cup; the goal is leave-distance, not make rate.`,
+        `Your lag putts (15+ ft) aren't finishing inside tap-in range, and you're ` +
+        `only making ${shortPct}% from 3-5 ft — so an estimated ${threePuttPct}% of your ` +
+        `long looks are turning into 3-putts. That's the cascade: a long miss leaves ` +
+        `a comebacker your short stroke isn't closing. Fix the leave first: 30-foot ` +
+        `lag drills to a 3-foot circle around the cup — the goal is leave-distance, ` +
+        `not make rate — then drill the 3-5 ft comebackers so the second putt stops ` +
+        `costing you a stroke.`,
       signature: 'lag_distance_3putt',
       evidence: {
         metric: 'three_putt_chain',
-        metric_label: 'Lag → 3-putt cascade',
+        metric_label: 'Expected 3-putt rate (15+ ft)',
         unit: 'percent',
-        your_value: shortPct,
-        your_value_display: `${shortPct}% from 3-5 ft`,
-        comparison_value: 85,
-        comparison_label: 'Tour ~85%',
+        your_value: threePuttPct,
+        your_value_display: `${threePuttPct}% expected 3-putts`,
+        comparison_value: 3,
+        comparison_label: 'Tour ~3% 3-putt rate',
         comparison_source: 'pga_baseline',
-        sample_n: 5,
+        sample_n: 0, // replaced in Task G4 with the real source-rounds count
         window_days: 30,
         window_start: '',
         window_end: '',
