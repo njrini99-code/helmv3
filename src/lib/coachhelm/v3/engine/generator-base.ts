@@ -30,6 +30,7 @@ import {
   type ComputeCounterfactualInput,
 } from '@/lib/coachhelm/v3/counterfactual/compute';
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import type { CounterfactualProjection } from '@/lib/coachhelm/v3/counterfactual/types';
 import { isFloorExemptMetric } from '@/lib/coachhelm/v3/ranking/score';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
@@ -158,11 +159,17 @@ export function computeMeasuredFactors(
  *   leverage is ignored and the generator's `current` priority is returned
  *   unchanged — a descriptive standing row must not be floated into the Alert
  *   Center off CF leverage it doesn't independently own.
+ * @param confidence Optional insight confidence score (0–1). When below 0.5 the
+ *   'high' floor is suppressed — a thin-sample leak (DC-CONF-2, e.g. Grace
+ *   par_4 @ n=8, confidence=0.27) must not auto-promote to the Alert Center.
+ *   Below that threshold the insight can still reach 'medium' but never 'high'.
+ *   A null/omitted confidence preserves the prior unconditional behavior (back-compat).
  */
 export function leveragePriorityFloor(
   current: InsightPriority | undefined,
   counterfactual: CounterfactualProjection | null,
   metric?: string,
+  confidence?: number,
 ): InsightPriority | undefined {
   // Exempt metrics keep their generator priority (par-scoring stays 'low'
   // descriptive; warmup-hole keeps its own at/under-tax escalation) — the CF
@@ -171,7 +178,14 @@ export function leveragePriorityFloor(
   if (!counterfactual || counterfactual.suppressed === true) return current;
   const s = counterfactual.strokes_saved_per_round;
   if (!Number.isFinite(s)) return current;
-  const floor: InsightPriority | null = s >= 1.0 ? 'high' : s >= 0.5 ? 'medium' : null;
+  // DC-CONF-2: the 'high' floor requires a minimum confidence — a thin-sample
+  // leak (Grace par_4 @ 0.27, n=8) must not auto-promote to the Alert Center.
+  // Below that confidence it can still reach 'medium' but never 'high'. A null
+  // confidence keeps the prior unconditional behavior (back-compat).
+  const MIN_CONF_FOR_HIGH = 0.5;
+  const confOk = confidence == null || confidence >= MIN_CONF_FOR_HIGH;
+  const floor: InsightPriority | null =
+    s >= 1.0 && confOk ? 'high' : s >= 0.5 ? 'medium' : null;
   if (floor && PRIORITY_RANK[floor] > PRIORITY_RANK[current ?? 'low']) return floor;
   return current;
 }
@@ -280,6 +294,14 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         const cfg = METRIC_RENDER_CONFIG[this.metricId];
         if (cfg) {
           const baseline = await loadPlayerScoringBaseline(this.playerId);
+          const cohort = await loadPlayerCohort(this.playerId);
+          // Player's OWN per-round attempt rate when the aggregate exposes one
+          // (Scrambling/ApproachMiss set attempts_per_round; ParType sets
+          // holes_per_round). Null → computeCounterfactual uses the legacy path.
+          const attemptsPerRound =
+            (agg as { attempts_per_round?: number }).attempts_per_round ??
+            (agg as { holes_per_round?: number }).holes_per_round ??
+            null;
           const cfInput: ComputeCounterfactualInput = {
             metric_id: this.metricId,
             direction: cfg.direction,
@@ -289,6 +311,9 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
             // Null until the cohort RPC populates level_avg → unchanged behavior.
             cohort_value: standing.level_avg,
             player_30d_scoring_avg: baseline,
+            cohort_gender: cohort.gender,
+            player_attempts_per_round: attemptsPerRound,
+            confidence: evidence.confidence,
           };
           counterfactual = computeCounterfactual(cfInput);
         }
@@ -297,7 +322,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         // real per-round leverage (see the pure helpers above). The themes path
         // reads the counterfactual directly and is unaffected.
         const cfStrokes = backfilledStrokesImpact(evidence.strokes_impact, counterfactual, this.metricId);
-        effectivePriority = leveragePriorityFloor(effectivePriority, counterfactual, this.metricId);
+        effectivePriority = leveragePriorityFloor(effectivePriority, counterfactual, this.metricId, evidence.confidence);
 
         evidence = {
           ...evidence,

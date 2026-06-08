@@ -68,6 +68,28 @@ describe('leveragePriorityFloor (upgrade-only)', () => {
   });
 });
 
+describe('leveragePriorityFloor — confidence gate (DC-CONF-2)', () => {
+  const cf = (s: number): CounterfactualProjection => ({
+    suppressed: false, strokes_saved_per_round: s,
+    current_baseline_score: 79, projected_score_if_closed: 79 - s,
+    weeks_to_typical_close: 12,
+  });
+
+  it('a low-confidence high-leverage non-exempt leak caps at medium (never high)', () => {
+    const p = leveragePriorityFloor('low', cf(1.5), 'sg_total', 0.27);
+    expect(p).not.toBe('high');
+    expect(p).toBe('medium');
+  });
+
+  it('a confident high-leverage leak still floors to high', () => {
+    expect(leveragePriorityFloor('low', cf(1.5), 'sg_total', 0.8)).toBe('high');
+  });
+
+  it('omitted confidence preserves the prior unconditional behavior (back-compat)', () => {
+    expect(leveragePriorityFloor('low', cf(1.5), 'sg_total')).toBe('high');
+  });
+});
+
 describe('computeMeasuredFactors (SV-1 — real recency/variance, no fabrication)', () => {
   const NOW = Date.parse('2026-06-06T00:00:00Z');
   const daysAgo = (n: number) => new Date(NOW - n * 86400_000).toISOString();
