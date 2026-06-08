@@ -342,7 +342,7 @@ This is the core contract. `scoreInsight` becomes the single ranking function fo
 - [ ] **Step 1 — write the failing test.** Append to `src/lib/coachhelm/v3/ranking/score.test.ts`:
 
 ```typescript
-import { scoreInsight, rankInsights } from './score';
+import { scoreInsight } from './score';
 import type { RankableInsight } from './score';
 
 const base = (over: Partial<RankableInsight>): RankableInsight => ({
@@ -376,9 +376,12 @@ describe('scoreInsight rank floor', () => {
   });
 
   it('a real strokes_impact uses the impact term, not the floor', () => {
-    // impact 1.2 × conf 0.8 × damping(20)=1 × coachability(~1) ≈ 0.96,
-    // far above any floor-derived score (max low floor 1 × conf 1 × … ≈ 1
-    // but a high-impact row must dominate a same-priority floor row).
+    // impactful takes the IMPACT branch (1.2 × conf 0.8 × coachability × damping).
+    // floored takes the FLOOR branch: priorityFloor(medium)=2 × FLOOR_SCALE × …, a
+    // tiny band that sits strictly BELOW any real per-round impact — so a genuine
+    // 1.2-stroke leak always dominates a same-priority zero-impact diagnostic
+    // (contract #2). Note: floor and impact are on different scales, so the floor
+    // MUST be scaled down or a medium floor (2) would outrank a 1.2-stroke leak.
     const impactful = base({
       strokes_impact: 1.2, confidence: 0.8, priority: 'medium',
       metric: 'scrambling_pct_sand', sample_n: 20,
@@ -479,6 +482,19 @@ Expected: FAIL — current `scoreInsight` returns `cappedStrokesImpact(0) × con
 export const URGENT_SHORT_CIRCUIT = 1000;
 
 /**
+ * The priority RANK FLOOR (1–4) and a real per-round strokes impact live on
+ * different scales: impacts are clamped to ≤8 strokes (realistically <2/round),
+ * while the floor would otherwise sit at 1–4 and OUTRANK a genuine 1.2-stroke
+ * leak (a medium floor of 2 beating a 1.2-stroke leak is exactly the bug this
+ * prevents). FLOOR_SCALE pushes the floor band strictly below any real impact so
+ * the floor only ORDERS the zero-impact diagnostics among themselves (its sole
+ * job), honoring contract #2: a real impact always ranks on its magnitude, never
+ * the floor. Relative order of floored rows is unchanged (every floor scaled
+ * equally), so the rescue of buried high-confidence diagnostics still works.
+ */
+export const FLOOR_SCALE = 0.001;
+
+/**
  * Pure scoring fn — the SINGLE ranking contract for every read surface
  * (Hub single-pick, player feed, coach feed, round takeaway, player CoachHelm
  * dashboard). Returns a non-negative rank score.
@@ -488,8 +504,9 @@ export const URGENT_SHORT_CIRCUIT = 1000;
  *
  * - magnitudeTerm: the real |strokes_impact| (ceiling-clamped) when it rounds
  *   to a non-zero per-round value; otherwise the priority RANK FLOOR
- *   (urgent 4 / high 3 / medium 2 / low 1) so a zero-impact diagnostic is still
- *   orderable instead of tying at 0 and falling back to recency. Floor-exempt
+ *   (urgent 4 / high 3 / medium 2 / low 1, scaled by FLOOR_SCALE to sit strictly
+ *   below any real impact) so a zero-impact diagnostic is still orderable instead
+ *   of tying at 0 and falling back to recency. Floor-exempt
  *   metrics (scoring_par_*, opening_hole_delta) get NO floor — they keep their
  *   priority for the Alert Center but rank on their honest (zero) impact, so the
  *   descriptive engines never crowd the actionable feed.
@@ -515,7 +532,7 @@ export function scoreInsight(
       ? capped
       : isFloorExemptMetric(insight.metric)
         ? 0
-        : priorityFloorScore(insight.priority);
+        : priorityFloorScore(insight.priority) * FLOOR_SCALE;
 
   const composite = magnitudeTerm * confidence * w * boost * coachability * damping;
 
