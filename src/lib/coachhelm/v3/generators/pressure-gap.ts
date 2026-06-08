@@ -13,6 +13,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { loadCompletedHoles, classifyHole } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -25,6 +26,21 @@ interface PressureGapAggregate extends GeneratorAggregate {
   competitive_avg: number;
   practice_count: number;
   competitive_count: number;
+  /** competitive − practice, in pp of holes, for double-or-worse holes. */
+  double_rate_delta: number;
+  /** competitive − practice, in pp of holes that were 3-putt-or-worse. */
+  three_putt_delta: number;
+  /** competitive − practice, penalty strokes per round. */
+  penalty_delta: number;
+  /** competitive − practice, avg score-to-par across holes 1-3. */
+  opening3_delta: number;
+  /** SV-1 duck-typed dispersion (DispersionSignals): per-round score-to-par stddev. */
+  stddev?: number;
+  /** SV-1 scale for the stddev → variance-confidence map. */
+  stddev_scale?: number;
+  /** SV-1 contributing competitive round dates — required (with stddev) for the
+   *  base's computeMeasuredFactors to return factors_measured:true. */
+  round_dates?: string[];
 }
 
 /**
@@ -57,11 +73,16 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     // Pull last 90 days of completed rounds for this player; bucket in TS.
     const since = new Date(Date.now() - 90 * 86400_000).toISOString().slice(0, 10);
     const { data, error } = await fromUntyped(supabase, 'golf_rounds')
-      .select('round_type, score_to_par')
+      .select('id, round_type, score_to_par, round_date')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .gte('round_date', since) as {
-        data: Array<{ round_type: string | null; score_to_par: number | null }> | null;
+        data: Array<{
+          id: string;
+          round_type: string | null;
+          score_to_par: number | null;
+          round_date: string | null;
+        }> | null;
         error: { message: string } | null;
       };
     if (error || !data) return null;
@@ -96,7 +117,72 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     if (practiceN < MIN_ROUNDS_PER_BUCKET || competitiveN < MIN_ROUNDS_PER_BUCKET) return null;
     const practiceAvg = practiceSum / practiceN;
     const competitiveAvg = competitiveSum / competitiveN;
+    // score_to_par nets out par → the gap is course-difficulty-normalized to the
+    // extent the course's par reflects difficulty.
     const delta = competitiveAvg - practiceAvg;
+
+    // C5: decompose the gap into WHICH sub-area breaks under pressure. Bucket
+    // each round by competitive/practice, then compute per-bucket rates from
+    // golf_holes. Component deltas are competitive − practice (higher = worse
+    // under pressure); the largest positive one is what the prose names.
+    const bucketOf = new Map<string, 'p' | 'c'>();
+    for (const r of data) {
+      if (r.round_type === 'practice') bucketOf.set(r.id, 'p');
+      else if (r.round_type === 'tournament' || r.round_type === 'qualifier') bucketOf.set(r.id, 'c');
+    }
+    const holes = (await loadCompletedHoles(this.playerId)).filter((h) => bucketOf.has(h.round_id));
+    const acc = {
+      p: { holes: 0, dbl: 0, tp: 0, pen: 0, op3sum: 0, op3n: 0, rounds: new Set<string>() },
+      c: { holes: 0, dbl: 0, tp: 0, pen: 0, op3sum: 0, op3n: 0, rounds: new Set<string>() },
+    };
+    for (const h of holes) {
+      const b = acc[bucketOf.get(h.round_id) as 'p' | 'c'];
+      b.holes += 1;
+      b.rounds.add(h.round_id);
+      if (classifyHole(h) === 'double_plus') b.dbl += 1;
+      if ((h.putts ?? 0) >= 3) b.tp += 1;
+      if ((h.penalty_strokes ?? 0) > 0) b.pen += h.penalty_strokes ?? 0;
+      if (h.score !== null && h.hole_number >= 1 && h.hole_number <= 3) {
+        b.op3sum += h.score - h.par;
+        b.op3n += 1;
+      }
+    }
+    const rate = (k: number, n: number) => (n > 0 ? (100 * k) / n : 0);
+    const perRound = (k: number, rounds: number) => (rounds > 0 ? k / rounds : 0);
+    const doubleRateDelta = rate(acc.c.dbl, acc.c.holes) - rate(acc.p.dbl, acc.p.holes);
+    const threePuttDelta = rate(acc.c.tp, acc.c.holes) - rate(acc.p.tp, acc.p.holes);
+    // NOTE (latent denominator divergence): penaltyDelta is per-round over the
+    // HOLE-SET round count (acc.*.rounds.size) — the rounds loadCompletedHoles
+    // actually returned (total_score IS NOT NULL filtered, inherited from C0's
+    // loader). The prose competitive_count comes from the unfiltered round query.
+    // These can diverge when a 'completed' round has a null total_score; zero such
+    // rounds in current data. Using the hole-set count here is the CORRECT
+    // denominator for these penalties (they were summed over exactly those rounds).
+    const penaltyDelta =
+      perRound(acc.c.pen, acc.c.rounds.size) - perRound(acc.p.pen, acc.p.rounds.size);
+    const opening3Delta =
+      (acc.c.op3n > 0 ? acc.c.op3sum / acc.c.op3n : 0) -
+      (acc.p.op3n > 0 ? acc.p.op3sum / acc.p.op3n : 0);
+
+    // SV-1: per-round score-to-par dispersion + dates so the base computes a real
+    // variance/recency instead of the placeholder 0.5/1.0 (no fabrication).
+    // `computeMeasuredFactors` returns null (→ factors_measured:false) unless BOTH
+    // a finite stddev AND ≥1 parseable round_date are present — so we MUST expose
+    // round_dates too, or the real dispersion is never consumed.
+    const compScores = data
+      .filter((r) => bucketOf.get(r.id) === 'c' && r.score_to_par !== null)
+      .map((r) => Number(r.score_to_par));
+    const mean = compScores.reduce((a, v) => a + v, 0) / (compScores.length || 1);
+    const variance =
+      compScores.length > 1
+        ? compScores.reduce((a, v) => a + (v - mean) ** 2, 0) / (compScores.length - 1)
+        : 0;
+    const stddev = Math.sqrt(variance);
+    // The competitive bucket's round dates — the same rounds whose score_to_par
+    // dispersion the stddev measures. Drop nulls so every entry is parseable.
+    const roundDates = data
+      .filter((r) => bucketOf.get(r.id) === 'c' && r.round_date !== null)
+      .map((r) => r.round_date as string);
 
     return {
       sampleN: practiceN + competitiveN,
@@ -105,6 +191,16 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       competitive_avg: competitiveAvg,
       practice_count: practiceN,
       competitive_count: competitiveN,
+      double_rate_delta: doubleRateDelta,
+      three_putt_delta: threePuttDelta,
+      penalty_delta: penaltyDelta,
+      opening3_delta: opening3Delta,
+      // SV-1 duck-typed dispersion (DispersionSignals): stddev + scale + the
+      // contributing round dates. All three are required for the base's
+      // computeMeasuredFactors to return factors_measured:true.
+      stddev,
+      stddev_scale: 5, // ~5 strokes spread on score-to-par reads as "high variance"
+      round_dates: roundDates,
     };
   }
 
@@ -116,14 +212,28 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const practiceDisp = formatVsPar(agg.practice_avg);
     const competitiveDisp = formatVsPar(agg.competitive_avg);
 
+    const components: Array<{ label: string; val: number; unit: 'pp' | 'pr' }> = [
+      { label: 'double bogeys', val: agg.double_rate_delta, unit: 'pp' as const },
+      { label: '3-putts', val: agg.three_putt_delta, unit: 'pp' as const },
+      { label: 'penalties', val: agg.penalty_delta, unit: 'pr' as const },
+      { label: 'your opening 3 holes', val: agg.opening3_delta, unit: 'pr' as const },
+    ].sort((a, b) => b.val - a.val);
+    const lead = components[0];
+    const driverClause =
+      agg.playerValue > 0 && lead && lead.val > 0
+        ? lead.unit === 'pp'
+          ? ` Most of that gap is ${lead.label}: +${lead.val.toFixed(0)}% of holes vs your practice rate.`
+          : ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} per round vs practice.`
+        : '';
+
     const title = `Pressure gap: ${deltaDisp} strokes (tournament vs practice)`;
     const content =
       `Across the last 90 days you averaged ${competitiveDisp} in ` +
       `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
       `${agg.practice_count} practice rounds — a ${absDelta}-stroke gap. ` +
-      `You play ${direction} when it counts. PGA Tour gap is ~0.5 strokes; ` +
-      `college typical is 2-5 (Research doc §9). The standing card below ` +
-      `shows where you sit vs PGA + your team.`;
+      `You play ${direction} when it counts.` + driverClause +
+      ` PGA Tour gap is ~0.5 strokes; college typical is 2-5 (Research doc §9). ` +
+      `The standing card below shows where you sit vs PGA + your team.`;
 
     return {
       title,

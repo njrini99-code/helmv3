@@ -3181,18 +3181,30 @@ interface PressureGapAggregate extends GeneratorAggregate {
   penalty_delta: number;
   /** competitive − practice, avg score-to-par across holes 1-3. */
   opening3_delta: number;
+  /** SV-1 duck-typed dispersion (DispersionSignals): per-round score-to-par stddev. */
+  stddev?: number;
+  /** SV-1 scale for the stddev → variance-confidence map. */
+  stddev_scale?: number;
+  /** SV-1 contributing competitive round dates — required (with stddev) for the
+   *  base's computeMeasuredFactors to return factors_measured:true. */
+  round_dates?: string[];
 }
 ```
 
-In `aggregate()`, the current query selects only `round_type, score_to_par` from `golf_rounds`. We need per-round component rates. Two approaches; use the simpler join: after computing `delta` (line 99) and before the `return` (line 101), pull holes joined to round_type. Replace the `aggregate()` `golf_rounds` select (lines 59–66) to also fetch round `id`:
+In `aggregate()`, the current query selects only `round_type, score_to_par` from `golf_rounds`. We need per-round component rates AND the round dates (SV-1's `round_dates`). Two approaches; use the simpler join: after computing `delta` (line 99) and before the `return` (line 101), pull holes joined to round_type. Replace the `aggregate()` `golf_rounds` select (lines 59–66) to also fetch round `id` and `round_date`:
 
 ```ts
     const { data, error } = await fromUntyped(supabase, 'golf_rounds')
-      .select('id, round_type, score_to_par')
+      .select('id, round_type, score_to_par, round_date')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .gte('round_date', since) as {
-        data: Array<{ id: string; round_type: string | null; score_to_par: number | null }> | null;
+        data: Array<{
+          id: string;
+          round_type: string | null;
+          score_to_par: number | null;
+          round_date: string | null;
+        }> | null;
         error: { message: string } | null;
       };
 ```
@@ -3242,6 +3254,9 @@ Add the new fields + the SV-1 dispersion hook to the returned aggregate (lines 1
 ```ts
     // SV-1: per-round score-to-par dispersion + dates so the base computes a real
     // variance/recency instead of the placeholder 0.5/1.0 (no fabrication).
+    // `computeMeasuredFactors` returns null (→ factors_measured:false) unless BOTH
+    // a finite stddev AND ≥1 parseable round_date are present — so we MUST expose
+    // round_dates too, or the real dispersion is never consumed.
     const compScores = data
       .filter((r) => bucketOf.get(r.id) === 'c' && r.score_to_par !== null)
       .map((r) => Number(r.score_to_par));
@@ -3251,6 +3266,11 @@ Add the new fields + the SV-1 dispersion hook to the returned aggregate (lines 1
         ? compScores.reduce((a, v) => a + (v - mean) ** 2, 0) / (compScores.length - 1)
         : 0;
     const stddev = Math.sqrt(variance);
+    // The competitive bucket's round dates — the same rounds whose score_to_par
+    // dispersion the stddev measures. Drop nulls so every entry is parseable.
+    const roundDates = data
+      .filter((r) => bucketOf.get(r.id) === 'c' && r.round_date !== null)
+      .map((r) => r.round_date as string);
 
     return {
       sampleN: practiceN + competitiveN,
@@ -3263,9 +3283,12 @@ Add the new fields + the SV-1 dispersion hook to the returned aggregate (lines 1
       three_putt_delta: threePuttDelta,
       penalty_delta: penaltyDelta,
       opening3_delta: opening3Delta,
-      // SV-1 duck-typed dispersion (DispersionSignals).
+      // SV-1 duck-typed dispersion (DispersionSignals): stddev + scale + the
+      // contributing round dates. All three are required for the base's
+      // computeMeasuredFactors to return factors_measured:true.
       stddev,
       stddev_scale: 5, // ~5 strokes spread on score-to-par reads as "high variance"
+      round_dates: roundDates,
     };
 ```
 
