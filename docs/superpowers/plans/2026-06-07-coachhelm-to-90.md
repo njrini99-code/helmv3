@@ -3545,8 +3545,16 @@ Add the diagnosis import after line 24:
 
 ```ts
 import { loadCompletedHoles } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
-import { loadTeeShots } from '@/lib/coachhelm/v3/engine/shot-source';
 ```
+
+> **Spec correction (C7 review):** this previously also imported `loadTeeShots`
+> and read an `openTeePenalty` "corroboration" count, but it fed only a no-op
+> ternary (`cause_penalty_pct: Math.max(cpct(pen), openTeePenalty > 0 ? cpct(pen) : cpct(pen))`
+> — every branch equals `cpct(pen)`). That was a dead read costing an extra
+> paginated `golf_shots` round-trip per emitting player for zero behavioral
+> effect. The penalty share is unconditionally `cpct(pen)` (the hole-level
+> decomposition penalty share — the real signal), so the `loadTeeShots` import,
+> the `openTeePenalty` read, and the `Math.max` are removed below.
 
 Rewrite `aggregate()` (lines 46–107) to par-normalize and gate on a positive tax:
 
@@ -3606,11 +3614,8 @@ Rewrite `aggregate()` (lines 46–107) to par-normalize and gate on a positive t
       else if ((h.putts ?? 0) >= 3) putt += 1;
       else exec += 1;
     }
-    // Tee execution is corroborated by an opening tee-shot penalty/miss when shots exist.
-    const teeShots = await loadTeeShots(this.playerId);
-    const openTeePenalty = teeShots.filter((s) => s.hole_number === 1 && s.is_penalty).length;
-    const teePctBase = lostN > 0 ? (100 * exec) / lostN : 0;
     const cpct = (k: number) => (lostN > 0 ? (100 * k) / lostN : 0);
+    const teePctBase = cpct(exec);
 
     return {
       sampleN: hole1Rounds.size,
@@ -3618,7 +3623,7 @@ Rewrite `aggregate()` (lines 46–107) to par-normalize and gate on a positive t
       hole1_avg: hole1Avg,
       rest_avg: restAvg,
       rounds_with_hole1: hole1Rounds.size,
-      cause_penalty_pct: Math.max(cpct(pen), openTeePenalty > 0 ? cpct(pen) : cpct(pen)),
+      cause_penalty_pct: cpct(pen),
       cause_putt_pct: cpct(putt),
       cause_tee_pct: teePctBase,
     };
