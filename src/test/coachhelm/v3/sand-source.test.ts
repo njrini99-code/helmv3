@@ -5,17 +5,19 @@ import type { SandShot } from '@/lib/coachhelm/v3/engine/shot-source';
 // ScramblingGenerator's escape-vs-lag branch reads. (The DB-bound loader itself
 // is covered by the ScramblingGenerator tests via a mock.)
 describe('SandShot shape contract', () => {
-  it('carries reached_green, leave_distance_feet, putts_after', () => {
+  it('carries reached_green, leave_distance_feet, putts_after, sand_save_flag', () => {
     const s: SandShot = {
       round_id: 'r-1',
       hole_number: 3,
       reached_green: true,
       leave_distance_feet: 13.7,
       putts_after: 2,
+      sand_save_flag: false,
     };
     expect(s.reached_green).toBe(true);
     expect(s.leave_distance_feet).toBeCloseTo(13.7);
     expect(s.putts_after).toBe(2);
+    expect(s.sand_save_flag).toBe(false);
   });
 });
 
@@ -66,8 +68,24 @@ function buildAllRows() {
       lie_before: 'sand',
       lie_after: 'green',
       result: 'green',
+      is_penalty: false,
       distance_to_hole_after: 13.7,
       distance_unit_after: 'feet',
+    });
+  }
+  return rows;
+}
+
+// Parallel golf_holes flag dataset — one sand_save flag per hole, also >1000 so
+// the secondary flag fetch ALSO has to paginate or it silently truncates and
+// later holes' flags come back null (the latent bug this guards).
+function buildAllHoleRows() {
+  const rows: Array<Record<string, unknown>> = [];
+  for (let i = 0; i < TOTAL_SAND_SHOTS; i += 1) {
+    rows.push({
+      round_id: 'round-1',
+      hole_number: i + 1,
+      sand_save: false,
     });
   }
   return rows;
@@ -125,10 +143,19 @@ function makePaginatedShotsMock(
 
 const orderCalls: Array<{ column: string; opts?: { ascending?: boolean } }> = [];
 const rangeCalls: Array<{ from: number; to: number }> = [];
+const holeOrderCalls: Array<{ column: string; opts?: { ascending?: boolean } }> = [];
+const holeRangeCalls: Array<{ from: number; to: number }> = [];
 const allRows = buildAllRows();
+const allHoleRows = buildAllHoleRows();
 
+// Route by table: golf_shots and golf_holes each get their own paginated
+// dataset + range/order recorders so the secondary flag fetch's pagination is
+// asserted independently of the primary shots fetch.
 vi.mock('@/lib/supabase/untyped', () => ({
-  fromUntyped: () => makePaginatedShotsMock(allRows, orderCalls, rangeCalls),
+  fromUntyped: (_client: unknown, table: string) =>
+    table === 'golf_holes'
+      ? makePaginatedShotsMock(allHoleRows, holeOrderCalls, holeRangeCalls)
+      : makePaginatedShotsMock(allRows, orderCalls, rangeCalls),
 }));
 
 // Import AFTER the mocks are registered.
@@ -138,6 +165,8 @@ describe('loadSandShots pagination', () => {
   beforeEach(() => {
     orderCalls.length = 0;
     rangeCalls.length = 0;
+    holeOrderCalls.length = 0;
+    holeRangeCalls.length = 0;
   });
 
   it('returns ALL sand shots past the PostgREST 1000-row cap (no truncation)', async () => {
@@ -160,5 +189,21 @@ describe('loadSandShots pagination', () => {
     expect(rangeCalls.length).toBeGreaterThanOrEqual(2);
     expect(rangeCalls[0]).toEqual({ from: 0, to: 999 });
     expect(rangeCalls[1]).toEqual({ from: 1000, to: 1999 });
+  });
+
+  it('paginates the golf_holes sand_save flag fetch too (no flag truncation past 1000)', async () => {
+    const result = await loadSandShots('player-1');
+    // The secondary flag fetch must walk pages with a stable order key — a bare
+    // `.in()` would cap at 1000 and leave the 300 later holes' flags null.
+    expect(
+      holeOrderCalls.some((c) => c.column === 'id' && c.opts?.ascending === true),
+    ).toBe(true);
+    expect(holeRangeCalls.length).toBeGreaterThanOrEqual(2);
+    expect(holeRangeCalls[0]).toEqual({ from: 0, to: 999 });
+    expect(holeRangeCalls[1]).toEqual({ from: 1000, to: 1999 });
+    // Every shot — including those past row 1000 — got its real flag (false),
+    // not a truncation-induced null. Proves the flag map covered all 1300 holes.
+    expect(result.length).toBe(TOTAL_SAND_SHOTS);
+    expect(result.every((s) => s.sand_save_flag === false)).toBe(true);
   });
 });
