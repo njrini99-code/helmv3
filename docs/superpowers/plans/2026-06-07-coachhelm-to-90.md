@@ -2940,7 +2940,7 @@ In `aggregate()`, after the `value === null` guard (line 96) and before the `loa
     const worstHoles = Array.from(byHole.entries())
       .filter(([, v]) => v.n >= 3)
       .map(([hole_number, v]) => ({ hole_number, avg_to_par: v.sum / v.n, n: v.n }))
-      .sort((a, b) => b.avg_to_par - a.avg_to_par)
+      .sort((a, b) => b.avg_to_par - a.avg_to_par || a.hole_number - b.hole_number)
       .slice(0, 2);
 ```
 
@@ -2966,11 +2966,13 @@ In `composeContent`, add two shared helpers at the top of the method (before the
           `.`
         : '';
     // Dominant proximate cause among the double-plus holes.
-    const causes: Array<{ key: string; pct: number }> = [
-      { key: 'three_putt', pct: agg.cause_three_putt_pct },
-      { key: 'penalty', pct: agg.cause_penalty_pct },
-      { key: 'missed_gir_no_scramble', pct: agg.cause_missed_gir_pct },
-    ].sort((a, b) => b.pct - a.pct);
+    const causes: Array<{ key: string; pct: number; rank: number }> = [
+      { key: 'three_putt', pct: agg.cause_three_putt_pct, rank: 0 },
+      { key: 'penalty', pct: agg.cause_penalty_pct, rank: 1 },
+      { key: 'missed_gir_no_scramble', pct: agg.cause_missed_gir_pct, rank: 2 },
+      // Deterministic tiebreak on a stable rank so equal shares don't flip the
+      // named dominant cause across engines (mirrors the worst-holes tiebreak).
+    ].sort((a, b) => b.pct - a.pct || a.rank - b.rank);
     const top = causes[0];
     const CAUSE_LABEL: Record<string, string> = {
       three_putt: '3-putts',
