@@ -227,7 +227,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     if (agg.variant === 'penalty') {
       const valueDisp = agg.metric_value.toFixed(1);
       const anchorClause = agg.anchor_is_cohort && agg.anchor_value !== null
-        ? `Your division cohort averages ~${agg.anchor_value.toFixed(1)} (PGA Tour ~0.3)`
+        ? `College players in our data average ~${agg.anchor_value.toFixed(1)} (PGA Tour ~0.3)`
         : `PGA Tour is ~0.3; top college teams stay under 0.5`;
       return {
         title: `Penalty strokes: ${valueDisp} per round`,
@@ -269,7 +269,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     // big_number variant
     const valueDisp = `${agg.metric_value.toFixed(1)}%`;
     const anchorClause = agg.anchor_is_cohort && agg.anchor_value !== null
-      ? `Your division cohort averages ~${agg.anchor_value.toFixed(1)}% (PGA Tour ~2%)`
+      ? `College players in our data average ~${agg.anchor_value.toFixed(1)}% (PGA Tour ~2%)`
       : `PGA Tour is ~2%`;
     return {
       title: `Double bogey-or-worse rate: ${valueDisp}`,

@@ -79,7 +79,7 @@ describe('CourseMgmtGenerator', () => {
       // no gap to close → descriptive (low), matching the zero counterfactual.
       const c = g.composeContent(makeAgg('penalty', 0.9, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
       expect(c.priority).toBe('low');
-      expect(c.content).toContain('division cohort averages ~0.9');
+      expect(c.content).toContain('College players in our data average ~0.9');
       expect(c.content).toContain('PGA Tour ~0.3');
     });
 
@@ -101,7 +101,7 @@ describe('CourseMgmtGenerator', () => {
       const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
       const atCohort = g.composeContent(makeAgg('big_number', 6, 20, { anchor_value: 6, anchor_is_cohort: true }));
       expect(atCohort.priority).toBe('low');
-      expect(atCohort.content).toContain('division cohort averages ~6.0%');
+      expect(atCohort.content).toContain('College players in our data average ~6.0%');
       const above = g.composeContent(makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }));
       expect(above.priority).toBe('high'); // 9 - 6 = 3 > 2 highMargin
     });
@@ -111,6 +111,12 @@ describe('CourseMgmtGenerator', () => {
       expect(g.composeContent(makeAgg('big_number', 5, 20)).priority).toBe('high');
       expect(g.composeContent(makeAgg('big_number', 3, 20)).priority).toBe('medium');
       expect(g.composeContent(makeAgg('big_number', 1.5, 20)).priority).toBe('low');
+    });
+
+    it('does NOT assert a "division cohort" (level_avg is an app-wide population)', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
+      const c = g.composeContent(makeAgg('penalty', 0.9, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
+      expect(c.content.toLowerCase()).not.toContain('division cohort');
     });
   });
 
