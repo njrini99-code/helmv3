@@ -47,3 +47,42 @@ export async function fetchAllRows<T>(
 
   return all;
 }
+
+/**
+ * Same pagination as {@link fetchAllRows}, but returns the familiar
+ * `{ data, error }` shape instead of throwing — so call sites that already do
+ * `const { data, error } = await supabase.from(...)...` can adopt pagination
+ * with a near-identical destructure and keep their existing error branches.
+ *
+ *   const { data: shots, error } = await fetchAllRowsResult((from, to) =>
+ *     supabase.from('golf_shots').select('...').in('round_id', ids)
+ *       .order('id', { ascending: true }).range(from, to));
+ *
+ * T is inferred from the PostgREST builder, so no explicit type argument is
+ * needed at the call site. On the first page error, `data` is null and `error`
+ * carries the original PostgREST error (matching the unpaginated behavior).
+ */
+export async function fetchAllRowsResult<T>(
+  makeQuery: (
+    from: number,
+    to: number,
+  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+  pageSize: number = DEFAULT_PAGE_SIZE,
+): Promise<{ data: T[] | null; error: { message: string } | null }> {
+  const all: T[] = [];
+  let from = 0;
+
+  for (let page = 0; page < 1000; page += 1) {
+    const { data, error } = await makeQuery(from, from + pageSize - 1);
+    if (error) {
+      // Preserve the unpaginated contract: surface the error, null data.
+      return { data: from === 0 ? null : all, error };
+    }
+    const rows = data ?? [];
+    all.push(...rows);
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return { data: all, error: null };
+}

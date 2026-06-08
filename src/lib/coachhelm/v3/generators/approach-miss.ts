@@ -31,6 +31,8 @@
 
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { round } from '@/lib/golf/stat-formulas';
+import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import {
   loadApproachShots,
   bucketApproachDistance,
@@ -43,6 +45,11 @@ import type {
   InsightCategory,
   MetricId,
 } from '@/lib/coachhelm/v3/engine/types';
+import {
+  dominantAxis,
+  approachAxisDriver,
+  type AxisTally,
+} from '@/lib/coachhelm/v3/engine/diagnosis';
 
 const BUCKET_TO_METRIC_ID: Record<ApproachBucket, MetricId> = {
   '50_125ft':      'approach_proximity_50_125ft',
@@ -95,6 +102,16 @@ function onGreenFinishFeet(s: ApproachShot): number {
     : Number(s.distance_to_hole_after);
 }
 
+/** Classify a raw miss_direction into its short/long and left/right poles. A
+ *  direction may contribute to BOTH axes (e.g. 'short_right' → short + right);
+ *  a pure 'short' contributes short + L/R-neutral. Unknown → neutral on both. */
+function classifyMiss(raw: string | null): { sl: keyof AxisTally; lr: keyof AxisTally } {
+  const v = (raw ?? '').toLowerCase();
+  const sl: keyof AxisTally = v.includes('short') ? 'negative' : v.includes('long') ? 'positive' : 'neutral';
+  const lr: keyof AxisTally = v.includes('left') ? 'negative' : v.includes('right') ? 'positive' : 'neutral';
+  return { sl, lr };
+}
+
 interface ApproachMissAggregate extends GeneratorAggregate {
   bucket: ApproachBucket;
   attempts: number;
@@ -103,6 +120,14 @@ interface ApproachMissAggregate extends GeneratorAggregate {
   /** Avg proximity in FEET over green-finding shots only; null when too few greens hit. */
   proximity_when_hit_feet: number | null;
   penalty_rate_pct: number;
+  /** Short(neg)/long(pos) tally over off-green misses in this bucket. */
+  miss_short_long: AxisTally;
+  /** Left(neg)/right(pos) tally over off-green misses in this bucket. */
+  miss_left_right: AxisTally;
+  /** Team gender used to select the per-gender comparison anchor. */
+  cohort_gender: CohortGender;
+  /** Attempts in this bucket per distinct round — used for CF attempt-rate sizing. */
+  attempts_per_round: number;
 }
 
 export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> {
@@ -128,6 +153,9 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     );
     if (inBucket.length === 0) return null;
 
+    const cohort = await loadPlayerCohort(this.playerId);
+    const distinctRounds = new Set(inBucket.map((s) => s.round_id)).size;
+
     const greenShots = inBucket.filter(reachedGreen);
     const greenHitN = greenShots.length;
     // 1 dp to match the canonical pct() display contract (inBucket.length > 0
@@ -142,6 +170,15 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
         : null;
 
     const penaltyCount = inBucket.filter((s) => s.is_penalty).length;
+
+    const sl: AxisTally = { negative: 0, positive: 0, neutral: 0 };
+    const lr: AxisTally = { negative: 0, positive: 0, neutral: 0 };
+    for (const s of inBucket) {
+      if (reachedGreen(s)) continue; // only misses carry a meaningful miss_direction
+      const c = classifyMiss(s.miss_direction);
+      sl[c.sl] += 1;
+      lr[c.lr] += 1;
+    }
 
     return {
       sampleN: inBucket.length,
@@ -164,12 +201,18 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       proximity_when_hit_feet: proximityWhenHit,
       // inBucket.length > 0 is guaranteed by the early return; 1 dp per canonical pct().
       penalty_rate_pct: round((100 * penaltyCount) / inBucket.length, 1),
+      miss_short_long: sl,
+      miss_left_right: lr,
+      cohort_gender: cohort.gender,
+      attempts_per_round: inBucket.length / Math.max(1, distinctRounds),
     };
   }
 
   composeContent(agg: ApproachMissAggregate): ComposedContent {
     const label = BUCKET_LABEL[agg.bucket];
-    const tourGreenHit = TOUR_GREEN_HIT_PCT[agg.bucket];
+    const tourGreenHit =
+      cohortAnchor(this.metricId, agg.cohort_gender) ?? TOUR_GREEN_HIT_PCT[agg.bucket];
+    const tourLabel = agg.cohort_gender === 'womens' ? "women's college" : 'PGA Tour';
     const tourProx = TOUR_PROXIMITY_FEET[agg.bucket];
     const ghDisp = `${agg.green_hit_pct.toFixed(0)}%`;
     const prox = agg.proximity_when_hit_feet;
@@ -184,21 +227,35 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // coach whether the leak is finding greens or controlling distance once there.
     const reachSentence =
       `Across your last ${agg.attempts} approaches from ${label} you found the green ` +
-      `${ghDisp} of the time (PGA Tour ~${tourGreenHit}%, approximate).`;
+      `${ghDisp} of the time (${tourLabel} ~${tourGreenHit}%, approximate).`;
     const dialInSentence =
       prox != null
         ? ` When you do reach it you finish ${prox.toFixed(0)} ft from the hole ` +
-          `(Tour ~${tourProx} ft) — that's the dial-in once you're on.`
-        : ` Too few greens hit from here to read a reliable proximity yet — the gap is ` +
+          `(Tour ~${tourProx} ft, over ${agg.green_hit_n} greens) — that's the dial-in once you're on.`
+        : ` Too few greens hit from here (${agg.green_hit_n}) to read a reliable proximity yet — the gap is ` +
           `finding the green, not distance control on it.`;
     const penaltySentence =
       agg.penalty_rate_pct > 5
         ? ` Note: ${agg.penalty_rate_pct.toFixed(0)}% of these approaches incurred a penalty — worth flagging in practice.`
         : '';
 
+    // Dominant miss axis → driver+action. Short/long leads (the dial-in lever);
+    // left/right is the fallback when the vertical miss is balanced. Omitted
+    // entirely when neither axis dominates — no fabricated tendency.
+    const slDom = dominantAxis(agg.miss_short_long);
+    const lrDom = dominantAxis(agg.miss_left_right);
+    let axisSentence = '';
+    if (slDom) {
+      axisSentence = ' ' + approachAxisDriver(
+        slDom.axis === 'negative' ? 'short' : 'long', slDom.share, slDom.n);
+    } else if (lrDom) {
+      axisSentence = ' ' + approachAxisDriver(
+        lrDom.axis === 'negative' ? 'left' : 'right', lrDom.share, lrDom.n);
+    }
+
     return {
       title,
-      content: reachSentence + dialInSentence + penaltySentence,
+      content: reachSentence + dialInSentence + penaltySentence + axisSentence,
       // Descriptive diagnostic — severity is read off the StandingBar, not the verdict.
       priority: 'low',
       signature: `approach_miss:${agg.bucket}`,
@@ -209,7 +266,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
         your_value: agg.green_hit_pct,
         your_value_display: ghDisp,
         comparison_value: tourGreenHit,
-        comparison_label: 'PGA Tour (approx)',
+        comparison_label: agg.cohort_gender === 'womens' ? "Women's college (approx)" : 'PGA Tour (approx)',
         comparison_source: 'pga_baseline',
         sample_n: agg.attempts,
         window_days: 90,

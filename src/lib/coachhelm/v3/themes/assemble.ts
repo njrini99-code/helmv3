@@ -174,6 +174,30 @@ export function sanitizeProse(text: string | null | undefined): string {
     .trim();
 }
 
+/**
+ * Coaching-grade NLG template (Phase G). Assembles a DATA FACT, a DRIVER (what
+ * the number means — the cause, not a restatement), and a specific ACTION into
+ * one clean, sanitized passage. Caller supplies the data-derived strings; this
+ * helper owns only the joining, terminal-punctuation hygiene, and a final
+ * sanitizeProse pass so no authoring artifact can slip through. Empty/omitted
+ * clauses drop cleanly. Pure + idempotent.
+ */
+export function composeDriverPrescription(parts: {
+  fact: string;
+  driver?: string;
+  action?: string;
+}): string {
+  const clause = (s: string | undefined): string => {
+    const t = (s ?? '').trim();
+    if (!t) return '';
+    return /[.!?]$/.test(t) ? t : `${t}.`;
+  };
+  const joined = [clause(parts.fact), clause(parts.driver), clause(parts.action)]
+    .filter((c) => c.length > 0)
+    .join(' ');
+  return sanitizeProse(joined);
+}
+
 export interface AssembleThemesInput {
   playerId: string;
   rows: EvidenceInsight[];
@@ -316,11 +340,47 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
     }
   }
 
+  // CROSS-THEME opening-stretch dedup (Phase G). warmup_hole (category pressure)
+  // and front_9_starter (category scoring) both narrate the same
+  // `opening_hole_delta` leak in two themes; when BOTH are persisted the read
+  // path would double-surface one leak. Keep the larger-magnitude row, suppress
+  // the rest from their themes (rows are not deleted — just not double-surfaced).
+  // Same channel + determinism as aliasSuppressedRowIds.
+  const openingStretchSuppressedRowIds = new Set<string>();
+  const openingRows = rows.filter((row) => {
+    if (!row?.id || demotedLeafIds.has(row.id) || aliasSuppressedRowIds.has(row.id)) return false;
+    return readEvidence(row).metric === 'opening_hole_delta';
+  });
+  const openingCategories = new Set(openingRows.map((r) => r.category).filter(Boolean));
+  if (openingRows.length >= 2 && openingCategories.size >= 2) {
+    const winner = openingRows.slice().sort((a, b) => {
+      const aEv = readEvidence(a);
+      const bEv = readEvidence(b);
+      const aImpact = Math.abs(Number(aEv.strokes_impact ?? 0));
+      const bImpact = Math.abs(Number(bEv.strokes_impact ?? 0));
+      if (bImpact !== aImpact) return bImpact - aImpact;
+      // `your_value` is a v2 evidence field (not in AssembledEvidence typedef)
+      // but present in the persisted JSONB at runtime — read via bracket access.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const aVal = Math.abs(Number((aEv as any).your_value ?? 0));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bVal = Math.abs(Number((bEv as any).your_value ?? 0));
+      if (bVal !== aVal) return bVal - aVal;
+      return a.id.localeCompare(b.id);
+    })[0];
+    if (winner) {
+      for (const r of openingRows) {
+        if (r.id !== winner.id) openingStretchSuppressedRowIds.add(r.id);
+      }
+    }
+  }
+
   const causesByCategory = new Map<InsightCategory, CauseNode[]>();
   for (const row of rows) {
     if (!row?.id) continue;
     if (demotedLeafIds.has(row.id)) continue; // demoted same-category leaf — not top level
     if (aliasSuppressedRowIds.has(row.id)) continue; // ASM-1 alias duplicate — keep the winner only
+    if (openingStretchSuppressedRowIds.has(row.id)) continue; // cross-theme opening-stretch dup
     if (!row.category) continue; // null/unknown category → skip (don't invent a theme)
     if (!getThemeDef(row.category)) continue; // unknown category → skip
 

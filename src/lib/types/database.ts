@@ -8544,6 +8544,7 @@ export type Database = {
           engine_version: string | null
           fairways_hit: number | null
           fairways_total: number | null
+          first_round_date: string | null
           gir_percentage: number | null
           greens_hit: number | null
           greens_total: number | null
@@ -8561,6 +8562,11 @@ export type Database = {
           pars: number | null
           penalty_strokes_per_round: number | null
           player_id: string
+          putt_attempts_10_15ft: number | null
+          putt_attempts_15_25ft: number | null
+          putt_attempts_25_plus_ft: number | null
+          putt_attempts_3_5ft: number | null
+          putt_attempts_5_10ft: number | null
           putt_make_pct_0_3ft: number | null
           putt_make_pct_10_15ft: number | null
           putt_make_pct_15_20ft: number | null
@@ -8625,6 +8631,7 @@ export type Database = {
           engine_version?: string | null
           fairways_hit?: number | null
           fairways_total?: number | null
+          first_round_date?: string | null
           gir_percentage?: number | null
           greens_hit?: number | null
           greens_total?: number | null
@@ -8642,6 +8649,11 @@ export type Database = {
           pars?: number | null
           penalty_strokes_per_round?: number | null
           player_id: string
+          putt_attempts_10_15ft?: number | null
+          putt_attempts_15_25ft?: number | null
+          putt_attempts_25_plus_ft?: number | null
+          putt_attempts_3_5ft?: number | null
+          putt_attempts_5_10ft?: number | null
           putt_make_pct_0_3ft?: number | null
           putt_make_pct_10_15ft?: number | null
           putt_make_pct_15_20ft?: number | null
@@ -8706,6 +8718,7 @@ export type Database = {
           engine_version?: string | null
           fairways_hit?: number | null
           fairways_total?: number | null
+          first_round_date?: string | null
           gir_percentage?: number | null
           greens_hit?: number | null
           greens_total?: number | null
@@ -8723,6 +8736,11 @@ export type Database = {
           pars?: number | null
           penalty_strokes_per_round?: number | null
           player_id?: string
+          putt_attempts_10_15ft?: number | null
+          putt_attempts_15_25ft?: number | null
+          putt_attempts_25_plus_ft?: number | null
+          putt_attempts_3_5ft?: number | null
+          putt_attempts_5_10ft?: number | null
           putt_make_pct_0_3ft?: number | null
           putt_make_pct_10_15ft?: number | null
           putt_make_pct_15_20ft?: number | null

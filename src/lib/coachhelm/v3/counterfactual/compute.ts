@@ -27,6 +27,8 @@ import {
   getCounterfactualConfig,
   getCohortPlausibilityBound,
 } from './lookup-tables';
+import { cohortAnchor, type CohortGender } from './cohort-baselines';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 
 export interface ComputeCounterfactualInput {
   metric_id: MetricId | string;
@@ -44,6 +46,20 @@ export interface ComputeCounterfactualInput {
    * null, so the engine is unchanged until the cohort RPC populates `level_avg`.
    */
   cohort_value?: number | null;
+  /** Player's cohort gender — selects the per-gender anchor (DC-GENDER-1). */
+  cohort_gender?: CohortGender;
+  /**
+   * Player's OWN per-round attempt rate for this metric (DC-ATTEMPT-1). When
+   * the metric has an `attempt_metric` and this is finite + > 0, impact is
+   * sized off it instead of the global `stroke_impact_per_unit`.
+   */
+  player_attempts_per_round?: number | null;
+  /**
+   * Insight confidence score (DC-CONF-1). When below 0.4 the formatter
+   * softens the verb and widens the projected range so a thin-sample claim
+   * doesn't read as a precise promise. Omitting this field defaults to 'high'.
+   */
+  confidence?: number;
 }
 
 /**
@@ -72,7 +88,17 @@ export function computeCounterfactual(
     input.cohort_value != null &&
     Number.isFinite(input.cohort_value) &&
     isCohortPlausible(input.metric_id, input.cohort_value, input.direction, input.pga_value);
-  const target = cohortUsable ? (input.cohort_value as number) : input.pga_value;
+  // Target priority (DC-COHORT-1 → DC-GENDER-1): a plausible cohort, else the
+  // per-gender anchor (women's college target), else the Tour pga_value. The
+  // anchor is the controlled replacement for the synthetic single-value cohort.
+  const anchor = input.cohort_gender
+    ? cohortAnchor(input.metric_id, input.cohort_gender)
+    : null;
+  const target = cohortUsable
+    ? (input.cohort_value as number)
+    : anchor != null
+      ? anchor
+      : input.pga_value;
 
   // Gap = how much the player would need to MOVE to reach the target. For
   // higher_better metrics, positive gap means player needs to gain value
@@ -90,7 +116,22 @@ export function computeCounterfactual(
     };
   }
 
-  const raw_strokes_saved_per_round = gap * cfg.stroke_impact_per_unit;
+  // DC-ATTEMPT-1: size impact off the player's OWN attempt rate when the metric
+  // declares an attempt_metric and the caller supplied a real rate. Otherwise
+  // keep the legacy gap × stroke_impact_per_unit (SG, deltas, no-attempts callers).
+  // For percent metrics the gap is in pp → /100; for strokes-unit metrics
+  // (par-type uses holes_per_round) the gap is already in strokes → no /100.
+  const attempts = input.player_attempts_per_round;
+  const useAttemptRate =
+    cfg.attempt_metric != null &&
+    cfg.value_per_unit != null &&
+    attempts != null &&
+    Number.isFinite(attempts) &&
+    attempts > 0;
+  const pctDivisor = getMetricRenderConfig(input.metric_id)?.unit === 'percent' ? 100 : 1;
+  const raw_strokes_saved_per_round = useAttemptRate
+    ? (gap / pctDivisor) * (attempts as number) * (cfg.value_per_unit as number)
+    : gap * cfg.stroke_impact_per_unit;
 
   // CF-1/CF-2: clamp each projection to a per-metric ceiling. No single-metric
   // leak realistically saves more than ~2.5 strokes/round (tighter on the
@@ -109,6 +150,7 @@ export function computeCounterfactual(
       weeks_to_typical_close: cfg.coachable_timeframe_weeks,
       suppressed: true,
       suppress_reason: 'below_threshold',
+      attempts_used: useAttemptRate ? (attempts as number) : null,
     };
   }
 
@@ -121,6 +163,8 @@ export function computeCounterfactual(
       suppressed: true,
       suppress_reason: 'no_baseline',
       clamped,
+      attempts_used: useAttemptRate ? (attempts as number) : null,
+      confidence_band: bandFor(input.confidence),
     };
   }
 
@@ -131,6 +175,8 @@ export function computeCounterfactual(
     weeks_to_typical_close: cfg.coachable_timeframe_weeks,
     suppressed: false,
     clamped,
+    attempts_used: useAttemptRate ? (attempts as number) : null,
+    confidence_band: bandFor(input.confidence),
   };
 }
 
@@ -179,11 +225,26 @@ function zeroProjection(
 }
 
 /**
+ * DC-CONF-1: map a raw confidence score to a band used by the formatter.
+ * Null / non-finite → 'high' (safe default; callers that don't supply
+ * confidence get the unchanged precise copy).
+ */
+function bandFor(confidence: number | undefined): 'low' | 'medium' | 'high' {
+  if (confidence == null || !Number.isFinite(confidence)) return 'high';
+  if (confidence < 0.4) return 'low';
+  if (confidence < 0.7) return 'medium';
+  return 'high';
+}
+
+/**
  * Format the secondary-line text per master plan Part X:
  *   "Closing this gap → 75.2 → 74.5 (≈4 wks)"
  *
  * Returns empty string when the projection is suppressed — caller can
  * use that as a truthiness check for "should we render this row?"
+ *
+ * DC-CONF-1: a low-confidence (thin-sample) projection softens the verb and
+ * widens the range rather than promising a precise score drop.
  */
 export function formatCounterfactualLine(p: CounterfactualProjection): string {
   if (p.suppressed) return '';
@@ -191,5 +252,15 @@ export function formatCounterfactualLine(p: CounterfactualProjection): string {
   const baseline = p.current_baseline_score.toFixed(1);
   const projected = p.projected_score_if_closed.toFixed(1);
   const weeks = Math.max(1, Math.round(p.weeks_to_typical_close));
-  return `Closing this gap → ${baseline} → ${projected} (≈${weeks} wk${weeks === 1 ? '' : 's'})`;
+  const wk = `≈${weeks} wk${weeks === 1 ? '' : 's'}`;
+
+  // DC-CONF-1: a low-confidence (thin-sample) projection softens the verb and
+  // widens the range rather than promising a precise score drop.
+  if (p.confidence_band === 'low') {
+    const saved = p.strokes_saved_per_round;
+    const lo = (saved * 0.5).toFixed(1);
+    const hi = saved.toFixed(1);
+    return `On limited data, focused work here could trim roughly ${lo}-${hi} strokes/round (${wk})`;
+  }
+  return `Closing this gap → ${baseline} → ${projected} (${wk})`;
 }

@@ -16,6 +16,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   verifyPlayerAccess as canonicalVerifyPlayerAccess,
   verifyTeamAccess as canonicalVerifyTeamAccess,
@@ -619,14 +620,15 @@ export async function getPlayerShotContext(
     const roundIds = roundsData.map((r) => r.id);
 
     // Fetch shots for these rounds
-    const { data: shotsData, error: shotsError } = await supabase
+    const { data: shotsData, error: shotsError } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_shots')
       .select('id, round_id, hole_number, shot_number, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, club_type, result')
       .in('round_id', roundIds)
       .order('round_id')
       .order('hole_number')
       .order('shot_number')
-      .limit(50000); // lift PostgREST 1000-row default cap
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
 
     if (shotsError) {
       return { success: false, error: 'Failed to fetch shot data' };
@@ -709,11 +711,12 @@ export async function getPlayerShotContext(
     const resilience = analyzeSequenceEffects(shots, sgValues);
 
     // Fetch holes for scramble rate
-    const { data: holesData } = await supabase
+    const { data: holesData } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_holes')
       .select('hole_number, par, score, gir, putts, round_id')
       .in('round_id', roundIds)
-      .limit(50000); // lift PostgREST 1000-row default cap
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
 
     const scrambleHoles = (holesData ?? [])
       .filter((h): h is typeof h & { par: number; score: number; gir: boolean } =>

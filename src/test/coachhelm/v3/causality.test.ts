@@ -74,6 +74,33 @@ describe('nextWeight (EMA over signed lifts)', () => {
     expect(lateDelta).toBeLessThan(earlyDelta);
   });
 
+  it('Phase H/H4: a LARGER positive lift pushes weight further than a small one (magnitude-aware)', () => {
+    // Same prior, same sample_n — only the lift magnitude differs. The binary
+    // 1.5/0.5 design failed this (both went to exactly the same place).
+    const small = nextWeight({ weight: 1.0, sample_n: 0 }, 0.1);
+    const large = nextWeight({ weight: 1.0, sample_n: 0 }, 2.0);
+    expect(large.weight).toBeGreaterThan(small.weight);
+  });
+
+  it('Phase H/H4: a LARGER negative lift pushes weight further down than a small one', () => {
+    const small = nextWeight({ weight: 1.0, sample_n: 0 }, -0.1);
+    const large = nextWeight({ weight: 1.0, sample_n: 0 }, -2.0);
+    expect(large.weight).toBeLessThan(small.weight);
+  });
+
+  it('Phase H/H4: target saturates — a 2-stroke and a 20-stroke lift land close together', () => {
+    // tanh saturation: a single freak round can't dominate the weight.
+    const big = nextWeight({ weight: 1.0, sample_n: 0 }, 2.0);
+    const absurd = nextWeight({ weight: 1.0, sample_n: 0 }, 20.0);
+    expect(Math.abs(absurd.weight - big.weight)).toBeLessThan(0.1);
+  });
+
+  it('Phase H/H4: a ~1-stroke lift targets ≈1.76 (1 + tanh(1)) on the first sample', () => {
+    // sample_n=0 → alpha=1 → next ≈ target exactly.
+    const next = nextWeight({ weight: 1.0, sample_n: 0 }, 1.0);
+    expect(next.weight).toBeCloseTo(1 + Math.tanh(1), 3); // ≈1.7616
+  });
+
   it('ignores non-finite lift values defensively', () => {
     const prev = { weight: 1.0, sample_n: 5 };
     expect(nextWeight(prev, Number.NaN)).toEqual(prev);
@@ -160,6 +187,41 @@ describe('METRIC_SOURCE registry coverage (drift catcher)', () => {
     }
   });
 
+  it('Phase H/H2: resolves the live scrambling drift spellings as honest intentional-null', () => {
+    // Observed live (>=21d insights): `scrambling_fairway` (2), `scrambling_rough` (1).
+    // These are the insight-surface short spellings of the canonical
+    // scrambling_pct_fairway / scrambling_pct_rough — both intentional-null
+    // (needs-shot-level-join). They must resolve so the cron stops counting
+    // them as unknown-metric drift, but MUST stay intentional-null (no
+    // manufactured lift on the wrong population).
+    for (const id of ['scrambling_fairway', 'scrambling_rough']) {
+      const def = lookupMetricSource(id);
+      expect(def, `expected ${id} to resolve`).toBeTruthy();
+      expect(def!.kind).toBe('intentional-null');
+    }
+  });
+
+  it('Phase H/H2: resolves audit-named driver metrics as intentional-null (no honest per-round source)', () => {
+    // three_putt_chain + compound_mistake_rate need hole-level SEQUENCING the
+    // round_stats_cache does not store; short_side_proximity needs shot-level
+    // position. They resolve (so they never silently drift) but produce no lift.
+    for (const id of [
+      'three_putt_chain',
+      'short_side_proximity',
+      'compound_mistake_rate',
+    ]) {
+      const def = lookupMetricSource(id);
+      expect(def, `expected ${id} to resolve`).toBeTruthy();
+      expect(def!.kind).toBe('intentional-null');
+    }
+  });
+
+  it('Phase H/H2: fairways_hit_pct stays an attributable ratio (lift must persist)', () => {
+    const def = lookupMetricSource('fairways_hit_pct');
+    expect(def).toBeTruthy();
+    expect(def!.kind).toBe('round_stats_cache_ratio');
+  });
+
   it('reports the expected count of attributable vs intentional-null metrics', () => {
     // Snapshot the coverage so future drift is visible in the diff.
     // If you add a new source, bump these numbers.
@@ -213,6 +275,8 @@ function buildRoundsBuilder(rows: Array<Record<string, unknown>>) {
   builder.gte = (...a: unknown[]) => record('gte', ...a);
   builder.lte = (...a: unknown[]) => record('lte', ...a);
   builder.limit = (...a: unknown[]) => record('limit', ...a);
+  builder.order = (...a: unknown[]) => record('order', ...a);
+  builder.range = (...a: unknown[]) => record('range', ...a);
   // The await on the builder resolves to { data, error }
   builder.then = (resolve: (v: { data: typeof rows; error: null }) => void) =>
     resolve({ data: rows, error: null });
@@ -539,5 +603,145 @@ describe('computeAttribution (W35 follow-up integration)', () => {
       target_metric_id: 'sg_total',
     });
     expect(result).toEqual({ ok: false, reason: 'no-data' });
+  });
+});
+
+/**
+ * Phase H/H3 — ambient counterfactual must be computed STRICTLY OUTSIDE the
+ * [preStart, postEnd] window, so post-window improvement can't leak into the
+ * ambient average and cancel the lift it is supposed to isolate.
+ */
+function buildWindowAwareSupabase(
+  rowsByCall: (startIso: string, endIso: string) => Array<Record<string, unknown>>,
+) {
+  // Records every (start,end) pair averageGolfRoundsColumn queries so the test
+  // can assert the ambient window never overlaps the post window.
+  const windows: Array<{ start: string; end: string }> = [];
+  const from = () => {
+    let start = '';
+    let end = '';
+    const builder: Record<string, unknown> = {};
+    const self = () => builder;
+    builder.select = self;
+    builder.eq = self;
+    builder.gte = (_col: string, v: string) => {
+      start = v;
+      return builder;
+    };
+    builder.lte = (_col: string, v: string) => {
+      end = v;
+      return builder;
+    };
+    builder.order = self;
+    builder.range = self;
+    builder.then = (
+      resolve: (v: { data: Array<Record<string, unknown>>; error: null }) => void,
+    ) => {
+      windows.push({ start, end });
+      resolve({ data: rowsByCall(start, end), error: null });
+    };
+    return builder;
+  };
+  const sb = { from } as unknown as Parameters<typeof computeAttribution>[0];
+  return { sb, windows };
+}
+
+describe('Phase H/H3: ambient counterfactual isolation', () => {
+  it('computes ambient strictly OUTSIDE [preStart, postEnd]', async () => {
+    const surfaced = '2026-04-01T00:00:00.000Z';
+    const surfacedTs = new Date(surfaced).getTime();
+    const preStartDate = new Date(surfacedTs - 14 * 86400_000)
+      .toISOString()
+      .slice(0, 10);
+    const postEndDate = new Date(surfacedTs + 21 * 86400_000)
+      .toISOString()
+      .slice(0, 10);
+
+    const { sb, windows } = buildWindowAwareSupabase((start, _end) => {
+      // Pre window: baseline avg sg_total = 0. Post window: avg = +2 (improved).
+      // Ambient (pre-pre history): avg = 0 (flat). gte/lte are date-only.
+      const s = start.slice(0, 10);
+      if (s >= preStartDate.slice(0, 10) && s < surfaced.slice(0, 10)) {
+        return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
+      }
+      if (s > surfaced.slice(0, 10) && s <= postEndDate) {
+        return [{ strokes_gained_total: 2 }, { strokes_gained_total: 2 }];
+      }
+      // ambient (history before preStart)
+      return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
+    });
+
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-1',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'sg_total',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+
+    // The ambient window the code queried must END no later than preStart.
+    const ambientWindow = windows.find(
+      (w) => w.end.slice(0, 10) <= preStartDate,
+    );
+    expect(
+      ambientWindow,
+      'an ambient window ending at/before preStart must have been queried',
+    ).toBeTruthy();
+    // And NO queried window may extend into the post period while also reaching
+    // before the pre window (i.e. the old [-90d, +90d] straddling window).
+    const straddles = windows.some(
+      (w) => w.start.slice(0, 10) < preStartDate && w.end.slice(0, 10) > postEndDate,
+    );
+    expect(straddles, 'ambient must NOT straddle the post window').toBe(false);
+  });
+
+  it('credits the full delta when ambient trend is flat (lift ≈ delta)', async () => {
+    // Flat ambient (0) + flat baseline (0) + improved post (+2) → lift ≈ +2,
+    // NOT cancelled. With the old straddling window the post leaked into ambient
+    // and lift collapsed toward 0.
+    const surfaced = '2026-04-01T00:00:00.000Z';
+    const surfacedTs = new Date(surfaced).getTime();
+    const { sb } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      const postStart = new Date(surfacedTs + 1).toISOString().slice(0, 10);
+      if (s >= postStart) return [{ strokes_gained_total: 2 }, { strokes_gained_total: 2 }];
+      return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
+    });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-2',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'sg_total',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+    expect(result.row.delta).toBeCloseTo(2, 5);
+    expect(result.row.lift).not.toBeNull();
+    expect(result.row.lift!).toBeCloseTo(2, 5); // ambient drift = 0 → no subtraction
+  });
+
+  it('returns lift=null (but still records delta) when ambient has too few rounds', async () => {
+    const surfaced = '2026-04-01T00:00:00.000Z';
+    const surfacedTs = new Date(surfaced).getTime();
+    const postStart = new Date(surfacedTs + 1).toISOString().slice(0, 10);
+    const preStartDate = new Date(surfacedTs - 14 * 86400_000)
+      .toISOString()
+      .slice(0, 10);
+    const { sb } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      if (s >= postStart) return [{ strokes_gained_total: 1 }, { strokes_gained_total: 1 }];
+      if (s >= preStartDate && s < surfaced.slice(0, 10)) {
+        return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
+      }
+      return [{ strokes_gained_total: 0 }]; // ambient: only 1 round → below gate
+    });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-3',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'sg_total',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+    expect(result.row.delta).toBeCloseTo(1, 5);
+    expect(result.row.lift).toBeNull(); // gated — 1 ambient round is noise
   });
 });

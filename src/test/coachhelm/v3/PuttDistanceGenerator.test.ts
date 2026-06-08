@@ -7,9 +7,22 @@
  * verify the title / content / signature / evidence shape are correct.
  *
  * The end-to-end orchestrator integration test belongs to W25 (cutover).
+ *
+ * E7 addition: a focused aggregate() suppression test that mocks the DB
+ * boundary so aggregate() sees putt_attempts_25_plus_ft < ATTEMPT_FLOOR
+ * and asserts null is returned (sub-floor bands must be suppressed
+ * end-to-end, not just in composeContent). The lifecycle harness in
+ * generator-base-run-lifecycle.test.ts was NOT extended for this because
+ * PuttDistanceGenerator.aggregate() goes through fromUntyped() which calls
+ * .from() on the admin client — the lifecycle harness only stubs
+ * createAdminClient() to return { __fake: true } without chaining .from(),
+ * so wiring the full fluent mock there would duplicate a large amount of
+ * mock infrastructure for no additional lifecycle coverage. The focused
+ * aggregate mock here is cleaner and exercises the same gate.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { PuttDistanceGenerator } from '@/lib/coachhelm/v3/generators/putt-distance';
 
 const PLAYER_ID = 'player-test-1';
@@ -18,13 +31,19 @@ function makeAgg(overrides: Partial<{
   bucket: '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
   playerValue: number;
   rounds_played: number;
+  cohort_gender: 'mens' | 'womens';
+  attempts?: number;
+  spanDays?: number | null;
 }> = {}) {
   return {
-    sampleN: overrides.rounds_played ?? 20,
+    sampleN: overrides.attempts ?? 40,
     playerValue: overrides.playerValue ?? 35,
     bucket: overrides.bucket ?? '10_15ft',
     rawValue: (overrides.playerValue ?? 35) / 100,
     rounds_played: overrides.rounds_played ?? 20,
+    cohort_gender: overrides.cohort_gender ?? 'mens',
+    attempts: overrides.attempts ?? 40,
+    spanDays: overrides.spanDays === undefined ? 54 : overrides.spanDays,
   };
 }
 
@@ -82,13 +101,39 @@ describe('PuttDistanceGenerator', () => {
     expect(composed.evidence.comparison_source).toBe('pga_baseline');
   });
 
-  it('composeContent confidence_factors.sample_adequacy scales with rounds_played and caps at 1', () => {
+  it('composeContent confidence_factors.sample_adequacy scales with band attempts and caps at 1', () => {
     const g = new PuttDistanceGenerator(PLAYER_ID, '10_15ft');
-    const small = g.composeContent(makeAgg({ rounds_played: 6 }));
+    const small = g.composeContent(makeAgg({ attempts: 6 }));
     expect(small.evidence.confidence_factors.sample_adequacy).toBeCloseTo(0.2, 1);
-    const large = g.composeContent(makeAgg({ rounds_played: 60 }));
+    const large = g.composeContent(makeAgg({ attempts: 60 }));
     expect(large.evidence.confidence_factors.sample_adequacy).toBe(1);
   });
+
+describe('PuttDistanceGenerator — synthesized priority + action (PLAY: driver+action)', () => {
+  it('short-makeable band well below PGA → highest-leverage verdict + gate drill (Nick 3-5ft 46.5%)', () => {
+    const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft')
+      .composeContent(makeAgg({ bucket: '3_5ft', playerValue: 46.5, rounds_played: 15 }));
+    // Quality contract: names the gap, the WHY (makeable distance), a SPECIFIC drill.
+    expect(c.content.toLowerCase()).toContain('highest-leverage');
+    expect(c.content.toLowerCase()).toMatch(/gate drill|short-putt/);
+    expect(c.content).toContain('91'); // cites the PGA 90.5% -> "91%" anchor (90.5.toFixed(0) === "91")
+  });
+
+  it('lag band below PGA → lag-speed / approach-proximity verdict, NOT a stroke fix', () => {
+    const c = new PuttDistanceGenerator(PLAYER_ID, '25_plus_ft')
+      .composeContent(makeAgg({ bucket: '25_plus_ft', playerValue: 0, rounds_played: 15 }));
+    expect(c.content.toLowerCase()).toContain('lag');
+    expect(c.content.toLowerCase()).toContain('speed');
+    expect(c.content.toLowerCase()).not.toContain('gate drill');
+  });
+
+  it('at/above the PGA anchor → strength verdict, no drill prescribed', () => {
+    const c = new PuttDistanceGenerator(PLAYER_ID, '5_10ft')
+      .composeContent(makeAgg({ bucket: '5_10ft', playerValue: 70, rounds_played: 15 }));
+    expect(c.content.toLowerCase()).toContain('above the tour');
+    expect(c.content.toLowerCase()).not.toContain('drill');
+  });
+});
 
   // gen-putt-distance-1: comparison_value was hard-coded 0 → "95% vs 0% PGA"
   // inverted anchor in the WhyPopover. It now carries the real PGA Tour make %
@@ -117,5 +162,127 @@ describe('PuttDistanceGenerator', () => {
         .composeContent(makeAgg({ bucket: '3_5ft', playerValue: 95 }));
       expect(c.content).toContain('PGA Tour ~91%');
     });
+  });
+
+  describe('PuttDistanceGenerator — per-gender anchor', () => {
+    function aggG(overrides: Partial<{ playerValue: number; rounds: number; bucket: '3_5ft'; gender: 'mens'|'womens' }> = {}) {
+      return {
+        sampleN: 40,
+        playerValue: overrides.playerValue ?? 78,
+        bucket: (overrides.bucket ?? '3_5ft') as '3_5ft',
+        rawValue: (overrides.playerValue ?? 78) / 100,
+        rounds_played: overrides.rounds ?? 12,
+        cohort_gender: overrides.gender ?? 'mens',
+        attempts: 40,
+        spanDays: 54,
+      };
+    }
+
+    it("women's 3-5ft anchor is ~84%, not the men's 90.5%", () => {
+      const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft').composeContent(aggG({ gender: 'womens' }));
+      expect(c.evidence.comparison_value).toBe(84);
+      expect(c.content).toContain('84%');
+    });
+    it("men's 3-5ft anchor stays 90.5% (rounds to 90% in copy, unchanged)", () => {
+      const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft').composeContent(aggG({ gender: 'mens' }));
+      expect(c.evidence.comparison_value).toBe(90.5);
+    });
+  });
+});
+
+describe('PuttDistanceGenerator — Phase E band attempts, gate, and honest window', () => {
+  const PID2 = 'player-test-1';
+  function mk(overrides: Partial<{ bucket: '3_5ft'|'5_10ft'|'10_15ft'|'15_25ft'|'25_plus_ft'; playerValue: number; rounds_played: number; attempts: number; spanDays: number | null; }> = {}) {
+    const attempts = overrides.attempts ?? 40;
+    return {
+      sampleN: attempts,
+      playerValue: overrides.playerValue ?? 35,
+      bucket: (overrides.bucket ?? '10_15ft') as '10_15ft',
+      rawValue: (overrides.playerValue ?? 35) / 100,
+      rounds_played: overrides.rounds_played ?? 20,
+      cohort_gender: 'mens' as const,
+      attempts,
+      spanDays: overrides.spanDays === undefined ? 54 : overrides.spanDays,
+    };
+  }
+  it('stamps sample_n as band ATTEMPTS, not lifetime rounds', () => {
+    const c = new PuttDistanceGenerator(PID2, '25_plus_ft')
+      .composeContent(mk({ bucket: '25_plus_ft', playerValue: 0, attempts: 31, rounds_played: 15 }));
+    expect(c.evidence.sample_n).toBe(31);
+  });
+  it('a 0% band discloses its attempt count (no naked "0% from 25+ ft")', () => {
+    const c = new PuttDistanceGenerator(PID2, '25_plus_ft')
+      .composeContent(mk({ bucket: '25_plus_ft', playerValue: 0, attempts: 31 }));
+    expect(c.content).toContain('0%');
+    expect(c.content).toMatch(/31 attempts/);
+  });
+  it('window_days carries the true lifetime span, never a fixed 90', () => {
+    const c = new PuttDistanceGenerator(PID2, '10_15ft').composeContent(mk({ spanDays: 54 }));
+    expect(c.evidence.window_days).toBe(54);
+    expect(c.content).not.toContain('90');
+    expect(c.content).not.toContain('last 90');
+  });
+  it('falls back to a conservative window_days when span is unknown (still not 90)', () => {
+    const c = new PuttDistanceGenerator(PID2, '10_15ft').composeContent(mk({ spanDays: null }));
+    expect(c.evidence.window_days).toBe(0);
+  });
+  it('content frames the sample as rounds for context but the RATE as band attempts', () => {
+    const c = new PuttDistanceGenerator(PID2, '5_10ft')
+      .composeContent(mk({ bucket: '5_10ft', playerValue: 55, attempts: 82, rounds_played: 20 }));
+    expect(c.content).toContain('82 attempts');
+    expect(c.content).toContain('20 rounds');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// E7 suppression test — focused aggregate() mock (path: PuttDistanceGenerator.test.ts)
+//
+// Why here, not in generator-base-run-lifecycle.test.ts:
+//   PuttDistanceGenerator.aggregate() calls fromUntyped(adminClient, table),
+//   which calls adminClient.from(table) on the result of createAdminClient().
+//   The lifecycle harness stubs createAdminClient() to return { __fake: true }
+//   without chaining .from() — so mounting the full fluent chain mock there
+//   would require duplicating a large mock infrastructure for no extra lifecycle
+//   coverage. This focused mock is the idiomatic path for testing the DB gate.
+// ---------------------------------------------------------------------------
+
+// Declare the mock controls at module scope so vi.mock() hoisting can see them.
+const maybeSingleMock = vi.fn();
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({}),
+}));
+
+vi.mock('@/lib/supabase/untyped', () => ({
+  fromUntyped: (_client: unknown, _table: string) => ({
+    select: () => ({
+      eq: () => ({
+        maybeSingle: maybeSingleMock,
+      }),
+    }),
+  }),
+}));
+
+vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
+  loadPlayerCohort: vi.fn().mockResolvedValue({ gender: 'mens', level: null }),
+}));
+
+describe('PuttDistanceGenerator — E7 aggregate() ATTEMPT_FLOOR suppression (end-to-end gate)', () => {
+  it('returns null when putt_attempts_25_plus_ft is ATTEMPT_FLOOR-1 (sub-floor band is suppressed)', async () => {
+    // ATTEMPT_FLOOR is 8; this band has 7 attempts — exactly one below floor.
+    maybeSingleMock.mockResolvedValue({
+      data: {
+        player_id: 'p-e7',
+        rounds_played: 10,
+        first_round_date: '2026-01-01',
+        last_round_date: '2026-06-01',
+        putt_make_pct_25_plus_ft: 0.10, // non-null so raw value passes the null check
+        putt_attempts_25_plus_ft: ATTEMPT_FLOOR - 1, // 7 — below the gate
+      },
+      error: null,
+    });
+
+    const result = await new PuttDistanceGenerator('p-e7', '25_plus_ft').aggregate();
+    expect(result).toBeNull();
   });
 });

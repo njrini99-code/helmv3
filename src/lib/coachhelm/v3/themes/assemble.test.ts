@@ -1134,6 +1134,79 @@ describe('assembleThemes — SG trend attachment (PLAY G)', () => {
 });
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * G8 — Cross-theme opening-stretch dedup (warmup-hole vs front-9-starter)
+ * ────────────────────────────────────────────────────────────────────────── */
+
+describe('cross-theme opening-stretch dedup (warmup-hole vs front-9-starter)', () => {
+  function openingRow(over: { id: string; category: string; impact: number; value: number }) {
+    const r = row({
+      id: over.id,
+      category: over.category as InsightCategory,
+      metric: 'opening_hole_delta',
+      strokesImpact: over.impact,
+      strokesSaved: over.value,
+    });
+    // Set your_value directly on the evidence JSONB blob so the secondary
+    // tiebreaker in openingStretchSuppressedRowIds is exercisable in tests.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (r.evidence as any).your_value = over.value;
+    return r;
+  }
+
+  it('surfaces the opening-stretch leak in only ONE theme (the higher-impact row)', () => {
+    const result = assembleThemes({
+      playerId: 'p',
+      rows: [
+        openingRow({ id: 'warmup', category: 'pressure', impact: 0.3, value: 0.8 }),
+        openingRow({ id: 'front9', category: 'scoring', impact: 0.9, value: 0.6 }),
+      ],
+      sgByCategory: {},
+    });
+    const allCauseIds = result.themes.flatMap((t) => t.causes.map((c) => c.insight_id));
+    expect(allCauseIds).toContain('front9');
+    expect(allCauseIds).not.toContain('warmup');
+  });
+
+  it('when impact is tied, keeps the higher-value row', () => {
+    const result = assembleThemes({
+      playerId: 'p',
+      rows: [
+        openingRow({ id: 'warmup', category: 'pressure', impact: 0.5, value: 0.9 }),
+        openingRow({ id: 'front9', category: 'scoring', impact: 0.5, value: 0.4 }),
+      ],
+      sgByCategory: {},
+    });
+    const allCauseIds = result.themes.flatMap((t) => t.causes.map((c) => c.insight_id));
+    expect(allCauseIds).toContain('warmup');
+    expect(allCauseIds).not.toContain('front9');
+  });
+
+  it('single opening_hole_delta row in ONE category is NOT suppressed', () => {
+    const result = assembleThemes({
+      playerId: 'p',
+      rows: [openingRow({ id: 'warmup', category: 'pressure', impact: 0.5, value: 0.8 })],
+      sgByCategory: {},
+    });
+    const allCauseIds = result.themes.flatMap((t) => t.causes.map((c) => c.insight_id));
+    expect(allCauseIds).toContain('warmup');
+  });
+
+  it('two opening_hole_delta rows in the SAME category are NOT cross-deduped', () => {
+    const result = assembleThemes({
+      playerId: 'p',
+      rows: [
+        openingRow({ id: 'r1', category: 'pressure', impact: 0.3, value: 0.5 }),
+        openingRow({ id: 'r2', category: 'pressure', impact: 0.7, value: 0.6 }),
+      ],
+      sgByCategory: {},
+    });
+    const allCauseIds = result.themes.flatMap((t) => t.causes.map((c) => c.insight_id));
+    expect(allCauseIds).toContain('r1');
+    expect(allCauseIds).toContain('r2');
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
  * Property-based invariants
  * ────────────────────────────────────────────────────────────────────────── */
 

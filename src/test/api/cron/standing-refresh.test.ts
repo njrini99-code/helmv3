@@ -11,12 +11,16 @@
  *     a created_at fallback when the RPC isn't deployed.
  */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import {
   STANDING_REFRESH_METRIC_IDS,
   STANDING_REFRESH_DEFERRED_METRIC_IDS,
 } from '@/lib/coachhelm/v3/standing/refresh';
+import { MIN_ROUNDS_PER_BUCKET } from '@/lib/coachhelm/v3/generators/pressure-gap';
 
 const PUTT_MAKE_PCT_METRICS = [
   'putts_made_3_5ft_pct',
@@ -100,6 +104,23 @@ interface Body {
   metrics_covered_zero_rows: string[];
   orphans_pruned: number;
 }
+
+describe('pg-2: SQL bucket gate matches the TS per-bucket floor', () => {
+  it('the pressure RPC migration gates both buckets at the TS floor (>= 3)', () => {
+    expect(MIN_ROUNDS_PER_BUCKET).toBe(3);
+    const sql = readFileSync(
+      join(process.cwd(), 'supabase/migrations/20260609120000_pressure_gate_count_ge_3.sql'),
+      'utf8',
+    );
+    const ge3 = sql.match(/COUNT\(\*\) FILTER \(WHERE r\.round_type IN \('tournament','qualifier'\)\) >= 3/g) ?? [];
+    const practiceGe3 = sql.match(/COUNT\(\*\) FILTER \(WHERE r\.round_type = 'practice'\) >= 3/g) ?? [];
+    // Both the team_values and population_values CTEs (2 each).
+    expect(ge3.length).toBeGreaterThanOrEqual(2);
+    expect(practiceGe3.length).toBeGreaterThanOrEqual(2);
+    // The old > 0 gate must be gone for the pressure buckets.
+    expect(sql).not.toContain("FILTER (WHERE r.round_type = 'practice') > 0");
+  });
+});
 
 describe('standing-refresh refresh.ts metric lists (SC2 → re-promoted 2026-06-06)', () => {
   // After update_player_putt_make_pct() began populating the per-band cache

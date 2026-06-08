@@ -15,6 +15,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 export type ApproachBucket = '50_125ft' | '125_175ft' | '175_plus_ft';
 
@@ -33,6 +34,34 @@ export interface ApproachShot {
   result: string | null;
   is_penalty: boolean;
   miss_direction: string | null;
+}
+
+/** A GREENSIDE-bunker shot resolved against its hole so the ScramblingGenerator
+ *  can split escape-failure from reached-green-then-lag.
+ *
+ *  Scope MUST match the engine's `sand_save_percentage` denominator
+ *  (golf-stats-calculator-shots `aroundGreenShot`): a sand shot is greenside
+ *  when it is shot_type='around_green' OR a non-approach/non-putt/non-tee shot
+ *  within AROUND_GREEN_THRESHOLD_YARDS (50yd) of the hole. Fairway-bunker
+ *  *approach* shots (lie_before='sand' but shot_type='approach', often
+ *  90-220yd out) are EXCLUDED — including them would make the scrambling card
+ *  print a different attempts count + sand-save % than the app's stat surfaces
+ *  (e.g. Nick Rini: 32 all-sand vs 20 greenside). */
+export interface SandShot {
+  round_id: string;
+  hole_number: number | null;
+  /** Did the bunker shot find the green? */
+  reached_green: boolean;
+  /** Leave distance in FEET when it reached the green; null otherwise. */
+  leave_distance_feet: number | null;
+  /** Number of putts taken on that hole AFTER this bunker shot (lag signal). */
+  putts_after: number;
+  /** Authoritative greenside-bunker up-and-down result from golf_holes.sand_save
+   *  (the SAME source the DB cache + stat-formulas use). true=saved, false=not,
+   *  null=flag not recorded. The generator's printed sand-save % reads this so it
+   *  reconciles with the displayed `sand_save_percentage`; reached/leave/putts
+   *  drive only the escape-vs-lag DIAGNOSIS. */
+  sand_save_flag: boolean | null;
 }
 
 export interface TeeShot {
@@ -97,21 +126,165 @@ export async function loadApproachShots(
   if (rErr || !rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
 
-  const { data, error } = await fromUntyped(supabase, 'golf_shots')
-    .select(
-      'round_id, hole_number, shot_number, distance_to_hole_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, result, is_penalty, miss_direction',
-    )
-    .eq('shot_type', 'approach')
-    .in('round_id', roundIds) as {
-      data: ApproachShot[] | null;
-      error: { message: string } | null;
-    };
+  const { data, error } = await fetchAllRowsResult<ApproachShot>((from, to) =>
+    fromUntyped(supabase, 'golf_shots')
+      .select(
+        'round_id, hole_number, shot_number, distance_to_hole_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, result, is_penalty, miss_direction',
+      )
+      .eq('shot_type', 'approach')
+      .in('round_id', roundIds)
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
   if (error || !data) return [];
   return data.filter(
     (s) =>
       typeof s.distance_to_hole_before === 'number' &&
       typeof s.distance_to_hole_after === 'number',
   );
+}
+
+/** Greenside-bunker threshold (yards from hole). Mirrors
+ *  golf-stats-calculator-shots `AROUND_GREEN_THRESHOLD_YARDS` so this loader's
+ *  denominator matches the engine's `sand_save_percentage`. */
+const AROUND_GREEN_THRESHOLD_YARDS = 50;
+
+/**
+ * Load this player's GREENSIDE-bunker shots in the window, each resolved against
+ * its hole's subsequent putts + canonical sand_save flag. The escape signal
+ * comes from result/lie_after; the leave distance (feet) + putts_after give the
+ * "reached the green but lagged" read the sand-save % alone can't.
+ *
+ * Scope: shot_type='around_green' OR (non-approach/non-putt/non-tee within 50yd
+ * of the hole). Fairway-bunker *approach* shots (lie_before='sand',
+ * shot_type='approach') are excluded so the scrambling card's attempts +
+ * sand-save % reconcile with the engine/cache (which count greenside only).
+ */
+export async function loadSandShots(
+  playerId: string,
+  windowDays = DEFAULT_WINDOW_DAYS,
+): Promise<SandShot[]> {
+  const supabase = createAdminClient();
+  const since = new Date(Date.now() - windowDays * 86400_000).toISOString().slice(0, 10);
+
+  const { data: rounds, error: rErr } = await supabase
+    .from('golf_rounds')
+    .select('id')
+    .eq('player_id', playerId)
+    .eq('status', 'completed')
+    .gte('round_date', since);
+  if (rErr || !rounds || rounds.length === 0) return [];
+  const roundIds = rounds.map((r) => r.id);
+
+  // All shots in those rounds (we need putting rows to count putts_after).
+  interface SandSourceRow {
+    round_id: string;
+    hole_number: number | null;
+    shot_number: number | null;
+    shot_type: string | null;
+    lie_before: string | null;
+    lie_after: string | null;
+    result: string | null;
+    is_penalty: boolean | null;
+    distance_to_hole_before: number | null;
+    distance_unit_before: string | null;
+    distance_to_hole_after: number | null;
+    distance_unit_after: string | null;
+  }
+  const { data, error } = await fetchAllRowsResult<SandSourceRow>((from, to) =>
+    fromUntyped(supabase, 'golf_shots')
+      .select(
+        'round_id, hole_number, shot_number, shot_type, lie_before, lie_after, result, is_penalty, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after',
+      )
+      .in('round_id', roundIds)
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
+  if (error || !data) return [];
+
+  // Authoritative greenside-bunker up-and-down flags, keyed (round, hole). Same
+  // source (golf_holes.sand_save) the DB cache + stat-formulas use, so the
+  // generator's printed sand-save % matches the displayed stat. Resilient to a
+  // missing/empty result (treated as "no flag recorded").
+  interface HoleFlagRow {
+    round_id: string;
+    hole_number: number | null;
+    sand_save: boolean | null;
+  }
+  const flagByHole = new Map<string, boolean | null>();
+  try {
+    // Paginate past the PostgREST 1000-row cap — a >1000-hole window (~55+
+    // rounds/90d) would otherwise truncate, dropping later holes' flags and
+    // silently demoting those attempts to the heuristic. Same pattern + stable
+    // order key as the golf_shots fetch above.
+    const { data: holes } = await fetchAllRowsResult<HoleFlagRow>((from, to) =>
+      fromUntyped(supabase, 'golf_holes')
+        .select('round_id, hole_number, sand_save')
+        .in('round_id', roundIds)
+        .order('id', { ascending: true })
+        .range(from, to));
+    for (const h of holes ?? []) {
+      if (h.hole_number == null) continue;
+      flagByHole.set(`${h.round_id}:${h.hole_number}`, h.sand_save ?? null);
+    }
+  } catch {
+    // No flags available — generator falls back to the shot-derived save heuristic.
+  }
+
+  const out: SandShot[] = [];
+  for (const s of data) {
+    if ((s.lie_before ?? '').toLowerCase() !== 'sand') continue;
+    if (s.shot_number == null || s.hole_number == null) continue;
+
+    // Greenside gate — matches the engine's aroundGreenShot detection so the
+    // sand-save denominator reconciles. Explicit around_green type always
+    // qualifies; otherwise the shot must be a non-approach/non-putt/non-tee
+    // shot within the around-green threshold (distance measured from the hole).
+    const stype = (s.shot_type ?? '').toLowerCase();
+    let greenside: boolean;
+    if (stype === 'around_green') {
+      greenside = true;
+    } else if (stype === 'approach' || stype === 'putting' || stype === 'tee') {
+      greenside = false; // fairway-bunker approaches etc. are NOT sand saves
+    } else if (!s.is_penalty && typeof s.distance_to_hole_before === 'number') {
+      // Exclude penalty shots from the distance-based branch to match the
+      // engine's aroundGreenShot predicate exactly — a penalty-flagged sand
+      // shot ≤50yd must never inflate the greenside (sand-save) denominator.
+      const distYards =
+        s.distance_unit_before === 'feet'
+          ? s.distance_to_hole_before / 3
+          : s.distance_to_hole_before;
+      greenside = distYards <= AROUND_GREEN_THRESHOLD_YARDS;
+    } else {
+      greenside = false; // untyped/unmeasured/penalty → can't confirm greenside
+    }
+    if (!greenside) continue;
+
+    const r = (s.result ?? '').toLowerCase();
+    const reached = r === 'green' || r === 'hole' || r === 'gir'
+      || (s.lie_after ?? '').toLowerCase() === 'green';
+    // Putts on this hole that came AFTER this bunker shot = the lag signal.
+    const puttsAfter = data.filter(
+      (p) =>
+        p.round_id === s.round_id &&
+        p.hole_number === s.hole_number &&
+        p.shot_type === 'putting' &&
+        p.shot_number != null &&
+        p.shot_number > (s.shot_number as number),
+    ).length;
+    const leaveRaw = s.distance_to_hole_after;
+    const leaveFeet =
+      reached && typeof leaveRaw === 'number'
+        ? (s.distance_unit_after === 'yards' ? leaveRaw * 3 : leaveRaw)
+        : null;
+    out.push({
+      round_id: s.round_id,
+      hole_number: s.hole_number,
+      reached_green: reached,
+      leave_distance_feet: leaveFeet,
+      putts_after: puttsAfter,
+      sand_save_flag: flagByHole.get(`${s.round_id}:${s.hole_number}`) ?? null,
+    });
+  }
+  return out;
 }
 
 /**
@@ -135,13 +308,13 @@ export async function loadTeeShots(
   if (rErr || !rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
 
-  const { data, error } = await fromUntyped(supabase, 'golf_shots')
-    .select('round_id, hole_number, club_type, lie_after, is_penalty')
-    .eq('shot_type', 'tee')
-    .in('round_id', roundIds) as {
-      data: TeeShot[] | null;
-      error: { message: string } | null;
-    };
+  const { data, error } = await fetchAllRowsResult<TeeShot>((from, to) =>
+    fromUntyped(supabase, 'golf_shots')
+      .select('round_id, hole_number, club_type, lie_after, is_penalty')
+      .eq('shot_type', 'tee')
+      .in('round_id', roundIds)
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
   if (error || !data) return [];
   return data.filter((s) => s.club_type === 'driver' || s.club_type === 'non_driver');
 }
@@ -181,22 +354,22 @@ export async function loadTeeShotsForStrategy(
     } | null;
   }
 
-  const { data, error } = await fromUntyped(supabase, 'golf_shots')
-    .select(
-      `
+  const { data, error } = await fetchAllRowsResult<JoinedRow>((from, to) =>
+    fromUntyped(supabase, 'golf_shots')
+      .select(
+        `
       round_id, hole_number, club_type, lie_after, shot_distance,
       distance_to_hole_after, is_penalty,
       golf_rounds!inner ( player_id, round_date, status ),
       golf_holes!inner ( par, yardage, fairway_hit )
     `,
-    )
-    .eq('shot_type', 'tee')
-    .eq('golf_rounds.player_id', playerId)
-    .eq('golf_rounds.status', 'completed')
-    .gte('golf_rounds.round_date', since) as {
-      data: JoinedRow[] | null;
-      error: { message: string } | null;
-    };
+      )
+      .eq('shot_type', 'tee')
+      .eq('golf_rounds.player_id', playerId)
+      .eq('golf_rounds.status', 'completed')
+      .gte('golf_rounds.round_date', since)
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
   if (error || !data) return [];
 
   const out: TeeStrategyShot[] = [];

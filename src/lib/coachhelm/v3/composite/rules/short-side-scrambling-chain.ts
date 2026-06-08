@@ -69,6 +69,16 @@ const rule: CompositeRule = {
     const bunkerPct = Math.round(Number(match.signals.bunker_pct ?? 0));
     const dominant =
       roughPct > bunkerPct ? `${roughPct}% from rough` : `${bunkerPct}% from bunker`;
+    // Own magnitude (sscc-2): cost of leaving recoveries ~{avg} ft instead of the
+    // Tour ~10 ft. ~10 extra ft of leave ≈ one missed up-and-down per round at
+    // this volume; size it as (avg − Tour) / 10 ft, bounded to 1.5 so a single
+    // bad day can't mint a wild cascade number. Derived, not asserted.
+    const TOUR_LEAVE_FT = 10;
+    const FT_PER_STROKE = 10;
+    const ownStrokesImpact = Math.min(
+      Math.max(0, (avgProximity - TOUR_LEAVE_FT) / FT_PER_STROKE),
+      1.5,
+    );
     return {
       title: 'Short-side misses are compounding',
       content:
@@ -91,7 +101,7 @@ const rule: CompositeRule = {
         window_days: 90,
         window_start: '',
         window_end: '',
-        strokes_impact: 0,
+        strokes_impact: ownStrokesImpact,
         strokes_impact_method: 'peer_delta',
         confidence: attempts >= 20 ? 0.75 : 0.6,
         confidence_factors: {

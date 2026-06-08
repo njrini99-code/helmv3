@@ -12,6 +12,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 
 type CanonicalShotType = 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
@@ -526,15 +527,16 @@ export class ShotStateIntelligence {
 
     for (let i = 0; i < roundIds.length; i += 100) {
       const batch = roundIds.slice(i, i + 100);
-      const { data } = await supabase
+      const { data } = await fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select('round_id, hole_number, shot_number, shot_type, lie_before, lie_after, result, is_penalty, miss_direction, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, putt_made')
         .in('round_id', batch)
         .order('round_id', { ascending: true })
         .order('hole_number', { ascending: true })
         .order('shot_number', { ascending: true })
-        // Batching round IDs avoids .in() URL limits but not the 1000-row cap.
-        .limit(50000);
+        // Batching round IDs avoids .in() URL limits.
+        .order('id', { ascending: true })
+        .range(from, to)); // paginate past PostgREST 1000-row cap
 
       shots.push(...((data ?? []) as RawShotRow[]));
     }
@@ -548,11 +550,12 @@ export class ShotStateIntelligence {
 
     for (let i = 0; i < roundIds.length; i += 100) {
       const batch = roundIds.slice(i, i + 100);
-      const { data } = await supabase
+      const { data } = await fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
         .select('round_id, hole_number, par, score')
         .in('round_id', batch)
-        .limit(50000); // lift PostgREST 1000-row default cap (per-batch)
+        .order('id', { ascending: true })
+        .range(from, to)); // paginate past PostgREST 1000-row cap (per-batch)
 
       holes.push(...((data ?? []) as HoleRow[]));
     }

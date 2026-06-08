@@ -262,6 +262,29 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
     scale: 100,
   },
 
+  // Drift: `scrambling_fairway` / `scrambling_rough` are the insight-surface
+  // short spellings of the canonical scrambling_pct_fairway / scrambling_pct_rough.
+  // Both canonical defs are intentional-null (needs-shot-level-join — the cache
+  // stores only aggregate sand saves, no rough/fairway split). We reuse those
+  // canonical defs verbatim so attribution NEVER computes lift on the wrong
+  // population; aliasing only reclassifies the cron bucket from "unknown-metric
+  // drift" to the honest "intentional-no-lift". (Observed live: 2 + 1 insights.)
+  scrambling_fairway: METRIC_SOURCE.scrambling_pct_fairway,
+  scrambling_rough: METRIC_SOURCE.scrambling_pct_rough,
+
+  // Audit-named driver metrics the maturing insight surface will emit. None has
+  // an honest per-round source today:
+  //  - three_putt_chain / compound_mistake_rate: need hole-level SEQUENCING
+  //    (which hole, what preceded the big number) — round_stats_cache stores
+  //    only per-round scoring-distribution COUNTS, not order.
+  //  - short_side_proximity: a positional shot-level concept; no per-round
+  //    time-series exists (same family as approach_proximity_*).
+  // Classifying them intentional-null keeps the cron honest and stops them
+  // becoming silent unknown-metric drift the day a generator starts emitting them.
+  three_putt_chain: { kind: 'intentional-null', reason: 'needs-hole-level-sequencing' },
+  compound_mistake_rate: { kind: 'intentional-null', reason: 'needs-hole-level-sequencing' },
+  short_side_proximity: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+
   // DEFERRED (no honest per-round source — intentionally NOT aliased):
   //  - `shortside_scrambling_pct`: "short-side" is a positional concept, not a
   //    lie. The cache only stores aggregate sand (sand_saves/sand_attempts) and

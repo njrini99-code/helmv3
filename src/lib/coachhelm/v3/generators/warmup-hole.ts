@@ -1,9 +1,21 @@
 /**
- * v3 WarmupHoleGenerator (W24).
+ * v3 WarmupHoleGenerator (W24, par-normalized in C7).
  *
  * Aggregates the player's avg (score - par) on hole 1 vs holes 2-18 over
  * the last 90 days. Positive delta = "warmup tax" — opening hole plays
  * harder than the round average.
+ *
+ * C7 sharpening (three fixes):
+ *   1. PAR-NORMALIZE — hole 1 has a fixed par per course, so its raw
+ *      (score − par) was being measured against a bag of par-3/4/5 holes.
+ *      Compare hole 1 ONLY against holes 2-18 of the SAME par.
+ *   2. POSITIVE-TAX GATE — only emit when hole 1 is genuinely HARDER. The
+ *      negative-delta players (opener easier than same-par holes) get no
+ *      card; a "warmup tax" insight for a player with no tax is noise.
+ *   3. DECOMPOSE — name the cause (putting / tee-approach / penalty) of the
+ *      opening loss so the card is actionable.
+ * The evidence stamps `feed_exempt: true` so Phase A's leverage floor keeps
+ * this descriptive standing card off the feed rank (like par_scoring).
  *
  * Standing populated by `refresh_player_standing_round_metrics` (W24-prep
  * companion RPC). PGA reference = 0.1 strokes per Research doc §9.
@@ -19,9 +31,8 @@
  * generator. Flagged here so the overlap is documented at the source.
  */
 
-import { createAdminClient } from '@/lib/supabase/admin';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { loadCompletedHoles } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -31,8 +42,13 @@ import type {
 
 interface WarmupHoleAggregate extends GeneratorAggregate {
   hole1_avg: number;
+  /** Avg (score − par) on holes 2-18 of the SAME par as the hole-1 plays. */
   rest_avg: number;
   rounds_with_hole1: number;
+  /** Of the opening-hole strokes lost, the % traced to putting / tee / penalty. */
+  cause_putt_pct: number;
+  cause_tee_pct: number;
+  cause_penalty_pct: number;
 }
 
 export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
@@ -44,58 +60,61 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
   readonly metricId: MetricId = 'opening_hole_delta';
 
   async aggregate(): Promise<WarmupHoleAggregate | null> {
-    const supabase = createAdminClient();
-    const since = new Date(Date.now() - 90 * 86400_000).toISOString().slice(0, 10);
+    const holes = await loadCompletedHoles(this.playerId);
+    if (holes.length === 0) return null;
 
-    // Pull this player's completed rounds + the holes for each. Bucket
-    // hole 1 vs holes 2-18 in TS.
-    const { data: rounds, error: roundsErr } = await fromUntyped(supabase, 'golf_rounds')
-      .select('id')
-      .eq('player_id', this.playerId)
-      .eq('status', 'completed')
-      .gte('round_date', since) as {
-        data: Array<{ id: string }> | null;
-        error: { message: string } | null;
-      };
-    if (roundsErr || !rounds || rounds.length === 0) return null;
-    const roundIds = rounds.map((r) => r.id);
-
-    const { data: holes, error: holesErr } = await fromUntyped(supabase, 'golf_holes')
-      .select('round_id, hole_number, par, score')
-      .in('round_id', roundIds) as {
-        data: Array<{
-          round_id: string;
-          hole_number: number | null;
-          par: number | null;
-          score: number | null;
-        }> | null;
-        error: { message: string } | null;
-      };
-    if (holesErr || !holes) return null;
-
-    let hole1Sum = 0;
-    let hole1N = 0;
-    const hole1Rounds = new Set<string>();
-    let restSum = 0;
-    let restN = 0;
+    // Par-normalize: hole 1 has a fixed par per course; compare it ONLY against
+    // holes 2-18 of the SAME par, so a par-5 opener isn't measured against a
+    // bag of par-3s (W7 fix). We accumulate per-par sums then weight hole-1's
+    // delta by the matching-par baseline.
+    const hole1ByPar = new Map<number, { sum: number; n: number; rounds: Set<string> }>();
+    const restByPar = new Map<number, { sum: number; n: number }>();
     for (const h of holes) {
-      if (h.score === null || h.par === null || h.hole_number === null) continue;
-      const delta = Number(h.score) - Number(h.par);
-      if (!Number.isFinite(delta)) continue;
+      const over = h.score - h.par;
       if (h.hole_number === 1) {
-        hole1Sum += delta;
-        hole1N += 1;
-        hole1Rounds.add(h.round_id);
+        const s = hole1ByPar.get(h.par) ?? { sum: 0, n: 0, rounds: new Set<string>() };
+        s.sum += over; s.n += 1; s.rounds.add(h.round_id);
+        hole1ByPar.set(h.par, s);
       } else if (h.hole_number >= 2 && h.hole_number <= 18) {
-        restSum += delta;
-        restN += 1;
+        const s = restByPar.get(h.par) ?? { sum: 0, n: 0 };
+        s.sum += over; s.n += 1;
+        restByPar.set(h.par, s);
       }
     }
-
-    if (hole1N === 0 || restN === 0) return null;
+    let hole1Sum = 0, hole1N = 0, restMatchedSum = 0, restMatchedN = 0;
+    const hole1Rounds = new Set<string>();
+    for (const [par, s] of hole1ByPar) {
+      const rest = restByPar.get(par);
+      if (!rest || rest.n === 0 || s.n === 0) continue; // need a same-par baseline
+      hole1Sum += s.sum; hole1N += s.n;
+      s.rounds.forEach((r) => hole1Rounds.add(r));
+      // Weight the rest baseline by how many hole-1 plays this par contributed.
+      restMatchedSum += (rest.sum / rest.n) * s.n;
+      restMatchedN += s.n;
+    }
+    if (hole1N === 0 || restMatchedN === 0) return null;
     const hole1Avg = hole1Sum / hole1N;
-    const restAvg = restSum / restN;
+    const restAvg = restMatchedSum / restMatchedN;
     const delta = hole1Avg - restAvg;
+
+    // POSITIVE-TAX GATE: only emit when hole 1 is genuinely HARDER. The
+    // negative-delta players (opener easier than same-par holes) get no card —
+    // a "warmup tax" insight for a player with no tax is noise.
+    if (delta <= 0) return null;
+
+    // Cause split over the hole-1 plays: penalty (penalty_strokes>0), putting
+    // (>=3 putts on the opener), else tee/approach execution (the remainder).
+    const hole1Holes = holes.filter((h) => h.hole_number === 1);
+    let pen = 0, putt = 0, exec = 0, lostN = 0;
+    for (const h of hole1Holes) {
+      if (h.score - h.par <= 0) continue; // only holes that lost strokes
+      lostN += 1;
+      if ((h.penalty_strokes ?? 0) > 0) pen += 1;
+      else if ((h.putts ?? 0) >= 3) putt += 1;
+      else exec += 1;
+    }
+    const cpct = (k: number) => (lostN > 0 ? (100 * k) / lostN : 0);
+    const teePctBase = cpct(exec);
 
     return {
       sampleN: hole1Rounds.size,
@@ -103,6 +122,9 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
       hole1_avg: hole1Avg,
       rest_avg: restAvg,
       rounds_with_hole1: hole1Rounds.size,
+      cause_penalty_pct: cpct(pen),
+      cause_putt_pct: cpct(putt),
+      cause_tee_pct: teePctBase,
     };
   }
 
@@ -114,13 +136,25 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
     const hole1Disp = formatHoleDelta(agg.hole1_avg);
     const restDisp = formatHoleDelta(agg.rest_avg);
 
+    const r0 = (x: number) => Math.round(x).toString();
+    const causes: Array<{ label: string; pct: number; action: string }> = [
+      { label: 'putting (3-putts on the opener)', pct: agg.cause_putt_pct, action: 'a few lag putts in warm-up will settle it' },
+      { label: 'tee/approach execution', pct: agg.cause_tee_pct, action: 'hit balls before you tee off, not just chip-and-putt' },
+      { label: 'opening-hole penalties', pct: agg.cause_penalty_pct, action: 'play the opener conservatively off the tee' },
+    ].sort((a, b) => b.pct - a.pct);
+    const lead = causes[0];
+    const causeClause =
+      agg.playerValue > 0 && lead && lead.pct > 0
+        ? ` ${r0(lead.pct)}% of those lost strokes are ${lead.label} — ${lead.action}.`
+        : '';
+
     const title = `Opening hole gap: ${deltaDisp} strokes vs round avg`;
     const content =
       `Across your last ${agg.rounds_with_hole1} rounds, hole 1 plays ` +
-      `${absDelta} strokes ${direction} than holes 2-18 ` +
-      `(hole 1 = ${hole1Disp}/hole; rest of round = ${restDisp}/hole). ` +
-      `Tour avg is ~0.1 strokes (Research doc §9). The standing card ` +
-      `below shows where you sit vs PGA + your team.`;
+      `${absDelta} strokes ${direction} than same-par holes 2-18 ` +
+      `(hole 1 = ${hole1Disp}/hole; matched rest of round = ${restDisp}/hole).` +
+      causeClause +
+      ` Tour avg is ~0.1 strokes (Research doc §9).`;
 
     return {
       title,
@@ -149,6 +183,7 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
           recency: 1.0,
           variance: 0.5,
         },
+        feed_exempt: true,
       },
     };
   }

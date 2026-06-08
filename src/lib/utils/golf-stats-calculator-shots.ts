@@ -55,6 +55,7 @@ export interface HoleInfo {
   putts?: number | null;
   fairway_hit?: boolean | null;
   gir?: boolean | null;
+  sand_save?: boolean | null; // canonical greenside-bunker up-and-down flag (golf_holes.sand_save)
 }
 
 export interface RoundInfo {
@@ -625,12 +626,12 @@ function interpolateBenchmark(table: Record<number, number>, distance: number): 
 
 // Helper to get expected strokes from position
 /** @internal - exported for testing */
-export function getExpectedStrokes(lie: string | null, distanceYards: number, distanceFeet?: number): number {
+export function getExpectedStrokes(lie: string | null, distanceYards: number, distanceFeet?: number, scale = 1): number {
   if (!lie) return 0;
   if (lie === 'green' && distanceFeet !== undefined) {
     // Putting — distance is feet, never converted (see normalizePuttFeet), and
     // interpolated across the green make-rate curve.
-    return interpolateBenchmark(STROKES_GAINED_BENCHMARKS.green, distanceFeet);
+    return interpolateBenchmark(STROKES_GAINED_BENCHMARKS.green, distanceFeet) * scale;
   }
 
   // DC-SG-3: tee shots use a single continuous tee curve (100-600yd). The old
@@ -651,13 +652,17 @@ export function getExpectedStrokes(lie: string | null, distanceYards: number, di
     benchmarkTable = STROKES_GAINED_BENCHMARKS.fairway;
   }
 
-  return interpolateBenchmark(benchmarkTable, distanceYards);
+  // Per-team SG baseline scale (women's 1.083, NCAA D1/D2/D3, etc.) multiplies the
+  // expected-strokes curve, mirroring the DB sg_expected_strokes(...,p_scale)
+  // (RETURN v_es * COALESCE(p_scale,1.0)). The -1 stroke charged per shot stays
+  // UNSCALED (applied by the caller), so SG = scale·E_before − 1 − scale·E_after.
+  return interpolateBenchmark(benchmarkTable, distanceYards) * scale;
 }
 
 // Calculate Strokes Gained for a shot
 // Returns null when data is incomplete (cannot calculate accurately)
 /** @internal - exported for testing */
-export function calculateStrokesGainedForShot(shot: RawShot): number | null {
+export function calculateStrokesGainedForShot(shot: RawShot, scale = 1): number | null {
   // Strokes Gained = Expected strokes BEFORE - (1 + Expected strokes AFTER)
 
   // CRITICAL: Cannot calculate SG without lie_before and distance_to_hole_before
@@ -679,8 +684,8 @@ export function calculateStrokesGainedForShot(shot: RawShot): number | null {
 
   // Get expected strokes before
   const expectedBefore = lieBefore === 'green'
-    ? getExpectedStrokes('green', 0, distBeforeFeet)
-    : getExpectedStrokes(lieBefore, distBefore);
+    ? getExpectedStrokes('green', 0, distBeforeFeet, scale)
+    : getExpectedStrokes(lieBefore, distBefore, undefined, scale);
 
   // Get expected strokes after (0 if holed)
   let expectedAfter = 0;
@@ -716,8 +721,8 @@ export function calculateStrokesGainedForShot(shot: RawShot): number | null {
     }
 
     expectedAfter = lieAfter === 'green'
-      ? getExpectedStrokes('green', 0, distAfterFeet!)
-      : getExpectedStrokes(lieAfter!, distAfterYards!);
+      ? getExpectedStrokes('green', 0, distAfterFeet!, scale)
+      : getExpectedStrokes(lieAfter!, distAfterYards!, undefined, scale);
   }
 
   // Strokes Gained = what was expected - what it cost (1 stroke + remaining expected)
@@ -775,11 +780,16 @@ interface CalculatedHoleStats {
   approachShotNumber: number | null; // Shot number of the approach attempt
   approachDistance: number | null;
   approachLie: string | null;
+  approachRawLie: string | null; // un-remapped lie (tee NOT folded into fairway) — GIR-by-lie split
   approachProximity: number | null;
   approachMissDirection: string | null; // Where approach missed when not GIR
   chipLie: string | null;      // Lie of the chip/pitch shot (for scrambling stats)
   chipDistance: number | null; // Distance of the chip/pitch shot (for scrambling by distance)
   firstPuttDistance: number | null;
+  // All-putt make% by distance band: EVERY putt on the hole, made = holed.
+  // The conventional PGA "putts made from distance" (matches golf_pga_standards
+  // + the cache writer update_player_putt_make_pct), not first-putt-only.
+  puttMakeByBand: Record<string, { made: number; total: number }>;
   firstPuttLeave: number | null;
   firstPuttBreak: string | null;
   firstPuttSlope: string | null;
@@ -811,11 +821,13 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
     approachShotNumber: null,
     approachDistance: null,
     approachLie: null,
+    approachRawLie: null,
     approachProximity: null,
     approachMissDirection: null,
     chipLie: null,
     chipDistance: null,
     firstPuttDistance: null,
+    puttMakeByBand: {},
     firstPuttLeave: null,
     firstPuttBreak: null,
     firstPuttSlope: null,
@@ -836,7 +848,7 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
 /** @internal - exported for testing */
 export function calculateHoleStatsFromShots(
   shots: RawShot[],
-  holeInfoOrPar: number | Pick<HoleInfo, 'hole_number' | 'par' | 'score' | 'putts' | 'fairway_hit' | 'gir'>
+  holeInfoOrPar: number | Pick<HoleInfo, 'hole_number' | 'par' | 'score' | 'putts' | 'fairway_hit' | 'gir' | 'sand_save'>
 ): CalculatedHoleStats {
   // Sort shots by shot number
   const sortedShots = [...shots].sort((a, b) => a.shot_number - b.shot_number);
@@ -852,6 +864,7 @@ export function calculateHoleStatsFromShots(
         putts: null,
         fairway_hit: null,
         gir: null,
+        // sand_save intentionally left undefined → shot-derived fallback below
       }
     : holeInfoOrPar;
 
@@ -956,6 +969,19 @@ export function calculateHoleStatsFromShots(
   const firstPuttBreak = firstPutt ? (firstPutt.putt_break ?? null) : null;
   const firstPuttSlope = firstPutt ? (firstPutt.putt_slope ?? null) : null;
 
+  // All-putt make% by distance band: every putt on the hole, bucketed by ITS OWN
+  // start distance, made = holed. This is the conventional PGA "make % from
+  // distance" (matches golf_pga_standards + the cache writer), not first-putt
+  // only — a 0-3ft tap-in is a real make from 0-3ft.
+  const puttMakeByBand: Record<string, { made: number; total: number }> = {};
+  for (const p of puttingShots) {
+    if (p.distance_to_hole_before === null) continue;
+    const band = getPuttDistanceBucket(normalizePuttFeet(p.distance_to_hole_before));
+    if (!puttMakeByBand[band]) puttMakeByBand[band] = { made: 0, total: 0 };
+    puttMakeByBand[band].total++;
+    if (p.result === 'hole' || p.putt_made === true) puttMakeByBand[band].made++;
+  }
+
   // Scrambling = missed GIR but made par or better
   const scrambleAttempt = !greenInRegulation;
   const scrambleMade = scrambleAttempt && (score <= holeInfo.par);
@@ -997,8 +1023,23 @@ export function calculateHoleStatsFromShots(
   // greenside bunker onto the green. Gating on greenInRegulation (which derives from
   // the gir column) would drop those legit bunker visits. Denominator matches the DB
   // cache + shot-level ground truth (team 248 greenside-bunker visits).
-  const sandSaveAttempt = aroundGreenShot?.lie_before === 'sand';
-  const sandSaveMade = sandSaveAttempt && (score <= holeInfo.par);
+  // Sand save = up-and-down from a greenside bunker. Prefer the canonical
+  // golf_holes.sand_save flag (the SAME source the DB cache uses, per
+  // stat-formulas) so the engine and cache agree: attempt = flag is non-null
+  // (a greenside-bunker visit was recorded), made = flag === true. The old
+  // `score <= par` rule wrongly credited GIR pars (green reached in regulation,
+  // never in a bunker) as saves. When the flag is absent (number-only path),
+  // fall back to shot-derived detection requiring an actual up-and-down: a
+  // greenside-bunker visit on a missed green, holed in <=2 from the sand shot.
+  const sandFlag = holeInfo.sand_save;
+  const sandShotIdx = aroundGreenShot ? normalizedShots.indexOf(aroundGreenShot) : -1;
+  const strokesFromSand = sandShotIdx >= 0 ? normalizedShots.length - sandShotIdx : Infinity;
+  const sandSaveAttempt = sandFlag !== undefined
+    ? sandFlag !== null
+    : aroundGreenShot?.lie_before === 'sand';
+  const sandSaveMade = sandFlag !== undefined
+    ? sandFlag === true
+    : (aroundGreenShot?.lie_before === 'sand' && !greenInRegulation && strokesFromSand <= 2);
 
   // Penalties
   const penalties = normalizedShots.filter(s => s.is_penalty).length;
@@ -1019,11 +1060,13 @@ export function calculateHoleStatsFromShots(
     approachShotNumber: approachShot?.shot_number ?? null,
     approachDistance,
     approachLie,
+    approachRawLie: rawLie,
     approachProximity,
     approachMissDirection,
     chipLie,
     chipDistance,
     firstPuttDistance,
+    puttMakeByBand,
     firstPuttLeave,
     firstPuttBreak,
     firstPuttSlope,
@@ -1044,8 +1087,13 @@ export function calculateHoleStatsFromShots(
 export function calculateStatsFromShots(
   shots: RawShot[],
   holes: HoleInfo[],
-  rounds: RoundInfo[]
+  rounds: RoundInfo[],
+  opts?: { sgScale?: number }
 ): GolfStats {
+  // Per-team SG baseline scale (1.0 = PGA Tour/men's; women's 1.083; NCAA D1/D2/D3).
+  // Resolve via the DB sg_scale_for_player RPC in the caller and pass it here so the
+  // TS engine's SG matches the DB cache (which already applies the scale).
+  const sgScale = opts?.sgScale ?? 1;
   // Group shots by round
   const shotsByRound = new Map<string, RawShot[]>();
   for (const shot of shots) {
@@ -1112,7 +1160,7 @@ export function calculateStatsFromShots(
   }
 
   // Now aggregate stats across all rounds
-  return aggregateRoundStats(roundsWithStats);
+  return aggregateRoundStats(roundsWithStats, sgScale);
 }
 
 // ============================================================================
@@ -1123,7 +1171,7 @@ function aggregateRoundStats(rounds: Array<{
   roundInfo: RoundInfo;
   holes: CalculatedHoleStats[];
   totalScore: number;
-}>): GolfStats {
+}>, sgScale = 1): GolfStats {
   const stats: GolfStats = {
     roundsPlayed: rounds.length,
     holesPlayed: 0,
@@ -1595,8 +1643,14 @@ function aggregateRoundStats(rounds: Array<{
       stats.tournamentRounds++;
     }
 
-    // Process each hole
-    for (const hole of round.holes) {
+    // Process each hole. Streak counters reset at every round boundary (a
+    // birdie/par/no-3-putt run cannot span two rounds) and holes are walked in
+    // hole_number order so the run reflects true play order, not DB row order.
+    currentBirdieStreak = 0;
+    currentParStreak = 0;
+    current3PuttStreak = 0;
+    const orderedHoles = [...round.holes].sort((a, b) => a.holeNumber - b.holeNumber);
+    for (const hole of orderedHoles) {
       const scoreToPar = hole.score - hole.par;
 
       // Scoring counts
@@ -1738,9 +1792,12 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
 
-      // GIR by approach lie
-      if (hole.approachLie) {
-        const girLie = hole.approachLie;
+      // GIR by approach lie — use the UN-remapped lie so par-3 tee shots (which
+      // line 918 folds into 'fairway' for proximity) are NOT counted as fairway
+      // approaches. "GIR from the fairway" must mean an approach genuinely played
+      // from the fairway, else par-3 tee shots inflate the fairway denominator.
+      if (hole.approachRawLie) {
+        const girLie = hole.approachRawLie;
         if (girLie === 'fairway' || girLie === 'rough' || girLie === 'sand') {
           girByLie[girLie].total++;
           if (hole.greenInRegulation) {
@@ -1795,10 +1852,16 @@ function aggregateRoundStats(rounds: Array<{
         firstPuttDistances.push(hole.firstPuttDistance);
         firstPuttDistanceBandCounts[bucket] = (firstPuttDistanceBandCounts[bucket] ?? 0) + 1;
 
-        // Make %
-        if (!puttMake[bucket]) puttMake[bucket] = { made: 0, total: 0 };
-        puttMake[bucket].total++;
-        if (hole.putts === 1) puttMake[bucket].made++;
+        // Make % — ALL-PUTT (every putt on the hole, made = holed), merged from
+        // the hole's per-band tallies. Conventional PGA "make % from distance"
+        // (matches golf_pga_standards + the cache writer). Was first-putt-only
+        // with made = 1-putt, which mislabeled the rate and conflicted with the
+        // leak-map/cache grid shown on the same tab.
+        for (const [band, mc] of Object.entries(hole.puttMakeByBand)) {
+          if (!puttMake[band]) puttMake[band] = { made: 0, total: 0 };
+          puttMake[band].total += mc.total;
+          puttMake[band].made += mc.made;
+        }
 
         // Proximity (leave distance)
         if (hole.firstPuttLeave !== null) {
@@ -2049,7 +2112,7 @@ function aggregateRoundStats(rounds: Array<{
           continue;
         }
 
-        const sg = calculateStrokesGainedForShot(shot);
+        const sg = calculateStrokesGainedForShot(shot, sgScale);
         const category = getStrokesGainedCategory(shot, hole.par);
 
         // Accumulate by category - only when SG is calculable (not null)
@@ -2145,7 +2208,11 @@ function aggregateRoundStats(rounds: Array<{
   stats.missRightPctNonDriver = safePercent(teeMissNonDriver.right, nonDriverMisses);
 
   stats.girPercentage = safePercent(stats.girTotal, stats.girOpportunities);
-  stats.girPerRound = safeAverage(stats.girTotal, rounds.length);
+  // 18-hole-normalized (matches puttsPerRound above and the DB cache contract);
+  // a raw divide by round count under-reports when a 9-hole round is present.
+  stats.girPerRound = stats.holesPlayed > 0
+    ? Math.round(((stats.girTotal / stats.holesPlayed) * 18) * 100) / 100
+    : null;
   stats.girPctPar3 = safePercent(girPar3.made, girPar3.total);
   stats.girPctPar4 = safePercent(girPar4.made, girPar4.total);
   stats.girPctPar5 = safePercent(girPar5.made, girPar5.total);
@@ -2540,7 +2607,11 @@ function aggregateRoundStats(rounds: Array<{
   stats.sandSavePercentage = safePercent(stats.sandSavesMade, stats.sandSaveAttempts);
 
   // Penalties
-  stats.penaltiesPerRound = safeAverage(stats.totalPenalties, rounds.length);
+  // 18-hole-normalized to match the DB cache (update_player_stats_complete:
+  // total_penalties / total_holes * 18) and stat-formulas.computePerRound18.
+  stats.penaltiesPerRound = stats.holesPlayed > 0
+    ? Math.round(((stats.totalPenalties / stats.holesPlayed) * 18) * 100) / 100
+    : null;
 
   return stats;
 }

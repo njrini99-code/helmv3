@@ -2550,9 +2550,16 @@ async function loadEvidenceBackedInsights(
     // ranking weight before returning.
     const { data, error } = await supabase
       .from('golf_coach_insights')
-      .select('id, title, content, evidence, category, insight_type, lifecycle_state, metadata, created_at')
+      .select('id, title, content, evidence, category, insight_type, priority, lifecycle_state, metadata, created_at')
       .eq('player_id', playerId)
       .not('evidence', 'is', null)
+      // Scope to the v3 engine, matching every insight-delivery.ts fetcher.
+      // Without this, legacy v2 rows (stale 'scoring'/'course_management' with
+      // physically-impossible strokes_impact up to ~42/round) whose
+      // lifecycle_state is still detected/matured/addressed leak in and, after
+      // the score.ts ceiling clamp, still outrank every correct v3 insight —
+      // ranking stale phantoms #1–#3 in the player feed.
+      .or('engine_version.eq.v3,signature.like.v3:%')
       .in('lifecycle_state', ['detected', 'matured', 'addressed'])
       .eq('dismissed', false)
       .order('created_at', { ascending: false })
@@ -2580,7 +2587,12 @@ async function loadEvidenceBackedInsights(
           category: row.category ?? undefined,
           insight_type: row.insight_type,
           metric: typeof evidence?.metric === 'string' ? evidence.metric : undefined,
-        } as ComposedInsight & { id: string; evidence: unknown; category?: string; insight_type: string; metric?: string };
+          priority: (row.priority as InsightPriority | null) ?? undefined,
+          sample_n: typeof evidence?.sample_n === 'number' ? evidence.sample_n : undefined,
+        } as ComposedInsight & {
+          id: string; evidence: unknown; category?: string; insight_type: string;
+          metric?: string; priority?: InsightPriority; sample_n?: number;
+        };
       });
 
     // W36 ranking: |strokes_impact| × confidence × coach_weight × goalBoost.
@@ -2600,6 +2612,8 @@ async function loadEvidenceBackedInsights(
         confidence: p.confidence ?? 0,
         metric: p.metric,
         category: p.category,
+        priority: p.priority,
+        sample_n: p.sample_n,
         _ref: p,
       })),
       weights,

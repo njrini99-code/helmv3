@@ -45,6 +45,7 @@ export function backfilledCompositeStrokesImpact(
   composedImpact: number,
   sourceInsightIds: string[],
   impactBySourceId: Map<string, number>,
+  ownMagnitudeFallback = 0,
 ): number {
   if (Number.isFinite(composedImpact) && composedImpact > 0) return composedImpact;
   let maxSource = 0;
@@ -52,7 +53,14 @@ export function backfilledCompositeStrokesImpact(
     const v = impactBySourceId.get(id);
     if (typeof v === 'number' && Number.isFinite(v) && v > maxSource) maxSource = v;
   }
-  return maxSource > 0 ? maxSource : composedImpact;
+  if (maxSource > 0) return maxSource;
+  // Zero-source ctx composite with no borrowable leverage: use the rule's OWN
+  // measured magnitude (a gap it already derived, e.g. proximity-over-Tour) so it
+  // doesn't ship 0 and tie-break by recency. Never a fabricated constant.
+  if (Number.isFinite(ownMagnitudeFallback) && ownMagnitudeFallback > 0) {
+    return ownMagnitudeFallback;
+  }
+  return composedImpact;
 }
 
 /**
@@ -91,6 +99,50 @@ export function isSubsumedBy(candidateIds: string[], otherIds: string[]): boolea
     candidateIds.length < otherIds.length &&
     candidateIds.every((id) => otherIds.includes(id))
   );
+}
+
+/**
+ * True when two composites name at least one common source insight id. The
+ * `length > 0` guard on EACH side is load-bearing: ctx composites carry
+ * `source_insight_ids: []`, and `[]` shares nothing with anything — two ctx
+ * cascades (closing-hole-fatigue, front-9-starter) must stay independent.
+ */
+export function sharesSource(a: string[], b: string[]): boolean {
+  if (a.length === 0 || b.length === 0) return false;
+  const set = new Set(a);
+  return b.some((id) => set.has(id));
+}
+
+/**
+ * Collapse composites that SHARE >=1 source insight to the single highest-impact
+ * one — a stricter sibling of `isSubsumedBy` (which only catches strict subsets).
+ * Order-independent + deterministic: on an impact tie the lexically-smaller id
+ * wins. Disjoint (incl. all ctx) composites pass through. Generic over the match
+ * shape so it is unit-tested in isolation.
+ */
+export function dedupeBySharedSource<T>(
+  items: T[],
+  idsOf: (item: T) => string[],
+  impactOf: (item: T) => number,
+): T[] {
+  // Stable identity for tiebreaking: serialize the whole item so two distinct
+  // objects are always distinguishable even when their source-ids are identical.
+  const keyOf = (item: T): string => JSON.stringify(item);
+  const kept: T[] = [];
+  for (const cand of items) {
+    const clashIdx = kept.findIndex((k) => sharesSource(idsOf(cand), idsOf(k)));
+    if (clashIdx === -1) {
+      kept.push(cand);
+      continue;
+    }
+    // clashIdx !== -1, so the element exists — the non-null assertion is safe.
+    const incumbent = kept[clashIdx] as T;
+    const candWins =
+      impactOf(cand) > impactOf(incumbent) ||
+      (impactOf(cand) === impactOf(incumbent) && keyOf(cand) < keyOf(incumbent));
+    if (candWins) kept[clashIdx] = cand;
+  }
+  return kept;
 }
 
 export interface SynthesisResult {
@@ -176,18 +228,35 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
     }
   }
 
-  // Pass 3: upsert each survivor. Build the source-impact lookup once so the
-  // strokes_impact backfill can borrow counterfactual-derived leverage from
-  // each composite's source insights (see backfilledCompositeStrokesImpact).
+  // Pass 2b: SAME-SOURCE dedup. `isSubsumedBy` only suppresses strict subsets;
+  // two composites that merely SHARE a source insight (e.g. lag_3putt and
+  // pressure_decel both naming the 3-5 ft putt row) would otherwise both surface
+  // and double-narrate one leak. Keep the higher-impact one, sized by the same
+  // backfilled leverage we will upsert (so the kept choice matches what ranks).
   const impactBySourceId = buildSourceImpactLookup(insights);
+  const impactOf = (m: { rule: CompositeRule; match: CompositeMatch }): number =>
+    backfilledCompositeStrokesImpact(
+      m.rule.compose(m.match).evidence.strokes_impact,
+      m.match.source_insight_ids,
+      impactBySourceId,
+    );
+  const deduped = dedupeBySharedSource(
+    survivors,
+    (m) => m.match.source_insight_ids,
+    impactOf,
+  );
+  result.rule_suppressed += survivors.length - deduped.length;
+
+  // Pass 3: upsert each survivor.
   const supabase = createAdminClient();
-  for (const { rule, match } of survivors) {
+  for (const { rule, match } of deduped) {
     try {
       const composed = rule.compose(match);
       const strokesImpact = backfilledCompositeStrokesImpact(
         composed.evidence.strokes_impact,
         match.source_insight_ids,
         impactBySourceId,
+        Math.abs(Number(composed.evidence.strokes_impact ?? 0)),
       );
       const evidence = {
         ...composed.evidence,

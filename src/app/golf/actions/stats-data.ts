@@ -38,6 +38,7 @@ import type {
 } from './stats-data-types';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 
 // ============================================================================
@@ -273,12 +274,16 @@ function buildFallbackDetailedStats(roundsData: DetailedStatsRoundRow[]): GolfSt
     fallback.worstRound = normalizedScores.length > 0 ? Math.max(...normalizedScores) : null;
   }
 
-  const roundsWithToPar = roundsData.filter(
-    (round): round is DetailedStatsRoundRow & { score_to_par: number } => round.score_to_par !== null
+  // avg-to-par: 18-hole rounds only, matching scoringAverage above and the
+  // canonical engine (totalScoreToPar18 / roundsPlayed18). A 9-hole round's raw
+  // score_to_par must not leak into a per-18-round average.
+  const roundsWithToPar18 = completedRounds.filter(
+    (round): round is DetailedStatsRoundRow & { total_score: number; score_to_par: number } =>
+      round.score_to_par !== null && (round.holes_played ?? 18) === 18
   );
-  if (roundsWithToPar.length > 0) {
-    const totalToPar = roundsWithToPar.reduce((sum, round) => sum + round.score_to_par, 0);
-    fallback.avgScoreToPar = Math.round((totalToPar / roundsWithToPar.length) * 100) / 100;
+  if (roundsWithToPar18.length > 0) {
+    const totalToPar = roundsWithToPar18.reduce((sum, round) => sum + round.score_to_par, 0);
+    fallback.avgScoreToPar = Math.round((totalToPar / roundsWithToPar18.length) * 100) / 100;
   }
 
   const roundTypeBuckets = {
@@ -660,13 +665,14 @@ export async function getStatsSummary(
   // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
   // Uses (score - par) <= 0 to match the DB trigger definition exactly
   const roundIds = filteredRounds.map(r => r.id);
-  const { data: holesWithScrambling } = await supabase
+  const { data: holesWithScrambling } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select('score, par')
     .in('round_id', roundIds)
     .not('score', 'is', null)
     .eq('gir', false)
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
 
   let scramblingAttempts = 0;
   let scramblingMade = 0;
@@ -885,15 +891,13 @@ async function queryDetailedStatsWithClient(
 
   try {
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
-      supabase
+      fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
-        .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir')
+        .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir, sand_save')
         .in('round_id', roundIds)
-        // PostgREST returns at most 1000 rows by default; a season exceeds that
-        // (e.g. 1377 holes for one team), silently truncating aggregates. An
-        // explicit high limit lifts the cap in a single request.
-        .limit(50000),
-      supabase
+        .order('id', { ascending: true })
+        .range(from, to)), // paginate past PostgREST 1000-row cap
+      fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
           id,
@@ -924,9 +928,8 @@ async function queryDetailedStatsWithClient(
         .in('round_id', roundIds)
         .order('hole_number')
         .order('shot_number')
-        // Lift PostgREST's 1000-row default cap (one team has 5796 shots); the
-        // limit applies to the top-level golf_shots rows only, not the embeds.
-        .limit(50000),
+        .order('id', { ascending: true })
+        .range(from, to)), // paginate past PostgREST 1000-row cap
     ]);
 
     if (holesError) throw holesError;
@@ -953,6 +956,7 @@ async function queryDetailedStatsWithClient(
       putts: h.putts ?? null,
       fairway_hit: h.fairway_hit ?? null,
       gir: h.gir ?? null,
+      sand_save: h.sand_save ?? null,
     }));
 
     const shots: RawShot[] = (shotsData || []).map(s => {
@@ -1002,7 +1006,13 @@ async function queryDetailedStatsWithClient(
       };
     });
 
-    const computed = calculateStatsFromShots(shots, holesInfo, roundsInfo);
+    // Per-team SG baseline scale (women's 1.083, NCAA D1/D2/D3, etc.) so the
+    // Stats page SG matches the DB cache, which already applies it. Resolved via
+    // the same DB function the cache uses (sg_scale_for_player) = single source.
+    const { data: sgScaleRaw } = await supabase.rpc('sg_scale_for_player', { p_player_id: playerId });
+    const sgScale = typeof sgScaleRaw === 'number' && sgScaleRaw > 0 ? sgScaleRaw : 1;
+
+    const computed = calculateStatsFromShots(shots, holesInfo, roundsInfo, { sgScale });
     computed.truncated = truncated;
     return serializeDetailedStats(computed);
   } catch (error) {
@@ -1161,12 +1171,13 @@ export async function getSprayChartData(
       : roundsData.map((round) => round.id);
 
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
-      supabase
+      fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
         .select('id, round_id, hole_number, par')
         .in('round_id', roundIds)
-        .limit(50000), // lift PostgREST 1000-row default cap (see getDetailedStats)
-      supabase
+        .order('id', { ascending: true })
+        .range(from, to)), // paginate past PostgREST 1000-row cap
+      fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
           id,
@@ -1193,7 +1204,8 @@ export async function getSprayChartData(
         .in('shot_type', ['tee', 'approach'])
         .order('hole_number')
         .order('shot_number')
-        .limit(50000), // lift PostgREST 1000-row default cap (see getDetailedStats)
+        .order('id', { ascending: true })
+        .range(from, to)), // paginate past PostgREST 1000-row cap
     ]);
 
     if (holesError) throw holesError;
@@ -1713,13 +1725,14 @@ export async function getTeamComparison(
   // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
   // Uses (score - par) <= 0 to match the DB trigger definition exactly
   const teamRoundIds = roundsData.map(r => r.id);
-  const { data: teamScramblingData } = await supabase
+  const { data: teamScramblingData } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select('round_id, score, par')
     .in('round_id', teamRoundIds)
     .not('score', 'is', null)
     .eq('gir', false)
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
 
   // Build a map of round_id -> player_id for scrambling aggregation
   const roundToPlayer = new Map<string, string>();
@@ -2084,7 +2097,7 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
   }
 
   // Get all holes with their scores
-  const { data: holesData } = await supabase
+  const { data: holesData } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select(`
       id,
@@ -2103,7 +2116,8 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
     .not('score', 'is', null)
     .order('round_id')
     .order('hole_number')
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
 
   if (!holesData || holesData.length === 0) {
     return {
@@ -2117,25 +2131,24 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
     };
   }
 
-  // Group by hole number and aggregate
-  const holeMap = new Map<number, { par: number; scores: number[]; dates: string[] }>();
+  // Group by hole_number, but KEEP EACH PLAY'S OWN PAR. A given hole_number is a
+  // different hole (and often a different par) at each course, so freezing par to
+  // the first-seen round mis-baselines avg-to-par AND mis-buckets par-3/4/5
+  // (e.g. a hole_number frozen to par-3 whose plays were mostly par-4/5 inflated
+  // "Par 3 avg" ~2.7x). Bucket every play by its ACTUAL par.
+  const holeMap = new Map<number, { entries: { score: number; par: number }[]; dates: string[] }>();
+  const toParByParType: Record<number, number[]> = { 3: [], 4: [], 5: [] }; // (score - par) per play
+  const closingToPar: number[] = []; // holes 16-18, (score - par) per play
 
   for (const hole of holesData) {
-    const existing = holeMap.get(hole.hole_number) || {
-      par: hole.par,
-      scores: [],
-      dates: [],
-    };
-
-    if (hole.score !== null) {
-      existing.scores.push(hole.score);
-      const roundData = hole.golf_rounds as { round_date?: string } | undefined;
-      if (roundData?.round_date) {
-        existing.dates.push(roundData.round_date);
-      }
-    }
-
+    if (hole.score === null) continue;
+    const existing = holeMap.get(hole.hole_number) || { entries: [], dates: [] };
+    existing.entries.push({ score: hole.score, par: hole.par });
+    const roundData = hole.golf_rounds as { round_date?: string } | undefined;
+    if (roundData?.round_date) existing.dates.push(roundData.round_date);
     holeMap.set(hole.hole_number, existing);
+    if (toParByParType[hole.par]) toParByParType[hole.par]!.push(hole.score - hole.par);
+    if (hole.hole_number >= 16) closingToPar.push(hole.score - hole.par);
   }
 
   // Calculate analysis per hole
@@ -2143,15 +2156,17 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
 
   for (let holeNum = 1; holeNum <= 18; holeNum++) {
     const data = holeMap.get(holeNum);
-    if (!data || data.scores.length === 0) continue;
+    if (!data || data.entries.length === 0) continue;
 
-    const avgScore = data.scores.reduce((a, b) => a + b, 0) / data.scores.length;
-    const avgToPar = avgScore - data.par;
+    const scores = data.entries.map(e => e.score);
+    const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+    // avg-to-par = mean of each play's own (score - par), not avgScore - frozenPar.
+    const avgToPar = data.entries.reduce((a, e) => a + (e.score - e.par), 0) / data.entries.length;
 
-    // Calculate score distribution
+    // Score distribution — grade each play against ITS OWN par.
     let birdieOrBetter = 0, pars = 0, bogeys = 0, doublePlus = 0;
-    for (const score of data.scores) {
-      const toPar = score - data.par;
+    for (const e of data.entries) {
+      const toPar = e.score - e.par;
       if (toPar <= -1) birdieOrBetter++;
       else if (toPar === 0) pars++;
       else if (toPar === 1) bogeys++;
@@ -2160,19 +2175,24 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
 
     // Simple trend calculation (last 5 vs first 5)
     let trend: 'improving' | 'declining' | 'stable' = 'stable';
-    if (data.scores.length >= 10) {
-      const first5 = data.scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
-      const last5 = data.scores.slice(-5).reduce((a, b) => a + b, 0) / 5;
+    if (scores.length >= 10) {
+      const first5 = scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
+      const last5 = scores.slice(-5).reduce((a, b) => a + b, 0) / 5;
       if (last5 < first5 - 0.2) trend = 'improving';
       else if (last5 > first5 + 0.2) trend = 'declining';
     }
 
+    // Display par = the most common par this hole_number was played at.
+    const parCounts = new Map<number, number>();
+    for (const e of data.entries) parCounts.set(e.par, (parCounts.get(e.par) ?? 0) + 1);
+    const displayPar = [...parCounts.entries()].sort((a, b) => b[1] - a[1])[0]![0];
+
     holes.push({
       holeNumber: holeNum,
-      par: data.par,
+      par: displayPar,
       averageScore: Math.round(avgScore * 100) / 100,
       averageToPar: Math.round(avgToPar * 100) / 100,
-      timesPlayed: data.scores.length,
+      timesPlayed: scores.length,
       birdieOrBetter,
       pars,
       bogeys,
@@ -2186,25 +2206,20 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
   const worstHoles = sortedByToPar.slice(0, 3);
   const bestHoles = [...sortedByToPar].reverse().slice(0, 3);
 
-  // Calculate par-specific averages
-  const par3s = holes.filter(h => h.par === 3);
-  const par4s = holes.filter(h => h.par === 4);
-  const par5s = holes.filter(h => h.par === 5);
-  const closingHoles = holes.filter(h => h.holeNumber >= 16);
-
-  const calcAvg = (arr: HoleAnalysis[]) =>
-    arr.length > 0
-      ? Math.round((arr.reduce((a, b) => a + b.averageToPar, 0) / arr.length) * 100) / 100
-      : null;
+  // Par-specific + closing averages: mean of per-play (score - par) bucketed by
+  // each play's ACTUAL par (NOT an average of per-hole-number averages, which the
+  // frozen par corrupted).
+  const meanOrNull = (arr: number[]) =>
+    arr.length > 0 ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 100) / 100 : null;
 
   return {
     holes,
     worstHoles,
     bestHoles,
-    par3Average: calcAvg(par3s),
-    par4Average: calcAvg(par4s),
-    par5Average: calcAvg(par5s),
-    closingHolesAverage: calcAvg(closingHoles),
+    par3Average: meanOrNull(toParByParType[3]!),
+    par4Average: meanOrNull(toParByParType[4]!),
+    par5Average: meanOrNull(toParByParType[5]!),
+    closingHolesAverage: meanOrNull(closingToPar),
   };
   } catch (error) {
     await logServerError(`[Stats] getWorstHoleAnalysis failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.calcAvg' });

@@ -37,6 +37,26 @@ export interface CounterfactualConfig {
    * Omitted → falls back to {@link COUNTERFACTUAL_MAX_STROKES_PER_ROUND}.
    */
   max_strokes_saved_per_round?: number;
+  /**
+   * The player-OWN per-round attempt rate that sizes this metric's impact
+   * (DC-ATTEMPT-1). When set, computeCounterfactual (D5) uses
+   *   strokes_saved = (gap_pp / 100) × player_attempts_per_round × value_per_unit
+   * instead of the global `stroke_impact_per_unit`. Names a metric the caller
+   * resolves from cache/standing:
+   *   'sand_attempts_per_round'     → cache.sand_attempts / rounds_played
+   *   'gir_misses_per_round'        → (greens_total − greens_hit) / rounds_played
+   *   'approach_attempts_per_round' → shots in the bucket / rounds (generator-supplied)
+   *   'putt_attempts_per_round'     → typical putts/round in the distance bucket
+   *   'holes_per_round'             → par-type hole count (4 par-3s / 10 par-4s / 4 par-5s)
+   */
+  attempt_metric?:
+    | 'sand_attempts_per_round'
+    | 'gir_misses_per_round'
+    | 'approach_attempts_per_round'
+    | 'putt_attempts_per_round'
+    | 'holes_per_round';
+  /** Strokes saved per successful attempt at full conversion (paired with attempt_metric). */
+  value_per_unit?: number;
 }
 
 export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
@@ -49,16 +69,20 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
 
   // Putt make % — each percent point ≈ N/100 strokes saved per round where N
   // is the typical attempts/round in that bucket. Research doc §3-4:
-  //   3-5 ft  ~6 attempts/rd  → 0.06 strokes per pp
+  //   3-5 ft  ~6 attempts/rd  → 0.10 (see note below)
   //   5-10 ft ~3 attempts/rd  → 0.03
   //   10-15   ~2 attempts/rd  → 0.02
   //   15-25   ~1.5            → 0.015
   //   25+     ~1              → 0.01
-  putts_made_3_5ft_pct:      { stroke_impact_per_unit: 0.06,  coachable_timeframe_weeks: 4 },
-  putts_made_5_10ft_pct:     { stroke_impact_per_unit: 0.03,  coachable_timeframe_weeks: 6 },
-  putts_made_10_15ft_pct:    { stroke_impact_per_unit: 0.02,  coachable_timeframe_weeks: 8 },
-  putts_made_15_25ft_pct:    { stroke_impact_per_unit: 0.015, coachable_timeframe_weeks: 8 },
-  putts_made_25_plus_ft_pct: { stroke_impact_per_unit: 0.01,  coachable_timeframe_weeks: 12 }, // mostly lag-distance
+  // 3-5 ft is the most frequent putt distance (~6 attempts/rd) AND the most
+  // makeable (Tour ~90%), so a missed pp here is the single highest-leverage,
+  // fastest-to-fix putting gap. Bumped 0.06→0.10 so a large short-putt gap
+  // floors to `high` (the counterfactual ceiling + 0.3 floor still bound it).
+  putts_made_3_5ft_pct:      { stroke_impact_per_unit: 0.10,  coachable_timeframe_weeks: 4,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
+  putts_made_5_10ft_pct:     { stroke_impact_per_unit: 0.03,  coachable_timeframe_weeks: 6,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
+  putts_made_10_15ft_pct:    { stroke_impact_per_unit: 0.02,  coachable_timeframe_weeks: 8,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
+  putts_made_15_25ft_pct:    { stroke_impact_per_unit: 0.015, coachable_timeframe_weeks: 8,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
+  putts_made_25_plus_ft_pct: { stroke_impact_per_unit: 0.01,  coachable_timeframe_weeks: 12, attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 }, // mostly lag-distance
 
   // Putt miss bias — bias direction itself doesn't save strokes; it's
   // diagnostic. Stroke impact = 0 means counterfactual is always suppressed
@@ -79,9 +103,12 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
   // Scrambling — each percent point improvement ≈ N/100 strokes/round where
   // N is attempts/round from that lie. Research: typical 8-10 attempts/rd
   // total, ~3 from sand, ~4 from rough.
-  scrambling_pct_rough:    { stroke_impact_per_unit: 0.04, coachable_timeframe_weeks: 6 },
-  scrambling_pct_sand:     { stroke_impact_per_unit: 0.03, coachable_timeframe_weeks: 4 },
-  scrambling_pct_fairway:  { stroke_impact_per_unit: 0.02, coachable_timeframe_weeks: 6 },
+  scrambling_pct_rough:    { stroke_impact_per_unit: 0.04, coachable_timeframe_weeks: 6, attempt_metric: 'approach_attempts_per_round', value_per_unit: 0.85 },
+  // NOTE: the old global 0.03 constant baked in a Tour-average sand-attempt rate and overstated
+  // a women's player's impact to a fabricated 1.5 strokes/round. D5 sizes this off the player's
+  // OWN sand_attempts_per_round so the projection stays grounded for low-volume bunker players.
+  scrambling_pct_sand:     { stroke_impact_per_unit: 0.03, coachable_timeframe_weeks: 4, attempt_metric: 'sand_attempts_per_round', value_per_unit: 0.85 },
+  scrambling_pct_fairway:  { stroke_impact_per_unit: 0.02, coachable_timeframe_weeks: 6, attempt_metric: 'approach_attempts_per_round', value_per_unit: 0.85 },
 
   // Course mgmt — research §4 + §6: each penalty avoided ≈ 1.5 strokes;
   // each double avoided ≈ 1.0 stroke.
@@ -94,12 +121,12 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
   // gapped to a full target, so it carries the tightest ceiling (CF-1/CF-2):
   // per-par is descriptive — a single par-type can't realistically reclaim
   // the whole-round gap on its own.
-  scoring_par_3: { stroke_impact_per_unit: 4,  coachable_timeframe_weeks: 8,  max_strokes_saved_per_round: 1.0 },
-  scoring_par_4: { stroke_impact_per_unit: 10, coachable_timeframe_weeks: 12, max_strokes_saved_per_round: 1.5 },
-  scoring_par_5: { stroke_impact_per_unit: 4,  coachable_timeframe_weeks: 8,  max_strokes_saved_per_round: 1.0 },
+  scoring_par_3: { stroke_impact_per_unit: 4,  coachable_timeframe_weeks: 8,  max_strokes_saved_per_round: 1.0, attempt_metric: 'holes_per_round', value_per_unit: 1.0 },
+  scoring_par_4: { stroke_impact_per_unit: 10, coachable_timeframe_weeks: 12, max_strokes_saved_per_round: 1.5, attempt_metric: 'holes_per_round', value_per_unit: 1.0 },
+  scoring_par_5: { stroke_impact_per_unit: 4,  coachable_timeframe_weeks: 8,  max_strokes_saved_per_round: 1.0, attempt_metric: 'holes_per_round', value_per_unit: 1.0 },
 
   // GIR — each pp ≈ 0.18 holes/round × 0.5 strokes per GIR = ~0.09 strokes/pp
-  gir_pct: { stroke_impact_per_unit: 0.09, coachable_timeframe_weeks: 12 },
+  gir_pct: { stroke_impact_per_unit: 0.09, coachable_timeframe_weeks: 12, attempt_metric: 'gir_misses_per_round', value_per_unit: 0.5 },
 
   // Pressure + warmup
   // Pressure gap is "typical / slow-to-close" (domain doc §9-10) — only a
@@ -177,6 +204,35 @@ export const COHORT_PLAUSIBILITY_BOUNDS: Partial<Record<MetricId, CohortPlausibi
   approach_proximity_50_125ft:    { not_better_than_pga: true },
   approach_proximity_125_175ft:   { not_better_than_pga: true },
   approach_proximity_175_plus_ft: { not_better_than_pga: true },
+
+  // Putt make % (higher_better, pp). The synthetic app-population cohort under-
+  // states these badly (3-5ft level_avg 62.8% on prod, vs a real ~84% women's
+  // college). Floor at a plausible college make rate so the bad cohort is
+  // rejected → fall back to the per-gender anchor / Tour.
+  putts_made_3_5ft_pct:      { min: 70, not_better_than_pga: true },
+  putts_made_5_10ft_pct:     { min: 40, not_better_than_pga: true },
+  putts_made_10_15ft_pct:    { min: 20, not_better_than_pga: true },
+  putts_made_15_25ft_pct:    { min: 7,  not_better_than_pga: true },
+  putts_made_25_plus_ft_pct: { min: 2,  not_better_than_pga: true },
+
+  // GIR % (higher_better) — a college cohort below ~45% is a synthetic artifact;
+  // it can't exceed the Tour.
+  gir_pct: { min: 45, not_better_than_pga: true },
+
+  // Big-number rate (lower_better, % of holes). A cohort double-bogey rate above
+  // ~25% or below the Tour ~2% is not a realistic target.
+  big_number_rate: { min: 2, max: 25, not_better_than_pga: true },
+
+  // Per-par scoring (lower_better, strokes). A cohort better than (below) the
+  // Tour par value is impossible; floor near par.
+  scoring_par_3: { min: 2.9, not_better_than_pga: true },
+  scoring_par_4: { min: 3.9, not_better_than_pga: true },
+  scoring_par_5: { min: 4.4, not_better_than_pga: true },
+
+  // Pressure deltas (lower_better, strokes). A negative cohort (cohort plays
+  // BETTER under pressure) is a between-round artifact; floor at 0.
+  practice_tournament_delta: { min: 0 },
+  opening_hole_delta:        { min: -0.3 },
 };
 
 export function getCohortPlausibilityBound(metricId: string): CohortPlausibilityBound | null {

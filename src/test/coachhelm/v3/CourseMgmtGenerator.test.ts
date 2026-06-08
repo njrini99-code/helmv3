@@ -8,6 +8,12 @@ function makeAgg(
   value: number,
   rounds = 20,
   anchor: { anchor_value?: number | null; anchor_is_cohort?: boolean } = {},
+  cause: Partial<{
+    cause_penalty_pct: number;
+    cause_missed_gir_pct: number;
+    cause_three_putt_pct: number;
+    worst_holes: Array<{ hole_number: number; avg_to_par: number; n: number }>;
+  }> = {},
 ) {
   return {
     sampleN: rounds,
@@ -19,6 +25,10 @@ function makeAgg(
     // composeContent falls back to the raw PGA anchors (pre-cm-1 behavior).
     anchor_value: anchor.anchor_value ?? null,
     anchor_is_cohort: anchor.anchor_is_cohort ?? false,
+    cause_penalty_pct: cause.cause_penalty_pct ?? 0,
+    cause_missed_gir_pct: cause.cause_missed_gir_pct ?? 0,
+    cause_three_putt_pct: cause.cause_three_putt_pct ?? 0,
+    worst_holes: cause.worst_holes ?? [],
   };
 }
 
@@ -69,7 +79,7 @@ describe('CourseMgmtGenerator', () => {
       // no gap to close → descriptive (low), matching the zero counterfactual.
       const c = g.composeContent(makeAgg('penalty', 0.9, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
       expect(c.priority).toBe('low');
-      expect(c.content).toContain('division cohort averages ~0.9');
+      expect(c.content).toContain('College players in our data average ~0.9');
       expect(c.content).toContain('PGA Tour ~0.3');
     });
 
@@ -91,7 +101,7 @@ describe('CourseMgmtGenerator', () => {
       const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
       const atCohort = g.composeContent(makeAgg('big_number', 6, 20, { anchor_value: 6, anchor_is_cohort: true }));
       expect(atCohort.priority).toBe('low');
-      expect(atCohort.content).toContain('division cohort averages ~6.0%');
+      expect(atCohort.content).toContain('College players in our data average ~6.0%');
       const above = g.composeContent(makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }));
       expect(above.priority).toBe('high'); // 9 - 6 = 3 > 2 highMargin
     });
@@ -101,6 +111,53 @@ describe('CourseMgmtGenerator', () => {
       expect(g.composeContent(makeAgg('big_number', 5, 20)).priority).toBe('high');
       expect(g.composeContent(makeAgg('big_number', 3, 20)).priority).toBe('medium');
       expect(g.composeContent(makeAgg('big_number', 1.5, 20)).priority).toBe('low');
+    });
+
+    it('does NOT assert a "division cohort" (level_avg is an app-wide population)', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
+      const c = g.composeContent(makeAgg('penalty', 0.9, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
+      expect(c.content.toLowerCase()).not.toContain('division cohort');
+    });
+  });
+
+  describe('C3 cause decomposition + worst holes', () => {
+    it('big_number names the dominant proximate cause (3-putt vs penalty vs missed-GIR)', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
+      const c = g.composeContent(
+        makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }, {
+          cause_three_putt_pct: 55, cause_missed_gir_pct: 30, cause_penalty_pct: 15,
+        }),
+      );
+      // Dominant cause (3-putt at 55%) is named with its share.
+      expect(c.content).toContain('55%');
+      expect(c.content.toLowerCase()).toContain('3-putt');
+    });
+
+    it('penalty action is specific to the dominant cause, not generic "avoid penalties"', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
+      const c = g.composeContent(
+        makeAgg('penalty', 1.4, 20, { anchor_value: 0.9, anchor_is_cohort: true }, {
+          cause_penalty_pct: 70, cause_missed_gir_pct: 20, cause_three_putt_pct: 10,
+        }),
+      );
+      // A real, cause-specific action (off-the-tee penalties → tee-club / target).
+      expect(c.content.toLowerCase()).toMatch(/tee|aim|conservative line|bail-out/);
+      expect(c.content.toLowerCase()).not.toContain('avoid penalties');
+    });
+
+    it('big_number surfaces the worst holes by avg-to-par when present', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
+      const c = g.composeContent(
+        makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }, {
+          cause_three_putt_pct: 40, cause_missed_gir_pct: 40, cause_penalty_pct: 20,
+          worst_holes: [
+            { hole_number: 7, avg_to_par: 0.9, n: 6 },
+            { hole_number: 14, avg_to_par: 0.7, n: 6 },
+          ],
+        }),
+      );
+      expect(c.content).toContain('hole 7');
+      expect(c.content).toContain('+0.9');
     });
   });
 });

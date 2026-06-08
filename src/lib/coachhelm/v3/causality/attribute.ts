@@ -26,6 +26,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   lookupMetricSource,
   ALL_SCORING_COLUMNS,
@@ -74,6 +75,11 @@ export type WindowResult =
 
 const PRE_WINDOW_DAYS = 14;
 const POST_WINDOW_DAYS = 21;
+/** Days of player history BEFORE the pre-window used to estimate ambient drift. */
+const AMBIENT_HISTORY_DAYS = 90;
+/** Minimum rounds in the ambient window before we trust it to net out drift.
+ *  A 1-round ambient average is noise, not a trend — below this, lift is null. */
+const MIN_AMBIENT_ROUNDS = 2;
 
 /** Average a denormalised `golf_rounds` column across completed rounds in a window. */
 async function averageGolfRoundsColumn(
@@ -200,7 +206,7 @@ async function averageHoleLevelByPar(
   startIso: string,
   endIso: string,
 ): Promise<WindowResult> {
-  const { data } = await sb
+  const { data } = await fetchAllRowsResult((from, to) => sb
     .from('golf_holes')
     .select('score, par, round_id, golf_rounds!inner(round_date, status, player_id)')
     .eq('golf_rounds.player_id', player_id)
@@ -208,7 +214,8 @@ async function averageHoleLevelByPar(
     .eq('par', source.par_filter)
     .gte('golf_rounds.round_date', startIso.slice(0, 10))
     .lte('golf_rounds.round_date', endIso.slice(0, 10))
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
   type Row = Record<string, unknown>;
   const diffs: number[] = [];
   const roundIds = new Set<string>();
@@ -221,9 +228,9 @@ async function averageHoleLevelByPar(
     diffs.push(score - par);
     if (typeof roundId === 'string') roundIds.add(roundId);
   }
-  if (diffs.length === 0) return { ok: false, reason: 'no-data' };
+  if (diffs.length === 0 || roundIds.size === 0) return { ok: false, reason: 'no-data' };
   const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
-  return { ok: true, avg, n: roundIds.size || 1 };
+  return { ok: true, avg, n: roundIds.size };
 }
 
 /**
@@ -319,16 +326,32 @@ export async function computeAttribution(
 
   const delta = post.avg - base.avg;
 
-  // Ambient trend: compare a 90-day window centered on surfaced_at
-  // (excluding the immediate pre/post) so we can subtract ambient drift.
+  // Ambient counterfactual: the player's level over the 90 days of history
+  // BEFORE the pre-window — strictly OUTSIDE [preStart, postEnd]. A window that
+  // overlaps the post period would absorb the very improvement the insight
+  // caused and cancel the lift (the W35 bug). Ambient drift = (ambient.avg −
+  // base.avg) is "how much the player was already trending"; lift subtracts it
+  // so we only credit movement BEYOND that trend.
+  const ambientStart = new Date(
+    surfacedTs - (PRE_WINDOW_DAYS + AMBIENT_HISTORY_DAYS) * 86400_000,
+  ).toISOString();
+  const ambientEnd = new Date(
+    surfacedTs - (PRE_WINDOW_DAYS + 1) * 86400_000,
+  ).toISOString();
   const ambient = await dispatchWindow(
     sb,
     input.player_id,
     source,
-    new Date(surfacedTs - 90 * 86400_000).toISOString(),
-    new Date(surfacedTs + 90 * 86400_000).toISOString(),
+    ambientStart,
+    ambientEnd,
   );
-  const lift = ambient.ok ? delta - (ambient.avg - base.avg) : null;
+  // Min-rounds gate: a thin ambient sample is noise, not a trend. Below the
+  // gate we record delta but leave lift null (nextWeight no-ops on null, so the
+  // attribution row is still logged for observability without moving weights).
+  const lift =
+    ambient.ok && ambient.n >= MIN_AMBIENT_ROUNDS
+      ? delta - (ambient.avg - base.avg)
+      : null;
 
   return {
     ok: true,
@@ -346,18 +369,32 @@ export async function computeAttribution(
   };
 }
 
+/** Stroke-scale for the tanh lift→target map. Calibrated from live data:
+ *  SG_total round-to-round magnitude has median |value| ≈5.35 and SD ≈4.39
+ *  across 173 completed rounds, but a *lift* (delta-of-averages minus ambient)
+ *  is realistically ~0.5–2 strokes. scale=1.0 makes a 1-stroke lift target
+ *  1+tanh(1)≈1.76 and a 2-stroke lift ≈1.96 (near saturation) — meaningful
+ *  gradation exactly where real lifts live. */
+const LIFT_TANH_SCALE = 1.0;
+
 /**
- * Bayesian-ish update for a (coach_id, insight_type, intent) weight
- * given a new attribution lift. We use a simple exponential-moving-
- * average over signed lifts, then clamp to [0.25, 2.0] so a single
- * outlier can't dominate the ranker.
+ * Magnitude-aware Bayesian-ish update for a (coach_id, insight_type, intent)
+ * weight given a new attribution lift. We move an exponential-moving-average
+ * toward a target that scales with the lift's MAGNITUDE and SIGN:
+ *
+ *   target = 1 + tanh(lift / LIFT_TANH_SCALE)
+ *
+ * tanh is signed (negative lift → target < 1), monotonic, and saturating, so a
+ * single outlier round can't blow the weight out — it asymptotes toward (0, 2)
+ * and is then hard-clamped to [0.25, 2.0]. alpha = 1/(sample_n+1) shrinks each
+ * update as evidence accumulates, so later attributions move the weight less.
  */
 export function nextWeight(prev: { weight: number; sample_n: number }, lift: number | null): { weight: number; sample_n: number } {
   if (lift === null || !Number.isFinite(lift)) return prev;
   const alpha = 1 / (prev.sample_n + 1);
-  // Positive lift = good outcome from this insight type → push weight up
-  // toward 1.5; negative lift → push toward 0.5.
-  const target = lift > 0 ? 1.5 : 0.5;
+  // Magnitude- and sign-aware target. A bigger positive lift pushes the target
+  // closer to 2.0; a bigger negative lift closer to 0.0; both saturate via tanh.
+  const target = 1 + Math.tanh(lift / LIFT_TANH_SCALE);
   const next = prev.weight * (1 - alpha) + target * alpha;
   const clamped = Math.max(0.25, Math.min(2.0, next));
   return {

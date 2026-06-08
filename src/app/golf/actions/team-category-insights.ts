@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 // ============================================================================
 // TYPES
@@ -513,17 +514,18 @@ export async function getTeamOverview(
 
       for (let i = 0; i < roundIds.length; i += batchSize) {
         const batch = roundIds.slice(i, i + batchSize);
-        const { data: shotsData } = await supabase
+        const { data: shotsData } = await fetchAllRowsResult((from, to) => supabase
           .from('golf_shots')
           .select('id, round_id, hole_number, shot_number, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, club_type, result')
           .in('round_id', batch)
           .order('round_id')
           .order('hole_number')
           .order('shot_number')
-          // Batching the round-ID array dodges .in() URL-length limits but NOT
-          // PostgREST's 1000-row default: a 100-round batch is ~7400 shots and
-          // would silently truncate without an explicit limit.
-          .limit(50000);
+          // Batching the round-ID array dodges .in() URL-length limits AND
+          // PostgREST's 1000-row default: a 100-round batch is ~7400 shots, so
+          // we paginate to fetch every row instead of silently truncating.
+          .order('id', { ascending: true })
+          .range(from, to)); // paginate past PostgREST 1000-row cap
         if (shotsData) {
           allShotsRaw.push(...(shotsData as unknown as Array<Record<string, unknown>>));
         }

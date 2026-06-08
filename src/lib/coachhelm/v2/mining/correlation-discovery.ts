@@ -13,6 +13,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 // ============================================================================
 // TYPES
@@ -208,7 +209,7 @@ export class CorrelationDiscovery {
     const roundIds = rounds?.map(r => r.id) ?? [];
 
     if (roundIds.length > 0) {
-      const { data: shots } = await supabase
+      const { data: shots } = await fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
           round_id,
@@ -222,7 +223,8 @@ export class CorrelationDiscovery {
           is_penalty
         `)
         .in('round_id', roundIds)
-        .limit(50000); // lift PostgREST 1000-row default cap
+        .order('id', { ascending: true })
+        .range(from, to)); // paginate past PostgREST 1000-row cap
 
       if (shots) {
         this.shots = shots;
@@ -256,7 +258,7 @@ export class CorrelationDiscovery {
       }
 
       // Load hole-level data from golf_holes table
-      const { data: holes } = await supabase
+      const { data: holes } = await fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
         .select(`
           round_id,
@@ -268,7 +270,8 @@ export class CorrelationDiscovery {
           fairway_hit
         `)
         .in('round_id', roundIds)
-        .limit(50000); // lift PostgREST 1000-row default cap
+        .order('id', { ascending: true })
+        .range(from, to)); // paginate past PostgREST 1000-row cap
 
       if (holes) {
         this.holes = holes.map(h => ({

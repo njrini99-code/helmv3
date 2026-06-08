@@ -68,6 +68,9 @@ const THRESHOLDS = {
   minStrokeImpact: 0.3,  // 0.3 strokes — meaningful impact
 };
 
+/** Round-load window (days). Matches the v3 shot-level generators (was unbounded). */
+export const WINDOW_DAYS = 90;
+
 /**
  * Absolute floor for the early-return guard when a player has too few rounds
  * to mine anything meaningful. We drop this below `THRESHOLDS.minSampleSize`
@@ -147,6 +150,22 @@ export function computeConvictionSafe(
   return ((1 - support) * confidence) / (1 - confidence);
 }
 
+/** Below this observation count, a "perfect" confidence is treated as unproven. */
+export const MIN_OBS_FOR_FULL_CONFIDENCE = 8;
+
+/**
+ * Shrink confidence toward 0.5 (max-entropy) for small samples so a rule that
+ * happens to be 3-for-3 isn't reported as 100% confident. Linear shrinkage in
+ * sampleSize up to MIN_OBS_FOR_FULL_CONFIDENCE; identity at/above.
+ *   cappedConfidence(1, 4) = 0.5 + 0.5*(4/8) = 0.75 ; cappedConfidence(1, 8) = 1
+ */
+export function cappedConfidence(confidence: number, sampleSize: number): number {
+  if (!Number.isFinite(confidence)) return 0.5;
+  if (sampleSize >= MIN_OBS_FOR_FULL_CONFIDENCE) return confidence;
+  const w = Math.max(0, sampleSize) / MIN_OBS_FOR_FULL_CONFIDENCE;
+  return 0.5 + (confidence - 0.5) * w;
+}
+
 function normalizeRoundType(roundType?: string | null): string | null {
   if (!roundType) return roundType ?? null;
   return roundType === 'qualifying' ? 'qualifier' : roundType;
@@ -164,6 +183,40 @@ interface RoundData {
   total_gir?: number;
   total_gir_possible?: number;
 }
+
+export interface CompoundConditionSpec {
+  conditions: PatternCondition[];
+  test: (r: RoundData) => boolean;
+}
+
+/**
+ * Compound condition specs. CONTEXT-only by construction: every condition is
+ * independent of the round's own score. The former "GIR >=12 AND Putts >=34 ->
+ * worse score" rule was DELETED (2026 audit) — putts and GIR are components of
+ * score_to_par, so conditioning them against a score_to_par outcome is
+ * tautological (it restates that putts are strokes).
+ */
+export const COMPOUND_CONDITION_SPECS: CompoundConditionSpec[] = [
+  // Rust + tournament pressure
+  {
+    conditions: [
+      {
+        field: 'days_since_last',
+        operator: 'gte',
+        value: 5,
+        label: 'After 5+ days off',
+      },
+      {
+        field: 'round_type',
+        operator: 'eq',
+        value: 'tournament',
+        label: 'In tournament',
+      },
+    ],
+    test: (r) =>
+      (r.days_since_last ?? 0) >= 5 && r.round_type === 'tournament',
+  },
+];
 
 /**
  * Pattern Mining class for discovering patterns in player data
@@ -186,11 +239,15 @@ export class PatternMiner {
     await extractAllFeatures(this.playerId);
 
     // Load rounds with computed fields
+    const since = new Date(Date.now() - WINDOW_DAYS * 86400_000)
+      .toISOString()
+      .slice(0, 10);
     const { data: rounds, error } = await supabase
       .from('golf_rounds')
       .select('id, score_to_par, round_date, round_type, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
+      .gte('round_date', since)
       .order('round_date', { ascending: false })
       .limit(100);
 
@@ -475,49 +532,7 @@ export class PatternMiner {
     const scaledMinSample = effectiveMinSampleSize(this.rounds.length);
 
     // Test combinations
-    const compoundConditions: Array<{
-      conditions: PatternCondition[];
-      test: (r: RoundData) => boolean;
-    }> = [
-      // Rust + tournament pressure
-      {
-        conditions: [
-          {
-            field: 'days_since_last',
-            operator: 'gte',
-            value: 5,
-            label: 'After 5+ days off',
-          },
-          {
-            field: 'round_type',
-            operator: 'eq',
-            value: 'tournament',
-            label: 'In tournament',
-          },
-        ],
-        test: (r) =>
-          (r.days_since_last ?? 0) >= 5 && r.round_type === 'tournament',
-      },
-      // High GIR but high putts (not capitalizing on greens)
-      {
-        conditions: [
-          {
-            field: 'total_gir',
-            operator: 'gte',
-            value: 12,
-            label: 'GIR ≥12',
-          },
-          {
-            field: 'putts',
-            operator: 'gte',
-            value: 34,
-            label: 'Putts ≥34',
-          },
-        ],
-        test: (r) =>
-          (r.total_gir ?? 0) >= 12 && (r.putts ?? 0) >= 34,
-      },
-    ];
+    const compoundConditions = COMPOUND_CONDITION_SPECS;
 
     for (const { conditions, test } of compoundConditions) {
       const matchingRounds = this.rounds.filter(test);
@@ -682,8 +697,10 @@ export class PatternMiner {
     strokeImpact: number,
     sampleSize: number
   ): MinedPattern {
-    // Calculate conviction (NaN-safe; null sentinel substituted as 10)
-    const rawConviction = computeConvictionSafe(confidence, support);
+    // Calibrate confidence for sample size, THEN derive conviction — so a tiny
+    // "3-for-3" sample can't report confidence 1.00 / conviction-at-ceiling.
+    const calibratedConfidence = cappedConfidence(confidence, sampleSize);
+    const rawConviction = computeConvictionSafe(calibratedConfidence, support);
     const conviction = rawConviction === null ? 10 : rawConviction;
 
     // Calculate actionability
@@ -703,7 +720,7 @@ export class PatternMiner {
       conditions,
       outcome,
       support,
-      confidence,
+      confidence: calibratedConfidence,
       lift,
       conviction: Math.min(conviction, 10), // Cap for readability
       strokeImpact,

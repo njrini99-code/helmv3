@@ -12,6 +12,7 @@
 
 import { createHash } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type {
   ShotPattern,
   ShotPatternAnalysis,
@@ -69,6 +70,43 @@ export function computeActionability(
 ): number {
   const freq = tendencies[0]?.frequency ?? 0;
   return freq > 0.5 ? 0.9 : 0.6;
+}
+
+/** Bands whose shots are tee shots (remaining-to-hole ≠ target error). */
+export function isTeeBand(label: string): boolean {
+  return label.startsWith('Driver');
+}
+
+export interface DistanceControlInput {
+  /** avg distance_to_hole_after in yards. */
+  avgProximityYds: number;
+  /** band midpoint in yards (approx start distance for approaches). */
+  bandMidYds: number;
+  isTeeBand: boolean;
+}
+
+/**
+ * Distance-control score (0-1).
+ *
+ * TEE shots: `distance_to_hole_after` is remaining-to-hole (e.g. ~150 yds left
+ * after a drive), NOT target error — it cannot measure drive distance control,
+ * so return a neutral 0.5 and let fairwayHitRate + dispersion carry the signal.
+ * The old code referenced proximity to the band MIDPOINT (~360 yds for the
+ * 220+ band), which scored every drive 0.2.
+ *
+ * APPROACH shots: proximity IS the relevant control signal; reference the
+ * "good" proximity to ~10% of the band's start distance (unchanged curve).
+ */
+export function distanceControlScore(input: DistanceControlInput): number {
+  if (input.isTeeBand) return 0.5;
+  const idealProximity = input.bandMidYds * 0.1;
+  if (idealProximity <= 0) return 0.5;
+  const ratio = input.avgProximityYds / idealProximity;
+  if (ratio <= 1) return 1.0;
+  if (ratio <= 2) return 0.8;
+  if (ratio <= 3) return 0.6;
+  if (ratio <= 4) return 0.4;
+  return 0.2;
 }
 
 /** Standard distance ranges for analysis */
@@ -191,14 +229,15 @@ export class ShotPatternMiner {
     // Get all shots from those rounds. Project only the columns the miner
     // actually consumes (was `select('*')`). Keep this list in sync with the
     // `RawShot` interface above — under-projecting will silently drop fields.
-    const { data: shots, error } = await supabase
+    const { data: shots, error } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_shots')
       .select('id,round_id,hole_number,shot_number,shot_type,club_type,lie_before,distance_to_hole_before,distance_unit_before,distance_to_hole_after,distance_unit_after,miss_direction,shot_distance,result')
       .in('round_id', roundIds)
       .order('round_id')
       .order('hole_number')
       .order('shot_number')
-      .limit(50000); // lift PostgREST 1000-row default cap
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
 
     if (error || !shots) {
       return;
@@ -378,7 +417,7 @@ export class ShotPatternMiner {
       );
 
       // Calculate distance control score
-      const distanceControlScore = this.calculateDistanceControl(stats);
+      const distControlScore = this.calculateDistanceControl(stats);
 
       // Generate insight and recommendation
       const { insight, recommendation } = this.generateInsight(
@@ -402,7 +441,7 @@ export class ShotPatternMiner {
         dispersionPattern,
         avgDistanceError: stats.avgMissDistance,
         avgProximity: stats.avgProximity,
-        distanceControlScore,
+        distanceControlScore: distControlScore,
         sampleSize: stats.totalShots,
         confidence: this.calculateConfidence(stats.totalShots),
         insight,
@@ -511,18 +550,11 @@ export class ShotPatternMiner {
    * Calculates distance control score
    */
   private calculateDistanceControl(stats: DistanceRangeStats): number {
-    // Score based on how much distance is left after the shot relative to target
-    const targetRange = (stats.range.max + stats.range.min) / 2;
-
-    // Ideal proximity for different ranges
-    const idealProximity = targetRange * 0.1; // 10% of distance is good
-
-    if (stats.avgProximity <= idealProximity) return 1.0;
-    if (stats.avgProximity <= idealProximity * 2) return 0.8;
-    if (stats.avgProximity <= idealProximity * 3) return 0.6;
-    if (stats.avgProximity <= idealProximity * 4) return 0.4;
-
-    return 0.2;
+    return distanceControlScore({
+      avgProximityYds: stats.avgProximity,
+      bandMidYds: (stats.range.max + stats.range.min) / 2,
+      isTeeBand: isTeeBand(stats.range.label),
+    });
   }
 
   /**

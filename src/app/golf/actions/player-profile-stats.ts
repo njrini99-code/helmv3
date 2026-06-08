@@ -10,6 +10,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   calculateStatsFromShots,
   type GolfStats,
@@ -127,7 +128,7 @@ export async function getPlayerProfileStats(
       : [roundId];
 
     // 3. Fetch all shots for the selected round(s) with detail tables
-    const { data: shotsData, error: shotsError } = await supabase
+    const { data: shotsData, error: shotsError } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_shots')
       .select(`
         *,
@@ -137,7 +138,8 @@ export async function getPlayerProfileStats(
       .in('round_id', roundIdsToFetch)
       .order('hole_number')
       .order('shot_number')
-      .limit(50000); // lift PostgREST 1000-row default cap
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
 
     if (shotsError) {
       await logServerError(`[getPlayerProfileStats] Error fetching shots: ${shotsError instanceof Error ? shotsError.message : String(shotsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
@@ -154,11 +156,15 @@ export async function getPlayerProfileStats(
     }
 
     // 4. Fetch hole info for the rounds
-    const { data: holesData } = await supabase
+    const { data: holesData } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_holes')
-      .select('round_id, hole_number, par, yardage')
+      // gir/score/sand_save are canonical inputs: without them the calculator
+      // falls back to shot-count for score and re-derives GIR from shot results,
+      // which corrupts scrambling, sand-save, and any score/par-based stat.
+      .select('round_id, hole_number, par, yardage, gir, score, putts, fairway_hit, sand_save')
       .in('round_id', roundIdsToFetch)
-      .limit(50000); // lift PostgREST 1000-row default cap
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
 
     // 5. Build data structures for calculator
     const selectedRounds = roundId === 'overall'
@@ -179,6 +185,11 @@ export async function getPlayerProfileStats(
       hole_number: h.hole_number,
       par: h.par,
       yardage: h.yardage ?? null,
+      gir: h.gir ?? null,
+      score: h.score ?? null,
+      putts: h.putts ?? null,
+      fairway_hit: h.fairway_hit ?? null,
+      sand_save: h.sand_save ?? null,
     }));
 
     // Transform shots to RawShot format - don't filter out shots with missing distances
@@ -241,8 +252,12 @@ export async function getPlayerProfileStats(
       };
     }
 
-    // 6. Calculate comprehensive stats
-    const stats = calculateStatsFromShots(rawShots, holesInfo, roundsInfo);
+    // 6. Calculate comprehensive stats. Apply the per-team SG baseline scale
+    // (women's 1.083, NCAA tiers) via the same DB function the cache uses, so
+    // this surface's SG matches the cache.
+    const { data: sgScaleRaw } = await supabase.rpc('sg_scale_for_player', { p_player_id: playerId });
+    const sgScale = typeof sgScaleRaw === 'number' && sgScaleRaw > 0 ? sgScaleRaw : 1;
+    const stats = calculateStatsFromShots(rawShots, holesInfo, roundsInfo, { sgScale });
 
     return {
       success: true,
