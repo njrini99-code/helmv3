@@ -31,6 +31,7 @@ import {
 } from '@/lib/coachhelm/v3/counterfactual/compute';
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
 import type { CounterfactualProjection } from '@/lib/coachhelm/v3/counterfactual/types';
+import { isFloorExemptMetric } from '@/lib/coachhelm/v3/ranking/score';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
@@ -64,7 +65,14 @@ const PRIORITY_RANK: Record<InsightPriority, number> = {
 export function backfilledStrokesImpact(
   composedImpact: number,
   counterfactual: CounterfactualProjection | null,
+  metric?: string,
 ): number {
+  // Descriptive / warmup metrics (scoring_par_*, opening_hole_delta) are
+  // intentionally zero-impact — never overwrite their seed from the CF, or they
+  // acquire a per-round leverage they don't independently own and crowd the feed.
+  if (isFloorExemptMetric(metric)) {
+    return composedImpact;
+  }
   if (
     counterfactual &&
     counterfactual.suppressed !== true &&
@@ -142,7 +150,12 @@ export function computeMeasuredFactors(
 export function leveragePriorityFloor(
   current: InsightPriority | undefined,
   counterfactual: CounterfactualProjection | null,
+  metric?: string,
 ): InsightPriority | undefined {
+  // Exempt metrics keep their generator priority (par-scoring stays 'low'
+  // descriptive; warmup-hole keeps its own at/under-tax escalation) — the CF
+  // leverage must not float a descriptive row into the Alert Center.
+  if (isFloorExemptMetric(metric)) return current;
   if (!counterfactual || counterfactual.suppressed === true) return current;
   const s = counterfactual.strokes_saved_per_round;
   if (!Number.isFinite(s)) return current;
@@ -271,8 +284,8 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         // Backfill strokes_impact + floor priority from the counterfactual's
         // real per-round leverage (see the pure helpers above). The themes path
         // reads the counterfactual directly and is unaffected.
-        const cfStrokes = backfilledStrokesImpact(evidence.strokes_impact, counterfactual);
-        effectivePriority = leveragePriorityFloor(effectivePriority, counterfactual);
+        const cfStrokes = backfilledStrokesImpact(evidence.strokes_impact, counterfactual, this.metricId);
+        effectivePriority = leveragePriorityFloor(effectivePriority, counterfactual, this.metricId);
 
         evidence = {
           ...evidence,
