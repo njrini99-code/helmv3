@@ -79,10 +79,13 @@ describe('sampleDamping', () => {
     expect(sampleDamping(5)).toBeLessThan(sampleDamping(12));
   });
 
-  it('treats absent/zero/NaN sample as fully damped-out to the exact floor', () => {
-    expect(sampleDamping(undefined)).toBe(DAMP_MIN);
+  it('treats absent/NaN sample as NEUTRAL (1.0), but a RECORDED zero as the exact floor', () => {
+    // Absent / garbage sample_n is not evidence of thinness → neutral 1.0
+    // (consistent with weight/goalBoost defaulting to 1.0). Only a RECORDED
+    // zero/negative count is degenerate-thin and damps to DAMP_MIN.
+    expect(sampleDamping(undefined)).toBe(1);
+    expect(sampleDamping(Number.NaN)).toBe(1);
     expect(sampleDamping(0)).toBe(DAMP_MIN);
-    expect(sampleDamping(Number.NaN)).toBe(DAMP_MIN);
   });
 });
 

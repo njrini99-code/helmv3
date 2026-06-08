@@ -95,10 +95,26 @@ describe('scoreInsight', () => {
     ).toBe(0);
   });
 
-  it('returns zero when strokes_impact is zero', () => {
-    expect(
-      scoreInsight({ insight_type: 'x', strokes_impact: 0, confidence: 1 }, { x: 2 }),
-    ).toBe(0);
+  it('floors a zero-impact NON-EXEMPT row to a small positive (orderable, not zeroed); exempt rows stay 0', () => {
+    // Phase A floor contract: a zero-impact NON-EXEMPT row (no metric, or an
+    // actionable metric) is floored to a tiny POSITIVE value so it's orderable
+    // instead of tying at 0 and falling back to recency.
+    const nonExempt = scoreInsight(
+      { insight_type: 'x', strokes_impact: 0, confidence: 1 },
+      { x: 2 },
+    );
+    expect(nonExempt).toBeGreaterThan(0);
+    const nonExemptActionable = scoreInsight(
+      { insight_type: 'x', strokes_impact: 0, confidence: 1, metric: 'putts_made_5_10ft_pct' },
+      { x: 2 },
+    );
+    expect(nonExemptActionable).toBeGreaterThan(0);
+    // A zero-impact EXEMPT row (scoring_par_*) gets NO floor — exemption removes it.
+    const exempt = scoreInsight(
+      { insight_type: 'x', strokes_impact: 0, confidence: 1, metric: 'scoring_par_4' },
+      { x: 2 },
+    );
+    expect(exempt).toBe(0);
   });
 });
 

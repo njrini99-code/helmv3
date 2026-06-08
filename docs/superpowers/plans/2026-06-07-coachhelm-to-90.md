@@ -105,7 +105,7 @@ This phase replaces the two-tier ranking split (the rich `scoreInsight` runs onl
 
 1. **`scoreInsight(insight, weights, goals)` is the single ranking function.** Every read surface (Hub single-pick, player feed, coach feed, round takeaway, player CoachHelm dashboard) calls it. Per-engine phases never re-implement ranking.
 2. **Rank floor**: when `|cappedStrokesImpact| === 0`, the score is `priorityFloorScore(priority) × confidence × damping × coachability × coach_weight × goalBoost`, where `priorityFloorScore` = urgent 4 / high 3 / medium 2 / low 1. A real impact (>0) always uses the impact term, never the floor.
-3. **Sample damping**: `sampleDamping(sample_n)` ∈ (0,1], `min(1, sqrt(sample_n / DAMP_REF_N))` with `DAMP_REF_N = 12`. A 5-sample row is damped to ~0.65; a ≥12-sample row is undamped. Multiplies BOTH the impact and the floor branches.
+3. **Sample damping**: `sampleDamping(sample_n)` ∈ (0,1], `min(1, sqrt(sample_n / DAMP_REF_N))` with `DAMP_REF_N = 12`. A 5-sample row is damped to ~0.65; a ≥12-sample row is undamped. A *recorded* zero/negative count is degenerate-thin → `DAMP_MIN` (0.25); an **absent/garbage** count is NEUTRAL (1.0) — a missing sample count is not evidence of thinness, consistent with weight/goalBoost defaulting to 1.0, so a real leak is never quartered just for lacking `sample_n`. Multiplies BOTH the impact and the floor branches.
 4. **Urgent short-circuit**: a `priority:'urgent'` insight always outranks any non-urgent (enforced by a large additive `URGENT_SHORT_CIRCUIT` constant inside `scoreInsight`, so a single comparator still sorts correctly).
 5. **Exemption set** `EXEMPT_FROM_FLOOR`: metrics whose impact is intentionally 0/descriptive (`scoring_par_*`, `opening_hole_delta`) get floor 0 — they keep their generator priority and rank by their honest (zero) impact, so they never crowd the actionable feed. Per-engine phases that add a *descriptive* metric add it here.
 
@@ -261,11 +261,13 @@ describe('sampleDamping', () => {
     expect(sampleDamping(5)).toBeLessThan(sampleDamping(12));
   });
 
-  it('treats absent/zero/NaN sample as fully damped-out to a small floor (never 0, never >1)', () => {
-    expect(sampleDamping(undefined)).toBeGreaterThan(0);
-    expect(sampleDamping(undefined)).toBeLessThanOrEqual(1);
-    expect(sampleDamping(0)).toBeGreaterThan(0);
-    expect(sampleDamping(Number.NaN)).toBeGreaterThan(0);
+  it('treats absent/NaN sample as NEUTRAL (1.0), but a RECORDED zero as the exact floor', () => {
+    // Absent / garbage sample_n is not evidence of thinness → neutral 1.0
+    // (consistent with weight/goalBoost defaulting to 1.0). Only a RECORDED
+    // zero/negative count is degenerate-thin and damps to DAMP_MIN.
+    expect(sampleDamping(undefined)).toBe(1);
+    expect(sampleDamping(Number.NaN)).toBe(1);
+    expect(sampleDamping(0)).toBe(DAMP_MIN);
   });
 });
 ```
@@ -304,15 +306,22 @@ export function priorityFloorScore(
  * not out-rank a deep-sample leak just because its confidence factor reads high.
  * `sqrt(sample_n / DAMP_REF_N)` clamped to 1 — undamped at the reference depth,
  * gentler than linear so a 5-round row keeps ~65% weight (not punished to near
- * zero). Absent / non-finite / zero sample → a small positive floor so the row
- * is still orderable rather than zeroed.
+ * zero). A RECORDED zero/negative count is degenerate-thin → DAMP_MIN.
+ *
+ * ABSENT / non-finite sample → NEUTRAL (1.0). Damping must down-rank
+ * KNOWN-thin samples; a MISSING sample count is not evidence of thinness, so we
+ * don't penalize it (consistent with weight/goalBoost defaulting to 1.0). A real
+ * 2-stroke leak must not be quartered merely for lacking sample_n.
  */
 export const DAMP_REF_N = 12;
-const DAMP_MIN = 0.25;
+export const DAMP_MIN = 0.25;
 
-export function sampleDamping(sample_n: number | undefined): number {
+export function sampleDamping(sample_n: number | null | undefined): number {
+  // Absent / not-recorded → NEUTRAL (1.0).
+  if (sample_n === undefined || sample_n === null) return 1;
   const n = Number(sample_n);
-  if (!Number.isFinite(n) || n <= 0) return DAMP_MIN;
+  if (!Number.isFinite(n)) return 1;            // garbage → neutral
+  if (n <= 0) return DAMP_MIN;                  // a RECORDED zero/negative = degenerate-thin
   return Math.min(1, Math.max(DAMP_MIN, Math.sqrt(n / DAMP_REF_N)));
 }
 ```
@@ -321,7 +330,7 @@ export function sampleDamping(sample_n: number | undefined): number {
 ```
 npx vitest run src/lib/coachhelm/v3/ranking/score.test.ts
 ```
-Expected: PASS (all A1 + A2 tests). `sampleDamping(12)` = `sqrt(1)` = 1; `sampleDamping(5)` = `sqrt(5/12)` ≈ 0.645 < 1; `sampleDamping(3)` ≈ 0.5; absent → 0.25.
+Expected: PASS (all A1 + A2 tests). `sampleDamping(12)` = `sqrt(1)` = 1; `sampleDamping(5)` = `sqrt(5/12)` ≈ 0.645 < 1; `sampleDamping(3)` ≈ 0.5; a RECORDED 0 → 0.25; absent/NaN → NEUTRAL 1.0.
 
 - [ ] **Step 5 — commit.**
 ```
@@ -600,7 +609,7 @@ Expected: PASS. Verify the two existing callers still typecheck:
 ```
 npm run typecheck
 ```
-Expected: PASS — `insights.ts` already passes `priority`? No: the existing `insights.ts` call (line 2603) does NOT pass `priority`/`sample_n`; that's fine because both are optional (absent priority → 'low' floor, absent sample_n → DAMP_MIN). Task A6 enriches that call so the dashboard gets the full contract.
+Expected: PASS — `insights.ts` already passes `priority`? No: the existing `insights.ts` call (line 2603) does NOT pass `priority`/`sample_n`; that's fine because both are optional (absent priority → 'low' floor, absent sample_n → NEUTRAL damping 1.0). Task A6 enriches that call so the dashboard gets the full contract.
 
 - [ ] **Step 5 — commit.**
 ```
@@ -1114,7 +1123,7 @@ git commit -m "Phase A: route flat feeds through shared scoreInsight (floor+damp
 
 ### Task A6 — Enrich the player CoachHelm dashboard `rankInsights` call with priority + sample_n
 
-`loadEvidenceBackedInsights` (insights.ts ~2603) already routes through `rankInsights`/`scoreInsight`, but it passes only `strokes_impact`/`confidence`/`metric`/`category` — so its rows currently get the `priority:undefined`→'low' floor and `sample_n:undefined`→`DAMP_MIN` damping. Pass the real `priority` + `sample_n` so the dashboard ranks identically to the flat feeds.
+`loadEvidenceBackedInsights` (insights.ts ~2603) already routes through `rankInsights`/`scoreInsight`, but it passes only `strokes_impact`/`confidence`/`metric`/`category` — so its rows currently get the `priority:undefined`→'low' floor and `sample_n:undefined`→NEUTRAL damping (1.0). Pass the real `priority` + `sample_n` so the dashboard ranks identically to the flat feeds.
 
 **Files**
 - Modify `src/app/golf/actions/insights.ts` — the `select` (~2553), the `projected` map (~2579-2590), and the `rankInsights` call (~2603-2614).

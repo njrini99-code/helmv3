@@ -142,15 +142,22 @@ export function priorityFloorScore(
  * not out-rank a deep-sample leak just because its confidence factor reads high.
  * `sqrt(sample_n / DAMP_REF_N)` clamped to 1 — undamped at the reference depth,
  * gentler than linear so a 5-round row keeps ~65% weight (not punished to near
- * zero). Absent / non-finite / zero sample → a small positive floor so the row
- * is still orderable rather than zeroed.
+ * zero). A RECORDED zero/negative count is degenerate-thin → DAMP_MIN.
+ *
+ * ABSENT / non-finite sample → NEUTRAL (1.0). Damping must down-rank
+ * KNOWN-thin samples; a MISSING sample count is not evidence of thinness, so we
+ * don't penalize it (consistent with weight/goalBoost defaulting to 1.0). A real
+ * 2-stroke leak must not be quartered merely for lacking sample_n.
  */
 export const DAMP_REF_N = 12;
 export const DAMP_MIN = 0.25;
 
-export function sampleDamping(sample_n: number | undefined): number {
+export function sampleDamping(sample_n: number | null | undefined): number {
+  // Absent / not-recorded → NEUTRAL (1.0).
+  if (sample_n === undefined || sample_n === null) return 1;
   const n = Number(sample_n);
-  if (!Number.isFinite(n) || n <= 0) return DAMP_MIN;
+  if (!Number.isFinite(n)) return 1;            // garbage → neutral
+  if (n <= 0) return DAMP_MIN;                  // a RECORDED zero/negative = degenerate-thin
   return Math.min(1, Math.max(DAMP_MIN, Math.sqrt(n / DAMP_REF_N)));
 }
 
