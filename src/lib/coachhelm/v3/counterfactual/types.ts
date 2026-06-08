@@ -40,4 +40,9 @@ export interface CounterfactualProjection {
    * "≥" framing if a consumer wants to flag the projection is bounded.
    */
   clamped?: boolean;
+  /**
+   * Player's own per-round attempt rate used to size impact (DC-ATTEMPT-1),
+   * or null when the legacy gap × stroke_impact_per_unit path was used.
+   */
+  attempts_used?: number | null;
 }
