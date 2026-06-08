@@ -44,7 +44,9 @@ import {
   getInsightsForPlayer,
   getInsightsForCoach,
   getRoundTakeawayInsight,
+  collapseParScoring,
 } from '@/app/golf/actions/insight-delivery';
+import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 
 // ---------------------------------------------------------------------------
 // Fixture builders
@@ -588,5 +590,129 @@ describe('ranking pathology guards', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await getInsightsForPlayer('p-1', {}, sb as any);
     expect(result[0]?.id).toBe('older');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// collapseParScoring (C2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Helper: builds a minimal EvidenceInsight shaped for the par_scoring collapse
+ * test. Mirrors the RawRow → EvidenceInsight shape used by the rest of this
+ * file, setting category='scoring', evidence.metric=metric, evidence.detail,
+ * and title='Par N scoring: ...' so collapseParScoring can find and collapse
+ * the 3 par rows.
+ */
+function parScoringRow(
+  metric: string,
+  avgScore: number,
+  detail: Record<string, number>,
+): EvidenceInsight {
+  const parNum = metric.match(/scoring_par_(\d)/)?.[1] ?? '?';
+  return {
+    id: `par-${parNum}-row`,
+    player_id: 'p-collapse-1',
+    category: 'scoring',
+    insight_type: 'par_type_scoring',
+    title: `Par ${parNum} scoring: avg ${avgScore.toFixed(2)}`,
+    content: `Par ${parNum} avg ${avgScore.toFixed(2)} vs benchmark`,
+    signature: `v3:par-type-${parNum}`,
+    evidence: {
+      metric,
+      metric_label: `Par ${parNum} scoring average`,
+      unit: 'strokes',
+      your_value: avgScore,
+      your_value_display: avgScore.toFixed(2),
+      comparison_value: parNum === '3' ? 3.2 : parNum === '4' ? 4.1 : 5.1,
+      comparison_label: 'D2 average',
+      comparison_source: 'd2_avg',
+      sample_n: 30,
+      window_days: 30,
+      window_start: '2026-05-01T00:00:00.000Z',
+      window_end: '2026-05-31T00:00:00.000Z',
+      strokes_impact: 0,
+      strokes_impact_method: 'rough_estimate' as const,
+      confidence: 0.8,
+      confidence_factors: { sample_adequacy: 1, recency: 1, variance: 0.8 },
+      detail,
+    },
+    metadata: null,
+    lifecycle_state: 'matured',
+    status: 'active',
+    priority: 'medium',
+    acknowledged_at: null,
+    resolved_at: null,
+    created_at: '2026-05-15T00:00:00.000Z',
+    updated_at: '2026-05-15T00:00:00.000Z',
+  };
+}
+
+describe('collapseParScoring (C2)', () => {
+  it('collapses the 3 par_scoring rows into one "Scoring by par type" card (C2)', () => {
+    const rows = [
+      parScoringRow('scoring_par_3', 3.2, { bogey_rate: 18, double_plus_rate: 5 }),
+      parScoringRow('scoring_par_4', 4.23, { bogey_rate: 21, double_plus_rate: 6.5 }),
+      parScoringRow('scoring_par_5', 5.1, { bogey_rate: 14, double_plus_rate: 3 }),
+    ];
+    const out = collapseParScoring(rows);
+    const par = out.filter((r) => r.category === 'scoring' && /par type/i.test(r.title));
+    expect(par).toHaveLength(1);
+    expect(par[0]!.content).toContain('Par 3');
+    expect(par[0]!.content).toContain('Par 4');
+    expect(par[0]!.content).toContain('Par 5');
+    // The 3 separate par rows are gone.
+    expect(out.filter((r) => /^par \d scoring:/i.test(r.title))).toHaveLength(0);
+  });
+
+  it('passes through non-par-scoring rows untouched', () => {
+    const puttRow = makeRow({ id: 'putt-1', category: 'putting' });
+    const parRow = parScoringRow('scoring_par_4', 4.2, { bogey_rate: 20, double_plus_rate: 5 });
+    // Map to EvidenceInsight shape (makeRow is RawRow; mapRowToEvidenceInsight is internal)
+    // so we build a minimal EvidenceInsight from the raw shape for testing.
+    const puttInsight: EvidenceInsight = {
+      id: puttRow.id,
+      player_id: puttRow.player_id,
+      category: 'putting',
+      title: puttRow.title,
+      content: puttRow.content,
+      signature: puttRow.signature,
+      evidence: puttRow.evidence as EvidenceInsight['evidence'],
+      metadata: null,
+      lifecycle_state: 'matured',
+      status: 'active',
+      priority: 'medium',
+      acknowledged_at: null,
+      resolved_at: null,
+      created_at: puttRow.created_at,
+      updated_at: puttRow.updated_at,
+    };
+    const out = collapseParScoring([puttInsight, parRow]);
+    // putt row passes through; the lone par row has no siblings → still collapses to one titled card
+    expect(out.find((r) => r.id === 'putt-1')).toBeDefined();
+    expect(out.find((r) => r.category === 'putting')).toBeDefined();
+  });
+
+  it('produces a collapsed card even with only one par row (graceful handling)', () => {
+    const singlePar = parScoringRow('scoring_par_4', 4.2, { bogey_rate: 22, double_plus_rate: 7 });
+    const out = collapseParScoring([singlePar]);
+    // A single par row still gets collapsed/re-titled.
+    expect(out).toHaveLength(1);
+    expect(/par type/i.test(out[0]!.title)).toBe(true);
+  });
+
+  it('collapses per-player — two players each get their own collapsed card', () => {
+    const p1rows = [
+      parScoringRow('scoring_par_3', 3.1, { bogey_rate: 15, double_plus_rate: 4 }),
+      parScoringRow('scoring_par_4', 4.1, { bogey_rate: 20, double_plus_rate: 5 }),
+    ].map((r) => ({ ...r, player_id: 'p1' }));
+    const p2rows = [
+      parScoringRow('scoring_par_3', 3.3, { bogey_rate: 19, double_plus_rate: 6 }),
+      parScoringRow('scoring_par_5', 5.2, { bogey_rate: 16, double_plus_rate: 4 }),
+    ].map((r) => ({ ...r, player_id: 'p2' }));
+    const out = collapseParScoring([...p1rows, ...p2rows]);
+    const collapsed = out.filter((r) => /par type/i.test(r.title));
+    expect(collapsed).toHaveLength(2);
+    expect(collapsed.map((r) => r.player_id).sort()).toEqual(['p1', 'p2']);
   });
 });

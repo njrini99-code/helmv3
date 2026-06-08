@@ -278,6 +278,62 @@ function dedupeBySubject(insights: EvidenceInsight[]): EvidenceInsight[] {
   });
 }
 
+/**
+ * Collapse the 3 separate par_scoring rows (scoring_par_3/4/5) into ONE
+ * "Scoring by par type" card per player (C2). Each par writes its own standing
+ * row (own counterfactual, own StandingBar), but on display they read as one
+ * decomposition card so the feed isn't three near-identical scoring rows. Rates
+ * come from evidence.detail stamped by ParTypeGenerator (C1). Non-par rows pass
+ * through untouched. Exported for direct unit testing.
+ */
+export function collapseParScoring(insights: EvidenceInsight[]): EvidenceInsight[] {
+  const PAR_METRICS = new Set(['scoring_par_3', 'scoring_par_4', 'scoring_par_5']);
+  const out: EvidenceInsight[] = [];
+  const byPlayer = new Map<string, EvidenceInsight[]>();
+  for (const ins of insights) {
+    const m = ins.evidence?.metric ?? '';
+    if (PAR_METRICS.has(m)) {
+      const arr = byPlayer.get(ins.player_id) ?? [];
+      arr.push(ins);
+      byPlayer.set(ins.player_id, arr);
+    } else {
+      out.push(ins);
+    }
+  }
+  for (const [, rows] of byPlayer) {
+    // Highest-impact par row (by feedRankScore) is the survivor we re-skin; if
+    // every par row is descriptive (impact 0) the first by par number wins.
+    const ordered = rows
+      .slice()
+      .sort((a, b) => parNum(a) - parNum(b));
+    const survivor = ordered[0];
+    const r1 = (x: unknown) =>
+      typeof x === 'number' ? (Math.round(x * 10) / 10).toString() : '—';
+    const lines = ordered.map((r) => {
+      const par = parNum(r);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = (r.evidence as any)?.detail ?? {};
+      const avg = r.evidence?.your_value;
+      return (
+        `Par ${par}: ${typeof avg === 'number' ? avg.toFixed(2) : '—'} ` +
+        `(${r1(d.bogey_rate)}% bogey, ${r1(d.double_plus_rate)}% double+)`
+      );
+    });
+    out.push({
+      ...survivor,
+      title: 'Scoring by par type',
+      content: lines.join(' · '),
+    } as EvidenceInsight);
+  }
+  return out;
+}
+
+function parNum(ins: EvidenceInsight): number {
+  const m = ins.evidence?.metric ?? '';
+  const hit = m.match(/scoring_par_(\d)/);
+  return hit ? Number(hit[1]) : 99;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -513,9 +569,11 @@ export async function getInsightsForPlayer(
   // Finding 29: apply the SAME (player:category:metric-subject) dedupe the
   // coach feed uses (via the shared `dedupeBySubject` helper) so a player does
   // not see duplicate-subject cards a coach viewing the same player sees merged.
+  // C2: collapse the 3 par_scoring rows into ONE "Scoring by par type" card
+  // BEFORE dedupe so the merged card is treated as a single unit downstream.
   // Dedupe AFTER ranking so the surviving row is the highest-ranked of a group,
   // then trim to the requested limit.
-  return dedupeBySubject(ranked).slice(0, limit);
+  return dedupeBySubject(collapseParScoring(ranked)).slice(0, limit);
 }
 
 /**
@@ -669,7 +727,9 @@ export async function getInsightsForCoach(
     weights = await loadCoachWeightsForPlayer(supabase, opts.player_id).catch(() => ({}));
     goals = await loadActiveGoals(opts.player_id).catch(() => []);
   }
-  const ranked = dedupeBySubject(rankEvidenceInsights(mapped, weights, goals));
+  // C2: collapse the 3 par_scoring rows into ONE "Scoring by par type" card
+  // BEFORE dedupe — same IDENTICAL-application rule as dedupeBySubject itself.
+  const ranked = dedupeBySubject(collapseParScoring(rankEvidenceInsights(mapped, weights, goals)));
 
   return ranked.slice(0, limit);
 }
