@@ -37,6 +37,7 @@ import type {
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
+import { attemptGate, lifetimeSpanDays, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 
 type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
 
@@ -59,6 +60,14 @@ const BUCKET_TO_CACHE_COLUMN: Record<PuttBucketKey, string> = {
   '10_15ft':  'putt_make_pct_10_15ft',
   '15_25ft':  'putt_make_pct_15_25ft',
   '25_plus_ft':'putt_make_pct_25_plus_ft',
+};
+
+const BUCKET_TO_ATTEMPTS_COLUMN: Record<PuttBucketKey, string> = {
+  '3_5ft':    'putt_attempts_3_5ft',
+  '5_10ft':   'putt_attempts_5_10ft',
+  '10_15ft':  'putt_attempts_10_15ft',
+  '15_25ft':  'putt_attempts_15_25ft',
+  '25_plus_ft':'putt_attempts_25_plus_ft',
 };
 
 const BUCKET_LABEL: Record<PuttBucketKey, string> = {
@@ -106,13 +115,17 @@ interface PuttDistanceAggregate extends GeneratorAggregate {
   rounds_played: number;
   /** Team gender used to select the per-gender comparison anchor. */
   cohort_gender: CohortGender;
+  /** Putts attempted in THIS band (cache putt_attempts_*). Drives sample_n + gate. */
+  attempts: number;
+  /** True lifetime span in days (first→last round); null when unknown. */
+  spanDays: number | null;
 }
 
 export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> {
   readonly name = 'PuttDistanceGenerator';
   readonly insightType = 'putt_distance';
   readonly category: InsightCategory = 'putting';
-  readonly minSampleN = 5; // rounds_played floor
+  readonly minSampleN = 5; // putts attempted in the band (sampleN = band attempts)
 
   readonly metricId: MetricId;
   readonly bucket: PuttBucketKey;
@@ -126,13 +139,12 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
   async aggregate(): Promise<PuttDistanceAggregate | null> {
     const supabase = createAdminClient();
     const col = BUCKET_TO_CACHE_COLUMN[this.bucket];
-    // Dynamic column name + new metric IDs not in generated types yet —
-    // go via the untyped escape hatch.
+    const attCol = BUCKET_TO_ATTEMPTS_COLUMN[this.bucket];
     const { data, error } = await fromUntyped(supabase, 'golf_player_stats_cache')
-      .select(`player_id, rounds_played, ${col}`)
+      .select(`player_id, rounds_played, first_round_date, last_round_date, ${col}, ${attCol}`)
       .eq('player_id', this.playerId)
       .maybeSingle() as {
-        data: Record<string, number | null> | null;
+        data: Record<string, number | string | null> | null;
         error: { message: string } | null;
       };
 
@@ -144,15 +156,27 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const playerValue = Number(raw);
     const normalized = playerValue <= 1 ? playerValue * 100 : playerValue;
     const roundsPlayed = (data.rounds_played as number | null) ?? 0;
+    const attempts = Number(data[attCol] ?? 0);
+    const spanDays = lifetimeSpanDays(
+      data.first_round_date as string | null,
+      data.last_round_date as string | null,
+    );
+
+    // Sample-size gate is on band ATTEMPTS — a make-% over <8 putts in the band
+    // is noise (a 0%/100% artifact), so suppress rather than ship it.
+    if (attempts < ATTEMPT_FLOOR) return null;
+
     const cohort = await loadPlayerCohort(this.playerId);
 
     return {
-      sampleN: roundsPlayed,
+      sampleN: attempts,
       playerValue: normalized,
       bucket: this.bucket,
       rawValue: playerValue,
       rounds_played: roundsPlayed,
       cohort_gender: cohort.gender,
+      attempts,
+      spanDays,
     };
   }
 
@@ -169,9 +193,11 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const signature = `putt_distance:${agg.bucket}`;
     const bandClass = BUCKET_BAND_CLASS[agg.bucket];
     const gapPp = pgaValue - agg.playerValue; // positive = below anchor
+    const gate = attemptGate(agg.attempts);
     const base =
-      `Across your last ${agg.rounds_played} rounds you're making ${valueDisp} ` +
-      `of putts from ${label} (${agg.cohort_gender === 'womens' ? "Women's college" : 'PGA Tour'} ~${pgaValue.toFixed(0)}%).`;
+      `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
+      `you're making ${valueDisp} of putts from ${label}${gate.disclosure} ` +
+      `(${agg.cohort_gender === 'womens' ? "Women's college" : 'PGA Tour'} ~${pgaValue.toFixed(0)}%).`;
 
     let verdict: string;
     let composedPriority: InsightPriority;
@@ -218,17 +244,22 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         comparison_value: pgaValue,
         comparison_label: anchorLabel,
         comparison_source: 'pga_baseline',
-        sample_n: agg.rounds_played,
-        window_days: 90,
+        sample_n: agg.attempts,
+        window_days: agg.spanDays ?? 0,
         window_start: '',
         window_end: '',
         strokes_impact: 0,
         strokes_impact_method: 'peer_delta',
         confidence: 0,
         confidence_factors: {
-          sample_adequacy: Math.min(agg.rounds_played / 30, 1),
+          sample_adequacy: Math.min(agg.attempts / 30, 1),
           recency: 1.0,
           variance: 0.5,
+        },
+        detail: {
+          band_attempts: agg.attempts,
+          rounds_played: agg.rounds_played,
+          lifetime_span_days: agg.spanDays,
         },
       },
     };

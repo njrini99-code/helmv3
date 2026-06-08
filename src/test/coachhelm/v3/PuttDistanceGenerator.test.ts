@@ -19,14 +19,18 @@ function makeAgg(overrides: Partial<{
   playerValue: number;
   rounds_played: number;
   cohort_gender: 'mens' | 'womens';
+  attempts?: number;
+  spanDays?: number | null;
 }> = {}) {
   return {
-    sampleN: overrides.rounds_played ?? 20,
+    sampleN: overrides.attempts ?? 40,
     playerValue: overrides.playerValue ?? 35,
     bucket: overrides.bucket ?? '10_15ft',
     rawValue: (overrides.playerValue ?? 35) / 100,
     rounds_played: overrides.rounds_played ?? 20,
     cohort_gender: overrides.cohort_gender ?? 'mens',
+    attempts: overrides.attempts ?? 40,
+    spanDays: overrides.spanDays === undefined ? 54 : overrides.spanDays,
   };
 }
 
@@ -84,11 +88,11 @@ describe('PuttDistanceGenerator', () => {
     expect(composed.evidence.comparison_source).toBe('pga_baseline');
   });
 
-  it('composeContent confidence_factors.sample_adequacy scales with rounds_played and caps at 1', () => {
+  it('composeContent confidence_factors.sample_adequacy scales with band attempts and caps at 1', () => {
     const g = new PuttDistanceGenerator(PLAYER_ID, '10_15ft');
-    const small = g.composeContent(makeAgg({ rounds_played: 6 }));
+    const small = g.composeContent(makeAgg({ attempts: 6 }));
     expect(small.evidence.confidence_factors.sample_adequacy).toBeCloseTo(0.2, 1);
-    const large = g.composeContent(makeAgg({ rounds_played: 60 }));
+    const large = g.composeContent(makeAgg({ attempts: 60 }));
     expect(large.evidence.confidence_factors.sample_adequacy).toBe(1);
   });
 
@@ -150,12 +154,14 @@ describe('PuttDistanceGenerator — synthesized priority + action (PLAY: driver+
   describe('PuttDistanceGenerator — per-gender anchor', () => {
     function aggG(overrides: Partial<{ playerValue: number; rounds: number; bucket: '3_5ft'; gender: 'mens'|'womens' }> = {}) {
       return {
-        sampleN: overrides.rounds ?? 12,
+        sampleN: 40,
         playerValue: overrides.playerValue ?? 78,
         bucket: (overrides.bucket ?? '3_5ft') as '3_5ft',
         rawValue: (overrides.playerValue ?? 78) / 100,
         rounds_played: overrides.rounds ?? 12,
         cohort_gender: overrides.gender ?? 'mens',
+        attempts: 40,
+        spanDays: 54,
       };
     }
 
@@ -168,5 +174,49 @@ describe('PuttDistanceGenerator — synthesized priority + action (PLAY: driver+
       const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft').composeContent(aggG({ gender: 'mens' }));
       expect(c.evidence.comparison_value).toBe(90.5);
     });
+  });
+});
+
+describe('PuttDistanceGenerator — Phase E band attempts, gate, and honest window', () => {
+  const PID2 = 'player-test-1';
+  function mk(overrides: Partial<{ bucket: '3_5ft'|'5_10ft'|'10_15ft'|'15_25ft'|'25_plus_ft'; playerValue: number; rounds_played: number; attempts: number; spanDays: number | null; }> = {}) {
+    const attempts = overrides.attempts ?? 40;
+    return {
+      sampleN: attempts,
+      playerValue: overrides.playerValue ?? 35,
+      bucket: (overrides.bucket ?? '10_15ft') as '10_15ft',
+      rawValue: (overrides.playerValue ?? 35) / 100,
+      rounds_played: overrides.rounds_played ?? 20,
+      cohort_gender: 'mens' as const,
+      attempts,
+      spanDays: overrides.spanDays === undefined ? 54 : overrides.spanDays,
+    };
+  }
+  it('stamps sample_n as band ATTEMPTS, not lifetime rounds', () => {
+    const c = new PuttDistanceGenerator(PID2, '25_plus_ft')
+      .composeContent(mk({ bucket: '25_plus_ft', playerValue: 0, attempts: 31, rounds_played: 15 }));
+    expect(c.evidence.sample_n).toBe(31);
+  });
+  it('a 0% band discloses its attempt count (no naked "0% from 25+ ft")', () => {
+    const c = new PuttDistanceGenerator(PID2, '25_plus_ft')
+      .composeContent(mk({ bucket: '25_plus_ft', playerValue: 0, attempts: 31 }));
+    expect(c.content).toContain('0%');
+    expect(c.content).toMatch(/31 attempts/);
+  });
+  it('window_days carries the true lifetime span, never a fixed 90', () => {
+    const c = new PuttDistanceGenerator(PID2, '10_15ft').composeContent(mk({ spanDays: 54 }));
+    expect(c.evidence.window_days).toBe(54);
+    expect(c.content).not.toContain('90');
+    expect(c.content).not.toContain('last 90');
+  });
+  it('falls back to a conservative window_days when span is unknown (still not 90)', () => {
+    const c = new PuttDistanceGenerator(PID2, '10_15ft').composeContent(mk({ spanDays: null }));
+    expect(c.evidence.window_days).toBe(0);
+  });
+  it('content frames the sample as rounds for context but the RATE as band attempts', () => {
+    const c = new PuttDistanceGenerator(PID2, '5_10ft')
+      .composeContent(mk({ bucket: '5_10ft', playerValue: 55, attempts: 82, rounds_played: 20 }));
+    expect(c.content).toContain('82 attempts');
+    expect(c.content).toContain('20 rounds');
   });
 });
