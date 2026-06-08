@@ -755,8 +755,10 @@ git commit -m "Phase A: exempt scoring_par_*/opening_hole_delta from CF impact b
 Replaces the thin `feedRankScore` (impact × confidence only) with the shared `scoreInsight`, and threads coach weights + active goals through `getInsightsForPlayer` / `getInsightsForCoach`. Also fixes the coach pre-order starvation that truncates zero-impact rows.
 
 **Files**
-- Modify `src/app/golf/actions/insight-delivery.ts` — imports (~37), `feedRankScore` (~201-205), `getInsightsForPlayer` ranking block (~445-460), `getInsightsForCoach` query order (~509) + ranking (~540-549), `getTopInsightForPlayer` non-urgent ranking (~305-308), and `rankScore` (~1051-1055) + `getRoundTakeawayInsight` (~628-631).
+- Modify `src/app/golf/actions/insight-delivery.ts` — imports (~37), the `EvidenceInsight` type + `SelectedInsightColumns` + `INSIGHT_SELECT` (add the `insight_type` column), both row mappers (`mapRowToEvidenceInsight` + `mapRowLoose`, carry `insight_type`), `feedRankScore` (~201-205), `rankEvidenceInsights` (score-once), `getInsightsForPlayer` ranking block (~445-460), `getInsightsForCoach` query order (~509) + ranking (~540-549), `getTopInsightForPlayer` non-urgent ranking (~305-308), and `rankScore` (~1051-1055) + `getRoundTakeawayInsight` (~628-631).
 - Create `src/app/golf/actions/__tests__/insight-delivery-rank.test.ts`.
+
+> **Review correction (REQUIRED #1) — `insight_type` is a DEDICATED COLUMN, not a metadata key.** The coach-weights map is keyed by `golf_coach_insights.insight_type` (written as `this.insightType` in generator-base.ts). The earlier draft mapped `insight_type: insight.metadata?.insight_type ?? insight.category` — but that column is not in `metadata`, so the lookup always fell back to `category` (a different value space, e.g. type `putt_distance_control` vs category `putting`) and coach weights were silently 1.0 on EVERY flat feed. Fix: select the column (`INSIGHT_SELECT` + `SelectedInsightColumns`), surface it on `EvidenceInsight` (`insight_type?: string | null`), carry it through both mappers, and read `insight.insight_type ?? insight.category ?? 'unknown'` in `feedRankScore`. Reference: `insights.ts` (~2588) already reads `row.insight_type` correctly.
 
 - [ ] **Step 1 — write the failing test.** Create `src/app/golf/actions/__tests__/insight-delivery-rank.test.ts`. Since `feedRankScore` and `rankScore` are module-private, expose the behavior contract through a small exported helper. First add this export to `insight-delivery.ts` (top-level, near `feedRankScore`), then test it:
 
@@ -764,15 +766,19 @@ Replaces the thin `feedRankScore` (impact × confidence only) with the shared `s
 import { describe, it, expect } from 'vitest';
 import { rankEvidenceInsights } from '@/app/golf/actions/insight-delivery';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 
 const mk = (over: Partial<EvidenceInsight['evidence']> & {
   priority?: EvidenceInsight['priority'];
   created_at?: string;
   id?: string;
+  insight_type?: string;
+  category?: EvidenceInsight['category'];
 }): EvidenceInsight => ({
   id: over.id ?? Math.random().toString(36),
   player_id: 'p1',
-  category: 'putting',
+  category: over.category ?? 'putting',
+  insight_type: over.insight_type ?? 'putt_make_rate',
   title: 't',
   content: 'c',
   signature: 'v3:x',
@@ -804,53 +810,146 @@ const mk = (over: Partial<EvidenceInsight['evidence']> & {
   updated_at: '2026-01-01T00:00:00Z',
 });
 
+/** Minimal active Goal for the goal-boost ordering contract. */
+const mkGoal = (over: Partial<Goal> & { metric_id?: Goal['metric_id']; category?: string }): Goal => ({
+  id: over.id ?? Math.random().toString(36),
+  player_id: 'p1',
+  team_id: null,
+  created_by_user_id: 'u1',
+  creator_role: 'player',
+  coach_id_if_assigned: null,
+  metric_id: (over.metric_id ?? 'putts_made_5_10ft_pct') as Goal['metric_id'],
+  title: 'g',
+  category: over.category ?? 'putting',
+  started_at: '2026-01-01T00:00:00Z',
+  ends_at: '2026-12-01T00:00:00Z',
+  window_days: 90,
+  baseline_value: null,
+  current_value: null,
+  target_value: null,
+  target_source: null,
+  state: over.state ?? 'active',
+  outcome_evaluated_at: null,
+  shared_with_coach: false,
+  shared_at: null,
+  coach_assignment_mode: null,
+  player_accepted_at: null,
+  player_declined_at: null,
+  origin: 'manual',
+  origin_insight_id: null,
+  snapshots: [],
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+});
+
 describe('rankEvidenceInsights (flat-feed ordering contract)', () => {
   it('a high-confidence zero-impact approach diagnostic outranks an older zero-impact low-conf row', () => {
     const strong = mk({ metric: 'approach_proximity_175_plus_ft', confidence: 0.9, strokes_impact: 0, created_at: '2026-01-01T00:00:00Z' });
     const weakButNewer = mk({ metric: 'penalty_rate_per_round', confidence: 0.3, strokes_impact: 0, created_at: '2026-06-01T00:00:00Z' });
     const out = rankEvidenceInsights([weakButNewer, strong], {}, []);
-    expect(out[0].evidence.metric).toBe('approach_proximity_175_plus_ft');
+    expect(out[0]!.evidence.metric).toBe('approach_proximity_175_plus_ft');
   });
 
   it('an urgent insight leads even when a non-urgent has higher impact', () => {
     const urgent = mk({ metric: 'three_putt_chain', priority: 'urgent', strokes_impact: 0.4, confidence: 0.5 });
     const bigHigh = mk({ metric: 'scrambling_pct_sand', priority: 'high', strokes_impact: 6, confidence: 1 });
     const out = rankEvidenceInsights([bigHigh, urgent], {}, []);
-    expect(out[0].evidence.metric).toBe('three_putt_chain');
+    expect(out[0]!.evidence.metric).toBe('three_putt_chain');
   });
 
   it('a descriptive par-scoring row sinks below an actionable zero-impact diagnostic', () => {
     const par = mk({ metric: 'scoring_par_4', priority: 'medium', strokes_impact: 0, confidence: 1 });
     const diag = mk({ metric: 'putts_made_5_10ft_pct', priority: 'low', strokes_impact: 0, confidence: 0.5 });
     const out = rankEvidenceInsights([par, diag], {}, []);
-    expect(out[0].evidence.metric).toBe('putts_made_5_10ft_pct');
+    expect(out[0]!.evidence.metric).toBe('putts_made_5_10ft_pct');
   });
 
   it('a thin-sample zero-impact row sinks below a deep-sample peer', () => {
     const thin = mk({ metric: 'putts_made_25_plus_ft_pct', sample_n: 3, strokes_impact: 0, confidence: 0.5, id: 'thin' });
     const deep = mk({ metric: 'putts_made_25_plus_ft_pct', sample_n: 40, strokes_impact: 0, confidence: 0.5, id: 'deep' });
     const out = rankEvidenceInsights([thin, deep], {}, []);
-    expect(out[0].id).toBe('deep');
+    expect(out[0]!.id).toBe('deep');
+  });
+
+  it('an up-weighted insight_type outranks an equal row of a different type', () => {
+    // Two rows identical in EVERY scoring input except insight_type (same metric
+    // → same coachability, same sample/confidence/impact/priority). The weights
+    // map is keyed by the insight_type COLUMN — if feedRankScore mis-reads
+    // insight_type (e.g. falls back to category, which is identical for both
+    // rows here), neither matches the key and order falls to the created_at
+    // tie-break, leaving the wrong (newer) row first. Locks REQUIRED #1 closed.
+    const upweighted = mk({ insight_type: 'putt_distance_control', metric: 'putts_made_5_10ft_pct', id: 'up', created_at: '2026-01-01T00:00:00Z' });
+    const neutral = mk({ insight_type: 'putt_make_rate', metric: 'putts_made_5_10ft_pct', id: 'neutral', created_at: '2026-06-01T00:00:00Z' });
+    const out = rankEvidenceInsights([neutral, upweighted], { putt_distance_control: 2.0 }, []);
+    expect(out[0]!.id).toBe('up');
+  });
+
+  it('an active goal CAUSES a reorder — the goal touch is the sole differentiator', () => {
+    // Causal-reorder design: the two rows are identical in every scoring input
+    // EXCEPT metric, and both metrics sit in the same coachable-timeframe bucket
+    // (putts_made_10_15ft_pct and putts_made_15_25ft_pct are both 8 weeks →
+    // coachability 1.0), so they tie on score with no goal. otherRow is NEWER,
+    // so WITHOUT a goal it wins the created_at tie-break and ranks first.
+    //
+    // The goal matches ONLY goalRow — by metric_id — and its category is
+    // 'approach', which matches NEITHER row's 'putting' category, so there is no
+    // category-match cross-contamination (the bug in the prior version, where a
+    // 'putting' goal boosted both rows equally and the test passed regardless of
+    // the goal). The 1.5× boost on goalRow alone flips the order. Asserting BOTH
+    // directions proves the goal — not coachability or recency — caused the
+    // reorder, so the test FAILS if goal-boost is disabled (it then degrades to
+    // the no-goal tie-break and otherRow stays first).
+    const goalRow = mk({ metric: 'putts_made_10_15ft_pct', id: 'goal', created_at: '2026-01-01T00:00:00Z' });
+    const otherRow = mk({ metric: 'putts_made_15_25ft_pct', id: 'other', created_at: '2026-06-01T00:00:00Z' });
+
+    // Without the goal: pure tie → newer (otherRow) leads.
+    const withoutGoal = rankEvidenceInsights([goalRow, otherRow], {}, []);
+    expect(withoutGoal[0]!.id).toBe('other');
+
+    // With a goal touching ONLY goalRow (metric match; non-matching category):
+    // the 1.5× boost flips the order so goalRow leads despite being older.
+    const goals = [mkGoal({ metric_id: 'putts_made_10_15ft_pct', category: 'approach' })];
+    const withGoal = rankEvidenceInsights([otherRow, goalRow], {}, goals);
+    expect(withGoal[0]!.id).toBe('goal');
   });
 });
 ```
+
+> Note: the coach-weight test uses the SAME `metric` for both rows so coachability is identical and the 2.0 weight is the only differentiator (different metrics carry different coachability boosts, which can cancel the weight). The goal-boost test instead uses two DIFFERENT metrics in the SAME coachable-timeframe bucket (both 8 weeks → identical coachability) and a goal matching only one by `metric_id` with a non-matching `category`, so the goal touch is the sole differentiator — asserting both directions proves the goal caused the reorder. The `out[0]!` non-null assertions satisfy this repo's `noUncheckedIndexedAccess`.
 
 - [ ] **Step 2 — run it (expected FAIL).**
 ```
 npx vitest run src/app/golf/actions/__tests__/insight-delivery-rank.test.ts
 ```
-Expected: FAIL — `rankEvidenceInsights` is not exported.
+Expected: FAIL — `rankEvidenceInsights` is not exported. After the export + type/select/mapper wiring lands but BEFORE the `feedRankScore` column read, the `an up-weighted insight_type …` test must STILL FAIL (the mis-map falls back to `category` so the weight never matches) — that failure proves the test locks REQUIRED #1 closed. It passes once `feedRankScore` reads `insight.insight_type`.
 
 - [ ] **Step 3 — implement.** In `src/app/golf/actions/insight-delivery.ts`:
 
-(a) Replace the import on line 37:
+(a) Replace the import on line 37. `cappedStrokesImpact` is no longer needed here (both `feedRankScore` and the deleted `rankScore` were its only callers — the shared `scoreInsight` clamps internally):
 
 ```typescript
-import { cappedStrokesImpact, scoreInsight, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
-import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
+import { scoreInsight, loadCoachWeightsForPlayer, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 ```
+
+(a2) **REQUIRED #1 — carry the `insight_type` COLUMN.** Add `insight_type` to the `EvidenceInsight` type, the `SelectedInsightColumns` union, the `INSIGHT_SELECT` string, and BOTH row mappers:
+
+```typescript
+// On the EvidenceInsight interface (after `category`):
+  insight_type?: string | null;
+
+// In SelectedInsightColumns (after 'category'):
+  | 'insight_type'
+
+// In INSIGHT_SELECT — add insight_type to the first line:
+  id, player_id, category, insight_type, title, content, signature, evidence, metadata,
+
+// In mapRowToEvidenceInsight AND mapRowLoose, after `category:` in the return:
+    insight_type: row.insight_type ?? null,
+```
+
+`insight_type` is optional (`?:`) on the interface so existing test fixtures (10 of them) that construct `EvidenceInsight` without it still compile.
 
 (b) Replace `feedRankScore` (lines 201-205) and add the exported `rankEvidenceInsights` helper that owns the sort + tie-break (so the feeds and the test share ONE path):
 
@@ -870,7 +969,12 @@ function feedRankScore(
 ): number {
   return scoreInsight(
     {
-      insight_type: (insight.metadata?.insight_type as string) ?? insight.category ?? 'unknown',
+      // Use the DEDICATED insight_type column — the value the coach-weights map
+      // is keyed by. Falling back to `category` (a different value space, e.g.
+      // type `putt_distance_control` vs category `putting`) silently misses
+      // every stored key and neuters coach weights, so only fall back when the
+      // column is genuinely null (pre-v3 rows).
+      insight_type: insight.insight_type ?? insight.category ?? 'unknown',
       strokes_impact: insight.evidence?.strokes_impact ?? 0,
       confidence: insight.evidence?.confidence ?? 0,
       metric: insight.evidence?.metric,
@@ -886,17 +990,23 @@ function feedRankScore(
 /**
  * Sort a mapped insight list by the shared composite, newest-first on ties.
  * Exported so both feed paths and the ranking unit test exercise ONE code path.
+ * Scores each row ONCE (mirroring `rankInsights` in score.ts) rather than
+ * recomputing inside the comparator, then sorts by the precomputed score with a
+ * created_at tie-break.
  */
 export function rankEvidenceInsights(
   insights: EvidenceInsight[],
   weights: CoachWeights = {},
   goals: Goal[] = [],
 ): EvidenceInsight[] {
-  return insights.slice().sort((a, b) => {
-    const diff = feedRankScore(b, weights, goals) - feedRankScore(a, weights, goals);
-    if (diff !== 0) return diff;
-    return (b.created_at ?? '').localeCompare(a.created_at ?? '');
-  });
+  return insights
+    .map((insight) => ({ insight, score: feedRankScore(insight, weights, goals) }))
+    .sort((a, b) => {
+      const diff = b.score - a.score;
+      if (diff !== 0) return diff;
+      return (b.insight.created_at ?? '').localeCompare(a.insight.created_at ?? '');
+    })
+    .map((row) => row.insight);
 }
 ```
 
@@ -930,6 +1040,14 @@ Replace the explanatory comment above it (the existing RANK-4 comment block ~493
   // every high-confidence zero-impact diagnostic to the bottom and truncates it
   // at PRE_RANK_FETCH before the in-app `scoreInsight` floor can rescue it. We
   // widen the window and let the shared composite reorder in-app instead.
+  //
+  // SCOPE (review #2): this fully fixes the PER-PLAYER feeds (opts.player_id set
+  // — the window is one player's rows). The TEAM-WIDE coach sweep (no player_id)
+  // still fetches only the newest PRE_RANK_FETCH (≤100) rows across the WHOLE
+  // team, so a high-impact OLDER row on a >100-row team can still be truncated
+  // before the in-app rank sees it. Properly fixing the team window
+  // (paginate-then-rank, or a DB-side composite order) is tracked as an A7
+  // follow-up, NOT solved here.
   const PRE_RANK_FETCH = Math.min(100, Math.max(50, limit * 5));
 ```
 
