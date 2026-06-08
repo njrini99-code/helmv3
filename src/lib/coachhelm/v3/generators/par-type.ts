@@ -11,7 +11,6 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import { getCounterfactualConfig } from '@/lib/coachhelm/v3/counterfactual/lookup-tables';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -94,16 +93,6 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
    * row itself OWNS; the base currently overwrites it with the uncapped
    * counterfactual until compute.ts lands the ceiling.
    */
-  private cappedDiagnosticStrokes(vsPar: number): number {
-    const cfg = getCounterfactualConfig(this.metricId);
-    if (!cfg) return 0;
-    // Only an OVER-par average is "costing" strokes (lower_better metric).
-    const overPar = Math.max(0, vsPar);
-    const raw = overPar * cfg.stroke_impact_per_unit;
-    const ceiling = cfg.max_strokes_saved_per_round ?? raw;
-    return Math.min(raw, ceiling);
-  }
-
   composeContent(agg: ParTypeAggregate): ComposedContent {
     const vsPar = agg.playerValue - agg.par;
     const vsParDisp = vsPar > 0 ? `+${vsPar.toFixed(2)}` : vsPar.toFixed(2);
@@ -114,8 +103,6 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
       `Across your last ${agg.rounds_played} rounds you average ${valueDisp} ` +
       `on par ${agg.par}s — ${vsParDisp} versus par. The standing card below ` +
       `shows where that sits vs PGA Tour and your team.`;
-
-    const cappedStrokes = this.cappedDiagnosticStrokes(vsPar);
 
     return {
       title,
@@ -138,10 +125,14 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
         window_days: 90,
         window_start: '',
         window_end: '',
-        // Capped at the per-par ceiling (par-type-3) — see cappedDiagnosticStrokes.
-        // The base overwrites this from the counterfactual until compute.ts applies
-        // the same ceiling (cross-file dependency noted there).
-        strokes_impact: cappedStrokes,
+        // Seed 0: "impact" is a gap-to-COHORT quantity, so the BaseGenerator
+        // backfills the real value from the counterfactual (capped) when there
+        // is genuine cohort-relative leverage. A gap-to-PAR diagnostic must NOT
+        // seed this — when the CF is suppressed (player at/better than cohort)
+        // the base keeps the seed, and a non-zero gap-to-par would float a
+        // non-weakness to the top of the feed (audit FID/par_scoring). 0 ranks
+        // low when suppressed (correct); the StandingBar carries severity.
+        strokes_impact: 0,
         strokes_impact_method: 'rough_estimate',
         confidence: 0,
         confidence_factors: {

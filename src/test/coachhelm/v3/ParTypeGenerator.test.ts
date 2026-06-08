@@ -48,32 +48,26 @@ describe('ParTypeGenerator', () => {
     expect(c.signature).toBe('par_scoring:par5');
   });
 
-  // par-type-3: the ×4/×10/×4 holes/round leverage lets the par-4 family project
-  // the whole-round gap and dominate the top-3. The generator caps its declared
-  // strokes_impact at the per-par ceiling and stays descriptive (priority low).
-  describe('par-type-3 leverage cap', () => {
-    it('par-4 strokes_impact is capped at the par-4 ceiling (1.5), not gap×10', () => {
+  // par-type seeds strokes_impact:0. "Impact" is a gap-to-COHORT quantity, so the
+  // BaseGenerator backfills the real (capped) value from the counterfactual when
+  // there is genuine cohort-relative leverage. composeContent must NOT seed a
+  // gap-to-PAR diagnostic: when the CF is suppressed (player at/better than
+  // cohort) the base keeps the seed, and a non-zero gap-to-par would float a
+  // non-weakness to the top of the feed (audit par_scoring phantom impact).
+  describe('strokes_impact is seeded 0 (impact comes from the counterfactual)', () => {
+    it('an over-par par-4 average still seeds 0, not a gap×10 diagnostic', () => {
       const g = new ParTypeGenerator(PLAYER_ID, 4);
-      // +0.40 over par × 10 holes = 4.0 raw → capped to the 1.5 ceiling.
-      const c = g.composeContent(makeAgg(4, 4.4));
-      expect(c.evidence.strokes_impact).toBe(1.5);
-      expect(c.evidence.strokes_impact_method).toBe('rough_estimate');
-      expect(c.priority).toBe('low'); // descriptive — never dominates top-3
+      const c = g.composeContent(makeAgg(4, 4.4)); // +0.40 over par
+      expect(c.evidence.strokes_impact).toBe(0);
+      expect(c.priority).toBe('low'); // descriptive — StandingBar carries severity
     });
 
-    it('par-3 strokes_impact is capped at the par-3 ceiling (1.0)', () => {
+    it('an over-par par-3 average seeds 0', () => {
       const g = new ParTypeGenerator(PLAYER_ID, 3);
-      // +0.50 over par × 4 holes = 2.0 raw → capped to 1.0.
-      expect(g.composeContent(makeAgg(3, 3.5)).evidence.strokes_impact).toBe(1.0);
+      expect(g.composeContent(makeAgg(3, 3.5)).evidence.strokes_impact).toBe(0);
     });
 
-    it('a small over-par gap stays below the ceiling (uncapped)', () => {
-      const g = new ParTypeGenerator(PLAYER_ID, 4);
-      // +0.08 × 10 = 0.8 < 1.5 ceiling.
-      expect(g.composeContent(makeAgg(4, 4.08)).evidence.strokes_impact).toBeCloseTo(0.8, 3);
-    });
-
-    it('at/under par is not "costing" strokes → 0', () => {
+    it('at/under par seeds 0', () => {
       const g = new ParTypeGenerator(PLAYER_ID, 5);
       expect(g.composeContent(makeAgg(5, 4.7)).evidence.strokes_impact).toBe(0);
       expect(g.composeContent(makeAgg(5, 5.0)).evidence.strokes_impact).toBe(0);

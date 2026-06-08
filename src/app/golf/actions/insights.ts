@@ -2553,6 +2553,13 @@ async function loadEvidenceBackedInsights(
       .select('id, title, content, evidence, category, insight_type, lifecycle_state, metadata, created_at')
       .eq('player_id', playerId)
       .not('evidence', 'is', null)
+      // Scope to the v3 engine, matching every insight-delivery.ts fetcher.
+      // Without this, legacy v2 rows (stale 'scoring'/'course_management' with
+      // physically-impossible strokes_impact up to ~42/round) whose
+      // lifecycle_state is still detected/matured/addressed leak in and, after
+      // the score.ts ceiling clamp, still outrank every correct v3 insight —
+      // ranking stale phantoms #1–#3 in the player feed.
+      .or('engine_version.eq.v3,signature.like.v3:%')
       .in('lifecycle_state', ['detected', 'matured', 'addressed'])
       .eq('dismissed', false)
       .order('created_at', { ascending: false })

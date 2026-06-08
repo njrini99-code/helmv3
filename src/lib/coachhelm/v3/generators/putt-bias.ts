@@ -172,6 +172,15 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     const straightDisp = `${Math.round(agg.straight_pct)}%`;
     const gap = Math.round(agg.straight_pct - agg.weakest_pct);
 
+    // Stamp the metric from the COMPUTED weakest direction, not the constructor
+    // arg. aggregate() derives `weakest` from the data and ignores the arg, so a
+    // PuttBiasGenerator(_, 'left') that actually finds 'right' weakest would
+    // otherwise stamp evidence.metric=…_left_pct while title/signature say right
+    // (audit: 7/7 rows mis-stamped). Both orchestrator instances now emit an
+    // identical, correct row → the last-writer-wins dedup is harmless.
+    const computedMetricId: MetricId =
+      agg.weakest_direction === 'straight' ? this.metricId : DIR_TO_METRIC_ID[agg.weakest_direction];
+
     const title =
       agg.weakest_direction === 'straight'
         ? `Putting bias check: balanced across directions`
@@ -189,7 +198,7 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
       priority: agg.weakest_direction === 'straight' ? 'low' : 'medium',
       signature: `putt_bias:${agg.weakest_direction}`,
       evidence: {
-        metric: this.metricId,
+        metric: computedMetricId,
         metric_label: `Putt break-direction bias`,
         unit: 'percent',
         your_value: agg.weakest_pct,
