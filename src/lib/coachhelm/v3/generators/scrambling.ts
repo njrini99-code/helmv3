@@ -201,6 +201,11 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
         comparison_label: anchorLabel,
         comparison_source: 'pga_baseline',
         sample_n: agg.attempts,
+        // Phase E: scrambling is a SHOT-SOURCE engine — loadSandShots genuinely
+        // windows the last 90 days (golf_shots via golf_rounds.round_date >= now-90d),
+        // UNLIKE the cache-backed putt/par generators whose cache aggregates a
+        // player's entire history. So window_days:90 is HONEST here and must STAY 90;
+        // do NOT swap it for a lifetime span (that would misreport a real 90d window).
         window_days: 90,
         window_start: '',
         window_end: '',

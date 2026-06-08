@@ -142,3 +142,23 @@ describe('ScramblingGenerator', () => {
     expect(agg!.playerValue).toBeCloseTo(20, 1);
   });
 });
+
+// Phase E (E4): scrambling is a SHOT-SOURCE engine (loadSandShots genuinely windows
+// the last 90 days), so — unlike the cache-backed putt/par generators — its
+// window_days:90 is HONEST and must STAY 90. This locks that contract so a future
+// "honest window" edit doesn't mistakenly swap it for a lifetime span. The attempt
+// count is disclosed alongside the rate (sample-size honesty).
+describe('ScramblingGenerator — Phase E honest 90d window + attempt disclosure', () => {
+  it('keeps window_days 90 (loadSandShots genuinely windows 90d — not a cache-backed lie)', () => {
+    const c = new ScramblingGenerator(PLAYER_ID, 'sand')
+      .composeContent(makeAgg({ attempts: 20, failure_mode: 'mixed' }));
+    expect(c.evidence.window_days).toBe(90);
+  });
+
+  it('discloses the bunker attempt count alongside the sand-save rate', () => {
+    const c = new ScramblingGenerator(PLAYER_ID, 'sand')
+      .composeContent(makeAgg({ attempts: 20, failure_mode: 'mixed' }));
+    expect(c.content).toMatch(/20 attempts/);
+    expect(c.evidence.sample_n).toBe(20);
+  });
+});
