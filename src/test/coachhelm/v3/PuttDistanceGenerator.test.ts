@@ -7,9 +7,22 @@
  * verify the title / content / signature / evidence shape are correct.
  *
  * The end-to-end orchestrator integration test belongs to W25 (cutover).
+ *
+ * E7 addition: a focused aggregate() suppression test that mocks the DB
+ * boundary so aggregate() sees putt_attempts_25_plus_ft < ATTEMPT_FLOOR
+ * and asserts null is returned (sub-floor bands must be suppressed
+ * end-to-end, not just in composeContent). The lifecycle harness in
+ * generator-base-run-lifecycle.test.ts was NOT extended for this because
+ * PuttDistanceGenerator.aggregate() goes through fromUntyped() which calls
+ * .from() on the admin client — the lifecycle harness only stubs
+ * createAdminClient() to return { __fake: true } without chaining .from(),
+ * so wiring the full fluent mock there would duplicate a large amount of
+ * mock infrastructure for no additional lifecycle coverage. The focused
+ * aggregate mock here is cleaner and exercises the same gate.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { PuttDistanceGenerator } from '@/lib/coachhelm/v3/generators/putt-distance';
 
 const PLAYER_ID = 'player-test-1';
@@ -218,5 +231,58 @@ describe('PuttDistanceGenerator — Phase E band attempts, gate, and honest wind
       .composeContent(mk({ bucket: '5_10ft', playerValue: 55, attempts: 82, rounds_played: 20 }));
     expect(c.content).toContain('82 attempts');
     expect(c.content).toContain('20 rounds');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// E7 suppression test — focused aggregate() mock (path: PuttDistanceGenerator.test.ts)
+//
+// Why here, not in generator-base-run-lifecycle.test.ts:
+//   PuttDistanceGenerator.aggregate() calls fromUntyped(adminClient, table),
+//   which calls adminClient.from(table) on the result of createAdminClient().
+//   The lifecycle harness stubs createAdminClient() to return { __fake: true }
+//   without chaining .from() — so mounting the full fluent chain mock there
+//   would require duplicating a large mock infrastructure for no extra lifecycle
+//   coverage. This focused mock is the idiomatic path for testing the DB gate.
+// ---------------------------------------------------------------------------
+
+// Declare the mock controls at module scope so vi.mock() hoisting can see them.
+const maybeSingleMock = vi.fn();
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({}),
+}));
+
+vi.mock('@/lib/supabase/untyped', () => ({
+  fromUntyped: (_client: unknown, _table: string) => ({
+    select: () => ({
+      eq: () => ({
+        maybeSingle: maybeSingleMock,
+      }),
+    }),
+  }),
+}));
+
+vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
+  loadPlayerCohort: vi.fn().mockResolvedValue({ gender: 'mens', level: null }),
+}));
+
+describe('PuttDistanceGenerator — E7 aggregate() ATTEMPT_FLOOR suppression (end-to-end gate)', () => {
+  it('returns null when putt_attempts_25_plus_ft is ATTEMPT_FLOOR-1 (sub-floor band is suppressed)', async () => {
+    // ATTEMPT_FLOOR is 8; this band has 7 attempts — exactly one below floor.
+    maybeSingleMock.mockResolvedValue({
+      data: {
+        player_id: 'p-e7',
+        rounds_played: 10,
+        first_round_date: '2026-01-01',
+        last_round_date: '2026-06-01',
+        putt_make_pct_25_plus_ft: 0.10, // non-null so raw value passes the null check
+        putt_attempts_25_plus_ft: ATTEMPT_FLOOR - 1, // 7 — below the gate
+      },
+      error: null,
+    });
+
+    const result = await new PuttDistanceGenerator('p-e7', '25_plus_ft').aggregate();
+    expect(result).toBeNull();
   });
 });
