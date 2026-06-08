@@ -21,6 +21,34 @@
 
 import type { CompositeRule, EvidenceInsight, CompositeMatch, CompositeContent } from '../types';
 
+/** A leave beyond this many feet is a mishit/data error, not a recovery-proximity
+ *  datum — Grace's 25-yd sand shot recorded a 43-yd (×3 = 129 ft) leave that
+ *  survives the loader's 40-yd START filter. 75 ft = 25 yd (the loader's own
+ *  greenside ceiling), so anything above it is dropped. */
+const MAX_RECOVERY_LEAVE_FT = 75;
+
+/** Share the two leaks co-occur on the SAME holes (Jaccard of their hole-sets).
+ *  0 when either set is empty — we never claim co-occurrence we can't show. */
+export function coOccurrenceShare(holesA: number[], holesB: number[]): number {
+  if (holesA.length === 0 || holesB.length === 0) return 0;
+  const a = new Set(holesA);
+  const b = new Set(holesB);
+  let inter = 0;
+  for (const h of a) if (b.has(h)) inter += 1;
+  const union = new Set([...a, ...b]).size;
+  return union === 0 ? 0 : inter / union;
+}
+
+/** Clamp a per-shot recovery leave (feet): drop implausible outliers (return
+ *  null so the caller excludes them from the average), keep plausible leaves. */
+export function clampRecoveryLeaveFt(ft: number): number | null {
+  if (!Number.isFinite(ft) || ft < 0) return null;
+  return ft > MAX_RECOVERY_LEAVE_FT ? null : ft;
+}
+
+/** Below this same-hole overlap we cannot honestly say the leaks "compound". */
+const COOCCURRENCE_THRESHOLD = 0.3;
+
 function isWeakSandSave(i: EvidenceInsight): boolean {
   if (i.insight_type !== 'scrambling') return false;
   if (!i.signature.includes(':sand')) return false;
@@ -49,6 +77,7 @@ const rule: CompositeRule = {
       signals: {
         sand_save_pct: Number(sandWeak.evidence.your_value ?? 0),
         bias_direction: biasDir,
+        same_hole_share: 0,
       },
     };
   },
@@ -56,15 +85,25 @@ const rule: CompositeRule = {
   compose(match: CompositeMatch): CompositeContent {
     const sandPct = Math.round(Number(match.signals.sand_save_pct ?? 0));
     const dir = String(match.signals.bias_direction ?? 'left');
+    const share = Number(match.signals.same_hole_share ?? 0);
+    const proven = share >= COOCCURRENCE_THRESHOLD;
+    const title = proven
+      ? `Bunker + ${dir}-bias putt pattern is compounding`
+      : `Bunker save and ${dir}-bias putts both need work`;
+    const content = proven
+      ? `Two short-game leaks are stacking on the same holes: ${sandPct}% sand save ` +
+        `AND a tendency to miss ${dir} on break putts (overlapping on ` +
+        `${Math.round(share * 100)}% of the holes where either shows up). When the ` +
+        `bunker miss-side matches the putt-bias you short-side yourself twice. Work ` +
+        `bunker distance control to a ${dir}-tucked pin, then the ${dir}-break read.`
+      : `Two separate short-game leaks are showing up this window: ${sandPct}% sand ` +
+        `save AND a tendency to miss ${dir} on break putts. They're different skills ` +
+        `— splash-out distance control vs green-reading — and we can't yet confirm ` +
+        `they overlap on the same scoring holes, so treat them as a combined session: ` +
+        `bunker distance control plus ${dir}-break read work, not a single compound fault.`;
     return {
-      title: `Bunker + ${dir}-bias putt pattern is compounding`,
-      content:
-        `Two short-game leaks are showing up together: ${sandPct}% sand save ` +
-        `AND a tendency to miss ${dir} on break putts. These are separate ` +
-        `skills — one is splash-out distance control, the other is green-` +
-        `reading — but they're stacking on the same holes and compounding the ` +
-        `cost. Worth a session on bunker distance control plus some ${dir}-` +
-        `break read work to stop the two from piling up.`,
+      title,
+      content,
       signature: `bunker_${dir}_bias_amp`,
       evidence: {
         metric: 'scrambling_pct_sand',
