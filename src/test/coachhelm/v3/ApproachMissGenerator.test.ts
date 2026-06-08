@@ -5,6 +5,7 @@ import {
   loadApproachShots,
   type ApproachShot,
 } from '@/lib/coachhelm/v3/engine/shot-source';
+import type { AxisTally } from '@/lib/coachhelm/v3/engine/diagnosis';
 
 // Mock ONLY the DB loader; keep bucketApproachDistance (pure) real so the
 // generator's distance-bucketing stays under test.
@@ -51,8 +52,8 @@ function makeAgg(over: Partial<{
   green_hit_pct: number;
   proximity_when_hit_feet: number | null;
   penalty_rate_pct: number;
-  miss_short_long: import('@/lib/coachhelm/v3/engine/diagnosis').AxisTally;
-  miss_left_right: import('@/lib/coachhelm/v3/engine/diagnosis').AxisTally;
+  miss_short_long: AxisTally;
+  miss_left_right: AxisTally;
 }> = {}) {
   const attempts = over.attempts ?? 20;
   const greenHitPct = over.green_hit_pct ?? 60;
@@ -300,6 +301,11 @@ describe('ApproachMissGenerator — dominant miss-axis driver (PLAY: driver+acti
     }));
     expect(c.content).not.toContain('club up');
     expect(c.content).not.toContain('start line');
+    // A balanced tally must not leak ANY axis-share claim. Every axis driver
+    // sentence is uniquely fingerprinted by "<pct>% of those <n> misses ..."
+    // (the reach/dial-in prose talks about "approaches", never "misses"), so a
+    // spurious axis claim would smuggle a percentage in via that phrasing.
+    expect(c.content).not.toMatch(/% of those \d+ misses/);
   });
 
   it('aggregate tallies miss_direction over OFF-GREEN misses only', async () => {
@@ -320,5 +326,41 @@ describe('ApproachMissGenerator — dominant miss-axis driver (PLAY: driver+acti
     // short_right contributes RIGHT; short_left contributes LEFT.
     expect(agg!.miss_left_right.negative).toBe(1); // *_left
     expect(agg!.miss_left_right.positive).toBe(1); // *_right
+  });
+
+  it('aggregate tallies the LONG diagonals (long_left / long_right) onto BOTH axes', async () => {
+    mockLoadApproachShots.mockReset();
+    // 5 greens (excluded) + 5 off-green LONG misses: long, long_left*2, long_right*2.
+    // The compound directions must each contribute to BOTH the short/long axis
+    // (positive = long) AND the left/right axis (left=neg, right=pos) — the LONG
+    // counterpart of the SHORT-diagonal case above.
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet', 'green'), shot(100, 20, 'feet', 'green'), shot(100, 22, 'feet', 'green'),
+      shot(100, 19, 'feet', 'green'), shot(100, 21, 'feet', 'green'),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'long' }),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'long_left' }),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'long_right' }),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'long_left' }),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'long_right' }),
+    ]);
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
+    // All 5 misses are LONG → positive on short/long; none short.
+    expect(agg!.miss_short_long.negative).toBe(0);
+    expect(agg!.miss_short_long.positive).toBe(5); // long + long_left*2 + long_right*2
+    // long_left*2 → LEFT (neg); long_right*2 → RIGHT (pos); the pure 'long' is L/R-neutral.
+    expect(agg!.miss_left_right.negative).toBe(2); // long_left*2
+    expect(agg!.miss_left_right.positive).toBe(2); // long_right*2
+    expect(agg!.miss_left_right.neutral).toBe(1);  // the pure 'long'
+  });
+
+  it('a single long_right miss contributes positive to BOTH axes', async () => {
+    mockLoadApproachShots.mockReset();
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet', 'green'), shot(100, 20, 'feet', 'green'), shot(100, 22, 'feet', 'green'),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'long_right' }),
+    ]);
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
+    expect(agg!.miss_short_long.positive).toBe(1); // long → positive
+    expect(agg!.miss_left_right.positive).toBe(1); // right → positive
   });
 });
