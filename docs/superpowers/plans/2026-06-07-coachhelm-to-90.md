@@ -2155,7 +2155,7 @@ describe('PuttDistanceGenerator — synthesized priority + action (PLAY: driver+
     // Quality contract: names the gap, the WHY (makeable distance), a SPECIFIC drill.
     expect(c.content.toLowerCase()).toContain('highest-leverage');
     expect(c.content.toLowerCase()).toMatch(/gate drill|short-putt/);
-    expect(c.content).toContain('90'); // cites the PGA 90.5% -> "91%"/"90%" anchor
+    expect(c.content).toContain('91'); // cites the PGA 90.5% -> "91%" anchor (90.5.toFixed(0) === "91")
   });
 
   it('lag band below PGA → lag-speed / approach-proximity verdict, NOT a stroke fix', () => {

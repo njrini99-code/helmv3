@@ -31,6 +31,7 @@ import type {
   ComposedContent,
   GeneratorAggregate,
   InsightCategory,
+  InsightPriority,
   MetricId,
 } from '@/lib/coachhelm/v3/engine/types';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
@@ -81,6 +82,20 @@ const PGA_MAKE_PCT_BY_BUCKET: Record<PuttBucketKey, number> = {
   '15_25ft':   15.4,
   '25_plus_ft': 5.5,
 };
+
+/** Which putting band each bucket belongs to — drives the synthesized action.
+ *  'makeable' = a putt you should hole (3-15 ft); 'lag' = speed/approach-driven. */
+const BUCKET_BAND_CLASS: Record<PuttBucketKey, 'makeable' | 'lag'> = {
+  '3_5ft': 'makeable',
+  '5_10ft': 'makeable',
+  '10_15ft': 'makeable',
+  '15_25ft': 'lag',
+  '25_plus_ft': 'lag',
+};
+
+/** A makeable band is "well below" Tour when this many pp short — the
+ *  highest-leverage verdict. Below the smaller gap = a watch verdict. */
+const MAKEABLE_BIG_GAP_PP = 15;
 
 interface PuttDistanceAggregate extends GeneratorAggregate {
   bucket: PuttBucketKey;
@@ -143,18 +158,47 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     // hard-coded 0 that produced the inverted "X% vs 0% PGA" WhyPopover anchor.
     const pgaValue = PGA_MAKE_PCT_BY_BUCKET[agg.bucket];
 
-    const title = `${label} putting: ${valueDisp}`;
-    const content =
+    const signature = `putt_distance:${agg.bucket}`;
+    const bandClass = BUCKET_BAND_CLASS[agg.bucket];
+    const gapPp = pgaValue - agg.playerValue; // positive = below Tour
+    const base =
       `Across your last ${agg.rounds_played} rounds you're making ${valueDisp} ` +
       `of putts from ${label} (PGA Tour ~${pgaValue.toFixed(0)}%).`;
 
-    const signature = `putt_distance:${agg.bucket}`;
+    let verdict: string;
+    let composedPriority: InsightPriority;
+    if (gapPp <= 0) {
+      verdict = ` You're at or above the Tour rate here — a strength, leave it alone.`;
+      composedPriority = 'low';
+    } else if (bandClass === 'makeable') {
+      // Makeable distance below Tour = the highest-leverage, fastest-to-fix leak.
+      const lead = gapPp >= MAKEABLE_BIG_GAP_PP
+        ? `This is your highest-leverage putting band:`
+        : `Worth tightening:`;
+      verdict =
+        ` ${lead} ${label} is makeable distance and you're ${Math.round(gapPp)} points below Tour. ` +
+        `The fix is a gate drill (two tees a ball-width apart) plus a daily short-putt ladder — ` +
+        `pure-strike reps, not green-reading.`;
+      composedPriority = gapPp >= MAKEABLE_BIG_GAP_PP ? 'medium' : 'low';
+    } else {
+      // Lag band: a low make% here is speed + how far the approach/chip left you,
+      // not stroke mechanics (matches the shot-drivers lag attribution).
+      verdict =
+        ` From ${label} make% is mostly lag: the driver is speed control and how far your ` +
+        `approach/chip leaves you, not your stroke. Work distance-control lags to a 3-ft ` +
+        `circle and tighter approach proximity — don't drill the stroke.`;
+      composedPriority = 'low';
+    }
+
+    const title = `${label} putting: ${valueDisp}`;
+    const content = base + verdict;
 
     return {
       title,
       content,
-      // Descriptive make-rate standing row — severity is read off the StandingBar.
-      priority: 'low',
+      // Composed from the band's anchor-relative gap; Phase A's
+      // leveragePriorityFloor can still upgrade from the counterfactual leverage.
+      priority: composedPriority,
       signature,
       evidence: {
         metric: this.metricId,

@@ -90,6 +90,32 @@ describe('PuttDistanceGenerator', () => {
     expect(large.evidence.confidence_factors.sample_adequacy).toBe(1);
   });
 
+describe('PuttDistanceGenerator — synthesized priority + action (PLAY: driver+action)', () => {
+  it('short-makeable band well below PGA → highest-leverage verdict + gate drill (Nick 3-5ft 46.5%)', () => {
+    const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft')
+      .composeContent(makeAgg({ bucket: '3_5ft', playerValue: 46.5, rounds_played: 15 }));
+    // Quality contract: names the gap, the WHY (makeable distance), a SPECIFIC drill.
+    expect(c.content.toLowerCase()).toContain('highest-leverage');
+    expect(c.content.toLowerCase()).toMatch(/gate drill|short-putt/);
+    expect(c.content).toContain('91'); // cites the PGA 90.5% -> "91%" anchor (90.5.toFixed(0) === "91")
+  });
+
+  it('lag band below PGA → lag-speed / approach-proximity verdict, NOT a stroke fix', () => {
+    const c = new PuttDistanceGenerator(PLAYER_ID, '25_plus_ft')
+      .composeContent(makeAgg({ bucket: '25_plus_ft', playerValue: 0, rounds_played: 15 }));
+    expect(c.content.toLowerCase()).toContain('lag');
+    expect(c.content.toLowerCase()).toContain('speed');
+    expect(c.content.toLowerCase()).not.toContain('gate drill');
+  });
+
+  it('at/above the PGA anchor → strength verdict, no drill prescribed', () => {
+    const c = new PuttDistanceGenerator(PLAYER_ID, '5_10ft')
+      .composeContent(makeAgg({ bucket: '5_10ft', playerValue: 70, rounds_played: 15 }));
+    expect(c.content.toLowerCase()).toContain('above the tour');
+    expect(c.content.toLowerCase()).not.toContain('drill');
+  });
+});
+
   // gen-putt-distance-1: comparison_value was hard-coded 0 → "95% vs 0% PGA"
   // inverted anchor in the WhyPopover. It now carries the real PGA Tour make %
   // per bucket (golf_pga_standards), so the flat comparison agrees with the bar.
