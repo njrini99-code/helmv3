@@ -153,9 +153,97 @@ function makeSupabaseMock(rows: RawRow[], orderCalls: OrderCall[]) {
       return builder;
     }),
     limit: vi.fn().mockReturnThis(),
+    // A8: the team-wide sweep paginates via `fetchAllRowsResult` → `.range()`.
+    // These two fixtures (each < page size) resolve the full array on the first
+    // page; rows.length < pageSize terminates the paging loop after one page.
+    range: vi.fn().mockReturnThis(),
     then: (resolve: (v: typeof terminal) => void) => Promise.resolve(resolve(terminal)),
   };
   return {
+    auth: {
+      getUser: vi.fn(async () => ({ data: { user: { id: 'coach-1' } }, error: null })),
+    },
+    from: vi.fn((table: string) => {
+      if (table === 'golf_coach_insights') return builder;
+      throw new Error(`unexpected table "${table}" in coach-feed test`);
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Pagination-aware Supabase mock (A8). Unlike `makeSupabaseMock` above (which
+// resolves the FULL array on every `.then()`), this one honors `.range(from,to)`
+// and resolves the matching SLICE of the full row array — so
+// `fetchAllRowsResult`'s paging loop terminates on a final page shorter than the
+// page size. It records `.range()` calls (proving the team sweep paginates) and
+// uses a small `pageSize` so a >100-row fixture spans multiple pages without
+// needing 1000+ synthetic rows. The chain stays a thenable builder so every
+// conditional filter the action appends after `.range()` remains valid.
+// ---------------------------------------------------------------------------
+
+interface RangeCall {
+  from: number;
+  to: number;
+}
+
+function makePaginatedSupabaseMock(
+  rows: RawRow[],
+  orderCalls: OrderCall[],
+  rangeCalls: RangeCall[],
+  pageSize: number,
+) {
+  let pendingRange: RangeCall | null = null;
+  let pendingLimit: number | null = null;
+
+  // Faithfully simulate newest-first DB order so the OLD high-impact row really
+  // does sort to the bottom of a `.limit()` window (the truncation bug). PostgREST
+  // applies `.order('created_at', { ascending:false })`; mirror that here.
+  const sortedByCreatedDesc = () =>
+    [...rows].sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+  const resolveSlice = () => {
+    const ordered = sortedByCreatedDesc();
+    // `.range()` → paginated team-sweep path: return exactly that slice.
+    // No `.range()` but a `.limit(n)` → legacy windowed path: return the newest n
+    // rows, faithfully truncating the OLD high-impact row past the window.
+    let slice: RawRow[];
+    if (pendingRange != null) {
+      slice = ordered.slice(pendingRange.from, pendingRange.to + 1);
+    } else if (pendingLimit != null) {
+      slice = ordered.slice(0, pendingLimit);
+    } else {
+      slice = ordered;
+    }
+    pendingRange = null;
+    pendingLimit = null;
+    return { data: slice, error: null as { message: string } | null };
+  };
+
+  const builder = {
+    select: vi.fn().mockReturnThis(),
+    not: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    neq: vi.fn().mockReturnThis(),
+    order: vi.fn((column: string, opts?: { ascending?: boolean }) => {
+      orderCalls.push({ column, opts });
+      return builder;
+    }),
+    limit: vi.fn((n: number) => {
+      pendingLimit = n;
+      return builder;
+    }),
+    range: vi.fn((from: number, to: number) => {
+      pendingRange = { from, to };
+      rangeCalls.push({ from, to });
+      return builder;
+    }),
+    then: (resolve: (v: { data: RawRow[]; error: { message: string } | null }) => void) =>
+      Promise.resolve(resolve(resolveSlice())),
+  };
+  return {
+    __pageSize: pageSize,
     auth: {
       getUser: vi.fn(async () => ({ data: { user: { id: 'coach-1' } }, error: null })),
     },
@@ -212,11 +300,15 @@ describe('getInsightsForCoach — Phase A cross-surface ordering guard', () => {
     expect(out.map((i) => i.id)).toEqual(['approach-strong', 'penalty-weak-fresh']);
   });
 
-  it('pre-orders the candidate window by created_at DESC (never strokes_impact) so legit-zero rows survive to the in-app floor', async () => {
-    // Regression guard for the truncation bug: an impact-DESC pre-order pushes
-    // every zero-impact diagnostic to the bottom of the PRE_RANK_FETCH window and
-    // drops it before the floor can rank it. Assert the recorded order column is
-    // created_at (descending), not evidence->strokes_impact.
+  it('pre-orders the team sweep by id (stable pagination), NEVER strokes_impact, so legit-zero rows survive to the in-app floor', async () => {
+    // Regression guard for the truncation bug. The original A5/A7 form pre-ordered
+    // by created_at DESC + .limit(100); A8 replaced that with a FULL paginated
+    // fetch ordered by `id` ASC (a stable pagination tiebreaker — the DB order is
+    // irrelevant because ranking happens in-app afterward). The load-bearing
+    // invariant is UNCHANGED: the candidate set is NEVER pre-ordered by
+    // evidence->strokes_impact (an impact-DESC pre-order would push every
+    // zero-impact diagnostic to the bottom and truncate it before the floor ranks
+    // it). Assert the recorded order column is `id`, not strokes_impact.
     const zeroRows = [
       makeRow({ id: 'z1', metric: 'approach_proximity_175_plus_ft', confidence: 0.9, strokesImpact: 0 }),
       makeRow({ id: 'z2', metric: 'putts_made_5_10ft_pct', category: 'putting', confidence: 0.7, strokesImpact: 0 }),
@@ -227,20 +319,89 @@ describe('getInsightsForCoach — Phase A cross-surface ordering guard', () => {
 
     const out = await getInsightsForCoach('coach-1');
 
-    // The pre-order column is created_at, descending — NOT strokes_impact.
+    // The team-sweep pre-order column is `id` (ascending, stable pagination) —
+    // and emphatically NOT strokes_impact.
     expect(orderCalls.length).toBeGreaterThan(0);
     const orderColumns = orderCalls.map((c) => c.column);
-    expect(orderColumns).toContain('created_at');
+    expect(orderColumns).toContain('id');
     expect(orderColumns).not.toContain('strokes_impact');
     // Substring guard, not duplication: `.not.toContain` only catches an EXACT
     // 'strokes_impact' column, while a real regression would pass the JSON-path
     // form `evidence->strokes_impact`. This regex catches that embedded form too.
     expect(orderColumns.join()).not.toMatch(/strokes_impact/);
-    const createdAtOrder = orderCalls.find((c) => c.column === 'created_at');
-    expect(createdAtOrder?.opts?.ascending).toBe(false);
+    const idOrder = orderCalls.find((c) => c.column === 'id');
+    expect(idOrder?.opts?.ascending).toBe(true);
 
-    // And both legit-zero rows survived the window into the ranked output (the
+    // And both legit-zero rows survived the full fetch into the ranked output (the
     // floor kept them orderable rather than truncating them).
     expect(out.map((i) => i.id).sort()).toEqual(['z1', 'z2']);
+  });
+});
+
+// ===========================================================================
+// A8 — team-wide sweep window-starvation fix (paginate-then-rank)
+// ===========================================================================
+
+describe('getInsightsForCoach — A8 team sweep paginates past the newest-100 window', () => {
+  it('surfaces a high-impact OLD insight that the newest-100 window would have truncated', async () => {
+    // 130 synthetic team rows. 129 are RECENT, zero/low-impact noise. ONE is a
+    // genuinely high-impact leak (large strokes_impact) but the OLDEST row, so a
+    // newest-first `.limit(100)` window drops it (it sorts to the bottom, beyond
+    // index 100) BEFORE the in-app `scoreInsight` rank ever sees it. The full
+    // paginated fetch must keep it AND rank it to the top.
+    const NOISE = 129;
+    const noiseRows: RawRow[] = Array.from({ length: NOISE }, (_, i) =>
+      makeRow({
+        id: `noise-${String(i).padStart(3, '0')}`,
+        // Distinct metric per row so dedupe (player:category:metric-subject)
+        // doesn't collapse the noise into a single survivor and mask the test.
+        metric: `noise_metric_${i}`,
+        category: 'course_management',
+        insight_type: 'penalty_rate',
+        confidence: 0.2,
+        strokesImpact: 0,
+        priority: 'low',
+        // Recent dates — all newer than the high-impact OLD row below, so a
+        // newest-first window keeps these and evicts the old one.
+        created_at: `2026-06-${String((i % 28) + 1).padStart(2, '0')}T00:00:00.000Z`,
+      }),
+    );
+
+    const oldHighImpact = makeRow({
+      id: 'old-high-impact',
+      metric: 'approach_proximity_175_plus_ft',
+      category: 'approach',
+      insight_type: 'approach_proximity',
+      confidence: 0.95,
+      strokesImpact: 4.2, // genuinely high impact
+      priority: 'high',
+      created_at: '2024-01-01T00:00:00.000Z', // OLDEST → truncated by newest-100
+    });
+
+    // Full set as the DB would hold it. Order here is irrelevant to the A8
+    // path (it ranks in-app); the OLD row is placed LAST to mirror a
+    // newest-first DB order where it'd fall past the 100-row window.
+    const allRows: RawRow[] = [...noiseRows, oldHighImpact];
+
+    const orderCalls: OrderCall[] = [];
+    const rangeCalls: RangeCall[] = [];
+    activeClient = makePaginatedSupabaseMock(
+      allRows,
+      orderCalls,
+      rangeCalls,
+      1000,
+    ) as unknown as SupabaseClient;
+
+    const out = await getInsightsForCoach('coach-1', { limit: 100 });
+
+    const ids = out.map((i) => i.id);
+    // The high-impact OLD row MUST be present (not truncated by a newest-100 cap)
+    // and rank at the very top (its impact × confidence dominates the noise).
+    expect(ids).toContain('old-high-impact');
+    expect(ids[0]).toBe('old-high-impact');
+
+    // Pagination actually ran: the team sweep used `.range()` (full fetch), not a
+    // bare newest-100 `.limit()` cap.
+    expect(rangeCalls.length).toBeGreaterThan(0);
   });
 });

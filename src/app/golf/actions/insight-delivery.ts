@@ -21,6 +21,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
 import type {
   InsightCategory,
@@ -553,37 +554,96 @@ export async function getInsightsForCoach(
   // at PRE_RANK_FETCH before the in-app `scoreInsight` floor can rescue it. We
   // widen the window and let the shared composite reorder in-app instead.
   //
-  // SCOPE: this fully fixes the PER-PLAYER feeds (opts.player_id set — the
-  // window is one player's rows). The TEAM-WIDE coach sweep (no player_id) still
-  // fetches only the newest PRE_RANK_FETCH (≤100) rows across the WHOLE team, so
-  // a high-impact OLDER row on a >100-row team can still be truncated before the
-  // in-app rank sees it. Properly fixing the team window (paginate-then-rank, or
-  // a DB-side composite order) is tracked as an A7 follow-up, NOT solved here.
-  const PRE_RANK_FETCH = Math.min(100, Math.max(50, limit * 5));
+  // SCOPE (A5 + A8): the PER-PLAYER feed (opts.player_id set — the window is one
+  // player's few-dozen rows) keeps its bounded newest-first window; that set
+  // never overflows PRE_RANK_FETCH, so it cannot truncate (fixed in A5). The
+  // TEAM-WIDE sweep (no player_id) is FIXED IN A8: instead of capping at the
+  // newest PRE_RANK_FETCH (≤100) across the WHOLE team — which truncated a
+  // high-impact OLDER row on any >100-row team (a ~10-player team realistically
+  // has 150–400 visible rows) before the in-app `scoreInsight` rank saw it — we
+  // fetch the FULL visible team set (paginated via `fetchAllRowsResult`, ordered
+  // by `id` for stable paging since we rank in-app afterward) and let the shared
+  // composite reorder + the caller's `limit` slice it. The visible set is bounded
+  // by the lifecycle/v3 filters (archived/dismissed/non-v3 excluded), so it's a
+  // few hundred rows per team — cheap to fetch and rank in memory.
 
-  let query = supabase
-    .from('golf_coach_insights')
-    .select(INSIGHT_SELECT)
-    .not('evidence', 'is', null)
-    .or(V3_ENGINE_FILTER)
-    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed')
-    .order('created_at', { ascending: false })
-    .limit(PRE_RANK_FETCH);
+  let data: unknown = null;
+  let error: { message: string } | null = null;
 
   if (opts.player_id) {
-    query = query.eq('player_id', opts.player_id);
-  }
+    // PER-PLAYER path — keep the bounded newest-first window (A5). A single
+    // player's visible set is small (a few dozen rows); it never overflows
+    // PRE_RANK_FETCH, so the in-app rank sees every row. PRE_RANK_FETCH is
+    // computed here (only the per-player branch caps with `.limit()`); the
+    // team-wide branch paginates the full set and never uses it.
+    const PRE_RANK_FETCH = Math.min(100, Math.max(50, limit * 5));
+    const playerId = opts.player_id;
+    let query = supabase
+      .from('golf_coach_insights')
+      .select(INSIGHT_SELECT)
+      .eq('player_id', playerId)
+      .not('evidence', 'is', null)
+      .or(V3_ENGINE_FILTER)
+      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+      .neq('status', 'dismissed')
+      .order('created_at', { ascending: false })
+      .limit(PRE_RANK_FETCH);
 
-  if (opts.categories && opts.categories.length > 0) {
-    query = query.in('category', opts.categories);
-  }
+    if (opts.categories && opts.categories.length > 0) {
+      query = query.in('category', opts.categories);
+    }
+    if (opts.priorities && opts.priorities.length > 0) {
+      query = query.in('priority', opts.priorities);
+    }
 
-  if (opts.priorities && opts.priorities.length > 0) {
-    query = query.in('priority', opts.priorities);
-  }
+    const result = await query;
+    data = result.data;
+    error = result.error;
+  } else {
+    // TEAM-WIDE sweep — fetch the FULL visible set (A8). Order by `id` for stable
+    // pagination (DB order is irrelevant: we rank in-app afterward, only
+    // completeness matters). No `.limit()` row cap — that would reintroduce the
+    // newest-100 truncation. RLS restricts reads to teams the coach staffs. The
+    // SAME lifecycle/v3/status + optional category/priority filters as the
+    // per-player branch are applied here.
+    const result = await fetchAllRowsResult((from, to) => {
+      let query = supabase
+        .from('golf_coach_insights')
+        .select(INSIGHT_SELECT)
+        .not('evidence', 'is', null)
+        .or(V3_ENGINE_FILTER)
+        .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+        .neq('status', 'dismissed')
+        .order('id', { ascending: true });
 
-  const { data, error } = await query;
+      if (opts.categories && opts.categories.length > 0) {
+        query = query.in('category', opts.categories);
+      }
+      if (opts.priorities && opts.priorities.length > 0) {
+        query = query.in('priority', opts.priorities);
+      }
+
+      return query.range(from, to);
+    });
+    data = result.data;
+    error = result.error;
+
+    // Soft-ceiling observability (A8 review #4). The fetch is correct and
+    // bounded (RLS scopes to one team; pagination handles >1000), but because
+    // VISIBLE_LIFECYCLE_STATES includes `resolved`/`addressed` the visible set
+    // isn't pruned over time, and we rank+dedupe it all in memory. Emit ONE
+    // warning the day the bounded assumption breaks — surfacing it, NOT capping
+    // or dropping anything. A season window would be the fix if this fires.
+    const TEAM_SWEEP_SOFT_CEILING = 800;
+    const fetchedCount = Array.isArray(result.data) ? result.data.length : 0;
+    if (!error && fetchedCount > TEAM_SWEEP_SOFT_CEILING) {
+      await logServerError(
+        `coach team-sweep returned ${fetchedCount} visible insights for coach ${coachId} — exceeds soft ceiling, consider a season window`,
+        { action: 'insight-delivery.getInsightsForCoach', featureArea: 'insights', extra: { coachId, fetchedCount } },
+        'warning',
+      );
+    }
+  }
 
   if (error) {
     await logServerError(

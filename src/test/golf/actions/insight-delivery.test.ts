@@ -163,6 +163,11 @@ function makeSupabaseMock(opts: {
       neq: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
+      // A8: the coach team-wide sweep (no player_id) paginates via
+      // `fetchAllRowsResult` → `.range()`. Each fixture's queued response is < the
+      // 1000-row page size, so the first page is a short page and the paging loop
+      // terminates after one `.then()` resolution — no per-page queue needed.
+      range: vi.fn().mockReturnThis(),
       contains: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
