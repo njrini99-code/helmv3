@@ -54,6 +54,12 @@ export interface ComputeCounterfactualInput {
    * sized off it instead of the global `stroke_impact_per_unit`.
    */
   player_attempts_per_round?: number | null;
+  /**
+   * Insight confidence score (DC-CONF-1). When below 0.4 the formatter
+   * softens the verb and widens the projected range so a thin-sample claim
+   * doesn't read as a precise promise. Omitting this field defaults to 'high'.
+   */
+  confidence?: number;
 }
 
 /**
@@ -158,6 +164,7 @@ export function computeCounterfactual(
       suppress_reason: 'no_baseline',
       clamped,
       attempts_used: useAttemptRate ? (attempts as number) : null,
+      confidence_band: bandFor(input.confidence),
     };
   }
 
@@ -169,6 +176,7 @@ export function computeCounterfactual(
     suppressed: false,
     clamped,
     attempts_used: useAttemptRate ? (attempts as number) : null,
+    confidence_band: bandFor(input.confidence),
   };
 }
 
@@ -217,11 +225,26 @@ function zeroProjection(
 }
 
 /**
+ * DC-CONF-1: map a raw confidence score to a band used by the formatter.
+ * Null / non-finite → 'high' (safe default; callers that don't supply
+ * confidence get the unchanged precise copy).
+ */
+function bandFor(confidence: number | undefined): 'low' | 'medium' | 'high' {
+  if (confidence == null || !Number.isFinite(confidence)) return 'high';
+  if (confidence < 0.4) return 'low';
+  if (confidence < 0.7) return 'medium';
+  return 'high';
+}
+
+/**
  * Format the secondary-line text per master plan Part X:
  *   "Closing this gap → 75.2 → 74.5 (≈4 wks)"
  *
  * Returns empty string when the projection is suppressed — caller can
  * use that as a truthiness check for "should we render this row?"
+ *
+ * DC-CONF-1: a low-confidence (thin-sample) projection softens the verb and
+ * widens the range rather than promising a precise score drop.
  */
 export function formatCounterfactualLine(p: CounterfactualProjection): string {
   if (p.suppressed) return '';
@@ -229,5 +252,15 @@ export function formatCounterfactualLine(p: CounterfactualProjection): string {
   const baseline = p.current_baseline_score.toFixed(1);
   const projected = p.projected_score_if_closed.toFixed(1);
   const weeks = Math.max(1, Math.round(p.weeks_to_typical_close));
-  return `Closing this gap → ${baseline} → ${projected} (≈${weeks} wk${weeks === 1 ? '' : 's'})`;
+  const wk = `≈${weeks} wk${weeks === 1 ? '' : 's'}`;
+
+  // DC-CONF-1: a low-confidence (thin-sample) projection softens the verb and
+  // widens the range rather than promising a precise score drop.
+  if (p.confidence_band === 'low') {
+    const saved = p.strokes_saved_per_round;
+    const lo = (saved * 0.5).toFixed(1);
+    const hi = saved.toFixed(1);
+    return `On limited data, focused work here could trim roughly ${lo}-${hi} strokes/round (${wk})`;
+  }
+  return `Closing this gap → ${baseline} → ${projected} (${wk})`;
 }

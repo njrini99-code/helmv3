@@ -45,4 +45,11 @@ export interface CounterfactualProjection {
    * or null when the legacy gap × stroke_impact_per_unit path was used.
    */
   attempts_used?: number | null;
+  /**
+   * Confidence band derived from the insight's confidence score (DC-CONF-1).
+   * 'low' (< 0.4) → the formatter softens the verb and widens the projected
+   * range so a thin-sample claim (Grace par_4 @ 0.27, n=8) doesn't read as a
+   * precise promise. 'medium' (0.4–0.7) and 'high' (> 0.7) keep precise copy.
+   */
+  confidence_band?: 'low' | 'medium' | 'high';
 }
