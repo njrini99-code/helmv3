@@ -3,12 +3,28 @@ import { ParTypeGenerator } from '@/lib/coachhelm/v3/generators/par-type';
 
 const PLAYER_ID = 'p-1';
 
-function makeAgg(par: 3 | 4 | 5, playerValue: number, rounds = 20) {
+function makeAgg(
+  par: 3 | 4 | 5,
+  playerValue: number,
+  rounds = 20,
+  rates: Partial<{
+    birdie_rate: number;
+    par_rate: number;
+    bogey_rate: number;
+    double_plus_rate: number;
+    holes_scored: number;
+  }> = {},
+) {
   return {
     sampleN: rounds,
     playerValue,
     par,
     rounds_played: rounds,
+    birdie_rate: rates.birdie_rate ?? 5,
+    par_rate: rates.par_rate ?? 60,
+    bogey_rate: rates.bogey_rate ?? 28,
+    double_plus_rate: rates.double_plus_rate ?? 7,
+    holes_scored: rates.holes_scored ?? 80,
   };
 }
 
@@ -71,6 +87,45 @@ describe('ParTypeGenerator', () => {
       const g = new ParTypeGenerator(PLAYER_ID, 5);
       expect(g.composeContent(makeAgg(5, 4.7)).evidence.strokes_impact).toBe(0);
       expect(g.composeContent(makeAgg(5, 5.0)).evidence.strokes_impact).toBe(0);
+    });
+  });
+
+  describe('par-type rate decomposition (C1) — names the DRIVER, not the number', () => {
+    it('a 4.23 par-4 driven by doubles+bogeys names doubles/bogeys, not "lack of birdies"', () => {
+      const g = new ParTypeGenerator(PLAYER_ID, 4);
+      const c = g.composeContent(
+        makeAgg(4, 4.23, 22, { birdie_rate: 4, par_rate: 68.5, bogey_rate: 21, double_plus_rate: 6.5 }),
+      );
+      // Driver named with its real rate, not a restatement of 4.23.
+      expect(c.content).toContain('6.5% doubles');
+      expect(c.content).toContain('21% bogeys');
+      // Must NOT blame birdies when the leak is the bad tail.
+      expect(c.content).not.toContain('lack of birdies');
+      expect(c.content.toLowerCase()).toContain('not a birdie problem');
+    });
+
+    it('when the leak is genuinely too few birdies, it says so', () => {
+      const g = new ParTypeGenerator(PLAYER_ID, 5);
+      // Par-5 over par with healthy tail but almost no birdies → birdie-conversion leak.
+      const c = g.composeContent(
+        makeAgg(5, 5.15, 20, { birdie_rate: 6, par_rate: 78, bogey_rate: 14, double_plus_rate: 2 }),
+      );
+      expect(c.content.toLowerCase()).toContain('birdie');
+      expect(c.content).toContain('6% birdies');
+    });
+
+    it('stamps feed_exempt so Phase A keeps it out of the actionable feed', () => {
+      const g = new ParTypeGenerator(PLAYER_ID, 4);
+      const c = g.composeContent(makeAgg(4, 4.4));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((c.evidence as any).feed_exempt).toBe(true);
+    });
+
+    it('still seeds strokes_impact 0 and priority low (descriptive standing card)', () => {
+      const g = new ParTypeGenerator(PLAYER_ID, 4);
+      const c = g.composeContent(makeAgg(4, 4.4));
+      expect(c.evidence.strokes_impact).toBe(0);
+      expect(c.priority).toBe('low');
     });
   });
 });

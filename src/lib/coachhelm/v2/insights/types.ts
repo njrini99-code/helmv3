@@ -143,6 +143,12 @@ export interface InsightEvidence {
 
   // Generator-specific drill-down detail (optional)
   detail?: Record<string, unknown>;
+
+  // Phase A reads this flag to keep the insight out of the actionable feed /
+  // leverage-priority floor. Set by generators whose card is purely descriptive
+  // (e.g. par-type standing rows) — the scoreInsight / leveragePriorityFloor
+  // logic in generator-base must skip these rather than boosting them.
+  feed_exempt?: boolean;
 }
 
 export interface InsightMovement {

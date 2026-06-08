@@ -2585,13 +2585,28 @@ Replace the body of `composeContent()` (lines 96–145), keeping the same return
     // and birdie-conversion leaks read very differently to a coach. We classify
     // by which side contributes more strokes-over-par: tail cost vs the birdie
     // credit foregone vs a healthy ~PGA birdie rate.
+    //
+    // CORRECTION (C1 impl): the original draft compared `tailCost >= birdieCredit`
+    // where `birdieCredit = agg.birdie_rate / 100`. That self-contradicts the
+    // verbatim TEST block below — the par-5 birdie-gap case (birdie 6%, bogey 14%,
+    // double 2%) has tailCost=0.18 > birdieCredit=0.06, so it routed to the
+    // bad-tail branch and failed the "6% birdies" assertion. Fix: measure the
+    // birdie credit FOREGONE vs a par-type-typical healthy rate (as the prose
+    // comment already describes), so a par-5 that simply isn't converting birdies
+    // is correctly named a birdie-conversion gap. The TEST block is unchanged.
+    //
+    // Interim men's/PGA-grade par-type birdie baselines for prose classification
+    // only (never a standing/impact number). Phase D (D7) does not currently add
+    // a per-gender par-type anchor; if it ever does, swap this to it.
+    const EXPECTED_BIRDIE_RATE: Record<ParType, number> = { 3: 10, 4: 12, 5: 35 };
+    const expectedBirdie = EXPECTED_BIRDIE_RATE[agg.par];
     const tailCost = agg.bogey_rate / 100 + (2 * agg.double_plus_rate) / 100; // strokes over par per hole from the bad tail
-    const birdieCredit = agg.birdie_rate / 100; // strokes under par per hole from birdies
+    const birdieShortfall = Math.max(0, expectedBirdie - agg.birdie_rate) / 100; // credit foregone vs healthy baseline
     let driverClause: string;
     if (agg.holes_scored < 5) {
       driverClause =
         `Too few par ${agg.par}s logged in the window to break down where the strokes go yet.`;
-    } else if (vsPar > 0 && tailCost >= birdieCredit) {
+    } else if (vsPar > 0 && tailCost >= birdieShortfall) {
       // The over-par average is the bad tail, not a birdie shortfall.
       driverClause =
         `That's driven by ${r1(agg.double_plus_rate)}% doubles + ${r1(agg.bogey_rate)}% bogeys, ` +
