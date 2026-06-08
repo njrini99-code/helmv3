@@ -160,6 +160,41 @@ describe('METRIC_SOURCE registry coverage (drift catcher)', () => {
     }
   });
 
+  it('Phase H/H2: resolves the live scrambling drift spellings as honest intentional-null', () => {
+    // Observed live (>=21d insights): `scrambling_fairway` (2), `scrambling_rough` (1).
+    // These are the insight-surface short spellings of the canonical
+    // scrambling_pct_fairway / scrambling_pct_rough — both intentional-null
+    // (needs-shot-level-join). They must resolve so the cron stops counting
+    // them as unknown-metric drift, but MUST stay intentional-null (no
+    // manufactured lift on the wrong population).
+    for (const id of ['scrambling_fairway', 'scrambling_rough']) {
+      const def = lookupMetricSource(id);
+      expect(def, `expected ${id} to resolve`).toBeTruthy();
+      expect(def!.kind).toBe('intentional-null');
+    }
+  });
+
+  it('Phase H/H2: resolves audit-named driver metrics as intentional-null (no honest per-round source)', () => {
+    // three_putt_chain + compound_mistake_rate need hole-level SEQUENCING the
+    // round_stats_cache does not store; short_side_proximity needs shot-level
+    // position. They resolve (so they never silently drift) but produce no lift.
+    for (const id of [
+      'three_putt_chain',
+      'short_side_proximity',
+      'compound_mistake_rate',
+    ]) {
+      const def = lookupMetricSource(id);
+      expect(def, `expected ${id} to resolve`).toBeTruthy();
+      expect(def!.kind).toBe('intentional-null');
+    }
+  });
+
+  it('Phase H/H2: fairways_hit_pct stays an attributable ratio (lift must persist)', () => {
+    const def = lookupMetricSource('fairways_hit_pct');
+    expect(def).toBeTruthy();
+    expect(def!.kind).toBe('round_stats_cache_ratio');
+  });
+
   it('reports the expected count of attributable vs intentional-null metrics', () => {
     // Snapshot the coverage so future drift is visible in the diff.
     // If you add a new source, bump these numbers.
