@@ -43,6 +43,11 @@ import type {
   InsightCategory,
   MetricId,
 } from '@/lib/coachhelm/v3/engine/types';
+import {
+  dominantAxis,
+  approachAxisDriver,
+  type AxisTally,
+} from '@/lib/coachhelm/v3/engine/diagnosis';
 
 const BUCKET_TO_METRIC_ID: Record<ApproachBucket, MetricId> = {
   '50_125ft':      'approach_proximity_50_125ft',
@@ -95,6 +100,16 @@ function onGreenFinishFeet(s: ApproachShot): number {
     : Number(s.distance_to_hole_after);
 }
 
+/** Classify a raw miss_direction into its short/long and left/right poles. A
+ *  direction may contribute to BOTH axes (e.g. 'short_right' → short + right);
+ *  a pure 'short' contributes short + L/R-neutral. Unknown → neutral on both. */
+function classifyMiss(raw: string | null): { sl: keyof AxisTally; lr: keyof AxisTally } {
+  const v = (raw ?? '').toLowerCase();
+  const sl: keyof AxisTally = v.includes('short') ? 'negative' : v.includes('long') ? 'positive' : 'neutral';
+  const lr: keyof AxisTally = v.includes('left') ? 'negative' : v.includes('right') ? 'positive' : 'neutral';
+  return { sl, lr };
+}
+
 interface ApproachMissAggregate extends GeneratorAggregate {
   bucket: ApproachBucket;
   attempts: number;
@@ -103,6 +118,10 @@ interface ApproachMissAggregate extends GeneratorAggregate {
   /** Avg proximity in FEET over green-finding shots only; null when too few greens hit. */
   proximity_when_hit_feet: number | null;
   penalty_rate_pct: number;
+  /** Short(neg)/long(pos) tally over off-green misses in this bucket. */
+  miss_short_long: AxisTally;
+  /** Left(neg)/right(pos) tally over off-green misses in this bucket. */
+  miss_left_right: AxisTally;
 }
 
 export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> {
@@ -143,6 +162,15 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
 
     const penaltyCount = inBucket.filter((s) => s.is_penalty).length;
 
+    const sl: AxisTally = { negative: 0, positive: 0, neutral: 0 };
+    const lr: AxisTally = { negative: 0, positive: 0, neutral: 0 };
+    for (const s of inBucket) {
+      if (reachedGreen(s)) continue; // only misses carry a meaningful miss_direction
+      const c = classifyMiss(s.miss_direction);
+      sl[c.sl] += 1;
+      lr[c.lr] += 1;
+    }
+
     return {
       sampleN: inBucket.length,
       // am-3 (armed-landmine guard): `playerValue` is contractually "the unit of
@@ -164,6 +192,8 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       proximity_when_hit_feet: proximityWhenHit,
       // inBucket.length > 0 is guaranteed by the early return; 1 dp per canonical pct().
       penalty_rate_pct: round((100 * penaltyCount) / inBucket.length, 1),
+      miss_short_long: sl,
+      miss_left_right: lr,
     };
   }
 
@@ -196,9 +226,23 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
         ? ` Note: ${agg.penalty_rate_pct.toFixed(0)}% of these approaches incurred a penalty — worth flagging in practice.`
         : '';
 
+    // Dominant miss axis → driver+action. Short/long leads (the dial-in lever);
+    // left/right is the fallback when the vertical miss is balanced. Omitted
+    // entirely when neither axis dominates — no fabricated tendency.
+    const slDom = dominantAxis(agg.miss_short_long);
+    const lrDom = dominantAxis(agg.miss_left_right);
+    let axisSentence = '';
+    if (slDom) {
+      axisSentence = ' ' + approachAxisDriver(
+        slDom.axis === 'negative' ? 'short' : 'long', slDom.share, slDom.n);
+    } else if (lrDom) {
+      axisSentence = ' ' + approachAxisDriver(
+        lrDom.axis === 'negative' ? 'left' : 'right', lrDom.share, lrDom.n);
+    }
+
     return {
       title,
-      content: reachSentence + dialInSentence + penaltySentence,
+      content: reachSentence + dialInSentence + penaltySentence + axisSentence,
       // Descriptive diagnostic — severity is read off the StandingBar, not the verdict.
       priority: 'low',
       signature: `approach_miss:${agg.bucket}`,

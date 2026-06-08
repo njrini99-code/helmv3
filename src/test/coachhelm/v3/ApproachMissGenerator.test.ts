@@ -51,6 +51,8 @@ function makeAgg(over: Partial<{
   green_hit_pct: number;
   proximity_when_hit_feet: number | null;
   penalty_rate_pct: number;
+  miss_short_long: import('@/lib/coachhelm/v3/engine/diagnosis').AxisTally;
+  miss_left_right: import('@/lib/coachhelm/v3/engine/diagnosis').AxisTally;
 }> = {}) {
   const attempts = over.attempts ?? 20;
   const greenHitPct = over.green_hit_pct ?? 60;
@@ -64,6 +66,12 @@ function makeAgg(over: Partial<{
     // Respect an explicitly-passed null (?? would coerce null back to 22).
     proximity_when_hit_feet: 'proximity_when_hit_feet' in over ? over.proximity_when_hit_feet! : 22,
     penalty_rate_pct: over.penalty_rate_pct ?? 0,
+    miss_short_long: ('miss_short_long' in over
+      ? over.miss_short_long!
+      : { negative: 0, positive: 0, neutral: 0 }),
+    miss_left_right: ('miss_left_right' in over
+      ? over.miss_left_right!
+      : { negative: 0, positive: 0, neutral: 0 }),
   };
 }
 
@@ -266,5 +274,51 @@ describe('ApproachMissGenerator.aggregate (green-hit + on-green proximity)', () 
     const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
     expect(agg!.proximity_when_hit_feet).toBeNull();
     expect(Number.isNaN(agg!.playerValue)).toBe(true);
+  });
+});
+
+describe('ApproachMissGenerator — dominant miss-axis driver (PLAY: driver+action)', () => {
+  it('appends a SHORT driver with "club up" when misses skew short (Nick Rini 50-125)', () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
+    // 7 short, 3 long → 70% short, the live prod shape for Nick's short approaches.
+    const c = g.composeContent(makeAgg({
+      bucket: '50_125ft', green_hit_pct: 55, attempts: 20,
+      miss_short_long: { negative: 7, positive: 3, neutral: 0 },
+      miss_left_right: { negative: 1, positive: 1, neutral: 8 },
+    }));
+    expect(c.content).toContain('SHORT');
+    expect(c.content).toContain('70%');
+    expect(c.content.toLowerCase()).toContain('club up');
+    expect(c.content.toLowerCase()).toContain('full number');
+  });
+
+  it('omits the axis driver when the miss pattern is balanced (no false tendency)', () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '125_175ft');
+    const c = g.composeContent(makeAgg({
+      miss_short_long: { negative: 5, positive: 5, neutral: 0 },
+      miss_left_right: { negative: 5, positive: 5, neutral: 0 },
+    }));
+    expect(c.content).not.toContain('club up');
+    expect(c.content).not.toContain('start line');
+  });
+
+  it('aggregate tallies miss_direction over OFF-GREEN misses only', async () => {
+    mockLoadApproachShots.mockReset();
+    // 5 greens (excluded from miss tally) + 5 off-green: 4 short, 1 long.
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet', 'green'), shot(100, 20, 'feet', 'green'), shot(100, 22, 'feet', 'green'),
+      shot(100, 19, 'feet', 'green'), shot(100, 21, 'feet', 'green'),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'short' }),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'short_right' }),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'short_left' }),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'short' }),
+      shot(100, 40, 'yards', 'rough', { miss_direction: 'long' }),
+    ]);
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
+    expect(agg!.miss_short_long.negative).toBe(4); // short*2 + short_right + short_left
+    expect(agg!.miss_short_long.positive).toBe(1); // long
+    // short_right contributes RIGHT; short_left contributes LEFT.
+    expect(agg!.miss_left_right.negative).toBe(1); // *_left
+    expect(agg!.miss_left_right.positive).toBe(1); // *_right
   });
 });
