@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationType, NotificationPreferences } from './types';
 import { getUserNotificationPreferences } from './email';
 
@@ -125,13 +125,21 @@ export async function sendPushNotification(
   data: Record<string, unknown>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Check user preferences
-    const prefs = await getUserNotificationPreferences(userId);
+    // Server-side dispatcher: use the service-role admin client for ALL DB
+    // access here. This works in BOTH request and background contexts (cron,
+    // roster-sweep, the post-write insight-notifier) — the cookie-backed
+    // request client throws "cookies was called outside a request scope" when
+    // invoked outside a request, and RLS would also hide the *recipient's*
+    // device tokens whenever the sender differs from the recipient. The
+    // send-apns-push Edge Function below already authenticates with this same
+    // service-role key.
+    const supabase = createAdminClient();
+
+    // Check user preferences (recipient row, read via the admin client above).
+    const prefs = await getUserNotificationPreferences(userId, supabase);
     if (!shouldSendPush(type, prefs)) {
       return { success: true }; // User opted out
     }
-
-    const supabase = await createClient();
 
     // Get user's active device tokens
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

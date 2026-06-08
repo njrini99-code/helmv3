@@ -5,7 +5,9 @@
  * Falls back gracefully if Resend is not configured.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/lib/types/database';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 
@@ -37,10 +39,15 @@ async function getResendClient() {
  * Falls back to defaults if preferences not set or column missing.
  */
 export async function getUserNotificationPreferences(
-  userId: string
+  userId: string,
+  client?: SupabaseClient<Database>
 ): Promise<NotificationPreferences> {
   try {
-    const supabase = await createClient();
+    // Accept a caller-supplied client so server-side dispatchers (e.g. the
+    // background insight-notifier / cron push paths) can hand in a service-role
+    // admin client. The cookie-backed request client throws "cookies was called
+    // outside a request scope" when invoked with no active request.
+    const supabase = client ?? (await createClient());
     // .maybeSingle() returns null (no error) when the user row does not exist.
     // The cron roster sweep can hand us stale or detached player_ids whose
     // backing `users` row was deleted; .single() would throw PGRST116
