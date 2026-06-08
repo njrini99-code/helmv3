@@ -58,7 +58,7 @@ interface PressureGapAggregate extends GeneratorAggregate {
  * `COUNT(...) > 0` to `COUNT(...) >= 3` in both buckets so a standing row only
  * exists once the pressure gap is itself meaningful.
  */
-const MIN_ROUNDS_PER_BUCKET = 3;
+export const MIN_ROUNDS_PER_BUCKET = 3;
 
 export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
   readonly name = 'PressureGapGenerator';
