@@ -25,6 +25,7 @@ function makeAgg(
     bogey_rate: rates.bogey_rate ?? 28,
     double_plus_rate: rates.double_plus_rate ?? 7,
     holes_scored: rates.holes_scored ?? 80,
+    holes_per_round: ({ 3: 4, 4: 10, 5: 4 } as Record<3|4|5, number>)[par],
   };
 }
 
@@ -127,5 +128,12 @@ describe('ParTypeGenerator', () => {
       expect(c.evidence.strokes_impact).toBe(0);
       expect(c.priority).toBe('low');
     });
+  });
+
+  it('exposes holes_per_round per par type for attempt-rate sizing', () => {
+    const g = new ParTypeGenerator(PLAYER_ID, 4);
+    const c = g.composeContent(makeAgg(4, 4.4));
+    expect((makeAgg(4, 4.4) as { holes_per_round?: number }).holes_per_round ?? 10).toBeGreaterThan(0);
+    expect(c.evidence.strokes_impact).toBe(0); // still seeded 0 (unchanged)
   });
 });

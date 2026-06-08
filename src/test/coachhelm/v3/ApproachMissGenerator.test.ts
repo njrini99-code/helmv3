@@ -14,6 +14,10 @@ vi.mock('@/lib/coachhelm/v3/engine/shot-source', async (importOriginal) => {
   return { ...actual, loadApproachShots: vi.fn() };
 });
 
+vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
+  loadPlayerCohort: vi.fn().mockResolvedValue({ gender: 'mens', level: null }),
+}));
+
 const mockLoadApproachShots = vi.mocked(loadApproachShots);
 
 /** Build an ApproachShot fixture. distBefore is yards (drives the bucket); proxAfter +
@@ -54,6 +58,7 @@ function makeAgg(over: Partial<{
   penalty_rate_pct: number;
   miss_short_long: AxisTally;
   miss_left_right: AxisTally;
+  cohort_gender: 'mens' | 'womens';
 }> = {}) {
   const attempts = over.attempts ?? 20;
   const greenHitPct = over.green_hit_pct ?? 60;
@@ -73,6 +78,8 @@ function makeAgg(over: Partial<{
     miss_left_right: ('miss_left_right' in over
       ? over.miss_left_right!
       : { negative: 0, positive: 0, neutral: 0 }),
+    cohort_gender: over.cohort_gender ?? 'mens',
+    attempts_per_round: (over.attempts ?? 20) / 15,
   };
 }
 
@@ -147,6 +154,13 @@ describe('ApproachMissGenerator', () => {
     const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
     const c = g.composeContent(makeAgg({ penalty_rate_pct: 2 }));
     expect(c.content).not.toContain('incurred a penalty');
+  });
+
+  it("women's green-hit anchor for 50-125 is ~70%, not the men's 80%", () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
+    const c = g.composeContent(makeAgg({ green_hit_pct: 50, attempts: 20, cohort_gender: 'womens' }));
+    expect(c.evidence.comparison_value).toBe(70);
+    expect(c.content).toContain('70%');
   });
 });
 

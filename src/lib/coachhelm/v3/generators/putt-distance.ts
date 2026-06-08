@@ -35,6 +35,8 @@ import type {
   MetricId,
 } from '@/lib/coachhelm/v3/engine/types';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
+import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 
 type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
 
@@ -102,6 +104,8 @@ interface PuttDistanceAggregate extends GeneratorAggregate {
   /** Cache value the generator read. May be 0..1 fraction or 0..100 pct. */
   rawValue: number;
   rounds_played: number;
+  /** Team gender used to select the per-gender comparison anchor. */
+  cohort_gender: CohortGender;
 }
 
 export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> {
@@ -140,6 +144,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const playerValue = Number(raw);
     const normalized = playerValue <= 1 ? playerValue * 100 : playerValue;
     const roundsPlayed = (data.rounds_played as number | null) ?? 0;
+    const cohort = await loadPlayerCohort(this.playerId);
 
     return {
       sampleN: roundsPlayed,
@@ -147,6 +152,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
       bucket: this.bucket,
       rawValue: playerValue,
       rounds_played: roundsPlayed,
+      cohort_gender: cohort.gender,
     };
   }
 
@@ -154,16 +160,18 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const cfg = METRIC_RENDER_CONFIG[this.metricId];
     const valueDisp = `${Math.round(agg.playerValue)}%`;
     const label = BUCKET_LABEL[agg.bucket];
-    // Real PGA Tour make % for this bucket (gen-putt-distance-1) — replaces the
-    // hard-coded 0 that produced the inverted "X% vs 0% PGA" WhyPopover anchor.
-    const pgaValue = PGA_MAKE_PCT_BY_BUCKET[agg.bucket];
+    // Per-gender anchor: women's players compare to a women's-college target;
+    // men's falls through to the unchanged PGA Tour constant.
+    const pgaValue =
+      cohortAnchor(this.metricId, agg.cohort_gender) ?? PGA_MAKE_PCT_BY_BUCKET[agg.bucket];
+    const anchorLabel = agg.cohort_gender === 'womens' ? "Women's college avg" : 'PGA Tour avg';
 
     const signature = `putt_distance:${agg.bucket}`;
     const bandClass = BUCKET_BAND_CLASS[agg.bucket];
-    const gapPp = pgaValue - agg.playerValue; // positive = below Tour
+    const gapPp = pgaValue - agg.playerValue; // positive = below anchor
     const base =
       `Across your last ${agg.rounds_played} rounds you're making ${valueDisp} ` +
-      `of putts from ${label} (PGA Tour ~${pgaValue.toFixed(0)}%).`;
+      `of putts from ${label} (${agg.cohort_gender === 'womens' ? "Women's college" : 'PGA Tour'} ~${pgaValue.toFixed(0)}%).`;
 
     let verdict: string;
     let composedPriority: InsightPriority;
@@ -206,9 +214,9 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         unit: 'percent',
         your_value: agg.playerValue,
         your_value_display: valueDisp,
-        // Real PGA Tour make % (gen-putt-distance-1) — was hard-coded 0.
+        // Real anchor make % (gen-putt-distance-1) — was hard-coded 0.
         comparison_value: pgaValue,
-        comparison_label: 'PGA Tour avg',
+        comparison_label: anchorLabel,
         comparison_source: 'pga_baseline',
         sample_n: agg.rounds_played,
         window_days: 90,

@@ -40,6 +40,8 @@ const PAR_TO_CACHE_COL: Record<ParType, 'par3_average' | 'par4_average' | 'par5_
   5: 'par5_average',
 };
 
+const PAR_HOLES_PER_ROUND: Record<ParType, number> = { 3: 4, 4: 10, 5: 4 };
+
 interface ParTypeAggregate extends GeneratorAggregate {
   par: ParType;
   rounds_played: number;
@@ -53,6 +55,8 @@ interface ParTypeAggregate extends GeneratorAggregate {
   double_plus_rate: number;
   /** Holes of this par scored in the window (denominator of the rates). */
   holes_scored: number;
+  /** Holes of this par per typical round (4 par-3s / 10 par-4s / 4 par-5s) — the attempt rate for CF sizing. */
+  holes_per_round: number;
 }
 
 export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
@@ -112,6 +116,7 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
       bogey_rate: pct(bogey),
       double_plus_rate: pct(dbl),
       holes_scored: n,
+      holes_per_round: PAR_HOLES_PER_ROUND[this.par],
     };
   }
 

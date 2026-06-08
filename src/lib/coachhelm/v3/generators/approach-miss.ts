@@ -31,6 +31,8 @@
 
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { round } from '@/lib/golf/stat-formulas';
+import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import {
   loadApproachShots,
   bucketApproachDistance,
@@ -122,6 +124,10 @@ interface ApproachMissAggregate extends GeneratorAggregate {
   miss_short_long: AxisTally;
   /** Left(neg)/right(pos) tally over off-green misses in this bucket. */
   miss_left_right: AxisTally;
+  /** Team gender used to select the per-gender comparison anchor. */
+  cohort_gender: CohortGender;
+  /** Attempts in this bucket per distinct round — used for CF attempt-rate sizing. */
+  attempts_per_round: number;
 }
 
 export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> {
@@ -146,6 +152,9 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       (s) => bucketApproachDistance(s.distance_to_hole_before) === this.bucket,
     );
     if (inBucket.length === 0) return null;
+
+    const cohort = await loadPlayerCohort(this.playerId);
+    const distinctRounds = new Set(inBucket.map((s) => s.round_id)).size;
 
     const greenShots = inBucket.filter(reachedGreen);
     const greenHitN = greenShots.length;
@@ -194,12 +203,16 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       penalty_rate_pct: round((100 * penaltyCount) / inBucket.length, 1),
       miss_short_long: sl,
       miss_left_right: lr,
+      cohort_gender: cohort.gender,
+      attempts_per_round: inBucket.length / Math.max(1, distinctRounds),
     };
   }
 
   composeContent(agg: ApproachMissAggregate): ComposedContent {
     const label = BUCKET_LABEL[agg.bucket];
-    const tourGreenHit = TOUR_GREEN_HIT_PCT[agg.bucket];
+    const tourGreenHit =
+      cohortAnchor(this.metricId, agg.cohort_gender) ?? TOUR_GREEN_HIT_PCT[agg.bucket];
+    const tourLabel = agg.cohort_gender === 'womens' ? "women's college" : 'PGA Tour';
     const tourProx = TOUR_PROXIMITY_FEET[agg.bucket];
     const ghDisp = `${agg.green_hit_pct.toFixed(0)}%`;
     const prox = agg.proximity_when_hit_feet;
@@ -214,7 +227,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // coach whether the leak is finding greens or controlling distance once there.
     const reachSentence =
       `Across your last ${agg.attempts} approaches from ${label} you found the green ` +
-      `${ghDisp} of the time (PGA Tour ~${tourGreenHit}%, approximate).`;
+      `${ghDisp} of the time (${tourLabel} ~${tourGreenHit}%, approximate).`;
     const dialInSentence =
       prox != null
         ? ` When you do reach it you finish ${prox.toFixed(0)} ft from the hole ` +
@@ -253,7 +266,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
         your_value: agg.green_hit_pct,
         your_value_display: ghDisp,
         comparison_value: tourGreenHit,
-        comparison_label: 'PGA Tour (approx)',
+        comparison_label: agg.cohort_gender === 'womens' ? "Women's college (approx)" : 'PGA Tour (approx)',
         comparison_source: 'pga_baseline',
         sample_n: agg.attempts,
         window_days: 90,

@@ -18,6 +18,7 @@ function makeAgg(overrides: Partial<{
   bucket: '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
   playerValue: number;
   rounds_played: number;
+  cohort_gender: 'mens' | 'womens';
 }> = {}) {
   return {
     sampleN: overrides.rounds_played ?? 20,
@@ -25,6 +26,7 @@ function makeAgg(overrides: Partial<{
     bucket: overrides.bucket ?? '10_15ft',
     rawValue: (overrides.playerValue ?? 35) / 100,
     rounds_played: overrides.rounds_played ?? 20,
+    cohort_gender: overrides.cohort_gender ?? 'mens',
   };
 }
 
@@ -142,6 +144,29 @@ describe('PuttDistanceGenerator — synthesized priority + action (PLAY: driver+
       const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft')
         .composeContent(makeAgg({ bucket: '3_5ft', playerValue: 95 }));
       expect(c.content).toContain('PGA Tour ~91%');
+    });
+  });
+
+  describe('PuttDistanceGenerator — per-gender anchor', () => {
+    function aggG(overrides: Partial<{ playerValue: number; rounds: number; bucket: '3_5ft'; gender: 'mens'|'womens' }> = {}) {
+      return {
+        sampleN: overrides.rounds ?? 12,
+        playerValue: overrides.playerValue ?? 78,
+        bucket: (overrides.bucket ?? '3_5ft') as '3_5ft',
+        rawValue: (overrides.playerValue ?? 78) / 100,
+        rounds_played: overrides.rounds ?? 12,
+        cohort_gender: overrides.gender ?? 'mens',
+      };
+    }
+
+    it("women's 3-5ft anchor is ~84%, not the men's 90.5%", () => {
+      const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft').composeContent(aggG({ gender: 'womens' }));
+      expect(c.evidence.comparison_value).toBe(84);
+      expect(c.content).toContain('84%');
+    });
+    it("men's 3-5ft anchor stays 90.5% (rounds to 90% in copy, unchanged)", () => {
+      const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft').composeContent(aggG({ gender: 'mens' }));
+      expect(c.evidence.comparison_value).toBe(90.5);
     });
   });
 });
