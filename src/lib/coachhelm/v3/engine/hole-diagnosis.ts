@@ -60,10 +60,15 @@ interface HoleRow {
  *   - `gir` = `golf_holes.gir` (false when null/missing).
  *   - `up_and_down` is DERIVED as `gir === false && (score - par) <= 0` — the
  *     same scramble/up-and-down rule the stats engine uses
- *     (`golf-stats-calculator-shots.ts`). The `golf_holes.up_and_down` COLUMN is
- *     sparsely populated (~64% null on real data) but where set it agrees with
- *     this rule, so deriving keeps every hole's scramble signal instead of
- *     dropping the null majority.
+ *     (`golf-stats-calculator-shots.ts`). We derive rather than read the
+ *     `golf_holes.up_and_down` COLUMN to decouple from column-population drift:
+ *     the column is sparsely populated, and reading it directly would make the
+ *     scramble signal depend on whether an ingest path happened to back-fill it.
+ *     Deriving is byte-identical to the column wherever the column IS set
+ *     (0 disagreements across 3068 holes, verified 2026-06-08), so the change is
+ *     purely about robustness, not a different answer. (The null rows are 100%
+ *     GIR holes, so reading the column would actually have agreed too — the
+ *     prior "would mis-classify scramble holes" justification was inaccurate.)
  */
 export async function loadCompletedHoles(
   playerId: string,
