@@ -204,6 +204,35 @@ export const COHORT_PLAUSIBILITY_BOUNDS: Partial<Record<MetricId, CohortPlausibi
   approach_proximity_50_125ft:    { not_better_than_pga: true },
   approach_proximity_125_175ft:   { not_better_than_pga: true },
   approach_proximity_175_plus_ft: { not_better_than_pga: true },
+
+  // Putt make % (higher_better, pp). The synthetic app-population cohort under-
+  // states these badly (3-5ft level_avg 62.8% on prod, vs a real ~84% women's
+  // college). Floor at a plausible college make rate so the bad cohort is
+  // rejected → fall back to the per-gender anchor / Tour.
+  putts_made_3_5ft_pct:      { min: 70, not_better_than_pga: true },
+  putts_made_5_10ft_pct:     { min: 40, not_better_than_pga: true },
+  putts_made_10_15ft_pct:    { min: 20, not_better_than_pga: true },
+  putts_made_15_25ft_pct:    { min: 7,  not_better_than_pga: true },
+  putts_made_25_plus_ft_pct: { min: 2,  not_better_than_pga: true },
+
+  // GIR % (higher_better) — a college cohort below ~45% is a synthetic artifact;
+  // it can't exceed the Tour.
+  gir_pct: { min: 45, not_better_than_pga: true },
+
+  // Big-number rate (lower_better, % of holes). A cohort double-bogey rate above
+  // ~25% or below the Tour ~2% is not a realistic target.
+  big_number_rate: { min: 2, max: 25, not_better_than_pga: true },
+
+  // Per-par scoring (lower_better, strokes). A cohort better than (below) the
+  // Tour par value is impossible; floor near par.
+  scoring_par_3: { min: 2.9, not_better_than_pga: true },
+  scoring_par_4: { min: 3.9, not_better_than_pga: true },
+  scoring_par_5: { min: 4.4, not_better_than_pga: true },
+
+  // Pressure deltas (lower_better, strokes). A negative cohort (cohort plays
+  // BETTER under pressure) is a between-round artifact; floor at 0.
+  practice_tournament_delta: { min: 0 },
+  opening_hole_delta:        { min: -0.3 },
 };
 
 export function getCohortPlausibilityBound(metricId: string): CohortPlausibilityBound | null {
