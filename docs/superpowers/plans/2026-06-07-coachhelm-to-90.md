@@ -1288,7 +1288,8 @@ All ground truth below is from the live prod DB on the men's demo player **Nick 
 |------|--------|
 | `src/lib/coachhelm/v3/engine/diagnosis.ts` | **Create** — reusable `dominantAxis()` + `APPROACH_AXIS_PLAYBOOK` driver+action map. |
 | `src/lib/coachhelm/v3/generators/approach-miss.ts` | Modify — tally `miss_direction` in `aggregate` (~124-168); append dominant-axis why+action in `composeContent` (~184-197). |
-| `src/lib/coachhelm/v3/engine/shot-source.ts` | Modify — add `loadSandShots()` loader (after `loadApproachShots`, ~115). |
+| `src/lib/coachhelm/v3/engine/shot-source.ts` | Modify — add `loadSandShots()` loader (after `loadApproachShots`, ~115). **Also paginated the pre-existing bare `.in('round_id', …)` golf_shots fetches in `loadApproachShots`, `loadTeeShots`, and the join fetch in `loadTeeShotsForStrategy` via `fetchAllRowsResult` + `.order('id').range()` — the prior 27-site 1000-row-cap fix missed this file, so those loaders silently truncated approach/tee diagnoses for 14+-round players.** |
+| `src/test/coachhelm/v3/sand-source.test.ts` | **Create** — `SandShot` shape contract + `loadSandShots` >1000-row pagination guard (1300 synthetic rows, asserts no truncation + stable `.order('id')`/`.range()`). |
 | `src/lib/coachhelm/v3/generators/scrambling.ts` | Modify — read shot-level sand shots, branch escape-failure vs lag (aggregate ~51-81, compose ~83-120). |
 | `src/lib/coachhelm/v3/generators/putt-distance.ts` | Modify — synthesize 5 bands into ONE putting priority + action (`composeContent` ~138-183). |
 | `src/lib/coachhelm/v3/counterfactual/lookup-tables.ts` | Modify — raise `putts_made_3_5ft_pct.stroke_impact_per_unit` 0.06→0.10 (~57). |
@@ -1705,7 +1706,7 @@ npx vitest run src/test/coachhelm/v3/sand-source.test.ts
 ```
 Expected: FAIL — `'"…/shot-source"' has no exported member 'SandShot'`.
 
-- [ ] **Step 3 — implement.** In `src/lib/coachhelm/v3/engine/shot-source.ts`, add the interface after `ApproachShot` (~36):
+- [ ] **Step 3 — implement.** In `src/lib/coachhelm/v3/engine/shot-source.ts`, add the import `import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';` (the loader paginates), then add the interface after `ApproachShot` (~36):
 
 ```typescript
 /** A greenside-bunker shot (lie_before='sand') resolved against its hole so the
@@ -1748,24 +1749,29 @@ export async function loadSandShots(
   const roundIds = rounds.map((r) => r.id);
 
   // All shots in those rounds (we need putting rows to count putts_after).
-  const { data, error } = await fromUntyped(supabase, 'golf_shots')
-    .select(
-      'round_id, hole_number, shot_number, shot_type, lie_before, lie_after, result, distance_to_hole_after, distance_unit_after',
-    )
-    .in('round_id', roundIds) as {
-      data: Array<{
-        round_id: string;
-        hole_number: number | null;
-        shot_number: number | null;
-        shot_type: string | null;
-        lie_before: string | null;
-        lie_after: string | null;
-        result: string | null;
-        distance_to_hole_after: number | null;
-        distance_unit_after: string | null;
-      }> | null;
-      error: { message: string } | null;
-    };
+  // MUST paginate: PostgREST caps a single response at 1000 rows; a 14+-round
+  // player exceeds that and a bare `.in()` would silently truncate + corrupt
+  // the scrambling diagnosis. Use fetchAllRowsResult + .order('id').range(),
+  // mirroring causality/attribute.ts + composite/hole-sequence-loader.ts.
+  interface SandSourceRow {
+    round_id: string;
+    hole_number: number | null;
+    shot_number: number | null;
+    shot_type: string | null;
+    lie_before: string | null;
+    lie_after: string | null;
+    result: string | null;
+    distance_to_hole_after: number | null;
+    distance_unit_after: string | null;
+  }
+  const { data, error } = await fetchAllRowsResult<SandSourceRow>((from, to) =>
+    fromUntyped(supabase, 'golf_shots')
+      .select(
+        'round_id, hole_number, shot_number, shot_type, lie_before, lie_after, result, distance_to_hole_after, distance_unit_after',
+      )
+      .in('round_id', roundIds)
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
   if (error || !data) return [];
 
   const out: SandShot[] = [];

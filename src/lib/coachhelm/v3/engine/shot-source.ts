@@ -15,6 +15,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 export type ApproachBucket = '50_125ft' | '125_175ft' | '175_plus_ft';
 
@@ -33,6 +34,19 @@ export interface ApproachShot {
   result: string | null;
   is_penalty: boolean;
   miss_direction: string | null;
+}
+
+/** A greenside-bunker shot (lie_before='sand') resolved against its hole so the
+ *  ScramblingGenerator can split escape-failure from reached-green-then-lag. */
+export interface SandShot {
+  round_id: string;
+  hole_number: number | null;
+  /** Did the bunker shot find the green? */
+  reached_green: boolean;
+  /** Leave distance in FEET when it reached the green; null otherwise. */
+  leave_distance_feet: number | null;
+  /** Number of putts taken on that hole AFTER this bunker shot (lag signal). */
+  putts_after: number;
 }
 
 export interface TeeShot {
@@ -97,21 +111,97 @@ export async function loadApproachShots(
   if (rErr || !rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
 
-  const { data, error } = await fromUntyped(supabase, 'golf_shots')
-    .select(
-      'round_id, hole_number, shot_number, distance_to_hole_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, result, is_penalty, miss_direction',
-    )
-    .eq('shot_type', 'approach')
-    .in('round_id', roundIds) as {
-      data: ApproachShot[] | null;
-      error: { message: string } | null;
-    };
+  const { data, error } = await fetchAllRowsResult<ApproachShot>((from, to) =>
+    fromUntyped(supabase, 'golf_shots')
+      .select(
+        'round_id, hole_number, shot_number, distance_to_hole_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, result, is_penalty, miss_direction',
+      )
+      .eq('shot_type', 'approach')
+      .in('round_id', roundIds)
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
   if (error || !data) return [];
   return data.filter(
     (s) =>
       typeof s.distance_to_hole_before === 'number' &&
       typeof s.distance_to_hole_after === 'number',
   );
+}
+
+/**
+ * Load this player's greenside-bunker shots (lie_before='sand') in the window,
+ * each resolved against its hole's subsequent putts. The escape signal comes
+ * from result/lie_after; the leave distance (feet) + putts_after give the
+ * "reached the green but lagged" read the sand-save % alone can't.
+ */
+export async function loadSandShots(
+  playerId: string,
+  windowDays = DEFAULT_WINDOW_DAYS,
+): Promise<SandShot[]> {
+  const supabase = createAdminClient();
+  const since = new Date(Date.now() - windowDays * 86400_000).toISOString().slice(0, 10);
+
+  const { data: rounds, error: rErr } = await supabase
+    .from('golf_rounds')
+    .select('id')
+    .eq('player_id', playerId)
+    .eq('status', 'completed')
+    .gte('round_date', since);
+  if (rErr || !rounds || rounds.length === 0) return [];
+  const roundIds = rounds.map((r) => r.id);
+
+  // All shots in those rounds (we need putting rows to count putts_after).
+  interface SandSourceRow {
+    round_id: string;
+    hole_number: number | null;
+    shot_number: number | null;
+    shot_type: string | null;
+    lie_before: string | null;
+    lie_after: string | null;
+    result: string | null;
+    distance_to_hole_after: number | null;
+    distance_unit_after: string | null;
+  }
+  const { data, error } = await fetchAllRowsResult<SandSourceRow>((from, to) =>
+    fromUntyped(supabase, 'golf_shots')
+      .select(
+        'round_id, hole_number, shot_number, shot_type, lie_before, lie_after, result, distance_to_hole_after, distance_unit_after',
+      )
+      .in('round_id', roundIds)
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
+  if (error || !data) return [];
+
+  const out: SandShot[] = [];
+  for (const s of data) {
+    if ((s.lie_before ?? '').toLowerCase() !== 'sand') continue;
+    if (s.shot_number == null || s.hole_number == null) continue;
+    const r = (s.result ?? '').toLowerCase();
+    const reached = r === 'green' || r === 'hole' || r === 'gir'
+      || (s.lie_after ?? '').toLowerCase() === 'green';
+    // Putts on this hole that came AFTER this bunker shot = the lag signal.
+    const puttsAfter = data.filter(
+      (p) =>
+        p.round_id === s.round_id &&
+        p.hole_number === s.hole_number &&
+        p.shot_type === 'putting' &&
+        p.shot_number != null &&
+        p.shot_number > (s.shot_number as number),
+    ).length;
+    const leaveRaw = s.distance_to_hole_after;
+    const leaveFeet =
+      reached && typeof leaveRaw === 'number'
+        ? (s.distance_unit_after === 'yards' ? leaveRaw * 3 : leaveRaw)
+        : null;
+    out.push({
+      round_id: s.round_id,
+      hole_number: s.hole_number,
+      reached_green: reached,
+      leave_distance_feet: leaveFeet,
+      putts_after: puttsAfter,
+    });
+  }
+  return out;
 }
 
 /**
@@ -135,13 +225,13 @@ export async function loadTeeShots(
   if (rErr || !rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
 
-  const { data, error } = await fromUntyped(supabase, 'golf_shots')
-    .select('round_id, hole_number, club_type, lie_after, is_penalty')
-    .eq('shot_type', 'tee')
-    .in('round_id', roundIds) as {
-      data: TeeShot[] | null;
-      error: { message: string } | null;
-    };
+  const { data, error } = await fetchAllRowsResult<TeeShot>((from, to) =>
+    fromUntyped(supabase, 'golf_shots')
+      .select('round_id, hole_number, club_type, lie_after, is_penalty')
+      .eq('shot_type', 'tee')
+      .in('round_id', roundIds)
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
   if (error || !data) return [];
   return data.filter((s) => s.club_type === 'driver' || s.club_type === 'non_driver');
 }
@@ -181,22 +271,22 @@ export async function loadTeeShotsForStrategy(
     } | null;
   }
 
-  const { data, error } = await fromUntyped(supabase, 'golf_shots')
-    .select(
-      `
+  const { data, error } = await fetchAllRowsResult<JoinedRow>((from, to) =>
+    fromUntyped(supabase, 'golf_shots')
+      .select(
+        `
       round_id, hole_number, club_type, lie_after, shot_distance,
       distance_to_hole_after, is_penalty,
       golf_rounds!inner ( player_id, round_date, status ),
       golf_holes!inner ( par, yardage, fairway_hit )
     `,
-    )
-    .eq('shot_type', 'tee')
-    .eq('golf_rounds.player_id', playerId)
-    .eq('golf_rounds.status', 'completed')
-    .gte('golf_rounds.round_date', since) as {
-      data: JoinedRow[] | null;
-      error: { message: string } | null;
-    };
+      )
+      .eq('shot_type', 'tee')
+      .eq('golf_rounds.player_id', playerId)
+      .eq('golf_rounds.status', 'completed')
+      .gte('golf_rounds.round_date', since)
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
   if (error || !data) return [];
 
   const out: TeeStrategyShot[] = [];
