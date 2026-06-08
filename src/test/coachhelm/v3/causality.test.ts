@@ -74,6 +74,33 @@ describe('nextWeight (EMA over signed lifts)', () => {
     expect(lateDelta).toBeLessThan(earlyDelta);
   });
 
+  it('Phase H/H4: a LARGER positive lift pushes weight further than a small one (magnitude-aware)', () => {
+    // Same prior, same sample_n — only the lift magnitude differs. The binary
+    // 1.5/0.5 design failed this (both went to exactly the same place).
+    const small = nextWeight({ weight: 1.0, sample_n: 0 }, 0.1);
+    const large = nextWeight({ weight: 1.0, sample_n: 0 }, 2.0);
+    expect(large.weight).toBeGreaterThan(small.weight);
+  });
+
+  it('Phase H/H4: a LARGER negative lift pushes weight further down than a small one', () => {
+    const small = nextWeight({ weight: 1.0, sample_n: 0 }, -0.1);
+    const large = nextWeight({ weight: 1.0, sample_n: 0 }, -2.0);
+    expect(large.weight).toBeLessThan(small.weight);
+  });
+
+  it('Phase H/H4: target saturates — a 2-stroke and a 20-stroke lift land close together', () => {
+    // tanh saturation: a single freak round can't dominate the weight.
+    const big = nextWeight({ weight: 1.0, sample_n: 0 }, 2.0);
+    const absurd = nextWeight({ weight: 1.0, sample_n: 0 }, 20.0);
+    expect(Math.abs(absurd.weight - big.weight)).toBeLessThan(0.1);
+  });
+
+  it('Phase H/H4: a ~1-stroke lift targets ≈1.76 (1 + tanh(1)) on the first sample', () => {
+    // sample_n=0 → alpha=1 → next ≈ target exactly.
+    const next = nextWeight({ weight: 1.0, sample_n: 0 }, 1.0);
+    expect(next.weight).toBeCloseTo(1 + Math.tanh(1), 3); // ≈1.7616
+  });
+
   it('ignores non-finite lift values defensively', () => {
     const prev = { weight: 1.0, sample_n: 5 };
     expect(nextWeight(prev, Number.NaN)).toEqual(prev);

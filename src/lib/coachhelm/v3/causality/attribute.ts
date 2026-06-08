@@ -369,18 +369,32 @@ export async function computeAttribution(
   };
 }
 
+/** Stroke-scale for the tanh lift→target map. Calibrated from live data:
+ *  SG_total round-to-round magnitude has median |value| ≈5.35 and SD ≈4.39
+ *  across 173 completed rounds, but a *lift* (delta-of-averages minus ambient)
+ *  is realistically ~0.5–2 strokes. scale=1.0 makes a 1-stroke lift target
+ *  1+tanh(1)≈1.76 and a 2-stroke lift ≈1.96 (near saturation) — meaningful
+ *  gradation exactly where real lifts live. */
+const LIFT_TANH_SCALE = 1.0;
+
 /**
- * Bayesian-ish update for a (coach_id, insight_type, intent) weight
- * given a new attribution lift. We use a simple exponential-moving-
- * average over signed lifts, then clamp to [0.25, 2.0] so a single
- * outlier can't dominate the ranker.
+ * Magnitude-aware Bayesian-ish update for a (coach_id, insight_type, intent)
+ * weight given a new attribution lift. We move an exponential-moving-average
+ * toward a target that scales with the lift's MAGNITUDE and SIGN:
+ *
+ *   target = 1 + tanh(lift / LIFT_TANH_SCALE)
+ *
+ * tanh is signed (negative lift → target < 1), monotonic, and saturating, so a
+ * single outlier round can't blow the weight out — it asymptotes toward (0, 2)
+ * and is then hard-clamped to [0.25, 2.0]. alpha = 1/(sample_n+1) shrinks each
+ * update as evidence accumulates, so later attributions move the weight less.
  */
 export function nextWeight(prev: { weight: number; sample_n: number }, lift: number | null): { weight: number; sample_n: number } {
   if (lift === null || !Number.isFinite(lift)) return prev;
   const alpha = 1 / (prev.sample_n + 1);
-  // Positive lift = good outcome from this insight type → push weight up
-  // toward 1.5; negative lift → push toward 0.5.
-  const target = lift > 0 ? 1.5 : 0.5;
+  // Magnitude- and sign-aware target. A bigger positive lift pushes the target
+  // closer to 2.0; a bigger negative lift closer to 0.0; both saturate via tanh.
+  const target = 1 + Math.tanh(lift / LIFT_TANH_SCALE);
   const next = prev.weight * (1 - alpha) + target * alpha;
   const clamped = Math.max(0.25, Math.min(2.0, next));
   return {
