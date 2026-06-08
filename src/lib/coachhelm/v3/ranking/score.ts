@@ -117,6 +117,43 @@ export function isFloorExemptMetric(metric: string | undefined): boolean {
   );
 }
 
+/**
+ * Priority → rank floor. Used ONLY when |strokes_impact| rounds to 0 so the
+ * 176/232 live insights that legitimately carry no per-round stroke delta
+ * (high-confidence diagnostics like approach proximity, putt make-rates) are
+ * still orderable instead of tying at score 0 and falling back to recency.
+ * urgent 4 / high 3 / medium 2 / low 1 — strictly monotonic, never 0.
+ */
+const PRIORITY_FLOOR: Record<NonNullable<RankableInsight['priority']>, number> = {
+  urgent: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+export function priorityFloorScore(
+  priority: RankableInsight['priority'],
+): number {
+  return PRIORITY_FLOOR[priority ?? 'low'];
+}
+
+/**
+ * Sample-size damping ∈ (0, 1]. A 5%-make-rate off a thin lifetime sample must
+ * not out-rank a deep-sample leak just because its confidence factor reads high.
+ * `sqrt(sample_n / DAMP_REF_N)` clamped to 1 — undamped at the reference depth,
+ * gentler than linear so a 5-round row keeps ~65% weight (not punished to near
+ * zero). Absent / non-finite / zero sample → a small positive floor so the row
+ * is still orderable rather than zeroed.
+ */
+export const DAMP_REF_N = 12;
+export const DAMP_MIN = 0.25;
+
+export function sampleDamping(sample_n: number | undefined): number {
+  const n = Number(sample_n);
+  if (!Number.isFinite(n) || n <= 0) return DAMP_MIN;
+  return Math.min(1, Math.max(DAMP_MIN, Math.sqrt(n / DAMP_REF_N)));
+}
+
 /** Map of insight_type → resolved weight (already-validated against MIN_SAMPLES). */
 export type CoachWeights = Record<string, number>;
 
