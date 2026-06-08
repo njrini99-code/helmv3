@@ -388,6 +388,15 @@ describe('short_side_scrambling_chain', () => {
     expect(Math.round(Number(m!.signals.rough_pct))).toBe(67);
     expect(Math.round(Number(m!.signals.bunker_pct))).toBe(33);
   });
+
+  it('ships a non-zero strokes_impact derived from proximity-over-Tour', () => {
+    const ctx = emptyCtx();
+    for (let i = 0; i < 12; i++) ctx.short_game_shots.push(shortGameShot({ distance_to_hole_after: 22 }));
+    const m = shortSideScrambling.detect([], ctx)!;
+    const c = shortSideScrambling.compose(m);
+    expect(c.evidence.strokes_impact).toBeGreaterThan(0);
+    expect(c.evidence.strokes_impact).toBeLessThanOrEqual(1.5);
+  });
 });
 
 // ---------------------------------------------------------------------------

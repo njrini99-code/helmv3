@@ -45,6 +45,7 @@ export function backfilledCompositeStrokesImpact(
   composedImpact: number,
   sourceInsightIds: string[],
   impactBySourceId: Map<string, number>,
+  ownMagnitudeFallback = 0,
 ): number {
   if (Number.isFinite(composedImpact) && composedImpact > 0) return composedImpact;
   let maxSource = 0;
@@ -52,7 +53,14 @@ export function backfilledCompositeStrokesImpact(
     const v = impactBySourceId.get(id);
     if (typeof v === 'number' && Number.isFinite(v) && v > maxSource) maxSource = v;
   }
-  return maxSource > 0 ? maxSource : composedImpact;
+  if (maxSource > 0) return maxSource;
+  // Zero-source ctx composite with no borrowable leverage: use the rule's OWN
+  // measured magnitude (a gap it already derived, e.g. proximity-over-Tour) so it
+  // doesn't ship 0 and tie-break by recency. Never a fabricated constant.
+  if (Number.isFinite(ownMagnitudeFallback) && ownMagnitudeFallback > 0) {
+    return ownMagnitudeFallback;
+  }
+  return composedImpact;
 }
 
 /**
@@ -248,6 +256,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         composed.evidence.strokes_impact,
         match.source_insight_ids,
         impactBySourceId,
+        Math.abs(Number(composed.evidence.strokes_impact ?? 0)),
       );
       const evidence = {
         ...composed.evidence,

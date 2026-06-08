@@ -76,4 +76,18 @@ describe('backfilledCompositeStrokesImpact', () => {
   it('treats a non-finite composed value as needing backfill', () => {
     expect(backfilledCompositeStrokesImpact(NaN, ['a'], lookup)).toBe(0.6);
   });
+
+  it('falls back to the composite OWN magnitude for a zero-source ctx composite', () => {
+    expect(backfilledCompositeStrokesImpact(0, [], lookup, 0.7)).toBe(0.7);
+  });
+  it('prefers a real composed value over the own-magnitude fallback', () => {
+    expect(backfilledCompositeStrokesImpact(0.5, [], lookup, 0.7)).toBe(0.5);
+  });
+  it('prefers a borrowable source impact over the own-magnitude fallback', () => {
+    expect(backfilledCompositeStrokesImpact(0, ['b'], lookup, 0.2)).toBe(1.1);
+  });
+  it('ignores a non-finite or non-positive own-magnitude fallback', () => {
+    expect(backfilledCompositeStrokesImpact(0, [], lookup, NaN)).toBe(0);
+    expect(backfilledCompositeStrokesImpact(0, [], lookup, -1)).toBe(0);
+  });
 });
