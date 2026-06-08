@@ -27,6 +27,90 @@ const WEIGHTS = {
   formCycleAdjustment: 0.05,
 };
 
+/** Pattern adjustment is capped at this fraction of the CI half-width. */
+export const PATTERN_ADJ_CI_FRACTION = 0.5;
+
+/** Clamp the summed pattern adjustment so it can't exceed half the CI. */
+export function clampPatternAdjustment(rawAdj: number, ciHalfWidth: number): number {
+  if (!Number.isFinite(rawAdj) || ciHalfWidth <= 0) return 0;
+  const cap = ciHalfWidth * PATTERN_ADJ_CI_FRACTION;
+  return Math.max(-cap, Math.min(cap, rawAdj));
+}
+
+/** Force a point estimate to lie within its own confidence interval. */
+export function bracketEstimate(estimate: number, low: number, high: number): number {
+  return Math.max(low, Math.min(high, estimate));
+}
+
+/** Predictions off data older than this many days are refused (too stale). */
+export const STALENESS_DAYS = 21;
+export function isStale(daysSinceMostRecent: number): boolean {
+  return daysSinceMostRecent > STALENESS_DAYS;
+}
+
+/**
+ * CI multiplier for an ~80% two-sided interval. Asymptotic value 1.28 (normal);
+ * small samples need widening so nominal-80% covers ~80%. t-style inflation.
+ */
+export function ciMultiplier(n: number): number {
+  if (n < 4) return 1.28 * 1.5;
+  return 1.28 * Math.sqrt(n / (n - 2));
+}
+
+/** Build a data-backed driver description naming the actual numbers. */
+export function describeFactor(
+  key: string,
+  contribution: number,
+  features: ExtractedFeatures,
+): { name: string; explanation: string } {
+  const worse = contribution > 0; // positive contribution raises score_to_par = worse
+  switch (key) {
+    case 'recentForm': {
+      const fs = features.temporal.recentFormScore;
+      const dir = worse ? 'below your baseline' : 'sharper than your baseline';
+      return {
+        name: 'Recent Form',
+        explanation: `Your last 5 rounds are scoring ${dir} (form score ${fs.toFixed(2)}).`,
+      };
+    }
+    case 'trendMomentum':
+      return {
+        name: 'Trend Momentum',
+        explanation: worse
+          ? 'Your scoring trend is sliding the wrong way over recent rounds.'
+          : 'Your scoring trend is improving over recent rounds.',
+      };
+    case 'restRust': {
+      const days = features.temporal.daysSinceLastRound;
+      return {
+        name: 'Rest / Rust',
+        explanation: `It has been ${days} day${days === 1 ? '' : 's'} since your last round — ${worse ? 'a rust penalty applies' : 'optimal rest'}.`,
+      };
+    }
+    case 'pressure':
+      return {
+        name: 'Competitive Pressure',
+        explanation: worse
+          ? 'You have historically scored worse in competitive rounds than casual ones.'
+          : 'You have historically held up well in competitive rounds.',
+      };
+    case 'formCycle':
+      return {
+        name: 'Form Cycle',
+        explanation: `You are in a ${features.contextual.formCycle} phase of your scoring cycle.`,
+      };
+    case 'patterns':
+      return {
+        name: 'Active Patterns',
+        explanation: worse
+          ? 'A historical context pattern (rest/round-type) that costs you strokes applies here.'
+          : 'A historical context pattern that helps your scoring applies here.',
+      };
+    default:
+      return { name: key, explanation: `Adjusts the estimate by ${contribution.toFixed(2)} strokes.` };
+  }
+}
+
 /**
  * Performance Predictor class for forecasting round scores
  */
@@ -59,7 +143,7 @@ export class PerformancePredictor {
     // Get baseline score (average over last 20 rounds)
     const { data: rounds } = await supabase
       .from('golf_rounds')
-      .select('score_to_par')
+      .select('score_to_par, round_date')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
@@ -67,19 +151,31 @@ export class PerformancePredictor {
 
     if (!rounds || rounds.length < 5) return null;
 
+    // Staleness gate — refuse to predict off data older than STALENESS_DAYS
+    const mostRecent = rounds[0]?.round_date;
+    if (mostRecent) {
+      const daysSince = Math.floor(
+        (Date.now() - new Date(mostRecent).getTime()) / 86400_000,
+      );
+      if (isStale(daysSince)) return null;
+    }
+
     this.baselineScore =
       rounds.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / rounds.length;
+
+    // Compute the CI FIRST so the model can clamp the pattern term to it and
+    // the final estimate can be bracketed inside it.
+    const roundsForInterval = rounds.map(r => ({ score_to_par: r.score_to_par ?? 0 }));
+    const { low, high, confidence } = this.calculateConfidenceInterval(roundsForInterval);
+    const ciHalfWidth = (high - low) / 2;
 
     // Get active patterns
     const miner = new PatternMiner(this.playerId);
     this.patterns = await miner.minePatterns();
 
     // Apply prediction model
-    const { predictedScore, factors } = this.applyModel(context);
-
-    // Calculate confidence interval
-    const roundsForInterval = rounds.map(r => ({ score_to_par: r.score_to_par ?? 0 }));
-    const { low, high, confidence } = this.calculateConfidenceInterval(roundsForInterval);
+    const { predictedScore, factors } = this.applyModel(context, ciHalfWidth);
+    const bracketedScore = bracketEstimate(predictedScore, low, high);
 
     // Identify key factors
     const keyFactors = this.identifyKeyFactors(factors);
@@ -93,7 +189,7 @@ export class PerformancePredictor {
       playerId: this.playerId,
       predictionType: 'round_score',
       metric: 'score_to_par',
-      predictedValue: predictedScore,
+      predictedValue: bracketedScore,
       predictedRangeLow: low,
       predictedRangeHigh: high,
       confidence,
@@ -119,7 +215,8 @@ export class PerformancePredictor {
    * Applies the prediction model
    */
   private applyModel(
-    context?: Partial<PredictionContext>
+    context?: Partial<PredictionContext>,
+    ciHalfWidth = 0,
   ): { predictedScore: number; factors: Map<string, number> } {
     const factors = new Map<string, number>();
     let adjustedScore = this.baselineScore;
@@ -186,13 +283,14 @@ export class PerformancePredictor {
     factors.set('formCycle', formCycleAdj * WEIGHTS.formCycleAdjustment);
     adjustedScore += formCycleAdj * WEIGHTS.formCycleAdjustment;
 
-    // Factor 6: Active pattern impacts
-    let patternAdj = 0;
+    // Factor 6: Active pattern impacts (clamped so it can't blow past the CI).
+    let rawPatternAdj = 0;
     for (const pattern of this.patterns) {
       if (pattern.isActive && this.isPatternApplicable(pattern, context)) {
-        patternAdj += pattern.strokeImpact * pattern.confidence;
+        rawPatternAdj += pattern.strokeImpact * pattern.confidence;
       }
     }
+    const patternAdj = clampPatternAdjustment(rawPatternAdj, ciHalfWidth);
     factors.set('patterns', patternAdj);
     adjustedScore += patternAdj;
 
@@ -262,8 +360,8 @@ export class PerformancePredictor {
       squaredDiffs.reduce((a, b) => a + b, 0) / scores.length;
     const stdDev = Math.sqrt(variance);
 
-    // 80% confidence interval (approximately 1.28 standard deviations)
-    const margin = stdDev * 1.28;
+    // 80% confidence interval (t-style inflation for small samples)
+    const margin = stdDev * ciMultiplier(scores.length);
 
     // Confidence decreases with volatility
     let confidence = 0.8;
@@ -290,40 +388,12 @@ export class PerformancePredictor {
       (a, b) => Math.abs(b[1]) - Math.abs(a[1])
     );
 
-    const factorDescriptions: Record<string, { name: string; explanation: string }> = {
-      recentForm: {
-        name: 'Recent Form',
-        explanation: 'Performance over the last 5 rounds compared to baseline',
-      },
-      trendMomentum: {
-        name: 'Trend Momentum',
-        explanation: 'Rate of improvement or decline in scoring',
-      },
-      restRust: {
-        name: 'Rest/Rust',
-        explanation: 'Effect of time since last competitive round',
-      },
-      pressure: {
-        name: 'Pressure',
-        explanation: 'Historical performance in competitive situations',
-      },
-      formCycle: {
-        name: 'Form Cycle',
-        explanation: 'Position in natural performance cycle',
-      },
-      patterns: {
-        name: 'Active Patterns',
-        explanation: 'Historical patterns that apply to this situation',
-      },
-    };
-
     for (const [key, contribution] of sortedFactors) {
       if (Math.abs(contribution) < 0.1) continue;
 
-      const desc = factorDescriptions[key] || {
-        name: key,
-        explanation: 'Contributing factor',
-      };
+      const desc = this.features
+        ? describeFactor(key, contribution, this.features)
+        : { name: key, explanation: 'Contributing factor' };
 
       keyFactors.push({
         name: desc.name,
