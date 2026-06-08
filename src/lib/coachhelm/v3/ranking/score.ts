@@ -184,7 +184,51 @@ export function computeGoalBoost(insight: RankableInsight, activeGoals: Goal[]):
   return 1.0;
 }
 
-/** Pure scoring fn — returns a non-negative rank score. */
+/**
+ * Large additive band that guarantees a `priority:'urgent'` insight outranks
+ * EVERY non-urgent one regardless of impact, while two urgent rows still order
+ * by their underlying composite. Sits above the max achievable composite
+ * (ceiling 8 × conf 1 × coach_weight 2.0 × goalBoost 2.0 × coachability 1.5
+ * × damping 1 ≈ 48), so 1000 is an unreachable separator — a single comparator
+ * still sorts correctly. Assumes upstream-clamped confidence∈[0,1] and
+ * coach_weight≤2 (EMA-clamped in nextWeight); 1000 leaves a ~20× margin.
+ */
+export const URGENT_SHORT_CIRCUIT = 1000;
+
+/**
+ * The priority RANK FLOOR (1–4) and a real per-round strokes impact live on
+ * different scales: impacts are clamped to ≤8 strokes (realistically <2/round),
+ * while the floor would otherwise sit at 1–4 and OUTRANK a genuine 1.2-stroke
+ * leak (a medium floor of 2 beating a 1.2-stroke leak is exactly the bug this
+ * prevents). FLOOR_SCALE pushes the floor band strictly below any real impact so
+ * the floor only ORDERS the zero-impact diagnostics among themselves (its sole
+ * job), honoring contract #2: a real impact above ~0.05 strokes/round always
+ * ranks on its magnitude, never the floor (the floor band tops out ~0.018, so a
+ * sub-0.05-stroke leak with weak multipliers can tie/lose — acceptable). Relative
+ * order of floored rows is unchanged (every floor scaled equally), so the rescue
+ * of buried high-confidence diagnostics still works.
+ */
+export const FLOOR_SCALE = 0.001;
+
+/**
+ * Pure scoring fn — the SINGLE ranking contract for every read surface
+ * (Hub single-pick, player feed, coach feed, round takeaway, player CoachHelm
+ * dashboard). Returns a non-negative rank score.
+ *
+ *   composite = magnitudeTerm × confidence × coach_weight × goalBoost
+ *               × coachability × sampleDamping
+ *
+ * - magnitudeTerm: the real |strokes_impact| (ceiling-clamped) when it rounds
+ *   to a non-zero per-round value; otherwise the priority RANK FLOOR
+ *   (urgent 4 / high 3 / medium 2 / low 1, scaled by FLOOR_SCALE to sit strictly
+ *   below any real impact) so a zero-impact diagnostic is still orderable instead
+ *   of tying at 0 and falling back to recency. Floor-exempt
+ *   metrics (scoring_par_*, opening_hole_delta) get NO floor — they keep their
+ *   priority for the Alert Center but rank on their honest (zero) impact, so the
+ *   descriptive engines never crowd the actionable feed.
+ * - urgent short-circuit: an urgent row is lifted above the whole non-urgent
+ *   band so a small-but-urgent leak (e.g. a three-putt chain) always leads.
+ */
 export function scoreInsight(
   insight: RankableInsight,
   weights: CoachWeights,
@@ -192,13 +236,32 @@ export function scoreInsight(
 ): number {
   const w = weights[insight.insight_type] ?? 1.0;
   const boost = computeGoalBoost(insight, activeGoals);
-  // Rank by strokes-recoverable-SOON: equal-magnitude leaks order by how
-  // quickly they're coachable (domain doc §10), so a coach's feed leads with
-  // what this season's practice can actually move.
   const coachability = coachabilityBoost(insight.metric);
-  // |strokes_impact| is clamped to STROKES_IMPACT_CEILING first so a stale
-  // scale-mixed row (impossible 40-stroke leak) can never dominate the feed.
-  return cappedStrokesImpact(insight.strokes_impact) * insight.confidence * w * boost * coachability;
+  const damping = sampleDamping(insight.sample_n);
+  // Clamp to [0,1]: a no-op for valid data, but guards the urgent separator if
+  // confidence is ever stored as a 0–100 percentage. x=0→0, x=1.5→1, x=NaN→0.
+  const confidence = Math.max(0, Math.min(1, Number(insight.confidence) || 0));
+
+  // Real per-round leak → rank on the (clamped) magnitude. Rounds to 0 → use the
+  // priority floor UNLESS the metric is exempt (descriptive: keep honest 0).
+  const capped = cappedStrokesImpact(insight.strokes_impact);
+  const magnitudeTerm =
+    // rounds to 2dp — a sub-0.005 strokes/round leak is effectively zero and
+    // falls to the floor band.
+    Math.round(capped * 100) / 100 > 0
+      ? capped
+      : isFloorExemptMetric(insight.metric)
+        ? 0
+        : priorityFloorScore(insight.priority) * FLOOR_SCALE;
+
+  const composite = magnitudeTerm * confidence * w * boost * coachability * damping;
+
+  // Urgent always leads the feed — lift above the non-urgent band, preserving
+  // intra-urgent order by adding the composite on top of the separator.
+  if (insight.priority === 'urgent') {
+    return URGENT_SHORT_CIRCUIT + composite;
+  }
+  return composite;
 }
 
 /** Sort descending by score. Stable — equal scores preserve input order. */

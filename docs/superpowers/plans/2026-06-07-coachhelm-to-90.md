@@ -339,12 +339,23 @@ This is the core contract. `scoreInsight` becomes the single ranking function fo
 - Modify `src/lib/coachhelm/v3/ranking/score.ts` — replace the body of `scoreInsight` (~115-129).
 - Modify `src/lib/coachhelm/v3/ranking/score.test.ts` — append the QUALITY contracts.
 
-- [ ] **Step 1 — write the failing test.** Append to `src/lib/coachhelm/v3/ranking/score.test.ts`:
+- [ ] **Step 1 — write the failing test.** Add these imports to the file's TOP import block (consolidate — do NOT append a second mid-file import), extending the existing A1/A2 `from './score'` line:
 
 ```typescript
-import { scoreInsight } from './score';
+import {
+  isFloorExemptMetric,
+  priorityFloorScore,
+  sampleDamping,
+  DAMP_MIN,
+  scoreInsight,
+  URGENT_SHORT_CIRCUIT,
+} from './score';
 import type { RankableInsight } from './score';
+```
 
+Then append the QUALITY contracts to `src/lib/coachhelm/v3/ranking/score.test.ts`:
+
+```typescript
 const base = (over: Partial<RankableInsight>): RankableInsight => ({
   insight_type: 'x',
   strokes_impact: 0,
@@ -392,6 +403,23 @@ describe('scoreInsight rank floor', () => {
     });
     expect(scoreInsight(impactful, {})).toBeGreaterThan(scoreInsight(floored, {}));
   });
+
+  it('a real impact at LOW priority beats a HIGH-priority zero-impact floored row (contract #2 across priorities)', () => {
+    // Adversarial: the floored row stacks every advantage SHORT of a real impact —
+    // higher priority (high floor 3), max confidence, deep sample — yet a genuine
+    // 0.5-stroke leak at the LOWEST priority still wins, because a real impact ranks
+    // on its magnitude band, never the (scaled-down) floor band. Priority can never
+    // let a zero-impact diagnostic leapfrog a meaningful real leak.
+    const realLowImpact = base({
+      strokes_impact: 0.5, confidence: 0.5, priority: 'low',
+      metric: 'penalty_rate_per_round', sample_n: 12,
+    });
+    const flooredHigh = base({
+      strokes_impact: 0, confidence: 1.0, priority: 'high',
+      metric: 'approach_proximity_175_plus_ft', sample_n: 40,
+    });
+    expect(scoreInsight(realLowImpact, {})).toBeGreaterThan(scoreInsight(flooredHigh, {}));
+  });
 });
 
 describe('scoreInsight urgent short-circuit', () => {
@@ -411,6 +439,17 @@ describe('scoreInsight urgent short-circuit', () => {
     const a = base({ strokes_impact: 1.0, confidence: 0.8, priority: 'urgent', sample_n: 20 });
     const b = base({ strokes_impact: 0.4, confidence: 0.5, priority: 'urgent', sample_n: 20 });
     expect(scoreInsight(a, {})).toBeGreaterThan(scoreInsight(b, {}));
+  });
+
+  it('an urgent row scores at or above the URGENT_SHORT_CIRCUIT band', () => {
+    // The separator is actually applied: any urgent row lands in the >= 1000 band,
+    // above the entire non-urgent composite range (max ~48), so no non-urgent row
+    // can ever reach it.
+    const urgent = base({
+      strokes_impact: 0.4, confidence: 0.5, priority: 'urgent',
+      metric: 'three_putt_chain', sample_n: 5,
+    });
+    expect(scoreInsight(urgent, {})).toBeGreaterThanOrEqual(URGENT_SHORT_CIRCUIT);
   });
 });
 
@@ -476,8 +515,10 @@ Expected: FAIL — current `scoreInsight` returns `cappedStrokesImpact(0) × con
  * Large additive band that guarantees a `priority:'urgent'` insight outranks
  * EVERY non-urgent one regardless of impact, while two urgent rows still order
  * by their underlying composite. Sits above the max achievable composite
- * (ceiling 8 × conf 1 × weight × boost × coachability 1.5 ≈ 24), so 1000 is
- * an unreachable separator — a single comparator still sorts correctly.
+ * (ceiling 8 × conf 1 × coach_weight 2.0 × goalBoost 2.0 × coachability 1.5
+ * × damping 1 ≈ 48), so 1000 is an unreachable separator — a single comparator
+ * still sorts correctly. Assumes upstream-clamped confidence∈[0,1] and
+ * coach_weight≤2 (EMA-clamped in nextWeight); 1000 leaves a ~20× margin.
  */
 export const URGENT_SHORT_CIRCUIT = 1000;
 
@@ -488,9 +529,11 @@ export const URGENT_SHORT_CIRCUIT = 1000;
  * leak (a medium floor of 2 beating a 1.2-stroke leak is exactly the bug this
  * prevents). FLOOR_SCALE pushes the floor band strictly below any real impact so
  * the floor only ORDERS the zero-impact diagnostics among themselves (its sole
- * job), honoring contract #2: a real impact always ranks on its magnitude, never
- * the floor. Relative order of floored rows is unchanged (every floor scaled
- * equally), so the rescue of buried high-confidence diagnostics still works.
+ * job), honoring contract #2: a real impact above ~0.05 strokes/round always
+ * ranks on its magnitude, never the floor (the floor band tops out ~0.018, so a
+ * sub-0.05-stroke leak with weak multipliers can tie/lose — acceptable). Relative
+ * order of floored rows is unchanged (every floor scaled equally), so the rescue
+ * of buried high-confidence diagnostics still works.
  */
 export const FLOOR_SCALE = 0.001;
 
@@ -522,12 +565,16 @@ export function scoreInsight(
   const boost = computeGoalBoost(insight, activeGoals);
   const coachability = coachabilityBoost(insight.metric);
   const damping = sampleDamping(insight.sample_n);
-  const confidence = Math.max(0, Number(insight.confidence) || 0);
+  // Clamp to [0,1]: a no-op for valid data, but guards the urgent separator if
+  // confidence is ever stored as a 0–100 percentage. x=0→0, x=1.5→1, x=NaN→0.
+  const confidence = Math.max(0, Math.min(1, Number(insight.confidence) || 0));
 
   // Real per-round leak → rank on the (clamped) magnitude. Rounds to 0 → use the
   // priority floor UNLESS the metric is exempt (descriptive: keep honest 0).
   const capped = cappedStrokesImpact(insight.strokes_impact);
   const magnitudeTerm =
+    // rounds to 2dp — a sub-0.005 strokes/round leak is effectively zero and
+    // falls to the floor band.
     Math.round(capped * 100) / 100 > 0
       ? capped
       : isFloorExemptMetric(insight.metric)
