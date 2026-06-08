@@ -174,6 +174,30 @@ export function sanitizeProse(text: string | null | undefined): string {
     .trim();
 }
 
+/**
+ * Coaching-grade NLG template (Phase G). Assembles a DATA FACT, a DRIVER (what
+ * the number means — the cause, not a restatement), and a specific ACTION into
+ * one clean, sanitized passage. Caller supplies the data-derived strings; this
+ * helper owns only the joining, terminal-punctuation hygiene, and a final
+ * sanitizeProse pass so no authoring artifact can slip through. Empty/omitted
+ * clauses drop cleanly. Pure + idempotent.
+ */
+export function composeDriverPrescription(parts: {
+  fact: string;
+  driver?: string;
+  action?: string;
+}): string {
+  const clause = (s: string | undefined): string => {
+    const t = (s ?? '').trim();
+    if (!t) return '';
+    return /[.!?]$/.test(t) ? t : `${t}.`;
+  };
+  const joined = [clause(parts.fact), clause(parts.driver), clause(parts.action)]
+    .filter((c) => c.length > 0)
+    .join(' ');
+  return sanitizeProse(joined);
+}
+
 export interface AssembleThemesInput {
   playerId: string;
   rows: EvidenceInsight[];
