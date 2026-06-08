@@ -49,12 +49,16 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
 
   // Putt make % — each percent point ≈ N/100 strokes saved per round where N
   // is the typical attempts/round in that bucket. Research doc §3-4:
-  //   3-5 ft  ~6 attempts/rd  → 0.06 strokes per pp
+  //   3-5 ft  ~6 attempts/rd  → 0.10 (see note below)
   //   5-10 ft ~3 attempts/rd  → 0.03
   //   10-15   ~2 attempts/rd  → 0.02
   //   15-25   ~1.5            → 0.015
   //   25+     ~1              → 0.01
-  putts_made_3_5ft_pct:      { stroke_impact_per_unit: 0.06,  coachable_timeframe_weeks: 4 },
+  // 3-5 ft is the most frequent putt distance (~6 attempts/rd) AND the most
+  // makeable (Tour ~90%), so a missed pp here is the single highest-leverage,
+  // fastest-to-fix putting gap. Bumped 0.06→0.10 so a large short-putt gap
+  // floors to `high` (the counterfactual ceiling + 0.3 floor still bound it).
+  putts_made_3_5ft_pct:      { stroke_impact_per_unit: 0.10,  coachable_timeframe_weeks: 4 },
   putts_made_5_10ft_pct:     { stroke_impact_per_unit: 0.03,  coachable_timeframe_weeks: 6 },
   putts_made_10_15ft_pct:    { stroke_impact_per_unit: 0.02,  coachable_timeframe_weeks: 8 },
   putts_made_15_25ft_pct:    { stroke_impact_per_unit: 0.015, coachable_timeframe_weeks: 8 },
