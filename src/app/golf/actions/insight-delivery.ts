@@ -34,7 +34,9 @@ import { buildShotDrivers } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import { computeSgTrends } from '@/lib/coachhelm/v3/themes/trend';
 import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
-import { cappedStrokesImpact } from '@/lib/coachhelm/v3/ranking/score';
+import { scoreInsight, loadCoachWeightsForPlayer, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
+import type { Goal } from '@/lib/coachhelm/v3/goals/types';
+import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -67,6 +69,13 @@ export interface EvidenceInsight {
   id: string;
   player_id: string;
   category: InsightCategory | null;
+  /** Canonical generator type — the DEDICATED `golf_coach_insights.insight_type`
+   *  column (written as `this.insightType` in generator-base.ts), NOT a metadata
+   *  key. This is the value the coach-weights map is keyed by, so it must be
+   *  carried verbatim from the row for `scoreInsight`'s coach_weight lookup to
+   *  hit. Optional/nullable for back-compat: pre-v3 rows may not have stamped it,
+   *  and older test fixtures predate the field. */
+  insight_type?: string | null;
   title: string;
   content: string;
   signature: string | null;
@@ -128,6 +137,7 @@ type SelectedInsightColumns =
   | 'id'
   | 'player_id'
   | 'category'
+  | 'insight_type'
   | 'title'
   | 'content'
   | 'signature'
@@ -151,7 +161,7 @@ type RawInsightRowWithDrills = Pick<CoachInsightRow, SelectedInsightColumns> & {
 
 /** Select clause used by every fetcher — keep in sync. */
 const INSIGHT_SELECT = `
-  id, player_id, category, title, content, signature, evidence, metadata,
+  id, player_id, category, insight_type, title, content, signature, evidence, metadata,
   lifecycle_state, status, priority, acknowledged_at, resolved_at,
   outcome_status, outcome_measured_at,
   created_at, updated_at,
@@ -192,16 +202,58 @@ function canonicalMetricSubject(metric: string | null | undefined): string {
 }
 
 /**
- * Composite rank score for the read-path feeds (audit RANK-1). `|impact| ×
- * confidence`, with `|impact|` clamped to the shared ranking ceiling first so
- * a stale scale-mixed row can never top the feed. Confidence is floored at a
- * small positive so a high-impact row with a null/zero confidence still sorts
- * ahead of a zero-impact one.
+ * Composite rank score for the read-path feeds — the SHARED `scoreInsight`
+ * contract (Phase A). Maps an EvidenceInsight onto the RankableInsight shape
+ * (priority + sample_n included so the rank floor + damping apply) and runs the
+ * single ranking function every surface uses. Weights default to {} and goals
+ * to [] on surfaces that don't load them — the floor/damping/coachability terms
+ * still apply, so a zero-impact diagnostic is always orderable.
  */
-function feedRankScore(insight: EvidenceInsight): number {
-  const impact = cappedStrokesImpact(insight.evidence?.strokes_impact ?? 0);
-  const confidence = Math.max(0.1, insight.evidence?.confidence ?? 0);
-  return impact * confidence;
+function feedRankScore(
+  insight: EvidenceInsight,
+  weights: CoachWeights = {},
+  goals: Goal[] = [],
+): number {
+  return scoreInsight(
+    {
+      // Use the DEDICATED insight_type column — the value the coach-weights map
+      // is keyed by. Falling back to `category` (a different value space, e.g.
+      // type `putt_distance_control` vs category `putting`) silently misses
+      // every stored key and neuters coach weights, so only fall back when the
+      // column is genuinely null (pre-v3 rows).
+      insight_type: insight.insight_type ?? insight.category ?? 'unknown',
+      strokes_impact: insight.evidence?.strokes_impact ?? 0,
+      confidence: insight.evidence?.confidence ?? 0,
+      metric: insight.evidence?.metric,
+      category: insight.category ?? undefined,
+      priority: insight.priority,
+      sample_n: insight.evidence?.sample_n,
+    },
+    weights,
+    goals,
+  );
+}
+
+/**
+ * Sort a mapped insight list by the shared composite, newest-first on ties.
+ * Exported so both feed paths and the ranking unit test exercise ONE code path.
+ * Scores each row ONCE (mirroring `rankInsights` in score.ts) rather than
+ * recomputing inside the comparator, then sorts by the precomputed score with a
+ * created_at tie-break.
+ */
+export function rankEvidenceInsights(
+  insights: EvidenceInsight[],
+  weights: CoachWeights = {},
+  goals: Goal[] = [],
+): EvidenceInsight[] {
+  return insights
+    .map((insight) => ({ insight, score: feedRankScore(insight, weights, goals) }))
+    .sort((a, b) => {
+      const diff = b.score - a.score;
+      if (diff !== 0) return diff;
+      return (b.insight.created_at ?? '').localeCompare(a.insight.created_at ?? '');
+    })
+    .map((row) => row.insight);
 }
 
 /**
@@ -302,10 +354,16 @@ export async function getTopInsightForPlayer(
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
   if (rows.length === 0) return null;
 
-  const ranked = rows
-    .map(mapRowToEvidenceInsight)
-    .filter((r): r is EvidenceInsight => r !== null)
-    .sort((a, b) => rankScore(b) - rankScore(a));
+  // The urgent first pass already short-circuited any urgent row at the DB
+  // level, so this second pass only sees non-urgent rows. Rank with the shared
+  // `scoreInsight` composite so the single-pick agrees with the list feed.
+  const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
+  const activeGoals = await loadActiveGoals(playerId).catch(() => []);
+  const ranked = rankEvidenceInsights(
+    rows.map(mapRowToEvidenceInsight).filter((r): r is EvidenceInsight => r !== null),
+    weights,
+    activeGoals,
+  );
 
   return ranked[0] ?? null;
 }
@@ -442,15 +500,14 @@ export async function getInsightsForPlayer(
     return true;
   });
 
-  // RANK-1: order the player feed by |strokes_impact| × confidence (ceiling-
-  // clamped) — the same composite the engine ranks with — so the high-leverage
-  // leak leads the card stack instead of whatever was created most recently.
-  // Stable tie-break on created_at DESC keeps equal-score rows newest-first.
-  const ranked = filtered.sort((a, b) => {
-    const diff = feedRankScore(b) - feedRankScore(a);
-    if (diff !== 0) return diff;
-    return (b.created_at ?? '').localeCompare(a.created_at ?? '');
-  });
+  // RANK-1: order the player feed by the shared `scoreInsight` composite — the
+  // SAME contract every surface uses — so a high-leverage leak (or a high-
+  // confidence zero-impact diagnostic, via the rank floor) leads the card stack
+  // instead of whatever was created most recently. Coach weights default to 1.0
+  // until calibration lands; active goals float goal-touching rows up.
+  const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
+  const activeGoals = await loadActiveGoals(playerId).catch(() => []);
+  const ranked = rankEvidenceInsights(filtered, weights, activeGoals);
 
   // Finding 29: apply the SAME (player:category:metric-subject) dedupe the
   // coach feed uses (via the shared `dedupeBySubject` helper) so a player does
@@ -490,13 +547,18 @@ export async function getInsightsForCoach(
 
   const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
 
-  // RANK-4: order the candidate window by the in-DB impact magnitude (NULLS
-  // LAST), not `created_at`, so a high-impact older row is NOT dropped at the
-  // pre-rank cap before the in-app composite rank runs. `created_at` is the
-  // secondary order so equal-impact rows stay newest-first. Once the
-  // strokes_impact backfill is deployed every v3 leak carries a real magnitude;
-  // pre-backfill (all 0) this degrades gracefully to created_at order. We still
-  // widen the window to give the |impact| × confidence rank room to reorder.
+  // Pre-order the candidate window by created_at (NOT evidence->strokes_impact):
+  // 176/232 live rows carry strokes_impact≈0, so an impact-DESC pre-order pushes
+  // every high-confidence zero-impact diagnostic to the bottom and truncates it
+  // at PRE_RANK_FETCH before the in-app `scoreInsight` floor can rescue it. We
+  // widen the window and let the shared composite reorder in-app instead.
+  //
+  // SCOPE: this fully fixes the PER-PLAYER feeds (opts.player_id set — the
+  // window is one player's rows). The TEAM-WIDE coach sweep (no player_id) still
+  // fetches only the newest PRE_RANK_FETCH (≤100) rows across the WHOLE team, so
+  // a high-impact OLDER row on a >100-row team can still be truncated before the
+  // in-app rank sees it. Properly fixing the team window (paginate-then-rank, or
+  // a DB-side composite order) is tracked as an A7 follow-up, NOT solved here.
   const PRE_RANK_FETCH = Math.min(100, Math.max(50, limit * 5));
 
   let query = supabase
@@ -506,7 +568,6 @@ export async function getInsightsForCoach(
     .or(V3_ENGINE_FILTER)
     .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
     .neq('status', 'dismissed')
-    .order('evidence->strokes_impact', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(PRE_RANK_FETCH);
 
@@ -537,16 +598,18 @@ export async function getInsightsForCoach(
     .map(mapRowToEvidenceInsight)
     .filter((r): r is EvidenceInsight => r !== null);
 
-  // Rank by |strokes_impact| × confidence (ceiling-clamped — the same composite
-  // the engine uses internally to decide which insights matter) and dedupe
-  // across categories so the feed doesn't show three overlapping putting rows.
-  // Dedupe runs through the shared `dedupeBySubject` helper so the player feed
-  // (getInsightsForPlayer) collapses an IDENTICAL key set (finding 29). The key
-  // canonicalizes the metric subject so a v2 `par_scoring_par4` and a v3
-  // `scoring_par_4` for the same player collapse to one row (ASM-1).
-  const ranked = dedupeBySubject(
-    mapped.slice().sort((a, b) => feedRankScore(b) - feedRankScore(a)),
-  );
+  // Rank by the shared `scoreInsight` composite (rank floor + damping + urgent
+  // short-circuit + exemption) and dedupe across categories. Goals/weights are
+  // per-player; on the coach sweep (no player_id) we rank with neutral weights
+  // and no goals — the floor/confidence/damping/coachability terms still order
+  // the feed correctly. When a specific player is requested we load their goals.
+  let goals: Goal[] = [];
+  let weights: CoachWeights = {};
+  if (opts.player_id) {
+    weights = await loadCoachWeightsForPlayer(supabase, opts.player_id).catch(() => ({}));
+    goals = await loadActiveGoals(opts.player_id).catch(() => []);
+  }
+  const ranked = dedupeBySubject(rankEvidenceInsights(mapped, weights, goals));
 
   return ranked.slice(0, limit);
 }
@@ -625,10 +688,9 @@ export async function getRoundTakeawayInsight(
   }
 
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
-  const ranked = rows
-    .map(mapRowToEvidenceInsight)
-    .filter((r): r is EvidenceInsight => r !== null)
-    .sort((a, b) => rankScore(b) - rankScore(a));
+  const ranked = rankEvidenceInsights(
+    rows.map(mapRowToEvidenceInsight).filter((r): r is EvidenceInsight => r !== null),
+  );
 
   return ranked[0] ?? null;
 }
@@ -881,6 +943,7 @@ function mapRowLoose(row: RawInsightRowWithDrills): EvidenceInsight | null {
     id: row.id,
     player_id: row.player_id,
     category: (row.category as InsightCategory | null) ?? null,
+    insight_type: row.insight_type ?? null,
     title: row.title,
     // Strip authoring artifacts ("(Research doc §N)", "The standing card below
     // shows…") that the generators bake into copy — the themes path sanitizes
@@ -993,6 +1056,7 @@ function mapRowToEvidenceInsight(row: RawInsightRowWithDrills): EvidenceInsight 
     id: row.id,
     player_id: row.player_id,
     category: (row.category as InsightCategory | null) ?? null,
+    insight_type: row.insight_type ?? null,
     title: row.title,
     // Strip authoring artifacts before the flat path returns content to the
     // coach feed / Hub / round review / digest email (themes path sanitizes
@@ -1041,15 +1105,4 @@ function extractDrills(
       duration_min: a.drill.duration_min,
       difficulty: a.drill.difficulty,
     }));
-}
-
-/** Ranking function: strokes_impact magnitude * confidence. Matches the
- *  Rule 8 SQL fallback we use when urgent-priority doesn't short-circuit.
- *  |strokes_impact| is ceiling-clamped first (audit EC-1) so a stale
- *  scale-mixed row can never dominate the single-pick Hub / round-takeaway
- *  surfaces either — defense-in-depth behind the v3 read-path filter. */
-function rankScore(insight: EvidenceInsight): number {
-  const impact = cappedStrokesImpact(insight.evidence.strokes_impact ?? 0);
-  const confidence = Number(insight.evidence.confidence ?? 0);
-  return impact * confidence;
 }
