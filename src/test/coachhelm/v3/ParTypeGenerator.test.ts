@@ -13,6 +13,7 @@ function makeAgg(
     bogey_rate: number;
     double_plus_rate: number;
     holes_scored: number;
+    spanDays: number | null;
   }> = {},
 ) {
   return {
@@ -26,6 +27,7 @@ function makeAgg(
     double_plus_rate: rates.double_plus_rate ?? 7,
     holes_scored: rates.holes_scored ?? 80,
     holes_per_round: ({ 3: 4, 4: 10, 5: 4 } as Record<3|4|5, number>)[par],
+    spanDays: rates.spanDays === undefined ? 54 : rates.spanDays,
   };
 }
 
@@ -135,5 +137,27 @@ describe('ParTypeGenerator', () => {
     const c = g.composeContent(makeAgg(4, 4.4));
     expect((makeAgg(4, 4.4) as { holes_per_round?: number }).holes_per_round ?? 10).toBeGreaterThan(0);
     expect(c.evidence.strokes_impact).toBe(0); // still seeded 0 (unchanged)
+  });
+});
+
+describe('ParTypeGenerator — Phase E honest window + per-par hole sample', () => {
+  it('window_days is the true span, content drops the "90" claim', () => {
+    const c = new ParTypeGenerator(PLAYER_ID, 4).composeContent(makeAgg(4, 4.2, 22, { spanDays: 54 }));
+    expect(c.evidence.window_days).toBe(54);
+    expect(c.content).not.toContain('90');
+  });
+  it('sample_n is the number of holes of that par played, not rounds', () => {
+    const c = new ParTypeGenerator(PLAYER_ID, 3).composeContent(makeAgg(3, 3.3, 20, { holes_scored: 72 }));
+    expect(c.evidence.sample_n).toBe(72);
+    expect(c.content).toContain('72 par 3s');
+  });
+  it('still seeds strokes_impact 0 and stays descriptive (audit contract preserved)', () => {
+    const c = new ParTypeGenerator(PLAYER_ID, 4).composeContent(makeAgg(4, 4.4));
+    expect(c.evidence.strokes_impact).toBe(0);
+    expect(c.priority).toBe('low');
+  });
+  it('span unknown → window_days 0 sentinel', () => {
+    const c = new ParTypeGenerator(PLAYER_ID, 5).composeContent(makeAgg(5, 4.7, 20, { spanDays: null }));
+    expect(c.evidence.window_days).toBe(0);
   });
 });

@@ -19,6 +19,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
+import { lifetimeSpanDays } from '@/lib/coachhelm/v3/engine/window-honesty';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -57,6 +58,8 @@ interface ParTypeAggregate extends GeneratorAggregate {
   holes_scored: number;
   /** Holes of this par per typical round (4 par-3s / 10 par-4s / 4 par-5s) — the attempt rate for CF sizing. */
   holes_per_round: number;
+  /** True lifetime span in days (first→last round); null when unknown. */
+  spanDays: number | null;
 }
 
 export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
@@ -79,7 +82,7 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     const col = PAR_TO_CACHE_COL[this.par];
     const { data, error } = await supabase
       .from('golf_player_stats_cache')
-      .select(`player_id, rounds_played, ${col}`)
+      .select(`player_id, rounds_played, first_round_date, last_round_date, ${col}`)
       .eq('player_id', this.playerId)
       .maybeSingle();
     if (error || !data) return null;
@@ -117,6 +120,10 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
       double_plus_rate: pct(dbl),
       holes_scored: n,
       holes_per_round: PAR_HOLES_PER_ROUND[this.par],
+      spanDays: lifetimeSpanDays(
+        (data as { first_round_date?: string | null }).first_round_date ?? null,
+        (data as { last_round_date?: string | null }).last_round_date ?? null,
+      ),
     };
   }
 
@@ -191,9 +198,9 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     }
 
     const content =
-      `Across your last ${agg.rounds_played} rounds you average ${valueDisp} ` +
-      `on par ${agg.par}s (${vsParDisp} vs par). ${driverClause} The standing card ` +
-      `below shows where that sits vs PGA Tour and your team.`;
+      `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
+      `you average ${valueDisp} on ${agg.holes_scored} par ${agg.par}s (${vsParDisp} vs par). ${driverClause} ` +
+      `The standing card below shows where that sits vs PGA Tour and your team.`;
 
     return {
       title,
@@ -209,8 +216,8 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
         comparison_value: agg.par,
         comparison_label: `Par ${agg.par}`,
         comparison_source: 'absolute_target',
-        sample_n: agg.rounds_played,
-        window_days: 90,
+        sample_n: agg.holes_scored,
+        window_days: agg.spanDays ?? 0,
         window_start: '',
         window_end: '',
         // Seed 0: "impact" is a gap-to-COHORT quantity, so the BaseGenerator
@@ -240,6 +247,8 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
           bogey_rate: agg.bogey_rate,
           double_plus_rate: agg.double_plus_rate,
           holes_scored: agg.holes_scored,
+          rounds_played: agg.rounds_played,
+          lifetime_span_days: agg.spanDays,
         },
       },
     };
