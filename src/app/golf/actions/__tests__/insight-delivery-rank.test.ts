@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { rankEvidenceInsights } from '@/app/golf/actions/insight-delivery';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
+import { scoreInsight } from '@/lib/coachhelm/v3/ranking/score';
 
 const mk = (over: Partial<EvidenceInsight['evidence']> & {
   priority?: EvidenceInsight['priority'];
@@ -148,8 +149,6 @@ describe('rankEvidenceInsights (flat-feed ordering contract)', () => {
     expect(withGoal[0]!.id).toBe('goal');
   });
 });
-
-import { scoreInsight } from '@/lib/coachhelm/v3/ranking/score';
 
 describe('dashboard path uses the same floor/damping contract', () => {
   it('a dashboard row WITHOUT priority/sample_n ranks below the SAME row WITH high priority + deep sample', () => {

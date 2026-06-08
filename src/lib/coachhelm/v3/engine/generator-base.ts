@@ -61,6 +61,12 @@ const PRIORITY_RANK: Record<InsightPriority, number> = {
  * `strokes_impact`, so without this they read 0. Suppressed / absent /
  * non-positive → keep the generator's composed value (ranks low — correct).
  * Pure + exported for direct unit testing.
+ *
+ * @param metric Optional canonical metric id. When it is floor-exempt
+ *   (`scoring_par_*` / `opening_hole_delta` per `isFloorExemptMetric`) the
+ *   backfill is skipped and the generator's composed (descriptive) value is
+ *   returned unchanged — these metrics must never acquire CF-derived per-round
+ *   leverage they don't independently own, or they crowd the actionable feed.
  */
 export function backfilledStrokesImpact(
   composedImpact: number,
@@ -146,6 +152,12 @@ export function computeMeasuredFactors(
  * high, ≥0.5 → medium. Keeps a high-leverage but "descriptive" (priority:'low')
  * insight from being buried below the Alert Center's ['urgent','high'] filter
  * and the practice-plan top-3. Never downgrades. Pure + exported for testing.
+ *
+ * @param metric Optional canonical metric id. When it is floor-exempt
+ *   (`scoring_par_*` / `opening_hole_delta` per `isFloorExemptMetric`) the CF
+ *   leverage is ignored and the generator's `current` priority is returned
+ *   unchanged — a descriptive standing row must not be floated into the Alert
+ *   Center off CF leverage it doesn't independently own.
  */
 export function leveragePriorityFloor(
   current: InsightPriority | undefined,

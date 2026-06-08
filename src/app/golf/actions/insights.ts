@@ -2587,11 +2587,11 @@ async function loadEvidenceBackedInsights(
           category: row.category ?? undefined,
           insight_type: row.insight_type,
           metric: typeof evidence?.metric === 'string' ? evidence.metric : undefined,
-          priority: (row.priority as 'low' | 'medium' | 'high' | 'urgent' | null) ?? undefined,
+          priority: (row.priority as InsightPriority | null) ?? undefined,
           sample_n: typeof evidence?.sample_n === 'number' ? evidence.sample_n : undefined,
         } as ComposedInsight & {
           id: string; evidence: unknown; category?: string; insight_type: string;
-          metric?: string; priority?: 'low' | 'medium' | 'high' | 'urgent'; sample_n?: number;
+          metric?: string; priority?: InsightPriority; sample_n?: number;
         };
       });
 

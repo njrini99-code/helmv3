@@ -21,7 +21,10 @@ describe('backfilledStrokesImpact exemption', () => {
   });
 
   it('does NOT backfill an exempt par-scoring metric (keeps the descriptive 0)', () => {
+    // The exemption applies to all three par generators, not just par-4.
+    expect(backfilledStrokesImpact(0, liveCf, 'scoring_par_3')).toBe(0);
     expect(backfilledStrokesImpact(0, liveCf, 'scoring_par_4')).toBe(0);
+    expect(backfilledStrokesImpact(0, liveCf, 'scoring_par_5')).toBe(0);
   });
 
   it('does NOT backfill the warmup opening-hole metric', () => {
@@ -35,7 +38,10 @@ describe('leveragePriorityFloor exemption', () => {
   });
 
   it('does NOT escalate an exempt par-scoring metric (stays low/descriptive)', () => {
+    // The exemption applies to all three par generators, not just par-4.
+    expect(leveragePriorityFloor('low', liveCf, 'scoring_par_3')).toBe('low');
     expect(leveragePriorityFloor('low', liveCf, 'scoring_par_4')).toBe('low');
+    expect(leveragePriorityFloor('low', liveCf, 'scoring_par_5')).toBe('low');
   });
 
   it('does NOT escalate the warmup opening-hole metric', () => {
