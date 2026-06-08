@@ -199,8 +199,7 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
 
     const content =
       `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
-      `you average ${valueDisp} on ${agg.holes_scored} par ${agg.par}s (${vsParDisp} vs par). ${driverClause} ` +
-      `The standing card below shows where that sits vs PGA Tour and your team.`;
+      `you average ${valueDisp} on ${agg.holes_scored} par ${agg.par}s (${vsParDisp} vs par). ${driverClause}`;
 
     return {
       title,
