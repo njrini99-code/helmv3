@@ -378,3 +378,37 @@ describe('ApproachMissGenerator — dominant miss-axis driver (PLAY: driver+acti
     expect(agg!.miss_left_right.positive).toBe(1); // right → positive
   });
 });
+
+// Phase E (E6): approach-miss is a SHOT-SOURCE engine — loadApproachShots genuinely
+// windows the last 90 days — so window_days:90 is HONEST and STAYS 90 (unlike the
+// cache-backed putt/par generators). The remaining honesty fix is consistent
+// per-rate denominator disclosure: the reach % discloses approach attempts and the
+// proximity discloses the greens-hit count it was averaged over.
+describe('ApproachMissGenerator — Phase E window stays 90d, attempts disclosed', () => {
+  it('window_days remains 90 (shot-source genuinely windows — verified)', () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '125_175ft');
+    const c = g.composeContent(makeAgg({
+      bucket: '125_175ft', attempts: 22, green_hit_n: 14,
+      green_hit_pct: 63.6, proximity_when_hit_feet: 31,
+    }));
+    expect(c.evidence.window_days).toBe(90);
+  });
+
+  it('reach sentence discloses the approach attempt count', () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '175_plus_ft');
+    const c = g.composeContent(makeAgg({
+      bucket: '175_plus_ft', attempts: 18, green_hit_n: 7,
+      green_hit_pct: 38.9, proximity_when_hit_feet: null,
+    }));
+    expect(c.content).toMatch(/18 approaches/);
+  });
+
+  it('proximity sentence discloses the greens-hit count it was averaged over', () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
+    const c = g.composeContent(makeAgg({
+      bucket: '50_125ft', attempts: 30, green_hit_n: 24,
+      green_hit_pct: 80, proximity_when_hit_feet: 17,
+    }));
+    expect(c.content).toMatch(/over 24 greens/);
+  });
+});

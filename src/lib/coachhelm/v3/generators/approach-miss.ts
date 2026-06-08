@@ -231,8 +231,8 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     const dialInSentence =
       prox != null
         ? ` When you do reach it you finish ${prox.toFixed(0)} ft from the hole ` +
-          `(Tour ~${tourProx} ft) — that's the dial-in once you're on.`
-        : ` Too few greens hit from here to read a reliable proximity yet — the gap is ` +
+          `(Tour ~${tourProx} ft, over ${agg.green_hit_n} greens) — that's the dial-in once you're on.`
+        : ` Too few greens hit from here (${agg.green_hit_n}) to read a reliable proximity yet — the gap is ` +
           `finding the green, not distance control on it.`;
     const penaltySentence =
       agg.penalty_rate_pct > 5
