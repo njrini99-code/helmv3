@@ -148,3 +148,13 @@ describe('rankEvidenceInsights (flat-feed ordering contract)', () => {
     expect(withGoal[0]!.id).toBe('goal');
   });
 });
+
+import { scoreInsight } from '@/lib/coachhelm/v3/ranking/score';
+
+describe('dashboard path uses the same floor/damping contract', () => {
+  it('a dashboard row WITHOUT priority/sample_n ranks below the SAME row WITH high priority + deep sample', () => {
+    const bare = { insight_type: 'x', strokes_impact: 0, confidence: 0.6, metric: 'putts_made_5_10ft_pct' };
+    const enriched = { ...bare, priority: 'high' as const, sample_n: 40 };
+    expect(scoreInsight(enriched, {})).toBeGreaterThan(scoreInsight(bare, {}));
+  });
+});

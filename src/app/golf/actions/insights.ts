@@ -2550,7 +2550,7 @@ async function loadEvidenceBackedInsights(
     // ranking weight before returning.
     const { data, error } = await supabase
       .from('golf_coach_insights')
-      .select('id, title, content, evidence, category, insight_type, lifecycle_state, metadata, created_at')
+      .select('id, title, content, evidence, category, insight_type, priority, lifecycle_state, metadata, created_at')
       .eq('player_id', playerId)
       .not('evidence', 'is', null)
       // Scope to the v3 engine, matching every insight-delivery.ts fetcher.
@@ -2587,7 +2587,12 @@ async function loadEvidenceBackedInsights(
           category: row.category ?? undefined,
           insight_type: row.insight_type,
           metric: typeof evidence?.metric === 'string' ? evidence.metric : undefined,
-        } as ComposedInsight & { id: string; evidence: unknown; category?: string; insight_type: string; metric?: string };
+          priority: (row.priority as 'low' | 'medium' | 'high' | 'urgent' | null) ?? undefined,
+          sample_n: typeof evidence?.sample_n === 'number' ? evidence.sample_n : undefined,
+        } as ComposedInsight & {
+          id: string; evidence: unknown; category?: string; insight_type: string;
+          metric?: string; priority?: 'low' | 'medium' | 'high' | 'urgent'; sample_n?: number;
+        };
       });
 
     // W36 ranking: |strokes_impact| × confidence × coach_weight × goalBoost.
@@ -2607,6 +2612,8 @@ async function loadEvidenceBackedInsights(
         confidence: p.confidence ?? 0,
         metric: p.metric,
         category: p.category,
+        priority: p.priority,
+        sample_n: p.sample_n,
         _ref: p,
       })),
       weights,
