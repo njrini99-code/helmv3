@@ -11,6 +11,9 @@
 
 import type { CompositeRule, CompositeMatch, CompositeContent, EvidenceInsight } from '../types';
 
+/** A cascade needs >=5 rounds of BOTH signals; below that it's noise. */
+const MIN_SOURCE_N = 5;
+
 /**
  * Absolute-skill floor (lag3putt-2 / PDC-1).
  *
@@ -72,6 +75,10 @@ const rule: CompositeRule = {
     // lag didn't finish (1 − lagMake) AND the comebacker is missed at the player's
     // own 3-5 ft rate (1 − shortMake). Conservative floor — not a measured stat.
     const threePuttRate = (1 - lagMakePct / 100) * (1 - shortMakePct / 100);
+    const lagN = Number(lag.evidence.sample_n ?? 0);
+    const shortN = Number(short.evidence.sample_n ?? 0);
+    const sampleN = Math.min(lagN, shortN);
+    if (sampleN < MIN_SOURCE_N) return null;
     return {
       source_insight_ids: [lag.id, short.id],
       signals: {
@@ -79,6 +86,7 @@ const rule: CompositeRule = {
         lag_value: lagMakePct,
         short_value: shortMakePct,
         three_putt_rate: threePuttRate,
+        sample_n: sampleN,
       },
     };
   },
@@ -107,7 +115,7 @@ const rule: CompositeRule = {
         comparison_value: 3,
         comparison_label: 'Tour ~3% 3-putt rate',
         comparison_source: 'pga_baseline',
-        sample_n: 0, // replaced in Task G4 with the real source-rounds count
+        sample_n: Number(match.signals.sample_n ?? 0),
         window_days: 30,
         window_start: '',
         window_end: '',

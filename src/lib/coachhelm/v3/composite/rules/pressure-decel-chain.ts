@@ -12,6 +12,9 @@
 
 import type { CompositeRule, EvidenceInsight, CompositeMatch, CompositeContent } from '../types';
 
+/** A cascade needs >=5 rounds of BOTH signals; below that it's noise. */
+const MIN_SOURCE_N = 5;
+
 function isPressureGap(i: EvidenceInsight): boolean {
   return i.insight_type === 'pressure_gap' && Number(i.evidence.your_value ?? 0) > 0.3;
 }
@@ -52,12 +55,17 @@ const rule: CompositeRule = {
     const pressure = insights.find(isPressureGap);
     const shortPutt = insights.find(isWeakShortPutt);
     if (!pressure || !shortPutt) return null;
+    const pressureN = Number(pressure.evidence.sample_n ?? 0);
+    const shortN = Number(shortPutt.evidence.sample_n ?? 0);
+    const sampleN = Math.min(pressureN, shortN);
+    if (sampleN < MIN_SOURCE_N) return null; // too thin to assert a cascade
     return {
       source_insight_ids: [pressure.id, shortPutt.id],
       signals: {
         pressure_delta: Number(pressure.evidence.your_value ?? 0),
         short_putt_signature: shortPutt.signature,
         short_putt_value: Number(shortPutt.evidence.your_value ?? 0),
+        sample_n: sampleN,
       },
     };
   },
@@ -96,7 +104,7 @@ const rule: CompositeRule = {
         comparison_value: 0.5,
         comparison_label: 'PGA Tour pressure gap',
         comparison_source: 'pga_baseline',
-        sample_n: 5,
+        sample_n: Number(match.signals.sample_n ?? 0),
         window_days: 30,
         window_start: '',
         window_end: '',
