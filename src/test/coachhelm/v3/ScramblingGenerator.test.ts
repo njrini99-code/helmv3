@@ -6,6 +6,10 @@ vi.mock('@/lib/coachhelm/v3/engine/shot-source', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/coachhelm/v3/engine/shot-source')>();
   return { ...actual, loadSandShots: vi.fn() };
 });
+
+vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
+  loadPlayerCohort: vi.fn().mockResolvedValue({ gender: 'mens', level: null }),
+}));
 const mockLoadSandShots = vi.mocked(loadSandShots);
 
 const PLAYER_ID = 'p-1';
@@ -23,19 +27,23 @@ function makeAgg(over: Partial<{
   reached_green_n: number; failed_escape_n: number;
   avg_leave_feet: number | null; two_putt_after_reach_n: number;
   failure_mode: 'escape' | 'lag' | 'mixed';
+  gender: 'mens' | 'womens';
 }> = {}) {
   const attempts = over.attempts ?? 32;
+  const rounds_played = over.rounds_played ?? 15;
   return {
     sampleN: attempts,
     playerValue: over.playerValue ?? 8,
     lie: 'sand' as const,
     attempts,
-    rounds_played: over.rounds_played ?? 15,
+    rounds_played,
     reached_green_n: over.reached_green_n ?? 24,
     failed_escape_n: over.failed_escape_n ?? 8,
     avg_leave_feet: 'avg_leave_feet' in over ? over.avg_leave_feet! : 13.7,
     two_putt_after_reach_n: over.two_putt_after_reach_n ?? 22,
     failure_mode: over.failure_mode ?? 'lag',
+    cohort_gender: over.gender ?? 'mens',
+    attempts_per_round: attempts / rounds_played,
   };
 }
 
@@ -95,6 +103,27 @@ describe('ScramblingGenerator', () => {
     expect(agg!.two_putt_after_reach_n).toBe(3);    // 3 of the 4 reached then 2-putt
     // 67% reach (4/6) but only 1/4 up-and-down → lag, not escape.
     expect(agg!.failure_mode).toBe('lag');
+  });
+
+  it('anchors a women\'s player to ~38% sand-save, not the men\'s 50%', () => {
+    const g = new ScramblingGenerator(PLAYER_ID, 'sand');
+    const c = g.composeContent(makeAgg({ playerValue: 0, attempts: 13, rounds_played: 8, gender: 'womens' }));
+    expect(c.evidence.comparison_value).toBe(38);
+    expect(c.content).toContain('38%');
+    expect(c.content).not.toContain('~50%'); // no men's Tour anchor for a women's player
+    expect(c.evidence.comparison_label).toContain('women');
+  });
+
+  it('men\'s player keeps the 50% Tour anchor (unchanged)', () => {
+    const g = new ScramblingGenerator(PLAYER_ID, 'sand');
+    const c = g.composeContent(makeAgg({ playerValue: 30, attempts: 12, rounds_played: 20, gender: 'mens' }));
+    expect(c.evidence.comparison_value).toBe(50);
+  });
+
+  it('exposes the player\'s own sand attempts/round for attempt-rate sizing', () => {
+    const agg = makeAgg({ attempts: 13, rounds_played: 8 });
+    expect((agg as { attempts_per_round?: number }).attempts_per_round ?? (agg.attempts / agg.rounds_played))
+      .toBeCloseTo(1.625);
   });
 
   it('aggregate prints the AUTHORITATIVE sand-save % (golf_holes.sand_save flag) when flags are present', async () => {

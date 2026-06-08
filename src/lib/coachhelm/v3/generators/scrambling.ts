@@ -29,6 +29,8 @@
 import { round } from '@/lib/golf/stat-formulas';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadSandShots, type SandShot } from '@/lib/coachhelm/v3/engine/shot-source';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
+import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -54,6 +56,10 @@ interface ScramblingAggregate extends GeneratorAggregate {
   two_putt_after_reach_n: number;
   /** Which failure dominates: never escaping vs reaching-then-lagging. */
   failure_mode: ScramblingFailureMode;
+  /** Cohort gender resolved in aggregate() — selects the anchor + copy. */
+  cohort_gender: CohortGender;
+  /** Player's own sand attempts per round (attempts / rounds_played). */
+  attempts_per_round: number;
 }
 
 const LIE_TO_METRIC_ID: Record<ScramblingLie, MetricId> = {
@@ -107,6 +113,8 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     const avgLeave = leaves.length > 0 ? round(leaves.reduce((a, d) => a + d, 0) / leaves.length, 1) : null;
     const twoPuttAfterReach = reached.filter((s) => s.putts_after >= 2).length;
     const roundsPlayed = new Set(shots.map((s) => s.round_id)).size;
+    const cohort = await loadPlayerCohort(this.playerId);
+    const attemptsPerRound = roundsPlayed > 0 ? attempts / roundsPlayed : 0;
 
     // Failure mode: if a meaningful share never reaches the green it's an ESCAPE
     // problem; if most reach but don't get up-and-down it's a LAG/proximity
@@ -133,6 +141,8 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
       avg_leave_feet: avgLeave,
       two_putt_after_reach_n: twoPuttAfterReach,
       failure_mode: failureMode,
+      cohort_gender: cohort.gender,
+      attempts_per_round: attemptsPerRound,
     };
   }
 
@@ -140,6 +150,11 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     const saveDisp = `${Math.round(agg.playerValue)}%`;
     const escapePct = agg.attempts > 0 ? Math.round((100 * agg.reached_green_n) / agg.attempts) : 0;
     const leaveDisp = agg.avg_leave_feet != null ? `${Math.round(agg.avg_leave_feet)} ft` : null;
+
+    const anchor = cohortAnchor('scrambling_pct_sand', agg.cohort_gender) ?? 50;
+    const anchorLabel = agg.cohort_gender === 'womens'
+      ? "women's college sand-save avg"
+      : 'PGA Tour sand save avg';
 
     let title: string;
     let driver: string;
@@ -167,7 +182,7 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
         `dominates yet — keep logging bunker shots to sharpen the read.`;
     }
 
-    const content = `${driver} Tour sand-save average is ~50%.`;
+    const content = `${driver} ${agg.cohort_gender === 'womens' ? "Women's college" : 'Tour'} sand-save average is ~${anchor}%.`;
 
     return {
       title,
@@ -182,8 +197,8 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
         unit: 'percent',
         your_value: agg.playerValue,
         your_value_display: saveDisp,
-        comparison_value: 50,
-        comparison_label: 'PGA Tour sand save avg',
+        comparison_value: anchor,
+        comparison_label: anchorLabel,
         comparison_source: 'pga_baseline',
         sample_n: agg.attempts,
         window_days: 90,
