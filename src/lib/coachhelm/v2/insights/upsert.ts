@@ -204,6 +204,18 @@ async function updateExisting(
     // priority — wrong in the Alert Center's ['urgent','high'] filter + ordering.
     if (input.priority) refreshPayload.priority = input.priority;
 
+    // RESURRECTION (to-95 audit P2): a re-emitted signature whose row was
+    // previously archived (age-based lifecycle sweep or the generator scope
+    // retraction) must return to a visible state — otherwise this refresh
+    // lands fresh evidence on a row delivery can never show again, silently
+    // and permanently. `status` is deliberately NOT touched: a coach
+    // dismissal keeps hiding the row regardless of lifecycle.
+    if (existing.lifecycle_state === 'archived') {
+      refreshPayload.lifecycle_state = 'detected';
+      refreshPayload.archived_at = null;
+      mergedMetadata.redetected_at = nowIso;
+    }
+
     const { error } = await supabase
       .from('golf_coach_insights')
       .update(refreshPayload)
@@ -255,6 +267,13 @@ async function updateExisting(
   if (shouldMature) {
     updatePayload.lifecycle_state = 'matured';
   }
+  // RESURRECTION on movement — see the refresh-branch comment. shouldMature
+  // requires lifecycle 'detected', so the two assignments are exclusive.
+  if (existing.lifecycle_state === 'archived') {
+    updatePayload.lifecycle_state = 'detected';
+    updatePayload.archived_at = null;
+    mergedMetadata.redetected_at = nowIso;
+  }
   // Re-persist freshly-computed severity (no coach manual-priority path exists;
   // see refresh branch above) so escalations/de-escalations aren't pinned to
   // the stale INSERT-time value.
@@ -274,7 +293,11 @@ async function updateExisting(
   // transitions happen via the lifecycle cron, not upsertInsight. Never let a
   // push failure break the upsert.
   const nextLifecycleState: InsightLifecycleState =
-    shouldMature ? 'matured' : (existing.lifecycle_state ?? 'detected');
+    shouldMature
+      ? 'matured'
+      : existing.lifecycle_state === 'archived'
+        ? 'detected' // resurrected above
+        : (existing.lifecycle_state ?? 'detected');
   try {
     if (input.player_id) {
       await notifyInsightLanded({

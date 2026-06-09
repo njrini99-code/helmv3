@@ -225,6 +225,72 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   }
 
   /**
+   * Signature scope this generator instance OWNS, without the `v3:` prefix
+   * (to-95 audit P2 stale-row sweep). When non-null, a successful run
+   * retracts (archives) still-active rows in this scope that the run did
+   * not (re-)emit — closing the "player dequalified but the old row lives
+   * forever" gap the age-based lifecycle cron cannot close (it never
+   * archives matured rows, and detected rows survive 30d).
+   *
+   * MUST be deterministic from constructor state alone (never from the
+   * aggregate) so it is computable on the didn't-qualify exits. Scopes of
+   * sibling instances must not prefix-overlap (e.g. `putt_distance:3_5ft`
+   * vs `putt_distance:5_10ft`). Default null = no retraction (opt-in).
+   */
+  protected signatureScope(): string | null {
+    return null;
+  }
+
+  /**
+   * Archive still-active, coach-untouched rows in this generator's scope,
+   * except `keepSignature` (the row the run just wrote). Only `tentative`/
+   * `detected` lifecycle states are touched — matured/addressed/resolved
+   * carry movement history or coach action and are left to the lifecycle
+   * cron / the coach. Soft-archive only (lifecycle_state + archived_at);
+   * never a DELETE. Failure is logged and swallowed — a sweep failure must
+   * not fail the generator run that produced a fresh insight.
+   *
+   * NOTE on LIKE: signatures are fixed lowercase snake-case vocabularies,
+   * so the unescaped `_` wildcard cannot collide across scopes in practice
+   * (no two scopes differ only at an underscore position).
+   */
+  private async retractStaleInScope(keepSignature: string | null): Promise<number> {
+    const scope = this.signatureScope();
+    if (!scope) return 0;
+    try {
+      const supabase = createAdminClient();
+      const nowIso = new Date().toISOString();
+      let query = supabase
+        .from('golf_coach_insights')
+        .update({ lifecycle_state: 'archived', archived_at: nowIso, updated_at: nowIso })
+        .eq('player_id', this.playerId)
+        .like('signature', `${V3_SIGNATURE_PREFIX}${scope}%`)
+        .in('lifecycle_state', ['tentative', 'detected'])
+        .eq('status', 'active')
+        .is('acknowledged_at', null)
+        .is('addressed_at', null);
+      if (keepSignature) {
+        query = query.neq('signature', keepSignature);
+      }
+      const { data, error } = await query.select('id');
+      if (error) {
+        await logServerError(
+          `${this.name} stale-scope retraction failed for player=${this.playerId} scope=${scope}: ${error.message}`,
+          { action: `v3.generator.${this.name}.retract` },
+        );
+        return 0;
+      }
+      return data?.length ?? 0;
+    } catch (err) {
+      await logServerError(
+        `${this.name} stale-scope retraction threw for player=${this.playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        { action: `v3.generator.${this.name}.retract` },
+      );
+      return 0;
+    }
+  }
+
+  /**
    * Full lifecycle entry point. Cron / orchestrator code calls this.
    */
   async run(): Promise<RunResult> {
@@ -238,10 +304,15 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
 
       const agg = await this.aggregate();
       if (!agg) {
-        return { id: null, gated: false };
+        // True dequalification — no data in the window. Retract any rows
+        // this scope still has active so they don't outlive their evidence.
+        const retracted = await this.retractStaleInScope(null);
+        return { id: null, gated: false, retracted };
       }
       if (agg.sampleN < this.minSampleN) {
-        return { id: null, gated: false };
+        // Fell below the sample gate (audit P2's named case) — retract.
+        const retracted = await this.retractStaleInScope(null);
+        return { id: null, gated: false, retracted };
       }
 
       const standing = this.requiresStanding
@@ -251,6 +322,9 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       if (this.requiresStanding && !standing) {
         // No standing yet → no PGA reference → skip the insight. The
         // standing cron will catch up; next run picks this up.
+        // Deliberately NO retraction here — this is infrastructure lag,
+        // not dequalification; archiving would flap rows and reset their
+        // lifecycle history every time the standing cron falls behind.
         return { id: null, gated: false };
       }
 
@@ -359,9 +433,16 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       });
 
       if (result === GATED_OUT) {
+        // Philosophy gate suppressed the write — a product decision to not
+        // ADD a row, not evidence the old rows are stale. No retraction.
         return { id: null, gated: true };
       }
-      return { id: result, gated: false };
+      // Fresh row written — retract siblings in scope it superseded (e.g.
+      // a data-derived signature suffix moved: old band/pattern row goes).
+      const retracted = await this.retractStaleInScope(
+        `${V3_SIGNATURE_PREFIX}${composed.signature}`,
+      );
+      return { id: result, gated: false, retracted };
     } catch (err) {
       await logServerError(
         `${this.name} run() failed for player=${this.playerId}: ${err instanceof Error ? err.message : String(err)}`,

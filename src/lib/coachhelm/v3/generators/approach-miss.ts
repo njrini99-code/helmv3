@@ -146,6 +146,10 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     this.metricId = BUCKET_TO_METRIC_ID[bucket];
   }
 
+  protected override signatureScope(): string {
+    return `approach_miss:${this.bucket}`;
+  }
+
   async aggregate(): Promise<ApproachMissAggregate | null> {
     const shots = await loadApproachShots(this.playerId);
     const inBucket = shots.filter(

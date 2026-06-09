@@ -136,6 +136,10 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     this.metricId = BUCKET_TO_METRIC_ID[bucket];
   }
 
+  protected override signatureScope(): string {
+    return `putt_distance:${this.bucket}`;
+  }
+
   async aggregate(): Promise<PuttDistanceAggregate | null> {
     const supabase = createAdminClient();
     const col = BUCKET_TO_CACHE_COLUMN[this.bucket];

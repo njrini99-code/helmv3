@@ -81,6 +81,10 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     this.metricId = LIE_TO_METRIC_ID[lie];
   }
 
+  protected override signatureScope(): string {
+    return `scrambling:${this.lie}`;
+  }
+
   async aggregate(): Promise<ScramblingAggregate | null> {
     const shots = await loadSandShots(this.playerId);
     if (shots.length === 0) return null;

@@ -15,6 +15,10 @@ import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeAttribution, nextWeight } from '@/lib/coachhelm/v3/causality/attribute';
+import {
+  V3_ENGINE_FILTER,
+  VISIBLE_LIFECYCLE_STATES,
+} from '@/lib/coachhelm/v3/insight-visibility';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -78,11 +82,19 @@ async function handle(): Promise<NextResponse> {
 
   // Insights surfaced ≥21d ago. We use created_at as surfaced_at
   // proxy (insight surfacing in v3 happens at write time).
+  //
+  // Eligibility mirrors the delivery read paths EXACTLY (to-95 audit P1):
+  // the learning loop must never write attribution rows or move coach
+  // weights from rows the product has decided not to surface — stale v2
+  // rows, archived/tentative lifecycle states, or coach-dismissed insights.
   const { data: candidates } = await sb
     .from('golf_coach_insights')
     .select('id, player_id, coach_id, insight_type, evidence, created_at')
     .lte('created_at', cutoffIso)
     .not('player_id', 'is', null)
+    .or(V3_ENGINE_FILTER)
+    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+    .neq('status', 'dismissed')
     .order('created_at', { ascending: true })
     .limit(LIMIT * 3); // over-fetch — many will already be attributed
 

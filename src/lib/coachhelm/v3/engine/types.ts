@@ -35,6 +35,13 @@ export interface GeneratorAggregate {
 export interface RunResult {
   id: string | null;
   gated: boolean;
+  /**
+   * Number of stale rows in this generator's signature scope archived
+   * because the generator no longer emits them (to-95 audit P2 stale-row
+   * sweep). Absent when the generator declares no scope or the run exited
+   * on a path that must not retract (gated / no-standing / error).
+   */
+  retracted?: number;
 }
 
 /**

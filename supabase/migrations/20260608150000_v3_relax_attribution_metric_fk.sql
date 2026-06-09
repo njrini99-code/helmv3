@@ -43,3 +43,18 @@ COMMENT ON COLUMN public.golf_insight_outcome_attribution.target_metric_id IS
   'score_to_par) resolved by lookupMetricSource(). Intentionally NOT FK-bound '
   'to golf_metrics — integrity is enforced in computeAttribution(). See '
   'migration 20260608150000.';
+
+-- VERIFIED 2026-06-09 against prod (qmnssrrolpinvwjjnufo):
+--   golf_insight_outcome_attribution_target_metric_id_fkey GONE; the
+--   insight_id FK KEPT (contype='f' present); join index
+--   idx_golf_insight_outcome_attribution_metric EXISTS. First attribution row
+--   landed 2026-06-09 (written by the still-deployed PRE-Phase-H cron once this
+--   FK stopped rejecting it — see docs/audits/COACHHELM_TO_95_AUDIT_2026-06-08.md
+--   addendum on why that row is learning-poison until the branch deploys).
+-- HISTORY: recorded as version 20260608093936 ('v3_relax_attribution_metric_fk')
+--   — apply-time stamp from MCP apply_migration, NOT this filename. Do not
+--   re-apply via db push.
+-- ROLLBACK: DELETE alias-metric rows (target_metric_id NOT IN golf_metrics),
+--   then ALTER TABLE ... ADD CONSTRAINT ... FOREIGN KEY (target_metric_id)
+--   REFERENCES golf_metrics(metric_id). NOTE: the static lock test
+--   (causality-attribution-fk.test.ts) intentionally fails on re-adding it.

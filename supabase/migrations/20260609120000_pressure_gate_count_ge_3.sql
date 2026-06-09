@@ -304,3 +304,13 @@ REVOKE EXECUTE ON FUNCTION "public"."refresh_player_standing_round_metrics"("p_t
 GRANT EXECUTE ON FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) TO service_role;
 
 COMMENT ON FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) IS 'v3 W24 prep + cohort baseline (SC3, 2026-06-06). Round-level standing for practice_tournament_delta + opening_hole_delta with per-team team_avg/team_pct AND an app-wide college-population level_avg/level_n/level_pct (V1 cohort, MIN_COHORT_N=8). team_pct is NULLed when team_n<3 (tiny-N percentile guard, EC-2). Companion to refresh_player_standing. Same (metric_id, rows_upserted) return shape (aliased out_*). pg-2 (2026-06-09): pressure buckets gated at >=3 to match the TS MIN_ROUNDS_PER_BUCKET floor.';
+
+-- VERIFIED 2026-06-09 against prod (qmnssrrolpinvwjjnufo):
+--   refresh_player_standing_round_metrics prosrc carries the >= 3 bucket gate;
+--   function remains SECURITY DEFINER, service_role-only.
+-- HISTORY: recorded as version 20260608064117 ('pressure_gate_count_ge_3') —
+--   apply-time stamp from MCP apply_migration, NOT this filename. Do not
+--   re-apply via db push.
+-- ROLLBACK: CREATE OR REPLACE with the prior definition from the 2026-06-05
+--   cohort migration (bucket gate > 0), then re-run the standing refresh cron
+--   so standing rows regenerate under the old gate.

@@ -44,8 +44,8 @@ import {
   getInsightsForPlayer,
   getInsightsForCoach,
   getRoundTakeawayInsight,
-  collapseParScoring,
 } from '@/app/golf/actions/insight-delivery';
+import { collapseParScoring } from '@/app/golf/actions/insight-delivery-ranking';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 
 // ---------------------------------------------------------------------------

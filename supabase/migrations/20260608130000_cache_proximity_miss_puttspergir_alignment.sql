@@ -198,3 +198,15 @@ BEGIN
     PERFORM public.update_player_putt_make_pct(v_pid);
   END LOOP;
 END $$;
+
+-- VERIFIED 2026-06-09 against prod (qmnssrrolpinvwjjnufo):
+--   update_player_distance_proximity prosrc writes putts_per_gir;
+--   golf_player_stats_cache has putts_per_gir populated 20/20 active players;
+--   check:stats reports 0 divergent surfaces vs the TS engine.
+-- HISTORY: recorded as version 20260607235608
+--   ('cache_proximity_miss_puttspergir_alignment') — apply-time stamp from MCP
+--   apply_migration, NOT this filename. Do not re-apply via db push.
+-- ROLLBACK: CREATE OR REPLACE update_player_distance_proximity and
+--   update_player_putt_make_pct with the prior definitions from the preceding
+--   migration in the chain, then mark caches stale (mark_player_stats_stale)
+--   so the next refresh rewrites the affected columns.

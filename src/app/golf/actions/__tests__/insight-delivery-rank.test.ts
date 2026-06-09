@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rankEvidenceInsights } from '@/app/golf/actions/insight-delivery';
+import { rankEvidenceInsights } from '@/app/golf/actions/insight-delivery-ranking';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { scoreInsight } from '@/lib/coachhelm/v3/ranking/score';

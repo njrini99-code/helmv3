@@ -157,6 +157,10 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
     return isGeneratorEnabledForPlayer(this.playerId, 'tee_strategy_enabled');
   }
 
+  protected override signatureScope(): string {
+    return 'tee_strategy:';
+  }
+
   async aggregate(): Promise<TeeStrategyAggregate | null> {
     const rows = await loadTeeShotsForStrategy(this.playerId, WINDOW_DAYS);
     if (rows.length === 0) return null;
