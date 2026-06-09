@@ -43,6 +43,10 @@ import {
   dedupeBySubject,
   rankEvidenceInsights,
 } from './insight-delivery-ranking';
+import {
+  V3_ENGINE_FILTER,
+  VISIBLE_LIFECYCLE_STATES,
+} from '@/lib/coachhelm/v3/insight-visibility';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -123,9 +127,10 @@ export interface GetInsightsForCoachOptions {
 // Shared constants
 // ---------------------------------------------------------------------------
 
-/** Lifecycle states the UI is allowed to surface. `tentative` is pre-maturity
- *  and should never be shown to a player; `archived` rows are soft-deleted. */
-const VISIBLE_LIFECYCLE_STATES = ['detected', 'matured', 'addressed', 'resolved'] as const;
+// V3_ENGINE_FILTER + VISIBLE_LIFECYCLE_STATES moved to the shared
+// `@/lib/coachhelm/v3/insight-visibility` module so the causality
+// attribution cron applies the exact same eligibility boundary
+// (to-95 audit P1). Imported at the top of this file.
 
 type CoachInsightRow = Database['public']['Tables']['golf_coach_insights']['Row'];
 type DrillAttachmentRow = Database['public']['Tables']['golf_insight_drill_attachments']['Row'];
@@ -178,18 +183,6 @@ const INSIGHT_SELECT = `
     )
   )
 ` as const;
-
-/**
- * Read-path engine filter (audit EC-1 / FID-1/FID-2). The delivery surfaces
- * must only ever render the modern v3 system. Stale v2 rows (e.g. the
- * `par_scoring_parN` rows that mix a to-par player value against a raw-stroke
- * team average → an impossible 42-stroke `strokes_impact`) poison ranking and
- * must never reach a coach/player. Every fetcher applies this via PostgREST
- * `.or()`: a row qualifies if it was stamped `engine_version='v3'` OR carries
- * a `v3:%` signature (belt-and-suspenders for the handful of rows where one
- * field lags the other). Stale v2 rows match neither and are excluded in-DB.
- */
-const V3_ENGINE_FILTER = "engine_version.eq.v3,signature.like.v3:%" as const;
 
 // ---------------------------------------------------------------------------
 // Public API
