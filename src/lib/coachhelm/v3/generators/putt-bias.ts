@@ -154,6 +154,11 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     this.metricId = DIR_TO_METRIC_ID[weakestDirection];
   }
 
+  /** Both directional instances aggregate the SAME data and emit the same signature ('putt_bias:balanced' or the data-derived weakest direction), so they share the whole putt_bias scope; the post-emit keep makes the sweep idempotent across the pair, and a heal to 'balanced' retracts the stale directional row. */
+  protected override signatureScope(): string {
+    return 'putt_bias:';
+  }
+
   async aggregate(): Promise<PuttBiasAggregate | null> {
     const supabase = createAdminClient();
     const since = new Date(Date.now() - WINDOW_DAYS * 86400_000).toISOString().slice(0, 10);

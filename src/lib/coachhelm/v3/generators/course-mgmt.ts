@@ -79,6 +79,12 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     this.metricId = VARIANT_TO_METRIC_ID[variant];
   }
 
+  protected override signatureScope(): string {
+    return this.variant === 'penalty'
+      ? 'course_management:penalty_rate'
+      : 'course_management:big_number';
+  }
+
   async aggregate(): Promise<CourseMgmtAggregate | null> {
     const supabase = createAdminClient();
     const { data, error } = await supabase

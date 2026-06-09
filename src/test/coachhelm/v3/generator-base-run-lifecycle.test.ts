@@ -221,7 +221,10 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     const gen = new TestGenerator('player-1', { agg: null });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: null, gated: false });
+    // retracted:0 — the stale-scope sweep ran on this dequalify exit, but the
+    // TestGenerator declares no signatureScope (see generator-base-retraction
+    // tests for the scoped behavior).
+    expect(res).toEqual({ id: null, gated: false, retracted: 0 });
     expect(callLog).toEqual(['isEnabled', 'aggregate']);
     expect(loadStandingForMetricMock).not.toHaveBeenCalled();
     expect(upsertInsightV3Mock).not.toHaveBeenCalled();
@@ -233,7 +236,7 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: null, gated: false });
+    expect(res).toEqual({ id: null, gated: false, retracted: 0 });
     expect(callLog).toEqual(['isEnabled', 'aggregate']);
     expect(callLog).not.toContain('composeContent');
     expect(loadStandingForMetricMock).not.toHaveBeenCalled();
@@ -256,7 +259,7 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     const gen = new TestGenerator('player-1', { requiresStanding: false });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: 'row-id-1', gated: false });
+    expect(res).toEqual({ id: 'row-id-1', gated: false, retracted: 0 });
     // Diagnostic path never touches the standing loader or the counterfactual.
     expect(loadStandingForMetricMock).not.toHaveBeenCalled();
     expect(computeCounterfactualMock).not.toHaveBeenCalled();
@@ -290,7 +293,7 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: 'row-id-1', gated: false });
+    expect(res).toEqual({ id: 'row-id-1', gated: false, retracted: 0 });
     expect(callLog).toEqual(['isEnabled', 'aggregate', 'composeContent']);
 
     const input = lastUpsertInput();

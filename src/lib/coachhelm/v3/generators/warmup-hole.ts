@@ -59,6 +59,10 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
 
   readonly metricId: MetricId = 'opening_hole_delta';
 
+  protected override signatureScope(): string {
+    return 'warmup_hole:hole_1';
+  }
+
   async aggregate(): Promise<WarmupHoleAggregate | null> {
     const holes = await loadCompletedHoles(this.playerId);
     if (holes.length === 0) return null;

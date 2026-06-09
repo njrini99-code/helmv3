@@ -77,6 +77,10 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     this.metricId = PAR_TO_METRIC_ID[par];
   }
 
+  protected override signatureScope(): string {
+    return `par_scoring:par${this.par}`;
+  }
+
   async aggregate(): Promise<ParTypeAggregate | null> {
     const supabase = createAdminClient();
     const col = PAR_TO_CACHE_COL[this.par];

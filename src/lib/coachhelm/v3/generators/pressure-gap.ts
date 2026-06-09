@@ -68,6 +68,10 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
 
   readonly metricId: MetricId = 'practice_tournament_delta';
 
+  protected override signatureScope(): string {
+    return 'pressure_gap:practice_vs_tournament';
+  }
+
   async aggregate(): Promise<PressureGapAggregate | null> {
     const supabase = createAdminClient();
     // Pull last 90 days of completed rounds for this player; bucket in TS.
@@ -110,10 +114,10 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     // REQUALIFICATION gate: if a player who previously qualified drops below the
     // floor in the 90-day window (e.g. recent rounds are all one type), the
     // generator emits nothing this run, so the row is not refreshed.
-    // CROSS-FILE DEPENDENCY (lifecycle-cron / data owner): a stale stored HIGH
-    // pressure row from a player no longer meeting this gate is RETRACTED by the
-    // lifecycle resolve/archive sweep + the one-time stale-row cleanup — the
-    // generator cannot archive an existing row from here (upsert-only boundary).
+    // Returning null routes through BaseGenerator's stale-scope retraction
+    // (signatureScope above, to-95 audit P2): a stale stored HIGH pressure row
+    // from a player no longer meeting this gate is archived by the base class
+    // on this exit — no longer an external lifecycle-cron dependency.
     if (practiceN < MIN_ROUNDS_PER_BUCKET || competitiveN < MIN_ROUNDS_PER_BUCKET) return null;
     const practiceAvg = practiceSum / practiceN;
     const competitiveAvg = competitiveSum / competitiveN;
