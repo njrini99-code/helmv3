@@ -323,29 +323,30 @@ export async function getInsightsForPlayer(
 
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 50);
 
-  // Pull a wider set than `limit` so the in-app rank-by-impact below has room
-  // to favor |strokes_impact| × confidence over recency before trimming (audit
-  // RANK-1 / RANK-4 — the created_at-only player feed made the impact backfill
-  // a no-op on player cards and dropped a high-impact older row at the window).
-  const PRE_RANK_FETCH = Math.min(100, Math.max(50, limit * 5));
+  // Fetch the player's FULL visible set, paginated (to-95 audit P2). The old
+  // newest-first `PRE_RANK_FETCH ≤ 100` cap assumed a player's visible set
+  // never exceeds 100 rows — unproven, and a player who did overflow would
+  // silently lose an older high-impact row before the in-app rank-by-impact
+  // (audit RANK-1 / RANK-4) ever saw it. A normal visible set is a few dozen
+  // rows, so this is still ONE round trip; pagination only kicks in past 1000.
+  // Order by `id` for stable paging — the shared composite reorders in-app.
+  const runQuery = () =>
+    fetchAllRowsResult((from, to) => {
+      let query = supabase
+        .from('golf_coach_insights')
+        .select(INSIGHT_SELECT)
+        .eq('player_id', playerId)
+        .not('evidence', 'is', null)
+        .or(V3_ENGINE_FILTER)
+        .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+        .neq('status', 'dismissed')
+        .order('id', { ascending: true });
 
-  const runQuery = () => {
-    let query = supabase
-      .from('golf_coach_insights')
-      .select(INSIGHT_SELECT)
-      .eq('player_id', playerId)
-      .not('evidence', 'is', null)
-      .or(V3_ENGINE_FILTER)
-      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-      .neq('status', 'dismissed')
-      .order('created_at', { ascending: false })
-      .limit(PRE_RANK_FETCH);
-
-    if (opts.categories && opts.categories.length > 0) {
-      query = query.in('category', opts.categories);
-    }
-    return query;
-  };
+      if (opts.categories && opts.categories.length > 0) {
+        query = query.in('category', opts.categories);
+      }
+      return query.range(from, to);
+    });
 
   let data: unknown = null;
   let error: { message: string } | null = null;
@@ -393,8 +394,8 @@ export async function getInsightsForPlayer(
     .filter((r): r is EvidenceInsight => r !== null);
 
   // Client-side filters. We keep them here (not in the SQL) because the
-  // `evidence` JSONB's shape isn't indexed for these fields, and at
-  // PRE_RANK_FETCH ≤ 100 the post-filter cost is negligible.
+  // `evidence` JSONB's shape isn't indexed for these fields, and a player's
+  // visible set is a few dozen rows — the post-filter cost is negligible.
   const filtered = insights.filter((insight) => {
     if (opts.minConfidence != null) {
       const confidence = insight.evidence.confidence;
@@ -462,49 +463,43 @@ export async function getInsightsForCoach(
   // at PRE_RANK_FETCH before the in-app `scoreInsight` floor can rescue it. We
   // widen the window and let the shared composite reorder in-app instead.
   //
-  // SCOPE (A5 + A8): the PER-PLAYER feed (opts.player_id set — the window is one
-  // player's few-dozen rows) keeps its bounded newest-first window; that set
-  // never overflows PRE_RANK_FETCH, so it cannot truncate (fixed in A5). The
-  // TEAM-WIDE sweep (no player_id) is FIXED IN A8: instead of capping at the
-  // newest PRE_RANK_FETCH (≤100) across the WHOLE team — which truncated a
-  // high-impact OLDER row on any >100-row team (a ~10-player team realistically
-  // has 150–400 visible rows) before the in-app `scoreInsight` rank saw it — we
-  // fetch the FULL visible team set (paginated via `fetchAllRowsResult`, ordered
-  // by `id` for stable paging since we rank in-app afterward) and let the shared
-  // composite reorder + the caller's `limit` slice it. The visible set is bounded
-  // by the lifecycle/v3 filters (archived/dismissed/non-v3 excluded), so it's a
-  // few hundred rows per team — cheap to fetch and rank in memory.
+  // SCOPE (A5 + A8 + to-95 P2): BOTH branches now fetch the FULL visible set
+  // (paginated via `fetchAllRowsResult`, ordered by `id` for stable paging
+  // since we rank in-app afterward) and let the shared composite reorder +
+  // the caller's `limit` slice it. The team-wide sweep was fixed in A8; the
+  // per-player branch followed in the to-95 audit (P2) — its old newest-first
+  // `PRE_RANK_FETCH ≤ 100` cap rested on the unproven assumption that one
+  // player's visible set stays under 100. The visible set is bounded by the
+  // lifecycle/v3 filters (archived/dismissed/non-v3 excluded) — a few dozen
+  // rows per player, a few hundred per team — so a normal fetch is still ONE
+  // round trip and ranking in memory stays cheap.
 
   let data: unknown = null;
   let error: { message: string } | null = null;
 
   if (opts.player_id) {
-    // PER-PLAYER path — keep the bounded newest-first window (A5). A single
-    // player's visible set is small (a few dozen rows); it never overflows
-    // PRE_RANK_FETCH, so the in-app rank sees every row. PRE_RANK_FETCH is
-    // computed here (only the per-player branch caps with `.limit()`); the
-    // team-wide branch paginates the full set and never uses it.
-    const PRE_RANK_FETCH = Math.min(100, Math.max(50, limit * 5));
+    // PER-PLAYER path — full visible set for one player.
     const playerId = opts.player_id;
-    let query = supabase
-      .from('golf_coach_insights')
-      .select(INSIGHT_SELECT)
-      .eq('player_id', playerId)
-      .not('evidence', 'is', null)
-      .or(V3_ENGINE_FILTER)
-      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-      .neq('status', 'dismissed')
-      .order('created_at', { ascending: false })
-      .limit(PRE_RANK_FETCH);
+    const result = await fetchAllRowsResult((from, to) => {
+      let query = supabase
+        .from('golf_coach_insights')
+        .select(INSIGHT_SELECT)
+        .eq('player_id', playerId)
+        .not('evidence', 'is', null)
+        .or(V3_ENGINE_FILTER)
+        .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+        .neq('status', 'dismissed')
+        .order('id', { ascending: true });
 
-    if (opts.categories && opts.categories.length > 0) {
-      query = query.in('category', opts.categories);
-    }
-    if (opts.priorities && opts.priorities.length > 0) {
-      query = query.in('priority', opts.priorities);
-    }
+      if (opts.categories && opts.categories.length > 0) {
+        query = query.in('category', opts.categories);
+      }
+      if (opts.priorities && opts.priorities.length > 0) {
+        query = query.in('priority', opts.priorities);
+      }
 
-    const result = await query;
+      return query.range(from, to);
+    });
     data = result.data;
     error = result.error;
   } else {
