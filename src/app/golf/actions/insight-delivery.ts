@@ -35,9 +35,14 @@ import { buildShotDrivers } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import { computeSgTrends } from '@/lib/coachhelm/v3/themes/trend';
 import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
-import { scoreInsight, loadCoachWeightsForPlayer, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
+import { loadCoachWeightsForPlayer, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
+import {
+  collapseParScoring,
+  dedupeBySubject,
+  rankEvidenceInsights,
+} from './insight-delivery-ranking';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -185,154 +190,6 @@ const INSIGHT_SELECT = `
  * field lags the other). Stale v2 rows match neither and are excluded in-DB.
  */
 const V3_ENGINE_FILTER = "engine_version.eq.v3,signature.like.v3:%" as const;
-
-/**
- * Normalize a metric id to a canonical *subject* key so cross-version aliases
- * collapse to one row in dedupe (audit ASM-1 / the par_scoring alias). The v2
- * generator emits `par_scoring_par4` for the same subject the v3 generator
- * emits as `scoring_par_4`; without this they dedupe as two distinct metrics
- * and a coach sees the same par-4 scoring leak rendered twice.
- */
-function canonicalMetricSubject(metric: string | null | undefined): string {
-  if (!metric) return '';
-  const m = metric.toLowerCase();
-  // par_scoring_parN  ≡  scoring_par_N  →  scoring_par_N
-  const v2Par = m.match(/^par_scoring_par(\d)$/);
-  if (v2Par) return `scoring_par_${v2Par[1]}`;
-  return m;
-}
-
-/**
- * Composite rank score for the read-path feeds — the SHARED `scoreInsight`
- * contract (Phase A). Maps an EvidenceInsight onto the RankableInsight shape
- * (priority + sample_n included so the rank floor + damping apply) and runs the
- * single ranking function every surface uses. Weights default to {} and goals
- * to [] on surfaces that don't load them — the floor/damping/coachability terms
- * still apply, so a zero-impact diagnostic is always orderable.
- */
-function feedRankScore(
-  insight: EvidenceInsight,
-  weights: CoachWeights = {},
-  goals: Goal[] = [],
-): number {
-  return scoreInsight(
-    {
-      // Use the DEDICATED insight_type column — the value the coach-weights map
-      // is keyed by. Falling back to `category` (a different value space, e.g.
-      // type `putt_distance_control` vs category `putting`) silently misses
-      // every stored key and neuters coach weights, so only fall back when the
-      // column is genuinely null (pre-v3 rows).
-      insight_type: insight.insight_type ?? insight.category ?? 'unknown',
-      strokes_impact: insight.evidence?.strokes_impact ?? 0,
-      confidence: insight.evidence?.confidence ?? 0,
-      metric: insight.evidence?.metric,
-      category: insight.category ?? undefined,
-      priority: insight.priority,
-      sample_n: insight.evidence?.sample_n,
-    },
-    weights,
-    goals,
-  );
-}
-
-/**
- * Sort a mapped insight list by the shared composite, newest-first on ties.
- * Exported so both feed paths and the ranking unit test exercise ONE code path.
- * Scores each row ONCE (mirroring `rankInsights` in score.ts) rather than
- * recomputing inside the comparator, then sorts by the precomputed score with a
- * created_at tie-break.
- */
-export function rankEvidenceInsights(
-  insights: EvidenceInsight[],
-  weights: CoachWeights = {},
-  goals: Goal[] = [],
-): EvidenceInsight[] {
-  return insights
-    .map((insight) => ({ insight, score: feedRankScore(insight, weights, goals) }))
-    .sort((a, b) => {
-      const diff = b.score - a.score;
-      if (diff !== 0) return diff;
-      return (b.insight.created_at ?? '').localeCompare(a.insight.created_at ?? '');
-    })
-    .map((row) => row.insight);
-}
-
-/**
- * Cross-surface dedupe (audit finding 29). Collapses rows that share the same
- * `(player_id:category:metric-subject)` key — keeping the first survivor in the
- * supplied (already-ranked) order — so the same underlying leak never renders
- * twice. The metric subject is canonicalized so a v2 `par_scoring_par4` and a
- * v3 `scoring_par_4` for the same player collapse to one row (ASM-1). Falls
- * back to the insight title when no metric is present. MUST be applied
- * IDENTICALLY on the player and coach read paths so a player and a coach
- * viewing the same player see the same merged card set.
- */
-function dedupeBySubject(insights: EvidenceInsight[]): EvidenceInsight[] {
-  const seenSignatures = new Set<string>();
-  return insights.filter((insight) => {
-    const subject = canonicalMetricSubject(insight.evidence?.metric) || insight.title;
-    const sig = `${insight.player_id}:${insight.category}:${subject}`;
-    if (seenSignatures.has(sig)) return false;
-    seenSignatures.add(sig);
-    return true;
-  });
-}
-
-/**
- * Collapse the 3 separate par_scoring rows (scoring_par_3/4/5) into ONE
- * "Scoring by par type" card per player (C2). Each par writes its own standing
- * row (own counterfactual, own StandingBar), but on display they read as one
- * decomposition card so the feed isn't three near-identical scoring rows. Rates
- * come from evidence.detail stamped by ParTypeGenerator (C1). Non-par rows pass
- * through untouched. Exported for direct unit testing.
- */
-export function collapseParScoring(insights: EvidenceInsight[]): EvidenceInsight[] {
-  const PAR_METRICS = new Set(['scoring_par_3', 'scoring_par_4', 'scoring_par_5']);
-  const out: EvidenceInsight[] = [];
-  const byPlayer = new Map<string, EvidenceInsight[]>();
-  for (const ins of insights) {
-    const m = ins.evidence?.metric ?? '';
-    if (PAR_METRICS.has(m)) {
-      const arr = byPlayer.get(ins.player_id) ?? [];
-      arr.push(ins);
-      byPlayer.set(ins.player_id, arr);
-    } else {
-      out.push(ins);
-    }
-  }
-  for (const [, rows] of byPlayer) {
-    // Highest-impact par row (by feedRankScore) is the survivor we re-skin; if
-    // every par row is descriptive (impact 0) the first by par number wins.
-    const ordered = rows
-      .slice()
-      .sort((a, b) => parNum(a) - parNum(b));
-    const survivor = ordered[0];
-    const r1 = (x: unknown) =>
-      typeof x === 'number' ? (Math.round(x * 10) / 10).toString() : '—';
-    const lines = ordered.map((r) => {
-      const par = parNum(r);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const d = (r.evidence as any)?.detail ?? {};
-      const avg = r.evidence?.your_value;
-      return (
-        `Par ${par}: ${typeof avg === 'number' ? avg.toFixed(2) : '—'} ` +
-        `(${r1(d.bogey_rate)}% bogey, ${r1(d.double_plus_rate)}% double+)`
-      );
-    });
-    out.push({
-      ...survivor,
-      title: 'Scoring by par type',
-      content: lines.join(' · '),
-    } as EvidenceInsight);
-  }
-  return out;
-}
-
-function parNum(ins: EvidenceInsight): number {
-  const m = ins.evidence?.metric ?? '';
-  const hit = m.match(/scoring_par_(\d)/);
-  return hit ? Number(hit[1]) : 99;
-}
 
 // ---------------------------------------------------------------------------
 // Public API
