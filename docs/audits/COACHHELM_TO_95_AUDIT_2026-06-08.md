@@ -177,3 +177,47 @@ recorded in `supabase_migrations.schema_migrations` under their APPLY-TIME
 versions (e.g. `20260608093936:v3_relax_attribution_metric_fk`), not their
 filenames — the known apply_migration drift pattern; do not `db push` them.
 
+### P2 (stale-row sweep) FIXED — plus a resurrection bug it would have amplified
+
+`BaseGenerator` now owns retraction: generators declare an opt-in,
+constructor-deterministic `signatureScope()`; on true-dequalification exits
+(aggregate null / below the sample floor) and after a successful emit (keeping
+the fresh signature) the base class soft-archives still-active, coach-untouched
+`tentative`/`detected` rows in scope. Deliberately NO retraction on the
+no-standing exit (infra lag — would flap rows), the team-toggle/philosophy
+gates (product choices), or the error path. All nine generators declare scopes.
+Pressure-gap's "external cleanup retracts my stale HIGH rows" dependency is
+now closed in-code.
+
+Found while building it: `updateExisting` in the v2 upsert NEVER un-archived —
+any archived row whose signature re-emitted (today's age-based cron, or the new
+sweep) silently received fresh evidence on a permanently invisible row. Both
+update branches now resurrect archived rows to `detected` (clear `archived_at`,
+stamp `metadata.redetected_at`) while leaving coach dismissals (`status`)
+untouched. Tests: `generator-base-retraction.test.ts` (8 paths) +
+`upsert-resurrection.test.ts` (3 branches).
+
+### Item 3 (DB lint) — linked-prod half DONE
+
+`npx supabase db lint --linked --schema public` against prod: **0 errors**;
+only 2 pre-existing style warnings (shadowed/unused loop variable `i` in
+`sg_expected_strokes`). The fresh-replay half (`supabase db reset` on a local
+stack) still requires Docker, which is not running on this machine.
+
+### Verification re-run 2026-06-09 (all of it, post-fixes)
+
+- `npm run typecheck` — clean
+- `npx vitest run` — 5,896 passed / 0 failed (517 files)
+- `npm run test:rls` — 1,969 passed / 0 failed
+- `npm run build` — clean
+- `DOTENV_CONFIG_PATH=.env.local npm run check:stats` — 19 players, 0 divergent
+- `npx supabase db lint --linked` — 0 errors
+
+### Remaining (user-gated)
+
+1. **Deploy — urgency RAISED** (see the learning-poison addendum above: the old
+   deployed cron poisons coach weights a little more every day at ~06:00 UTC).
+2. Immediately post-deploy: wipe the two 1-row learning tables, then run the H5
+   smoke per the plan doc.
+3. Optional: full parallel re-audit to independently grade the branch.
+
