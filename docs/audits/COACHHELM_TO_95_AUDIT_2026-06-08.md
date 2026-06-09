@@ -129,9 +129,51 @@ Recommendation: add concise verification and rollback comments, then run local D
 
 ## Path To A Real 95
 
-1. Patch causality attribution candidate filtering to match v3 visible eligibility.
+1. Patch causality attribution candidate filtering to match v3 visible eligibility. — **DONE 2026-06-09 (addendum below)**
 2. Add/verify stale-row archive sweep for generator dequalification and stale composites.
 3. Run a local Supabase replay/lint gate once the local DB is available.
 4. Deploy and execute Phase H post-deploy causality smoke.
 5. Run the full prior-style parallel audit with explicit subagent authorization, then compare findings against this report.
+
+## Addendum 2026-06-09 — Continuation
+
+### P1 FIXED — and the risk it predicted materialized on prod first
+
+The deployed (pre-Phase-H) cron wrote its FIRST attribution row on prod at
+06:01 UTC today: insight `243947c8` is `engine_version='v2'` with signature
+`mock-driver-fwhit-trend` — a v2 MOCK row from 2026-04-20 — and it moved coach
+`71e75118`'s `tee/general` weight to exactly the old binary `1.5` (`sample_n=1`).
+The H1 FK drop unblocked inserts for the OLD deployed code, so until the branch
+deploys, the live loop learns from rows delivery would never show, ~50
+candidates per daily run. **This raises deploy urgency** — every day undeployed
+adds junk attribution rows and binary-pinned weights that the post-deploy H5
+smoke will then have to distinguish from real Phase-H output. Consider wiping
+`golf_insight_outcome_attribution` + `golf_coachhelm_coach_weights` (both
+poison-only as of today: 1 row each) immediately after deploy, before the first
+new cron run, to restore the documented zero baseline.
+
+Fix shipped: shared `src/lib/coachhelm/v3/insight-visibility.ts`
+(`V3_ENGINE_FILTER` + `VISIBLE_LIFECYCLE_STATES`) now sources BOTH the delivery
+read paths and the cron candidate query (`.or(V3_ENGINE_FILTER)`,
+`.in('lifecycle_state', ...)`, `.neq('status','dismissed')`). Behavioral
+regression test at `src/test/api/cron/causality-attribute.test.ts` simulates
+the PostgREST predicates over mixed v2/archived/tentative/dismissed/valid-v3
+fixtures and fails if any predicate is dropped.
+
+### P2 (player feed cap) FIXED
+
+Both per-player read paths (`getInsightsForPlayer` and the `player_id` branch
+of `getInsightsForCoach`) now paginate the full visible set via
+`fetchAllRowsResult` (stable `id` ordering, one round trip for normal sets),
+removing the `PRE_RANK_FETCH ≤ 100` assumption entirely — same shape as the A8
+team-sweep fix.
+
+### P3 (migration audit comments) DONE — with prod verification
+
+All six migrations re-verified object-level against prod today (FK/constraint
+state, pg_proc.prosrc predicates, cache columns existence + 20/20 population)
+and stamped with `VERIFIED` / `HISTORY` / `ROLLBACK` blocks. Note: all six are
+recorded in `supabase_migrations.schema_migrations` under their APPLY-TIME
+versions (e.g. `20260608093936:v3_relax_attribution_metric_fk`), not their
+filenames — the known apply_migration drift pattern; do not `db push` them.
 

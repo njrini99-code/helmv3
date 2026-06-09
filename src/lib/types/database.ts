@@ -7553,13 +7553,6 @@ export type Database = {
             referencedRelation: "golf_coach_insights"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "golf_insight_outcome_attribution_target_metric_id_fkey"
-            columns: ["target_metric_id"]
-            isOneToOne: false
-            referencedRelation: "golf_metrics"
-            referencedColumns: ["metric_id"]
-          },
         ]
       }
       golf_insight_player_feedback: {

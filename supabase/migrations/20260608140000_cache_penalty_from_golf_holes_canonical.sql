@@ -115,3 +115,14 @@ BEGIN
     PERFORM public.refresh_player_stats_cache(v_pid);
   END LOOP;
 END $$;
+
+-- VERIFIED 2026-06-09 against prod (qmnssrrolpinvwjjnufo):
+--   refresh_player_stats_cache prosrc derives penalty_strokes from golf_holes
+--   (canonical per-hole sum), no r.total_penalties preference; check:stats 0
+--   divergent.
+-- HISTORY: recorded as version 20260608005241
+--   ('cache_penalty_from_golf_holes_canonical') — apply-time stamp from MCP
+--   apply_migration, NOT this filename. Do not re-apply via db push.
+-- ROLLBACK: CREATE OR REPLACE refresh_player_stats_cache with the prior
+--   definition (COALESCE(r.total_penalties, ...) preference), then mark caches
+--   stale so the next refresh rewrites penalty_strokes.

@@ -158,3 +158,15 @@ BEGIN
   RETURN NEXT;
 END;
 $function$;
+
+-- VERIFIED 2026-06-09 against prod (qmnssrrolpinvwjjnufo): both writers
+--   (calculate_round_strokes_gained, recalculate_round_strokes_gained) carry the
+--   is_penalty branch in pg_proc.prosrc; SG recomputed across all teams and
+--   check:stats reports 19 players / 0 divergent surfaces.
+-- HISTORY: recorded in supabase_migrations.schema_migrations as version
+--   20260607222811 ('charge_penalties_in_sg') — applied via MCP apply_migration,
+--   so the history version is the apply-time stamp, NOT this filename. Do not
+--   re-apply via db push.
+-- ROLLBACK: CREATE OR REPLACE both functions with the prior definitions from
+--   20260607200000 (penalties -> category NULL), then recompute SG for every
+--   team (recompute_team_sg) so cached values revert with the formula.

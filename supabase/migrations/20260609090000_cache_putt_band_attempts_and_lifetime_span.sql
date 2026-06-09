@@ -82,3 +82,13 @@ BEGIN
     PERFORM public.update_player_putt_make_pct(v_pid);
   END LOOP;
 END $$;
+
+-- VERIFIED 2026-06-09 against prod (qmnssrrolpinvwjjnufo): all 6 new columns
+--   (putt_attempts_3_5ft..putt_attempts_25_plus_ft, first_round_date) exist on
+--   golf_player_stats_cache and are populated 20/20 active players.
+-- HISTORY: recorded as version 20260608075722
+--   ('cache_putt_band_attempts_and_lifetime_span') — apply-time stamp from MCP
+--   apply_migration, NOT this filename. Do not re-apply via db push.
+-- ROLLBACK: restore the prior update_player_putt_make_pct definition, then
+--   ALTER TABLE public.golf_player_stats_cache DROP COLUMN the 6 columns
+--   (generators gate on NULL attempts, so dropping is read-path safe).
