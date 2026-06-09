@@ -12,7 +12,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "puppeteer": "^21.6.1",
-    "ws": "^8.14.2"
+    "ws": "^8.21.0"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -24,5 +24,9 @@
     "helm-sports",
     "no-api-costs"
   ],
-  "author": "Helm Sports Labs"
+  "author": "Helm Sports Labs",
+  "overrides": {
+    "tar-fs": "^3.1.1",
+    "ws": "^8.21.0"
+  }
 }
