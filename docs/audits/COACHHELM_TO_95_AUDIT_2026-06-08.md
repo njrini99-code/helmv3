@@ -213,11 +213,35 @@ stack) still requires Docker, which is not running on this machine.
 - `DOTENV_CONFIG_PATH=.env.local npm run check:stats` — 19 players, 0 divergent
 - `npx supabase db lint --linked` — 0 errors
 
-### Remaining (user-gated)
+### Remaining (user-gated) — CLOSED 2026-06-09 evening
 
-1. **Deploy — urgency RAISED** (see the learning-poison addendum above: the old
-   deployed cron poisons coach weights a little more every day at ~06:00 UTC).
-2. Immediately post-deploy: wipe the two 1-row learning tables, then run the H5
-   smoke per the plan doc.
-3. Optional: full parallel re-audit to independently grade the branch.
+1. ~~Deploy~~ **DONE.** PR #247 had merged the branch the day before, but its
+   production auto-deploy ERRORED on the 'use server' build blocker — prod was
+   still serving pre-#247 code (which is what wrote the poison row). The six
+   continuation commits landed via PR #248; the auto-deploy succeeded and
+   `helmsportslabs.com` now serves main (`418a9923`+).
+2. ~~Wipe + smoke~~ **Wipe DONE** (both poison rows deleted post-deploy; zero
+   baseline restored). Manual smoke is moot: under the new eligibility filter
+   there are 0 candidates — the oldest visible v3 row is 2026-05-26, so the
+   21-day gate first clears **~2026-06-16**. Until then the correct daily
+   06:00 UTC cron outcome is `considered: 0` with both learning tables EMPTY.
+   Verify after ~06-16: attribution rows exist, weights move off 1.0, and are
+   NOT pinned at the old binary 1.5/0.5.
+3. Optional full parallel re-audit — still open.
+
+### Cleanup 2026-06-09 (post-deploy)
+
+- PR #238 merged + its table-wide `golf_rounds` UPDATE grant APPLIED to prod
+  (recurring auto-save 42501 class closed; grant verified table-level).
+- Six stale `_bk_*_20260606` remediation backup tables dropped from prod
+  (29,591-row patterns snapshot + 5 others) — all superseded by later
+  recomputes; restoring any would have regressed current state.
+- Dependabot: critical (basic-ftp) + all highs in `tools/ultra-agent-audit`,
+  `tools/ux-flow-auditor` (both now 0 vulns) and `helm-website-ui`
+  (next 16.0.10 → 16.2.6) fixed. Remaining: 2 moderate postcss pins inside
+  next's own node_modules (website), majors left to Dependabot PRs.
+- PRs #243 (push dispatcher), #219 (warning-severity logging), #159 (docs
+  regen) validated together locally (typecheck + 5,905 unit + 1,972 RLS +
+  build, all green) but admin-merge was permission-blocked — awaiting a
+  one-click merge each.
 
