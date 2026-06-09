@@ -83,9 +83,9 @@ BEGIN
     (id, coach_id, player_id, team_id, insight_type, title, content, priority, category)
   VALUES
     ('00000000-0000-0000-0000-0000000000af', v_coach_a, v_player_a, v_team_a,
-       'value_derived', 'A insight', 'tenant A only', 'high', 'putting'),
+       'putting', 'A insight', 'tenant A only', 'high', 'putting'),
     ('00000000-0000-0000-0000-0000000000bf', v_coach_b, v_player_b, v_team_b,
-       'value_derived', 'B insight', 'tenant B only', 'high', 'putting')
+       'putting', 'B insight', 'tenant B only', 'high', 'putting')
   ON CONFLICT DO NOTHING;
 END $$;
 
