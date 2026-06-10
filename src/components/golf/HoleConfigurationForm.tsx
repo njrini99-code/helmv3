@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { Button } from '@/components/ui/button';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { yardsToDisplay, displayToYards } from '@/lib/golf/distance-units';
 
 interface HoleConfigurationFormProps {
   initialHoles?: HoleConfig[];
@@ -38,6 +40,8 @@ export function HoleConfigurationForm({
   });
 
   const [activeTab, setActiveTab] = useState<'front' | 'back'>('front');
+  const { distancePref } = useDistanceUnits();
+  const isMeters = distancePref === 'meters';
 
   const is9Hole = holesPerRound === 9;
 
@@ -52,8 +56,12 @@ export function HoleConfigurationForm({
   const totalYards = frontYards + backYards;
 
   function updateHole(holeNumber: number, field: 'par' | 'yardage', value: number) {
+    // yardage is always stored in canonical yards; convert from meters if needed
+    const canonicalValue = (field === 'yardage' && isMeters)
+      ? displayToYards(value, 'meters')
+      : value;
     setHoles(prev => prev.map(h =>
-      h.holeNumber === holeNumber ? { ...h, [field]: value } : h
+      h.holeNumber === holeNumber ? { ...h, [field]: canonicalValue } : h
     ));
   }
 
@@ -98,9 +106,13 @@ export function HoleConfigurationForm({
         </div>
         <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
           <div className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
-            {totalYards.toLocaleString()}
+            {isMeters
+              ? yardsToDisplay(totalYards, 'meters').toLocaleString()
+              : totalYards.toLocaleString()}
           </div>
-          <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wider">Total Yards</div>
+          <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wider">
+            Total {isMeters ? 'Meters' : 'Yards'}
+          </div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
           <div className="text-h1 font-light text-warm-700 tracking-[-0.025em] tabular-nums">{holesPerRound}</div>
@@ -145,7 +157,7 @@ export function HoleConfigurationForm({
             Par
           </div>
           <div className="px-3 py-2 text-eyebrow font-medium text-warm-500 uppercase tracking-wider text-center border-l border-warm-200">
-            Yardage
+            {isMeters ? 'Meters' : 'Yardage'}
           </div>
         </div>
 
@@ -197,12 +209,13 @@ export function HoleConfigurationForm({
               <input
                 type="number"
                 inputMode="numeric"
-                value={hole.yardage}
+                value={isMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage}
                 onChange={(e) => updateHole(hole.holeNumber, 'yardage', parseInt(e.target.value) || 0)}
                 className="w-20 px-3 py-2 text-center text-sm font-medium border border-warm-200
                            rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                min="50"
-                max="700"
+                min={isMeters ? 46 : 50}
+                max={isMeters ? 640 : 700}
+                aria-label={`Hole ${hole.holeNumber} ${isMeters ? 'meters' : 'yardage'}`}
               />
             </div>
           </div>
@@ -217,7 +230,9 @@ export function HoleConfigurationForm({
             {is9Hole ? totalPar : (activeTab === 'front' ? frontPar : backPar)}
           </div>
           <div className="px-3 py-3 text-center text-body-sm font-medium text-warm-900 border-l border-warm-200">
-            {(is9Hole ? totalYards : (activeTab === 'front' ? frontYards : backYards)).toLocaleString()}
+            {isMeters
+              ? yardsToDisplay(is9Hole ? totalYards : (activeTab === 'front' ? frontYards : backYards), 'meters').toLocaleString()
+              : (is9Hole ? totalYards : (activeTab === 'front' ? frontYards : backYards)).toLocaleString()}
           </div>
         </div>
       </div>
