@@ -153,6 +153,8 @@ export default async function MyStandingPage() {
                           team_n={standing.team_n}
                           team_pct={standing.team_pct}
                           pga_value={standing.pga_value}
+                          pga_omitted={standing.pga_omitted}
+                          is_womens={standing.is_womens}
                           direction={cfg.direction}
                           unit={cfg.unit}
                           scale={cfg.default_scale}
@@ -224,6 +226,8 @@ export default async function MyStandingPage() {
                               team_n={standing.team_n}
                               team_pct={standing.team_pct}
                               pga_value={standing.pga_value}
+                              pga_omitted={standing.pga_omitted}
+                              is_womens={standing.is_womens}
                               direction={cfg.direction}
                               unit={cfg.unit}
                               scale={cfg.default_scale}

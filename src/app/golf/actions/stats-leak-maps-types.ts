@@ -65,6 +65,11 @@ export interface PlayerStandingRow {
   team_pct: number | null;
   pga_value: number;
   pga_delta: number | null;
+  /**
+   * True for women's-team rows (gender-anchored by the standing loader).
+   * Render layers label the Tour reference "LPGA" instead of "PGA".
+   */
+  is_womens?: boolean;
 }
 
 /** Standard server-action envelope used by every export in this module. */

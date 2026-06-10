@@ -518,6 +518,7 @@ export function FairwayPlayerCoachHelm({
                                 team_n={st.team_n}
                                 team_pct={st.team_pct}
                                 pga_value={st.pga_value}
+                                is_womens={st.is_womens}
                                 direction={cfg.direction}
                                 unit={cfg.unit}
                                 scale={cfg.default_scale}
@@ -908,6 +909,7 @@ function EdgeInstrument({
                 team_n={st.team_n}
                 team_pct={st.team_pct}
                 pga_value={st.pga_value}
+                is_womens={st.is_womens}
                 direction={cfg.direction}
                 unit={cfg.unit}
                 scale={cfg.default_scale}

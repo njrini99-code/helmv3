@@ -61,7 +61,8 @@ export function StandingStrip(props: StandingStripProps) {
       ? teamCohortText(props.team_pct, props.team_n)
       : '';
   // CF-3: SG metrics anchor to the field average (0), not a PGA Tour score.
-  const refLabel = pgaReferenceLabel(props.metric_id).short;
+  // Women's teams get "LPGA" instead of "PGA" for non-SG metrics.
+  const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
 
   const deltaToneClass =
     delta.tone === 'good' ? 'text-accent-600' :

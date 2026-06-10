@@ -75,6 +75,8 @@ export function applyGenderAnchor(
       pga_value: womensAnchor,
       pga_delta: standing.player_value - womensAnchor,
       pga_omitted: false,
+      // LPGA wire-up (2026-06-10): render layers label the reference "LPGA".
+      is_womens: true,
     };
   }
 
@@ -84,6 +86,7 @@ export function applyGenderAnchor(
   return {
     ...standing,
     pga_omitted: true,
+    is_womens: true,
   };
 }
 

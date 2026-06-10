@@ -644,6 +644,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                         team_n={standing.team_n}
                         team_pct={standing.team_pct}
                         pga_value={standing.pga_value}
+                        is_womens={standing.is_womens}
                         direction={cfg.direction}
                         unit={cfg.unit}
                         scale={cfg.default_scale}
