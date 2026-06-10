@@ -12,6 +12,7 @@
  * patterns. We pluck it out per row.
  */
 
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
@@ -113,13 +114,16 @@ export async function getPlayerEffectiveness(
       Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000,
     ).toISOString();
 
-    const { data: rows, error } = await supabase
-      .from('golf_coach_insights')
-      .select(
-        'id, title, category, lifecycle_state, outcome_status, resolved_at, metadata',
-      )
-      .eq('player_id', playerId)
-      .gte('created_at', sinceIso);
+    // Shared visibility contract (rescore partial #5) — effectiveness is
+    // measured over product-visible insights only.
+    const { data: rows, error } = await applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select(
+          'id, title, category, lifecycle_state, outcome_status, resolved_at, metadata',
+        )
+        .eq('player_id', playerId),
+    ).gte('created_at', sinceIso);
 
     if (error) {
       return { success: false, error: error.message };

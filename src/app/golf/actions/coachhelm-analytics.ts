@@ -9,6 +9,7 @@
 //
 // ============================================================================
 
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
@@ -656,11 +657,15 @@ export async function getCoachHelmOverview(
     // queries; bucket in memory to avoid 6 sequential round-trips. The select
     // bound must be the widest in-memory bin (30 days) so totalInsights —
     // which advertises a 30-day count — does not silently drop days 15–30.
-    const { data: insightRows } = await supabase
-      .from('golf_coach_insights')
-      .select('created_at, action_taken, outcome_status')
-      .in('player_id', playerIds)
-      .gte('created_at', thirtyDaysAgo.toISOString());
+    // Visible-truth alignment (rescore partial #5): analytics counts must
+    // match what the product actually surfaced — same shared contract as the
+    // badge/feed, no hand-rolled predicate to drift.
+    const { data: insightRows } = await applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select('created_at, action_taken, outcome_status')
+        .in('player_id', playerIds),
+    ).gte('created_at', thirtyDaysAgo.toISOString());
 
     const thirtyMs = thirtyDaysAgo.getTime();
     const sevenMs = sevenDaysAgo.getTime();
@@ -832,10 +837,12 @@ async function calculateInsightEffectivenessFromInsights(
     const playerIds = teamMembers.map((m) => m.player_id);
 
     // Query insights
-    const { data: insights, error } = await supabase
-      .from('golf_coach_insights')
-      .select('insight_type, status, action_taken, outcome_status')
-      .in('player_id', playerIds)
+    const { data: insights, error } = await applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select('insight_type, status, action_taken, outcome_status')
+        .in('player_id', playerIds),
+    )
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString());
 
