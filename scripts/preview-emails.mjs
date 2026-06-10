@@ -8,15 +8,21 @@
  *   node scripts/preview-emails.mjs
  *
  * No env vars needed — all rendering is pure functions.
- * The script imports the compiled layout from src/ via tsx/ts-node; if the
- * worktree has no build output it falls back to running the templates inline
- * so the script is always runnable.
+ *
+ * NOTE ON THE LOGO: production emails use the hosted HTTPS logo
+ * (https://helmsportslabs.com/helm-golf-logo-transparent.png) because Gmail
+ * and Outlook strip data: URIs. Preview files are opened from the local
+ * filesystem where remote images are often blocked, so THIS SCRIPT ONLY swaps
+ * the hosted URL for an inlined base64 data URI read from
+ * public/helm-golf-logo-transparent.png just before writing each file.
+ *
+ * The inline renderer below mirrors src/lib/email/layout.ts (editorial
+ * design, 2026-06). The TS source is authoritative — keep both in sync.
  */
 
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { register } from 'node:module';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -30,19 +36,20 @@ const B = {
   greenDeep:   '#166534',
   greenLight:  '#DCFCE7',
   greenXLight: '#F0FDF4',
-  dark:        '#1c1917',
+  dark:        '#1C1917',
   darkMid:     '#292524',
   warm700:     '#44403C',
   warm600:     '#57534E',
-  muted:       '#78716c',
+  muted:       '#78716C',
+  warm400:     '#A8A29E',
   border:      '#E7E5E4',
   cream:       '#FFFEFA',
   white:       '#FFFFFF',
-  pageBg:      '#F5F5F4',
   amber:       '#B45309',
   amberBg:     '#FEF3C7',
 };
 const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`;
+const SERIF = `Georgia,'Times New Roman',Times,serif`;
 const LOGO_URL = 'https://helmsportslabs.com/helm-golf-logo-transparent.png';
 
 function esc(s) {
@@ -54,39 +61,60 @@ function esc(s) {
     .replace(/'/g, '&#39;');
 }
 
+// Mirrors src/lib/email/layout.ts renderBrandedEmail (editorial design).
 function renderBrandedEmail({ preheader, eyebrow, heading, bodyHtml, cta, details, footerNote }) {
   const baseUrl = 'https://helmsportslabs.com';
   const safePreheader = esc(preheader);
   const safeHeading = esc(heading);
 
   const eyebrowHtml = eyebrow
-    ? `<p style="margin:0 0 10px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:${B.green};">${esc(eyebrow)}</p>`
+    ? `<p style="margin:0 0 18px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${B.green};line-height:1;">${esc(eyebrow)}</p>`
     : '';
 
   const detailsHtml = details && details.length > 0
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-             style="border:1px solid ${B.border};border-radius:8px;overflow:hidden;margin:20px 0;border-collapse:separate;">
-        <tbody>
-          ${details.map(d => `<tr>
-            <td style="padding:10px 16px;border-bottom:1px solid ${B.border};font-family:${FONT};font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:${B.muted};white-space:nowrap;">${esc(d.label)}</td>
-            <td style="padding:10px 16px;border-bottom:1px solid ${B.border};font-family:${FONT};font-size:14px;font-weight:500;color:${B.dark};text-align:right;">${esc(d.value)}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>`
+    ? `
+        <table role="presentation" class="details" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="margin:28px 0 0;border-top:1px solid ${B.border};">
+          <tbody>
+            ${details.map((d) => `
+            <tr>
+              <td style="padding:13px 16px 13px 0;border-bottom:1px solid ${B.border};font-family:${FONT};font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:${B.muted};white-space:nowrap;vertical-align:middle;">
+                ${esc(d.label)}
+              </td>
+              <td style="padding:13px 0;border-bottom:1px solid ${B.border};font-family:${FONT};font-size:14px;font-weight:500;color:${B.dark};text-align:right;vertical-align:middle;">
+                ${esc(d.value)}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`
     : '';
 
   const ctaHtml = cta
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;">
+    ? `
+      <table role="presentation" class="cta-table" cellpadding="0" cellspacing="0" border="0" style="margin:36px 0 0;">
         <tr>
-          <td style="border-radius:8px;background-color:${B.green};" bgcolor="${B.green}">
-            <a href="${esc(cta.url)}"
-               style="display:inline-block;padding:13px 26px;font-family:${FONT};font-size:14px;font-weight:600;color:${B.white};text-decoration:none;letter-spacing:0.1px;line-height:1.4;white-space:nowrap;border-radius:8px;background-color:${B.green};">
-              ${esc(cta.label)}&nbsp;&nbsp;&rarr;
+          <td class="cta-td" style="border-radius:100px;background-color:${B.green};" bgcolor="${B.green}">
+            <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${esc(cta.url)}" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="50%" stroke="f" fillcolor="${B.green}"><w:anchorlock/><center style="color:${B.white};font-family:${FONT};font-size:14px;font-weight:600;"><![endif]-->
+            <a class="cta-a" href="${esc(cta.url)}"
+               style="display:inline-block;padding:14px 32px;font-family:${FONT};font-size:14px;font-weight:600;letter-spacing:0.3px;color:${B.white};text-decoration:none;line-height:1.4;white-space:nowrap;border-radius:100px;background-color:${B.green};">
+              ${esc(cta.label)}&nbsp;&rarr;
             </a>
+            <!--[if mso]></center></v:roundrect><![endif]-->
           </td>
         </tr>
       </table>`
     : '';
+
+  const hairline = `
+          <tr>
+            <td class="rule-cell" style="padding:0 48px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="height:1px;background-color:${B.border};font-size:1px;line-height:1px;" bgcolor="${B.border}">&nbsp;</td>
+                </tr>
+              </table>
+            </td>
+          </tr>`;
 
   const footerText = footerNote
     ? esc(footerNote)
@@ -97,67 +125,124 @@ function renderBrandedEmail({ preheader, eyebrow, heading, bodyHtml, cta, detail
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
   <title>${safeHeading}</title>
+  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
   <style>
-    body { font-family: ${FONT}; }
     @media only screen and (max-width:620px){
       .wrap{width:100%!important;}
-      .card-inner{padding:28px 20px!important;}
-      .foot-inner{padding:16px 20px!important;}
+      .logo-cell{padding:28px 24px 20px!important;}
+      .rule-cell{padding:0 24px!important;}
+      .body-cell{padding:28px 24px 36px!important;}
+      .foot-cell{padding:20px 24px!important;}
+      .cta-table{width:100%!important;}
+      .cta-td{display:block!important;text-align:center!important;}
+      .cta-a{display:block!important;width:100%!important;padding:16px!important;font-size:16px!important;text-align:center!important;box-sizing:border-box!important;}
+    }
+    @media (prefers-color-scheme:dark){
+      .dm-body{background-color:${B.cream}!important;}
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:${B.pageBg};-webkit-text-size-adjust:100%;" bgcolor="${B.pageBg}">
-  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${B.pageBg};">${safePreheader}&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;</div>
+<body class="dm-body" style="margin:0;padding:0;background-color:${B.cream};-webkit-text-size-adjust:100%;mso-line-height-rule:exactly;" bgcolor="${B.cream}">
+
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${B.cream};">${safePreheader}&#8203;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;</div>
+
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td align="center" style="padding:32px 16px 40px;">
+      <td align="center" style="padding:40px 16px 48px;background-color:${B.cream};" bgcolor="${B.cream}">
+
         <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0"
-               style="max-width:600px;width:100%;border-radius:12px;border:1px solid ${B.border};overflow:hidden;background-color:${B.white};" bgcolor="${B.white}">
+               style="max-width:600px;width:100%;background-color:${B.white};border:1px solid ${B.border};border-radius:2px;" bgcolor="${B.white}">
+
           <tr>
-            <td style="height:4px;background-color:${B.green};border-radius:12px 12px 0 0;line-height:4px;font-size:4px;" bgcolor="${B.green}">&nbsp;</td>
-          </tr>
-          <tr>
-            <td style="background-color:${B.cream};padding:24px 32px 20px;" bgcolor="${B.cream}">
-              <a href="${baseUrl}" style="text-decoration:none;display:inline-block;">
-                <img src="${LOGO_URL}" alt="Helm" height="36"
-                     style="height:36px;width:auto;border:0;display:block;" border="0" />
-              </a>
-            </td>
-          </tr>
-          <tr>
-            <td class="card-inner" style="background-color:${B.cream};padding:4px 32px 32px;" bgcolor="${B.cream}">
-              ${eyebrowHtml}
-              <h1 style="margin:0 0 16px;font-family:${FONT};font-size:24px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;color:${B.dark};">${safeHeading}</h1>
-              ${bodyHtml}
-              ${detailsHtml}
-              ${ctaHtml}
-            </td>
-          </tr>
-          <tr>
-            <td class="foot-inner" style="background-color:${B.white};padding:16px 32px 20px;border-top:1px solid ${B.border};" bgcolor="${B.white}">
+            <td class="logo-cell" style="background-color:${B.cream};padding:32px 48px 24px;" bgcolor="${B.cream}">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td>
-                    <p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.6;color:${B.muted};">
-                      ${footerText}
-                      &nbsp;&middot;&nbsp;
-                      <a href="${baseUrl}/golf/dashboard/settings" style="color:${B.muted};text-decoration:underline;">Manage preferences</a>
-                    </p>
+                  <td width="44" style="width:44px;vertical-align:middle;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td width="44" height="44" align="center" valign="middle" bgcolor="${B.greenXLight}"
+                            style="width:44px;height:44px;background-color:${B.greenXLight};border:1px solid ${B.greenLight};border-radius:10px;text-align:center;vertical-align:middle;">
+                          <a href="${baseUrl}" style="text-decoration:none;display:inline-block;font-family:${FONT};font-size:16px;font-weight:700;color:${B.green};line-height:0;">
+                            <img src="${LOGO_URL}"
+                                 alt="Helm"
+                                 width="32" height="26"
+                                 style="width:32px;height:26px;display:block;border:0;"
+                                 border="0" />
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
-                  <td align="right" style="white-space:nowrap;padding-left:16px;">
-                    <span style="font-family:${FONT};font-size:11px;color:${B.muted};letter-spacing:0.2px;">Helm Sports Labs</span>
+                  <td style="padding-left:14px;vertical-align:middle;">
+                    <span style="font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${B.warm400};">Helm Sports Labs</span>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
+${hairline}
+
+          <tr>
+            <td class="body-cell" style="background-color:${B.white};padding:40px 48px 44px;" bgcolor="${B.white}">
+
+              ${eyebrowHtml}
+
+              <h1 style="margin:0 0 28px;font-family:${SERIF};font-size:28px;font-weight:normal;line-height:1.25;letter-spacing:-0.3px;color:${B.dark};">${safeHeading}</h1>
+
+              ${bodyHtml}
+
+              ${detailsHtml}
+
+              ${ctaHtml}
+
+            </td>
+          </tr>
+${hairline}
+
+          <tr>
+            <td class="foot-cell" style="background-color:${B.white};padding:20px 48px 24px;" bgcolor="${B.white}">
+              <p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.6;color:${B.warm400};">
+                ${footerText}
+                &nbsp;&middot;&nbsp;
+                <a href="${baseUrl}/golf/dashboard/settings" style="color:${B.warm400};text-decoration:underline;">Manage preferences</a>
+                &nbsp;&middot;&nbsp;
+                Helm Sports Labs
+              </p>
+            </td>
+          </tr>
+
         </table>
+
       </td>
     </tr>
   </table>
 </body>
 </html>`;
+}
+
+// ─── Shared body fragments (mirror src/lib/notifications/email.ts) ───────────
+
+function greetingHtml(greeting) {
+  return greeting
+    ? `<p style="margin:0 0 8px;font-family:${FONT};font-size:16px;font-weight:500;line-height:1.5;color:${B.dark};">${esc(greeting)}</p>`
+    : '';
+}
+
+function quoteBlock(text) {
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;">
+      <tr>
+        <td width="2" style="background-color:${B.green};width:2px;" bgcolor="${B.green}">&nbsp;</td>
+        <td width="20" style="width:20px;">&nbsp;</td>
+        <td style="padding:16px 0;">
+          <p style="margin:0 0 6px;font-family:${SERIF};font-size:36px;line-height:1;color:${B.green};letter-spacing:-1px;">&ldquo;</p>
+          <p style="margin:0;font-family:${SERIF};font-size:18px;font-style:italic;line-height:1.55;color:${B.dark};letter-spacing:0.1px;">${text}</p>
+        </td>
+      </tr>
+    </table>`;
 }
 
 // ─── Fixture data ─────────────────────────────────────────────────────────────
@@ -175,8 +260,8 @@ const templates = [
       eyebrow: 'RSVP Reminder',
       heading: 'RSVP for Spring Team Scrimmage',
       bodyHtml: `
-        <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;font-weight:500;color:${B.dark};">Hi Nick,</p>
-        <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.6;color:${B.muted};">Your coach is collecting RSVPs for this event. Please confirm whether you'll be attending.</p>
+        ${greetingHtml('Hi Nick,')}
+        <p style="margin:0 0 4px;font-family:${FONT};font-size:16px;line-height:1.6;color:${B.muted};">Your coach is collecting RSVPs for this event. Please confirm whether you'll be attending.</p>
       `,
       details: [
         { label: 'Date & Time', value: 'Tuesday, June 10 · 2:00 PM' },
@@ -194,7 +279,7 @@ const templates = [
       eyebrow: 'Team Announcement',
       heading: 'Practice Cancelled Tomorrow',
       bodyHtml: `
-        <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;font-weight:500;color:${B.dark};">Hi there,</p>
+        ${greetingHtml('Hi there,')}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
           <tr>
             <td>
@@ -204,7 +289,7 @@ const templates = [
             </td>
           </tr>
         </table>
-        <div style="background:${B.white};border:1px solid ${B.border};border-radius:10px;padding:20px 22px;">
+        <div style="background:${B.white};border:1px solid ${B.border};border-radius:2px;padding:20px 22px;">
           <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.75;color:${B.darkMid};">
             Due to incoming weather, tomorrow's 8am practice at Finley is cancelled. We'll resume Thursday. Stay sharp — do your putting drills at home.
           </p>
@@ -221,8 +306,8 @@ const templates = [
       eyebrow: 'Qualifier',
       heading: 'Fall Qualifier #1',
       bodyHtml: `
-        <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;font-weight:500;color:${B.dark};">Hi Nick,</p>
-        <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.6;color:${B.muted};">A new qualifier has been posted. Review the details and prepare your rounds.</p>
+        ${greetingHtml('Hi Nick,')}
+        <p style="margin:0 0 4px;font-family:${FONT};font-size:16px;line-height:1.6;color:${B.muted};">A new qualifier has been posted. Review the details and prepare your rounds.</p>
       `,
       details: [
         { label: 'Start Date', value: 'August 25, 2026' },
@@ -239,15 +324,15 @@ const templates = [
       eyebrow: 'Team Invitation',
       heading: "You're invited to join UNC Golf",
       bodyHtml: `
-        <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;line-height:1.65;color:${B.muted};">
+        <p style="margin:0 0 20px;font-family:${FONT};font-size:16px;line-height:1.6;color:${B.muted};">
           <strong style="color:${B.dark};">Coach Williams</strong> invited you to join
           <strong style="color:${B.dark};">UNC Golf</strong> on GolfHelm —
           the team management and round-tracking platform for college golf.
         </p>
-        <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.65;color:${B.muted};">
+        <p style="margin:0 0 4px;font-family:${FONT};font-size:16px;line-height:1.6;color:${B.muted};">
           Tap the button below to accept the invite and create your player account.
         </p>
-        <div style="background:${B.greenXLight};border:1px solid ${B.greenLight};border-radius:10px;padding:16px 20px;margin-top:24px;">
+        <div style="background:${B.greenXLight};border:1px solid ${B.greenLight};border-radius:2px;padding:16px 20px;margin-top:24px;">
           <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;color:${B.green};letter-spacing:0.4px;text-transform:uppercase;">Button not working?</p>
           <p style="margin:0 0 8px;font-family:${FONT};font-size:14px;line-height:1.6;color:${B.greenDeep};">Visit the join page and paste this code:</p>
           <p style="margin:0;font-family:'SFMono-Regular',Consolas,monospace;font-size:18px;font-weight:700;letter-spacing:2px;color:${B.dark};">GH-XKTZ</p>
@@ -268,7 +353,7 @@ const templates = [
         <tr>
           <td style="padding:0 0 18px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                   style="border:1px solid ${B.border};border-radius:10px;background:${B.white};">
+                   style="border:1px solid ${B.border};border-radius:2px;background:${B.white};">
               <tr>
                 <td style="padding:18px 20px 14px;">
                   <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${B.muted};">
@@ -284,7 +369,7 @@ const templates = [
         </tr>`;
       const bodyHtml = `
         <p style="margin:0 0 4px;font-family:${FONT};font-size:13px;font-weight:500;color:${B.muted};">Tuesday, June 10</p>
-        <p style="margin:0 0 6px;font-family:${FONT};font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-0.4px;color:${B.dark};">Good morning, Sarah.</p>
+        <p style="margin:0 0 6px;font-family:${SERIF};font-size:22px;font-weight:normal;line-height:1.3;letter-spacing:-0.3px;color:${B.dark};">Good morning, Sarah.</p>
         <p style="margin:0 0 24px;font-family:${FONT};font-size:14px;line-height:1.55;color:${B.warm700};">Here is what changed overnight on UNC Women's Golf.</p>
         <p style="margin:0 0 10px;font-family:${FONT};font-size:13px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;color:${B.muted};">Top concerns today</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -295,7 +380,7 @@ const templates = [
           <tr>
             <td style="padding:0 0 18px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                     style="border:1px solid ${B.greenLight};border-radius:10px;background:${B.greenXLight};">
+                     style="border:1px solid ${B.greenLight};border-radius:2px;background:${B.greenXLight};">
                 <tr>
                   <td style="padding:16px 20px;">
                     <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${B.greenDeep};">Bright spot</p>
@@ -325,11 +410,11 @@ const templates = [
     name: '06-weekly-recap',
     render: () => {
       const statCell = (label, value) => `<td valign="top" style="padding:0 8px;width:25%;text-align:center;">
-        <p style="margin:0;font-family:${FONT};font-size:32px;font-weight:500;color:${B.dark};line-height:1;">${esc(value)}</p>
+        <p style="margin:0;font-family:${SERIF};font-size:32px;font-weight:normal;color:${B.dark};line-height:1;">${esc(value)}</p>
         <p style="margin:6px 0 0;font-family:${FONT};font-size:11px;letter-spacing:1px;text-transform:uppercase;color:${B.muted};">${esc(label)}</p>
       </td>`;
       const bodyHtml = `
-        <p style="margin:0 0 8px;font-family:${FONT};font-size:22px;font-weight:500;letter-spacing:-0.3px;color:${B.dark};">Hey Sarah,</p>
+        <p style="margin:0 0 8px;font-family:${SERIF};font-size:22px;font-weight:normal;line-height:1.3;letter-spacing:-0.3px;color:${B.dark};">Hey Sarah,</p>
         <p style="margin:0 0 32px;font-family:${FONT};font-size:15px;color:${B.muted};">Here's how UNC Women's Golf ran this week.</p>
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:36px;">
           <tr>
@@ -376,11 +461,11 @@ const templates = [
       eyebrow: 'Task Assigned',
       heading: 'Film your swing for review',
       bodyHtml: `
-        <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;font-weight:500;color:${B.dark};">Hi Nick,</p>
+        ${greetingHtml('Hi Nick,')}
         <p style="margin:0 0 16px;font-family:${FONT};font-size:13px;color:${B.muted};">
           Assigned by&nbsp;&nbsp;<strong style="color:${B.dark};">Coach Davis</strong>
         </p>
-        <div style="background:${B.white};border:1px solid ${B.border};border-radius:10px;padding:16px 20px;margin-bottom:4px;">
+        <div style="background:${B.white};border:1px solid ${B.border};border-radius:2px;padding:16px 20px;margin-bottom:4px;">
           <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.7;color:${B.darkMid};">
             Please record a face-on and down-the-line view of your full swing at the range. Upload to the app before our Thursday session.
           </p>
@@ -398,18 +483,12 @@ const templates = [
       eyebrow: 'Direct Message',
       heading: 'Message from Coach Williams',
       bodyHtml: `
-        <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;font-weight:500;color:${B.dark};">Hi Nick,</p>
-        <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.6;color:${B.muted};">
-          <strong style="color:${B.dark};">Coach Williams</strong> sent you a message.
+        ${greetingHtml('Hi Nick,')}
+        <p style="margin:0 0 28px;font-family:${FONT};font-size:16px;line-height:1.6;color:${B.muted};">
+          <strong style="color:${B.dark};font-weight:600;">Coach Williams</strong> sent you a message.
         </p>
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
-          <tr>
-            <td style="border-left:3px solid ${B.green};padding:12px 20px;background:${B.greenLight};border-radius:0 8px 8px 0;">
-              <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;color:${B.dark};font-style:italic;">"Can we chat Friday before practice about the qualifier lineup?"</p>
-            </td>
-          </tr>
-        </table>
-        <p style="margin:0;font-family:${FONT};font-size:13px;color:${B.muted};line-height:1.5;">Reply directly in Helm to keep the conversation going.</p>
+        ${quoteBlock('Can we chat Friday before practice about the qualifier lineup?')}
+        <p style="margin:0;font-family:${FONT};font-size:15px;color:${B.muted};line-height:1.6;">Reply directly in Helm to keep the conversation going.</p>
       `,
       cta: { label: 'Open Conversation', url: `${BASE}/golf/dashboard/messages/conv_654` },
       footerNote: 'You received this because someone sent you a message on Helm.',
@@ -423,12 +502,12 @@ const templates = [
       eyebrow: 'Development Plan',
       heading: 'Approach Shot Precision',
       bodyHtml: `
-        <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;font-weight:500;color:${B.dark};">Hi Nick,</p>
+        ${greetingHtml('Hi Nick,')}
         <p style="margin:0 0 16px;font-family:${FONT};font-size:13px;color:${B.muted};">
           From&nbsp;&nbsp;<strong style="color:${B.dark};">Coach Davis</strong>
           &nbsp;&nbsp;<span style="display:inline-block;padding:3px 10px;background:${B.greenXLight};color:${B.green};border-radius:12px;font-size:12px;font-weight:600;">Iron Play</span>
         </p>
-        <div style="background:${B.greenXLight};border:1px solid ${B.greenLight};border-radius:10px;padding:16px 20px;">
+        <div style="background:${B.greenXLight};border:1px solid ${B.greenLight};border-radius:2px;padding:16px 20px;">
           <p style="margin:0 0 6px;font-family:${FONT};font-size:13px;font-weight:600;color:${B.green};">Your coach has created a plan for your development</p>
           <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${B.greenDeep};">Review the goals, drills, and targets your coach has set. Track your progress from your dashboard.</p>
         </div>
@@ -444,10 +523,16 @@ const templates = [
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
 
+  // PREVIEW-ONLY logo inlining: local preview files block remote images, so
+  // swap the hosted logo URL for a base64 data URI before writing. Production
+  // rendering (src/lib/email/layout.ts) keeps the hosted HTTPS URL.
+  const logoPng = await readFile(join(ROOT, 'public', 'helm-golf-logo-transparent.png'));
+  const logoDataUri = `data:image/png;base64,${logoPng.toString('base64')}`;
+
   console.log(`Rendering ${templates.length} email templates to ${OUT_DIR}/\n`);
 
   for (const t of templates) {
-    const html = t.render();
+    const html = t.render().split(LOGO_URL).join(logoDataUri);
     const filePath = join(OUT_DIR, `${t.name}.html`);
     await writeFile(filePath, html, 'utf8');
     console.log(`  ✓  ${t.name}.html  (${Math.round(html.length / 1024)}kb)`);

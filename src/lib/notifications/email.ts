@@ -170,6 +170,7 @@ const BRAND = {
 };
 
 const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`;
+const SERIF = `Georgia,'Times New Roman',Times,serif`;
 
 
 // ── Urgency config ────────────────────────────────────────────────────────────
@@ -185,13 +186,20 @@ function badge(text: string, color: string, bg: string): string {
   return `<span style="display:inline-block;padding:3px 10px;background:${bg};color:${color};border-radius:12px;font-size:12px;font-weight:600;letter-spacing:0.2px;">${text}</span>`;
 }
 
-/** Quote block for message previews */
+/**
+ * Quote block for message previews — editorial pull-quote: a 2px solid green
+ * left rule, a large decorative Georgia opening quotation mark, then italic
+ * serif quote text.
+ */
 function quoteBlock(text: string): string {
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;">
       <tr>
-        <td style="border-left:3px solid ${BRAND.green};padding:12px 20px;background:${BRAND.greenLight};border-radius:0 8px 8px 0;">
-          <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.dark};font-style:italic;">"${text}"</p>
+        <td width="2" style="background-color:${BRAND.green};width:2px;" bgcolor="${BRAND.green}">&nbsp;</td>
+        <td width="20" style="width:20px;">&nbsp;</td>
+        <td style="padding:16px 0;">
+          <p style="margin:0 0 6px;font-family:${SERIF};font-size:36px;line-height:1;color:${BRAND.green};letter-spacing:-1px;">&ldquo;</p>
+          <p style="margin:0;font-family:${SERIF};font-size:18px;font-style:italic;line-height:1.55;color:${BRAND.dark};letter-spacing:0.1px;">${text}</p>
         </td>
       </tr>
     </table>`;
@@ -200,7 +208,7 @@ function quoteBlock(text: string): string {
 /** Greeting paragraph — renders only when non-empty */
 function greetingHtml(greeting: string): string {
   return greeting
-    ? `<p style="margin:0 0 20px;font-family:${FONT};font-size:15px;font-weight:500;color:${BRAND.dark};">${esc(greeting)}</p>`
+    ? `<p style="margin:0 0 8px;font-family:${FONT};font-size:16px;font-weight:500;line-height:1.5;color:${BRAND.dark};">${esc(greeting)}</p>`
     : '';
 }
 
@@ -231,11 +239,11 @@ function generateEmailTemplate(
           heading: `Message from ${senderName}`,
           bodyHtml: `
             ${greetingHtml(greeting)}
-            <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">
-              <strong style="color:${BRAND.dark};">${esc(senderName)}</strong> sent you a message.
+            <p style="margin:0 0 28px;font-family:${FONT};font-size:16px;line-height:1.6;color:${BRAND.muted};">
+              <strong style="color:${BRAND.dark};font-weight:600;">${esc(senderName)}</strong> sent you a message.
             </p>
             ${quoteBlock(esc(preview + (preview.length >= 200 ? '…' : '')))}
-            <p style="margin:0;font-family:${FONT};font-size:13px;color:${BRAND.muted};line-height:1.5;">Reply directly in Helm to keep the conversation going.</p>
+            <p style="margin:0;font-family:${FONT};font-size:15px;color:${BRAND.muted};line-height:1.6;">Reply directly in Helm to keep the conversation going.</p>
           `,
           cta: { label: 'Open Conversation', url: messageUrl },
           footerNote: 'You received this because someone sent you a message on Helm.',
@@ -270,7 +278,7 @@ function generateEmailTemplate(
                 </td>
               </tr>
             </table>
-            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:20px 22px;">
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:2px;padding:20px 22px;">
               <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.75;color:${BRAND.darkMid};">${content}</p>
             </div>
           `,
@@ -296,7 +304,7 @@ function generateEmailTemplate(
           heading: qualifierName,
           bodyHtml: `
             ${greetingHtml(greeting)}
-            <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">A new qualifier has been posted. Review the details and prepare your rounds.</p>
+            <p style="margin:0 0 4px;font-family:${FONT};font-size:16px;line-height:1.6;color:${BRAND.muted};">A new qualifier has been posted. Review the details and prepare your rounds.</p>
           `,
           details: [
             { label: 'Start Date', value: startDate },
@@ -325,7 +333,7 @@ function generateEmailTemplate(
           heading: `RSVP for ${eventName}`,
           bodyHtml: `
             ${greetingHtml(greeting)}
-            <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">Your coach is collecting RSVPs for this event. Please confirm whether you’ll be attending.</p>
+            <p style="margin:0 0 4px;font-family:${FONT};font-size:16px;line-height:1.6;color:${BRAND.muted};">Your coach is collecting RSVPs for this event. Please confirm whether you’ll be attending.</p>
           `,
           details: detailRows,
           cta: { label: 'RSVP Now', url: eventUrl },
@@ -348,10 +356,10 @@ function generateEmailTemplate(
           heading: "You’re on a coach’s watchlist",
           bodyHtml: `
             ${greetingHtml(greeting)}
-            <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">
+            <p style="margin:0 0 20px;font-family:${FONT};font-size:16px;line-height:1.6;color:${BRAND.muted};">
               <strong style="color:${BRAND.dark};">${esc(coachName)}</strong> from <strong style="color:${BRAND.dark};">${esc(schoolName)}</strong> added you to their recruiting watchlist.
             </p>
-            <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:10px;padding:16px 20px;">
+            <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:2px;padding:16px 20px;">
               <p style="margin:0 0 6px;font-family:${FONT};font-size:13px;font-weight:600;color:${BRAND.green};">What this means</p>
               <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Coaches watchlist players they’re seriously considering. Keep your profile complete and stay active.</p>
             </div>
@@ -392,7 +400,7 @@ function generateEmailTemplate(
                 </td>
               </tr>
             </table>
-            <div style="background:${stage.bg};border:1px solid ${stage.border};border-radius:10px;padding:16px 20px;">
+            <div style="background:${stage.bg};border:1px solid ${stage.border};border-radius:2px;padding:16px 20px;">
               <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;color:${stage.color};">${stage.desc}</p>
             </div>
           `,
@@ -415,10 +423,10 @@ function generateEmailTemplate(
           heading: 'Your profile was viewed',
           bodyHtml: `
             ${greetingHtml(greeting)}
-            <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">
+            <p style="margin:0 0 20px;font-family:${FONT};font-size:16px;line-height:1.6;color:${BRAND.muted};">
               <strong style="color:${BRAND.dark};">${esc(viewerInfo)}</strong> viewed your recruiting profile. This is a signal of interest — make sure your profile is complete.
             </p>
-            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;">
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:2px;padding:16px 20px;">
               <p style="margin:0 0 4px;font-family:${FONT};font-size:13px;font-weight:600;color:${BRAND.green};">Pro tip</p>
               <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BRAND.muted};">Profiles with a highlight video get significantly more coach messages. Add yours to stand out.</p>
             </div>
@@ -450,7 +458,7 @@ function generateEmailTemplate(
               Assigned by&nbsp;&nbsp;<strong style="color:${BRAND.dark};">${esc(coachName)}</strong>
             </p>
             ${taskDescription ? `
-            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;margin-bottom:4px;">
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:2px;padding:16px 20px;margin-bottom:4px;">
               <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.7;color:${BRAND.darkMid};">${esc(taskDescription)}</p>
             </div>` : ''}
           `,
@@ -482,7 +490,7 @@ function generateEmailTemplate(
               From&nbsp;&nbsp;<strong style="color:${BRAND.dark};">${esc(coachName)}</strong>
               ${areaLabel ? `&nbsp;&nbsp;${badge(areaLabel, BRAND.green, BRAND.greenXLight)}` : ''}
             </p>
-            <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:10px;padding:16px 20px;">
+            <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:2px;padding:16px 20px;">
               <p style="margin:0 0 6px;font-family:${FONT};font-size:13px;font-weight:600;color:${BRAND.green};">Your coach has created a plan for your development</p>
               <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Review the goals, drills, and targets your coach has set. Track your progress from your dashboard.</p>
             </div>
@@ -503,7 +511,7 @@ function generateEmailTemplate(
           heading: 'You have a new notification',
           bodyHtml: `
             ${greetingHtml(greeting)}
-            <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">Log in to Helm to see the latest updates from your team.</p>
+            <p style="margin:0;font-family:${FONT};font-size:16px;line-height:1.6;color:${BRAND.muted};">Log in to Helm to see the latest updates from your team.</p>
           `,
           cta: { label: 'Open Helm', url: baseUrl },
         }),

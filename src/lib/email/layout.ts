@@ -8,8 +8,14 @@
  * back. No React, no JSX — inline-styles-only tables that survive Gmail,
  * Apple Mail, Outlook, and dark-mode rewriting.
  *
- * Brand: cream #FFFEFA page, white card, helm green #16A34A accents,
- *        warm text (#1c1917 / #78716c), logo image at top.
+ * Design system ("editorial", 2026-06): cream #FFFEFA page, white card with a
+ * warm hairline border, Georgia serif display heading, two hairline rules
+ * separating masthead / content / footer, a 44px brand-tile masthead with a
+ * tracked small-caps wordmark, and a full-pill green CTA. Premium print
+ * correspondence, not SaaS notification.
+ *
+ * Brand: helm green #16A34A used structurally (tile, eyebrow, CTA, rules in
+ *        quote blocks), warm text (#1C1917 / #78716C / #A8A29E).
  */
 
 // ─── Brand tokens ─────────────────────────────────────────────────────────────
@@ -20,17 +26,22 @@ const B = {
   greenDeep:   '#166534',
   greenLight:  '#DCFCE7',
   greenXLight: '#F0FDF4',
-  dark:        '#1c1917',
+  dark:        '#1C1917',
   warm700:     '#44403C',
-  muted:       '#78716c',
+  muted:       '#78716C',
+  warm400:     '#A8A29E',
   border:      '#E7E5E4',
   cream:       '#FFFEFA',
   white:       '#FFFFFF',
-  pageBg:      '#F5F5F4',
+  pageBg:      '#FFFEFA',
 } as const;
 
 const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`;
+const SERIF = `Georgia,'Times New Roman',Times,serif`;
 
+// Hosted production logo. Preview scripts swap this for an inlined data URI
+// (remote images are blocked when previewing local files); production email
+// MUST keep the hosted HTTPS URL — Gmail/Outlook strip data: URIs.
 const LOGO_URL = 'https://helmsportslabs.com/helm-golf-logo-transparent.png';
 const BASE_URL = () =>
   process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
@@ -81,26 +92,26 @@ export function renderBrandedEmail(opts: BrandedEmailOpts): string {
   const safePreheader = escapeHtml(preheader);
   const safeHeading = escapeHtml(heading);
 
-  // ── Eyebrow chip ─────────────────────────────────────────────────────────
+  // ── Eyebrow: small caps, green, tracked 2px ──────────────────────────────
   const eyebrowHtml = eyebrow
-    ? `<p style="margin:0 0 10px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:${B.green};">${escapeHtml(eyebrow)}</p>`
+    ? `<p style="margin:0 0 18px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${B.green};line-height:1;">${escapeHtml(eyebrow)}</p>`
     : '';
 
-  // ── Details table ─────────────────────────────────────────────────────────
+  // ── Details: editorial hairline key-value rows ────────────────────────────
   const detailsHtml =
     details && details.length > 0
       ? `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-               style="border:1px solid ${B.border};border-radius:8px;overflow:hidden;margin:20px 0;border-collapse:separate;">
+        <table role="presentation" class="details" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="margin:28px 0 0;border-top:1px solid ${B.border};">
           <tbody>
             ${details
               .map(
                 (d) => `
             <tr>
-              <td style="padding:10px 16px;border-bottom:1px solid ${B.border};font-family:${FONT};font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:${B.muted};white-space:nowrap;">
+              <td style="padding:13px 16px 13px 0;border-bottom:1px solid ${B.border};font-family:${FONT};font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:${B.muted};white-space:nowrap;vertical-align:middle;">
                 ${escapeHtml(d.label)}
               </td>
-              <td style="padding:10px 16px;border-bottom:1px solid ${B.border};font-family:${FONT};font-size:14px;font-weight:500;color:${B.dark};text-align:right;">
+              <td style="padding:13px 0;border-bottom:1px solid ${B.border};font-family:${FONT};font-size:14px;font-weight:500;color:${B.dark};text-align:right;vertical-align:middle;">
                 ${escapeHtml(d.value)}
               </td>
             </tr>`,
@@ -110,23 +121,34 @@ export function renderBrandedEmail(opts: BrandedEmailOpts): string {
         </table>`
       : '';
 
-  // ── CTA button (bulletproof: padded td, not just anchor css) ──────────────
+  // ── CTA: bulletproof solid-green pill (full-width block on mobile) ────────
   const ctaHtml = cta
     ? `
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;">
+      <table role="presentation" class="cta-table" cellpadding="0" cellspacing="0" border="0" style="margin:36px 0 0;">
         <tr>
-          <td style="border-radius:8px;background-color:${B.green};" bgcolor="${B.green}">
-            <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapeHtml(cta.url)}" style="height:44px;v-text-anchor:middle;width:180px;" arcsize="18%" stroke="f" fillcolor="${B.green}"><w:anchorlock/><center style="color:${B.white};font-family:${FONT};font-size:14px;font-weight:bold;"><!
-            [endif]-->
-            <a href="${escapeHtml(cta.url)}"
-               style="display:inline-block;padding:13px 26px;font-family:${FONT};font-size:14px;font-weight:600;color:${B.white};text-decoration:none;letter-spacing:0.1px;line-height:1.4;white-space:nowrap;border-radius:8px;background-color:${B.green};">
-              ${escapeHtml(cta.label)}&nbsp;&nbsp;&rarr;
+          <td class="cta-td" style="border-radius:100px;background-color:${B.green};" bgcolor="${B.green}">
+            <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapeHtml(cta.url)}" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="50%" stroke="f" fillcolor="${B.green}"><w:anchorlock/><center style="color:${B.white};font-family:${FONT};font-size:14px;font-weight:600;"><![endif]-->
+            <a class="cta-a" href="${escapeHtml(cta.url)}"
+               style="display:inline-block;padding:14px 32px;font-family:${FONT};font-size:14px;font-weight:600;letter-spacing:0.3px;color:${B.white};text-decoration:none;line-height:1.4;white-space:nowrap;border-radius:100px;background-color:${B.green};">
+              ${escapeHtml(cta.label)}&nbsp;&rarr;
             </a>
             <!--[if mso]></center></v:roundrect><![endif]-->
           </td>
         </tr>
       </table>`
     : '';
+
+  // ── Hairline rule (separates masthead / content / footer) ─────────────────
+  const hairline = `
+          <tr>
+            <td class="rule-cell" style="padding:0 48px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="height:1px;background-color:${B.border};font-size:1px;line-height:1px;" bgcolor="${B.border}">&nbsp;</td>
+                </tr>
+              </table>
+            </td>
+          </tr>`;
 
   // ── Footer note ───────────────────────────────────────────────────────────
   const footerText = footerNote
@@ -144,53 +166,75 @@ export function renderBrandedEmail(opts: BrandedEmailOpts): string {
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
   <style>
     @media only screen and (max-width:620px){
-      .wrap{width:100%!important;padding:0!important;}
-      .card-inner{padding:28px 20px!important;}
-      .foot-inner{padding:16px 20px!important;}
+      .wrap{width:100%!important;}
+      .logo-cell{padding:28px 24px 20px!important;}
+      .rule-cell{padding:0 24px!important;}
+      .body-cell{padding:28px 24px 36px!important;}
+      .foot-cell{padding:20px 24px!important;}
+      .cta-table{width:100%!important;}
+      .cta-td{display:block!important;text-align:center!important;}
+      .cta-a{display:block!important;width:100%!important;padding:16px!important;font-size:16px!important;text-align:center!important;box-sizing:border-box!important;}
     }
-    /* Dark mode — prevent pure-white-on-transparent blowout */
+    /* Dark mode — keep the cream stationery field */
     @media (prefers-color-scheme:dark){
-      .dm-body{background-color:${B.pageBg}!important;}
+      .dm-body{background-color:${B.cream}!important;}
     }
   </style>
 </head>
-<body class="dm-body" style="margin:0;padding:0;background-color:${B.pageBg};-webkit-text-size-adjust:100%;mso-line-height-rule:exactly;" bgcolor="${B.pageBg}">
+<body class="dm-body" style="margin:0;padding:0;background-color:${B.cream};-webkit-text-size-adjust:100%;mso-line-height-rule:exactly;" bgcolor="${B.cream}">
 
   <!-- Preheader spacer -->
-  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${B.pageBg};">${safePreheader}&#8203;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;</div>
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${B.cream};">${safePreheader}&#8203;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;</div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td align="center" style="padding:32px 16px 40px;">
+      <td align="center" style="padding:40px 16px 48px;background-color:${B.cream};" bgcolor="${B.cream}">
 
+        <!-- Card shell — max 600px, warm hairline border -->
         <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0"
-               style="max-width:600px;width:100%;border-radius:12px;border:1px solid ${B.border};overflow:hidden;background-color:${B.white};" bgcolor="${B.white}">
+               style="max-width:600px;width:100%;background-color:${B.white};border:1px solid ${B.border};border-radius:2px;" bgcolor="${B.white}">
 
-          <!-- ══ GREEN ACCENT BAR ══ -->
+          <!-- ══ MASTHEAD: brand tile + tracked wordmark on a cream field ══ -->
           <tr>
-            <td style="height:4px;background-color:${B.green};border-radius:12px 12px 0 0;line-height:4px;font-size:4px;" bgcolor="${B.green}">&nbsp;</td>
-          </tr>
-
-          <!-- ══ LOGO ROW ══ -->
-          <tr>
-            <td style="background-color:${B.cream};padding:24px 32px 20px;" bgcolor="${B.cream}">
-              <a href="${baseUrl}" style="text-decoration:none;display:inline-block;">
-                <img src="${LOGO_URL}"
-                     alt="Helm"
-                     height="36"
-                     style="height:36px;width:auto;border:0;display:block;"
-                     border="0" />
-              </a>
+            <td class="logo-cell" style="background-color:${B.cream};padding:32px 48px 24px;" bgcolor="${B.cream}">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <!-- Brand tile: 44px chip with a solid light field so the
+                       green mark never vanishes under dark-mode inversion.
+                       Plain hosted img — no CSS filter tricks. -->
+                  <td width="44" style="width:44px;vertical-align:middle;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td width="44" height="44" align="center" valign="middle" bgcolor="${B.greenXLight}"
+                            style="width:44px;height:44px;background-color:${B.greenXLight};border:1px solid ${B.greenLight};border-radius:10px;text-align:center;vertical-align:middle;">
+                          <a href="${baseUrl}" style="text-decoration:none;display:inline-block;font-family:${FONT};font-size:16px;font-weight:700;color:${B.green};line-height:0;">
+                            <img src="${LOGO_URL}"
+                                 alt="Helm"
+                                 width="32" height="26"
+                                 style="width:32px;height:26px;display:block;border:0;"
+                                 border="0" />
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <!-- Wordmark -->
+                  <td style="padding-left:14px;vertical-align:middle;">
+                    <span style="font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${B.warm400};">Helm Sports Labs</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
+${hairline}
 
-          <!-- ══ BODY ══ -->
+          <!-- ══ BODY — generous padding, editorial type ══ -->
           <tr>
-            <td class="card-inner" style="background-color:${B.cream};padding:4px 32px 32px;" bgcolor="${B.cream}">
+            <td class="body-cell" style="background-color:${B.white};padding:40px 48px 44px;" bgcolor="${B.white}">
 
               ${eyebrowHtml}
 
-              <h1 style="margin:0 0 16px;font-family:${FONT};font-size:24px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;color:${B.dark};">${safeHeading}</h1>
+              <h1 style="margin:0 0 28px;font-family:${SERIF};font-size:28px;font-weight:normal;line-height:1.25;letter-spacing:-0.3px;color:${B.dark};">${safeHeading}</h1>
 
               ${bodyHtml}
 
@@ -200,28 +244,24 @@ export function renderBrandedEmail(opts: BrandedEmailOpts): string {
 
             </td>
           </tr>
+${hairline}
 
-          <!-- ══ FOOTER ══ -->
+          <!-- ══ FOOTER — white, minimal, single flowing line ══ -->
           <tr>
-            <td class="foot-inner" style="background-color:${B.white};padding:16px 32px 20px;border-top:1px solid ${B.border};" bgcolor="${B.white}">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td>
-                    <p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.6;color:${B.muted};">
-                      ${footerText}
-                      &nbsp;&middot;&nbsp;
-                      <a href="${baseUrl}/golf/dashboard/settings" style="color:${B.muted};text-decoration:underline;">Manage preferences</a>
-                    </p>
-                  </td>
-                  <td align="right" style="white-space:nowrap;padding-left:16px;">
-                    <span style="font-family:${FONT};font-size:11px;color:${B.muted};letter-spacing:0.2px;">Helm Sports Labs</span>
-                  </td>
-                </tr>
-              </table>
+            <td class="foot-cell" style="background-color:${B.white};padding:20px 48px 24px;" bgcolor="${B.white}">
+              <p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.6;color:${B.warm400};">
+                ${footerText}
+                &nbsp;&middot;&nbsp;
+                <a href="${baseUrl}/golf/dashboard/settings" style="color:${B.warm400};text-decoration:underline;">Manage preferences</a>
+                &nbsp;&middot;&nbsp;
+                Helm Sports Labs
+              </p>
             </td>
           </tr>
 
         </table>
+        <!-- / Card shell -->
+
       </td>
     </tr>
   </table>

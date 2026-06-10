@@ -30,14 +30,40 @@ describe('renderBrandedEmail', () => {
     expect(html).toMatch(/^<!DOCTYPE html>/);
   });
 
-  it('includes the logo img tag pointing to the absolute URL', () => {
+  it('includes the hosted logo img with explicit sizing and alt text', () => {
     const html = renderBrandedEmail({
       preheader: 'x',
       heading: 'h',
       bodyHtml: 'b',
     });
-    expect(html).toContain('helm-golf-logo-transparent.png');
+    // Hosted HTTPS logo — never a data: URI (Gmail/Outlook strip those)
+    expect(html).toContain('https://helmsportslabs.com/helm-golf-logo-transparent.png');
+    expect(html).not.toContain('data:image');
     expect(html).toContain('alt="Helm"');
+    expect(html).toMatch(/width="32" height="26"/);
+    expect(html).toMatch(/<img[^>]*style="[^"]*display:block/);
+  });
+
+  it('renders the logo on a solid light brand-tile (dark-mode guard)', () => {
+    const html = renderBrandedEmail({
+      preheader: 'x',
+      heading: 'h',
+      bodyHtml: 'b',
+    });
+    // Solid bgcolor attribute on the tile cell so the mark never vanishes
+    expect(html).toContain('bgcolor="#F0FDF4"');
+    // No CSS filter tricks — unsupported in Gmail/Outlook/Yahoo
+    expect(html).not.toContain('filter:');
+  });
+
+  it('includes the tracked small-caps wordmark in the masthead', () => {
+    const html = renderBrandedEmail({
+      preheader: 'x',
+      heading: 'h',
+      bodyHtml: 'b',
+    });
+    expect(html).toContain('Helm Sports Labs');
+    expect(html).toContain('letter-spacing:2.5px');
   });
 
   it('renders eyebrow when provided', () => {
@@ -52,16 +78,34 @@ describe('renderBrandedEmail', () => {
   });
 
   it('omits eyebrow when not provided', () => {
-    const html = renderBrandedEmail({
+    const withEyebrow = renderBrandedEmail({
+      preheader: 'x',
+      eyebrow: 'Zebra Chip',
+      heading: 'h',
+      bodyHtml: 'b',
+    });
+    const withoutEyebrow = renderBrandedEmail({
       preheader: 'x',
       heading: 'h',
       bodyHtml: 'b',
     });
-    // No uppercase chip other than in footer
-    expect(html.match(/text-transform:uppercase/g)?.length ?? 0).toBeLessThan(2);
+    expect(withoutEyebrow).not.toContain('Zebra Chip');
+    // Exactly one fewer uppercase element (the wordmark always remains)
+    const count = (s: string) => s.match(/text-transform:uppercase/g)?.length ?? 0;
+    expect(count(withoutEyebrow)).toBe(count(withEyebrow) - 1);
   });
 
-  it('renders CTA button when cta is provided', () => {
+  it('renders the heading as a Georgia serif display heading', () => {
+    const html = renderBrandedEmail({
+      preheader: 'x',
+      heading: 'Editorial Heading',
+      bodyHtml: 'b',
+    });
+    expect(html).toMatch(/<h1[^>]*Georgia[^>]*>Editorial Heading<\/h1>/);
+    expect(html).toMatch(/<h1[^>]*font-weight:normal/);
+  });
+
+  it('renders CTA as a full pill button when cta is provided', () => {
     const html = renderBrandedEmail({
       preheader: 'x',
       heading: 'h',
@@ -70,6 +114,10 @@ describe('renderBrandedEmail', () => {
     });
     expect(html).toContain('RSVP Now');
     expect(html).toContain('https://example.com/rsvp');
+    expect(html).toContain('border-radius:100px');
+    // MSO conditional close is the normalized single-line form
+    expect(html).toContain('<![endif]-->');
+    expect(html).not.toMatch(/<!\s*\n\s*\[endif\]/);
   });
 
   it('omits CTA when not provided', () => {
@@ -78,8 +126,9 @@ describe('renderBrandedEmail', () => {
       heading: 'No CTA',
       bodyHtml: '<p>content</p>',
     });
-    // No button table
-    expect(html).not.toContain('border-radius:8px;background-color:#16A34A');
+    // No pill button table (.cta-a in the <style> block is fine)
+    expect(html).not.toContain('border-radius:100px');
+    expect(html).not.toContain('class="cta-a"');
   });
 
   it('escapes HTML special characters in details values', () => {
@@ -121,8 +170,9 @@ describe('renderBrandedEmail', () => {
       bodyHtml: 'b',
     });
     expect(withDetails).toContain('Tuesday');
+    expect(withDetails).toContain('class="details"');
     // details table not present
-    expect(withoutDetails).not.toMatch(/border-radius:8px;overflow:hidden;margin:20px 0/);
+    expect(withoutDetails).not.toContain('class="details"');
   });
 
   it('includes footer note when provided', () => {
@@ -144,13 +194,16 @@ describe('renderBrandedEmail', () => {
     expect(html).toContain("You're receiving this because you're part of a Helm Sports team.");
   });
 
-  it('includes green accent bar', () => {
+  it('always carries helm green and the hairline-rule structure', () => {
     const html = renderBrandedEmail({
       preheader: 'x',
       heading: 'h',
       bodyHtml: 'b',
     });
     expect(html).toContain('#16A34A');
+    // Two hairline rules separate masthead / content / footer
+    const rules = html.match(/class="rule-cell"/g) ?? [];
+    expect(rules.length).toBe(2);
   });
 
   it('includes preheader hidden div', () => {

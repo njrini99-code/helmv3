@@ -70,8 +70,8 @@ export function renderWelcomeEmail(input: WelcomeEmailInput): WelcomeEmailResult
   // ── Join-code block (only rendered when a code is present) ───────────────
   const joinCodeBlock = safeCode
     ? `
-      <div style="background-color:${GREEN_XLIGHT};border:1px solid ${GREEN_LIGHT};border-radius:10px;padding:16px 20px;margin:24px 0 0;">
-        <p style="margin:0 0 4px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${GREEN};">Team Join Code</p>
+      <div style="background-color:${GREEN_XLIGHT};border:1px solid ${GREEN_LIGHT};border-radius:2px;padding:16px 20px;margin:24px 0 0;">
+        <p style="margin:0 0 4px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${GREEN};">Team Join Code</p>
         <p style="margin:0 0 8px;font-family:${FONT};font-size:13px;line-height:1.5;color:${GREEN_DEEP};">Share this with your players so they can join your roster in seconds:</p>
         <p style="margin:0;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:22px;font-weight:700;letter-spacing:3px;color:${DARK};">${safeCode}</p>
       </div>`
@@ -123,12 +123,12 @@ export function renderWelcomeEmail(input: WelcomeEmailInput): WelcomeEmailResult
 
   const bodyHtml = `
     <!-- Greeting -->
-    <p style="margin:0 0 16px;font-family:${FONT};font-size:15px;line-height:1.65;color:${WARM700};">
+    <p style="margin:0 0 16px;font-family:${FONT};font-size:16px;line-height:1.6;color:${WARM700};">
       Hi ${safeFirst}, welcome to Helm — we're glad you're here.
     </p>
 
     <!-- Why Helm paragraph — grounded in actual product positioning -->
-    <p style="margin:0 0 16px;font-family:${FONT};font-size:15px;line-height:1.65;color:${WARM700};">
+    <p style="margin:0 0 16px;font-family:${FONT};font-size:16px;line-height:1.6;color:${WARM700};">
       Managing a college golf program means juggling spreadsheets, group chats, tournament logistics,
       and individual player development — all at once. Helm is built to replace that patchwork with one
       platform that actually fits how you coach. Track every round shot-by-shot, see where each player is
@@ -144,7 +144,7 @@ export function renderWelcomeEmail(input: WelcomeEmailInput): WelcomeEmailResult
     </table>
 
     <!-- First steps heading -->
-    <p style="margin:0 0 16px;font-family:${FONT};font-size:13px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:${MUTED};">
+    <p style="margin:0 0 16px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${MUTED};">
       Three things to do first
     </p>
 

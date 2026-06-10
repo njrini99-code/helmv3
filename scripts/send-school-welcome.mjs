@@ -138,53 +138,96 @@ function escHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
+// Hosted production logo URL — the --send path keeps this; previews swap it
+// for an inlined base64 data URI (see writePreview below).
+const LOGO_URL = 'https://helmsportslabs.com/helm-golf-logo-transparent.png';
+
 function renderBrandedEmailInline(opts) {
   const {
     preheader, eyebrow, heading, bodyHtml, cta, footerNote,
   } = opts;
 
   const B = {
-    green: '#16A34A', greenDark: '#15803D', dark: '#1c1917',
-    muted: '#78716c', border: '#E7E5E4', cream: '#FFFEFA',
-    white: '#FFFFFF', pageBg: '#F5F5F4',
+    green: '#16A34A', greenLight: '#DCFCE7', greenXLight: '#F0FDF4',
+    dark: '#1C1917', muted: '#78716C', warm400: '#A8A29E',
+    border: '#E7E5E4', cream: '#FFFEFA', white: '#FFFFFF',
   };
   const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`;
+  const SERIF = `Georgia,'Times New Roman',Times,serif`;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
-  const LOGO_URL = 'https://helmsportslabs.com/helm-golf-logo-transparent.png';
 
   const eyebrowHtml = eyebrow
-    ? `<p style="margin:0 0 10px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:${B.green};">${escHtml(eyebrow)}</p>`
+    ? `<p style="margin:0 0 18px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${B.green};line-height:1;">${escHtml(eyebrow)}</p>`
     : '';
   const ctaHtml = cta
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;"><tr><td style="border-radius:8px;background-color:${B.green};"><a href="${escHtml(cta.url)}" style="display:inline-block;padding:13px 26px;font-family:${FONT};font-size:14px;font-weight:600;color:${B.white};text-decoration:none;letter-spacing:0.1px;line-height:1.4;white-space:nowrap;border-radius:8px;">${escHtml(cta.label)}&nbsp;&nbsp;&rarr;</a></td></tr></table>`
+    ? `<table role="presentation" class="cta-table" cellpadding="0" cellspacing="0" border="0" style="margin:36px 0 0;">
+<tr><td class="cta-td" style="border-radius:100px;background-color:${B.green};" bgcolor="${B.green}">
+<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escHtml(cta.url)}" style="height:48px;v-text-anchor:middle;width:220px;" arcsize="50%" stroke="f" fillcolor="${B.green}"><w:anchorlock/><center style="color:${B.white};font-family:${FONT};font-size:14px;font-weight:600;"><![endif]-->
+<a class="cta-a" href="${escHtml(cta.url)}" style="display:inline-block;padding:14px 32px;font-family:${FONT};font-size:14px;font-weight:600;letter-spacing:0.3px;color:${B.white};text-decoration:none;line-height:1.4;white-space:nowrap;border-radius:100px;background-color:${B.green};">${escHtml(cta.label)}&nbsp;&rarr;</a>
+<!--[if mso]></center></v:roundrect><![endif]-->
+</td></tr></table>`
     : '';
+  const hairline = `<tr><td class="rule-cell" style="padding:0 48px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="height:1px;background-color:${B.border};font-size:1px;line-height:1px;" bgcolor="${B.border}">&nbsp;</td></tr>
+</table>
+</td></tr>`;
   const footerText = footerNote ? escHtml(footerNote) : "You&#39;re receiving this because you&#39;re part of a Helm Sports team.";
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="color-scheme" content="light"/><meta name="supported-color-schemes" content="light"/>
 <title>${escHtml(heading)}</title>
-<style>@media only screen and (max-width:620px){.wrap{width:100%!important;}.card-inner{padding:28px 20px!important;}.foot-inner{padding:16px 20px!important;}}</style>
+<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+<style>
+@media only screen and (max-width:620px){
+.wrap{width:100%!important;}
+.logo-cell{padding:28px 24px 20px!important;}
+.rule-cell{padding:0 24px!important;}
+.body-cell{padding:28px 24px 36px!important;}
+.foot-cell{padding:20px 24px!important;}
+.cta-table{width:100%!important;}
+.cta-td{display:block!important;text-align:center!important;}
+.cta-a{display:block!important;width:100%!important;padding:16px!important;font-size:16px!important;text-align:center!important;box-sizing:border-box!important;}
+}
+@media (prefers-color-scheme:dark){.dm-body{background-color:${B.cream}!important;}}
+</style>
 </head>
-<body style="margin:0;padding:0;background-color:${B.pageBg};-webkit-text-size-adjust:100%;" bgcolor="${B.pageBg}">
-<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${B.pageBg};">${escHtml(preheader)}&#8203;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;</div>
+<body class="dm-body" style="margin:0;padding:0;background-color:${B.cream};-webkit-text-size-adjust:100%;mso-line-height-rule:exactly;" bgcolor="${B.cream}">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${B.cream};">${escHtml(preheader)}&#8203;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;&zwnj;</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td align="center" style="padding:32px 16px 40px;">
-<table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;border-radius:12px;border:1px solid ${B.border};overflow:hidden;background-color:${B.white};" bgcolor="${B.white}">
-<tr><td style="height:4px;background-color:${B.green};border-radius:12px 12px 0 0;line-height:4px;font-size:4px;" bgcolor="${B.green}">&nbsp;</td></tr>
-<tr><td style="background-color:${B.cream};padding:24px 32px 20px;" bgcolor="${B.cream}">
-<a href="${baseUrl}" style="text-decoration:none;display:inline-block;">
-<img src="${LOGO_URL}" alt="Helm" height="36" style="height:36px;width:auto;border:0;display:block;" border="0"/>
+<tr><td align="center" style="padding:40px 16px 48px;background-color:${B.cream};" bgcolor="${B.cream}">
+<table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:${B.white};border:1px solid ${B.border};border-radius:2px;" bgcolor="${B.white}">
+<tr><td class="logo-cell" style="background-color:${B.cream};padding:32px 48px 24px;" bgcolor="${B.cream}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+<td width="44" style="width:44px;vertical-align:middle;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+<tr><td width="44" height="44" align="center" valign="middle" bgcolor="${B.greenXLight}" style="width:44px;height:44px;background-color:${B.greenXLight};border:1px solid ${B.greenLight};border-radius:10px;text-align:center;vertical-align:middle;">
+<a href="${baseUrl}" style="text-decoration:none;display:inline-block;font-family:${FONT};font-size:16px;font-weight:700;color:${B.green};line-height:0;">
+<img src="${LOGO_URL}" alt="Helm" width="32" height="26" style="width:32px;height:26px;display:block;border:0;" border="0"/>
 </a>
 </td></tr>
-<tr><td class="card-inner" style="background-color:${B.cream};padding:4px 32px 32px;" bgcolor="${B.cream}">
+</table>
+</td>
+<td style="padding-left:14px;vertical-align:middle;">
+<span style="font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${B.warm400};">Helm Sports Labs</span>
+</td>
+</tr>
+</table>
+</td></tr>
+${hairline}
+<tr><td class="body-cell" style="background-color:${B.white};padding:40px 48px 44px;" bgcolor="${B.white}">
 ${eyebrowHtml}
-<h1 style="margin:0 0 16px;font-family:${FONT};font-size:24px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;color:${B.dark};">${escHtml(heading)}</h1>
+<h1 style="margin:0 0 28px;font-family:${SERIF};font-size:28px;font-weight:normal;line-height:1.25;letter-spacing:-0.3px;color:${B.dark};">${escHtml(heading)}</h1>
 ${bodyHtml}
 ${ctaHtml}
 </td></tr>
-<tr><td class="foot-inner" style="background-color:${B.white};padding:16px 32px 20px;border-top:1px solid ${B.border};" bgcolor="${B.white}">
-<p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.6;color:${B.muted};">${footerText} &nbsp;&middot;&nbsp; <a href="${baseUrl}/golf/dashboard/settings" style="color:${B.muted};text-decoration:underline;">Manage preferences</a></p>
+${hairline}
+<tr><td class="foot-cell" style="background-color:${B.white};padding:20px 48px 24px;" bgcolor="${B.white}">
+<p style="margin:0;font-family:${FONT};font-size:12px;line-height:1.6;color:${B.warm400};">${footerText} &nbsp;&middot;&nbsp; <a href="${baseUrl}/golf/dashboard/settings" style="color:${B.warm400};text-decoration:underline;">Manage preferences</a> &nbsp;&middot;&nbsp; Helm Sports Labs</p>
 </td></tr>
 </table>
 </td></tr>
@@ -213,8 +256,8 @@ function buildWelcomeHtml({ firstName, schoolName, teamJoinCode, supportEmail = 
   const safeCode = teamJoinCode ? escHtml(teamJoinCode) : '';
 
   const joinCodeBlock = safeCode
-    ? `<div style="background-color:${GREEN_XLIGHT};border:1px solid ${GREEN_LIGHT};border-radius:10px;padding:16px 20px;margin:24px 0 0;">
-<p style="margin:0 0 4px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${GREEN};">Team Join Code</p>
+    ? `<div style="background-color:${GREEN_XLIGHT};border:1px solid ${GREEN_LIGHT};border-radius:2px;padding:16px 20px;margin:24px 0 0;">
+<p style="margin:0 0 4px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${GREEN};">Team Join Code</p>
 <p style="margin:0 0 8px;font-family:${FONT};font-size:13px;line-height:1.5;color:${GREEN_DEEP};">Share this with your players so they can join your roster in seconds:</p>
 <p style="margin:0;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:22px;font-weight:700;letter-spacing:3px;color:${DARK};">${safeCode}</p>
 </div>` : '';
@@ -244,14 +287,14 @@ function buildWelcomeHtml({ firstName, schoolName, teamJoinCode, supportEmail = 
   const subject = `Welcome to Helm, ${firstName} — your program is ready`;
 
   const bodyHtml = `
-<p style="margin:0 0 16px;font-family:${FONT};font-size:15px;line-height:1.65;color:${WARM700};">Hi ${safeFirst}, welcome to Helm — we're glad you're here.</p>
-<p style="margin:0 0 16px;font-family:${FONT};font-size:15px;line-height:1.65;color:${WARM700};">
+<p style="margin:0 0 16px;font-family:${FONT};font-size:16px;line-height:1.6;color:${WARM700};">Hi ${safeFirst}, welcome to Helm — we're glad you're here.</p>
+<p style="margin:0 0 16px;font-family:${FONT};font-size:16px;line-height:1.6;color:${WARM700};">
 Managing a college golf program means juggling spreadsheets, group chats, tournament logistics, and individual player development — all at once. Helm is built to replace that patchwork with one platform that actually fits how you coach. Track every round shot-by-shot, see where each player is losing or gaining strokes, and let <strong style="color:${DARK};">CoachHelm AI</strong> surface the patterns that are hardest to spot across a full roster. Instead of combing through numbers after the fact, you'll have actionable insights waiting for you — which players need work on their approach, who's leaving putts short, where a qualifier would shake out today.
 </p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
 <tr><td style="height:1px;background-color:${BORDER};line-height:1px;font-size:1px;">&nbsp;</td></tr>
 </table>
-<p style="margin:0 0 16px;font-family:${FONT};font-size:13px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:${MUTED};">Three things to do first</p>
+<p style="margin:0 0 16px;font-family:${FONT};font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${MUTED};">Three things to do first</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tbody>${stepsHtml}</tbody></table>
 ${joinCodeBlock}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 20px;">
@@ -337,9 +380,15 @@ async function main() {
       supportEmail: SUPPORT_EMAIL,
     });
 
-    // Write preview
+    // Write preview — PREVIEW FILES ONLY get the logo inlined as a base64
+    // data URI (local files block remote images). The --send path below uses
+    // `html` unchanged, i.e. the hosted HTTPS logo (Gmail/Outlook strip
+    // data: URIs).
+    const logoPng = readFileSync(resolve(ROOT, 'public', 'helm-golf-logo-transparent.png'));
+    const logoDataUri = `data:image/png;base64,${logoPng.toString('base64')}`;
+    const previewHtml = html.split(LOGO_URL).join(logoDataUri);
     const previewPath = `${PREVIEW_DIR}/welcome-${coach.slug}.html`;
-    writeFileSync(previewPath, html, 'utf8');
+    writeFileSync(previewPath, previewHtml, 'utf8');
     console.log(`  ✓ Preview written → ${previewPath}`);
 
     if (SEND && resend) {

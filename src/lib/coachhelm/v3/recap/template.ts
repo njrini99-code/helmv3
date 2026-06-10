@@ -17,6 +17,7 @@ const WARM_900 = '#1c1917';
 const WARM_500 = '#78716c';
 const WARM_200 = '#e7e5e4';
 const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`;
+const SERIF = `Georgia,'Times New Roman',Times,serif`;
 
 function formatToPar(p: number | null): string {
   if (p === null) return '—';
@@ -37,7 +38,7 @@ export function buildWeeklyRecapHtml(recap: WeeklyRecap): { subject: string; htm
   const subject = `${recap.team_name} · weekly recap (${dateRange})`;
 
   const bodyHtml = `
-    <p style="margin:0 0 8px;font-family:${FONT};font-size:22px;font-weight:500;letter-spacing:-0.3px;color:${WARM_900};">
+    <p style="margin:0 0 8px;font-family:${SERIF};font-size:22px;font-weight:normal;line-height:1.3;letter-spacing:-0.3px;color:${WARM_900};">
       Hey ${escapeHtml(recap.coach_first_name)},
     </p>
     <p style="margin:0 0 32px;font-family:${FONT};font-size:15px;color:${WARM_500};">
@@ -94,7 +95,7 @@ export function buildWeeklyRecapHtml(recap: WeeklyRecap): { subject: string; htm
 
 function statCell(label: string, value: string): string {
   return `<td valign="top" style="padding:0 8px;width:25%;text-align:center;">
-    <p style="margin:0;font-family:${FONT};font-size:32px;font-weight:500;color:${WARM_900};line-height:1;">${escapeHtml(value)}</p>
+    <p style="margin:0;font-family:${SERIF};font-size:32px;font-weight:normal;color:${WARM_900};line-height:1;">${escapeHtml(value)}</p>
     <p style="margin:6px 0 0;font-family:${FONT};font-size:11px;letter-spacing:1px;text-transform:uppercase;color:${WARM_500};">${escapeHtml(label)}</p>
   </td>`;
 }

@@ -45,6 +45,7 @@ const BRAND = {
 } as const;
 
 const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`;
+const SERIF = `Georgia,'Times New Roman',Times,serif`;
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -121,7 +122,7 @@ function renderInsightRow(insight: CoachDigestInsight, baseUrl: string): string 
     <tr>
       <td style="padding:0 0 18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-               style="border:1px solid ${BRAND.border};border-radius:10px;background:${BRAND.white};">
+               style="border:1px solid ${BRAND.border};border-radius:2px;background:${BRAND.white};">
           <tr>
             <td style="padding:18px 20px 14px;">
               <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.muted};">
@@ -158,7 +159,7 @@ function renderCelebration(
     <tr>
       <td style="padding:0 0 18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-               style="border:1px solid ${BRAND.greenLight};border-radius:10px;background:${BRAND.greenXLight};">
+               style="border:1px solid ${BRAND.greenLight};border-radius:2px;background:${BRAND.greenXLight};">
           <tr>
             <td style="padding:16px 20px;">
               <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.greenDeep};">
@@ -187,7 +188,7 @@ function renderWatch(watch: CoachDigestWatch, baseUrl: string): string {
     <tr>
       <td style="padding:0 0 18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-               style="border:1px solid #FDE68A;border-radius:10px;background:${BRAND.amberBg};">
+               style="border:1px solid #FDE68A;border-radius:2px;background:${BRAND.amberBg};">
           <tr>
             <td style="padding:16px 20px;">
               <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.amber};">
@@ -246,7 +247,7 @@ export function renderCoachDigest(data: CoachDigestData): RenderedCoachDigest {
 
   const bodyHtml = `
     <p style="margin:0 0 4px;font-family:${FONT};font-size:13px;font-weight:500;color:${BRAND.muted};">${escapeHtml(date)}</p>
-    <p style="margin:0 0 6px;font-family:${FONT};font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-0.4px;color:${BRAND.dark};">Good morning, ${escapeHtml(coachName)}.</p>
+    <p style="margin:0 0 6px;font-family:${SERIF};font-size:22px;font-weight:normal;line-height:1.3;letter-spacing:-0.3px;color:${BRAND.dark};">Good morning, ${escapeHtml(coachName)}.</p>
     <p style="margin:0 0 24px;font-family:${FONT};font-size:14px;line-height:1.55;color:${BRAND.warm700};">Here is what changed overnight on ${escapeHtml(teamName)}.</p>
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">

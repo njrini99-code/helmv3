@@ -86,17 +86,17 @@ function buildHtml(args: SendTeamInviteEmailArgs, fullJoinUrl: string): string {
     eyebrow: 'Team Invitation',
     heading: `You're invited to join ${teamName}`,
     bodyHtml: `
-      <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;line-height:1.65;color:${BRAND.muted};">
+      <p style="margin:0 0 20px;font-family:${FONT};font-size:16px;line-height:1.6;color:${BRAND.muted};">
         <strong style="color:${BRAND.dark};">${coachName}</strong> invited you to join
         <strong style="color:${BRAND.dark};">${teamName}</strong> on GolfHelm —
         the team management and round-tracking platform for college golf.
       </p>
-      <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.65;color:${BRAND.muted};">
+      <p style="margin:0 0 4px;font-family:${FONT};font-size:16px;line-height:1.6;color:${BRAND.muted};">
         Tap the button below to accept the invite and create your player account.
       </p>
 
       <!-- Join code fallback -->
-      <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:10px;padding:16px 20px;margin-top:24px;">
+      <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:2px;padding:16px 20px;margin-top:24px;">
         <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;color:${BRAND.green};letter-spacing:0.4px;text-transform:uppercase;">Button not working?</p>
         <p style="margin:0 0 8px;font-family:${FONT};font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Visit the join page and paste this code:</p>
         <p style="margin:0;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:18px;font-weight:700;letter-spacing:2px;color:${BRAND.dark};">${joinCode}</p>
