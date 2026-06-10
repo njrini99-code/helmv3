@@ -280,14 +280,21 @@ ModalBody.displayName = 'ModalShell.Body';
 const ModalFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
     data-slot="modal-shell-footer"
     className={cn(
-      'flex flex-col-reverse gap-2 px-6 pb-6 pt-4 sm:flex-row sm:justify-end',
+      'flex flex-col-reverse gap-2 px-6 pt-4 sm:flex-row sm:justify-end',
       className,
     )}
+    // Safe-area bottom inset so the footer buttons are never clipped by the
+    // iPhone home indicator (Capacitor contentInset:'never' means the web
+    // code is responsible for honouring env(safe-area-inset-bottom)).
+    style={{
+      paddingBottom: 'max(1.5rem, calc(1rem + env(safe-area-inset-bottom)))',
+      ...style,
+    }}
     {...props}
   />
 ));

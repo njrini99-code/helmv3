@@ -177,7 +177,12 @@ export function FairwayTravel({
         : await createGolfTravelItinerary({ team_id: teamId, created_by: coachId, ...formData });
 
       if (!result.success) {
-        setSaveError(result.error || 'Failed to save itinerary');
+        const msg = result.error || 'Failed to save itinerary';
+        // Surface inline (inside the modal) AND via toast so the error is
+        // visible even if the modal scroll position hides the InlineNotice
+        // or the keyboard is covering the form on iOS.
+        setSaveError(msg);
+        fairwayToast.danger(msg);
         setSaving(false);
         return;
       }
@@ -192,7 +197,11 @@ export function FairwayTravel({
         window.location.reload();
         return;
       }
-      setSaveError(err instanceof Error ? err.message : 'An error occurred');
+      const errMsg = err instanceof Error ? err.message : 'An error occurred';
+      setSaveError(errMsg);
+      // Always toast the error — on iOS the inline notice may be scrolled out
+      // of view or the keyboard may be covering the form.
+      fairwayToast.danger(errMsg);
     } finally {
       setSaving(false);
     }

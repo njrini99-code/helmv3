@@ -13,13 +13,22 @@ import { logServerError } from '@/lib/server-error-logger';
 const uuidSchema = z.string().uuid();
 const transportationTypeSchema = z.enum(['bus', 'van', 'flight', 'carpool']);
 
+// Validates a date string coming from an HTML <input type="date">.
+// The native iOS Safari date picker always returns YYYY-MM-DD; this regex
+// also accepts the ISO subset used by Postgres. An empty string (returned
+// when the iOS picker is dismissed without a selection) is rejected.
+const dateStringSchema = z
+  .string()
+  .min(1, 'Departure date is required')
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format — expected YYYY-MM-DD');
+
 const createTravelItinerarySchema = z.object({
   team_id: z.string().uuid(),
   event_id: z.string().uuid().optional(),
   event_name: z.string().min(1).max(200),
   destination: z.string().min(1).max(200),
   transportation_type: transportationTypeSchema,
-  departure_date: z.string(),
+  departure_date: dateStringSchema,
   departure_time: z.string().optional(),
   departure_location: z.string().max(500).optional(),
   return_date: z.string().optional(),
