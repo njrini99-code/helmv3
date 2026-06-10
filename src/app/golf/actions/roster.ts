@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { logServerError } from '@/lib/server-error-logger';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // TYPES
@@ -26,9 +26,12 @@ interface RosterActionResult {
  */
 async function getCoachTeamId(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  organizationId: string | null
+  organizationId: string | null,
+  coachId: string | null
 ): Promise<string | null> {
-  return resolveCoachTeamId(supabase, organizationId);
+  // Cookie-aware: honours the program head's golf_active_team selection
+  // (validated server-side) so coach WRITES target the toggled team.
+  return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
 
 // ============================================================================
@@ -65,7 +68,7 @@ export async function removePlayerFromTeam(playerId: string): Promise<RosterActi
     return { success: false, error: 'Only coaches can remove players' };
   }
 
-  const teamId = await getCoachTeamId(supabase, coach.organization_id);
+  const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
   if (!teamId) {
     return { success: false, error: 'You must have a team to remove players' };
   }
@@ -142,7 +145,7 @@ export async function getTeamPlayers(): Promise<{
     return { success: false, error: 'Coach profile not found' };
   }
 
-  const teamId = await getCoachTeamId(supabase, coach.organization_id);
+  const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
   if (!teamId) {
     return { success: true, data: [] };
   }

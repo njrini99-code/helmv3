@@ -47,11 +47,14 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
   const { displayDensity, showAnimations } = useAppearancePreferences();
   const isCoach = userData.role === 'coach';
 
-  // TeamSwitcher: only render for coaches with >1 team.
+  // TeamSwitcher (program heads only): renders in a strip at the TOP of the
+  // content column — desktop AND mobile — when the coach is a multi-team
+  // head coach. (The sidebar identity block deliberately does NOT render it;
+  // exactly one affordance.)
   const coachTeams = userData.coachTeams ?? [];
-  const teamSwitcherSlot =
-    isCoach && coachTeams.length > 1 && userData.teamId ? (
-      <TeamSwitcher teams={coachTeams} activeTeamId={userData.teamId} variant="sidebar" />
+  const teamSwitcher =
+    isCoach && userData.canSwitchTeams && coachTeams.length > 1 && userData.teamId ? (
+      <TeamSwitcher teams={coachTeams} activeTeamId={userData.teamId} canSwitch />
     ) : null;
   const mobileSidebarRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
@@ -151,7 +154,6 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           userName={userData.name}
           teamName={userData.teamName}
           avatarUrl={userData.avatarUrl}
-          teamSwitcherSlot={teamSwitcherSlot}
         />
       </div>
 
@@ -193,7 +195,6 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           teamName={userData.teamName}
           avatarUrl={userData.avatarUrl}
           isMobile
-          teamSwitcherSlot={teamSwitcherSlot}
         />
       </div>
 
@@ -214,6 +215,12 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         }}
       >
         <NoTeamBanner />
+        {/* Program-head team toggle — top of the content column (one affordance). */}
+        {teamSwitcher && (
+          <div className="flex justify-end px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 lg:px-8">
+            {teamSwitcher}
+          </div>
+        )}
         <div className="min-h-full" style={{ background: 'transparent' }}>
           {children}
         </div>

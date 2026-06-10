@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { GolfDashboardShell } from './GolfDashboardShell';
 import { FairwayDashboardShell } from './FairwayDashboardShell';
-import { resolveCoachActiveTeamId, getCoachTeams } from '@/lib/golf/resolve-team';
+import { resolveCoachActiveTeamId, getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { isRedesignEnabled } from '@/lib/redesign/flag';
 import { getActiveTeamCookie } from '@/app/golf/actions/team-switcher';
 import type { GolfUserData } from '@/contexts/golf-user-context';
@@ -103,18 +103,20 @@ export default async function GolfDashboardLayout({
     // Fetch coach's active team with cookie-awareness:
     //   1. Read the golf_active_team cookie (if set).
     //   2. Validate it via golf_team_coach_staff before trusting it.
-    //   3. Fall back to the deterministic org-based resolver on any failure.
-    // Also fetch all teams so the TeamSwitcher can be shown when >1 team exists.
+    //   3. Fall back to the coach's staffed team, then the org resolver.
+    // Also fetch the switch context (teams + head-coach gate) so the
+    // TeamSwitcher renders only for multi-team head coaches (program heads).
     let teamId: string | undefined;
     let teamName: string | undefined;
     const supabase = await createClient();
 
-    // Parallel fetch: active team id + all coach teams list.
+    // Parallel fetch: active team id + switch context (teams + canSwitch gate).
     const cookieTeamId = await getActiveTeamCookie();
-    const [resolvedTeamId, coachTeams] = await Promise.all([
+    const [resolvedTeamId, switchContext] = await Promise.all([
       resolveCoachActiveTeamId(supabase, coach.organization_id, coach.id, cookieTeamId),
-      getCoachTeams(supabase, coach.id, coach.organization_id),
+      getCoachTeamSwitchContext(supabase, coach.id, coach.organization_id),
     ]);
+    const coachTeams = switchContext.teams;
 
     if (resolvedTeamId) {
       // Find name from coachTeams list first (already fetched); avoids a third query.
@@ -143,6 +145,7 @@ export default async function GolfDashboardLayout({
       teamId,
       organizationId: coach.organization_id || undefined,
       coachTeams,
+      canSwitchTeams: switchContext.canSwitch,
     };
   } else if (resolvedRole === 'player') {
     if (!player || !player.onboarding_completed) {

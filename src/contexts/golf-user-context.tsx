@@ -16,10 +16,17 @@ export interface GolfUserData {
   organizationId?: string;
   /**
    * All teams the coach is staffed on (populated for coaches only).
-   * Used to show/hide the TeamSwitcher in the sidebar identity block.
+   * Used by the TeamSwitcher at the top of the dashboard.
    * Empty array = single-team coach (switcher hidden).
    */
   coachTeams?: CoachTeamOption[];
+  /**
+   * Program-head gate: true only when the coach staffs >1 team via
+   * golf_team_coach_staff AND holds role 'head_coach' on at least one staff
+   * row. Controls whether the TeamSwitcher renders at all. Assistants and
+   * single-team head coaches keep standard single-team viewing.
+   */
+  canSwitchTeams?: boolean;
 }
 
 const GolfUserContext = createContext<GolfUserData | null>(null);

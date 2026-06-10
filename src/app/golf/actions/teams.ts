@@ -4,7 +4,7 @@ import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { revalidatePath } from 'next/cache';
 
 // ============================================================================
@@ -41,10 +41,12 @@ export interface TeamValidationResult {
  */
 async function getCoachTeamId(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  organizationId: string | null
+  organizationId: string | null,
+  coachId: string | null
 ): Promise<string | null> {
-  // Delegates to the shared deterministic resolver (never throws on orgs with >1 team).
-  return resolveCoachTeamId(supabase, organizationId);
+  // Cookie-aware: honours the program head's golf_active_team selection
+  // (validated server-side) so coach WRITES target the toggled team.
+  return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
 
 /**
@@ -322,7 +324,7 @@ export async function createTeam(
   }
 
   // Check if coach already has a team via organization
-  const existingTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  const existingTeamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
   if (existingTeamId) {
     return { success: false, error: 'You already have a team. Please update it instead.' };
   }
@@ -400,7 +402,7 @@ export async function updateTeam(
     return { success: false, error: 'Coach profile not found' };
   }
 
-  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
   if (coachTeamId !== teamId) {
     return { success: false, error: 'You can only update your own team' };
   }
@@ -471,7 +473,7 @@ export async function regenerateJoinCode(
     return { success: false, error: 'Coach profile not found' };
   }
 
-  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
   if (coachTeamId !== teamId) {
     return { success: false, error: 'You can only regenerate join codes for your own team' };
   }
@@ -684,7 +686,7 @@ export async function getTeamJoinRequests(): Promise<TeamActionResult<JoinReques
     return { success: false, error: 'Coach profile not found' };
   }
 
-  const teamId = await getCoachTeamId(supabase, coach.organization_id);
+  const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
   if (!teamId) {
     return { success: false, error: 'No team found' };
   }
@@ -774,7 +776,7 @@ export async function acceptJoinRequest(
   }
 
   // Verify coach owns this team
-  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
   if (coachTeamId !== request.team_id) {
     return { success: false, error: 'You can only accept requests for your own team' };
   }
@@ -917,7 +919,7 @@ export async function rejectJoinRequest(
   }
 
   // Verify coach owns this team
-  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+  const coachTeamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
   if (coachTeamId !== request.team_id) {
     return { success: false, error: 'You can only reject requests for your own team' };
   }

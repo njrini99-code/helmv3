@@ -45,7 +45,7 @@ import {
 } from '@/lib/golf/recurrence';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -57,10 +57,12 @@ import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
  */
 async function getCoachTeamId(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  organizationId: string | null
+  organizationId: string | null,
+  coachId: string | null
 ): Promise<string | null> {
-  // Delegates to the shared deterministic resolver (never throws on orgs with >1 team).
-  return resolveCoachTeamId(supabase, organizationId);
+  // Cookie-aware: honours the program head's golf_active_team selection
+  // (validated server-side) so coach WRITES target the toggled team.
+  return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
 
 // ============================================================================
@@ -434,7 +436,7 @@ export async function createRecurringEvent(
     }
 
     // Get team_id via organization
-    const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+    const coachTeamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
 
     // Validate recurrence rule (shared parser — supports multi-weekday BYDAY,
     // biweekly INTERVAL=2, COUNT, and inclusive UNTIL; legacy stored strings
@@ -1201,7 +1203,7 @@ export async function createAcademicExclusion(input: {
       return { success: false, error: 'Coach not found' };
     }
 
-    const coachTeamId = await getCoachTeamId(supabase, coach.organization_id);
+    const coachTeamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
     const teamId = input.teamId || coachTeamId;
     if (!teamId) {
       return { success: false, error: 'Team ID is required' };

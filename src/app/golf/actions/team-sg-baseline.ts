@@ -16,7 +16,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import {
@@ -42,7 +42,7 @@ async function resolveCoachTeam(): Promise<
     .maybeSingle();
   if (!coach?.organization_id) return { error: 'Coach not found' };
 
-  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   if (!teamId) return { error: 'No team assigned' };
 
   const { data: team } = await supabase

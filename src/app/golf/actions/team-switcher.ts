@@ -18,7 +18,7 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { validateCoachTeamAccess, getCoachTeams } from '@/lib/golf/resolve-team';
+import { getCoachTeams, getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import type { CoachTeamOption } from '@/lib/golf/resolve-team';
 
 /** Cookie name — keep in sync with the layout reader. */
@@ -30,10 +30,17 @@ const COOKIE_MAX_AGE = 90 * 24 * 60 * 60;
 /**
  * Switch the signed-in coach's active team.
  *
- * The action writes `golf_active_team` only when the coach is authorised
- * for `teamId`. On success it revalidates the dashboard root so every
- * coach page re-renders with the new team. The client calls `router.refresh()`
- * after this returns to pick up the new RSC payload.
+ * GATING (program-head capability): switching is permitted only when the
+ * coach (a) is staffed on MORE than one team via golf_team_coach_staff AND
+ * (b) holds role 'head_coach' on at least one of those staff rows. A
+ * multi-team assistant — and any single-team coach — is refused; their
+ * default-team behaviour is unchanged.
+ *
+ * The action writes `golf_active_team` only when the gate passes AND the
+ * requested `teamId` is one of the coach's staffed teams. On success it
+ * revalidates the dashboard root so every coach page re-renders with the new
+ * team. The client calls `router.refresh()` after this returns to pick up
+ * the new RSC payload.
  *
  * @returns `{ success: true }` on valid switch; `{ success: false, reason }` otherwise.
  */
@@ -46,14 +53,16 @@ export async function setActiveTeam(
   const { coach } = session;
   const supabase = await createClient();
 
-  const allowed = await validateCoachTeamAccess(
-    supabase,
-    coach.id,
-    teamId,
-    coach.organization_id,
-  );
+  const ctx = await getCoachTeamSwitchContext(supabase, coach.id, coach.organization_id);
 
-  if (!allowed) return { success: false, reason: 'unauthorized' };
+  // Head-coach gate: only multi-team head coaches may switch.
+  if (!ctx.canSwitch) return { success: false, reason: 'switching-not-permitted' };
+
+  // Target must be one of the coach's own staffed teams (stricter than the
+  // read-path org fallback — a head coach can only switch among teams they staff).
+  if (!ctx.teams.some((t) => t.id === teamId)) {
+    return { success: false, reason: 'unauthorized' };
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(ACTIVE_TEAM_COOKIE, teamId, {

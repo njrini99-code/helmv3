@@ -1,17 +1,25 @@
 'use client';
 
 /**
- * TeamSwitcher — shown in the sidebar identity block when a coach staffs
- * more than one team (via golf_team_coach_staff).
+ * TeamSwitcher — the program-head team toggle, rendered at the TOP of the
+ * coach dashboard (Fairway top bar's action cluster; a top strip in the
+ * legacy shell). Shown ONLY when the signed-in coach is a multi-team head
+ * coach (`canSwitch` — see getCoachTeamSwitchContext).
  *
- * Design: matches the Fairway warm-black sidebar palette (nav-bg, nav-text,
- * nav-accent, nav-surface). Renders a compact button that opens a Radix
- * DropdownMenu listing each team; selecting one calls the `setActiveTeam`
- * server action then does a `router.refresh()` so RSC pages re-render
- * with the new team.
+ * Two presentations:
+ *   1. PILL TOGGLE — when the coach staffs exactly 2 teams with distinct
+ *      genders (the classic men's/women's program). A rounded-full segmented
+ *      pill: active segment filled helm green with white text, inactive
+ *      transparent with warm-500 text. 44px tap targets.
+ *   2. DROPDOWN — fallback for >2 teams or missing/duplicate genders. A
+ *      Radix DropdownMenu listing each team.
  *
- * Accessibility: fully keyboard-navigable via Radix primitives; active team
- * is marked with a green checkmark and `aria-checked`.
+ * Selecting a team calls the `setActiveTeam` server action (validated +
+ * head-coach-gated server-side) then `router.refresh()` so RSC pages
+ * re-render with the new team.
+ *
+ * Accessibility: pill = `radiogroup` of `aria-checked` buttons; dropdown is
+ * fully keyboard-navigable via Radix primitives.
  */
 
 import { useState, useTransition } from 'react';
@@ -34,29 +42,39 @@ export interface TeamSwitcherProps {
   /** Currently active team id (already validated server-side). */
   activeTeamId: string;
   /**
-   * Visual variant:
-   *   'sidebar'   — warm-black rail styling (for FairwaySidebar / GolfSidebar).
-   *   'surface'   — cream/glass styling (for light surfaces or legacy shell).
+   * Program-head gate resolved server-side (getCoachTeamSwitchContext).
+   * The switcher renders nothing unless this is true.
    */
-  variant?: 'sidebar' | 'surface';
+  canSwitch: boolean;
 }
 
-/** Short gender label for the team pill. */
-function genderLabel(gender: string): string {
-  if (gender === 'male') return "Men's";
-  if (gender === 'female') return "Women's";
-  return gender;
+/** Normalise golf_teams.gender ('mens' | 'womens', tolerating legacy values). */
+function normalizeGender(gender: string | null | undefined): 'mens' | 'womens' | null {
+  const g = (gender ?? '').toLowerCase();
+  if (g === 'mens' || g === 'men' || g === 'male') return 'mens';
+  if (g === 'womens' || g === 'women' || g === 'female') return 'womens';
+  return null;
 }
 
-export function TeamSwitcher({ teams, activeTeamId, variant = 'sidebar' }: TeamSwitcherProps) {
+/** Short display label for a normalised gender. */
+function genderLabel(gender: 'mens' | 'womens'): string {
+  return gender === 'mens' ? "Men's" : "Women's";
+}
+
+/** Display label for any team (dropdown rows). */
+function teamLabel(team: CoachTeamOption): string {
+  const g = normalizeGender(team.gender);
+  return g ? `${genderLabel(g)} — ${team.name}` : team.name;
+}
+
+export function TeamSwitcher({ teams, activeTeamId, canSwitch }: TeamSwitcherProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
 
-  // Should never render with ≤1 team (layout gates it), but guard anyway.
-  if (teams.length <= 1) return null;
-
-  const activeTeam = teams.find((t) => t.id === activeTeamId) ?? teams[0]!;
+  // Only multi-team HEAD coaches get the toggle (layout gates rendering too,
+  // but guard here so a stray mount can never show it).
+  if (!canSwitch || teams.length <= 1) return null;
 
   const handleSelect = (teamId: string) => {
     if (teamId === activeTeamId || isPending) return;
@@ -69,7 +87,64 @@ export function TeamSwitcher({ teams, activeTeamId, variant = 'sidebar' }: TeamS
     });
   };
 
-  const isSidebar = variant === 'sidebar';
+  // ── Pill mode: exactly 2 teams with distinct genders (men's vs women's) ──
+  const genders = teams.map((t) => normalizeGender(t.gender));
+  const pillMode =
+    teams.length === 2 &&
+    genders[0] !== null &&
+    genders[1] !== null &&
+    genders[0] !== genders[1];
+
+  if (pillMode) {
+    // Men's segment first, matching the "Men's | Women's" label order.
+    const ordered = [...teams].sort((a) =>
+      normalizeGender(a.gender) === 'mens' ? -1 : 1,
+    );
+    return (
+      <div
+        role="radiogroup"
+        aria-label="Switch team view"
+        className={cn(
+          'inline-flex items-center gap-0.5 rounded-full p-0.5',
+          'border border-warm-200 bg-cream-50',
+          isPending && 'opacity-60',
+        )}
+      >
+        {ordered.map((team) => {
+          const gender = normalizeGender(team.gender)!;
+          const isActive = team.id === activeTeamId;
+          return (
+            // eslint-disable-next-line helm/no-raw-button -- pill segments need role="radio" semantics a <Button> doesn't expose
+            <button
+              key={team.id}
+              type="button"
+              role="radio"
+              aria-checked={isActive}
+              aria-label={`${genderLabel(gender)} team — ${team.name}`}
+              disabled={isPending}
+              onClick={() => handleSelect(team.id)}
+              className={cn(
+                'inline-flex min-h-[44px] items-center justify-center rounded-full px-4',
+                'font-fw-sans text-body-sm font-medium whitespace-nowrap select-none',
+                'transition-colors [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
+                'motion-reduce:transition-none',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1',
+                'disabled:cursor-default',
+                isActive
+                  ? 'bg-primary-600 text-white shadow-soft'
+                  : 'bg-transparent text-warm-500 hover:text-warm-700',
+              )}
+            >
+              {genderLabel(gender)}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ── Dropdown fallback: >2 teams or missing/duplicate genders ──
+  const activeTeam = teams.find((t) => t.id === activeTeamId) ?? teams[0]!;
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -82,55 +157,40 @@ export function TeamSwitcher({ teams, activeTeamId, variant = 'sidebar' }: TeamS
           aria-haspopup="listbox"
           aria-expanded={open}
           className={cn(
-            'flex h-auto w-full items-center gap-2 rounded-fw-md px-2 py-1.5 text-left',
-            'font-fw-sans text-caption font-medium tracking-[-0.005em]',
+            'flex h-auto min-h-[44px] items-center gap-2 rounded-full border border-warm-200 bg-cream-50 px-4 py-1.5 text-left',
+            'font-fw-sans text-body-sm font-medium tracking-[-0.005em] text-warm-700',
             'transition-colors [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
             'motion-reduce:transition-none',
+            'hover:bg-warm-100 hover:text-warm-900',
             'disabled:opacity-60',
-            isSidebar
-              ? 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text'
-              : 'text-warm-600 hover:bg-warm-100 hover:text-warm-900',
           )}
         >
-          <IconUsers
-            size={13}
-            aria-hidden
-            className={cn('flex-shrink-0', isSidebar ? 'text-nav-accent' : 'text-primary-600')}
-          />
-          <span className="min-w-0 flex-1 truncate">
-            {genderLabel(activeTeam.gender)} — {activeTeam.name}
-          </span>
+          <IconUsers size={14} aria-hidden className="flex-shrink-0 text-primary-600" />
+          <span className="min-w-0 max-w-[200px] flex-1 truncate">{teamLabel(activeTeam)}</span>
           <IconChevronDown
             size={12}
             aria-hidden
             className={cn(
-              'flex-shrink-0 transition-transform duration-150',
+              'flex-shrink-0 text-warm-400 transition-transform duration-150',
               open && 'rotate-180',
-              isSidebar ? 'text-nav-text-dim' : 'text-warm-400',
             )}
           />
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        align="start"
+        align="end"
         side="bottom"
         sideOffset={4}
-        // Override default surface-stone → warm cream for sidebar context.
         className={cn(
-          'z-[var(--fw-z-nav)] min-w-[200px] overflow-hidden rounded-xl py-1.5',
-          isSidebar
-            ? 'bg-[#1a1614] border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]'
-            : 'bg-cream-50 border border-warm-200 shadow-lg',
+          'z-[var(--fw-z-nav)] min-w-[220px] overflow-hidden rounded-xl py-1.5',
+          'bg-cream-50 border border-warm-200 shadow-lg',
         )}
       >
-        <div
-          role="listbox"
-          aria-label="Select active team"
-          className="flex flex-col gap-0.5 px-1.5"
-        >
+        <div role="listbox" aria-label="Select active team" className="flex flex-col gap-0.5 px-1.5">
           {teams.map((team) => {
             const isActive = team.id === activeTeamId;
+            const g = normalizeGender(team.gender);
             return (
               <DropdownMenuPrimitive.Item
                 key={team.id}
@@ -139,36 +199,25 @@ export function TeamSwitcher({ teams, activeTeamId, variant = 'sidebar' }: TeamS
                 aria-selected={isActive}
                 onSelect={() => handleSelect(team.id)}
                 className={cn(
-                  'flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2',
+                  'flex min-h-[44px] cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2',
                   'font-fw-sans text-body-sm font-medium outline-none',
                   'transition-colors duration-100',
                   'focus:outline-none',
-                  isSidebar
-                    ? isActive
-                      ? 'bg-nav-surface text-nav-text'
-                      : 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text focus:bg-nav-surface/60 focus:text-nav-text'
-                    : isActive
-                      ? 'bg-primary-50 text-warm-900'
-                      : 'text-warm-700 hover:bg-warm-50 hover:text-warm-900 focus:bg-warm-50 focus:text-warm-900',
+                  isActive
+                    ? 'bg-primary-50 text-warm-900'
+                    : 'text-warm-700 hover:bg-warm-50 hover:text-warm-900 focus:bg-warm-50 focus:text-warm-900',
                 )}
               >
                 <span className="min-w-0 flex-1">
-                  <span
-                    className={cn(
-                      'block text-caption font-normal',
-                      isSidebar ? 'text-nav-text-dim' : 'text-warm-500',
-                    )}
-                  >
-                    {genderLabel(team.gender)}
-                  </span>
+                  {g && (
+                    <span className="block text-caption font-normal text-warm-500">
+                      {genderLabel(g)}
+                    </span>
+                  )}
                   <span className="block truncate">{team.name}</span>
                 </span>
                 {isActive && (
-                  <IconCheck
-                    size={14}
-                    aria-hidden
-                    className={cn('flex-shrink-0', isSidebar ? 'text-nav-accent' : 'text-primary-600')}
-                  />
+                  <IconCheck size={14} aria-hidden className="flex-shrink-0 text-primary-600" />
                 )}
               </DropdownMenuPrimitive.Item>
             );

@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
+import { GolfUserProvider } from '@/contexts/golf-user-context';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 
 const saveMock = vi.fn();
@@ -150,7 +151,22 @@ describe('FairwaySettingsCoachingIntelligence', () => {
       '@/components/fairway/pages/settings/FairwaySettingsCoachingIntelligence'
     );
 
-    render(<FairwaySettingsCoachingIntelligence />);
+    // The component reads the ACTIVE team from GolfUserContext (cookie-aware,
+    // resolved by the dashboard layout) — provide it like the layout does.
+    render(
+      <GolfUserProvider
+        userData={{
+          role: 'coach',
+          userId: 'user-1',
+          name: 'Coach',
+          coachId: 'coach-1',
+          teamId: 'team-1',
+          organizationId: 'org-1',
+        }}
+      >
+        <FairwaySettingsCoachingIntelligence />
+      </GolfUserProvider>,
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Reorder priorities' }));
 

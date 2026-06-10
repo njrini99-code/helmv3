@@ -11,7 +11,7 @@
  *
  *   • useCoachPhilosophy(coachId)                         — '@/hooks/coachhelm/useCoachPhilosophy'
  *   • getOrCreateTeamCoachHelmSettings / updateTeamCoachHelmSettings — '@/app/golf/actions/insights'
- *   • resolveCoachTeamId(supabase, orgId, coachId)        — '@/lib/golf/resolve-team'
+ *   • useGolfUser().teamId (cookie-aware ACTIVE team)     — '@/contexts/golf-user-context'
  *   • THRESHOLD_RANGES                                    — '@/lib/coachhelm/constants'
  *   • the SAME editor widgets (PriorityRanker / SensitivitySlider / ThresholdSlider
  *     / WeightDistributor / AlertTypeToggles) — '@/components/golf/coachhelm/settings'
@@ -44,7 +44,7 @@ import {
   updateTeamCoachHelmSettings,
   type TeamCoachHelmSettings,
 } from '@/app/golf/actions/insights';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { useGolfUser } from '@/contexts/golf-user-context';
 
 import { ViewHeader, Surface, Switch, InlineNotice } from '@/components/fairway';
 import { IconCheck } from '@/components/icons';
@@ -70,6 +70,12 @@ type DisplayToggleKey = 'showStrokesGained' | 'showAdvancedStats';
 type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
 export function FairwaySettingsCoachingIntelligence() {
+  // ACTIVE team from the layout-resolved context (cookie-aware) — team-scoped
+  // CoachHelm settings must follow the program head's team toggle. The coach
+  // PHILOSOPHY below is coach-scoped (keyed by coach_id) and intentionally
+  // does NOT change with the toggle.
+  const golfUser = useGolfUser();
+  const activeTeamId = golfUser.teamId ?? null;
   const [coachId, setCoachId] = useState<string | null>(null);
   const [teamId, setTeamId] = useState<string | null>(null);
   const [teamSettings, setTeamSettings] = useState<TeamCoachHelmSettings | null>(null);
@@ -91,24 +97,17 @@ export function FairwaySettingsCoachingIntelligence() {
       if (coach) {
         setCoachId(coach.id);
 
-        if (coach.organization_id) {
-          const resolvedTeamId = await resolveCoachTeamId(
-            supabase,
-            coach.organization_id,
-            coach.id,
-          );
-          if (resolvedTeamId) {
-            setTeamId(resolvedTeamId);
-            const result = await getOrCreateTeamCoachHelmSettings(resolvedTeamId);
-            if (result.success && result.settings) {
-              setTeamSettings(result.settings);
-            }
+        if (activeTeamId) {
+          setTeamId(activeTeamId);
+          const result = await getOrCreateTeamCoachHelmSettings(activeTeamId);
+          if (result.success && result.settings) {
+            setTeamSettings(result.settings);
           }
         }
       }
     }
     getCoach();
-  }, [supabase]);
+  }, [supabase, activeTeamId]);
 
   const handleTeamCoachHelmToggle = useCallback(
     async (nextEnabled: boolean) => {

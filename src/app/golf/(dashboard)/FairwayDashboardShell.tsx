@@ -299,11 +299,12 @@ function FairwayDashboardContent({
   const { displayDensity, showAnimations } = useAppearancePreferences();
   const role: Role = userData.role === 'coach' ? 'coach' : 'player';
 
-  // TeamSwitcher: only render for coaches with >1 team.
+  // TeamSwitcher (program heads only): renders in the glass top bar's action
+  // cluster — desktop AND mobile — when the coach is a multi-team head coach.
   const coachTeams = userData.coachTeams ?? [];
   const teamSwitcher =
-    role === 'coach' && coachTeams.length > 1 && userData.teamId ? (
-      <TeamSwitcher teams={coachTeams} activeTeamId={userData.teamId} variant="sidebar" />
+    role === 'coach' && userData.canSwitchTeams && coachTeams.length > 1 && userData.teamId ? (
+      <TeamSwitcher teams={coachTeams} activeTeamId={userData.teamId} canSwitch />
     ) : null;
 
   // Track presence (deferred internally so it doesn't compete with page load).
@@ -378,7 +379,7 @@ function FairwayDashboardContent({
         user={{ name: userData.name, teamName: userData.teamName, avatarUrl: userData.avatarUrl }}
         brand={Brand}
         sidebarFooter={<ShellFooter />}
-        sidebarIdentityExtra={teamSwitcher}
+        topBarActions={teamSwitcher}
         pathname={pathname}
         linkComponent={ShellLink}
         breadcrumbs={breadcrumbs}
