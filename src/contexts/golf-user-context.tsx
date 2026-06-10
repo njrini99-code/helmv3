@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useMemo } from 'react';
+import type { CoachTeamOption } from '@/lib/golf/resolve-team';
 
 export interface GolfUserData {
   role: 'coach' | 'player';
@@ -13,6 +14,12 @@ export interface GolfUserData {
   playerId?: string;
   teamId?: string;
   organizationId?: string;
+  /**
+   * All teams the coach is staffed on (populated for coaches only).
+   * Used to show/hide the TeamSwitcher in the sidebar identity block.
+   * Empty array = single-team coach (switcher hidden).
+   */
+  coachTeams?: CoachTeamOption[];
 }
 
 const GolfUserContext = createContext<GolfUserData | null>(null);

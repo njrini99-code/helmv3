@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayBrief } from '@/components/fairway';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // METADATA
@@ -51,7 +51,7 @@ export default async function IntelligenceDashboardPage() {
   // getTeamOverview, and getTeamCategoryInsights. Both action calls now
   // accept a teamId argument so they skip their internal redundant lookup.
   // Deterministic resolution: handles orgs with >1 team.
-  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     redirect('/golf/dashboard');

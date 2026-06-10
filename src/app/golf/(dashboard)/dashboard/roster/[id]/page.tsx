@@ -15,7 +15,7 @@ import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerStatsSection } from '@/components/golf/profile/PlayerStatsSection';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import {
   IconMessage,
   IconMapPin,
@@ -126,7 +126,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   }
 
   // Verify player is on coach's team (deterministic: handles orgs with >1 team)
-  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     notFound();

@@ -13,7 +13,7 @@ import { PremiumRoundHeader } from '@/components/golf/rounds/PremiumRoundHeader'
 import { Reveal } from '@/components/ui/reveal';
 import { PageHeader, Eyebrow } from '@/components/ui/page-header';
 import { generateRoundRecap } from '@/app/golf/actions/round-recap';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayRoundDetail } from '@/components/fairway/pages/rounds/FairwayRoundDetail';
 
@@ -116,7 +116,7 @@ export default async function RoundDetailPage({
   // Check if coach has access by verifying round's player is on their team
   let isCoach = false;
   if (coach?.organization_id && roundData.player_id) {
-    const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (teamId) {
       const { data: teamMembership } = await supabase

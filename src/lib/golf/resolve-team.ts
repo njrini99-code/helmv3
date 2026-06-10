@@ -11,6 +11,126 @@ import type { Database } from '@/lib/types/database';
  */
 type TypedSupabaseClient = SupabaseClient<Database>;
 
+/** Lightweight team descriptor returned by getCoachTeams(). */
+export interface CoachTeamOption {
+  id: string;
+  name: string;
+  gender: string;
+}
+
+/**
+ * Return all teams a coach is explicitly staffed on (via golf_team_coach_staff).
+ * Falls back to the org-based lookup when the staff table has no rows for this coach.
+ *
+ * @returns Array of teams (may be empty if the coach has no team assignments).
+ */
+export async function getCoachTeams(
+  supabase: TypedSupabaseClient,
+  coachId: string | null | undefined,
+  organizationId: string | null | undefined,
+): Promise<CoachTeamOption[]> {
+  if (!coachId) return [];
+
+  // 1. Canonical: golf_team_coach_staff (the source of truth for multi-team coaches).
+  const { data: staffRows } = await supabase
+    .from('golf_team_coach_staff')
+    .select('team_id')
+    .eq('coach_id', coachId);
+
+  const staffTeamIds = (staffRows ?? []).map((r) => r.team_id).filter(Boolean) as string[];
+
+  if (staffTeamIds.length > 0) {
+    const { data: teams } = await supabase
+      .from('golf_teams')
+      .select('id, name, gender')
+      .in('id', staffTeamIds)
+      .order('name', { ascending: true });
+    return (teams ?? []) as CoachTeamOption[];
+  }
+
+  // 2. Fallback: org-based lookup (for coaches not yet in golf_team_coach_staff).
+  if (organizationId) {
+    const { data: teams } = await supabase
+      .from('golf_teams')
+      .select('id, name, gender')
+      .eq('organization_id', organizationId)
+      .order('name', { ascending: true });
+    return (teams ?? []) as CoachTeamOption[];
+  }
+
+  return [];
+}
+
+/**
+ * Validate that coachId is actually staffed on teamId (golf_team_coach_staff),
+ * OR that the team belongs to the coach's organization.
+ * Returns true when the coach is authorised to view that team.
+ *
+ * SECURITY: always call this before trusting a cookie value.
+ */
+export async function validateCoachTeamAccess(
+  supabase: TypedSupabaseClient,
+  coachId: string,
+  teamId: string,
+  organizationId: string | null | undefined,
+): Promise<boolean> {
+  // 1. Primary: explicit staff row.
+  const { data: staffRow } = await supabase
+    .from('golf_team_coach_staff')
+    .select('id')
+    .eq('coach_id', coachId)
+    .eq('team_id', teamId)
+    .maybeSingle();
+
+  if (staffRow) return true;
+
+  // 2. Fallback: team belongs to coach's org.
+  if (organizationId) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('id', teamId)
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+    if (team) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Cookie-aware team resolver.
+ *
+ * Priority order:
+ *   1. `cookieTeamId` value — if provided AND the coach has access to it.
+ *   2. Fall back to the deterministic org-based resolver (existing behaviour).
+ *
+ * SECURITY: the cookie value is validated against golf_team_coach_staff / org
+ * before use so an attacker cannot forge access to another team.
+ *
+ * @param supabase      A server-scoped Supabase client.
+ * @param organizationId The coach's organization_id.
+ * @param coachId       The coach's golf_coaches.id.
+ * @param cookieTeamId  Value from the `golf_active_team` cookie (may be undefined).
+ * @returns The resolved team id, or null when no team can be found.
+ */
+export async function resolveCoachActiveTeamId(
+  supabase: TypedSupabaseClient,
+  organizationId: string | null | undefined,
+  coachId: string | null | undefined,
+  cookieTeamId: string | null | undefined,
+): Promise<string | null> {
+  // Validate the cookie value when one is present.
+  if (cookieTeamId && coachId) {
+    const allowed = await validateCoachTeamAccess(supabase, coachId, cookieTeamId, organizationId);
+    if (allowed) return cookieTeamId;
+    // Invalid / tampered cookie — fall through to default.
+  }
+
+  // No valid cookie → original deterministic resolution.
+  return resolveCoachTeamId(supabase, organizationId, coachId);
+}
+
 /**
  * Deterministically resolve a coach's `golf_teams.id` from their organization.
  *

@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { ContainerGrid } from '@/components/ui/containers';
 import { Metadata } from 'next';
 
@@ -163,7 +163,7 @@ export default async function GolfRosterPage() {
   }
 
   // Get team_id from organization (deterministic: handles orgs with >1 team)
-  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     return (

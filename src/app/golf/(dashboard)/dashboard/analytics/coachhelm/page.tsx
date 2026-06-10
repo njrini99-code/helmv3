@@ -15,7 +15,7 @@ import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayEffectiveness } from '@/components/fairway';
 import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 export const metadata = {
   title: 'CoachHelm Analytics | GolfHelm',
@@ -32,7 +32,7 @@ export default async function CoachHelmAnalyticsPage() {
   const supabase = await createClient();
 
   // Get team ID from organization (deterministic: handles orgs with >1 team)
-  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     // No-team branch ALSO forks: the redesign shows the canonical

@@ -3,8 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { GolfDashboardShell } from './GolfDashboardShell';
 import { FairwayDashboardShell } from './FairwayDashboardShell';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachActiveTeamId, getCoachTeams } from '@/lib/golf/resolve-team';
 import { isRedesignEnabled } from '@/lib/redesign/flag';
+import { getActiveTeamCookie } from '@/app/golf/actions/team-switcher';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
 /**
@@ -99,14 +100,29 @@ export default async function GolfDashboardLayout({
       redirect('/golf/coach');
     }
 
-    // Fetch coach's team via organization_id (deterministic: handles orgs with
-    // >1 team), then load the chosen team's display name by id.
+    // Fetch coach's active team with cookie-awareness:
+    //   1. Read the golf_active_team cookie (if set).
+    //   2. Validate it via golf_team_coach_staff before trusting it.
+    //   3. Fall back to the deterministic org-based resolver on any failure.
+    // Also fetch all teams so the TeamSwitcher can be shown when >1 team exists.
     let teamId: string | undefined;
     let teamName: string | undefined;
-    if (coach.organization_id) {
-      const supabase = await createClient();
-      const resolvedTeamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
-      if (resolvedTeamId) {
+    const supabase = await createClient();
+
+    // Parallel fetch: active team id + all coach teams list.
+    const cookieTeamId = await getActiveTeamCookie();
+    const [resolvedTeamId, coachTeams] = await Promise.all([
+      resolveCoachActiveTeamId(supabase, coach.organization_id, coach.id, cookieTeamId),
+      getCoachTeams(supabase, coach.id, coach.organization_id),
+    ]);
+
+    if (resolvedTeamId) {
+      // Find name from coachTeams list first (already fetched); avoids a third query.
+      const teamFromList = coachTeams.find((t) => t.id === resolvedTeamId);
+      if (teamFromList) {
+        teamId = teamFromList.id;
+        teamName = teamFromList.name;
+      } else {
         const { data: team } = await supabase
           .from('golf_teams')
           .select('id, name')
@@ -126,6 +142,7 @@ export default async function GolfDashboardLayout({
       coachId: coach.id,
       teamId,
       organizationId: coach.organization_id || undefined,
+      coachTeams,
     };
   } else if (resolvedRole === 'player') {
     if (!player || !player.onboarding_completed) {

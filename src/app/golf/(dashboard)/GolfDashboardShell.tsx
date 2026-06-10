@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
+import { TeamSwitcher } from '@/components/golf/TeamSwitcher';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { usePresence } from '@/hooks/use-presence';
@@ -45,6 +46,13 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
   const { displayDensity, showAnimations } = useAppearancePreferences();
   const isCoach = userData.role === 'coach';
+
+  // TeamSwitcher: only render for coaches with >1 team.
+  const coachTeams = userData.coachTeams ?? [];
+  const teamSwitcherSlot =
+    isCoach && coachTeams.length > 1 && userData.teamId ? (
+      <TeamSwitcher teams={coachTeams} activeTeamId={userData.teamId} variant="sidebar" />
+    ) : null;
   const mobileSidebarRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
   // Desktop check for the global notification bell. The bell was previously
@@ -143,6 +151,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           userName={userData.name}
           teamName={userData.teamName}
           avatarUrl={userData.avatarUrl}
+          teamSwitcherSlot={teamSwitcherSlot}
         />
       </div>
 
@@ -184,6 +193,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           teamName={userData.teamName}
           avatarUrl={userData.avatarUrl}
           isMobile
+          teamSwitcherSlot={teamSwitcherSlot}
         />
       </div>
 
