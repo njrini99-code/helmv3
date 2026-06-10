@@ -150,6 +150,21 @@ export async function syncClassToCalendar(
     return { success: false, error: 'Player is not a member of this team' };
   }
 
+  // Verify the class row BELONGS to the calling player (PR #259 review,
+  // verified real): without this, any teammate could pass another player's
+  // classId and overwrite/delete that player's class events via the
+  // tag-scoped admin writes below.
+  const { data: ownedClass, error: ownedClassError } = await supabase
+    .from('golf_player_classes')
+    .select('id')
+    .eq('id', classId)
+    .eq('player_id', player.id)
+    .maybeSingle();
+
+  if (ownedClassError || !ownedClass) {
+    return { success: false, error: 'Not authorized to sync this class' };
+  }
+
   // Parse semester to determine start and end dates
   const semesterDates = parseSemesterDates(classData.semester, classData.semesterStartDate);
 
@@ -368,6 +383,25 @@ export async function removeClassFromCalendar(classId: string, teamId?: string):
   }
 
   const targetTeamIds = teamId ? [teamId] : memberTeamIds;
+
+  // Class ownership (PR #259 review, verified real): if the class row still
+  // exists it must belong to the caller — otherwise any teammate could delete
+  // another player's class events via the tag-scoped delete below. A missing
+  // row means the class was already deleted (callers remove events first, but
+  // retries/legacy orders exist) — then this is orphan cleanup on the
+  // caller's own teams, which stays allowed.
+  const { data: classRow, error: classRowError } = await supabase
+    .from('golf_player_classes')
+    .select('id, player_id')
+    .eq('id', classId)
+    .maybeSingle();
+
+  if (classRowError) {
+    return { success: false, error: `Failed to verify class ownership: ${classRowError.message}` };
+  }
+  if (classRow && classRow.player_id !== player.id) {
+    return { success: false, error: 'Not authorized to remove this class' };
+  }
 
   // Authz established above — admin client required because player RLS has no
   // DELETE grant on golf_events. Scoped to the class tag + the player's teams.

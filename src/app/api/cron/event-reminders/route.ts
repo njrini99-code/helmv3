@@ -83,8 +83,10 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const deadlineAt = Date.now() + SOFT_DEADLINE_MS;
 
-  let result24h: KindResult = { sent: 0, failed: 0, skipped: 0 };
-  let result1h: KindResult = { sent: 0, failed: 0, skipped: 0 };
+  // No initializers: the catch below returns, so these are definitely
+  // assigned wherever they are read (also silences CodeQL useless-assignment).
+  let result24h: KindResult;
+  let result1h: KindResult;
 
   try {
     result24h = await dispatchReminders(supabase, now, REMINDER_24H_MS, 'event_reminder_24h', deadlineAt);
