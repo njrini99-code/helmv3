@@ -274,16 +274,16 @@ export async function getStatsFromCache(playerId: string): Promise<PlayerStatsSu
  * Refresh the stats cache for a player
  * Called after round completion, edits, or deletions
  *
- * SC2 (2026-06-06): the actual column computation lives in the SQL
+ * The actual column computation lives in the SQL
  * `refresh_player_stats_cache(p_player_id)` RPC (this function only delegates +
- * invalidates Redis). That RPC does NOT compute the per-band putt make %
- * columns (putt_make_pct_3_5ft … putt_make_pct_20_plus_ft) — they are 100% NULL
- * in prod — so the 5 putts_made_*_pct standing metrics that bind to them yield
- * 0 rows. Because the cache row is computed entirely in SQL, those columns can't
- * be populated cleanly from TS here; the 5 metrics are therefore deferred in
- * src/lib/coachhelm/v3/standing/refresh.ts (STANDING_REFRESH_DEFERRED_METRIC_IDS)
- * and the standing-refresh cron asserts on declared-covered-but-0-rows. Re-promote
- * once the SQL writer computes per-band make % from putt distances.
+ * invalidates Redis). HISTORY (kept because the old text misled): SC2
+ * (2026-06-06) noted the per-band putt make-% columns were 100% NULL in prod;
+ * that gap was CLOSED by update_player_putt_make_pct (migrations
+ * 20260606160000 + 20260608130000 + 20260609090000) — as of 2026-06-09 every
+ * cache row carries all putt_make_pct_* AND putt_attempts_* bands, and the 5
+ * putts_made_*_pct standing metrics were re-promoted in
+ * src/lib/coachhelm/v3/standing/refresh.ts. The standing-refresh cron still
+ * asserts on declared-covered-but-0-rows as the regression guard.
  */
 export async function refreshStatsCache(playerId: string): Promise<void> {
   // Admin (service-role) client: the refresh_player_stats_cache SECURITY DEFINER

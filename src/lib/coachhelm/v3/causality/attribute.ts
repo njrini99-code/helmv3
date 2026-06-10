@@ -31,6 +31,7 @@ import {
   lookupMetricSource,
   ALL_SCORING_COLUMNS,
   type MetricSourceDef,
+  type RoundStatsCacheAvgSource,
   type RoundStatsCacheRatioSource,
   type RoundStatsCacheComputedSource,
   type HoleLevelAvgSource,
@@ -98,6 +99,39 @@ async function averageGolfRoundsColumn(
     .lte('round_date', endIso.slice(0, 10));
   const values = ((data ?? []) as unknown as Array<Record<string, unknown>>)
     .map((r) => r[column])
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  if (values.length === 0) return { ok: false, reason: 'no-data' };
+  const sum = values.reduce((a, b) => a + b, 0);
+  return { ok: true, avg: sum / values.length, n: values.length };
+}
+
+/**
+ * Average a single per-round column from `golf_round_stats_cache` over a
+ * window. Joins to `golf_rounds` on `round_id` to filter by `round_date` /
+ * `status` (the cache row carries neither), then takes a simple per-round mean
+ * of the column. Used for `penalty_rate_per_round`, whose canonical per-round
+ * value is `golf_round_stats_cache.penalty_strokes` (= SUM(golf_holes.penalty_strokes))
+ * rather than the drifted `golf_rounds.total_penalties` (migration 20260608140000).
+ */
+async function averageRoundStatsCacheColumn(
+  sb: Sb,
+  player_id: string,
+  source: RoundStatsCacheAvgSource,
+  startIso: string,
+  endIso: string,
+): Promise<WindowResult> {
+  const { data } = await sb
+    .from('golf_round_stats_cache')
+    .select(
+      `round_id, ${source.column}, golf_rounds!inner(round_date, status, player_id)`,
+    )
+    .eq('player_id', player_id)
+    .eq('golf_rounds.player_id', player_id)
+    .eq('golf_rounds.status', 'completed')
+    .gte('golf_rounds.round_date', startIso.slice(0, 10))
+    .lte('golf_rounds.round_date', endIso.slice(0, 10));
+  const values = ((data ?? []) as unknown as Array<Record<string, unknown>>)
+    .map((r) => r[source.column])
     .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
   if (values.length === 0) return { ok: false, reason: 'no-data' };
   const sum = values.reduce((a, b) => a + b, 0);
@@ -270,6 +304,9 @@ async function dispatchWindow(
   if (source.kind === 'rounds') {
     return averageGolfRoundsColumn(sb, player_id, source.column, startIso, endIso);
   }
+  if (source.kind === 'round_stats_cache_avg') {
+    return averageRoundStatsCacheColumn(sb, player_id, source, startIso, endIso);
+  }
   if (source.kind === 'round_stats_cache_computed') {
     return averageRoundStatsCacheComputed(sb, player_id, source, startIso, endIso);
   }
@@ -309,9 +346,19 @@ export async function computeAttribution(
   }
 
   const surfacedTs = new Date(input.surfaced_at).getTime();
+  // The surfaced CALENDAR day (UTC midnight). All window functions filter the
+  // DATE column `round_date` with inclusive gte/lte on the .slice(0,10) date
+  // string, so the boundary that matters is the calendar day, not the instant.
+  const surfacedDayTs = new Date(`${new Date(surfacedTs).toISOString().slice(0, 10)}T00:00:00.000Z`).getTime();
+  // Windows EXCLUDE the surfaced calendar day on BOTH sides — the triggering
+  // round (typically ingested/surfaced the same day, and usually the outlier
+  // that fired the insight) must not land in baseline AND post. Pre ends the
+  // day BEFORE surfaced; post starts the day AFTER surfaced. (Prior bug: preEnd
+  // = surfaced−1ms and postStart = surfaced+1ms both .slice(0,10) back to the
+  // surfaced date, so round_date == surfaced fell in both windows.)
   const preStart = new Date(surfacedTs - PRE_WINDOW_DAYS * 86400_000).toISOString();
-  const preEnd = new Date(surfacedTs - 1).toISOString();
-  const postStart = new Date(surfacedTs + 1).toISOString();
+  const preEnd = new Date(surfacedDayTs - 86400_000).toISOString();
+  const postStart = new Date(surfacedDayTs + 86400_000).toISOString();
   const postEnd = new Date(surfacedTs + POST_WINDOW_DAYS * 86400_000).toISOString();
 
   const [base, post] = await Promise.all([

@@ -86,7 +86,11 @@ export type ApproachAxis = 'short' | 'long' | 'left' | 'right';
  * @param share Observed share of the cited misses, as a 0..1 fraction (NOT
  *   0..100) — rendered as a percentage in the sentence. Pass the
  *   {@link DominantAxis.share} straight through.
- * @param n Number of misses the share is over (the cited sample).
+ * @param n Number of misses the share is over (the cited sample). NOTE: this
+ *   is the AXIS-READ subset (misses with a short/long or left/right
+ *   component), not all misses — pure cross-axis misses are excluded by
+ *   dominantAxis, and the sentence must say so (regrade VAL-P3: '82% of
+ *   those 11 misses' on a card whose own green-hit line implies 21).
  * @returns A driver+action sentence naming the share, the cause, and a specific
  *   mechanical fix.
  */
@@ -95,25 +99,25 @@ export function approachAxisDriver(axis: ApproachAxis, share: number, n: number)
   switch (axis) {
     case 'short':
       return (
-        `${pct}% of those ${n} misses came up SHORT — the driver is under-clubbing ` +
+        `${pct}% of the ${n} misses with a distance read came up SHORT — the driver is under-clubbing ` +
         `or decelerating, not aim. Club up and commit to a full number (carry the ` +
         `flag's yardage, not the front edge).`
       );
     case 'long':
       return (
-        `${pct}% of those ${n} misses flew LONG — you're getting more carry than the ` +
+        `${pct}% of the ${n} misses with a distance read flew LONG — you're getting more carry than the ` +
         `number plays. Club down and take spin off it (three-quarter swing) so the ` +
         `stock yardage matches the green.`
       );
     case 'left':
       return (
-        `${pct}% of those ${n} misses leaked LEFT — this is a start line / face-control ` +
+        `${pct}% of the ${n} misses with a line read leaked LEFT — this is a start line / face-control ` +
         `pattern, not a distance fix. Work an alignment-stick start line gate and favor ` +
         `the right edge so the miss stays on the green.`
       );
     case 'right':
       return (
-        `${pct}% of those ${n} misses leaked RIGHT — this is a start line / face-control ` +
+        `${pct}% of the ${n} misses with a line read leaked RIGHT — this is a start line / face-control ` +
         `pattern, not a distance fix. Work an alignment-stick start line gate and favor ` +
         `the left edge so the miss stays on the green.`
       );

@@ -11,6 +11,7 @@ describe('Phase E cross-engine — cache-backed engines carry the true span, nev
     const c = new PuttDistanceGenerator(PID, '10_15ft').composeContent({
       sampleN: 40, playerValue: 35, bucket: '10_15ft', rawValue: 0.35,
       rounds_played: 20, cohort_gender: 'mens', attempts: 40, spanDays: 54,
+  last_round_date: '2026-05-25',
     });
     expect(c.evidence.window_days).toBe(54);
   });
@@ -20,6 +21,7 @@ describe('Phase E cross-engine — cache-backed engines carry the true span, nev
       sampleN: 80, playerValue: 4.2, par: 4, rounds_played: 20,
       birdie_rate: 5, par_rate: 60, bogey_rate: 28, double_plus_rate: 7,
       holes_scored: 80, holes_per_round: 10, spanDays: 54,
+  last_round_date: '2026-05-25',
     });
     expect(c.evidence.window_days).toBe(54);
   });

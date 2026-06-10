@@ -12,6 +12,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 export interface CommandPalettePlayer {
   id: string;
@@ -32,6 +33,9 @@ export interface CommandPaletteRound {
 export interface CommandPaletteInsight {
   id: string;
   title: string;
+  /** Surfaces the `golf_coach_insights.priority` value (low|medium|high|urgent).
+   *  Named `severity` for back-compat with the ⌘K palette UI which keys off this
+   *  field; there is NO `severity` column on `golf_coach_insights`. */
   severity: string | null;
   player_name: string | null;
   category: string | null;
@@ -134,25 +138,33 @@ export async function getCommandPaletteData(): Promise<CommandPaletteData> {
   }
 
   // ── Recent coach insights (coach only — last 10 active) ──
+  // FIX: `golf_coach_insights` has NO `severity` column (severity lives on
+  // golf_patterns_v2) — selecting it 400'd the whole query, and line ~189's
+  // `?? []` swallowed the error so the palette's insights section was silently
+  // always empty. Select the real `priority` column instead. Also apply the
+  // shared product-visibility contract so the palette never surfaces stale v2 /
+  // archived / tentative rows.
   const insightsPromise = isCoach
-    ? supabase
-        .from('golf_coach_insights')
-        .select(`
-          id,
-          title,
-          severity,
-          category,
-          status,
-          player:golf_players ( first_name, last_name )
-        `)
-        .eq('team_id', teamId)
-        .in('status', ['active', 'acknowledged'])
+    ? applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select(`
+            id,
+            title,
+            priority,
+            category,
+            status,
+            player:golf_players ( first_name, last_name )
+          `)
+          .eq('team_id', teamId)
+          .in('status', ['active', 'acknowledged']),
+      )
         .order('created_at', { ascending: false })
         .limit(10)
     : Promise.resolve({ data: [] as Array<{
         id: string;
         title: string;
-        severity: string | null;
+        priority: string | null;
         category: string | null;
         status: string | null;
         player: { first_name: string | null; last_name: string | null } | null;
@@ -189,7 +201,7 @@ export async function getCommandPaletteData(): Promise<CommandPaletteData> {
   const insightsRaw = (insightsResult.data ?? []) as Array<{
     id: string;
     title: string;
-    severity: string | null;
+    priority: string | null;
     category: string | null;
     status: string | null;
     player: { first_name: string | null; last_name: string | null } | null;
@@ -219,7 +231,8 @@ export async function getCommandPaletteData(): Promise<CommandPaletteData> {
   const recentInsights: CommandPaletteInsight[] = insightsRaw.map((i) => ({
     id: i.id,
     title: i.title,
-    severity: i.severity,
+    // Map the real `priority` column into the UI-facing `severity` field.
+    severity: i.priority,
     category: i.category,
     status: i.status,
     player_name: i.player

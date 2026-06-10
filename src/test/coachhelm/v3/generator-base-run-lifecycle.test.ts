@@ -210,7 +210,9 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     const gen = new TestGenerator('player-1', { enabled: false });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: null, gated: true });
+    // Toggle-off now sweeps the scope (regrade NEW-P3); TestGenerator has no
+    // scope so the sweep is a 0-count no-op, but the field is reported.
+    expect(res).toEqual({ id: null, gated: true, retracted: 0 });
     // Order proof: isEnabled ran, aggregate did NOT.
     expect(callLog).toEqual(['isEnabled']);
     expect(loadStandingForMetricMock).not.toHaveBeenCalled();

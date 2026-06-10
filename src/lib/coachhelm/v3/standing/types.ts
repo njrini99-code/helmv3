@@ -30,6 +30,17 @@ export interface PlayerStanding {
   /** player_value - pga_value (signed; direction interpreted via golf_metrics.direction). */
   pga_delta: number | null;
 
+  /**
+   * Gender-anchor omission flag (audit P3). Set true ONLY by
+   * {@link applyGenderAnchor} for a women's-cohort player on a metric that has
+   * NO credible women's anchor (course_management big_number_rate /
+   * penalty_rate_per_round; par-type scoring_par_*). The men's `pga_value`
+   * would mislead, so the render layer should suppress the reference marker
+   * rather than draw a wrong one. Undefined/false → render the marker as usual
+   * (the default for every men's / unknown-cohort row — unchanged behavior).
+   */
+  pga_omitted?: boolean;
+
   computed_at: string;
 }
 

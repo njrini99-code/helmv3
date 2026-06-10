@@ -27,6 +27,8 @@ import { logServerError } from '@/lib/server-error-logger';
  * Mirrors the PlayerStanding interface but flattened for storage.
  */
 export type EvidenceStanding = {
+  /** True when the gender-aware loader omitted a misleading cross-gender PGA anchor. */
+  pga_omitted?: boolean;
   metric_id: string;
   player_value: number;
   team_avg: number | null;

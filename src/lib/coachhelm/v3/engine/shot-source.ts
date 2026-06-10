@@ -123,7 +123,8 @@ export async function loadApproachShots(
     .eq('player_id', playerId)
     .eq('status', 'completed')
     .gte('round_date', since);
-  if (rErr || !rounds || rounds.length === 0) return [];
+  if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);
+  if (!rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
 
   const { data, error } = await fetchAllRowsResult<ApproachShot>((from, to) =>
@@ -135,7 +136,8 @@ export async function loadApproachShots(
       .in('round_id', roundIds)
       .order('id', { ascending: true })
       .range(from, to)); // paginate past PostgREST 1000-row cap
-  if (error || !data) return [];
+  if (error) throw new Error(`shot-source shots query failed: ${error.message}`);
+  if (!data) return [];
   return data.filter(
     (s) =>
       typeof s.distance_to_hole_before === 'number' &&
@@ -172,7 +174,8 @@ export async function loadSandShots(
     .eq('player_id', playerId)
     .eq('status', 'completed')
     .gte('round_date', since);
-  if (rErr || !rounds || rounds.length === 0) return [];
+  if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);
+  if (!rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
 
   // All shots in those rounds (we need putting rows to count putts_after).
@@ -198,7 +201,8 @@ export async function loadSandShots(
       .in('round_id', roundIds)
       .order('id', { ascending: true })
       .range(from, to)); // paginate past PostgREST 1000-row cap
-  if (error || !data) return [];
+  if (error) throw new Error(`shot-source shots query failed: ${error.message}`);
+  if (!data) return [];
 
   // Authoritative greenside-bunker up-and-down flags, keyed (round, hole). Same
   // source (golf_holes.sand_save) the DB cache + stat-formulas use, so the
@@ -305,7 +309,8 @@ export async function loadTeeShots(
     .eq('player_id', playerId)
     .eq('status', 'completed')
     .gte('round_date', since);
-  if (rErr || !rounds || rounds.length === 0) return [];
+  if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);
+  if (!rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
 
   const { data, error } = await fetchAllRowsResult<TeeShot>((from, to) =>
@@ -315,7 +320,8 @@ export async function loadTeeShots(
       .in('round_id', roundIds)
       .order('id', { ascending: true })
       .range(from, to)); // paginate past PostgREST 1000-row cap
-  if (error || !data) return [];
+  if (error) throw new Error(`shot-source shots query failed: ${error.message}`);
+  if (!data) return [];
   return data.filter((s) => s.club_type === 'driver' || s.club_type === 'non_driver');
 }
 
@@ -370,7 +376,8 @@ export async function loadTeeShotsForStrategy(
       .gte('golf_rounds.round_date', since)
       .order('id', { ascending: true })
       .range(from, to)); // paginate past PostgREST 1000-row cap
-  if (error || !data) return [];
+  if (error) throw new Error(`shot-source shots query failed: ${error.message}`);
+  if (!data) return [];
 
   const out: TeeStrategyShot[] = [];
   for (const r of data) {

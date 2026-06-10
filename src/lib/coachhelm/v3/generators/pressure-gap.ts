@@ -89,7 +89,8 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
         }> | null;
         error: { message: string } | null;
       };
-    if (error || !data) return null;
+    if (error) throw new Error(`pressure-gap aggregate query failed: ${error.message}`);
+    if (!data) return null;
 
     let practiceSum = 0;
     let practiceN = 0;

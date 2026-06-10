@@ -44,6 +44,7 @@ function makeAgg(overrides: Partial<{
     cohort_gender: overrides.cohort_gender ?? 'mens',
     attempts: overrides.attempts ?? 40,
     spanDays: overrides.spanDays === undefined ? 54 : overrides.spanDays,
+  last_round_date: '2026-05-25',
   };
 }
 
@@ -175,6 +176,7 @@ describe('PuttDistanceGenerator — synthesized priority + action (PLAY: driver+
         cohort_gender: overrides.gender ?? 'mens',
         attempts: 40,
         spanDays: 54,
+  last_round_date: '2026-05-25',
       };
     }
 
@@ -203,6 +205,7 @@ describe('PuttDistanceGenerator — Phase E band attempts, gate, and honest wind
       cohort_gender: 'mens' as const,
       attempts,
       spanDays: overrides.spanDays === undefined ? 54 : overrides.spanDays,
+  last_round_date: '2026-05-25',
     };
   }
   it('stamps sample_n as band ATTEMPTS, not lifetime rounds', () => {

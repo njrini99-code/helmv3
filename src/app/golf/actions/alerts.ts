@@ -10,6 +10,7 @@ import { coachHelmIntelligence } from '@/lib/coachhelm/v2';
 import type { CoachAlert } from '@/components/golf/coachhelm/alerts/AlertCard';
 import { logServerError } from '@/lib/server-error-logger';
 import type { Database } from '@/lib/types/database';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 type CoachInsightInsert = Database['public']['Tables']['golf_coach_insights']['Insert'];
 
@@ -49,26 +50,31 @@ export async function getCoachAlerts(
   }
 
   try {
-    // Build query
-    let query = supabase
-      .from('golf_coach_insights')
-      .select(`
-        id,
-        player_id,
-        insight_type,
-        title,
-        content,
-        priority,
-        status,
-        acknowledged_at,
-        dismissed,
-        created_at,
-        metadata,
-        player:golf_players(id, first_name, last_name, avatar_url)
-      `)
-      .eq('coach_id', coachId)
-      .eq('dismissed', false)
-      .order('created_at', { ascending: false });
+    // Build query. Apply the SAME product-visibility contract every coach
+    // surface uses (P2 legacy-surface): this flag-off Alert Center must NOT
+    // render stale v2 phantoms or archived/dismissed rows if the redesign flag
+    // is ever flipped off. `.eq('dismissed', false)` alone lets the 42-stroke
+    // v2 phantoms + archived-active rows through.
+    let query = applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select(`
+          id,
+          player_id,
+          insight_type,
+          title,
+          content,
+          priority,
+          status,
+          acknowledged_at,
+          dismissed,
+          created_at,
+          metadata,
+          player:golf_players(id, first_name, last_name, avatar_url)
+        `)
+        .eq('coach_id', coachId)
+        .eq('dismissed', false),
+    ).order('created_at', { ascending: false });
 
     // Filter acknowledged if not including them
     if (!options?.includeAcknowledged) {
@@ -160,12 +166,19 @@ export async function getAlertCounts(
   }
 
   try {
-    const { data, error } = await supabase
-      .from('golf_coach_insights')
-      .select('priority')
-      .eq('coach_id', coachId)
-      .eq('dismissed', false)
-      .eq('status', 'active');
+    // Apply the SAME product-visibility contract every coach surface uses
+    // (P1/P2): the badge must NOT count stale v2 rows or rows the engine
+    // archived (v3 stale-scope retraction leaves status='active' but flips
+    // lifecycle_state='archived', so a lifecycle filter is load-bearing —
+    // `.eq('status','active')` alone lets all 64 archived-active rows through).
+    const { data, error } = await applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select('priority')
+        .eq('coach_id', coachId)
+        .eq('dismissed', false)
+        .eq('status', 'active'),
+    );
 
     if (error) {
       return { success: false, error: 'Failed to fetch alert counts' };
@@ -179,9 +192,14 @@ export async function getAlertCounts(
     };
 
     (data || []).forEach((insight) => {
-      if (insight.priority === 'critical' || insight.priority === 'high') {
+      // The live priority enum is low | medium | high | urgent. `urgent` is the
+      // top severity and MUST land in the critical bucket — the old check
+      // (`'critical' || 'high'`) tested a 'critical' value that the enum never
+      // emits and silently dropped every 'urgent' row into INFO, undercounting
+      // the badge's critical tier.
+      if (insight.priority === 'urgent' || insight.priority === 'high') {
         counts.critical++;
-      } else if (insight.priority === 'medium' || insight.priority === 'warning') {
+      } else if (insight.priority === 'medium') {
         counts.warning++;
       } else {
         counts.info++;

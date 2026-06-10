@@ -33,6 +33,8 @@ function makeSearchBuilder(finalResult: { data: unknown[] | null; error: { messa
   const orSpy = vi.fn().mockReturnThis();
   const builder: Record<string, unknown> & {
     or: typeof orSpy;
+    in: ReturnType<typeof vi.fn>;
+    neq: ReturnType<typeof vi.fn>;
     eq: ReturnType<typeof vi.fn>;
     gte: ReturnType<typeof vi.fn>;
     lte: ReturnType<typeof vi.fn>;
@@ -41,6 +43,9 @@ function makeSearchBuilder(finalResult: { data: unknown[] | null; error: { messa
     then: (resolve: (v: typeof terminal) => void) => Promise<void>;
   } = {
     or: orSpy,
+    // The shared `applyInsightVisibility` helper chains .in + .neq.
+    in: vi.fn().mockReturnThis(),
+    neq: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),
@@ -69,13 +74,18 @@ describe('searchInsights', () => {
 
     await searchInsights({ coachId: 'coach-1', query: 'putting' });
 
-    expect(orSpy).toHaveBeenCalledTimes(1);
-    const firstCall = orSpy.mock.calls[0];
-    expect(firstCall).toBeDefined();
-    const orFilter = firstCall![0] as string;
-    expect(orFilter).toContain('content.ilike');
-    expect(orFilter).not.toContain('description.ilike');
-    expect(orFilter).toContain('title.ilike');
+    // Two .or() calls now: the shared v3 visibility filter (applied first by
+    // `applyInsightVisibility`) and the title/content text search.
+    expect(orSpy).toHaveBeenCalledTimes(2);
+    const orFilters = orSpy.mock.calls.map((c) => c[0] as string);
+    // The v3 engine visibility filter is applied.
+    expect(orFilters).toContain('engine_version.eq.v3,signature.like.v3:%');
+    // The text-search filter searches title + content (NOT the old description).
+    const textFilter = orFilters.find((f) => f.includes('ilike'));
+    expect(textFilter).toBeDefined();
+    expect(textFilter).toContain('content.ilike');
+    expect(textFilter).not.toContain('description.ilike');
+    expect(textFilter).toContain('title.ilike');
   });
 });
 

@@ -12,7 +12,10 @@ function makeAgg(
     cause_penalty_pct: number;
     cause_missed_gir_pct: number;
     cause_three_putt_pct: number;
-    worst_holes: Array<{ hole_number: number; avg_to_par: number; n: number }>;
+    spanDays: 54,
+  first_round_date: '2026-04-01',
+  last_round_date: '2026-05-25',
+  worst_holes: Array<{ hole_number: number; avg_to_par: number; n: number }>;
   }> = {},
 ) {
   return {
@@ -28,7 +31,10 @@ function makeAgg(
     cause_penalty_pct: cause.cause_penalty_pct ?? 0,
     cause_missed_gir_pct: cause.cause_missed_gir_pct ?? 0,
     cause_three_putt_pct: cause.cause_three_putt_pct ?? 0,
-    worst_holes: cause.worst_holes ?? [],
+    spanDays: 54,
+  first_round_date: '2026-04-01',
+  last_round_date: '2026-05-25',
+  worst_holes: cause.worst_holes ?? [],
   };
 }
 
@@ -150,7 +156,10 @@ describe('CourseMgmtGenerator', () => {
       const c = g.composeContent(
         makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }, {
           cause_three_putt_pct: 40, cause_missed_gir_pct: 40, cause_penalty_pct: 20,
-          worst_holes: [
+          spanDays: 54,
+  first_round_date: '2026-04-01',
+  last_round_date: '2026-05-25',
+  worst_holes: [
             { hole_number: 7, avg_to_par: 0.9, n: 6 },
             { hole_number: 14, avg_to_par: 0.7, n: 6 },
           ],

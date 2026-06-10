@@ -28,6 +28,7 @@ function makeAgg(
     holes_scored: rates.holes_scored ?? 80,
     holes_per_round: ({ 3: 4, 4: 10, 5: 4 } as Record<3|4|5, number>)[par],
     spanDays: rates.spanDays === undefined ? 54 : rates.spanDays,
+  last_round_date: '2026-05-25',
   };
 }
 

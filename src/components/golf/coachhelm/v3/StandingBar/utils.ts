@@ -162,10 +162,15 @@ export function shouldShowTeamMarker(props: Pick<StandingBarProps, 'team_avg' | 
 export function deriveAriaLabel(props: StandingBarProps): string {
   if (props.ariaLabel) return props.ariaLabel;
   const you = formatValue(props.player_value, props.unit);
-  const pga = formatValue(props.pga_value, props.unit);
-  // CF-3: SG metrics anchor to the FIELD AVERAGE (0), not a PGA Tour score.
-  const refLabel = pgaReferenceLabel(props.metric_id).long;
-  const parts = [`${props.metric_label}. You: ${you}.`, `${refLabel}: ${pga}.`];
+  const parts = [`${props.metric_label}. You: ${you}.`];
+  // P3: omit the reference phrase entirely when the anchor is suppressed —
+  // a women's player on a metric with no credible women's baseline must not be
+  // narrated against a misleading men's value.
+  if (!props.pga_omitted) {
+    // CF-3: SG metrics anchor to the FIELD AVERAGE (0), not a PGA Tour score.
+    const refLabel = pgaReferenceLabel(props.metric_id).long;
+    parts.push(`${refLabel}: ${formatValue(props.pga_value, props.unit)}.`);
+  }
   if (props.team_avg !== null && (props.team_n ?? 0) >= TEAM_MARKER_MIN_N) {
     parts.push(`Team average: ${formatValue(props.team_avg, props.unit)}.`);
   }

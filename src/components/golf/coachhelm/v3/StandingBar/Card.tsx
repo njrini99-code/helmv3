@@ -42,7 +42,8 @@ export function Card(props: CardProps) {
   const showTeam = shouldShowTeamMarker(props);
   const youPct = toScalePct(props.player_value, props.scale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
-  const pgaPct = toScalePct(props.pga_value, props.scale);
+  // P3: omit the reference marker entirely when the anchor is suppressed.
+  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, props.scale);
   const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
   // EC-2: only narrate "Above/Below team average" when the team marker itself
   // renders (team_n>=5 && team_avg!=null). On a tiny roster the comparison is
@@ -84,7 +85,9 @@ export function Card(props: CardProps) {
         <span className="text-warm-900 font-medium text-sm">
           You {formatValue(props.player_value, props.unit)}
         </span>
-        <span>{refLabel} {formatValue(props.pga_value, props.unit)}</span>
+        {props.pga_omitted
+          ? <span className="opacity-0">·</span>
+          : <span>{refLabel} {formatValue(props.pga_value, props.unit)}</span>}
       </div>
 
       {/* Bar */}
@@ -174,7 +177,8 @@ function CardEmpty({ label }: { label: string }) {
 interface BarProps {
   youPct: number;
   teamPct: number | null;
-  pgaPct: number;
+  /** Null → the reference ("P") marker is omitted (audit P3 suppressed anchor). */
+  pgaPct: number | null;
   size: 'card' | 'inline' | 'hero';
 }
 
@@ -189,15 +193,17 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
       transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}
       className={`relative ${height} w-full bg-warm-100 rounded-full overflow-visible`}
     >
-      {/* PGA marker (background, light) */}
-      <Marker
-        kind="ref"
-        leftPct={pgaPct}
-        markerSize={markerSize}
-        label="P"
-        toneClass="bg-warm-400 text-white"
-        delay={0.08}
-      />
+      {/* PGA marker (background, light) — omitted when pgaPct is null (P3). */}
+      {pgaPct !== null && (
+        <Marker
+          kind="ref"
+          leftPct={pgaPct}
+          markerSize={markerSize}
+          label="P"
+          toneClass="bg-warm-400 text-white"
+          delay={0.08}
+        />
+      )}
       {/* Team marker — omitted in cold-start */}
       {teamPct !== null && (
         <Marker

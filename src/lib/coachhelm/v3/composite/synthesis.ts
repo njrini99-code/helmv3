@@ -151,6 +151,8 @@ export interface SynthesisResult {
   rule_suppressed: number;
   rule_emitted: number;
   errors: number;
+  /** Stale composite rows archived by the post-run scope sweep (regrade LIFE-P2). */
+  stale_retracted?: number;
 }
 
 /**
@@ -249,6 +251,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
 
   // Pass 3: upsert each survivor.
   const supabase = createAdminClient();
+  const emittedSignatures = new Set<string>();
   for (const { rule, match } of deduped) {
     try {
       const composed = rule.compose(match);
@@ -265,6 +268,10 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         source_insight_ids: match.source_insight_ids,
       };
       const sig = `${COMPOSITE_PREFIX}:${rule.id}:${composed.signature}`;
+      // Track BEFORE the gate check: a philosophy-gated match still owns its
+      // signature — the sweep must not archive an existing row just because
+      // the gate suppressed this run's refresh (mirrors BaseGenerator).
+      emittedSignatures.add(`v3:${sig}`);
       const upsertResult = await upsertInsightV3(supabase, {
         player_id: playerId,
         category: rule.category,
@@ -284,6 +291,60 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         { action: 'v3.composite.synthesis.upsert' },
       );
       result.errors += 1;
+    }
+  }
+
+  // Stale-composite scope sweep (regrade LIFE-P2 / NEW-P2): composite
+  // signatures embed data-derived suffixes (decel band, bunker side), so a
+  // band move / side flip left the superseded sibling coach-visible, and a
+  // dequalified rule's row had NO retirement path at all — the exact gap
+  // BaseGenerator.signatureScope closed for the 9 generator families. Mirror
+  // that sweep across the whole per-player `v3:composite:` space, but ONLY on
+  // a fully clean run (errors === 0): a rule that threw is an infra failure,
+  // not dequalification, and must not archive anything (NEW-P1 contract).
+  if (result.errors === 0) {
+    try {
+      const nowIso = new Date().toISOString();
+      const { data: rows, error: selErr } = await supabase
+        .from('golf_coach_insights')
+        .select('id, signature, metadata, lifecycle_state')
+        .eq('player_id', playerId)
+        .like('signature', `v3:${COMPOSITE_PREFIX}:%`)
+        .in('lifecycle_state', ['tentative', 'detected'])
+        .eq('status', 'active')
+        .is('acknowledged_at', null)
+        .is('addressed_at', null);
+      if (selErr) throw new Error(selErr.message);
+      const stale = (rows ?? []).filter(
+        (r) => typeof r.signature === 'string' && !emittedSignatures.has(r.signature),
+      );
+      let retracted = 0;
+      for (const r of stale) {
+        const metadata = {
+          ...((r.metadata as Record<string, unknown> | null) ?? {}),
+          archived_by: 'composite-scope-sweep',
+          archive_reason: `not-reemitted:${r.signature}`,
+          retracted_at: nowIso,
+        };
+        const { error } = await supabase
+          .from('golf_coach_insights')
+          .update({
+            lifecycle_state: 'archived',
+            archived_at: nowIso,
+            updated_at: nowIso,
+            metadata,
+          })
+          .eq('id', r.id)
+          .eq('lifecycle_state', r.lifecycle_state);
+        if (!error) retracted += 1;
+      }
+      result.stale_retracted = retracted;
+    } catch (err) {
+      await logServerError(
+        `synthesizeForPlayer: stale-composite sweep failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        { action: 'v3.composite.synthesis.sweep' },
+      );
+      // Sweep failure must not fail the synthesis run that emitted insights.
     }
   }
 

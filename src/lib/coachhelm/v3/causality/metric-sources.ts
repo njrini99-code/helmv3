@@ -59,6 +59,16 @@ export type GolfRoundsAvgColumn =
   | 'strokes_gained_putting'
   | 'total_penalties';
 
+/**
+ * Single per-round columns on `golf_round_stats_cache` we average directly
+ * (no ratio). Used when the canonical per-round value lives on the cache row
+ * rather than the denormalised `golf_rounds` column — e.g. `penalty_strokes`,
+ * which migration 20260608140000 made canonical-from-golf_holes
+ * (= SUM(golf_holes.penalty_strokes)) after `golf_rounds.total_penalties`
+ * drifted.
+ */
+export type RoundStatsCacheAvgColumn = 'penalty_strokes';
+
 /** Columns on `golf_round_stats_cache` that form the scoring distribution. */
 export type ScoringDistributionColumn =
   | 'eagles'
@@ -85,6 +95,19 @@ export interface RoundStatsCacheRatioSource {
 export interface GolfRoundsSource {
   kind: 'rounds';
   column: GolfRoundsAvgColumn;
+}
+
+/**
+ * Average a single per-round column on `golf_round_stats_cache` over a window.
+ * Joins to `golf_rounds` on `round_id` for the `round_date` / `status` filter
+ * (the cache row carries neither), then takes a simple per-round mean of the
+ * column. Used for `penalty_rate_per_round` — the cache's `penalty_strokes` is
+ * the canonical per-round penalty count (SUM(golf_holes.penalty_strokes)),
+ * whereas `golf_rounds.total_penalties` has drifted (migration 20260608140000).
+ */
+export interface RoundStatsCacheAvgSource {
+  kind: 'round_stats_cache_avg';
+  column: RoundStatsCacheAvgColumn;
 }
 
 /**
@@ -123,6 +146,7 @@ export interface IntentionalNullSource {
 
 export type MetricSourceDef =
   | GolfRoundsSource
+  | RoundStatsCacheAvgSource
   | RoundStatsCacheRatioSource
   | RoundStatsCacheComputedSource
   | HoleLevelAvgSource
@@ -193,8 +217,14 @@ export const METRIC_SOURCE: Record<MetricId, MetricSourceDef> = {
   },
   scrambling_pct_fairway: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
 
-  // Course management — both are per-round measurable
-  penalty_rate_per_round: { kind: 'rounds', column: 'total_penalties' },
+  // Course management — both are per-round measurable.
+  // penalty_rate_per_round reads the CANONICAL per-round penalty count from
+  // golf_round_stats_cache.penalty_strokes (= SUM(golf_holes.penalty_strokes),
+  // = count of is_penalty shots). It was previously { kind: 'rounds', column:
+  // 'total_penalties' }, but golf_rounds.total_penalties has drifted from the
+  // per-hole source (migration 20260608140000_cache_penalty_from_golf_holes_canonical),
+  // understating attribution deltas. The cache column is canonical-from-holes.
+  penalty_rate_per_round: { kind: 'round_stats_cache_avg', column: 'penalty_strokes' },
   // `big_number_rate` = (double_bogeys + triple_plus) / total-holes-scored × 100
   // where total-holes-scored = eagles + birdies + pars + bogeys + double_bogeys + triple_plus.
   big_number_rate: {

@@ -70,6 +70,15 @@ interface HoleRow {
  *     GIR holes, so reading the column would actually have agreed too — the
  *     prior "would mis-classify scramble holes" justification was inaccurate.)
  */
+/**
+ * Effectively-unbounded window for cache-coherent callers (regrade VAL-P1/P2):
+ * generators whose headline value is the LIFETIME cache scalar must decompose
+ * over the same lifetime hole set, not a silent 90-day subset — mixed
+ * denominators printed "you average 4.47 on 66 par 4s" where the 66 holes'
+ * true average was 4.455.
+ */
+export const LIFETIME_WINDOW_DAYS = 3650;
+
 export async function loadCompletedHoles(
   playerId: string,
   windowDays = DEFAULT_WINDOW_DAYS,
@@ -87,7 +96,8 @@ export async function loadCompletedHoles(
     .eq('status', 'completed')
     .not('total_score', 'is', null)
     .gte('round_date', since);
-  if (rErr || !rounds || rounds.length === 0) return [];
+  if (rErr) throw new Error(`hole-diagnosis rounds query failed: ${rErr.message}`);
+  if (!rounds || rounds.length === 0) return [];
   const roundIds = rounds.map((r) => r.id);
 
   const { data, error } = await fetchAllRowsResult<HoleRow>((from, to) =>
@@ -97,7 +107,8 @@ export async function loadCompletedHoles(
       .not('score', 'is', null)
       .order('id', { ascending: true })
       .range(from, to)); // paginate past PostgREST 1000-row cap
-  if (error || !data) return [];
+  if (error) throw new Error(`hole-diagnosis holes query failed: ${error.message}`);
+  if (!data) return [];
 
   const out: DiagnosisHole[] = [];
   for (const r of data) {

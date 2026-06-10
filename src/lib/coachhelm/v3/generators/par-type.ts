@@ -18,8 +18,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import { loadCompletedHoles } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
-import { lifetimeSpanDays } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { loadCompletedHoles, LIFETIME_WINDOW_DAYS } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
+import { lifetimeSpanDays, staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -60,6 +60,7 @@ interface ParTypeAggregate extends GeneratorAggregate {
   holes_per_round: number;
   /** True lifetime span in days (first→last round); null when unknown. */
   spanDays: number | null;
+  last_round_date: string | null;
 }
 
 export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
@@ -89,7 +90,8 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
       .select(`player_id, rounds_played, first_round_date, last_round_date, ${col}`)
       .eq('player_id', this.playerId)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) throw new Error(`par-type aggregate query failed: ${error.message}`);
+    if (!data) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const raw = (data as any)[col];
     if (raw === null || raw === undefined) return null;
@@ -100,7 +102,11 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     // Decompose this par type into outcome rates from golf_holes (C1). The cache
     // average stays playerValue so standing + counterfactual are unchanged; the
     // rate cut only feeds the prose that names the DRIVER of that average.
-    const holes = (await loadCompletedHoles(this.playerId)).filter((h) => h.par === this.par);
+    // LIFETIME holes so the decomposition + counts share the cache value's
+    // denominator (regrade VAL-P1 — no more lifetime average over a 90d count).
+    const holes = (await loadCompletedHoles(this.playerId, LIFETIME_WINDOW_DAYS)).filter(
+      (h) => h.par === this.par,
+    );
     const n = holes.length;
     let birdie = 0, par = 0, bogey = 0, dbl = 0;
     for (const h of holes) {
@@ -124,6 +130,7 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
       double_plus_rate: pct(dbl),
       holes_scored: n,
       holes_per_round: PAR_HOLES_PER_ROUND[this.par],
+      last_round_date: (data as { last_round_date?: string | null }).last_round_date ?? null,
       spanDays: lifetimeSpanDays(
         (data as { first_round_date?: string | null }).first_round_date ?? null,
         (data as { last_round_date?: string | null }).last_round_date ?? null,
@@ -203,7 +210,8 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
 
     const content =
       `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
-      `you average ${valueDisp} on ${agg.holes_scored} par ${agg.par}s (${vsParDisp} vs par). ${driverClause}`;
+      `you average ${valueDisp} on ${agg.holes_scored} par ${agg.par}s (${vsParDisp} vs par). ${driverClause}` +
+      staleDataSuffix(agg.last_round_date);
 
     return {
       title,

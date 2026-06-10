@@ -236,9 +236,13 @@ class CoachHelmIntelligence {
       { name: 'v3.puttDistance.10_15ft',   fn: () => new PuttDistanceGenerator(playerId, '10_15ft').run() },
       { name: 'v3.puttDistance.15_25ft',   fn: () => new PuttDistanceGenerator(playerId, '15_25ft').run() },
       { name: 'v3.puttDistance.25_plus_ft', fn: () => new PuttDistanceGenerator(playerId, '25_plus_ft').run() },
-      // v3 — putt bias (left / right; diagnostic, no PGA standing)
-      { name: 'v3.puttBias.left',  fn: () => new PuttBiasGenerator(playerId, 'left').run() },
-      { name: 'v3.puttBias.right', fn: () => new PuttBiasGenerator(playerId, 'right').run() },
+      // v3 — putt bias (diagnostic, no PGA standing). ONE instance only
+      // (regrade NEW-P2): the direction param never shaped the output — the
+      // aggregate derives weakest_direction from data, so the second instance
+      // was redundant compute AND a sweep race (two concurrent owners of the
+      // shared 'putt_bias:' scope could mutually archive each other's fresh
+      // row when their reads diverged mid-batch).
+      { name: 'v3.puttBias', fn: () => new PuttBiasGenerator(playerId).run() },
       // v3 — scrambling (sand only; rough/fairway pending cache split)
       { name: 'v3.scrambling.sand', fn: () => new ScramblingGenerator(playerId, 'sand').run() },
       // v3 — per-par scoring (3 instances)

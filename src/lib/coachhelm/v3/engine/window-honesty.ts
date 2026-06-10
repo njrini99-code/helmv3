@@ -60,3 +60,21 @@ export function attemptGate(
   const noun = n === 1 ? 'attempt' : 'attempts';
   return { report: true, disclosure: ` (${n} ${noun})` };
 }
+
+/** Days after which a card must disclose how old its newest data is. */
+export const STALE_DATA_DISCLOSURE_DAYS = 21;
+
+/**
+ * Staleness disclosure for cache-backed cards (regrade VAL-P3): a "high"
+ * alert generated today can describe play from 7-9 weeks ago, and nothing on
+ * the card said so. Returns " Data through YYYY-MM-DD." when the newest round
+ * is older than STALE_DATA_DISCLOSURE_DAYS, else ''. Append to card content.
+ */
+export function staleDataSuffix(lastRoundDate: string | null | undefined): string {
+  if (!lastRoundDate) return '';
+  const last = Date.parse(lastRoundDate);
+  if (!Number.isFinite(last)) return '';
+  const ageDays = (Date.now() - last) / 86400_000;
+  if (ageDays <= STALE_DATA_DISCLOSURE_DAYS) return '';
+  return ` Data through ${String(lastRoundDate).slice(0, 10)}.`;
+}

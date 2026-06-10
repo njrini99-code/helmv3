@@ -182,7 +182,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   };
 
   const severityIcon = (sev: string | null) => {
-    if (sev === 'critical' || sev === 'high') return <IconAlertCircle size={18} />;
+    if (sev === 'urgent' || sev === 'high') return <IconAlertCircle size={18} />;
     return <IconSparkles size={18} />;
   };
 
@@ -312,7 +312,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                   >
                     <div className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-                      i.severity === 'critical' || i.severity === 'high'
+                      i.severity === 'urgent' || i.severity === 'high'
                         ? 'bg-rose-100 text-rose-700'
                         : 'bg-cream-200/55 text-warm-700',
                     )}>

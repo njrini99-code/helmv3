@@ -15,6 +15,7 @@ import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeAttribution, nextWeight } from '@/lib/coachhelm/v3/causality/attribute';
+import { lookupMetricSource } from '@/lib/coachhelm/v3/causality/metric-sources';
 import {
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
@@ -26,6 +27,20 @@ export const dynamic = 'force-dynamic';
 
 const LIMIT = 50;
 const MIN_AGE_DAYS = 21;
+/**
+ * Page size for the paginated candidate fetch. The eligible-candidate set is
+ * dominated by rows that never produce an attribution row (intentional-null
+ * metrics + already-attributed rows), so a fixed oldest-N window starves the
+ * measurable backlog. We page through eligible candidates (created_at ASC)
+ * until we've collected LIMIT attributable+unattributed rows or run out.
+ */
+const FETCH_PAGE_SIZE = 200;
+/**
+ * Hard cap on pages scanned per run so a pathological backlog (tens of
+ * thousands of sticky never-attributable rows) can't run the cron past its
+ * maxDuration. At 200/page this scans up to 10k candidates per run.
+ */
+const MAX_FETCH_PAGES = 50;
 
 interface CronSummary {
   considered: number;
@@ -87,34 +102,95 @@ async function handle(): Promise<NextResponse> {
   // the learning loop must never write attribution rows or move coach
   // weights from rows the product has decided not to surface — stale v2
   // rows, archived/tentative lifecycle states, or coach-dismissed insights.
-  const { data: candidates } = await sb
-    .from('golf_coach_insights')
-    .select('id, player_id, coach_id, insight_type, evidence, created_at')
-    .lte('created_at', cutoffIso)
-    .not('player_id', 'is', null)
-    .or(V3_ENGINE_FILTER)
-    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed')
-    .order('created_at', { ascending: true })
-    .limit(LIMIT * 3); // over-fetch — many will already be attributed
+  // The candidate set is dominated by never-attributable rows: intentional-null
+  // metrics never get an attribution row written, and already-attributed rows
+  // are deduped by absence-of-attribution-row. A fixed oldest-N window therefore
+  // clogs with sticky rows and starves measurable insights forever (P1). We
+  // PAGINATE through eligible candidates (created_at ASC), and on each page:
+  //   1) anti-join the attribution table to drop already-attributed rows, and
+  //   2) SYNCHRONOUSLY drop intentional-null metrics (lookupMetricSource is sync),
+  //      counting them in summary.intentional_no_lift via a cheap pass,
+  // accumulating only attributable+unattributed rows into `todo` until we have
+  // LIMIT of them or candidates are exhausted.
+  type Candidate = {
+    id: string;
+    player_id: string | null;
+    coach_id: string | null;
+    insight_type: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    evidence: any;
+    created_at: string | null;
+  };
+  const todo: Candidate[] = [];
+  let page = 0;
+  for (; page < MAX_FETCH_PAGES && todo.length < LIMIT; page += 1) {
+    const from = page * FETCH_PAGE_SIZE;
+    const to = from + FETCH_PAGE_SIZE - 1;
+    const { data: candidates, error: fetchErr } = await sb
+      .from('golf_coach_insights')
+      .select('id, player_id, coach_id, insight_type, evidence, created_at')
+      .lte('created_at', cutoffIso)
+      .not('player_id', 'is', null)
+      .or(V3_ENGINE_FILTER)
+      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+      .neq('status', 'dismissed')
+      .order('created_at', { ascending: true })
+      .range(from, to);
 
-  if (!candidates || candidates.length === 0) {
+    // P3: surface the fetch error instead of returning a success-shaped empty
+    // summary on infra failure — a persistent failure would silently stall the
+    // whole learning loop with no Sentry signal, indistinguishable from a
+    // legitimately empty backlog.
+    if (fetchErr) {
+      await logServerError(
+        `causality candidate fetch (page ${page}): ${fetchErr.message}`,
+        { action: 'cron.v3.causality.fetch' },
+      );
+      summary.errors += 1;
+      summary.duration_ms = Date.now() - startedAt;
+      return NextResponse.json(summary, { status: 500 });
+    }
+
+    const candidatePage = (candidates ?? []) as Candidate[];
+    if (candidatePage.length === 0) break; // candidates exhausted
+
+    // Anti-join the attribution table for THIS page to drop already-attributed
+    // rows. Batched per page so we never load the whole table.
+    const pageIds = candidatePage.map((c) => c.id);
+    const { data: existing } = await sb
+      .from('golf_insight_outcome_attribution')
+      .select('insight_id')
+      .in('insight_id', pageIds);
+    const attributedSet = new Set((existing ?? []).map((r) => r.insight_id));
+
+    for (const c of candidatePage) {
+      if (todo.length >= LIMIT) break;
+      if (attributedSet.has(c.id)) continue;
+      // SYNCHRONOUS intentional-null pre-filter (cheap pass). These never get an
+      // attribution row written, so leaving them in the work list would clog
+      // every slot with permanently-skipped rows. Count them here exactly as the
+      // loop would have, then drop them from the work list.
+      const metric = (c.evidence as { metric?: string } | null)?.metric;
+      if (metric) {
+        const source = lookupMetricSource(metric);
+        if (source && source.kind === 'intentional-null') {
+          summary.intentional_no_lift += 1;
+          continue;
+        }
+      }
+      todo.push(c);
+    }
+
+    // Short page => candidates exhausted (last page).
+    if (candidatePage.length < FETCH_PAGE_SIZE) break;
+  }
+
+  summary.considered = todo.length;
+
+  if (todo.length === 0) {
     summary.duration_ms = Date.now() - startedAt;
     return NextResponse.json(summary);
   }
-
-  // Filter out already-attributed ones in one batch query.
-  const ids = candidates.map((c) => c.id);
-  const { data: existing } = await sb
-    .from('golf_insight_outcome_attribution')
-    .select('insight_id')
-    .in('insight_id', ids);
-  const attributedSet = new Set((existing ?? []).map((r) => r.insight_id));
-
-  const todo = candidates
-    .filter((c) => !attributedSet.has(c.id))
-    .slice(0, LIMIT);
-  summary.considered = todo.length;
 
   // Per-run roll-up of unknown metrics. Per-insight Sentry events were
   // re-firing on the same registry gaps every cron run (one Sentry issue
@@ -191,13 +267,25 @@ async function handle(): Promise<NextResponse> {
         summary.errors += 1;
         continue;
       }
-      // Update coach weight EMA for (coach, insight_type, intent='general')
-      if (c.coach_id) {
-        await updateCoachWeight(sb, {
+      // Update coach weight EMA for (coach, insight_type, intent='general').
+      // Skip entirely when lift is null: nextWeight no-ops on null (returns
+      // prev unchanged), so the upsert would only re-write the unchanged base
+      // {weight:1.0, sample_n:0} row — repopulating the freshly-wiped weights
+      // table with zero-evidence baseline rows that LOOK like learned state,
+      // and touching updated_at on real rows without any weight movement.
+      if (c.coach_id && row.lift !== null) {
+        const weightErr = await updateCoachWeight(sb, {
           coach_id: c.coach_id,
           insight_type: c.insight_type,
           lift: row.lift,
         });
+        if (weightErr) {
+          await logServerError(
+            `causality coach-weight upsert ${c.coach_id}/${c.insight_type}: ${weightErr.message}`,
+            { action: 'cron.v3.causality.coach-weight' },
+          );
+          summary.errors += 1;
+        }
       }
       summary.attributed += 1;
     } catch (err) {
@@ -237,7 +325,7 @@ async function handle(): Promise<NextResponse> {
 async function updateCoachWeight(
   sb: ReturnType<typeof createAdminClient>,
   args: { coach_id: string; insight_type: string; lift: number | null },
-): Promise<void> {
+): Promise<{ message: string } | null> {
   const intent = 'general';
   const { data: prev } = await sb
     .from('golf_coachhelm_coach_weights')
@@ -252,7 +340,13 @@ async function updateCoachWeight(
   const next = nextWeight(base, args.lift);
   // fromUntyped to upsert composite-PK rows cleanly even when the
   // generated types haven't fully propagated the new table yet.
-  await fromUntyped(sb, 'golf_coachhelm_coach_weights').upsert(
+  //
+  // The upsert error is returned (not swallowed): a grant/constraint failure
+  // — the exact class behind the prior "upsert needs UPDATE grant" incident on
+  // round_reviews/coach_insights — would otherwise leave attribution rows
+  // written but weights frozen at 1.0 forever while summary.attributed keeps
+  // climbing, i.e. the loop looks healthy while half of it is dead.
+  const { error } = await fromUntyped(sb, 'golf_coachhelm_coach_weights').upsert(
     {
       coach_id: args.coach_id,
       insight_type: args.insight_type,
@@ -263,4 +357,5 @@ async function updateCoachWeight(
     },
     { onConflict: 'coach_id,insight_type,intent' },
   );
+  return error ? { message: error.message } : null;
 }

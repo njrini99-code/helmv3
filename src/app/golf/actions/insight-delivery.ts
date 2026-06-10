@@ -46,6 +46,7 @@ import {
 import {
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
+  applyInsightVisibility,
 } from '@/lib/coachhelm/v3/insight-visibility';
 
 // ---------------------------------------------------------------------------
@@ -216,14 +217,13 @@ export async function getTopInsightForPlayer(
 
   // 1. Urgent-priority first pass. We run it as a separate query so the JSON
   //    ordering below never accidentally starves an urgent row.
-  const { data: urgent, error: urgentError } = await supabase
-    .from('golf_coach_insights')
-    .select(INSIGHT_SELECT)
-    .eq('player_id', playerId)
-    .not('evidence', 'is', null)
-    .or(V3_ENGINE_FILTER)
-    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed')
+  const { data: urgent, error: urgentError } = await applyInsightVisibility(
+    supabase
+      .from('golf_coach_insights')
+      .select(INSIGHT_SELECT)
+      .eq('player_id', playerId)
+      .not('evidence', 'is', null),
+  )
     .eq('priority', 'urgent')
     .order('created_at', { ascending: false })
     .limit(1);
@@ -237,18 +237,24 @@ export async function getTopInsightForPlayer(
     return mapRowToEvidenceInsight(urgent[0] as unknown as RawInsightRowWithDrills);
   }
 
-  // 2. Score by strokes_impact * confidence. JSON extraction runs in-DB so we
-  //    don't fetch thirty rows just to sort them client-side.
-  const { data, error } = await supabase
-    .from('golf_coach_insights')
-    .select(INSIGHT_SELECT)
-    .eq('player_id', playerId)
-    .not('evidence', 'is', null)
-    .or(V3_ENGINE_FILTER)
-    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed')
-    .order('created_at', { ascending: false })
-    .limit(20);
+  // 2. Rank the FULL visible set (regrade READ/NEW-P2): the old newest-20
+  //    created_at pre-trim was the same truncation bug the list feeds shed —
+  //    prod sat EXACTLY at the 20-row boundary, so the Hub signal card and the
+  //    feed's #1 could diverge on the very next insight. Paginate via
+  //    fetchAllRowsResult (one round trip for normal sets) and apply the SAME
+  //    collapse + dedupe the feed applies, so the single-pick is literally the
+  //    feed's head.
+  const { data, error } = await fetchAllRowsResult((from, to) =>
+    applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select(INSIGHT_SELECT)
+        .eq('player_id', playerId)
+        .not('evidence', 'is', null),
+    )
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
 
   if (error) {
     await logServerError(
@@ -263,7 +269,8 @@ export async function getTopInsightForPlayer(
 
   // The urgent first pass already short-circuited any urgent row at the DB
   // level, so this second pass only sees non-urgent rows. Rank with the shared
-  // `scoreInsight` composite so the single-pick agrees with the list feed.
+  // `scoreInsight` composite, then collapse par-scoring + dedupe by subject —
+  // EXACTLY the feed pipeline — so the single-pick agrees with the list feed.
   const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
   const activeGoals = await loadActiveGoals(playerId).catch(() => []);
   const ranked = rankEvidenceInsights(
@@ -272,7 +279,7 @@ export async function getTopInsightForPlayer(
     activeGoals,
   );
 
-  return ranked[0] ?? null;
+  return dedupeBySubject(collapseParScoring(ranked))[0] ?? null;
 }
 
 /**
@@ -332,15 +339,13 @@ export async function getInsightsForPlayer(
   // Order by `id` for stable paging — the shared composite reorders in-app.
   const runQuery = () =>
     fetchAllRowsResult((from, to) => {
-      let query = supabase
-        .from('golf_coach_insights')
-        .select(INSIGHT_SELECT)
-        .eq('player_id', playerId)
-        .not('evidence', 'is', null)
-        .or(V3_ENGINE_FILTER)
-        .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-        .neq('status', 'dismissed')
-        .order('id', { ascending: true });
+      let query = applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select(INSIGHT_SELECT)
+          .eq('player_id', playerId)
+          .not('evidence', 'is', null),
+      ).order('id', { ascending: true });
 
       if (opts.categories && opts.categories.length > 0) {
         query = query.in('category', opts.categories);
@@ -481,15 +486,13 @@ export async function getInsightsForCoach(
     // PER-PLAYER path — full visible set for one player.
     const playerId = opts.player_id;
     const result = await fetchAllRowsResult((from, to) => {
-      let query = supabase
-        .from('golf_coach_insights')
-        .select(INSIGHT_SELECT)
-        .eq('player_id', playerId)
-        .not('evidence', 'is', null)
-        .or(V3_ENGINE_FILTER)
-        .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-        .neq('status', 'dismissed')
-        .order('id', { ascending: true });
+      let query = applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select(INSIGHT_SELECT)
+          .eq('player_id', playerId)
+          .not('evidence', 'is', null),
+      ).order('id', { ascending: true });
 
       if (opts.categories && opts.categories.length > 0) {
         query = query.in('category', opts.categories);
@@ -510,14 +513,12 @@ export async function getInsightsForCoach(
     // SAME lifecycle/v3/status + optional category/priority filters as the
     // per-player branch are applied here.
     const result = await fetchAllRowsResult((from, to) => {
-      let query = supabase
-        .from('golf_coach_insights')
-        .select(INSIGHT_SELECT)
-        .not('evidence', 'is', null)
-        .or(V3_ENGINE_FILTER)
-        .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-        .neq('status', 'dismissed')
-        .order('id', { ascending: true });
+      let query = applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select(INSIGHT_SELECT)
+          .not('evidence', 'is', null),
+      ).order('id', { ascending: true });
 
       if (opts.categories && opts.categories.length > 0) {
         query = query.in('category', opts.categories);
@@ -631,14 +632,13 @@ export async function getRoundTakeawayInsight(
   const windowStart = new Date(anchor.getTime() - 24 * 60 * 60 * 1000).toISOString();
   const windowEnd = new Date(anchor.getTime() + 24 * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await supabase
-    .from('golf_coach_insights')
-    .select(INSIGHT_SELECT)
-    .eq('player_id', playerId)
-    .not('evidence', 'is', null)
-    .or(V3_ENGINE_FILTER)
-    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed')
+  const { data, error } = await applyInsightVisibility(
+    supabase
+      .from('golf_coach_insights')
+      .select(INSIGHT_SELECT)
+      .eq('player_id', playerId)
+      .not('evidence', 'is', null),
+  )
     .gte('updated_at', windowStart)
     .lte('updated_at', windowEnd)
     .order('updated_at', { ascending: false })

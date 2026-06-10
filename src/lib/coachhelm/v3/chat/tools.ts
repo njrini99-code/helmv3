@@ -21,6 +21,7 @@ import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 type Sb = SupabaseClient<Database>;
 
@@ -78,10 +79,19 @@ export const GetPlayerInsightsInput = z.object({
 export type GetPlayerInsightsInput = z.infer<typeof GetPlayerInsightsInput>;
 
 export async function get_player_insights(sb: Sb, input: GetPlayerInsightsInput) {
-  let q = sb
-    .from('golf_coach_insights')
-    .select('id, insight_type, category, title, content, evidence, created_at')
-    .eq('player_id', input.player_id)
+  // Apply the SAME product-visibility contract every coach surface uses (P2):
+  // the chat agent quotes these rows verbatim into the coach's context, so it
+  // must NEVER see stale v2 phantoms, dismissed rows, or — critically —
+  // sweep-archived rows that the engine retracted (lifecycle_state='archived'
+  // while status stays 'active', so a status-only filter cannot exclude them).
+  // We also SELECT lifecycle_state so a future caller can never resurface a
+  // retracted row, and apply the visibility filter so they never reach here.
+  let q = applyInsightVisibility(
+    sb
+      .from('golf_coach_insights')
+      .select('id, insight_type, category, title, content, evidence, lifecycle_state, created_at')
+      .eq('player_id', input.player_id),
+  )
     .order('created_at', { ascending: false })
     .limit(input.limit);
   if (input.category) q = q.eq('category', input.category);
@@ -94,6 +104,7 @@ export async function get_player_insights(sb: Sb, input: GetPlayerInsightsInput)
       category: i.category,
       title: i.title,
       content: i.content,
+      lifecycle_state: i.lifecycle_state,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       headline_metric: (i.evidence as any)?.metric_label ?? null,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -246,11 +257,16 @@ export async function get_team_patterns(sb: Sb, input: GetTeamPatternsInput) {
   if (playerIds.length === 0) return { patterns: [] };
 
   const since = new Date(Date.now() - input.window_days * 86400_000).toISOString();
-  const { data } = await sb
-    .from('golf_coach_insights')
-    .select('insight_type, player_id')
-    .in('player_id', playerIds)
-    .gte('created_at', since);
+  // Apply the SAME product-visibility contract (P2): a "how many players have
+  // this pattern" rollup the agent quotes must count only product-visible rows
+  // — not stale v2, archived, tentative, or dismissed insights.
+  const { data } = await applyInsightVisibility(
+    sb
+      .from('golf_coach_insights')
+      .select('insight_type, player_id')
+      .in('player_id', playerIds)
+      .gte('created_at', since),
+  );
 
   // Insights can be team-level (player_id NULL); skip those for a
   // "how many players have this pattern" rollup.

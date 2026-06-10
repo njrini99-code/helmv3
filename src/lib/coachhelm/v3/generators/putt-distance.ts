@@ -37,7 +37,7 @@ import type {
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
-import { attemptGate, lifetimeSpanDays, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { attemptGate, lifetimeSpanDays, staleDataSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 
 type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
 
@@ -119,6 +119,7 @@ interface PuttDistanceAggregate extends GeneratorAggregate {
   attempts: number;
   /** True lifetime span in days (first→last round); null when unknown. */
   spanDays: number | null;
+  last_round_date: string | null;
 }
 
 export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> {
@@ -152,7 +153,8 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         error: { message: string } | null;
       };
 
-    if (error || !data) return null;
+    if (error) throw new Error(`putt-distance aggregate query failed: ${error.message}`);
+    if (!data) return null;
 
     const raw = data[col];
     if (raw === null || raw === undefined) return null;
@@ -181,6 +183,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
       cohort_gender: cohort.gender,
       attempts,
       spanDays,
+      last_round_date: (data.last_round_date as string | null) ?? null,
     };
   }
 
@@ -229,7 +232,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     }
 
     const title = `${label} putting: ${valueDisp}`;
-    const content = base + verdict;
+    const content = base + verdict + staleDataSuffix(agg.last_round_date);
 
     return {
       title,
