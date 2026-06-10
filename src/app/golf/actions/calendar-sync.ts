@@ -185,13 +185,18 @@ export async function syncClassToCalendar(
   // Generate one desired occurrence per weekly meeting, keyed by local date.
   // The calendar UI matches events by comparing start_time to the displayed
   // date, so each week needs its own row.
-  const semesterEnd = new Date(semesterDates.end + 'T23:59:59');
+  //
+  // All date-only arithmetic here is done in UTC (explicit Z suffix +
+  // getUTC*/setUTC* methods) so occurrence dates don't shift by a day
+  // depending on the SERVER's timezone. The caller's wall-clock time enters
+  // only through buildDateTimeString's explicit offset.
+  const semesterEnd = new Date(semesterDates.end + 'T23:59:59Z');
   const desiredByDate = new Map<string, GolfEventInsert>();
 
   for (const day of classData.days) {
     const dayOfWeek = getDayOfWeek(day);
     const firstDateStr = getFirstOccurrenceDate(semesterDates.start, dayOfWeek);
-    const cursor = new Date(firstDateStr + 'T00:00:00');
+    const cursor = new Date(firstDateStr + 'T00:00:00Z');
 
     while (cursor <= semesterEnd) {
       const dateStr = cursor.toISOString().slice(0, 10);
@@ -208,8 +213,8 @@ export async function syncClassToCalendar(
         description,
         status: 'confirmed',
       });
-      // Advance by 7 days for next weekly occurrence
-      cursor.setDate(cursor.getDate() + 7);
+      // Advance by 7 days for next weekly occurrence (UTC — see note above)
+      cursor.setUTCDate(cursor.getUTCDate() + 7);
     }
   }
 
@@ -455,11 +460,16 @@ function getDayOfWeek(day: string): number {
 }
 
 /**
- * Get the first occurrence of a day of week on or after the start date
+ * Get the first occurrence of a day of week on or after the start date.
+ *
+ * UTC-consistent: `new Date('YYYY-MM-DD')` parses as UTC midnight, so the
+ * day-of-week and date arithmetic MUST use the getUTC / setUTC methods.
+ * The previous local-time mix (getDay/setDate) shifted the result by one
+ * day whenever the server's timezone wasn't UTC.
  */
 function getFirstOccurrenceDate(startDate: string, dayOfWeek: number): string {
-  const date = new Date(startDate);
-  const currentDay = date.getDay();
+  const date = new Date(startDate + 'T00:00:00Z');
+  const currentDay = date.getUTCDay();
 
   // Calculate days to add to get to the target day
   let daysToAdd = dayOfWeek - currentDay;
@@ -467,7 +477,7 @@ function getFirstOccurrenceDate(startDate: string, dayOfWeek: number): string {
     daysToAdd += 7;
   }
 
-  date.setDate(date.getDate() + daysToAdd);
+  date.setUTCDate(date.getUTCDate() + daysToAdd);
 
   // Return in YYYY-MM-DD format
   return date.toISOString().split('T')[0] || startDate;

@@ -35,7 +35,7 @@ function formatTimezoneOffset(offsetMinutes: number): string {
   return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 import { type ExpandedEvent } from '@/lib/calendar/recurrence';
-import { parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import {
   generateOccurrences,
   parseRecurrenceRule,
@@ -68,6 +68,12 @@ async function getCoachTeamId(
 // ============================================================================
 
 export type RecurringEditScope = 'this' | 'thisAndFuture' | 'all';
+
+const RECURRING_EDIT_SCOPES: readonly RecurringEditScope[] = ['this', 'thisAndFuture', 'all'];
+
+function isRecurringEditScope(value: unknown): value is RecurringEditScope {
+  return typeof value === 'string' && (RECURRING_EDIT_SCOPES as readonly string[]).includes(value);
+}
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -256,6 +262,149 @@ async function promoteSeriesRoot(
   }
 
   return { success: true, promoted: true };
+}
+
+/**
+ * Event-local calendar date + wall time for a stored timestamptz.
+ *
+ * `offsetMinutes` is `Date.getTimezoneOffset()` semantics (minutes from UTC,
+ * positive west) — the same value both calendar callers send. When it is
+ * undefined we fall back to the server's local frame, matching how the
+ * create path interprets a `${date}T${time}` string without a tz suffix.
+ */
+function localParts(iso: string, offsetMinutes: number | undefined): { date: string; time: string } {
+  if (offsetMinutes === undefined) {
+    const d = parseISO(iso);
+    return { date: format(d, 'yyyy-MM-dd'), time: format(d, 'HH:mm:ss') };
+  }
+  const shifted = new Date(Date.parse(iso) - offsetMinutes * 60_000);
+  const s = shifted.toISOString();
+  return { date: s.slice(0, 10), time: s.slice(11, 19) };
+}
+
+/**
+ * SERIES RULE UPDATE + EXTENSION (2026-06-10 calendar audit, P2).
+ *
+ * Applied for scope 'all' edits that carry `updates.recurrenceRule`. The
+ * parsed rule is canonicalized and stored on the series root; when the new
+ * rule reaches PAST the series' last materialized occurrence (bigger COUNT,
+ * later UNTIL, extra weekdays), the missing occurrences are appended as new
+ * child rows cloned from the root.
+ *
+ * Deliberate semantics:
+ * - Extension dates anchor on the series' FIRST occurrence and only dates
+ *   strictly after the LAST existing occurrence are added — occurrences the
+ *   coach deleted or rescheduled mid-series are never resurrected.
+ * - Shrinking a rule never deletes rows (house rule: no destructive writes
+ *   in save paths) — the coach removes occurrences via explicit deletes.
+ * - Total materialized series size stays under MAX_SERIES_OCCURRENCES.
+ * - Ordering: children are inserted (one atomic INSERT) BEFORE the root's
+ *   rule is rewritten, so a failure can never leave a rule that promises
+ *   occurrences which were silently dropped… the rows are the ground truth.
+ */
+async function applySeriesRuleUpdate(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  opts: {
+    rootId: string;
+    teamId: string | null;
+    newRuleString: string;
+    timezoneOffset?: number;
+  },
+): Promise<ActionResult> {
+  const failure = { success: false, error: 'Failed to update the recurrence rule. Please try again.' };
+
+  const newRule: RecurrenceRule | null = parseRecurrenceRule(opts.newRuleString);
+  if (!newRule) {
+    return { success: false, error: 'Invalid recurrence rule' };
+  }
+  const canonicalRule = serializeRecurrenceRule(newRule);
+
+  // Current materialized series (paginated — never assume a single page).
+  const { data: seriesRows, error: seriesError } = await fetchSeriesRows(supabase, {
+    teamId: opts.teamId,
+    rootId: opts.rootId,
+  });
+  if (seriesError || !seriesRows || seriesRows.length === 0) {
+    await logServerError(
+      `[applySeriesRuleUpdate fetch Error]: ${seriesError ? seriesError.message : 'series matched 0 rows'}`,
+      { action: 'recurring_events.applySeriesRuleUpdate', extra: { rootId: opts.rootId } },
+    );
+    return failure;
+  }
+
+  // Root row is the template for any appended occurrences.
+  const { data: rootRow, error: rootError } = await supabase
+    .from('golf_events')
+    .select('*')
+    .eq('id', opts.rootId)
+    .single();
+  if (rootError || !rootRow) {
+    await logServerError(
+      `[applySeriesRuleUpdate root Error]: ${rootError ? String(rootError.message ?? rootError) : 'root not found'}`,
+      { action: 'recurring_events.applySeriesRuleUpdate', extra: { rootId: opts.rootId } },
+    );
+    return failure;
+  }
+
+  const timed = seriesRows.filter((row): row is SeriesRowLite & { start_time: string } => !!row.start_time);
+  if (timed.length > 0) {
+    timed.sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time));
+    const anchorDate = localParts(timed[0]!.start_time, opts.timezoneOffset).date;
+    const lastDate = localParts(timed[timed.length - 1]!.start_time, opts.timezoneOffset).date;
+
+    const capacity = Math.max(0, MAX_SERIES_OCCURRENCES - seriesRows.length);
+    const newDates = generateOccurrences(anchorDate, newRule)
+      .filter((date) => date > lastDate)
+      .slice(0, capacity);
+
+    if (newDates.length > 0) {
+      const tz = opts.timezoneOffset !== undefined ? formatTimezoneOffset(opts.timezoneOffset) : '';
+      const startTime = rootRow.start_time ? localParts(rootRow.start_time, opts.timezoneOffset).time : '00:00:00';
+      const endTime = rootRow.end_time ? localParts(rootRow.end_time, opts.timezoneOffset).time : null;
+
+      const childRows = newDates.map((date) => ({
+        title: rootRow.title,
+        description: rootRow.description ?? null,
+        event_type: rootRow.event_type,
+        start_time: `${date}T${startTime}${tz}`,
+        end_time: endTime ? `${date}T${endTime}${tz}` : null,
+        location: rootRow.location ?? null,
+        created_by: rootRow.created_by,
+        team_id: rootRow.team_id,
+        status: 'confirmed',
+        requires_rsvp: rootRow.requires_rsvp ?? false,
+        rsvp_deadline: rootRow.rsvp_deadline ?? null,
+        max_attendees: rootRow.max_attendees ?? null,
+        recurrence_rule: null,
+        parent_event_id: opts.rootId,
+      }));
+
+      // Single INSERT statement — atomic, so a failure appends nothing.
+      const { error: insertError } = await fromUntyped(supabase, 'golf_events').insert(childRows);
+      if (insertError) {
+        await logServerError(
+          `[applySeriesRuleUpdate insert Error]: ${String(insertError.message ?? insertError)}`,
+          { action: 'recurring_events.applySeriesRuleUpdate', extra: { rootId: opts.rootId, newCount: newDates.length } },
+        );
+        return failure;
+      }
+    }
+  }
+
+  if (rootRow.recurrence_rule !== canonicalRule) {
+    const { error: ruleError } = await fromUntyped(supabase, 'golf_events')
+      .update({ recurrence_rule: canonicalRule })
+      .eq('id', opts.rootId);
+    if (ruleError) {
+      await logServerError(
+        `[applySeriesRuleUpdate rule Error]: ${String(ruleError.message ?? ruleError)}`,
+        { action: 'recurring_events.applySeriesRuleUpdate', extra: { rootId: opts.rootId } },
+      );
+      return failure;
+    }
+  }
+
+  return { success: true };
 }
 
 // ============================================================================
@@ -644,6 +793,28 @@ export async function editRecurringEvent(
       }
     }
 
+    // Rule change / series extension — scope 'all' only (a recurrence rule
+    // describes the whole series). Runs AFTER the row updates above so any
+    // appended occurrences clone the post-edit schedule. Legacy rootless
+    // series have nowhere to store a rule — skip with a log rather than
+    // failing an edit whose row updates already succeeded.
+    if (input.scope === 'all' && input.updates.recurrenceRule !== undefined) {
+      if (rootId) {
+        const ruleResult = await applySeriesRuleUpdate(supabase, {
+          rootId,
+          teamId: targetEvent.team_id,
+          newRuleString: input.updates.recurrenceRule,
+          timezoneOffset: input.timezoneOffset,
+        });
+        if (!ruleResult.success) return ruleResult;
+      } else {
+        await logServerError(
+          `editRecurringEvent: recurrenceRule update ignored for legacy rootless series (eventId=${input.eventId})`,
+          { action: 'recurring_events.editRecurringEvent.legacyRuleIgnored' },
+        );
+      }
+    }
+
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
@@ -656,12 +827,36 @@ export async function editRecurringEvent(
 // DELETE RECURRING EVENT
 // ============================================================================
 
+/**
+ * Delete occurrences of a recurring series. Both call forms are supported:
+ *
+ *   deleteRecurringEvent(eventId, scope)                      // preferred
+ *   deleteRecurringEvent(eventId, originalStartDate, scope)   // legacy
+ *
+ * For 'thisAndFuture' the cutoff is the explicit `originalStartDate` when the
+ * legacy form is used, otherwise the target occurrence's own start_time.
+ *
+ * ROOT PROMOTION (2026-06-10 calendar audit, P0 #1): whenever the delete set
+ * contains the series ROOT but not the whole series, the earliest surviving
+ * child is promoted to root first — so the parent_event_id ON DELETE CASCADE
+ * can never wipe occurrences the coach asked to keep.
+ */
 export async function deleteRecurringEvent(
   eventId: string,
-  originalStartDate: string,
-  scope: RecurringEditScope
+  scopeOrOriginalStartDate: RecurringEditScope | string,
+  maybeScope?: RecurringEditScope
 ): Promise<ActionResult> {
   try {
+    const scope: RecurringEditScope | null =
+      maybeScope ?? (isRecurringEditScope(scopeOrOriginalStartDate) ? scopeOrOriginalStartDate : null);
+    if (!scope) {
+      return { success: false, error: 'Invalid delete scope' };
+    }
+    const explicitFromDate =
+      maybeScope !== undefined && !isRecurringEditScope(scopeOrOriginalStartDate)
+        ? scopeOrOriginalStartDate
+        : null;
+
     const supabase = await createClient();
 
     // Get current coach
@@ -698,9 +893,24 @@ export async function deleteRecurringEvent(
 
     const rootId: string | null =
       targetEvent.parent_event_id ?? (targetEvent.recurrence_rule ? targetEvent.id : null);
+    const targetIsRoot = !targetEvent.parent_event_id && !!targetEvent.recurrence_rule;
 
     switch (scope) {
       case 'this': {
+        // P0 #1: deleting the ROOT row would cascade-wipe every child via
+        // the parent_event_id FK. Promote the earliest child to root FIRST;
+        // only a childless root is deleted directly.
+        if (targetIsRoot) {
+          const promo = await promoteSeriesRoot(
+            supabase,
+            { id: targetEvent.id, team_id: targetEvent.team_id, recurrence_rule: targetEvent.recurrence_rule },
+            new Set([eventId]),
+          );
+          if (!promo.success) {
+            return { success: false, error: 'Failed to delete event occurrence. Please try again.' };
+          }
+        }
+
         // 2026-05-17: audit Q-NEW-7. Select + count.
         const { data: affected, error: deleteError } = await supabase
           .from('golf_events')
@@ -720,21 +930,121 @@ export async function deleteRecurringEvent(
       }
 
       case 'thisAndFuture': {
-        let query = supabase.from('golf_events').delete();
+        const fromStart = explicitFromDate ?? targetEvent.start_time;
+        if (!fromStart) {
+          return { success: false, error: 'Could not determine the occurrence date for this delete.' };
+        }
+
         if (rootId) {
-          query = query
+          // Resolve the exact delete set first — if the ROOT falls inside it
+          // while earlier children survive (possible once single occurrences
+          // have been rescheduled), the root must be promoted away before
+          // anything is deleted. Paginated: a series can exceed one page.
+          const { data: matchedRows, error: matchError } = await fetchSeriesRows(supabase, {
+            teamId: targetEvent.team_id,
+            rootId,
+            fromStart,
+          });
+
+          if (matchError) {
+            await logServerError(`[deleteRecurringEvent fetch Error]: ${matchError.message}`, { action: 'recurring_events.deleteRecurringEvent' });
+            return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
+          }
+          if (!matchedRows || matchedRows.length === 0) {
+            await logServerError(`deleteRecurringEvent.thisAndFuture matched 0 rows`, {
+              action: 'recurring_events.deleteRecurringEvent.zeroRows',
+              extra: { eventId, rootId, fromDate: fromStart },
+            });
+            return { success: false, error: 'No matching future events were found to delete.' };
+          }
+
+          const deleteIds = new Set(matchedRows.map((row) => row.id));
+
+          if (deleteIds.has(rootId)) {
+            // Need the root's rule to transfer onto the promoted child.
+            let rootRecurrenceRule: string | null = targetEvent.recurrence_rule;
+            if (targetEvent.id !== rootId) {
+              const { data: rootRow } = await supabase
+                .from('golf_events')
+                .select('recurrence_rule')
+                .eq('id', rootId)
+                .single();
+              rootRecurrenceRule = rootRow?.recurrence_rule ?? null;
+            }
+
+            const promo = await promoteSeriesRoot(
+              supabase,
+              { id: rootId, team_id: targetEvent.team_id, recurrence_rule: rootRecurrenceRule },
+              deleteIds,
+            );
+            if (!promo.success) {
+              return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
+            }
+
+            if (promo.promoted) {
+              // Promotion repointed every child at the new root, so the
+              // parent_event_id filter no longer matches the delete set —
+              // delete the captured ids explicitly (chunked: short URLs).
+              let affectedCount = 0;
+              for (const ids of chunkArray([...deleteIds], ID_CHUNK_SIZE)) {
+                const { data: affected, error: deleteError } = await supabase
+                  .from('golf_events')
+                  .delete()
+                  .in('id', ids)
+                  .eq('team_id', targetEvent.team_id)
+                  .select('id');
+
+                if (deleteError) {
+                  await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+                  return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
+                }
+                affectedCount += affected?.length ?? 0;
+              }
+              if (affectedCount === 0) {
+                await logServerError(`deleteRecurringEvent.thisAndFuture matched 0 rows`, {
+                  action: 'recurring_events.deleteRecurringEvent.zeroRows',
+                  extra: { eventId, rootId, fromDate: fromStart },
+                });
+                return { success: false, error: 'No matching future events were found to delete.' };
+              }
+              break;
+            }
+            // promoted === false → no child survives the cutoff: the whole
+            // series is going away, so the cascade is harmless. Fall through
+            // to the single filtered DELETE below.
+          }
+
+          const { data: affected, error: deleteError } = await supabase
+            .from('golf_events')
+            .delete()
             .eq('team_id', targetEvent.team_id)
             .or(`parent_event_id.eq.${rootId},id.eq.${rootId}`)
-            .gte('start_time', originalStartDate);
-        } else {
-          query = query
-            .eq('team_id', targetEvent.team_id)
-            .eq('title', targetEvent.title)
-            .eq('event_type', targetEvent.event_type)
-            .gte('start_time', originalStartDate);
+            .gte('start_time', fromStart)
+            .select('id');
+
+          if (deleteError) {
+            await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
+            return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
+          }
+          if (!affected || affected.length === 0) {
+            await logServerError(`deleteRecurringEvent.thisAndFuture matched 0 rows`, {
+              action: 'recurring_events.deleteRecurringEvent.zeroRows',
+              extra: { eventId, rootId, fromDate: fromStart },
+            });
+            return { success: false, error: 'No matching future events were found to delete.' };
+          }
+          break;
         }
-        // 2026-05-17: audit Q-NEW-7. Select + count.
-        const { data: affected, error: deleteError } = await query.select('id');
+
+        // Legacy series (pre parent_event_id): heuristic filter, no cascade risk.
+        const { data: affected, error: deleteError } = await supabase
+          .from('golf_events')
+          .delete()
+          .eq('team_id', targetEvent.team_id)
+          .eq('title', targetEvent.title)
+          .eq('event_type', targetEvent.event_type)
+          .gte('start_time', fromStart)
+          .select('id');
 
         if (deleteError) {
           await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
@@ -743,7 +1053,7 @@ export async function deleteRecurringEvent(
         if (!affected || affected.length === 0) {
           await logServerError(`deleteRecurringEvent.thisAndFuture matched 0 rows`, {
             action: 'recurring_events.deleteRecurringEvent.zeroRows',
-            extra: { eventId, rootId, fromDate: originalStartDate },
+            extra: { eventId, rootId, fromDate: fromStart },
           });
           return { success: false, error: 'No matching future events were found to delete.' };
         }

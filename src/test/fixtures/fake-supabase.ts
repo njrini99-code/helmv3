@@ -133,12 +133,14 @@ class QueryBuilder<T = Row> implements PromiseLike<{ data: T[]; error: unknown }
     const rows = applyState(this.tables[this.state.table] ?? [], this.state);
     return { data: (rows[0] as T) ?? null, error: null };
   }
-  then<R1 = { data: T[]; error: unknown }, R2 = never>(
-    onfulfilled?: ((v: { data: T[]; error: unknown }) => R1 | PromiseLike<R1>) | null,
+  then<R1 = { data: T[]; error: unknown; count: number }, R2 = never>(
+    onfulfilled?: ((v: { data: T[]; error: unknown; count: number }) => R1 | PromiseLike<R1>) | null,
     onrejected?: ((reason: unknown) => R2 | PromiseLike<R2>) | null,
   ): PromiseLike<R1 | R2> {
     const rows = applyState(this.tables[this.state.table] ?? [], this.state);
-    return Promise.resolve({ data: rows as T[], error: null }).then(
+    // `count` mirrors select(..., { count: 'exact' }) — callers that don't
+    // request a count simply ignore the extra property.
+    return Promise.resolve({ data: rows as T[], error: null, count: rows.length }).then(
       onfulfilled ?? undefined,
       onrejected ?? undefined,
     );

@@ -269,6 +269,8 @@ export interface GenerateOccurrencesOptions {
  *   weeks anchored on the start date's week.
  * - `until` is INCLUSIVE; `count` is the total number of occurrences;
  *   whichever limit is reached first stops generation.
+ * - With `until` but no `count`, generation runs to the until date (still
+ *   capped at {@link MAX_SERIES_OCCURRENCES}).
  * - When neither `count` nor `until` is given, generation stops after
  *   `maxOccurrences` (default 52) or 12 months, whichever comes first —
  *   matching the historical generator.
@@ -282,17 +284,26 @@ export function generateOccurrences(
   const start = parseISO(startDate);
   if (Number.isNaN(start.getTime())) return [];
 
+  // COUNT wins when present. An UNTIL-only rule is bounded by its end date,
+  // so it gets the full occurrence cap rather than the open-ended default.
   const budget = Math.min(
-    rule.count ?? options?.maxOccurrences ?? DEFAULT_SERIES_OCCURRENCES,
+    rule.count ??
+      (rule.until ? MAX_SERIES_OCCURRENCES : (options?.maxOccurrences ?? DEFAULT_SERIES_OCCURRENCES)),
     MAX_SERIES_OCCURRENCES,
   );
   if (budget < 1) return [];
 
   const untilDate = rule.until ? parseISO(rule.until) : null;
-  // Historical fallback horizon when no explicit end: 12 months (exclusive).
+  // Historical fallback horizon: 12 months (exclusive) — but ONLY when the
+  // rule carries no explicit end at all. A COUNT rule is already bounded by
+  // its budget; clipping it to 12 months would silently shorten e.g. a
+  // COUNT=104 weekly series to 52 occurrences.
   const defaultHorizon = addMonths(start, 12);
-  const withinHorizon = (d: Date): boolean =>
-    untilDate ? !isAfter(d, untilDate) : isBefore(d, defaultHorizon);
+  const withinHorizon = (d: Date): boolean => {
+    if (untilDate) return !isAfter(d, untilDate);
+    if (rule.count !== undefined) return true;
+    return isBefore(d, defaultHorizon);
+  };
 
   const dates: string[] = [];
   const weekdaySet =

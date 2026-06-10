@@ -6,7 +6,7 @@ import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus, Dumbb
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import type { RecurrenceRule } from '@/lib/golf/recurrence';
+import { parseRecurrenceRule, describeRecurrenceRule, type RecurrenceRule } from '@/lib/golf/recurrence';
 import {
   computeAttendeeChanges,
   summarizeAttendeeChanges,
@@ -456,7 +456,12 @@ export function EventDetailModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, event?.id, isCreating, isCoach]);
+    // Keyed on `event` IDENTITY (not event.id) deliberately: the form-reset
+    // effect above also keys on identity, so a parent re-render that hands us
+    // a fresh event object re-runs BOTH effects together. Keying this one on
+    // event.id alone would let the reset wipe the selection while the loaded
+    // baseline survives — turning every invitee into a phantom "removal".
+  }, [isOpen, event, isCreating, isCoach]);
 
   // Series-root edits: prefill the recurrence pattern from the stored rule so
   // the series can be extended (more occurrences / later end date) or
@@ -464,22 +469,13 @@ export function EventDetailModal({
   const isSeriesRoot = !isCreating && Boolean(event?.recurrence_rule) && !event?.parent_event_id;
   useEffect(() => {
     if (!isOpen || !isSeriesRoot || !event?.recurrence_rule) return;
-    let cancelled = false;
-    import('@/lib/golf/recurrence')
-      .then(({ parseRecurrenceRule }) => {
-        if (cancelled) return;
-        const rule = parseRecurrenceRule(event.recurrence_rule!);
-        if (rule) {
-          setFormData((prev) => ({ ...prev, ...recurrenceFieldsFromRule(rule), recurrenceRule: rule }));
-        }
-      })
-      .catch(() => {
-        // Pattern editor simply stays hidden if the rule can't be parsed.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, isSeriesRoot, event?.recurrence_rule]);
+    const rule = parseRecurrenceRule(event.recurrence_rule);
+    if (rule) {
+      setFormData((prev) => ({ ...prev, ...recurrenceFieldsFromRule(rule), recurrenceRule: rule }));
+    }
+    // `event` identity dep keeps this in lockstep with the form-reset effect
+    // (see the attendee-hydration effect above for the rationale).
+  }, [isOpen, isSeriesRoot, event]);
 
   // Pending attendee delta vs the hydrated baseline. Null until hydration
   // succeeds — removals are only ever computed from a loaded baseline.
@@ -498,6 +494,14 @@ export function EventDetailModal({
     if (attendeeChanges) return attendeeChanges.addAttendeeIds;
     return formData.attendeeIds;
   }, [isCreating, formData.attendeeIds, attendeeChanges]);
+
+  // Live human-readable summary of the pattern being built, e.g.
+  // "Every 2 weeks on Mon, Wed, Fri until Aug 15, 2026".
+  const recurrencePreview = useMemo(() => {
+    if (formData.recurrence === 'none') return null;
+    const rule = buildRecurrenceRule(formData, formData.startDate);
+    return rule ? describeRecurrenceRule(rule) : null;
+  }, [formData]);
 
   // Check for conflicts when attendees or event time changes
   useEffect(() => {
@@ -1272,6 +1276,7 @@ export function EventDetailModal({
                   disabled={isViewMode || isSaving}
                   className="w-full px-3 py-2 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors disabled:bg-warm-50"
                 />
+                <p className="text-label text-warm-400 mt-1">Your local time</p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-warm-500 mb-1">Max Attendees</label>
@@ -1340,9 +1345,14 @@ export function EventDetailModal({
 
           {/* Footer - inside form for proper submit semantics */}
           <div className="border-t border-warm-100 flex items-center justify-between bg-warm-50/50 -mx-6 px-6 py-4 mt-4">
-            {/* Delete Button (left side) */}
+            {/* Delete / cancel button (left side). deleteGolfEvent is a SOFT
+                CANCEL for one-off events (status → cancelled, RSVPs kept,
+                attendees notified) so the copy says "Cancel event"; series
+                deletes go through the scope dialog where the permanent
+                series-wide removal is spelled out. Hidden on an already-
+                cancelled event — re-cancelling is a no-op. */}
             <div>
-              {onDelete && !isCreating && (
+              {onDelete && !isCreating && !isCancelled && (
                 <>
                   {showDeleteConfirm ? (
                     <div className="flex items-center gap-2">
@@ -1352,7 +1362,7 @@ export function EventDetailModal({
                         disabled={isSaving}
                         className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
                       >
-                        Confirm Delete
+                        {isInSeries ? 'Confirm Delete' : 'Confirm cancellation'}
                       </Button>
                       <Button variant="ghost"
                         type="button"
@@ -1360,7 +1370,7 @@ export function EventDetailModal({
                         disabled={isSaving}
                         className="px-3 py-1.5 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
                       >
-                        Cancel
+                        Keep event
                       </Button>
                     </div>
                   ) : (
@@ -1371,7 +1381,7 @@ export function EventDetailModal({
                       className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />
-                      Delete
+                      {isInSeries ? 'Delete' : 'Cancel event'}
                     </Button>
                   )}
                 </>
@@ -1432,17 +1442,23 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
     {
       value: 'this',
       label: 'This event only',
-      sub: action === 'edit' ? 'Other occurrences keep their current details.' : 'Other occurrences stay on the calendar.',
+      sub: action === 'edit'
+        ? 'Other occurrences keep their current details.'
+        : 'This occurrence is cancelled and attendees are notified. The rest of the series stays.',
     },
     {
       value: 'thisAndFuture',
       label: 'This and following events',
-      sub: action === 'edit' ? 'Past occurrences are left alone.' : 'Past occurrences are left alone.',
+      sub: action === 'edit'
+        ? 'Past occurrences are left alone.'
+        : 'Permanently removes this and every later occurrence. Past ones are left alone.',
     },
     {
       value: 'all',
       label: 'All events in the series',
-      sub: action === 'edit' ? 'Every occurrence picks up the change.' : 'The whole series is removed.',
+      sub: action === 'edit'
+        ? 'Every occurrence picks up the change.'
+        : 'Permanently removes the whole series, including past occurrences.',
     },
   ];
 
@@ -1476,6 +1492,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
               <Button variant="ghost"
                 type="button"
                 onClick={() => onConfirm(opt.value)}
+                autoFocus={opt.value === 'this'}
                 className={cn(
                   'w-full text-left px-4 py-3 rounded-xl transition-colors',
                   'hover:bg-warm-50 active:bg-warm-100',
@@ -1499,7 +1516,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
         </div>
         {danger && (
           <p className="px-5 pb-4 text-eyebrow text-rose-600/80">
-            Deletion is permanent — this can&apos;t be undone.
+            Removing future or all occurrences is permanent — it can&apos;t be undone.
           </p>
         )}
       </div>

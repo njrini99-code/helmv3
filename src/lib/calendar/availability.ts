@@ -10,6 +10,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfEvent, GolfPlayerClass } from '@/lib/types/golf';
+import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 
 // ============================================================================
 // TYPES
@@ -46,7 +47,16 @@ type AttendanceEventRow = Pick<
 >;
 
 interface AttendanceWithEvent {
-  event: AttendanceEventRow | null;
+  // PostgREST types to-one embeds as an array on untyped clients — normalize
+  // with firstEventOrNull at the point of use.
+  event: AttendanceEventRow | AttendanceEventRow[] | null;
+}
+
+function firstEventOrNull(
+  value: AttendanceEventRow | AttendanceEventRow[] | null
+): AttendanceEventRow | null {
+  if (!value) return null;
+  return Array.isArray(value) ? value[0] ?? null : value;
 }
 
 interface CoachBlockedTimeRow {
@@ -74,6 +84,13 @@ export async function getUserBusyPeriods(
   supabase: SupabaseClient
 ): Promise<BusyPeriod[]> {
   const busyPeriods: BusyPeriod[] = [];
+  // Event windows compare REAL UTC timestamps (audit finding #7): the old
+  // date-only collapse (`.lte('start_time', 'YYYY-MM-DD')` = midnight UTC)
+  // excluded every TIMED event on the window's last day — the most common
+  // conflict source, an existing timed practice, never registered as busy.
+  const minIso = timeMin.toISOString();
+  const maxIso = timeMax.toISOString();
+  // golf_coach_blocked_time stores DATE columns — date strings stay correct there.
   const dateMin = timeMin.toISOString().split('T')[0];
   const dateMax = timeMax.toISOString().split('T')[0];
 
@@ -117,26 +134,47 @@ export async function getUserBusyPeriods(
       .filter((id): id is string => Boolean(id));
   }
 
-  // 2. Fetch all busy periods in parallel (major performance improvement)
-  const teamEventsPromise = teamIds.length > 0
-    ? supabase
-        .from('golf_events')
-        .select('id, title, start_time, end_time, created_by')
-        .in('team_id', teamIds)
-        .gte('start_time', dateMin)
-        .lte('start_time', dateMax)
-    : Promise.resolve({ data: [] as TeamEventRow[] });
+  // 2. Fetch all busy periods in parallel (major performance improvement).
+  // Overlap semantics: an event is busy inside [timeMin, timeMax] when it
+  // starts before the window closes AND either starts inside the window or
+  // ends after it opens (covers events that span the window start; null
+  // end_time rows are treated as instantaneous). Soft-cancelled events keep
+  // their rows but are never busy. Paginated via fetchAllRows — PostgREST
+  // hard-caps responses at 1000 rows regardless of .limit().
+  const teamEventsPromise: Promise<TeamEventRow[]> = teamIds.length > 0
+    ? fetchAllRows<TeamEventRow>((from, to) =>
+        supabase
+          .from('golf_events')
+          .select('id, title, start_time, end_time, created_by')
+          .in('team_id', teamIds)
+          .neq('status', 'cancelled')
+          .lte('start_time', maxIso)
+          .or(`start_time.gte.${minIso},end_time.gte.${minIso}`)
+          .order('id', { ascending: true })
+          .range(from, to)
+      )
+    : Promise.resolve([]);
 
-  const attendancesPromise = player
-    ? supabase
-        .from('golf_event_attendance')
-        .select(`
-          event_id,
-          event:golf_events(id, title, start_time, end_time)
-        `)
-        .eq('player_id', player.id)
-        .eq('status', 'accepted')
-    : Promise.resolve({ data: [] as AttendanceWithEvent[] });
+  // Audit finding #24: this used to fetch the player's LIFETIME accepted-RSVP
+  // history unwindowed (1000-cap-prone, multiplied by per-tap fan-outs).
+  // !inner makes the embedded-event filters drop non-matching parent rows.
+  const attendancesPromise: Promise<AttendanceWithEvent[]> = player
+    ? fetchAllRows<AttendanceWithEvent>((from, to) =>
+        supabase
+          .from('golf_event_attendance')
+          .select(`
+            event_id,
+            event:golf_events!inner(id, title, start_time, end_time)
+          `)
+          .eq('player_id', player.id)
+          .eq('status', 'accepted')
+          .neq('event.status', 'cancelled')
+          .lte('event.start_time', maxIso)
+          .or(`start_time.gte.${minIso},end_time.gte.${minIso}`, { referencedTable: 'event' })
+          .order('id', { ascending: true })
+          .range(from, to)
+      )
+    : Promise.resolve([]);
 
   const classesPromise = player
     ? supabase
@@ -154,7 +192,7 @@ export async function getUserBusyPeriods(
         .lte('start_date', dateMax)
     : Promise.resolve({ data: [] as CoachBlockedTimeRow[] });
 
-  const [teamEventsResult, attendancesResult, classesResult, blockedTimesResult] = await Promise.all([
+  const [teamEvents, attendanceRows, classesResult, blockedTimesResult] = await Promise.all([
     teamEventsPromise,
     attendancesPromise,
     classesPromise,
@@ -162,43 +200,39 @@ export async function getUserBusyPeriods(
   ]);
 
   // Process team events
-  if (teamEventsResult.data) {
-    for (const event of teamEventsResult.data as TeamEventRow[]) {
-      const startDateTime = new Date(event.start_time);
-      const endDateTime = new Date(event.end_time || event.start_time);
+  for (const event of teamEvents) {
+    const startDateTime = new Date(event.start_time);
+    const endDateTime = new Date(event.end_time || event.start_time);
 
-      busyPeriods.push({
-        start: startDateTime,
-        end: endDateTime,
-        type: 'event',
-        title: event.title,
-        eventId: event.id,
-        ownerId: event.created_by || undefined,
-        ownerType: isCoach ? 'coach' : 'player',
-      });
-    }
+    busyPeriods.push({
+      start: startDateTime,
+      end: endDateTime,
+      type: 'event',
+      title: event.title,
+      eventId: event.id,
+      ownerId: event.created_by || undefined,
+      ownerType: isCoach ? 'coach' : 'player',
+    });
   }
 
   // Process RSVP'd events (dedupe by event_id)
   const existingEventIds = new Set(busyPeriods.map(p => p.eventId).filter(Boolean));
-  if (attendancesResult.data) {
-    for (const attendance of attendancesResult.data as AttendanceWithEvent[]) {
-      const event = attendance.event;
-      if (!event || existingEventIds.has(event.id)) continue;
+  for (const attendance of attendanceRows) {
+    const event = firstEventOrNull(attendance.event);
+    if (!event || existingEventIds.has(event.id)) continue;
 
-      const startDateTime = new Date(event.start_time);
-      const endDateTime = new Date(event.end_time || event.start_time);
+    const startDateTime = new Date(event.start_time);
+    const endDateTime = new Date(event.end_time || event.start_time);
 
-      busyPeriods.push({
-        start: startDateTime,
-        end: endDateTime,
-        type: 'event',
-        title: event.title,
-        eventId: event.id,
-        ownerId: player!.user_id,
-        ownerType: 'player',
-      });
-    }
+    busyPeriods.push({
+      start: startDateTime,
+      end: endDateTime,
+      type: 'event',
+      title: event.title,
+      eventId: event.id,
+      ownerId: player!.user_id,
+      ownerType: 'player',
+    });
   }
 
   // Process academic classes

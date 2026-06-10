@@ -29,6 +29,7 @@ function queryBuilder(response: unknown) {
     gte: vi.fn(() => builder),
     lte: vi.fn(() => builder),
     order: vi.fn(() => builder),
+    range: vi.fn(() => builder),
     update: vi.fn(() => builder),
     single: vi.fn(async () => response),
     maybeSingle: vi.fn(async () => response),

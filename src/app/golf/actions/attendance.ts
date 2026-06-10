@@ -11,8 +11,10 @@
  *
  * Audit finding #21 fixes baked in:
  * - Attendance writes NEVER touch the `status` / `rsvp_at` columns — those
- *   belong to the RSVP flow. Check-in state lives exclusively in the
- *   dedicated `checked_in` / `checked_in_at` columns.
+ *   belong to the RSVP flow. The attendance mark lives in the dedicated
+ *   `attendance_status` column (dual-axis with `status`; migration
+ *   20260610080000), with `checked_in` / `checked_in_at` as the
+ *   timestamped check-in record.
  * - Every mutating action (and the report reads) authorizes the caller
  *   against the event's team, following the sendEventReminderToPlayers
  *   authz chain in golf.ts (user → event.team_id → coach → staff row).
@@ -30,6 +32,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import type { Database } from '@/lib/types/database';
 
 // ============================================================================
 // TYPES
@@ -55,32 +58,22 @@ export type RsvpStatus =
   | 'unexcused';
 
 /**
- * How attendance marks persist into golf_event_attendance:
+ * How attendance marks persist into golf_event_attendance (dual-axis with
+ * `status`, the RSVP column — attendance writes never touch it):
  *
- *   present → checked_in=true,  checked_in_at=<now>
- *   late    → checked_in=true,  checked_in_at=<now>   (see MIGRATION NOTE)
- *   no_show → checked_in=false, checked_in_at=<now>
- *   clear   → checked_in=false, checked_in_at=null    (back to unmarked)
+ *   present → attendance_status='present', checked_in=true,  checked_in_at=<now>
+ *   late    → attendance_status='late',    checked_in=true,  checked_in_at=<now>
+ *   no_show → attendance_status='no_show', checked_in=false, checked_in_at=<now>
+ *   clear   → attendance_status=null,      checked_in=false, checked_in_at=null
  *
- * `checked_in_at` doubles as "attendance recorded at": an explicit no-show
- * (checked_in=false + checked_in_at set) is distinguishable from a row that
- * was never marked (checked_in_at IS NULL — checked_in defaults to false).
- *
- * MIGRATION NOTE: golf_event_attendance has no column that can hold a
- * first-class "late" state — `status` is the RSVP column (clobbering it was
- * the audit-#21 bug) and the table has no jsonb/metadata column. Until a
- * migration adds e.g.
- *   ALTER TABLE golf_event_attendance ADD COLUMN attendance_status text
- *     CHECK (attendance_status IN ('present','late','no_show'));
- * a 'late' mark persists identically to 'present' (a late player IS
- * present), and the late distinction survives only within the live panel
- * session. Do NOT encode late into `notes` — that column is human-facing
- * and its visibility is being tightened (finding #30).
+ * `attendance_status` (migration 20260610080000) is the first-class mark;
+ * NULL = not yet marked. `checked_in` / `checked_in_at` remain the
+ * timestamped check-in record (a late player IS checked in). Rows written
+ * before the migration were backfilled (checked_in → 'present', explicit
+ * checked_in_at-stamped non-check-ins → 'no_show'); readers still honor
+ * that legacy convention defensively via persistedMark().
  */
 export type AttendanceMark = 'present' | 'late' | 'no_show';
-
-/** Attendance state derivable from the persisted columns. */
-export type PersistedAttendance = 'present' | 'no_show' | null;
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -100,6 +93,8 @@ export interface AttendanceRecord {
   player_id: string;
   status: RsvpStatus | null;
   rsvp_at: string | null;
+  /** First-class coach-recorded mark; null = not yet marked. */
+  attendance_status: AttendanceMark | null;
   checked_in: boolean | null;
   checked_in_at: string | null;
   notes: string | null;
@@ -120,8 +115,10 @@ export interface PlayerAttendanceStats {
   player_id: string;
   /** Total attendance rows (event invites) seen for this player. */
   invited: number;
-  /** Events where the player was checked in (present or late). */
+  /** Events attended — present or late (late counts as attended). */
   attended: number;
+  /** Events marked late (subset of `attended`, exposed separately). */
+  late: number;
   /** Events explicitly marked no-show. */
   no_shows: number;
   /** Invites with no attendance recorded yet. */
@@ -199,21 +196,62 @@ async function authorizeCoachForEvent(
   return { ok: true, event };
 }
 
-/** Map a mark to the persisted check-in fields. Never includes status/rsvp_at. */
+type GolfEventAttendanceInsert =
+  Database['public']['Tables']['golf_event_attendance']['Insert'];
+
+/**
+ * golf_event_attendance write payload. The generated Database types may not
+ * include `attendance_status` yet (column added by migration 20260610080000;
+ * typegen regen is handled separately) — type it locally and cast to the
+ * generated Insert type at the .upsert() boundary (supabase-js rejects
+ * statically-unknown columns via RejectExcessProperties). No `any`.
+ */
+type AttendanceUpsertRow = GolfEventAttendanceInsert & {
+  attendance_status: AttendanceMark | null;
+};
+
+/**
+ * Map a mark to the persisted attendance fields. Never includes
+ * status/rsvp_at — those are the RSVP axis.
+ */
 function attendanceFieldsFor(mark: AttendanceMark | 'clear'): {
+  attendance_status: AttendanceMark | null;
   checked_in: boolean;
   checked_in_at: string | null;
 } {
   if (mark === 'clear') {
-    return { checked_in: false, checked_in_at: null };
+    return { attendance_status: null, checked_in: false, checked_in_at: null };
   }
   const now = new Date().toISOString();
   if (mark === 'no_show') {
-    return { checked_in: false, checked_in_at: now };
+    return { attendance_status: 'no_show', checked_in: false, checked_in_at: now };
   }
-  // present + late (late needs a migration for first-class storage — see
-  // the MIGRATION NOTE on AttendanceMark above).
-  return { checked_in: true, checked_in_at: now };
+  // present + late both count as checked in; the mark itself is first-class.
+  return { attendance_status: mark, checked_in: true, checked_in_at: now };
+}
+
+/**
+ * Derive the recorded mark from a persisted row: `attendance_status` is
+ * authoritative; rows from before migration 20260610080000 (backfilled, but
+ * stay defensive) fall back to the legacy checked_in/checked_in_at
+ * convention, where checked_in=true meant present and an explicit
+ * checked_in_at stamp without check-in meant no-show.
+ */
+function persistedMark(row: {
+  attendance_status?: string | null;
+  checked_in: boolean | null;
+  checked_in_at: string | null;
+}): AttendanceMark | null {
+  if (
+    row.attendance_status === 'present' ||
+    row.attendance_status === 'late' ||
+    row.attendance_status === 'no_show'
+  ) {
+    return row.attendance_status;
+  }
+  if (row.checked_in === true) return 'present';
+  if (row.checked_in_at !== null) return 'no_show';
+  return null;
 }
 
 const VALID_MARKS: ReadonlySet<string> = new Set([
@@ -269,19 +307,17 @@ export async function markAttendance(
       return { success: false, error: 'Player is not an active member of this team' };
     }
 
-    // Upsert ONLY the check-in columns. status / rsvp_at are deliberately
+    // Upsert ONLY the attendance columns. status / rsvp_at are deliberately
     // absent from the payload so an existing RSVP response is never
     // overwritten (audit finding #21).
+    const payload: AttendanceUpsertRow = {
+      event_id: eventId,
+      player_id: playerId,
+      ...attendanceFieldsFor(mark),
+    };
     const { error: upsertError } = await supabase
       .from('golf_event_attendance')
-      .upsert(
-        {
-          event_id: eventId,
-          player_id: playerId,
-          ...attendanceFieldsFor(mark),
-        },
-        { onConflict: 'event_id,player_id' },
-      );
+      .upsert(payload as GolfEventAttendanceInsert, { onConflict: 'event_id,player_id' });
 
     if (upsertError) {
       await logServerError(`markAttendance upsert failed: ${upsertError.message}`, {
@@ -376,18 +412,19 @@ export async function bulkCheckIn(
       return { success: true, data: { successCount: 0, failureCount: playerIds.length } };
     }
 
-    // Batch upsert of check-in columns ONLY — status / rsvp_at untouched.
+    // Batch upsert of attendance columns ONLY — status / rsvp_at untouched.
     const now = new Date().toISOString();
-    const upsertRecords = allowedPlayerIds.map((playerId) => ({
+    const upsertRecords: AttendanceUpsertRow[] = allowedPlayerIds.map((playerId) => ({
       event_id: eventId,
       player_id: playerId,
+      attendance_status: 'present',
       checked_in: true,
       checked_in_at: now,
     }));
 
     const { error: upsertError, data: upsertedData } = await supabase
       .from('golf_event_attendance')
-      .upsert(upsertRecords, {
+      .upsert(upsertRecords as GolfEventAttendanceInsert[], {
         onConflict: 'event_id,player_id',
         ignoreDuplicates: false,
       })
@@ -512,6 +549,7 @@ export async function getAttendanceReport(
             player_id,
             status,
             rsvp_at,
+            attendance_status,
             checked_in,
             checked_in_at,
             notes,
@@ -538,12 +576,15 @@ export async function getAttendanceReport(
       return { success: false, error: 'Failed to get attendance report. Please try again.' };
     }
 
-    // Scope notes: coaches see all; a player sees only their own note.
-    const scoped = (rows ?? []).map((row) =>
-      viewerIsCoach || row.player_id === viewerPlayerId
-        ? row
-        : { ...row, notes: null },
-    );
+    // Scope notes (coaches see all; a player sees only their own note —
+    // finding #30) and normalize the mark server-side: attendance_status is
+    // authoritative, with persistedMark() covering legacy pre-migration rows
+    // so the panel can trust the field without its own fallback logic.
+    const scoped = (rows ?? []).map((row) => ({
+      ...row,
+      attendance_status: persistedMark(row),
+      notes: viewerIsCoach || row.player_id === viewerPlayerId ? row.notes : null,
+    }));
 
     // Stable display order by name (pagination above already ordered by id
     // for correctness; this is a presentation sort).
@@ -581,6 +622,7 @@ export async function getAttendanceReport(
 
 interface StatsRow {
   player_id: string;
+  attendance_status: string | null;
   checked_in: boolean | null;
   checked_in_at: string | null;
 }
@@ -590,6 +632,7 @@ function emptyStats(playerId: string): PlayerAttendanceStats {
     player_id: playerId,
     invited: 0,
     attended: 0,
+    late: 0,
     no_shows: 0,
     unmarked: 0,
     attendance_pct: null,
@@ -684,14 +727,19 @@ export async function getPlayerAttendanceStats(
 
     // Paginated — a season of attendance rows across a roster easily exceeds
     // the 1000-row PostgREST cap, which silently truncates (finding #21).
+    // Cast at the query boundary: the generated types may not include
+    // attendance_status yet (migration 20260610080000; regen handled later).
     const { data: rows, error: fetchError } = await fetchAllRowsResult<StatsRow>(
       (from, to) =>
         supabase
           .from('golf_event_attendance')
-          .select('player_id, checked_in, checked_in_at')
+          .select('player_id, attendance_status, checked_in, checked_in_at')
           .in('player_id', targetPlayerIds)
           .order('id', { ascending: true })
-          .range(from, to),
+          .range(from, to) as unknown as PromiseLike<{
+            data: StatsRow[] | null;
+            error: { message: string } | null;
+          }>,
     );
 
     if (fetchError) {
@@ -710,11 +758,17 @@ export async function getPlayerAttendanceStats(
       const stats = perPlayer.get(row.player_id) ?? emptyStats(row.player_id);
       stats.invited += 1;
       overall.invited += 1;
-      if (row.checked_in === true) {
+      const mark = persistedMark(row);
+      if (mark === 'present' || mark === 'late') {
+        // Late counts as attended for the percentage …
         stats.attended += 1;
         overall.attended += 1;
-      } else if (row.checked_in_at !== null) {
-        // Explicit no-show: not checked in, but attendance WAS recorded.
+        if (mark === 'late') {
+          // … but is exposed separately so coaches can see the pattern.
+          stats.late += 1;
+          overall.late += 1;
+        }
+      } else if (mark === 'no_show') {
         stats.no_shows += 1;
         overall.no_shows += 1;
       } else {

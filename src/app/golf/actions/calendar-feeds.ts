@@ -300,12 +300,16 @@ export async function getOrCreateCalendarFeedToken(): Promise<ActionResult<{ url
   const { userId, teamId, displayName } = contextResult.data;
   const supabase = await createClient();
 
-  // First, check if user already has an active feed
+  // First, check if user already has an active feed. Latest-first + limit(1)
+  // keeps this deterministic (and non-erroring) when the user holds multiple
+  // active feeds, and matches the feed regenerateCalendarFeedToken targets.
   const { data: existingFeed, error: fetchError } = await supabase
     .from('golf_calendar_feeds')
     .select('id, feed_token')
     .eq('user_id', userId)
     .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (fetchError) {

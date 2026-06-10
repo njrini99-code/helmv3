@@ -43,7 +43,16 @@ import {
 
 type Row = Record<string, unknown>;
 
-function baseTables(): Record<string, Row[]> {
+interface SeedTables extends Record<string, Row[]> {
+  golf_events: Row[];
+  golf_coaches: Row[];
+  golf_team_coach_staff: Row[];
+  golf_players: Row[];
+  golf_team_members: Row[];
+  golf_event_attendance: Row[];
+}
+
+function baseTables(): SeedTables {
   return {
     golf_events: [
       { id: 'event-1', team_id: 'team-1', start_time: '2026-06-10T14:00:00Z' },
@@ -70,12 +79,12 @@ function baseTables(): Record<string, Row[]> {
   };
 }
 
-function asCoach(tables: Record<string, Row[]>) {
+function asCoach<T extends Record<string, Row[]>>(tables: T): T {
   fake = createFakeSupabase({ user: { id: 'u-coach' }, tables });
   return tables;
 }
 
-function asUser(userId: string, tables: Record<string, Row[]>) {
+function asUser<T extends Record<string, Row[]>>(userId: string, tables: T): T {
   fake = createFakeSupabase({ user: { id: userId }, tables });
   return tables;
 }
@@ -183,6 +192,7 @@ describe('markAttendance RSVP preservation', () => {
     expect(result.success).toBe(true);
 
     const row = tables.golf_event_attendance.find((r) => r.id === 'att-1');
+    expect(row?.attendance_status).toBe('present');
     expect(row?.checked_in).toBe(true);
     expect(row?.checked_in_at).toBeTruthy();
     // RSVP untouched:
@@ -198,10 +208,46 @@ describe('markAttendance RSVP preservation', () => {
 
     const row = tables.golf_event_attendance.find((r) => r.player_id === 'player-1');
     expect(row).toBeDefined();
+    expect(row?.attendance_status).toBe('present');
     expect(row?.checked_in).toBe(true);
     // The payload must not contain status/rsvp_at — DB defaults apply.
     expect(row).not.toHaveProperty('status');
     expect(row).not.toHaveProperty('rsvp_at');
+  });
+
+  it('late persists first-class and round-trips through the report', async () => {
+    const tables = baseTables();
+    tables.golf_event_attendance.push({
+      id: 'att-1',
+      event_id: 'event-1',
+      player_id: 'player-1',
+      status: 'accepted',
+      rsvp_at: '2026-06-01T00:00:00Z',
+      attendance_status: null,
+      checked_in: false,
+      checked_in_at: null,
+      notes: null,
+      player: { first_name: 'Nick', last_name: 'Rini', jersey_number: 7 },
+    });
+    asCoach(tables);
+
+    const result = await markAttendance('event-1', 'player-1', 'late');
+    expect(result.success).toBe(true);
+
+    const row = tables.golf_event_attendance.find((r) => r.id === 'att-1');
+    expect(row?.attendance_status).toBe('late');
+    // A late player IS checked in …
+    expect(row?.checked_in).toBe(true);
+    expect(row?.checked_in_at).toBeTruthy();
+    // … and the RSVP axis is untouched.
+    expect(row?.status).toBe('accepted');
+
+    // Round-trip: the report surfaces the first-class late mark, so Late
+    // survives a panel reload.
+    const report = await getAttendanceReport('event-1');
+    expect(report.success).toBe(true);
+    const reported = report.data?.attendance.find((r) => r.player_id === 'player-1');
+    expect(reported?.attendance_status).toBe('late');
   });
 
   it('no-show preserves the RSVP and stamps a recorded-at time', async () => {
@@ -212,6 +258,7 @@ describe('markAttendance RSVP preservation', () => {
       player_id: 'player-1',
       status: 'accepted',
       rsvp_at: '2026-06-02T00:00:00Z',
+      attendance_status: 'present',
       checked_in: true,
       checked_in_at: '2026-06-10T13:55:00Z',
       notes: null,
@@ -222,14 +269,15 @@ describe('markAttendance RSVP preservation', () => {
     expect(result.success).toBe(true);
 
     const row = tables.golf_event_attendance.find((r) => r.id === 'att-1');
+    expect(row?.attendance_status).toBe('no_show');
     expect(row?.checked_in).toBe(false);
-    // Explicit no-show is distinguishable from never-marked:
+    // Explicit no-show keeps the recorded-at stamp:
     expect(row?.checked_in_at).toBeTruthy();
     expect(row?.status).toBe('accepted');
     expect(row?.rsvp_at).toBe('2026-06-02T00:00:00Z');
   });
 
-  it('clear reverts to unmarked (checked_in_at null) without touching the RSVP', async () => {
+  it('clear reverts to unmarked (attendance_status null) without touching the RSVP', async () => {
     const tables = baseTables();
     tables.golf_event_attendance.push({
       id: 'att-1',
@@ -237,6 +285,7 @@ describe('markAttendance RSVP preservation', () => {
       player_id: 'player-1',
       status: 'tentative',
       rsvp_at: '2026-06-02T00:00:00Z',
+      attendance_status: 'late',
       checked_in: true,
       checked_in_at: '2026-06-10T13:55:00Z',
       notes: null,
@@ -247,6 +296,7 @@ describe('markAttendance RSVP preservation', () => {
     expect(result.success).toBe(true);
 
     const row = tables.golf_event_attendance.find((r) => r.id === 'att-1');
+    expect(row?.attendance_status).toBeNull();
     expect(row?.checked_in).toBe(false);
     expect(row?.checked_in_at).toBeNull();
     expect(row?.status).toBe('tentative');
@@ -352,6 +402,8 @@ describe('bulkCheckIn', () => {
 
     const att1 = tables.golf_event_attendance.find((r) => r.id === 'att-1');
     const att2 = tables.golf_event_attendance.find((r) => r.id === 'att-2');
+    expect(att1?.attendance_status).toBe('present');
+    expect(att2?.attendance_status).toBe('present');
     expect(att1?.checked_in).toBe(true);
     expect(att2?.checked_in).toBe(true);
     expect(att1?.status).toBe('declined');
@@ -370,8 +422,10 @@ describe('bulkCheckIn', () => {
 // getAttendanceReport — viewer scoping (finding #30: notes)
 // ===========================================================================
 
-function seedReportRows(tables: Record<string, Row[]>) {
+function seedReportRows(tables: SeedTables) {
   tables.golf_event_attendance.push(
+    // Legacy pre-migration row: no attendance_status column value — the
+    // checked_in convention must still read as 'present' (backfill parity).
     {
       id: 'att-1',
       event_id: 'event-1',
@@ -389,6 +443,7 @@ function seedReportRows(tables: Record<string, Row[]>) {
       player_id: 'player-2',
       status: 'pending',
       rsvp_at: null,
+      attendance_status: null,
       checked_in: false,
       checked_in_at: null,
       notes: 'coach-only context',
@@ -410,6 +465,22 @@ describe('getAttendanceReport', () => {
     const notes = result.data?.attendance.map((r) => r.notes);
     expect(notes).toContain('left early for class');
     expect(notes).toContain('coach-only context');
+  });
+
+  it('normalizes legacy rows: attendance_status derived from the checked_in convention', async () => {
+    const tables = baseTables();
+    seedReportRows(tables);
+    asCoach(tables);
+
+    const result = await getAttendanceReport('event-1');
+    expect(result.success).toBe(true);
+
+    const legacy = result.data?.attendance.find((r) => r.player_id === 'player-1');
+    const unmarked = result.data?.attendance.find((r) => r.player_id === 'player-2');
+    // Pre-migration checked_in=true row reads as present (matches the
+    // migration's backfill: checked_in → 'present').
+    expect(legacy?.attendance_status).toBe('present');
+    expect(unmarked?.attendance_status).toBeNull();
   });
 
   it("strips other players' notes for a player caller but keeps their own", async () => {
@@ -455,7 +526,8 @@ describe('getAttendanceReport', () => {
 describe('getPlayerAttendanceStats', () => {
   it('paginates past the PostgREST 1000-row cap', async () => {
     const tables = baseTables();
-    // 1500 rows for player-1: 900 attended, 400 explicit no-shows, 200 unmarked.
+    // 1500 LEGACY rows (no attendance_status — pre-migration convention) for
+    // player-1: 900 attended, 400 explicit no-shows, 200 unmarked.
     for (let i = 0; i < 1500; i += 1) {
       const id = `att-${String(i).padStart(5, '0')}`;
       if (i < 900) {
@@ -484,14 +556,52 @@ describe('getPlayerAttendanceStats', () => {
     // The fetch actually paged (page 1: 0-999, page 2: 1000-1999) …
     expect(rangeCalls).toEqual([[0, 999], [1000, 1999]]);
 
-    // … and every row past the cap was counted.
+    // … and every row past the cap was counted (legacy convention honored:
+    // checked_in → attended, explicit stamp without check-in → no-show).
     const player = result.data?.players.find((p) => p.player_id === 'player-1');
     expect(player?.invited).toBe(1500);
     expect(player?.attended).toBe(900);
+    expect(player?.late).toBe(0);
     expect(player?.no_shows).toBe(400);
     expect(player?.unmarked).toBe(200);
     // 900 / (900 + 400) = 69.2%
     expect(player?.attendance_pct).toBe(69.2);
+  });
+
+  it('counts late as attended for the percentage but exposes it separately', async () => {
+    const tables = baseTables();
+    tables.golf_event_attendance.push(
+      // player-1: 2 present + 1 late + 1 no-show, all first-class marks.
+      { id: 'a1-p1', event_id: 'e-1', player_id: 'player-1', attendance_status: 'present', checked_in: true, checked_in_at: '2026-06-01T00:00:00Z' },
+      { id: 'a1-p2', event_id: 'e-2', player_id: 'player-1', attendance_status: 'present', checked_in: true, checked_in_at: '2026-06-02T00:00:00Z' },
+      { id: 'a1-l1', event_id: 'e-3', player_id: 'player-1', attendance_status: 'late', checked_in: true, checked_in_at: '2026-06-03T00:00:00Z' },
+      { id: 'a1-n1', event_id: 'e-4', player_id: 'player-1', attendance_status: 'no_show', checked_in: false, checked_in_at: '2026-06-04T00:00:00Z' },
+      // player-2: one legacy backfill-convention attended row (no
+      // attendance_status), mixed in to prove both shapes aggregate together.
+      { id: 'a2-p1', event_id: 'e-1', player_id: 'player-2', checked_in: true, checked_in_at: '2026-06-01T00:00:00Z' },
+      { id: 'a2-l1', event_id: 'e-2', player_id: 'player-2', attendance_status: 'late', checked_in: true, checked_in_at: '2026-06-02T00:00:00Z' },
+    );
+    asCoach(tables);
+
+    const result = await getPlayerAttendanceStats();
+    expect(result.success).toBe(true);
+
+    const p1 = result.data?.players.find((p) => p.player_id === 'player-1');
+    // Late counts as attended: 3 / (3 + 1) = 75% — but stays visible.
+    expect(p1?.attended).toBe(3);
+    expect(p1?.late).toBe(1);
+    expect(p1?.no_shows).toBe(1);
+    expect(p1?.attendance_pct).toBe(75);
+
+    const p2 = result.data?.players.find((p) => p.player_id === 'player-2');
+    expect(p2?.attended).toBe(2);
+    expect(p2?.late).toBe(1);
+    expect(p2?.attendance_pct).toBe(100);
+
+    // Overall stays weighted sum/sum: 5 attended / 6 recorded = 83.3%.
+    expect(result.data?.overall.attended).toBe(5);
+    expect(result.data?.overall.late).toBe(2);
+    expect(result.data?.overall.attendance_pct).toBe(83.3);
   });
 
   it('weights the overall percentage sum/sum, not mean-of-percentages', async () => {

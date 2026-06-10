@@ -252,10 +252,19 @@ export async function notifyEventUpdate(
 
   if (userIds.length === 0) return;
 
+  // Idempotency key is CONTENT-BEARING (audit finding #18). The unique index
+  // is (event_id, user_id, notification_type); a constant 'event_updated'
+  // type with ignoreDuplicates meant the FIRST update notification blocked
+  // every later one — a 2nd+ reschedule never notified and the surviving row
+  // showed the superseded time. Folding the event's CURRENT timing into the
+  // type means each distinct reschedule inserts exactly one fresh row
+  // (repeat saves of the same time still dedupe) with no delete-then-reinsert.
+  const timingKey = `${event.start_time ?? 'tbd'}|${event.end_time ?? ''}`;
+
   const notifications = userIds.map(userId => ({
     user_id: userId,
     event_id: eventId,
-    notification_type: 'event_updated',
+    notification_type: `event_updated:${timingKey}`,
     title: `Event updated: ${event.title}`,
     message: changes || `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
     action_url: `/golf/dashboard/calendar?event=${eventId}`,
@@ -277,26 +286,57 @@ export async function notifyEventUpdate(
 // RSVP RESPONSES
 // ============================================================================
 
-export class RSVPDeadlinePassedError extends Error {
+/** Why an RSVP write was rejected — renderable by the UI. */
+export type RSVPLockCode = 'deadline_passed' | 'event_started' | 'event_cancelled';
+
+/**
+ * Thrown when an RSVP change is locked (audit finding #16: there was no lock
+ * after event start — a no-show could flip to "accepted" post-hoc).
+ */
+export class RSVPLockedError extends Error {
+  constructor(public code: RSVPLockCode, message: string) {
+    super(message);
+    this.name = 'RSVPLockedError';
+  }
+}
+
+export class RSVPDeadlinePassedError extends RSVPLockedError {
   constructor(public deadline: string) {
-    super('RSVP deadline has passed');
+    super('deadline_passed', 'RSVP deadline has passed');
     this.name = 'RSVPDeadlinePassedError';
   }
 }
 
+export interface UpdateRSVPOptions {
+  /**
+   * Coaches correcting attendance records may bypass the deadline /
+   * post-start / cancelled locks. Player self-RSVP paths must never set this;
+   * callers are responsible for verifying the caller actually coaches the
+   * event's team before passing it.
+   */
+  coachOverride?: boolean;
+}
+
 /**
- * Update a player's RSVP status. Throws RSVPDeadlinePassedError if the
- * event's rsvp_deadline is in the past — server-side enforcement so a
- * stale client tab can't slip a late RSVP in.
+ * Update a player's RSVP status.
+ *
+ * Locks (all skipped under options.coachOverride):
+ * - RSVPDeadlinePassedError when rsvp_deadline has passed
+ * - RSVPLockedError('event_started') once the event has started (all-day
+ *   events lock 24h after their stored UTC-midnight start)
+ * - RSVPLockedError('event_cancelled') for soft-cancelled events
+ *
+ * Server-side enforcement so a stale client tab can't slip a late RSVP in.
  */
 export async function updateRSVP(
   eventId: string,
   playerId: string,
   status: RSVPStatus,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  options: UpdateRSVPOptions = {}
 ): Promise<void> {
-  // Fetch event up front: we need it for both deadline enforcement and
-  // creator notification, so paying the round-trip once keeps things cheap.
+  // Fetch event up front: we need it for lock enforcement and creator
+  // notification, so paying the round-trip once keeps things cheap.
   const { data: eventData } = await supabase
     .from('golf_events')
     .select(`
@@ -307,8 +347,30 @@ export async function updateRSVP(
     .single();
   const event = eventData as EventWithCreator | null;
 
-  if (event?.rsvp_deadline && new Date(event.rsvp_deadline).getTime() < Date.now()) {
-    throw new RSVPDeadlinePassedError(event.rsvp_deadline);
+  // Previously a missing/RLS-invisible event silently skipped enforcement and
+  // upserted anyway. Locks can't be enforced against a row we can't see.
+  if (!event) {
+    throw new Error('Event not found');
+  }
+
+  if (!options.coachOverride) {
+    if (event.status === 'cancelled') {
+      throw new RSVPLockedError('event_cancelled', 'This event has been cancelled');
+    }
+
+    // Lock after the event starts. All-day events store start_time as
+    // UTC midnight, so they get a 24h grace window covering the whole day.
+    const startMs = event.start_time ? new Date(event.start_time).getTime() : null;
+    if (startMs !== null && Number.isFinite(startMs)) {
+      const lockMs = event.all_day ? startMs + 24 * 60 * 60 * 1000 : startMs;
+      if (lockMs <= Date.now()) {
+        throw new RSVPLockedError('event_started', 'This event has already started');
+      }
+    }
+
+    if (event.rsvp_deadline && new Date(event.rsvp_deadline).getTime() < Date.now()) {
+      throw new RSVPDeadlinePassedError(event.rsvp_deadline);
+    }
   }
 
   // 2026-05-17: closes audit Finding 4. Previously this upsert discarded
@@ -376,15 +438,18 @@ export async function getPlayerPendingInvitations(
   playerId: string,
   supabase: SupabaseClient
 ): Promise<EventInvitation[]> {
+  // !inner + status filter: soft-cancelled events keep their RSVP rows
+  // (audit finding #19) but must not resurface as actionable invitations.
   const { data: attendances } = await supabase
     .from('golf_event_attendance')
     .select(`
       status,
       rsvp_at,
-      event:golf_events(*)
+      event:golf_events!inner(*)
     `)
     .eq('player_id', playerId)
     .eq('status', 'pending')
+    .neq('event.status', 'cancelled')
     .order('event(start_time)', { ascending: true });
 
   if (!attendances) return [];

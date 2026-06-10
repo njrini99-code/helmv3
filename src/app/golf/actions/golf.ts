@@ -406,6 +406,43 @@ const dateString = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3
 const timeString = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'Time must be HH:MM');
 const golfEventType = z.enum(['practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other', 'class']);
 
+/**
+ * End must not precede start (audit finding #17 — 3 inverted rows reached
+ * prod and exported inverted DTEND to external calendars). The DB CHECK
+ * golf_events_end_after_start is live as the backstop; this refine produces a
+ * friendly message first. Wall-time string comparison is valid because both
+ * sides carry the same timezone offset.
+ */
+function refineEventEndAfterStart(
+  d: { startDate?: string; endDate?: string; startTime?: string; endTime?: string; allDay?: boolean },
+  ctx: z.RefinementCtx
+): void {
+  if (!d.startDate) return;
+  // A strictly earlier end DATE is inverted under every all-day/timed
+  // convention (create defaults allDay→true, update defaults timed — only
+  // flag what is wrong in both).
+  if (d.endDate && d.endDate < d.startDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'End date must be on or after the start date',
+      path: ['endDate'],
+    });
+    return;
+  }
+  // Explicitly timed with both times on the same effective dates.
+  if (d.allDay === false && d.startTime && d.endTime) {
+    const start = `${d.startDate}T${d.startTime}`;
+    const end = `${d.endDate || d.startDate}T${d.endTime}`;
+    if (end < start) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'End time must be after the start time',
+        path: ['endTime'],
+      });
+    }
+  }
+}
+
 const golfEventSchema = z.object({
   title: z.string().min(1).max(200),
   eventType: golfEventType,
@@ -425,7 +462,7 @@ const golfEventSchema = z.object({
   attendeeIds: z.array(z.string().uuid()).optional(),
   // Timezone offset from client (minutes from UTC, e.g. 360 for UTC-6)
   timezoneOffset: z.number().int().optional(),
-});
+}).superRefine(refineEventEndAfterStart);
 
 const golfQualifierSchema = z
   .object({
@@ -563,9 +600,12 @@ export interface DeleteGolfEventOptions {
   reason?: string;
 }
 
-/** Machine-readable RSVP failure codes the UI can branch on. */
+/**
+ * Machine-readable RSVP failure codes the UI can branch on. The lock strings
+ * match useRSVP's RsvpLockCode union (rsvpLockMessage renders them).
+ */
 export type RSVPErrorCode =
-  | 'deadline_passed'
+  | 'rsvp_deadline_passed'
   | 'event_started'
   | 'event_cancelled'
   | 'not_team_member'
@@ -1955,6 +1995,17 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       insertData.created_by = createdBy;
     }
 
+    // Legacy UI shape: timed event with an endDate but no endTime resolves to
+    // midnight, which can precede a same-day timed start. The DB CHECK
+    // golf_events_end_after_start (live) would reject the row — store an open
+    // end instead. (Explicitly inverted endTime is rejected by zod above.)
+    if (
+      insertData.end_time &&
+      new Date(insertData.end_time).getTime() < new Date(insertData.start_time).getTime()
+    ) {
+      insertData.end_time = null;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: event, error } = await (supabase as any)
       .from('golf_events')
@@ -1963,6 +2014,10 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       .single();
 
     if (error) {
+      // 23514 = CHECK violation (golf_events_end_after_start backstop).
+      if ((error as { code?: string }).code === '23514') {
+        return { success: false, error: 'End time must be after the start time.' };
+      }
       return { success: false, error: 'Failed to create event. Please try again.' };
     }
 
@@ -2104,7 +2159,8 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: 'Invalid event data. Please check your inputs.' };
+      const firstIssue = error.issues[0]?.message;
+      return { success: false, error: firstIssue || 'Invalid event data. Please check your inputs.' };
     }
     return formatSafeErrorResponse(error);
   }
@@ -2132,7 +2188,7 @@ const golfEventUpdateSchema = z.object({
   // incomplete client list.
   removeAttendeeIds: z.array(z.string().uuid()).optional(),
   timezoneOffset: z.number().int().optional(),
-});
+}).superRefine(refineEventEndAfterStart);
 
 export async function updateGolfEvent(
   eventId: string,
@@ -2237,6 +2293,12 @@ export async function updateGolfEvent(
     const { data: updatedRows, error } = await query.select('id');
 
     if (error) {
+      // 23514 = CHECK violation (golf_events_end_after_start). Partial updates
+      // can invert against the UNCHANGED half of the range (e.g. moving the
+      // start past the existing end) — the DB constraint is the arbiter.
+      if ((error as { code?: string }).code === '23514') {
+        return { success: false, error: 'End time must be after the start time. Adjust the event end as well.' };
+      }
       return { success: false, error: 'Failed to update event' };
     }
 
@@ -2279,11 +2341,20 @@ export async function updateGolfEvent(
     }
 
     if (removeIds.length > 0) {
-      await supabase
+      const { error: removeError } = await supabase
         .from('golf_event_attendance')
         .delete()
         .eq('event_id', eventId)
         .in('player_id', removeIds);
+
+      if (removeError) {
+        await logServerError(`updateGolfEvent attendee removal failed: ${removeError.message}`, {
+          action: 'updateGolfEvent.removeAttendees',
+          featureArea: 'events',
+          extra: { eventId, removeIds },
+        });
+        return { success: false, error: 'Event updated, but removing attendees failed. Please retry.' };
+      }
     }
 
     // Notify team players about event update. Time / location / title /
@@ -2313,7 +2384,8 @@ export async function updateGolfEvent(
 
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return { success: false, error: 'Invalid input data' };
+      const firstIssue = err.issues[0]?.message;
+      return { success: false, error: firstIssue || 'Invalid input data' };
     }
     return { success: false, error: 'An unexpected error occurred' };
   }
@@ -2962,10 +3034,23 @@ export async function updatePlayerStatus(
 /**
  * Player responds to an event invitation
  */
+/**
+ * Player self-RSVP.
+ *
+ * 2026-06-10 (audit findings #8, #16):
+ * - Authz is team membership, not a pre-seeded invite: any ACTIVE member of
+ *   the event's team may RSVP. The write is an upsert on
+ *   (event_id, player_id) — the golf_event_attendance_insert_self RLS policy
+ *   (live) lets a player INSERT their own row, so whole-team events no longer
+ *   hard-error for players the coach didn't pre-pick.
+ * - Locks: RSVPs are rejected after the event starts and after rsvp_deadline
+ *   (enforced inside updateRSVP). Failures carry a machine-readable `code`
+ *   the UI can branch on.
+ */
 export async function respondToEvent(
   eventId: string,
   status: 'pending' | 'accepted' | 'declined' | 'tentative'
-): Promise<ActionResult> {
+): Promise<RespondToEventResult> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -2985,13 +3070,52 @@ export async function respondToEvent(
       return { success: false, error: 'Player profile not found' };
     }
 
-    const { updateRSVP, RSVPDeadlinePassedError } = await import('@/lib/calendar/rsvp');
+    // Authorize: the event must be visible and the caller must be an ACTIVE
+    // member of its team. The RLS INSERT policy enforces the same rule at the
+    // DB — this check exists to return a typed, renderable error instead of a
+    // generic write failure.
+    const { data: event } = await supabase
+      .from('golf_events')
+      .select('id, team_id')
+      .eq('id', eventId)
+      .maybeSingle();
+
+    if (!event) {
+      return { success: false, error: 'Event not found' };
+    }
+
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('team_id', event.team_id)
+      .eq('player_id', player.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (!membership) {
+      return {
+        success: false,
+        error: "Only active members of this event's team can RSVP.",
+        code: 'not_team_member',
+      };
+    }
+
+    const { updateRSVP, RSVPDeadlinePassedError, RSVPLockedError } = await import('@/lib/calendar/rsvp');
     const { WriteIntegrityError } = await import('@/lib/calendar/write-integrity');
     try {
       await updateRSVP(eventId, player.id, status, supabase);
     } catch (err) {
       if (err instanceof RSVPDeadlinePassedError) {
-        return { success: false, error: 'RSVP deadline has passed for this event.' };
+        return { success: false, error: 'RSVP deadline has passed for this event.', code: 'rsvp_deadline_passed' };
+      }
+      if (err instanceof RSVPLockedError) {
+        const message = err.code === 'event_cancelled'
+          ? 'This event has been cancelled — RSVPs are closed.'
+          : 'This event has already started — RSVPs are locked.';
+        // Lib code 'deadline_passed' is unreachable here (caught above) but
+        // map it anyway so the union stays exhaustive.
+        const code: RSVPErrorCode = err.code === 'deadline_passed' ? 'rsvp_deadline_passed' : err.code;
+        return { success: false, error: message, code };
       }
       // 2026-05-17: closes audit Finding 4 + Q-NEW-14. Previously this
       // catch was bare (`catch {}`) — every error returned the same
@@ -3008,6 +3132,7 @@ export async function respondToEvent(
         return {
           success: false,
           error: 'Could not record your RSVP. Please try again or contact your coach.',
+          code: 'write_failed',
         };
       }
       throw err;
@@ -3024,7 +3149,7 @@ export async function respondToEvent(
       featureArea: 'calendar',
       extra: { stack: err instanceof Error ? err.stack : undefined },
     }, 'warning');
-    return { success: false, error: 'Failed to update RSVP' };
+    return { success: false, error: 'Failed to update RSVP', code: 'write_failed' };
   }
 }
 
@@ -3167,15 +3292,21 @@ export async function checkScheduleConflicts(
   endDate: string,
   endTime: string,
   attendeeIds: string[],
-  excludeEventId?: string
+  excludeEventId?: string,
+  /** Client timezone offset (Date.getTimezoneOffset() minutes). When provided,
+   * the proposed window is anchored to the coach's wall clock instead of the
+   * server's (audit finding #7 — server-TZ parse made the comparison window
+   * drift against UTC-stored timed events). Omitted → UTC, which matches the
+   * previous prod behavior deterministically. */
+  timezoneOffset?: number
 ): Promise<ActionResult<ConflictResult>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Unauthorized');
 
-    const start = new Date(`${startDate}T${startTime}`);
-    const end = new Date(`${endDate}T${endTime}`);
+    const start = new Date(buildDateTimeString(startDate, startTime, timezoneOffset));
+    const end = new Date(buildDateTimeString(endDate, endTime, timezoneOffset));
 
     const { checkEventConflicts } = await import('@/lib/calendar/conflicts');
     const result = await checkEventConflicts(
@@ -3208,7 +3339,11 @@ export async function checkScheduleConflicts(
 export async function getPlayerAvailability(
   memberId: string,
   startDate: string, // YYYY-MM-DD
-  endDate: string // YYYY-MM-DD
+  endDate: string, // YYYY-MM-DD
+  /** Client timezone offset (Date.getTimezoneOffset() minutes). Anchors the
+   * day window to the viewer's local day; omitted → UTC day (deterministic,
+   * matches previous prod behavior). */
+  timezoneOffset?: number
 ): Promise<ActionResult<SerializedBusyPeriod[]>> {
   try {
     const supabase = await createClient();
@@ -3308,8 +3443,10 @@ export async function getPlayerAvailability(
       return { success: false, error: 'Not authorized to view this schedule' };
     }
 
-    const dayStart = new Date(`${startDate}T00:00:00`);
-    const dayEnd = new Date(`${endDate}T23:59:59`);
+    // Deterministic window bounds — the old bare `new Date('...T00:00:00')`
+    // parsed in the SERVER's timezone (audit finding #7).
+    const dayStart = new Date(buildDateTimeString(startDate, '00:00:00', timezoneOffset));
+    const dayEnd = new Date(buildDateTimeString(endDate, '23:59:59', timezoneOffset));
 
     const { getUserBusyPeriods } = await import('@/lib/calendar/availability');
     const busyPeriods = await getUserBusyPeriods(
@@ -3341,7 +3478,10 @@ export async function getPlayerAvailability(
  */
 export async function getCurrentUserBusyPeriods(
   startDate: string, // YYYY-MM-DD
-  endDate: string // YYYY-MM-DD
+  endDate: string, // YYYY-MM-DD
+  /** Client timezone offset (Date.getTimezoneOffset() minutes) — see
+   * getPlayerAvailability. */
+  timezoneOffset?: number
 ): Promise<ActionResult<SerializedBusyPeriod[]>> {
   try {
     const supabase = await createClient();
@@ -3351,8 +3491,8 @@ export async function getCurrentUserBusyPeriods(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const dayStart = new Date(`${startDate}T00:00:00`);
-    const dayEnd = new Date(`${endDate}T23:59:59`);
+    const dayStart = new Date(buildDateTimeString(startDate, '00:00:00', timezoneOffset));
+    const dayEnd = new Date(buildDateTimeString(endDate, '23:59:59', timezoneOffset));
 
     const { getUserBusyPeriods } = await import('@/lib/calendar/availability');
     const busyPeriods = await getUserBusyPeriods(

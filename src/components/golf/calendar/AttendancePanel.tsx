@@ -11,11 +11,12 @@
  *
  * Player view: read-only card showing the player's own recorded status.
  *
- * Persistence note: golf_event_attendance has no column for a first-class
- * "late" state yet (see the MIGRATION NOTE in actions/attendance.ts), so a
- * Late mark is stored as checked-in; the late distinction survives only
- * within the live session. The tally counts Late players as present —
- * a late player IS present.
+ * Persistence: marks live in golf_event_attendance.attendance_status
+ * (migration 20260610080000; dual-axis with `status`, the RSVP column), so
+ * Present / Late / No-show all survive reload. getAttendanceReport
+ * normalizes legacy pre-migration rows server-side, making attendance_status
+ * authoritative here. The tally counts Late players as present — a late
+ * player IS present.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -49,6 +50,8 @@ interface RosterRow {
   mark: AttendanceMark | null;
 }
 
+const PENDING_BADGE = { label: 'No reply', className: 'bg-warm-100 text-warm-600 ring-warm-200' };
+
 const RSVP_BADGES: Record<string, { label: string; className: string }> = {
   accepted: { label: 'Going', className: 'bg-primary-50 text-primary-700 ring-primary-100' },
   attending: { label: 'Going', className: 'bg-primary-50 text-primary-700 ring-primary-100' },
@@ -58,7 +61,7 @@ const RSVP_BADGES: Record<string, { label: string; className: string }> = {
   maybe: { label: 'Maybe', className: 'bg-amber-50 text-amber-700 ring-amber-100' },
   excused: { label: 'Excused', className: 'bg-warm-100 text-warm-600 ring-warm-200' },
   unexcused: { label: 'Unexcused', className: 'bg-rose-50 text-rose-700 ring-rose-100' },
-  pending: { label: 'No reply', className: 'bg-warm-100 text-warm-600 ring-warm-200' },
+  pending: PENDING_BADGE,
 };
 
 const MARK_OPTIONS: Array<{ value: AttendanceMark; label: string; activeClassName: string }> = [
@@ -76,9 +79,9 @@ function rowName(record: AttendanceRecord): string {
 }
 
 function markFromRecord(record: AttendanceRecord): AttendanceMark | null {
-  if (record.checked_in === true) return 'present';
-  if (record.checked_in_at) return 'no_show';
-  return null;
+  // attendance_status is the first-class mark, already normalized for legacy
+  // rows by getAttendanceReport — Late survives reload.
+  return record.attendance_status;
 }
 
 // ----------------------------------------------------------------------------
@@ -270,10 +273,10 @@ interface AttendanceRowProps {
 }
 
 function AttendanceRow({ row, pending, onMark }: AttendanceRowProps) {
-  const badge = RSVP_BADGES[row.rsvp ?? 'pending'] ?? RSVP_BADGES.pending;
+  const badge = RSVP_BADGES[row.rsvp ?? 'pending'] ?? PENDING_BADGE;
 
   return (
-    <li className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/70 backdrop-blur-xl ring-1 ring-warm-200/60">
+    <li className="flex items-center gap-2.5 px-3 py-2 rounded-xl glass-standard ring-1 ring-warm-200/60">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-warm-900 truncate">
           {row.name}
@@ -283,7 +286,7 @@ function AttendanceRow({ row, pending, onMark }: AttendanceRowProps) {
         </p>
         <span
           className={cn(
-            'inline-block mt-0.5 px-1.5 py-px rounded-full text-[10px] font-medium ring-1',
+            'inline-block mt-0.5 px-1.5 py-px rounded-full text-eyebrow ring-1',
             badge.className,
           )}
         >
@@ -306,12 +309,12 @@ function AttendanceRow({ row, pending, onMark }: AttendanceRowProps) {
               disabled={pending}
               onClick={() => onMark(row.playerId, option.value)}
               className={cn(
-                'px-2 py-1 rounded-full text-[11px] font-medium ring-1 transition-colors',
+                'px-2 py-1 rounded-full text-eyebrow ring-1 transition-colors',
                 'disabled:cursor-not-allowed',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                 active
                   ? option.activeClassName
-                  : 'bg-white/70 text-warm-600 ring-warm-200 hover:bg-warm-50',
+                  : 'bg-cream-50 text-warm-600 ring-warm-200 hover:bg-warm-50',
               )}
             >
               {option.label}

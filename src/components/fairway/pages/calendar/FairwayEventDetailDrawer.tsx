@@ -21,13 +21,26 @@
  * ========================================================================== */
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import { format } from 'date-fns';
-import { Check, X, MapPin, Clock, ExternalLink, Pencil } from 'lucide-react';
+import { Check, X, MapPin, Clock, ExternalLink, Pencil, Lock, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, Inset, Readout, Button, StatusPill } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import type { RSVPStatus } from '@/hooks/useRSVP';
+import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
+import { rsvpLockMessage } from '@/hooks/useRSVP';
+
+// Coach-only roll-call panel — code-split so players never download it.
+const AttendancePanel = dynamic(
+  () =>
+    import('@/components/golf/calendar/AttendancePanel').then((m) => m.AttendancePanel),
+  {
+    loading: () => (
+      <div className="h-24 animate-pulse rounded-fw-md bg-surface-sunken" aria-hidden />
+    ),
+  },
+);
 
 const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
   practice: { label: 'Practice', tone: 'accent' },
@@ -69,10 +82,18 @@ export interface FairwayEventDetailDrawerProps {
     total: number;
   } | null;
   /** Player RSVP submit (the EXISTING respondToEvent action, via the parent). */
-  onRespond?: (eventId: string, status: RSVPStatus) => Promise<{ success: boolean; error?: string }>;
+  onRespond?: (eventId: string, status: RSVPStatus) => Promise<RsvpRespondResult>;
   /** Coach view: opens the Fairway create/edit editor for this event. */
   onEdit?: (event: CalendarEvent) => void;
 }
+
+/** Player-facing copy for the current response in locked states. */
+const RSVP_STATUS_LABEL: Record<RSVPStatus, string> = {
+  accepted: 'Going',
+  tentative: 'Maybe',
+  declined: 'Declined',
+  pending: 'No response',
+};
 
 function mapsHref(location: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
@@ -117,6 +138,28 @@ export function FairwayEventDetailDrawer({
     ? TYPE_META[(event.event_type || 'other').toLowerCase()] ?? META_FALLBACK
     : META_FALLBACK;
 
+  // ── RSVP gating (audit finding #16) ────────────────────────────────────────
+  // The drawer previously rendered live RSVP buttons on past events, non-RSVP
+  // events, and after the deadline. Recomputed per open so the snapshot is
+  // fresh (the drawer only renders post-interaction — no hydration concern).
+  const nowMs = Date.now();
+  const isCancelled = event?.status === 'cancelled';
+  const requiresRsvp = event?.requires_rsvp === true;
+  const startMs = event ? new Date(event.start_time || event.start_date).getTime() : NaN;
+  const hasStarted = Number.isFinite(startMs) && startMs <= nowMs;
+  const deadlineMs = event?.rsvp_deadline ? new Date(event.rsvp_deadline).getTime() : null;
+  const deadlinePassed = deadlineMs !== null && deadlineMs < nowMs;
+  const rsvpLocked = hasStarted || deadlinePassed || isCancelled;
+  const lockReason = isCancelled
+    ? 'This event has been cancelled.'
+    : hasStarted
+      ? 'RSVPs are locked — this event has already started.'
+      : 'RSVPs are locked — the deadline has passed.';
+  // Deadline rendered in the VIEWER's local timezone (new Date parses the
+  // stored timestamptz; format() prints local wall-time).
+  const deadlineLabel =
+    deadlineMs !== null ? format(new Date(deadlineMs), "EEE, MMM d 'at' h:mm a") : null;
+
   const handleRespond = async (status: RSVPStatus) => {
     if (!onRespond || !event) return;
     setPendingStatus(status);
@@ -124,7 +167,9 @@ export function FairwayEventDetailDrawer({
     const result = await onRespond(event.id, status);
     setPendingStatus(null);
     if (!result.success) {
-      setError(result.error ?? 'Could not save your response.');
+      // Typed lock codes get specific copy; anything else falls back to the
+      // server's error string.
+      setError(rsvpLockMessage(result.code, result.error ?? 'Could not save your response.'));
       return;
     }
     // Soft close — let the user register the new state for a beat.
@@ -142,12 +187,26 @@ export function FairwayEventDetailDrawer({
     >
       {event ? (
         <Sheet.Body className="flex flex-col gap-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          {/* Header — type pill + title + date/time line. */}
+          {/* Header — type pill (+ cancelled badge) + title + date/time line.
+              Cancelled events render DISTINCTLY (badge + strike) instead of
+              disappearing — soft-cancel lifecycle. */}
           <div className="flex flex-col gap-2">
-            <StatusPill tone={meta.tone} size="sm" dot={false}>
-              {meta.label}
-            </StatusPill>
-            <h2 className="font-fw-display text-h2 font-medium tracking-[-0.005em] text-text-primary">
+            <div className="flex items-center gap-2">
+              <StatusPill tone={meta.tone} size="sm" dot={false}>
+                {meta.label}
+              </StatusPill>
+              {isCancelled ? (
+                <StatusPill tone="danger" size="sm" dot={false}>
+                  Cancelled
+                </StatusPill>
+              ) : null}
+            </div>
+            <h2
+              className={cn(
+                'font-fw-display text-h2 font-medium tracking-[-0.005em] text-text-primary',
+                isCancelled && 'text-text-tertiary line-through decoration-2',
+              )}
+            >
               {event.title}
             </h2>
             <p className="flex items-center gap-1.5 font-fw-sans text-body-sm text-text-tertiary">
@@ -213,6 +272,12 @@ export function FairwayEventDetailDrawer({
             </div>
           ) : null}
 
+          {/* Coach roll-call — full invitee roster with RSVP + check-in marks.
+              (AttendancePanel contract: { eventId, teamId, canManage }.) */}
+          {isCoach && event.team_id ? (
+            <AttendancePanel eventId={event.id} teamId={event.team_id} canManage />
+          ) : null}
+
           {/* Coach: edit this event in the native Fairway editor. */}
           {isCoach && onEdit && event ? (
             <Button
@@ -226,36 +291,58 @@ export function FairwayEventDetailDrawer({
             </Button>
           ) : null}
 
-          {/* Player RSVP — 3 Fairway Buttons wired to the existing respondToEvent. */}
-          {!isCoach && onRespond ? (
-            <div>
-              <p className="mb-2.5 font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
-                Your response
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {RSVP_OPTIONS.map((opt) => {
-                  const isSelected = rsvpStatus === opt.value;
-                  return (
-                    <Button
-                      key={opt.value}
-                      variant={isSelected ? opt.variant : 'secondary'}
-                      size="md"
-                      fullWidth
-                      busy={pendingStatus === opt.value}
-                      disabled={pendingStatus !== null}
-                      aria-pressed={isSelected}
-                      leftIcon={opt.icon}
-                      onClick={() => handleRespond(opt.value)}
-                    >
-                      {opt.label}
-                    </Button>
-                  );
-                })}
+          {/* Player RSVP — 3 Fairway Buttons wired to the existing respondToEvent.
+              GATED: hidden for non-RSVP events; LOCKED (read-only) for past /
+              post-deadline / cancelled events (audit finding #16). */}
+          {!isCoach && onRespond && requiresRsvp ? (
+            rsvpLocked ? (
+              <div className="rounded-fw-md bg-surface-sunken px-4 py-3">
+                <p className="flex items-center gap-2 font-fw-sans text-body-sm font-medium text-text-secondary">
+                  <Lock className="h-3.5 w-3.5 flex-shrink-0 text-text-tertiary" aria-hidden />
+                  {lockReason}
+                </p>
+                <p className="mt-1.5 font-fw-sans text-caption text-text-tertiary">
+                  Your response: {rsvpStatus ? RSVP_STATUS_LABEL[rsvpStatus] : '—'}
+                </p>
               </div>
-              {error ? (
-                <p className="mt-2.5 font-fw-sans text-caption text-fw-danger">{error}</p>
-              ) : null}
-            </div>
+            ) : (
+              <div>
+                <p className="mb-2.5 font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
+                  Your response
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {RSVP_OPTIONS.map((opt) => {
+                    const isSelected = rsvpStatus === opt.value;
+                    return (
+                      <Button
+                        key={opt.value}
+                        variant={isSelected ? opt.variant : 'secondary'}
+                        size="md"
+                        fullWidth
+                        busy={pendingStatus === opt.value}
+                        disabled={pendingStatus !== null}
+                        aria-pressed={isSelected}
+                        leftIcon={opt.icon}
+                        onClick={() => handleRespond(opt.value)}
+                      >
+                        {opt.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+                {deadlineLabel ? (
+                  <p className="mt-2.5 flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
+                    <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+                    <span suppressHydrationWarning>Respond by {deadlineLabel}</span>
+                  </p>
+                ) : null}
+                {error ? (
+                  <p className="mt-2.5 font-fw-sans text-caption text-fw-danger" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+              </div>
+            )
           ) : null}
         </Sheet.Body>
       ) : null}
