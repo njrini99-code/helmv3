@@ -7502,6 +7502,8 @@ export type Database = {
           pga_tour_value: number | null
           season: string
           source: string | null
+          /** Tour discriminator: 'pga' = PGA Tour values; 'lpga' = LPGA Tour values. */
+          tour: string
           updated_at: string
         }
         Insert: {
@@ -7518,6 +7520,8 @@ export type Database = {
           pga_tour_value?: number | null
           season: string
           source?: string | null
+          /** Tour discriminator: 'pga' (default) or 'lpga'. */
+          tour?: string
           updated_at?: string
         }
         Update: {
@@ -7534,6 +7538,8 @@ export type Database = {
           pga_tour_value?: number | null
           season?: string
           source?: string | null
+          /** Tour discriminator: 'pga' (default) or 'lpga'. */
+          tour?: string
           updated_at?: string
         }
         Relationships: [
