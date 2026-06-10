@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTodayRangeForTz } from '@/lib/utils/timezone';
 
 // ============================================================================
@@ -350,33 +351,52 @@ export async function getCoachDashboardData(
     const teamPulse: TeamPulseData = { improving: 0, stable: 0, declining: 0, roundsThisWeek: 0 };
 
     if (playerIds.length > 0) {
-        // Build recent rounds query with optional date filter
-        let recentRoundsQ = supabase
-            .from('golf_rounds')
-            .select('id, player_id, course_name, total_score, score_to_par, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
-            .in('player_id', playerIds)
-            .eq('status', 'completed')
-            .not('total_score', 'is', null);
-        if (dateCutoff) recentRoundsQ = recentRoundsQ.gte('round_date', dateCutoff);
-        // 200 (not 50) so the "N rounds in window" footnote reflects the true
-        // windowed count and matches the round set the KPIs are computed over
-        // (allRounds is also capped at 200). The Recent Rounds table still renders
-        // only the first 8.
-        recentRoundsQ = recentRoundsQ.order('round_date', { ascending: false }).limit(200);
+        // Both round queries are paginated via fetchAllRowsResult so the FULL
+        // windowed round set is covered (PostgREST hard-caps a single response
+        // at 1000 rows; the previous `.limit(200)` silently truncated every KPI
+        // — team scoring avg, GIR%, putts/Rd, top players, monthly trend — for
+        // any window with >200 rounds). Pagination needs a stable total order:
+        // round_date DESC keeps the newest-first ordering the downstream
+        // consumers rely on (sparklines, split-half trends), with unique `id`
+        // as tiebreaker so page boundaries don't drift.
+        //
+        // recentRounds is paginated too (not display-only): the coach dashboard
+        // derives `roundsLogged = recentRounds.length` for the "N rounds in
+        // window" footnote and the KPI coverage gate, so its count must match
+        // the round set the KPIs are computed over. The Recent Rounds table
+        // still renders only the first 8.
+        const recentRoundsPromise = fetchAllRowsResult((from, to) => {
+            let q = supabase
+                .from('golf_rounds')
+                .select('id, player_id, course_name, total_score, score_to_par, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
+                .in('player_id', playerIds)
+                .eq('status', 'completed')
+                .not('total_score', 'is', null);
+            if (dateCutoff) q = q.gte('round_date', dateCutoff);
+            return q
+                .order('round_date', { ascending: false })
+                .order('id', { ascending: true })
+                .range(from, to);
+        });
 
-        // Build all rounds query with optional date filter + holes_played for normalization
-        let allRoundsQ = supabase
-            .from('golf_rounds')
-            .select('player_id, total_score, score_to_par, round_date, holes_played, total_putts, total_gir, total_gir_possible')
-            .in('player_id', playerIds)
-            .eq('status', 'completed')
-            .not('total_score', 'is', null);
-        if (dateCutoff) allRoundsQ = allRoundsQ.gte('round_date', dateCutoff);
-        allRoundsQ = allRoundsQ.order('round_date', { ascending: false }).limit(200);
+        // All rounds query with optional date filter + holes_played for normalization
+        const allRoundsPromise = fetchAllRowsResult((from, to) => {
+            let q = supabase
+                .from('golf_rounds')
+                .select('id, player_id, total_score, score_to_par, round_date, holes_played, total_putts, total_gir, total_gir_possible')
+                .in('player_id', playerIds)
+                .eq('status', 'completed')
+                .not('total_score', 'is', null);
+            if (dateCutoff) q = q.gte('round_date', dateCutoff);
+            return q
+                .order('round_date', { ascending: false })
+                .order('id', { ascending: true })
+                .range(from, to);
+        });
 
         const [recentRoundsResult, allRoundsResult, weekRoundsResult] = await Promise.all([
-            recentRoundsQ,
-            allRoundsQ,
+            recentRoundsPromise,
+            allRoundsPromise,
             // Rounds this week
             supabase
                 .from('golf_rounds')
@@ -529,17 +549,19 @@ export async function getCoachDashboardData(
             }
             const avgGir = girPossibleTotal > 0 ? (girMadeTotal / girPossibleTotal) * 100 : null;
 
-            // Putts/round over the full window, normalized to 18 holes (matches the
-            // team stats page; a raw mean under-reports when 9-hole rounds exist).
-            const normalizedPutts = allRounds
-                .filter((r): r is typeof r & { total_putts: number } => r.total_putts !== null)
-                .map(r => {
-                    const hp = (r as { holes_played?: number | null }).holes_played ?? 18;
-                    return hp > 0 && hp < 18 ? (r.total_putts * 18) / hp : r.total_putts;
-                });
-            const avgPutts = normalizedPutts.length > 0
-                ? normalizedPutts.reduce((a, b) => a + b, 0) / normalizedPutts.length
-                : null;
+            // Putts/round over the full window — HOLE-WEIGHTED: (sum putts ÷ sum
+            // holes played) × 18, matching the canonical cache
+            // (update_player_stats_complete), the stats page, and the team page.
+            // A mean of per-round normalized values over-weights short rounds.
+            let puttsTotal = 0;
+            let puttsHolesTotal = 0;
+            for (const r of allRounds) {
+                if (r.total_putts !== null) {
+                    puttsTotal += r.total_putts;
+                    puttsHolesTotal += (r as { holes_played?: number | null }).holes_played ?? 18;
+                }
+            }
+            const avgPutts = puttsHolesTotal > 0 ? (puttsTotal / puttsHolesTotal) * 18 : null;
 
             // Compute GIR% and Putts trends (need arrays sorted newest-first)
             const girTrendValues = allRounds.slice(0, 20)
@@ -723,7 +745,7 @@ export async function getPlayerDashboardData(
             : Promise.resolve({ data: null }),
         supabase
             .from('golf_rounds')
-            .select('id, course_name, total_score, score_to_par, round_date, holes_played, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible')
+            .select('id, course_name, total_score, score_to_par, round_date, holes_played, total_putts, total_gir, total_gir_possible')
             .eq('player_id', playerId)
             .eq('status', 'completed')
             .not('total_score', 'is', null)
@@ -732,7 +754,7 @@ export async function getPlayerDashboardData(
         supabase.from('golf_players').select('handicap').eq('id', playerId).single(),
         supabase
             .from('golf_player_stats_cache')
-            .select('sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, scrambling_percentage, birdies, rounds_played')
+            .select('sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, scrambling_percentage, birdies, rounds_played, scoring_average, best_round, gir_percentage, driving_accuracy_percentage, putts_per_round')
             .eq('player_id', playerId)
             .maybeSingle(),
         // Today's events
@@ -781,6 +803,11 @@ export async function getPlayerDashboardData(
         scrambling_percentage: number | null;
         birdies: number | null;
         rounds_played: number | null;
+        scoring_average: number | null;
+        best_round: number | null;
+        gir_percentage: number | null;
+        driving_accuracy_percentage: number | null;
+        putts_per_round: number | null;
     } | null;
 
     // Fetch player's own RSVP for today's events
@@ -811,9 +838,20 @@ export async function getPlayerDashboardData(
         }
     }
 
-    // best round / trend use 18-hole-normalized scores (matches the cache's
-    // normalized best_round). Scoring AVERAGE, however, is 18-hole-rounds-only to
-    // match the canonical cache scoring_average (update_player_stats_complete).
+    // Headline stats (rounds played / scoring avg / best round) come from
+    // golf_player_stats_cache — the canonical per-player stats source,
+    // trigger-refreshed on round submit. Computing them from the `rounds`
+    // fetch above silently capped them at the latest 50 rounds (roundsPlayed
+    // stuck at 50, scoringAverage/bestRound over a truncated set). The
+    // 50-round fetch now feeds ONLY recent-form widgets (sparklines, trend
+    // arrows, scoring trend, recent-rounds list). A null cache row (player
+    // with no completed rounds) preserves the cold-start null/zero behavior.
+    const roundsPlayed = statsCache?.rounds_played ?? 0;
+    const scoringAverage = statsCache?.scoring_average != null ? Number(statsCache.scoring_average) : null;
+    const bestRound = statsCache?.best_round != null ? Number(statsCache.best_round) : null;
+
+    // Recent trend is intentionally recent-form: 18-hole-normalized scores from
+    // the latest rounds (matches the cache's normalized best_round convention).
     const normalizedScores = rounds
         .filter(r => r.total_score != null && r.total_score > 0)
         .map(r => {
@@ -822,12 +860,6 @@ export async function getPlayerDashboardData(
             return holes < 18 ? (r.total_score! / holes) * 18 : r.total_score!;
         })
         .filter((s): s is number => s !== null);
-    const eighteenHoleScores = rounds
-        .filter(r => r.total_score != null && r.total_score > 0
-            && (((r as { holes_played?: number | null }).holes_played ?? 18) === 18))
-        .map(r => r.total_score!);
-    const scoringAverage = eighteenHoleScores.length > 0 ? eighteenHoleScores.reduce((a, b) => a + b, 0) / eighteenHoleScores.length : null;
-    const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
     const recentTrend = computeTrend(normalizedScores);
 
     // Sparklines
@@ -840,30 +872,13 @@ export async function getPlayerDashboardData(
             : null
     })));
 
-    // Current GIR% and Putts/Rd — mirror the coach-dashboard / team-page convention
-    // so the same player shows the same numbers everywhere.
-    // GIR% is a WEIGHTED aggregate (sum made / sum opportunities), not an unweighted
-    // per-round mean; this also keeps 9-hole rounds from skewing it.
-    let girMadeTotal = 0;
-    let girPossibleTotal = 0;
-    for (const r of rounds) {
-        if (r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0) {
-            girMadeTotal += r.total_gir;
-            girPossibleTotal += r.total_gir_possible;
-        }
-    }
-    const avgGir = girPossibleTotal > 0 ? (girMadeTotal / girPossibleTotal) * 100 : null;
-    // Putts/Rd normalized to 18 holes before averaging (a raw mean under-reports
-    // when 9-hole rounds exist), matching the coach dashboard and stats page.
-    const normalizedPutts = rounds
-        .filter((r): r is typeof r & { total_putts: number } => r.total_putts !== null)
-        .map(r => {
-            const hp = (r as { holes_played?: number | null }).holes_played ?? 18;
-            return hp > 0 && hp < 18 ? (r.total_putts * 18) / hp : r.total_putts;
-        });
-    const avgPutts = normalizedPutts.length > 0
-        ? normalizedPutts.reduce((a, b) => a + b, 0) / normalizedPutts.length
-        : null;
+    // Current GIR% and Putts/Rd headline values also come from the canonical
+    // stats cache so the same player shows the same numbers everywhere:
+    // gir_percentage is the weighted aggregate (sum made / sum opportunities)
+    // and putts_per_round is hole-weighted ((sum putts ÷ sum holes) × 18),
+    // both computed over ALL rounds — not the capped 50-round fetch.
+    const avgGir = statsCache?.gir_percentage != null ? Number(statsCache.gir_percentage) : null;
+    const avgPutts = statsCache?.putts_per_round != null ? Number(statsCache.putts_per_round) : null;
 
     // Per-round series (newest first) feeding the sparkline trend arrows. These
     // are intentionally per-round (not the windowed aggregate above) — the trend
@@ -878,20 +893,12 @@ export async function getPlayerDashboardData(
             return hp > 0 && hp < 18 ? (r.total_putts * 18) / hp : r.total_putts;
         });
 
-    // Secondary stats — FIR% is a WEIGHTED aggregate (sum hit / sum recorded
-    // fairway opportunities) over ALL rounds, mirroring avgGir above and the
-    // coach/team/stats pages. (Was an unweighted per-round mean capped at the
-    // last 20 rounds, which over-weighted low-opportunity rounds and could
-    // disagree with the player's own Stats page.)
-    let firHitTotal = 0;
-    let firPossibleTotal = 0;
-    for (const r of rounds) {
-        if (r.total_fairways_hit !== null && r.total_fairways && r.total_fairways > 0) {
-            firHitTotal += r.total_fairways_hit;
-            firPossibleTotal += r.total_fairways;
-        }
-    }
-    const firPct = firPossibleTotal > 0 ? Number(((firHitTotal / firPossibleTotal) * 100).toFixed(1)) : null;
+    // Secondary stats — FIR% from the cache's driving_accuracy_percentage
+    // (weighted aggregate: sum hit / sum recorded fairway opportunities over
+    // ALL rounds), mirroring avgGir above and the coach/team/stats pages.
+    const firPct = statsCache?.driving_accuracy_percentage != null
+        ? Number(Number(statsCache.driving_accuracy_percentage).toFixed(1))
+        : null;
 
     // Birdies per round — sourced from the maintained stats cache (golf_player_stats_cache
     // is trigger-refreshed on round submit). `birdies` is the season total over
@@ -950,7 +957,7 @@ export async function getPlayerDashboardData(
     return {
         todayEvents,
         stats: {
-            roundsPlayed: rounds.length,
+            roundsPlayed,
             scoringAverage: scoringAverage !== null ? Number(scoringAverage.toFixed(1)) : null,
             bestRound,
             handicap: playerHandicap,

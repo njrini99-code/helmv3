@@ -9,7 +9,7 @@ import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence'
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamStats } from '@/components/fairway/pages/coachhelm/FairwayTeamStats';
-import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
+import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { Metadata } from 'next';
@@ -131,13 +131,21 @@ export default async function TeamStatsPage() {
   const allPlayerIds = players.map(p => p.id);
 
   const [roundsResult, intelligenceResult] = await Promise.all([
-    supabase
-      .from('golf_rounds')
-      .select('id, player_id, total_score, round_date, holes_played')
-      .in('player_id', allPlayerIds)
-      .eq('status', 'completed')
-      .not('total_score', 'is', null)
-      .order('round_date', { ascending: false }),
+    // Paginated: PostgREST caps each response at 1000 rows; a full roster's
+    // season exceeds that and silently dropped the oldest rounds. Keep
+    // round_date DESC first (the trend math below expects newest-first) with
+    // id ASC as a unique tiebreak so page boundaries are stable.
+    fetchAllRowsResult((from, to) =>
+      supabase
+        .from('golf_rounds')
+        .select('id, player_id, total_score, round_date, holes_played')
+        .in('player_id', allPlayerIds)
+        .eq('status', 'completed')
+        .not('total_score', 'is', null)
+        .order('round_date', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
     getTeamStatsIntelligence(teamId),
   ]);
   const { data: allRounds } = roundsResult;
@@ -275,10 +283,11 @@ export default async function TeamStatsPage() {
         if (hole.putts !== null && hole.putts > 0) {
           totalPutts += hole.putts;
         }
-        // Birdies (score <= par - 1)
+        // Birdies (score exactly par - 1 — eagles are NOT birdies; matches
+        // the canonical cache definition of birdies_per_round)
         if (hole.score !== null) {
           totalHolesWithScore++;
-          if (hole.score <= hole.par - 1) totalBirdies++;
+          if (hole.score === hole.par - 1) totalBirdies++;
         }
       });
     });

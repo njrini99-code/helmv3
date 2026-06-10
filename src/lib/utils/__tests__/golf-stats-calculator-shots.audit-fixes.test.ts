@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { calculateStatsFromShots } from '../golf-stats-calculator-shots';
 import type { RawShot, HoleInfo } from '../golf-stats-calculator-shots';
 import {
+  makeRawShot,
   makeHoleInfo,
   makeRoundInfo,
   par4BirdieRawShots,
@@ -116,5 +117,171 @@ describe('audit fix J — girPctFromFairway excludes par-3 tee approaches', () =
     // The only GIR came from a tee shot, not a fairway approach → fairway-lie GIR
     // has no opportunities → null (was 100% when tee folded into 'fairway').
     expect(stats.girPctFromFairway).toBeNull();
+  });
+});
+
+// ============================================================================
+// 2026-06-09 stats-accuracy audit fixes (branch fix/stats-accuracy-audit-2026-06-09)
+// ============================================================================
+
+describe('2026-06-09 fix A — sg*PerRound divides by rounds WITH SG, not all rounds', () => {
+  it('a shot-untracked round does not dilute the per-round SG averages', () => {
+    // r1: full shot data (par-4 birdie) → contributes SG.
+    // r2: hole-row only (score recorded, NO shots) → contributes zero SG.
+    // DB cache divides by COUNT of rounds with strokes_gained_total IS NOT NULL
+    // → denominator must be 1, so per-round SG === total SG (to safeAverage's
+    // 2-decimal rounding). The old rounds.length denominator halved it.
+    const r1 = makeRoundInfo({ id: 'r1', holes_played: 18 });
+    const r2 = makeRoundInfo({ id: 'r2', holes_played: 18 });
+    const shots = par4BirdieRawShots(1).map(s => ({ ...s, round_id: 'r1' }));
+    const holes: HoleInfo[] = [
+      makeHoleInfo({ round_id: 'r1', hole_number: 1, par: 4 }),
+      makeHoleInfo({ round_id: 'r2', hole_number: 1, par: 4, score: 4, putts: 2, gir: true }),
+    ];
+
+    const stats = calculateStatsFromShots(shots, holes, [r1, r2]);
+
+    expect(stats.roundsPlayed).toBe(2);
+    expect(stats.strokesGainedTotal).not.toBeNull();
+    // A par-4 birdie gains ~+1 stroke vs the PGA baseline, so total/1 and
+    // total/2 are far apart — the closeTo(…, 2dp) below is discriminating.
+    expect(Math.abs(stats.strokesGainedTotal!)).toBeGreaterThan(0.5);
+    expect(stats.sgTotalPerRound).toBeCloseTo(stats.strokesGainedTotal!, 2);
+    expect(stats.sgPuttingPerRound).toBeCloseTo(stats.strokesGainedPutting!, 2);
+    // Regression guard: the old behavior (divide by ALL rounds) would land here.
+    expect(stats.sgTotalPerRound).not.toBeCloseTo(stats.strokesGainedTotal! / 2, 2);
+  });
+});
+
+describe('2026-06-09 fix B — puttingByBreak is all-putt (every break-tagged putt, made = holed)', () => {
+  // Par 3: tee → green 20ft, then two putts that BOTH carry a break.
+  function twoPuttHoleShots(secondPuttBreak: 'straight' | 'left_to_right'): RawShot[] {
+    return [
+      makeRawShot({
+        hole_number: 1, shot_number: 1, shot_type: 'tee', club_type: 'non_driver',
+        lie_before: 'tee', distance_to_hole_before: 160, distance_unit_before: 'yards',
+        result: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet',
+        shot_distance: 160,
+      }),
+      makeRawShot({
+        hole_number: 1, shot_number: 2, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: 20, distance_unit_before: 'feet',
+        result: 'green', distance_to_hole_after: 4, distance_unit_after: 'feet',
+        shot_distance: 0, putt_break: 'straight', putt_distance_feet: 20, putt_made: false,
+      }),
+      makeRawShot({
+        hole_number: 1, shot_number: 3, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: 4, distance_unit_before: 'feet',
+        result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+        shot_distance: 0, putt_break: secondPuttBreak, putt_distance_feet: 4, putt_made: true,
+      }),
+    ];
+  }
+  const holes = [makeHoleInfo({ hole_number: 1, par: 3 })];
+
+  it('counts the second putt toward ITS break and band (was first-putt-only)', () => {
+    // 20ft straight miss + 4ft straight make → straight: 2 attempts, 1 holed.
+    // Hand-derived: 20ft → band 15_20 (0 of 1), 4ft → band 3_5 (1 of 1),
+    // overall = 1/2 = 50%. Old code: 1 attempt (first putt), made=false → 0%.
+    const stats = calculateStatsFromShots(twoPuttHoleShots('straight'), holes, [round]);
+    const straight = stats.puttingByBreak.straight;
+    expect(straight.totalPutts).toBe(2);
+    expect(straight.overallMakePct).toBe(50);
+    expect(straight.makePct15_20).toBe(0);
+    expect(straight.makePct3_5).toBe(100);
+  });
+
+  it('a second putt with a DIFFERENT break lands in that break bucket', () => {
+    // First putt straight (missed), second putt left_to_right (holed).
+    // left_to_right: 1 attempt, 1 made → 100% overall, 100% in 3_5.
+    // Old code never counted non-first putts → left_to_right.totalPutts was 0.
+    const stats = calculateStatsFromShots(twoPuttHoleShots('left_to_right'), holes, [round]);
+    expect(stats.puttingByBreak.straight.totalPutts).toBe(1);
+    expect(stats.puttingByBreak.straight.overallMakePct).toBe(0);
+    expect(stats.puttingByBreak.left_to_right.totalPutts).toBe(1);
+    expect(stats.puttingByBreak.left_to_right.overallMakePct).toBe(100);
+    expect(stats.puttingByBreak.left_to_right.makePct3_5).toBe(100);
+  });
+});
+
+describe('2026-06-09 fix C — make% bands not gated on the FIRST putt having a distance', () => {
+  it('a distance-tagged later putt still feeds the make% grid when putt 1 lacks distance', () => {
+    // First putt has NO distance_to_hole_before → firstPuttDistance is null and
+    // the old code skipped the whole make% merge for the hole. The 3ft second
+    // putt (holed) must still register: band 0_3 = 1 of 1 → 100%.
+    const shots: RawShot[] = [
+      makeRawShot({
+        hole_number: 1, shot_number: 1, shot_type: 'tee', club_type: 'non_driver',
+        lie_before: 'tee', distance_to_hole_before: 160, distance_unit_before: 'yards',
+        result: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet',
+        shot_distance: 160,
+      }),
+      makeRawShot({
+        hole_number: 1, shot_number: 2, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: null, distance_unit_before: 'feet',
+        result: 'green', distance_to_hole_after: 3, distance_unit_after: 'feet',
+        shot_distance: 0, putt_made: false,
+      }),
+      makeRawShot({
+        hole_number: 1, shot_number: 3, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: 3, distance_unit_before: 'feet',
+        result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+        shot_distance: 0, putt_distance_feet: 3, putt_made: true,
+      }),
+    ];
+    const holes = [makeHoleInfo({ hole_number: 1, par: 3 })];
+
+    const stats = calculateStatsFromShots(shots, holes, [round]);
+    expect(stats.puttMakeCount0_3).toBe(1);
+    expect(stats.puttMakePct0_3).toBe(100);
+  });
+});
+
+describe('2026-06-09 fix D — shotless holes with NULL score/putts are null-honest', () => {
+  it('does not fabricate score=par / putts=2 into totals, averages, or streaks', () => {
+    // Hole 1: real shot data (par-4 birdie, 1 putt). Hole 2: hole row only,
+    // score/putts/gir all NULL — previously fabricated a par with 2 putts.
+    const shots = par4BirdieRawShots(1);
+    const holes: HoleInfo[] = [
+      makeHoleInfo({ hole_number: 1, par: 4 }),
+      makeHoleInfo({ hole_number: 2, par: 4 }), // score/putts undefined → null
+    ];
+
+    const stats = calculateStatsFromShots(shots, holes, [round]);
+
+    expect(stats.roundsPlayed).toBe(1);
+    expect(stats.holesPlayed).toBe(2);
+    expect(stats.totalBirdies).toBe(1);
+    expect(stats.totalPars).toBe(0);      // was 1 (fabricated par on hole 2)
+    expect(stats.totalPutts).toBe(1);     // was 3 (fabricated 2 putts on hole 2)
+    expect(stats.onePuttsTotal).toBe(1);
+    // The round has a hole without a score → NO round-level scoring aggregates
+    // (a partial 1-hole sum must not pose as a round total).
+    expect(stats.scoringAverage).toBeNull();
+    expect(stats.bestRound).toBeNull();
+    expect(stats.worstRound).toBeNull();
+    // gir=null + score=null is NOT a scramble attempt (canonical: gir=false
+    // AND score IS NOT NULL). Old code logged an attempt AND a fabricated make.
+    expect(stats.scrambleAttempts).toBe(0);
+    // Hole 1 (1 putt) extends the no-3-putt run; hole 2 (unknown putts) BREAKS
+    // it rather than extending it.
+    expect(stats.longestNo3PuttStreak).toBe(1);
+    expect(stats.currentNo3PuttStreak).toBe(0);
+  });
+
+  it('a shotless hole WITH recorded score/putts still counts normally', () => {
+    // Bogey 5 with 2 putts on a missed green, recorded only in golf_holes.
+    const holes: HoleInfo[] = [
+      makeHoleInfo({ hole_number: 1, par: 4, score: 5, putts: 2, gir: false }),
+    ];
+    const stats = calculateStatsFromShots([], holes, [makeRoundInfo({ holes_played: 9 })]);
+
+    expect(stats.holesPlayed).toBe(1);
+    expect(stats.totalBogeys).toBe(1);
+    expect(stats.totalPutts).toBe(2);
+    // Missed GIR with a recorded score = scramble attempt; 5 > par 4 → no make.
+    expect(stats.scrambleAttempts).toBe(1);
+    expect(stats.scramblesMade).toBe(0);
+    expect(stats.threePuttsTotal).toBe(0);
   });
 });

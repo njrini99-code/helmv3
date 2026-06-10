@@ -41,9 +41,25 @@ interface MockConfig {
   roundRows?: Array<{ out_metric_id: string; out_rows_upserted: number }>;
   shotRows?: Array<{ out_metric_id: string; out_rows_upserted: number }>;
   pruneCount?: number;
+  // W7 pre-sweep tables
+  presweepMembers?: Array<{ player_id: string }>;
+  staleCacheRows?: Array<{ player_id: string }>;
+  recentRoundRows?: Array<{ player_id: string }>;
+  refreshCacheError?: { message: string } | null;
 }
 
 const rpcCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+
+/** Terminal-at-.limit() filter-agnostic chain: select/in/eq/gte/order return
+ * the same builder; limit() resolves the table's configured rows. */
+function makeTableChain(rows: Array<Record<string, unknown>>) {
+  const chain: Record<string, unknown> = {};
+  for (const m of ['select', 'in', 'eq', 'gte', 'order']) {
+    chain[m] = vi.fn(() => chain);
+  }
+  chain.limit = vi.fn(() => Promise.resolve({ data: rows, error: null }));
+  return chain;
+}
 
 function makeClient(cfg: MockConfig) {
   return {
@@ -62,19 +78,25 @@ function makeClient(cfg: MockConfig) {
           return Promise.resolve({ data: cfg.shotRows ?? [], error: null });
         case 'prune_stale_player_standing':
           return Promise.resolve({ data: cfg.pruneCount ?? 0, error: null });
+        case 'refresh_player_stats_cache':
+          return Promise.resolve({ data: null, error: cfg.refreshCacheError ?? null });
         default:
           return Promise.resolve({ data: null, error: { message: `unexpected rpc ${name}` } });
       }
     }),
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        order: vi.fn(() => ({
-          limit: vi.fn(() =>
-            Promise.resolve({ data: cfg.fallbackTeams ?? [], error: null }),
-          ),
-        })),
-      })),
-    })),
+    from: vi.fn((table: string) => {
+      switch (table) {
+        case 'golf_team_members':
+          return makeTableChain(cfg.presweepMembers ?? []);
+        case 'golf_player_stats_cache':
+          return makeTableChain(cfg.staleCacheRows ?? []);
+        case 'golf_rounds':
+          return makeTableChain(cfg.recentRoundRows ?? []);
+        default:
+          // golf_teams created_at fallback
+          return makeTableChain(cfg.fallbackTeams ?? []);
+      }
+    }),
   };
 }
 
@@ -103,6 +125,7 @@ interface Body {
   metrics_deferred: string[];
   metrics_covered_zero_rows: string[];
   orphans_pruned: number;
+  stale_caches_refreshed: number;
 }
 
 describe('pg-2: SQL bucket gate matches the TS per-bucket floor', () => {
@@ -236,5 +259,56 @@ describe('standing-refresh cron route (SC1 / SC2 / PERF-2)', () => {
     const res = await GET(authed());
     const body = (await res.json()) as Body;
     expect(body.metrics_covered_zero_rows).toEqual([]);
+  });
+
+  it('W7: pre-sweep refreshes stale + recently-active player caches BEFORE the standing RPCs, deduped', async () => {
+    currentClient = makeClient({
+      stalestTeams: { data: [{ team_id: 'T1' }], error: null },
+      standingRows: STANDING_REFRESH_METRIC_IDS.map((m) => ({ metric_id: m, rows_upserted: 2 })),
+      presweepMembers: [{ player_id: 'P1' }, { player_id: 'P2' }, { player_id: 'P3' }],
+      // P1 flagged stale; P1 ALSO recently active (dedupe), P2 recently active.
+      staleCacheRows: [{ player_id: 'P1' }],
+      recentRoundRows: [{ player_id: 'P1' }, { player_id: 'P2' }],
+    });
+    const res = await GET(authed());
+    const body = (await res.json()) as Body;
+    expect(res.status).toBe(200);
+    expect(body.stale_caches_refreshed).toBe(2); // P1 + P2, not 3
+
+    const refreshes = rpcCalls.filter((c) => c.name === 'refresh_player_stats_cache');
+    expect(refreshes.map((c) => c.args.p_player_id).sort()).toEqual(['P1', 'P2']);
+
+    // Ordering: every cache refresh must precede the first standing RPC so
+    // standing never ranks on the stale values the sweep just fixed.
+    const firstStanding = rpcCalls.findIndex((c) => c.name === 'refresh_player_standing');
+    const lastRefresh = rpcCalls.map((c) => c.name).lastIndexOf('refresh_player_stats_cache');
+    expect(firstStanding).toBeGreaterThan(lastRefresh);
+  });
+
+  it('W7: a failing cache refresh is failure-isolated — standing still runs, count excludes the failure', async () => {
+    currentClient = makeClient({
+      stalestTeams: { data: [{ team_id: 'T1' }], error: null },
+      standingRows: STANDING_REFRESH_METRIC_IDS.map((m) => ({ metric_id: m, rows_upserted: 2 })),
+      presweepMembers: [{ player_id: 'P1' }],
+      staleCacheRows: [{ player_id: 'P1' }],
+      refreshCacheError: { message: 'boom' },
+    });
+    const res = await GET(authed());
+    const body = (await res.json()) as Body;
+    expect(res.status).toBe(200);
+    expect(body.stale_caches_refreshed).toBe(0);
+    expect(rpcCalls.some((c) => c.name === 'refresh_player_standing')).toBe(true);
+  });
+
+  it('W7: no stale flags and no recent activity → zero refreshes', async () => {
+    currentClient = makeClient({
+      stalestTeams: { data: [{ team_id: 'T1' }], error: null },
+      standingRows: STANDING_REFRESH_METRIC_IDS.map((m) => ({ metric_id: m, rows_upserted: 2 })),
+      presweepMembers: [{ player_id: 'P1' }],
+    });
+    const res = await GET(authed());
+    const body = (await res.json()) as Body;
+    expect(body.stale_caches_refreshed).toBe(0);
+    expect(rpcCalls.some((c) => c.name === 'refresh_player_stats_cache')).toBe(false);
   });
 });

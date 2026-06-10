@@ -52,6 +52,37 @@ interface TeamStatsTableProps {
   intelligenceByPlayer?: Record<string, PlayerIntelligenceSummary>;
 }
 
+/**
+ * Rounds-weighted mean: Σ(value_i × rounds_i) ÷ Σ rounds_i.
+ *
+ * The canonical team-average rule — per-player averages are weighted by the
+ * round count they were computed over, so a 2-round walk-on never weighs the
+ * same as a 40-round starter. Entries with a null/NaN value are skipped.
+ * Falls back to the unweighted mean if no contributing entry carries a
+ * positive round count (degenerate data); null when nothing contributes.
+ *
+ * Exported for unit tests.
+ */
+export function roundsWeightedMean(
+  entries: ReadonlyArray<{ value: number | null; rounds: number }>,
+): number | null {
+  let weightedSum = 0;
+  let totalRounds = 0;
+  let unweightedSum = 0;
+  let n = 0;
+  for (const entry of entries) {
+    if (entry.value === null || Number.isNaN(entry.value)) continue;
+    n += 1;
+    unweightedSum += entry.value;
+    if (entry.rounds > 0 && !Number.isNaN(entry.rounds)) {
+      weightedSum += entry.value * entry.rounds;
+      totalRounds += entry.rounds;
+    }
+  }
+  if (totalRounds > 0) return weightedSum / totalRounds;
+  return n > 0 ? unweightedSum / n : null;
+}
+
 export function TeamStatsTable({
   players,
   intelligenceByPlayer = {},
@@ -85,6 +116,17 @@ export function TeamStatsTable({
       best_round: holeFormat === '18' ? p.best_round_18 : p.best_round_9,
     }));
   }, [players, holeFormat]);
+
+  // Team scoring average, weighted by each player's round count. The
+  // formattedPlayers view already carries format-aware rounds_played /
+  // scoring_average pairs, so the weights match the selected format.
+  const teamScoringAverage = useMemo(
+    () =>
+      roundsWeightedMean(
+        formattedPlayers.map(p => ({ value: p.scoring_average, rounds: p.rounds_played })),
+      ),
+    [formattedPlayers],
+  );
 
   const sortedPlayers = useMemo(() => {
     const sorted = [...formattedPlayers].sort((a, b) => {
@@ -467,14 +509,7 @@ export function TeamStatsTable({
             <span>
               Team Avg:{' '}
               <strong className="text-warm-900">
-                {formattedPlayers.filter(p => p.scoring_average !== null).length > 0
-                  ? (
-                      formattedPlayers
-                        .filter(p => p.scoring_average !== null)
-                        .reduce((sum, p) => sum + (p.scoring_average || 0), 0) /
-                      formattedPlayers.filter(p => p.scoring_average !== null).length
-                    ).toFixed(1)
-                  : '—'}
+                {teamScoringAverage !== null ? teamScoringAverage.toFixed(1) : '—'}
               </strong>
             </span>
           </div>

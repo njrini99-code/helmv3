@@ -48,9 +48,19 @@ interface RefreshSummary {
   metrics_covered_zero_rows: string[];
   // SC1: stale/orphan standing rows removed for the refreshed teams' players.
   orphans_pruned: number;
+  // W7 pre-sweep: player caches fully refreshed BEFORE the standing RPCs
+  // (is_stale flag or recent completed-round activity), so standing never
+  // ranks players on stale shot-derived columns.
+  stale_caches_refreshed: number;
   duration_ms: number;
   error?: string;
 }
+
+// W7 pre-sweep bounds: recent-activity lookback must exceed the cron cadence
+// (24h) so a lost after() callback is caught by the next nightly run; the
+// refresh cap keeps the sweep inside maxDuration on pathological backlogs.
+const RECENT_ACTIVITY_HOURS = 26;
+const MAX_PRESWEEP_REFRESHES = 200;
 
 /**
  * SC2 assertion — flag any metric the cron declared "covered" that upserted 0
@@ -146,8 +156,72 @@ async function handle(): Promise<NextResponse> {
       metrics_deferred: [...STANDING_REFRESH_DEFERRED_METRIC_IDS],
       metrics_covered_zero_rows: [],
       orphans_pruned: 0,
+      stale_caches_refreshed: 0,
       duration_ms: Date.now() - startedAt,
     } satisfies RefreshSummary);
+  }
+
+  // W7 pre-sweep (stats audit 2026-06-09): the shot-derived cache columns
+  // (putt bands + attempts, approach proximity, miss bias, putts_per_gir,
+  // driving distance, first_round_date) are written ONLY by
+  // refresh_player_stats_cache, which normally runs in the after() callback of
+  // a round submit/edit. If that callback dies, the trigger path has already
+  // set is_stale=false, so nothing self-heals and the standing RPCs below
+  // would rank players on stale band values indefinitely. Refresh, bounded:
+  // chunk players flagged stale + any with completed-round activity inside the
+  // lookback window. Failure-isolated — standing still runs on a sweep error.
+  let staleCachesRefreshed = 0;
+  try {
+    const { data: memberRows } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .in('team_id', teamIds)
+      .eq('status', 'active')
+      .limit(1000);
+    const chunkPlayerIds = [...new Set((memberRows ?? []).map((m) => m.player_id as string))];
+    if (chunkPlayerIds.length > 0) {
+      const recentCutoff = new Date(Date.now() - RECENT_ACTIVITY_HOURS * 3_600_000).toISOString();
+      const [staleRes, recentRes] = await Promise.all([
+        supabase
+          .from('golf_player_stats_cache')
+          .select('player_id')
+          .in('player_id', chunkPlayerIds)
+          .eq('is_stale', true)
+          .limit(MAX_PRESWEEP_REFRESHES),
+        supabase
+          .from('golf_rounds')
+          .select('player_id')
+          .in('player_id', chunkPlayerIds)
+          .eq('status', 'completed')
+          .gte('updated_at', recentCutoff)
+          .limit(1000),
+      ]);
+      const toRefresh = [
+        ...new Set([
+          ...(staleRes.data ?? []).map((r) => r.player_id as string),
+          ...(recentRes.data ?? []).map((r) => r.player_id as string),
+        ]),
+      ].slice(0, MAX_PRESWEEP_REFRESHES);
+      for (const pid of toRefresh) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: refreshErr } = await (supabase as any).rpc('refresh_player_stats_cache', {
+          p_player_id: pid,
+        });
+        if (refreshErr) {
+          await logServerError(
+            `standing-refresh cache-presweep refresh: ${refreshErr.message ?? 'unknown'}`,
+            { action: 'cron.v3.standing-refresh.cache-presweep', playerId: pid },
+          );
+        } else {
+          staleCachesRefreshed++;
+        }
+      }
+    }
+  } catch (err) {
+    await logServerError(
+      `standing-refresh cache-presweep exception: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'cron.v3.standing-refresh.cache-presweep' },
+    );
   }
 
   // Call the SECURITY DEFINER RPC. The function lives in
@@ -178,6 +252,7 @@ async function handle(): Promise<NextResponse> {
         metrics_deferred: [...STANDING_REFRESH_DEFERRED_METRIC_IDS],
         metrics_covered_zero_rows: [],
         orphans_pruned: 0,
+        stale_caches_refreshed: staleCachesRefreshed,
         duration_ms: Date.now() - startedAt,
         error: rpcResult.error.message ?? 'rpc-error',
       } satisfies RefreshSummary);
@@ -234,6 +309,7 @@ async function handle(): Promise<NextResponse> {
       metrics_deferred: [...STANDING_REFRESH_DEFERRED_METRIC_IDS],
       metrics_covered_zero_rows: [],
       orphans_pruned: 0,
+      stale_caches_refreshed: staleCachesRefreshed,
       duration_ms: Date.now() - startedAt,
       error: err instanceof Error ? err.message : String(err),
     } satisfies RefreshSummary);
@@ -286,6 +362,7 @@ async function handle(): Promise<NextResponse> {
     metrics_deferred: [...STANDING_REFRESH_DEFERRED_METRIC_IDS],
     metrics_covered_zero_rows: coveredZeroRows,
     orphans_pruned: orphansPruned,
+    stale_caches_refreshed: staleCachesRefreshed,
     duration_ms: Date.now() - startedAt,
   } satisfies RefreshSummary);
 }

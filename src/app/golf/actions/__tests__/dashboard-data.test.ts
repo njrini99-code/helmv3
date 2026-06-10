@@ -37,13 +37,42 @@ const mockSelect = vi.fn(() => ({
   error: null,
   count: 0,
 }));
-const mockFrom = vi.fn(() => ({
+const mockFrom = vi.fn((_table: string): Record<string, unknown> => ({
   select: mockSelect,
 }));
 const mockGetUser = vi.fn(() => ({
   data: { user: { id: 'user-1' } },
   error: null,
 }));
+
+// ---------------------------------------------------------------------------
+// Loose chainable builder for table-aware scenarios (KPI regression tests).
+// Every filter/order method returns the chain itself; awaiting the chain
+// resolves to its own { data, error, count } because it is not a thenable.
+// `.range` slices like PostgREST does, so fetchAllRowsResult pagination is
+// exercised for real (a 1001-row dataset takes two pages).
+// ---------------------------------------------------------------------------
+function createChainableMock({
+  data = [] as unknown[],
+  singleData = null as unknown,
+  maybeSingleData = null as unknown,
+} = {}) {
+  const chain: Record<string, unknown> = {
+    data,
+    error: null,
+    count: Array.isArray(data) ? data.length : 0,
+  };
+  for (const method of ['select', 'eq', 'in', 'gte', 'lt', 'not', 'order', 'limit']) {
+    chain[method] = vi.fn(() => chain);
+  }
+  chain.range = vi.fn((from: number, to: number) => ({
+    data: data.slice(from, to + 1),
+    error: null,
+  }));
+  chain.single = vi.fn(async () => ({ data: singleData, error: null }));
+  chain.maybeSingle = vi.fn(async () => ({ data: maybeSingleData, error: null }));
+  return chain;
+}
 
 // Closes audit Finding 8 (D-NEW dashboard RPC mock drift):
 // dashboard-data.ts:287-292 calls (supabase as any).rpc('get_coach_today_schedule', ...)
@@ -88,6 +117,9 @@ describe('dashboard-data server actions', () => {
     mockLimit.mockReturnValue({ data: [], error: null });
     mockOrder.mockReturnValue({ limit: mockLimit, data: [], error: null });
     mockRpc.mockResolvedValue({ data: [], error: null });
+    // Restore the default from() — table-aware tests override it per-test and
+    // vi.clearAllMocks() does not undo mockImplementation.
+    mockFrom.mockImplementation((_table: string) => ({ select: mockSelect }));
   });
 
   // ========================================================================
@@ -196,6 +228,75 @@ describe('dashboard-data server actions', () => {
   });
 
   // ========================================================================
+  // getCoachDashboardData — windowed KPI correctness (regression)
+  // ========================================================================
+  describe('getCoachDashboardData windowed KPIs', () => {
+    const member = {
+      player: { id: 'p1', first_name: 'Tess', last_name: 'Player', avatar_url: null },
+    };
+
+    /** Table-aware from(): rounds come from a real sliceable dataset so the
+     *  fetchAllRowsResult pagination in dashboard-data.ts is exercised. */
+    function mockCoachTables(roundRows: unknown[]) {
+      const roundsChain = createChainableMock({ data: roundRows });
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'golf_rounds') return roundsChain;
+        if (table === 'golf_team_members') return createChainableMock({ data: [member] });
+        if (table === 'golf_teams') {
+          return createChainableMock({
+            singleData: { id: 'team-1', name: 'Eagles', season: '2026', join_code: 'E1', created_at: '2026-01-01' },
+          });
+        }
+        return createChainableMock();
+      });
+      return roundsChain;
+    }
+
+    it('computes Team Putts/Rd hole-weighted (sum putts ÷ sum holes × 18)', async () => {
+      mockCoachTables([
+        { id: 'r1', player_id: 'p1', total_score: 72, score_to_par: 0, round_date: '2026-06-01', holes_played: 18, total_putts: 36, total_gir: null, total_gir_possible: null },
+        { id: 'r2', player_id: 'p1', total_score: 36, score_to_par: 0, round_date: '2026-05-28', holes_played: 9, total_putts: 9, total_gir: null, total_gir_possible: null },
+      ]);
+
+      const result = await getCoachDashboardData('coach-1', 'user-1', 'team-1');
+
+      // (36 + 9) ÷ (18 + 9) × 18 = 30.0 — the old mean of per-round normalized
+      // putts (mean of 36 and 18) reported 27.0.
+      expect(result.sparklines.puttsPerRound.value).toBe(30);
+      // 18-hole rounds only, matching the canonical cache scoring_average
+      expect(result.stats.teamScoringAverage).toBe(72);
+    });
+
+    it('paginates past the 1000-row PostgREST cap so KPIs and round counts cover the full window', async () => {
+      const manyRounds = Array.from({ length: 1001 }, (_, i) => ({
+        id: `r${i}`,
+        player_id: 'p1',
+        total_score: 72,
+        score_to_par: 0,
+        round_date: '2026-05-01',
+        holes_played: 18,
+        total_putts: 30,
+        total_gir: 10,
+        total_gir_possible: 18,
+      }));
+      const roundsChain = mockCoachTables(manyRounds);
+
+      const result = await getCoachDashboardData('coach-1', 'user-1', 'team-1');
+
+      // recentRounds feeds the "N rounds in window" footnote and the KPI
+      // coverage gate — its count must reflect the full windowed set, not a cap.
+      expect(result.recentRounds.length).toBe(1001);
+      // KPIs computed over all 1001 rounds
+      expect(result.stats.teamScoringAverage).toBe(72);
+      expect(result.topPlayers[0]?.rounds).toBe(1001);
+      expect(result.sparklines.puttsPerRound.value).toBe(30);
+      // Both round queries fetched a second page beyond the 1000-row cap
+      expect(roundsChain.range).toHaveBeenCalledWith(0, 999);
+      expect(roundsChain.range).toHaveBeenCalledWith(1000, 1999);
+    });
+  });
+
+  // ========================================================================
   // getPlayerDashboardData
   // ========================================================================
   describe('getPlayerDashboardData', () => {
@@ -276,6 +377,75 @@ describe('dashboard-data server actions', () => {
       const result = await getPlayerDashboardData('p', 'user-1', 't');
 
       expect(result.recentRounds.length).toBeLessThanOrEqual(5);
+    });
+  });
+
+  // ========================================================================
+  // getPlayerDashboardData — headline stats from stats cache (regression)
+  // ========================================================================
+  describe('getPlayerDashboardData headline stats', () => {
+    const cacheRow = {
+      sg_total_per_round: null,
+      sg_tee_per_round: null,
+      sg_approach_per_round: null,
+      sg_around_green_per_round: null,
+      sg_putting_per_round: null,
+      scrambling_percentage: 41.2,
+      birdies: 120,
+      rounds_played: 73,
+      scoring_average: 74.38,
+      best_round: 66,
+      gir_percentage: 64.52,
+      driving_accuracy_percentage: 58.33,
+      putts_per_round: 31.46,
+    };
+    // Recent-form fetch returns only 3 rounds (newest first) — deliberately
+    // disagreeing with the cache so the assertions prove the source of truth.
+    const recentFormRounds = [
+      { id: 'r1', course_name: 'Course A', total_score: 70, score_to_par: -2, round_date: '2026-06-05', holes_played: 18, total_putts: 28, total_gir: 12, total_gir_possible: 18 },
+      { id: 'r2', course_name: 'Course B', total_score: 75, score_to_par: 3, round_date: '2026-06-03', holes_played: 18, total_putts: 31, total_gir: 10, total_gir_possible: 18 },
+      { id: 'r3', course_name: 'Course C', total_score: 80, score_to_par: 8, round_date: '2026-06-01', holes_played: 18, total_putts: 34, total_gir: 8, total_gir_possible: 18 },
+    ];
+
+    function mockPlayerTables() {
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'golf_rounds') return createChainableMock({ data: recentFormRounds });
+        if (table === 'golf_player_stats_cache') return createChainableMock({ maybeSingleData: cacheRow });
+        if (table === 'golf_players') return createChainableMock({ singleData: { handicap: 5.2 } });
+        if (table === 'golf_teams') {
+          return createChainableMock({
+            singleData: { id: 'team-1', name: 'Eagles', season: '2026', join_code: 'E1', created_at: '2026-01-01' },
+          });
+        }
+        return createChainableMock();
+      });
+    }
+
+    it('takes headline values from golf_player_stats_cache, not the capped rounds fetch', async () => {
+      mockPlayerTables();
+      const result = await getPlayerDashboardData('player-1', 'user-1', 'team-1');
+
+      expect(result.stats.roundsPlayed).toBe(73); // cache, not the 3 fetched rounds
+      expect(result.stats.scoringAverage).toBe(74.4); // cache 74.38, not mean(70,75,80)=75
+      expect(result.stats.bestRound).toBe(66); // cache, not min of fetched (70)
+      expect(result.sparklines.scoringAvg.value).toBe(74.4);
+      expect(result.sparklines.girPct.value).toBe(64.5); // cache gir_percentage
+      expect(result.sparklines.puttsPerRound.value).toBe(31.5); // cache hole-weighted putts_per_round
+      expect(result.secondaryStats.firPct).toBe(58.3); // cache driving_accuracy_percentage
+      expect(result.secondaryStats.scramblingPct).toBe(41.2);
+      expect(result.secondaryStats.bestRound).toBe(66);
+      expect(result.secondaryStats.birdiesPerRound).toBe(1.64); // 120 birdies / 73 rounds
+    });
+
+    it('recent-form widgets still come from the recent rounds fetch', async () => {
+      mockPlayerTables();
+      const result = await getPlayerDashboardData('player-1', 'user-1', 'team-1');
+
+      // Sparkline series: oldest → newest from the fetched rounds
+      expect(result.sparklines.scoringAvg.sparkline).toEqual([80, 75, 70]);
+      expect(result.recentRounds.length).toBe(3);
+      expect(result.recentRounds[0]?.course_name).toBe('Course A');
+      expect(result.scoringTrend.length).toBe(3);
     });
   });
 });

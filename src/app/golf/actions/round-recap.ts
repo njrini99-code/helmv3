@@ -142,11 +142,17 @@ async function generateLLMRecap(
   if (round.front_nine !== null && round.back_nine !== null) {
     facts.push(`Front 9 / Back 9: ${round.front_nine} / ${round.back_nine}`);
   }
-  if (stats?.scoring_average) {
-    facts.push(`Player's season scoring average: ${stats.scoring_average.toFixed(1)}`);
-  }
-  if (stats?.best_round) {
-    facts.push(`Player's best round of the season: ${stats.best_round}`);
+  // scoring_average / best_round are 18-hole figures — only offer them as
+  // comparison fodder when this round is also 18 holes, otherwise the model
+  // writes the same "37 strokes below average" nonsense the deterministic
+  // path guards against (and the recap is persisted to golf_rounds.ai_recap).
+  if ((round.holes_played ?? 18) === 18) {
+    if (stats?.scoring_average) {
+      facts.push(`Player's season scoring average: ${stats.scoring_average.toFixed(1)}`);
+    }
+    if (stats?.best_round) {
+      facts.push(`Player's best round of the season: ${stats.best_round}`);
+    }
   }
 
   const prompt = `You are a golf magazine beat reporter writing a two-sentence post-round recap. Voice: editorial, declarative, concrete, no hype, no clichés (avoid "showed up", "performance", "solid round"). Match the calm authority of The New York Times sports desk.
@@ -231,12 +237,20 @@ function buildDeterministicRecap(
       ? pct(round.total_gir, round.total_gir_possible)
       : null;
 
+  // The stats-cache scoring_average and best_round are 18-hole figures, so
+  // comparing a 9-hole total against them produces nonsense ("37 strokes
+  // below the season average") — and the recap is persisted to
+  // golf_rounds.ai_recap. Skip those comparison ledes entirely for short
+  // rounds; the score-to-par / putts / fairways / GIR threads stay honest at
+  // any hole count.
+  const is18HoleRound = (round.holes_played ?? 18) === 18;
+
   // Pick the lede thread by what's most defining
   let lede: string;
-  if (stats?.scoring_average && score < stats.scoring_average - 1) {
+  if (is18HoleRound && stats?.scoring_average && score < stats.scoring_average - 1) {
     const delta = (stats.scoring_average - score).toFixed(1);
     lede = `${score} on the card, ${delta} strokes below the season average.`;
-  } else if (stats?.best_round && score < stats.best_round) {
+  } else if (is18HoleRound && stats?.best_round && score < stats.best_round) {
     lede = `${score} sets a new low for the season.`;
   } else if (stp < 0) {
     lede = `${score} dipped under par — the kind of round the rest of the season measures itself against.`;

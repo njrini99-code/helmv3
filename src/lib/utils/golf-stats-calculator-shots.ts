@@ -770,8 +770,11 @@ export function getPenaltyCategory(shot: RawShot, par: number): 'tee' | 'approac
 interface CalculatedHoleStats {
   holeNumber: number;
   par: number;
-  score: number;
-  putts: number;
+  // Null-honest: null means "hole row exists but no score/putts were recorded"
+  // (shotless hole with NULL golf_holes.score/putts). Aggregation null-skips
+  // these holes — they must never contribute fabricated values.
+  score: number | null;
+  putts: number | null;
   fairwayHit: boolean | null;
   usedDriver: boolean | null;
   drivingDistance: number | null;
@@ -803,8 +806,13 @@ interface CalculatedHoleStats {
 }
 
 function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
-  const score = hole.score ?? hole.par;
-  const putts = hole.putts ?? 2;
+  // Null-honest: a shotless hole contributes ONLY what golf_holes actually
+  // recorded. Fabricating score=par / putts=2 silently dragged scoring
+  // averages toward even par and putting stats toward 2.0/hole. A null
+  // score/putts means "no data" and is null-skipped at every aggregation
+  // point (totals, averages, streaks).
+  const score = hole.score ?? null;
+  const putts = hole.putts ?? null;
   const greenInRegulation = hole.gir ?? false;
   const fairwayHit = hole.par < 4 ? null : (hole.fairway_hit ?? null);
 
@@ -831,12 +839,15 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
     firstPuttLeave: null,
     firstPuttBreak: null,
     firstPuttSlope: null,
-    scrambleAttempt: !greenInRegulation,
-    scrambleMade: !greenInRegulation && score <= hole.par,
+    // Canonical scramble definition (DB cache trigger): attempt = gir=false
+    // AND score IS NOT NULL. A missed green with no recorded score is NOT a
+    // scramble attempt — we cannot know whether it converted.
+    scrambleAttempt: !greenInRegulation && score !== null,
+    scrambleMade: !greenInRegulation && score !== null && score <= hole.par,
     sandSaveAttempt: false,
     sandSaveMade: false,
     penalties: 0,
-    threePutts: putts >= 3,
+    threePutts: putts !== null && putts >= 3,
     shots: [],
   };
 }
@@ -1150,7 +1161,11 @@ export function calculateStatsFromShots(
       continue;
     }
 
-    const totalScore = holeStats.reduce((sum, h) => sum + h.score, 0);
+    // Sum of KNOWN hole scores only (null-honest). Round-level scoring
+    // aggregates additionally require every hole to carry a real score
+    // (see hasCompleteScores in aggregateRoundStats) so a partial sum can
+    // never masquerade as a full round total.
+    const totalScore = holeStats.reduce((sum, h) => sum + (h.score ?? 0), 0);
 
     roundsWithStats.push({
       roundInfo: round,
@@ -1461,6 +1476,9 @@ function aggregateRoundStats(rounds: Array<{
   const girPar4 = { made: 0, total: 0 };
   const girPar5 = { made: 0, total: 0 };
   let puttsOnGir = 0;
+  // GIR holes with KNOWN putts — the puttsPerGir denominator. A GIR hole
+  // whose putts are unrecorded contributes to neither side of the ratio.
+  let girHolesWithPutts = 0;
 
   // Per-par scoring distribution accumulators (→ stats.scoringByPar).
   const scorePar3 = { eagle: 0, birdie: 0, par: 0, bogey: 0, doublePlus: 0, total: 0, toParSum: 0 };
@@ -1475,18 +1493,23 @@ function aggregateRoundStats(rounds: Array<{
     sand: { made: 0, total: 0 },
   };
 
-  // Putting stats by break type
+  // Putting stats by break type — ALL-PUTT semantics: every putt with a
+  // recorded break direction is an attempt (the entry flow requires a break
+  // on every putt), made = that putt holed. attempts/makes cover ALL break-
+  // tagged putts; `make` holds the per-distance-band split (needs a distance).
   const puttStatsByBreak: Record<string, {
     make: Record<string, { made: number; total: number }>;
+    attempts: number;
+    makes: number;
     missShort: number;
     missLow: number;
     missHigh: number;
     missTotal: number;
   }> = {
-    left_to_right: { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
-    straight: { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
-    right_to_left: { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
-    multiple: { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
+    left_to_right: { make: {}, attempts: 0, makes: 0, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
+    straight: { make: {}, attempts: 0, makes: 0, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
+    right_to_left: { make: {}, attempts: 0, makes: 0, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
+    multiple: { make: {}, attempts: 0, makes: 0, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 },
   };
 
   // Strokes Gained accumulators
@@ -1499,6 +1522,11 @@ function aggregateRoundStats(rounds: Array<{
   let sgAroundGreenCount = 0;
   let sgPutting = 0;
   let sgPuttingCount = 0;
+  // Rounds that contributed ANY SG value. The DB cache divides every
+  // sg_*_per_round by COUNT of rounds with strokes_gained_total IS NOT NULL
+  // (update_player_stats_strokes_gained), NOT by all rounds in the window —
+  // a shot-untracked round must not dilute the per-round SG averages.
+  let roundsWithSg = 0;
 
   const puttMake: Record<string, { made: number; total: number }> = {};
   const puttProximity: Record<string, number[]> = {};
@@ -1578,9 +1606,15 @@ function aggregateRoundStats(rounds: Array<{
 
   // Process each round
   for (const round of rounds) {
-    const roundBirdies = round.holes.filter(h => (h.score - h.par) === -1).length;
+    // Null-honest: round-level SCORING aggregates (totals, best/worst,
+    // 9/18 buckets, round-type averages) require every hole to carry a real
+    // score — round.totalScore only sums known scores, so a round with any
+    // null-score hole would otherwise feed a fabricated low total.
+    const hasCompleteScores = round.holes.every(h => h.score !== null);
+    const roundBirdies = round.holes.filter(
+      h => h.score !== null && (h.score - h.par) === -1
+    ).length;
 
-    totalScore += round.totalScore;
     stats.holesPlayed += round.holes.length;
 
     // Determine 9-hole vs 18-hole format. Only STRICTLY-18 rounds feed the
@@ -1590,38 +1624,55 @@ function aggregateRoundStats(rounds: Array<{
     const holesInRound = round.roundInfo.holes_played ?? round.holes.length;
     const is9Hole = holesInRound <= 9; // for round-type (practice/qual/tourney) gating below
 
-    // Best/worst (overall) is normalized to an 18-hole equivalent across ALL
-    // rounds, mirroring the cache best_round_normalized = MIN(total_score * 18
-    // / holes_played).
-    if (holesInRound > 0) {
-      const normalized = round.totalScore * (18 / holesInRound);
-      if (bestRoundNormalized === null || normalized < bestRoundNormalized) {
-        bestRoundNormalized = normalized;
-      }
-      if (worstRoundNormalized === null || normalized > worstRoundNormalized) {
-        worstRoundNormalized = normalized;
-      }
-    }
+    if (hasCompleteScores) {
+      totalScore += round.totalScore;
 
-    if (holesInRound <= 9) {
-      totalScore9 += round.totalScore;
-      stats.roundsPlayed9++;
-      if (stats.bestRound9 === null || round.totalScore < stats.bestRound9) {
-        stats.bestRound9 = round.totalScore;
+      // Best/worst (overall) is normalized to an 18-hole equivalent across ALL
+      // rounds, mirroring the cache best_round_normalized = MIN(total_score * 18
+      // / holes_played).
+      if (holesInRound > 0) {
+        const normalized = round.totalScore * (18 / holesInRound);
+        if (bestRoundNormalized === null || normalized < bestRoundNormalized) {
+          bestRoundNormalized = normalized;
+        }
+        if (worstRoundNormalized === null || normalized > worstRoundNormalized) {
+          worstRoundNormalized = normalized;
+        }
       }
-      if (stats.worstRound9 === null || round.totalScore > stats.worstRound9) {
-        stats.worstRound9 = round.totalScore;
+
+      if (holesInRound <= 9) {
+        totalScore9 += round.totalScore;
+        stats.roundsPlayed9++;
+        if (stats.bestRound9 === null || round.totalScore < stats.bestRound9) {
+          stats.bestRound9 = round.totalScore;
+        }
+        if (stats.worstRound9 === null || round.totalScore > stats.worstRound9) {
+          stats.worstRound9 = round.totalScore;
+        }
+      } else if (holesInRound === 18) {
+        totalScore18 += round.totalScore;
+        stats.roundsPlayed18++;
+        const roundPar = round.holes.reduce((s, h) => s + h.par, 0);
+        totalScoreToPar18 += round.totalScore - roundPar;
+        if (stats.bestRound18 === null || round.totalScore < stats.bestRound18) {
+          stats.bestRound18 = round.totalScore;
+        }
+        if (stats.worstRound18 === null || round.totalScore > stats.worstRound18) {
+          stats.worstRound18 = round.totalScore;
+        }
       }
-    } else if (holesInRound === 18) {
-      totalScore18 += round.totalScore;
-      stats.roundsPlayed18++;
-      const roundPar = round.holes.reduce((s, h) => s + h.par, 0);
-      totalScoreToPar18 += round.totalScore - roundPar;
-      if (stats.bestRound18 === null || round.totalScore < stats.bestRound18) {
-        stats.bestRound18 = round.totalScore;
-      }
-      if (stats.worstRound18 === null || round.totalScore > stats.worstRound18) {
-        stats.worstRound18 = round.totalScore;
+
+      // Round type scoring
+      const roundType = normalizeRoundType(round.roundInfo.round_type);
+      if (!is9Hole && roundType === 'practice') {
+        practiceScore += round.totalScore;
+        stats.practiceRounds++;
+      } else if (!is9Hole && roundType === 'qualifier') {
+        qualifyingScore += round.totalScore;
+        stats.qualifyingRounds++;
+      } else if (!is9Hole && roundType === 'tournament') {
+        tournamentScore += round.totalScore;
+        stats.tournamentRounds++;
       }
     }
 
@@ -1630,69 +1681,70 @@ function aggregateRoundStats(rounds: Array<{
       stats.mostBirdiesRound = roundBirdies;
     }
 
-    // Round type scoring
-    const roundType = normalizeRoundType(round.roundInfo.round_type);
-    if (!is9Hole && roundType === 'practice') {
-      practiceScore += round.totalScore;
-      stats.practiceRounds++;
-    } else if (!is9Hole && roundType === 'qualifier') {
-      qualifyingScore += round.totalScore;
-      stats.qualifyingRounds++;
-    } else if (!is9Hole && roundType === 'tournament') {
-      tournamentScore += round.totalScore;
-      stats.tournamentRounds++;
-    }
-
     // Process each hole. Streak counters reset at every round boundary (a
     // birdie/par/no-3-putt run cannot span two rounds) and holes are walked in
     // hole_number order so the run reflects true play order, not DB row order.
     currentBirdieStreak = 0;
     currentParStreak = 0;
     current3PuttStreak = 0;
+    // Snapshot the SG shot tallies so we can tell whether THIS round
+    // contributed any SG (feeds the roundsWithSg per-round denominator).
+    const sgShotCountBefore = sgTeeCount + sgApproachCount + sgAroundGreenCount + sgPuttingCount;
     const orderedHoles = [...round.holes].sort((a, b) => a.holeNumber - b.holeNumber);
     for (const hole of orderedHoles) {
-      const scoreToPar = hole.score - hole.par;
+      // Null-honest: a hole without a recorded score contributes NO scoring
+      // outcome and BREAKS scoring streaks (an unknown score is not a par,
+      // and a streak cannot be verified across it).
+      if (hole.score !== null) {
+        const scoreToPar = hole.score - hole.par;
 
-      // Scoring counts
-      if (scoreToPar <= -2) stats.totalEagles++;
-      else if (scoreToPar === -1) stats.totalBirdies++;
-      else if (scoreToPar === 0) stats.totalPars++;
-      else if (scoreToPar === 1) stats.totalBogeys++;
-      else stats.totalDoublePlus++;
+        // Scoring counts
+        if (scoreToPar <= -2) stats.totalEagles++;
+        else if (scoreToPar === -1) stats.totalBirdies++;
+        else if (scoreToPar === 0) stats.totalPars++;
+        else if (scoreToPar === 1) stats.totalBogeys++;
+        else stats.totalDoublePlus++;
 
-      // Per-par scoring distribution — bucket the same outcome by hole par.
-      const parBucket =
-        hole.par === 3 ? scorePar3 : hole.par === 4 ? scorePar4 : hole.par === 5 ? scorePar5 : null;
-      if (parBucket) {
-        parBucket.total++;
-        parBucket.toParSum += scoreToPar;
-        if (scoreToPar <= -2) parBucket.eagle++;
-        else if (scoreToPar === -1) parBucket.birdie++;
-        else if (scoreToPar === 0) parBucket.par++;
-        else if (scoreToPar === 1) parBucket.bogey++;
-        else parBucket.doublePlus++;
-      }
+        // Per-par scoring distribution — bucket the same outcome by hole par.
+        const parBucket =
+          hole.par === 3 ? scorePar3 : hole.par === 4 ? scorePar4 : hole.par === 5 ? scorePar5 : null;
+        if (parBucket) {
+          parBucket.total++;
+          parBucket.toParSum += scoreToPar;
+          if (scoreToPar <= -2) parBucket.eagle++;
+          else if (scoreToPar === -1) parBucket.birdie++;
+          else if (scoreToPar === 0) parBucket.par++;
+          else if (scoreToPar === 1) parBucket.bogey++;
+          else parBucket.doublePlus++;
+        }
 
-      // Streaks
-      if (scoreToPar === -1) {
-        currentBirdieStreak++;
-        if (currentBirdieStreak > stats.mostBirdiesRow) {
-          stats.mostBirdiesRow = currentBirdieStreak;
+        // Streaks
+        if (scoreToPar === -1) {
+          currentBirdieStreak++;
+          if (currentBirdieStreak > stats.mostBirdiesRow) {
+            stats.mostBirdiesRow = currentBirdieStreak;
+          }
+        } else {
+          currentBirdieStreak = 0;
+        }
+
+        if (scoreToPar === 0) {
+          currentParStreak++;
+          if (currentParStreak > stats.mostParsRow) {
+            stats.mostParsRow = currentParStreak;
+          }
+        } else {
+          currentParStreak = 0;
         }
       } else {
         currentBirdieStreak = 0;
-      }
-
-      if (scoreToPar === 0) {
-        currentParStreak++;
-        if (currentParStreak > stats.mostParsRow) {
-          stats.mostParsRow = currentParStreak;
-        }
-      } else {
         currentParStreak = 0;
       }
 
-      if (!hole.threePutts) {
+      if (hole.putts === null) {
+        // Unknown putts cannot extend a verified no-3-putt run.
+        current3PuttStreak = 0;
+      } else if (!hole.threePutts) {
         current3PuttStreak++;
         if (current3PuttStreak > stats.longestNo3PuttStreak) {
           stats.longestNo3PuttStreak = current3PuttStreak;
@@ -1759,7 +1811,10 @@ function aggregateRoundStats(rounds: Array<{
       stats.girOpportunities++;
       if (hole.greenInRegulation) {
         stats.girTotal++;
-        puttsOnGir += hole.putts;
+        if (hole.putts !== null) {
+          puttsOnGir += hole.putts;
+          girHolesWithPutts++;
+        }
       }
 
       if (hole.par === 3) {
@@ -1839,10 +1894,69 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
 
-      // Putts
-      stats.totalPutts += hole.putts;
-      if (hole.threePutts) stats.threePuttsTotal++;
-      if (hole.putts === 1) stats.onePuttsTotal++;
+      // Putts — null-skip: a hole without recorded putts contributes nothing
+      // (the old known-hole path fabricated putts=2 for these holes).
+      if (hole.putts !== null) {
+        stats.totalPutts += hole.putts;
+        if (hole.threePutts) stats.threePuttsTotal++;
+        if (hole.putts === 1) stats.onePuttsTotal++;
+      }
+
+      // Make % — ALL-PUTT (every putt on the hole, made = holed), merged from
+      // the hole's per-band tallies. Conventional PGA "make % from distance"
+      // (matches golf_pga_standards + the cache writer). Was first-putt-only
+      // with made = 1-putt, which mislabeled the rate and conflicted with the
+      // leak-map/cache grid shown on the same tab. Deliberately NOT gated on
+      // the FIRST putt having a distance: the DB function buckets EVERY putt
+      // with a distance_to_hole_before, so a hole whose first putt lacks a
+      // distance still contributes its other distance-tagged putts.
+      for (const [band, mc] of Object.entries(hole.puttMakeByBand)) {
+        if (!puttMake[band]) puttMake[band] = { made: 0, total: 0 };
+        puttMake[band].total += mc.total;
+        puttMake[band].made += mc.made;
+      }
+
+      // Putting by break — ALL-PUTT, aligned with the headline make% above:
+      // every putt with a recorded break direction is an attempt in its own
+      // distance band, made = THAT putt holed (result/putt_made). The entry
+      // flow requires a break on every putt — not just the first — so all
+      // putts carry putt_break. Was first-putt-only with made = "exactly 1
+      // putt on the hole", which both mislabeled the rate and disagreed with
+      // the all-putt make% grid rendered alongside it.
+      for (const putt of hole.shots) {
+        if (putt.shot_type !== 'putting') continue;
+        const breakType = putt.putt_break;
+        if (breakType !== 'left_to_right' && breakType !== 'right_to_left' &&
+            breakType !== 'straight' && breakType !== 'multiple') {
+          continue;
+        }
+        const breakData = puttStatsByBreak[breakType];
+        if (!breakData) continue;
+        const holed = putt.result === 'hole' || putt.putt_made === true;
+
+        breakData.attempts++;
+        if (holed) breakData.makes++;
+
+        // Per-distance-band split needs the putt's own start distance.
+        if (putt.distance_to_hole_before !== null) {
+          const band = getPuttDistanceBucket(normalizePuttFeet(putt.distance_to_hole_before));
+          if (!breakData.make[band]) {
+            breakData.make[band] = { made: 0, total: 0 };
+          }
+          breakData.make[band].total++;
+          if (holed) breakData.make[band].made++;
+        }
+
+        // Miss tendency for this break — per missed putt with a tagged
+        // direction (compound tags like 'low_short' count toward each axis),
+        // matching the all-putt attempt definition.
+        if (!holed && putt.miss_direction) {
+          breakData.missTotal++;
+          if (putt.miss_direction.includes('short')) breakData.missShort++;
+          if (putt.miss_direction.includes('low')) breakData.missLow++;
+          if (putt.miss_direction.includes('high')) breakData.missHigh++;
+        }
+      }
 
       // First putt stats
       if (hole.firstPuttDistance !== null) {
@@ -1851,17 +1965,6 @@ function aggregateRoundStats(rounds: Array<{
         // ADDITIVE: first-putt approach distance — overall list + per-band count.
         firstPuttDistances.push(hole.firstPuttDistance);
         firstPuttDistanceBandCounts[bucket] = (firstPuttDistanceBandCounts[bucket] ?? 0) + 1;
-
-        // Make % — ALL-PUTT (every putt on the hole, made = holed), merged from
-        // the hole's per-band tallies. Conventional PGA "make % from distance"
-        // (matches golf_pga_standards + the cache writer). Was first-putt-only
-        // with made = 1-putt, which mislabeled the rate and conflicted with the
-        // leak-map/cache grid shown on the same tab.
-        for (const [band, mc] of Object.entries(hole.puttMakeByBand)) {
-          if (!puttMake[band]) puttMake[band] = { made: 0, total: 0 };
-          puttMake[band].total += mc.total;
-          puttMake[band].made += mc.made;
-        }
 
         // Proximity (leave distance)
         if (hole.firstPuttLeave !== null) {
@@ -1874,11 +1977,13 @@ function aggregateRoundStats(rounds: Array<{
         }
 
         // Efficiency (total putts from distance)
-        if (!puttEff[bucket]) puttEff[bucket] = [];
-        puttEff[bucket].push(hole.putts);
+        if (hole.putts !== null) {
+          if (!puttEff[bucket]) puttEff[bucket] = [];
+          puttEff[bucket].push(hole.putts);
+        }
 
         // Miss direction
-        if (hole.putts > 1 && hole.firstPuttLeave && hole.firstPuttLeave > 0) {
+        if (hole.putts !== null && hole.putts > 1 && hole.firstPuttLeave && hole.firstPuttLeave > 0) {
           // Determine miss direction from shots
           const firstPuttShot = hole.shots.find(s => s.shot_type === 'putting');
           if (firstPuttShot?.miss_direction) {
@@ -1893,35 +1998,6 @@ function aggregateRoundStats(rounds: Array<{
             if (pm === 'long' || pm.startsWith('long_') || pm.endsWith('_long')) puttMissLong++;
             if (pm === 'low' || pm.startsWith('low_') || pm.endsWith('_low')) puttMissLow++;
             if (pm === 'high' || pm.startsWith('high_') || pm.endsWith('_high')) puttMissHigh++;
-          }
-        }
-
-        // Putting stats by break type
-        const firstPuttShot = hole.shots.find(s => s.shot_type === 'putting');
-        if (firstPuttShot?.putt_break && (firstPuttShot.putt_break === 'left_to_right' ||
-            firstPuttShot.putt_break === 'right_to_left' || firstPuttShot.putt_break === 'straight' ||
-            firstPuttShot.putt_break === 'multiple')) {
-          const breakType = firstPuttShot.putt_break;
-
-          if (!puttStatsByBreak[breakType]) {
-            puttStatsByBreak[breakType] = { make: {}, missShort: 0, missLow: 0, missHigh: 0, missTotal: 0 };
-          }
-
-          // Make % by distance for this break type
-          if (!puttStatsByBreak[breakType].make[bucket]) {
-            puttStatsByBreak[breakType].make[bucket] = { made: 0, total: 0 };
-          }
-          puttStatsByBreak[breakType].make[bucket].total++;
-          if (hole.putts === 1) {
-            puttStatsByBreak[breakType].make[bucket].made++;
-          }
-
-          // Miss direction for this break type (use includes for compound tags like 'low_short')
-          if (hole.putts > 1 && firstPuttShot.miss_direction) {
-            puttStatsByBreak[breakType].missTotal++;
-            if (firstPuttShot.miss_direction.includes('short')) puttStatsByBreak[breakType].missShort++;
-            if (firstPuttShot.miss_direction.includes('low')) puttStatsByBreak[breakType].missLow++;
-            if (firstPuttShot.miss_direction.includes('high')) puttStatsByBreak[breakType].missHigh++;
           }
         }
       }
@@ -1965,7 +2041,7 @@ function aggregateRoundStats(rounds: Array<{
       // This is SEPARATE from proximity - we can calculate efficiency even without proximity data
       // We need: approachDistance (where they hit from), approachShotNumber, score, and lie
       // Only for approach shots (>= AROUND_GREEN_THRESHOLD_YARDS from hole) - around-the-green shots are tracked separately
-      if (hole.approachDistance !== null && hole.approachDistance >= AROUND_GREEN_THRESHOLD_YARDS && hole.approachShotNumber !== null) {
+      if (hole.score !== null && hole.approachDistance !== null && hole.approachDistance >= AROUND_GREEN_THRESHOLD_YARDS && hole.approachShotNumber !== null) {
         const bucket = getApproachDistanceBucket(hole.approachDistance);
         // Strokes to hole out = total shots - approach shot number + 1
         // Example: 5 total shots, approach is shot #2 → 5 - 2 + 1 = 4 strokes to hole out from approach
@@ -2143,6 +2219,12 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
     }
+
+    // This round contributed SG iff any category tally advanced while
+    // processing its holes (includes penalty-stroke charges).
+    if (sgTeeCount + sgApproachCount + sgAroundGreenCount + sgPuttingCount > sgShotCountBefore) {
+      roundsWithSg++;
+    }
   }
 
   stats.currentNo3PuttStreak = current3PuttStreak;
@@ -2236,7 +2318,9 @@ function aggregateRoundStats(rounds: Array<{
     ? Math.round(((stats.totalPutts / stats.holesPlayed) * 18) * 100) / 100
     : null;
   stats.puttsPerHole = safeAverage(stats.totalPutts, stats.holesPlayed);
-  stats.puttsPerGir = safeAverage(puttsOnGir, stats.girTotal);
+  // Denominator = GIR holes with KNOWN putts (null-skip both sides of the
+  // ratio; a GIR hole with unrecorded putts must not drag the average down).
+  stats.puttsPerGir = safeAverage(puttsOnGir, girHolesWithPutts);
   stats.threePuttsPerRound = stats.holesPlayed > 0
     ? Math.round(((stats.threePuttsTotal / stats.holesPlayed) * 18) * 100) / 100
     : null;
@@ -2392,14 +2476,14 @@ function aggregateRoundStats(rounds: Array<{
     greenMissProximities.length
   );
 
-  // Putting stats by break type
+  // Putting stats by break type — all-putt: totalPutts/overall cover every
+  // break-tagged putt (even one missing a start distance); the per-band
+  // make%s split the distance-tagged subset.
   for (const breakType of ['left_to_right', 'right_to_left', 'straight', 'multiple'] as const) {
     const breakData = puttStatsByBreak[breakType];
     if (breakData) {
-      const totalPutts = Object.values(breakData.make).reduce((sum, bucket) => sum + bucket.total, 0);
-
       stats.puttingByBreak[breakType] = {
-        totalPutts,
+        totalPutts: breakData.attempts,
         makePct0_3: safePercent(breakData.make['0_3']?.made || 0, breakData.make['0_3']?.total || 0),
         makePct3_5: safePercent(breakData.make['3_5']?.made || 0, breakData.make['3_5']?.total || 0),
         makePct5_10: safePercent(breakData.make['5_10']?.made || 0, breakData.make['5_10']?.total || 0),
@@ -2410,10 +2494,7 @@ function aggregateRoundStats(rounds: Array<{
         makePct25_30: safePercent(breakData.make['25_30']?.made || 0, breakData.make['25_30']?.total || 0),
         makePct30_35: safePercent(breakData.make['30_35']?.made || 0, breakData.make['30_35']?.total || 0),
         makePct35Plus: safePercent(breakData.make['35_plus']?.made || 0, breakData.make['35_plus']?.total || 0),
-        overallMakePct: safePercent(
-          Object.values(breakData.make).reduce((sum, bucket) => sum + bucket.made, 0),
-          totalPutts
-        ),
+        overallMakePct: safePercent(breakData.makes, breakData.attempts),
         missShortPct: safePercent(breakData.missShort, breakData.missTotal),
         missLowPct: safePercent(breakData.missLow, breakData.missTotal),
         missHighPct: safePercent(breakData.missHigh, breakData.missTotal),
@@ -2432,12 +2513,16 @@ function aggregateRoundStats(rounds: Array<{
   stats.strokesGainedAroundGreen = sgAroundGreenCount > 0 ? sgAroundGreen : null;
   stats.strokesGainedPutting = sgPuttingCount > 0 ? sgPutting : null;
 
-  // Strokes Gained per round - only calculate when we have valid data
-  stats.sgTeePerRound = sgTeeCount > 0 ? safeAverage(sgTee, rounds.length) : null;
-  stats.sgApproachPerRound = sgApproachCount > 0 ? safeAverage(sgApproach, rounds.length) : null;
-  stats.sgAroundGreenPerRound = sgAroundGreenCount > 0 ? safeAverage(sgAroundGreen, rounds.length) : null;
-  stats.sgPuttingPerRound = sgPuttingCount > 0 ? safeAverage(sgPutting, rounds.length) : null;
-  stats.sgTotalPerRound = hasSgData ? safeAverage(sgTotal, rounds.length) : null;
+  // Strokes Gained per round - only calculate when we have valid data.
+  // Denominator = rounds that actually contributed SG (roundsWithSg), matching
+  // the DB cache (update_player_stats_strokes_gained divides every category by
+  // COUNT of rounds with strokes_gained_total IS NOT NULL) — dividing by ALL
+  // rounds in the window let shot-untracked rounds dilute the averages.
+  stats.sgTeePerRound = sgTeeCount > 0 ? safeAverage(sgTee, roundsWithSg) : null;
+  stats.sgApproachPerRound = sgApproachCount > 0 ? safeAverage(sgApproach, roundsWithSg) : null;
+  stats.sgAroundGreenPerRound = sgAroundGreenCount > 0 ? safeAverage(sgAroundGreen, roundsWithSg) : null;
+  stats.sgPuttingPerRound = sgPuttingCount > 0 ? safeAverage(sgPutting, roundsWithSg) : null;
+  stats.sgTotalPerRound = hasSgData ? safeAverage(sgTotal, roundsWithSg) : null;
 
   // Approach proximity
   stats.approachProximityAvg = safeAverage(
