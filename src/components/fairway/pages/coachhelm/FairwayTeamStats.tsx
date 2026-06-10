@@ -655,6 +655,7 @@ function PlayerTile({
           team_n={headlineRow.team_n}
           team_pct={headlineRow.team_pct}
           pga_value={headlineRow.pga_value}
+          is_womens={headlineRow.is_womens}
           direction={renderCfg.direction}
           unit={renderCfg.unit}
           scale={renderCfg.default_scale}

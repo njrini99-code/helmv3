@@ -29,6 +29,8 @@ import { logServerError } from '@/lib/server-error-logger';
 export type EvidenceStanding = {
   /** True when the gender-aware loader omitted a misleading cross-gender PGA anchor. */
   pga_omitted?: boolean;
+  /** True for women's-team rows — render layers label the Tour reference "LPGA". */
+  is_womens?: boolean;
   metric_id: string;
   player_value: number;
   team_avg: number | null;
@@ -49,6 +51,7 @@ function flatten(s: PlayerStanding): EvidenceStanding {
     pga_value: s.pga_value,
     pga_delta: s.pga_delta,
     pga_omitted: s.pga_omitted,
+    is_womens: s.is_womens,
     computed_at: s.computed_at,
   };
 }

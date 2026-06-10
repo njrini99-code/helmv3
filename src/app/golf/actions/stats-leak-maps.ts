@@ -565,6 +565,7 @@ export async function getPlayerStandingRows(
       team_pct: s.team_pct,
       pga_value: s.pga_value,
       pga_delta: s.pga_delta,
+      is_womens: s.is_womens,
     }));
     return { success: true, data: rows };
   } catch (error) {

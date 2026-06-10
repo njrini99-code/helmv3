@@ -41,6 +41,15 @@ export interface PlayerStanding {
    */
   pga_omitted?: boolean;
 
+  /**
+   * True when this row was gender-anchored for a women's-team player by
+   * {@link applyGenderAnchor} (LPGA wire-up, 2026-06-10). Render layers use it
+   * to label the Tour reference "LPGA" instead of "PGA" (StandingBar /
+   * StandingStrip `is_womens` prop). Undefined/false for men's / unknown
+   * cohorts — unchanged behaviour.
+   */
+  is_womens?: boolean;
+
   computed_at: string;
 }
 

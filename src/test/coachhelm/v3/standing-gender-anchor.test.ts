@@ -108,6 +108,25 @@ describe('applyGenderAnchor — P3 missing women\'s anchor → omit, never fabri
   });
 });
 
+describe('applyGenderAnchor — is_womens flag (LPGA label wire-up)', () => {
+  it('stamps is_womens on a women\'s row WITH an anchor (label reads "LPGA")', () => {
+    const s = applyGenderAnchor(rawStanding({ metric_id: 'scrambling_pct_sand' }), 'womens');
+    expect(s.is_womens).toBe(true);
+    expect(s.pga_omitted).toBe(false);
+  });
+
+  it('stamps is_womens on a women\'s row WITHOUT an anchor (pga_omitted path)', () => {
+    const s = applyGenderAnchor(rawStanding({ metric_id: 'big_number_rate' }), 'womens');
+    expect(s.pga_omitted).toBe(true);
+    expect(s.is_womens).toBe(true);
+  });
+
+  it('never stamps is_womens on a men\'s row (PGA label unchanged)', () => {
+    const s = applyGenderAnchor(rawStanding(), 'mens');
+    expect(s.is_womens).toBeUndefined();
+  });
+});
+
 describe('applyGenderAnchorToMap', () => {
   it('rewrites every row for a women\'s player and leaves a men\'s map untouched', () => {
     const map = new Map<MetricId, PlayerStanding>([
@@ -117,10 +136,13 @@ describe('applyGenderAnchorToMap', () => {
 
     const womens = applyGenderAnchorToMap(map, 'womens');
     expect(womens.get('scrambling_pct_sand')!.pga_value).toBe(38);
+    expect(womens.get('scrambling_pct_sand')!.is_womens).toBe(true);
     expect(womens.get('big_number_rate')!.pga_omitted).toBe(true);
+    expect(womens.get('big_number_rate')!.is_womens).toBe(true);
 
     const mens = applyGenderAnchorToMap(map, 'mens');
     expect(mens).toBe(map); // identity for men — no allocation, no change
     expect(mens.get('scrambling_pct_sand')!.pga_value).toBe(50);
+    expect(mens.get('scrambling_pct_sand')!.is_womens).toBeUndefined();
   });
 });
