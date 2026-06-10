@@ -96,6 +96,8 @@ let authedUserId: string | null;
 let playerRow: { id: string } | null;
 let membershipRow: { team_id: string } | null;
 let membershipList: Array<{ team_id: string }>;
+// Class-ownership check (PR #259 review fix): null = row absent (orphan path).
+let classRow: { id: string; player_id: string } | null;
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
@@ -132,6 +134,24 @@ vi.mock('@/lib/supabase/server', () => ({
             onfulfilled?: ((value: unknown) => unknown) | null,
             onrejected?: ((reason: unknown) => unknown) | null,
           ) => Promise.resolve({ data: membershipList, error: null }).then(onfulfilled, onrejected),
+        };
+        return chain;
+      }
+      if (table === 'golf_player_classes') {
+        // Honor eq filters like PostgREST would: the row only comes back when
+        // every filtered column matches it.
+        const filters: Array<[string, unknown]> = [];
+        const chain = {
+          select: vi.fn(() => chain),
+          eq: vi.fn((col: string, val: unknown) => {
+            filters.push([col, val]);
+            return chain;
+          }),
+          maybeSingle: vi.fn(async () => {
+            const row = classRow as Record<string, unknown> | null;
+            const matches = row && filters.every(([c, v]) => row[c] === v);
+            return { data: matches ? classRow : null, error: null };
+          }),
         };
         return chain;
       }
@@ -211,6 +231,7 @@ describe('syncClassToCalendar — authz', () => {
     adminOps = [];
     authedUserId = 'user-1';
     playerRow = { id: PLAYER_ID };
+    classRow = { id: CLASS_ID, player_id: PLAYER_ID };
     membershipRow = { team_id: TEAM_ID };
     membershipList = [{ team_id: TEAM_ID }];
     vi.clearAllMocks();
@@ -237,6 +258,50 @@ describe('syncClassToCalendar — authz', () => {
     expect(result.error).toBe('Player is not a member of this team');
     expect(adminFrom).not.toHaveBeenCalled();
   });
+
+  it("rejects syncing a classId owned by ANOTHER player — admin client never used (PR #259 review)", async () => {
+    classRow = { id: CLASS_ID, player_id: 'player-OTHER' };
+    const result = await syncClassToCalendar(classData(), CLASS_ID, PLAYER_ID, TEAM_ID);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Not authorized to sync this class');
+    expect(adminFrom).not.toHaveBeenCalled();
+  });
+
+  it('rejects syncing a nonexistent classId — admin client never used', async () => {
+    classRow = null;
+    const result = await syncClassToCalendar(classData(), CLASS_ID, PLAYER_ID, TEAM_ID);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Not authorized to sync this class');
+    expect(adminFrom).not.toHaveBeenCalled();
+  });
+});
+
+describe("removeClassFromCalendar — class ownership (PR #259 review)", () => {
+  beforeEach(() => {
+    adminCfg = {};
+    adminOps = [];
+    authedUserId = 'user-1';
+    playerRow = { id: PLAYER_ID };
+    classRow = { id: CLASS_ID, player_id: PLAYER_ID };
+    membershipRow = { team_id: TEAM_ID };
+    membershipList = [{ team_id: TEAM_ID }];
+    vi.clearAllMocks();
+  });
+
+  it("rejects removing a LIVE class owned by another player — admin client never used", async () => {
+    classRow = { id: CLASS_ID, player_id: 'player-OTHER' };
+    const result = await removeClassFromCalendar(CLASS_ID, TEAM_ID);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Not authorized to remove this class');
+    expect(adminFrom).not.toHaveBeenCalled();
+  });
+
+  it('allows orphan cleanup when the class row no longer exists (scoped to own teams)', async () => {
+    classRow = null;
+    const result = await removeClassFromCalendar(CLASS_ID, TEAM_ID);
+    expect(result.success).toBe(true);
+    expect(adminFrom).toHaveBeenCalled();
+  });
 });
 
 describe('syncClassToCalendar — diff upsert (no blanket delete)', () => {
@@ -245,6 +310,7 @@ describe('syncClassToCalendar — diff upsert (no blanket delete)', () => {
     adminOps = [];
     authedUserId = 'user-1';
     playerRow = { id: PLAYER_ID };
+    classRow = { id: CLASS_ID, player_id: PLAYER_ID };
     membershipRow = { team_id: TEAM_ID };
     membershipList = [{ team_id: TEAM_ID }];
     vi.clearAllMocks();
@@ -384,6 +450,7 @@ describe('removeClassFromCalendar — scoped removal', () => {
     adminOps = [];
     authedUserId = 'user-1';
     playerRow = { id: PLAYER_ID };
+    classRow = { id: CLASS_ID, player_id: PLAYER_ID };
     membershipRow = { team_id: TEAM_ID };
     membershipList = [{ team_id: TEAM_ID }, { team_id: 'team-2' }];
     vi.clearAllMocks();
