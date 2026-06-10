@@ -366,3 +366,30 @@ Evidence: generator-base.ts:300-303 (toggle exit, no retraction), 221-225 (isEna
 - [newcode] Pagination is correctly built: fetchAllRowsResult uses stable unique-key ordering ('id' asc) with a bounded loop and short-page termination; every converted call site re-ranks in-app via rankEvidenceInsights (explicit score sort with created_at tie-break) and no downstream consumer was found relying on DB created_at ordering — dedupeBySubject/collapseParScoring operate on the ranked order by design.
 - [newcode] Resurrection deliberately preserves status: a coach dismissal keeps hiding a resurrected row (upsert.ts:211-212), and the refresh branch does not fire notifications, so the flap in CR-1 at least cannot spam push/email.
 - [newcode] The team-wide coach sweep retains the 800-row soft-ceiling observability warning rather than silently capping (insight-delivery.ts:540-548), and transient-fetch retry semantics were preserved through the pagination conversion.
+
+## Addendum — Full remediation + final-mile, same night (2026-06-09 late)
+
+All 40 confirmed findings actioned across PRs #253 + #254 (both deployed; prod
+Ready). Independent 8-agent re-verification after #253: **grade 93** — 43
+closures verified, 2 honest wontfixes (Supabase default-ACL posture, seeded
+demo clones), 0 still open. The rescore named the remaining 2 points
+explicitly; #254 closed them the same night, live-verified:
+
+- `pga_omitted` persisted end-to-end (10 women's rows carry it; StandingBar
+  suppression now fires)
+- both sibling standing RPCs gender-scoped on prod (approach bands +
+  opening-hole no longer pool genders; women's cohort honestly gated at
+  MIN_COHORT_N until enough data)
+- staleness disclosure on every generator family (105 live cards now say
+  "Data through ..."); 0 women's Tour-anchor prose; 0 below-gate highs
+- composite synthesis input restricted to product-visible v3; dual-axis
+  lifecycle/status contract documented; dead AlertBadge deleted
+
+**Standing after the final mile, by the rescore's own arithmetic: 95 — the
+rubric's definition of trustworthy.** The only evidence that remains is
+time-gated and cannot be coded: the organic causality cron writes
+(~2026-06-16; the manual dry run already passed all six gate checks on real
+prod data) and real-world calibration accumulation (>= 30 real players x >=
+10 real rounds) before cohort-primary counterfactuals can be considered
+proven at scale. Gates on the final tree: tsc clean / vitest 6,037-0 /
+RLS 2,016-0 / build clean / check:stats 0 divergent.
