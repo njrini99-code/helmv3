@@ -13,6 +13,7 @@ import {
   createTeam,
   updateTeam,
   regenerateJoinCode,
+  addSecondTeam,
 } from '@/app/golf/actions/teams';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
@@ -36,6 +37,30 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
+
+  // Add-second-team state (program head affordance — only shown when team exists)
+  const [showAddTeam, setShowAddTeam] = useState(false);
+  const [secondTeamName, setSecondTeamName] = useState('');
+  const [secondTeamGender, setSecondTeamGender] = useState<'mens' | 'womens'>('womens');
+  const [addTeamPending, startAddTeamTransition] = useTransition();
+
+  const handleAddSecondTeam = () => {
+    if (!secondTeamName.trim()) {
+      showToast('Please enter a team name', 'error');
+      return;
+    }
+    startAddTeamTransition(async () => {
+      const result = await addSecondTeam(secondTeamName.trim(), secondTeamGender);
+      if (result.success) {
+        showToast('Second team created successfully!', 'success');
+        setShowAddTeam(false);
+        setSecondTeamName('');
+        router.refresh();
+      } else {
+        showToast(result.error || 'Failed to create team', 'error');
+      }
+    });
+  };
 
   // Resolve the absolute origin only after mount. Rendering
   // `window.location.origin` during render produced a hydration mismatch —
@@ -274,6 +299,87 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
         <p className="text-xs text-warm-400">
           Regenerating will invalidate the old invite link.
         </p>
+      </div>
+
+      {/* ── Add a second team (program head affordance) ─────────────────── */}
+      <div className="surface-matte rounded-2xl p-6 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
+              Add a team
+            </h2>
+            <p className="text-sm text-warm-500 mt-1">
+              Run both a Men&apos;s and Women&apos;s program? Add a second team under the
+              same organization.
+            </p>
+          </div>
+          {!showAddTeam && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowAddTeam(true)}
+              className="flex-shrink-0"
+            >
+              + Add team
+            </Button>
+          )}
+        </div>
+
+        {showAddTeam && (
+          <div className="border-t border-warm-200/50 pt-4 space-y-4">
+            {/* Gender pill toggle — aria-label on each Button satisfies a11y */}
+            <div>
+              <p className="block text-sm font-medium text-warm-700 mb-2" id="add-team-gender-label">
+                Team Gender
+              </p>
+              <div className="flex gap-2" role="group" aria-labelledby="add-team-gender-label">
+                {(['mens', 'womens'] as const).map((g) => (
+                  <Button
+                    key={g}
+                    type="button"
+                    onClick={() => setSecondTeamGender(g)}
+                    variant={secondTeamGender === g ? 'primary' : 'secondary'}
+                    size="sm"
+                    className="flex-1"
+                    aria-pressed={secondTeamGender === g}
+                  >
+                    {g === 'mens' ? "Men's" : "Women's"}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="add-second-team-name" className="block text-sm font-medium text-warm-700 mb-2">
+                Team Name
+              </label>
+              <Input
+                id="add-second-team-name"
+                value={secondTeamName}
+                onChange={(e) => setSecondTeamName(e.target.value)}
+                placeholder={secondTeamGender === 'mens' ? "Men's Golf" : "Women's Golf"}
+                disabled={addTeamPending}
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleAddSecondTeam}
+                disabled={addTeamPending || !secondTeamName.trim()}
+                className="gap-2"
+              >
+                {addTeamPending ? 'Creating...' : 'Create Team'}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => { setShowAddTeam(false); setSecondTeamName(''); }}
+                disabled={addTeamPending}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
       </div>
     </div>

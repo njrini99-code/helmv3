@@ -2,6 +2,7 @@
 
 import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
@@ -1096,5 +1097,148 @@ export async function getPlayerJoinRequests(
         organization?: { name: string } | null;
       };
     }>,
+  };
+}
+
+// ============================================================================
+// PROGRAM HEAD: ADD SECOND TEAM
+// ============================================================================
+
+/**
+ * Add a second (or additional) team to a head coach's existing organization.
+ *
+ * Only a coach who already has a primary team (is_primary=true staff row) may
+ * call this. The new team is created under the SAME organization. The creating
+ * coach is added to the new team's staff as head_coach with is_primary=false —
+ * their original primary team is unchanged. A fresh join code is generated for
+ * the new team, exactly as in onboarding.
+ *
+ * Uses the admin client for the staff insert (same bootstrap pattern as
+ * onboarding) so the RLS "primary coach on the team" pre-condition is satisfied
+ * for the new row without a chicken-and-egg problem.
+ */
+export async function addSecondTeam(
+  name: string,
+  gender: 'mens' | 'womens'
+): Promise<TeamActionResult<TeamData & { gender: string }>> {
+  const supabase = await createClient();
+
+  // Auth check
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Verify coach exists
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (coachError || !coach) {
+    return { success: false, error: 'Coach profile not found' };
+  }
+
+  if (!coach.organization_id) {
+    return { success: false, error: 'No organization found. Complete onboarding first.' };
+  }
+
+  // Require the coach to already have a primary team — this action is for
+  // program heads adding a SECOND team, not for the initial team creation.
+  const { data: primaryStaffRow } = await supabase
+    .from('golf_team_coach_staff')
+    .select('id')
+    .eq('coach_id', coach.id)
+    .eq('is_primary', true)
+    .maybeSingle();
+
+  if (!primaryStaffRow) {
+    return { success: false, error: 'You must have a primary team before adding a second team.' };
+  }
+
+  // Prevent exact-duplicate gender: a coach should not have two teams with the
+  // same gender. Fetch all teams in the org this coach staffs, check genders.
+  const { data: existingStaffTeams } = await supabase
+    .from('golf_team_coach_staff')
+    .select('team_id')
+    .eq('coach_id', coach.id);
+
+  if (existingStaffTeams && existingStaffTeams.length > 0) {
+    const staffTeamIds = existingStaffTeams.map((s) => s.team_id);
+    const { data: existingTeams } = await supabase
+      .from('golf_teams')
+      .select('gender')
+      .in('id', staffTeamIds)
+      .eq('organization_id', coach.organization_id);
+
+    const genderConflict = (existingTeams ?? []).some((t) => t.gender === gender);
+    if (genderConflict) {
+      const label = gender === 'mens' ? "Men's" : "Women's";
+      return {
+        success: false,
+        error: `You already have a ${label} team in this program. Each program can have one Men's and one Women's team.`,
+      };
+    }
+  }
+
+  const joinCode = generateJoinCode();
+  const season = (() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    return month >= 7 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+  })();
+
+  const { data: newTeam, error: teamError } = await supabase
+    .from('golf_teams')
+    .insert({
+      name: name.trim(),
+      gender,
+      season,
+      join_code: joinCode,
+      organization_id: coach.organization_id,
+      created_by: coach.id,
+    })
+    .select('id, name, season, join_code, created_at')
+    .single();
+
+  if (teamError || !newTeam) {
+    await logServerError(
+      `[addSecondTeam] Team creation failed: ${teamError instanceof Error ? teamError.message : String(teamError)}`,
+      { action: 'teams.addSecondTeam' }
+    );
+    return { success: false, error: 'Failed to create team. Please try again.' };
+  }
+
+  // Use admin client for the staff insert — mirrors onboarding bootstrap pattern.
+  // is_primary = false because this is NOT the coach's primary team.
+  const admin = createAdminClient();
+  const { error: staffError } = await admin
+    .from('golf_team_coach_staff')
+    .insert({
+      team_id: newTeam.id,
+      coach_id: coach.id,
+      role: 'head_coach',
+      is_primary: false,
+    });
+
+  if (staffError) {
+    await logServerError(
+      `[addSecondTeam] Staff insert failed: ${staffError instanceof Error ? staffError.message : String(staffError)}`,
+      { action: 'teams.addSecondTeam' }
+    );
+    // Rollback the team we just created
+    await supabase.from('golf_teams').delete().eq('id', newTeam.id);
+    return { success: false, error: 'Failed to add team. Please try again.' };
+  }
+
+  revalidatePath('/golf/dashboard');
+  revalidatePath('/golf/dashboard/team');
+  revalidatePath('/golf/dashboard/roster');
+
+  return {
+    success: true,
+    data: { ...newTeam, gender },
   };
 }

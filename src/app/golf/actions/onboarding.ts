@@ -23,6 +23,7 @@ const coachOnboardingSchema = z.object({
   // Team
   teamName: z.string().max(200).optional(),
   season: z.string().max(20).optional(),
+  gender: z.enum(['mens', 'womens']).optional().default('mens'),
   // Profile
   fullName: z.string().min(1, 'Full name is required').max(200),
   title: z.string().max(100).optional(),
@@ -162,6 +163,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
         season: validatedData.season || getCurrentSeason(),
         join_code: joinCode,
         created_by: coach.id,
+        gender: validatedData.gender,
       })
       .select('id')
       .single();
