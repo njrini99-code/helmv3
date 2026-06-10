@@ -111,9 +111,15 @@ interface GolfSidebarProps {
   teamName?: string;
   avatarUrl?: string;
   isMobile?: boolean;
+  /**
+   * Optional slot rendered below the identity block.
+   * Used for the TeamSwitcher control (multi-team coaches only).
+   * Hidden when the rail is collapsed (icon-only mode).
+   */
+  teamSwitcherSlot?: React.ReactNode;
 }
 
-export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile = false }: GolfSidebarProps) {
+export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile = false, teamSwitcherSlot }: GolfSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -243,7 +249,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       <div
         className={cn(
           'border-b border-white/[0.06] overflow-hidden transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-          isCollapsed ? 'h-0 p-0 border-0' : 'h-auto px-5 py-5'
+          isCollapsed ? 'h-0 p-0 border-0' : 'h-auto px-5 pb-3 pt-5'
         )}
       >
         <div className="flex items-center gap-3">
@@ -266,12 +272,16 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             <p className="text-body-sm font-medium text-white truncate tracking-[-0.005em]">
               {userName || 'User'}
             </p>
-            <p className="text-[11.5px] text-white/45 truncate flex items-center gap-1.5">
-              <span className="w-1 h-1 rounded-full bg-primary-400/80" aria-hidden />
-              {teamName || 'Golf Team'}
-            </p>
+            {!teamSwitcherSlot && (
+              <p className="text-[11.5px] text-white/45 truncate flex items-center gap-1.5">
+                <span className="w-1 h-1 rounded-full bg-primary-400/80" aria-hidden />
+                {teamName || 'Golf Team'}
+              </p>
+            )}
           </div>
         </div>
+        {/* Team switcher slot — shown below identity for multi-team coaches. */}
+        {teamSwitcherSlot && <div className="mt-2">{teamSwitcherSlot}</div>}
       </div>
 
       {/* Navigation */}

@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { CreateQualifierButton } from '@/components/golf/qualifiers/CreateQualifierButton';
 import type { GolfQualifier } from '@/lib/types/golf';
 import { IconFlag, IconCalendar, IconMapPin, IconChevronRight, IconGolf } from '@/components/icons';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { Metadata } from 'next';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifiers } from '@/components/fairway/pages/qualifiers/FairwayQualifiers';
@@ -34,7 +34,7 @@ export default async function GolfQualifiersPage() {
   let qualifiers: GolfQualifier[] = [];
 
   if (isCoach && coach?.organization_id) {
-    teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+    teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   } else if (player?.id) {
     const { data: teamMember } = await supabase
       .from('golf_team_members')

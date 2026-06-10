@@ -43,6 +43,12 @@ export interface FairwaySidebarProps {
   brand?: React.ReactNode;
   /** Pinned footer slot (settings / sign-out). */
   footer?: React.ReactNode;
+  /**
+   * Extra content rendered inside the identity block, below the user name/team.
+   * Used for the team-switcher control (visible only to multi-team coaches).
+   * Hidden when the rail is collapsed (icon-only mode).
+   */
+  identityExtra?: React.ReactNode;
   /** Current pathname for active matching (pass `usePathname()` from the page). */
   pathname?: string;
   /** Collapsed (icon-only) rail. */
@@ -140,6 +146,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
     user,
     brand,
     footer,
+    identityExtra,
     pathname,
     collapsed = false,
     onToggleCollapsed,
@@ -219,7 +226,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
 
       {/* Identity */}
       {user && !isCollapsed && (
-        <div className="border-b border-white/[0.06] px-5 py-5">
+        <div className="border-b border-white/[0.06] px-5 pb-3 pt-5">
           <div className="flex items-center gap-3">
             <div
               className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-fw-md bg-gradient-to-br from-accent-400 to-accent-700 bg-cover bg-center"
@@ -237,7 +244,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
               <p className="truncate font-fw-sans text-body-sm font-medium tracking-[-0.005em] text-nav-text">
                 {user.name}
               </p>
-              {user.teamName && (
+              {user.teamName && !identityExtra && (
                 <p className="flex items-center gap-1.5 truncate font-fw-sans text-caption font-normal text-nav-text-dim">
                   <span className="h-1 w-1 flex-shrink-0 rounded-full bg-nav-accent" aria-hidden />
                   {user.teamName}
@@ -245,6 +252,8 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
               )}
             </div>
           </div>
+          {/* Team-switcher slot — only rendered for multi-team coaches, hidden when collapsed. */}
+          {identityExtra && <div className="mt-2">{identityExtra}</div>}
         </div>
       )}
 

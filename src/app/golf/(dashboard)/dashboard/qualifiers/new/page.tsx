@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import NewQualifierClient from './new-qualifier-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewQualifier } from '@/components/fairway/pages/qualifiers/FairwayNewQualifier';
 
@@ -25,7 +25,7 @@ export default async function NewQualifierPage() {
   let players: Array<{ id: string; first_name: string; last_name: string }> = [];
 
   if (coach?.organization_id) {
-    const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (teamId) {
       const { data: teamMembersData } = await supabase

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { TravelClient } from './travel-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTravel } from '@/components/fairway/pages/travel';
 
@@ -27,7 +27,7 @@ export default async function GolfTravelPage() {
   // with >1 team; player via membership)
   const [coachTeamId, playerTeamResult] = await Promise.all([
     coach?.organization_id
-      ? resolveCoachTeamId(supabase, coach.organization_id, coach.id)
+      ? resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id)
       : Promise.resolve(null),
     player?.id
       ? supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).eq('status', 'active').maybeSingle()

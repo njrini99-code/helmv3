@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { DocumentsClient } from './documents-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayDocuments } from '@/components/fairway/pages/documents';
 
@@ -28,7 +28,7 @@ export default async function GolfDocumentsPage() {
   // orgs with >1 team); for players, look up via team_members
   let teamId: string | null = null;
   if (coach?.organization_id) {
-    teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+    teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   } else if (player?.id) {
     const { data: teamMember } = await supabase
       .from('golf_team_members')

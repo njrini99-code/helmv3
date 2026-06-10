@@ -39,6 +39,7 @@ import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
+import { TeamSwitcher } from '@/components/golf/TeamSwitcher';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { usePresence } from '@/hooks/use-presence';
 import { createClient } from '@/lib/supabase/client';
@@ -298,6 +299,13 @@ function FairwayDashboardContent({
   const { displayDensity, showAnimations } = useAppearancePreferences();
   const role: Role = userData.role === 'coach' ? 'coach' : 'player';
 
+  // TeamSwitcher: only render for coaches with >1 team.
+  const coachTeams = userData.coachTeams ?? [];
+  const teamSwitcher =
+    role === 'coach' && coachTeams.length > 1 && userData.teamId ? (
+      <TeamSwitcher teams={coachTeams} activeTeamId={userData.teamId} variant="sidebar" />
+    ) : null;
+
   // Track presence (deferred internally so it doesn't compete with page load).
   usePresence();
 
@@ -370,6 +378,7 @@ function FairwayDashboardContent({
         user={{ name: userData.name, teamName: userData.teamName, avatarUrl: userData.avatarUrl }}
         brand={Brand}
         sidebarFooter={<ShellFooter />}
+        sidebarIdentityExtra={teamSwitcher}
         pathname={pathname}
         linkComponent={ShellLink}
         breadcrumbs={breadcrumbs}

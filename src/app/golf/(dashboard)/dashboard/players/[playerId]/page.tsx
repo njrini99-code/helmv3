@@ -3,7 +3,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { PlayerInsightClient } from './player-insight-client';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerInsight } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
@@ -128,7 +128,7 @@ export default async function PlayerInsightPage({
   // 1. Auth check — verify this coach's org owns the team containing this player
   // -----------------------------------------------------------------------
   // Deterministic org→team resolution (handles orgs with >1 team)
-  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
   if (!teamId) redirect('/golf/dashboard/roster');
 
