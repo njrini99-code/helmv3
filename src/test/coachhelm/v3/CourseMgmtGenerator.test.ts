@@ -12,11 +12,9 @@ function makeAgg(
     cause_penalty_pct: number;
     cause_missed_gir_pct: number;
     cause_three_putt_pct: number;
-    spanDays: 54,
-  first_round_date: '2026-04-01',
-  last_round_date: '2026-05-25',
-  worst_holes: Array<{ hole_number: number; avg_to_par: number; n: number }>;
+    worst_holes: Array<{ hole_number: number; avg_to_par: number; n: number }>;
   }> = {},
+  cohortGender: 'mens' | 'womens' | null = 'mens',
 ) {
   return {
     sampleN: rounds,
@@ -28,13 +26,14 @@ function makeAgg(
     // composeContent falls back to the raw PGA anchors (pre-cm-1 behavior).
     anchor_value: anchor.anchor_value ?? null,
     anchor_is_cohort: anchor.anchor_is_cohort ?? false,
+    cohort_gender: cohortGender,
     cause_penalty_pct: cause.cause_penalty_pct ?? 0,
     cause_missed_gir_pct: cause.cause_missed_gir_pct ?? 0,
     cause_three_putt_pct: cause.cause_three_putt_pct ?? 0,
     spanDays: 54,
-  first_round_date: '2026-04-01',
-  last_round_date: '2026-05-25',
-  worst_holes: cause.worst_holes ?? [],
+    first_round_date: '2026-04-01',
+    last_round_date: '2026-05-25',
+    worst_holes: cause.worst_holes ?? [],
   };
 }
 
@@ -86,7 +85,7 @@ describe('CourseMgmtGenerator', () => {
       const c = g.composeContent(makeAgg('penalty', 0.9, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
       expect(c.priority).toBe('low');
       expect(c.content).toContain('College players in our data average ~0.9');
-      expect(c.content).toContain('PGA Tour ~0.3');
+      expect(c.content).toContain('College players in our data average');
     });
 
     it('penalty: well above cohort escalates to HIGH', () => {
@@ -156,10 +155,7 @@ describe('CourseMgmtGenerator', () => {
       const c = g.composeContent(
         makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }, {
           cause_three_putt_pct: 40, cause_missed_gir_pct: 40, cause_penalty_pct: 20,
-          spanDays: 54,
-  first_round_date: '2026-04-01',
-  last_round_date: '2026-05-25',
-  worst_holes: [
+          worst_holes: [
             { hole_number: 7, avg_to_par: 0.9, n: 6 },
             { hole_number: 14, avg_to_par: 0.7, n: 6 },
           ],

@@ -20,6 +20,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import { loadCompletedHoles, LIFETIME_WINDOW_DAYS, proximateCause } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { lifetimeSpanDays, staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
@@ -55,6 +56,9 @@ interface CourseMgmtAggregate extends GeneratorAggregate {
   anchor_value: number | null;
   /** True when anchor_value came from the cohort (level_avg), not the PGA fallback. */
   anchor_is_cohort: boolean;
+  /** Player cohort gender — women's cards must not cite men's Tour anchors
+   *  when no cohort baseline exists (rescore item 7: honesty over coverage). */
+  cohort_gender: 'mens' | 'womens' | null;
   /** Of this player's double-plus holes, the % whose proximate cause was a penalty. */
   cause_penalty_pct: number;
   /** % whose proximate cause was a missed GIR with no scramble. */
@@ -161,6 +165,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     // else the PGA value. Cold-start (no standing row) leaves anchor_value null
     // and composeContent falls back to the raw PGA anchors.
     const standing = await loadStandingForMetric(this.playerId, this.metricId);
+    const playerCohort = await loadPlayerCohort(this.playerId);
     const cohort = standing?.level_avg ?? null;
     const anchorIsCohort = cohort !== null && Number.isFinite(cohort);
     const anchorValue = anchorIsCohort
@@ -177,6 +182,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       rounds_played: roundsPlayed,
       anchor_value: anchorValue,
       anchor_is_cohort: anchorIsCohort,
+      cohort_gender: playerCohort.gender,
       cause_penalty_pct: cpct(penaltyN),
       cause_missed_gir_pct: cpct(missedGirN),
       cause_three_putt_pct: cpct(threePuttN),
@@ -246,9 +252,13 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
 
     if (agg.variant === 'penalty') {
       const valueDisp = agg.metric_value.toFixed(1);
+      // Women's players never see the men's-Tour citation when there's no
+      // cohort baseline — omit rather than mislead (rescore item 7).
       const anchorClause = agg.anchor_is_cohort && agg.anchor_value !== null
-        ? `College players in our data average ~${agg.anchor_value.toFixed(1)} (PGA Tour ~0.3)`
-        : `PGA Tour is ~0.3; top college teams stay under 0.5`;
+        ? `College players in our data average ~${agg.anchor_value.toFixed(1)}`
+        : agg.cohort_gender === 'womens'
+          ? `Every avoided penalty is a stroke back`
+          : `PGA Tour is ~0.3; top college teams stay under 0.5`;
       return {
         title: `Penalty strokes: ${valueDisp} per round`,
         content:
@@ -292,8 +302,10 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     // big_number variant
     const valueDisp = `${agg.metric_value.toFixed(1)}%`;
     const anchorClause = agg.anchor_is_cohort && agg.anchor_value !== null
-      ? `College players in our data average ~${agg.anchor_value.toFixed(1)}% (PGA Tour ~2%)`
-      : `PGA Tour is ~2%`;
+      ? `College players in our data average ~${agg.anchor_value.toFixed(1)}%`
+      : agg.cohort_gender === 'womens'
+        ? `This is the #1 controllable scoring leak`
+        : `PGA Tour is ~2%`;
     return {
       title: `Double bogey-or-worse rate: ${valueDisp}`,
       content:

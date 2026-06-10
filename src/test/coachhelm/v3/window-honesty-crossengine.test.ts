@@ -30,6 +30,7 @@ describe('Phase E cross-engine — cache-backed engines carry the true span, nev
 describe('Phase E cross-engine — shot-source engines genuinely window 90d (honest, stays 90)', () => {
   it('scrambling keeps window_days 90 (loadSandShots genuinely windows 90d)', () => {
     const c = new ScramblingGenerator(PID, 'sand').composeContent({
+      last_round_date: '2026-05-25',
       sampleN: 20, playerValue: 45, lie: 'sand', attempts: 20, rounds_played: 20,
       reached_green_n: 15, failed_escape_n: 5, avg_leave_feet: 14,
       two_putt_after_reach_n: 10, failure_mode: 'mixed',

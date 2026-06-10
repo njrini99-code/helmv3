@@ -181,9 +181,14 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     // from these anchors prevents "the tail drove it" from firing on par 5s where
     // the primary leak is simply not converting the eagle/birdie opportunity.
     //
-    // Interim men's/PGA-grade par-type birdie baselines for prose classification
-    // only (never a standing/impact number). Phase D (D7) does not currently add
-    // a per-gender par-type anchor; if it ever does, swap this to it.
+    // Interim men's/PGA-grade par-type birdie baselines for prose
+    // CLASSIFICATION only (tail-cost vs birdie-shortfall branching — never a
+    // standing/impact number, and the rates are never printed on the card).
+    // Rescore item 7 reviewed this: no credible women's per-par birdie
+    // baseline exists in docs/v3-research-golf-domain.md, and since the value
+    // only picks which driver SENTENCE renders (both sentences cite only the
+    // player's OWN rates), the classification-side use is gender-safe. If a
+    // women's baseline ever lands in Phase D (D7), swap this to it.
     const EXPECTED_BIRDIE_RATE: Record<ParType, number> = { 3: 10, 4: 12, 5: 35 };
     const expectedBirdie = EXPECTED_BIRDIE_RATE[agg.par];
     const tailCost = agg.bogey_rate / 100 + (2 * agg.double_plus_rate) / 100; // strokes over par per hole from the bad tail

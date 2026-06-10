@@ -1,6 +1,19 @@
 /**
  * Single source of truth for which `golf_coach_insights` rows are
- * product-visible. Shared by the delivery read paths
+ * product-visible.
+ *
+ * DUAL-AXIS STATE CONTRACT (explicit design decision, rescore item 4):
+ * `lifecycle_state` and `status` are INDEPENDENT axes by design —
+ * lifecycle_state is the ENGINE's axis (tentative → detected → matured →
+ * addressed → resolved / archived; sweeps + the lifecycle cron move it),
+ * while `status` is the COACH's axis (active / acknowledged / dismissed /
+ * resolved; only coach actions move it). A sweep-archived row therefore
+ * legitimately reads lifecycle='archived' + status='active': the engine
+ * retracted it, the coach never touched it — which is exactly what lets
+ * resurrection restore it without clobbering coach intent. The axes are NOT
+ * to be reconciled in the rows; they are reconciled HERE, and every reader
+ * must come through this module (applyInsightVisibility) rather than
+ * hand-rolling a predicate on one axis. Shared by the delivery read paths
  * (`src/app/golf/actions/insight-delivery.ts`) and the causality
  * attribution cron (`/api/cron/v3/causality-attribute`) so the learning
  * loop can only ever train on rows a coach or player could actually see

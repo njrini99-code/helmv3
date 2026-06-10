@@ -31,8 +31,9 @@
  * generator. Flagged here so the overlap is documented at the source.
  */
 
+import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import { loadCompletedHoles } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
+import { loadCompletedHoles, loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -41,6 +42,8 @@ import type {
 } from '@/lib/coachhelm/v3/engine/types';
 
 interface WarmupHoleAggregate extends GeneratorAggregate {
+  /** Newest cache round date — feeds the staleness disclosure. */
+  last_round_date: string | null;
   hole1_avg: number;
   /** Avg (score − par) on holes 2-18 of the SAME par as the hole-1 plays. */
   rest_avg: number;
@@ -120,8 +123,11 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
     const cpct = (k: number) => (lostN > 0 ? (100 * k) / lostN : 0);
     const teePctBase = cpct(exec);
 
+    const lastRoundDate = await loadLastRoundDate(this.playerId);
+
     return {
       sampleN: hole1Rounds.size,
+      last_round_date: lastRoundDate,
       playerValue: delta,
       hole1_avg: hole1Avg,
       rest_avg: restAvg,
@@ -158,7 +164,8 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
       `${absDelta} strokes ${direction} than same-par holes 2-18 ` +
       `(hole 1 = ${hole1Disp}/hole; matched rest of round = ${restDisp}/hole).` +
       causeClause +
-      ` Tour avg is ~0.1 strokes (Research doc §9).`;
+      ` Tour avg is ~0.1 strokes (Research doc §9).` +
+      staleDataSuffix(agg.last_round_date);
 
     return {
       title,

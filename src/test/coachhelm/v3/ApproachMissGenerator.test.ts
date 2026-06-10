@@ -14,6 +14,10 @@ vi.mock('@/lib/coachhelm/v3/engine/shot-source', async (importOriginal) => {
   return { ...actual, loadApproachShots: vi.fn() };
 });
 
+vi.mock('@/lib/coachhelm/v3/engine/hole-diagnosis', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/coachhelm/v3/engine/hole-diagnosis')>();
+  return { ...actual, loadLastRoundDate: vi.fn().mockResolvedValue('2026-05-25') };
+});
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
   loadPlayerCohort: vi.fn().mockResolvedValue({ gender: 'mens', level: null }),
 }));
@@ -63,6 +67,7 @@ function makeAgg(over: Partial<{
   const attempts = over.attempts ?? 20;
   const greenHitPct = over.green_hit_pct ?? 60;
   return {
+    last_round_date: '2026-05-25',
     sampleN: attempts,
     playerValue: greenHitPct,
     bucket: (over.bucket ?? '50_125ft') as '50_125ft' | '125_175ft' | '175_plus_ft',

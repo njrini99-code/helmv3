@@ -29,6 +29,8 @@
  * metrics is a follow-up RPC; the PGA green-hit anchors below are APPROXIMATE.
  */
 
+import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { round } from '@/lib/golf/stat-formulas';
 import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
@@ -113,6 +115,8 @@ function classifyMiss(raw: string | null): { sl: keyof AxisTally; lr: keyof Axis
 }
 
 interface ApproachMissAggregate extends GeneratorAggregate {
+  /** Newest cache round date — feeds the staleness disclosure. */
+  last_round_date: string | null;
   bucket: ApproachBucket;
   attempts: number;
   green_hit_n: number;
@@ -184,8 +188,11 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       lr[c.lr] += 1;
     }
 
+    const lastRoundDate = await loadLastRoundDate(this.playerId);
+
     return {
       sampleN: inBucket.length,
+      last_round_date: lastRoundDate,
       // am-3 (armed-landmine guard): `playerValue` is contractually "the unit of
       // the v3 metric" — and `approach_proximity_*ft` is registered as FEET
       // (lower_better) in the metric registry + counterfactual lookup. The
@@ -259,7 +266,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
 
     return {
       title,
-      content: reachSentence + dialInSentence + penaltySentence + axisSentence,
+      content: reachSentence + dialInSentence + penaltySentence + axisSentence + staleDataSuffix(agg.last_round_date),
       // Descriptive diagnostic — severity is read off the StandingBar, not the verdict.
       priority: 'low',
       signature: `approach_miss:${agg.bucket}`,
