@@ -37,7 +37,15 @@ export async function resolveCoachTeamIdWithCookie(
   organizationId: string | null | undefined,
   coachId: string | null | undefined,
 ): Promise<string | null> {
-  const cookieStore = await cookies();
-  const cookieTeamId = cookieStore.get(ACTIVE_TEAM_COOKIE)?.value ?? null;
+  // `cookies()` throws outside a request scope (e.g. unit tests exercising a
+  // server action directly, or background jobs). Degrade to "no cookie" — the
+  // resolver then falls back to the coach's staffed/default team.
+  let cookieTeamId: string | null = null;
+  try {
+    const cookieStore = await cookies();
+    cookieTeamId = cookieStore.get(ACTIVE_TEAM_COOKIE)?.value ?? null;
+  } catch {
+    cookieTeamId = null;
+  }
   return resolveCoachActiveTeamId(supabase, organizationId, coachId, cookieTeamId);
 }

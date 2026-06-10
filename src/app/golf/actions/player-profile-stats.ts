@@ -20,7 +20,7 @@ import {
 } from '@/lib/utils/golf-stats-calculator-shots';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { logServerError } from '@/lib/server-error-logger';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // TYPES
@@ -70,7 +70,7 @@ export async function getPlayerProfileStats(
       return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
     }
     // Deterministic org→team resolution (handles orgs with >1 team)
-    const teamId = await resolveCoachTeamId(supabase, coach.data.organization_id, coach.data.id);
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.data.organization_id, coach.data.id);
     if (!teamId) {
       return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
     }
@@ -315,7 +315,7 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
       return { success: false, error: 'Unauthorized' };
     }
     // Deterministic org→team resolution (handles orgs with >1 team)
-    const teamId = await resolveCoachTeamId(supabase, coach.data.organization_id, coach.data.id);
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.data.organization_id, coach.data.id);
     if (!teamId) {
       return { success: false, error: 'Unauthorized' };
     }
