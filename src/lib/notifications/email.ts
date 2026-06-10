@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
+import { renderBrandedEmail, escapeHtml as esc, safeFormatDate } from '@/lib/email/layout';
 
 // Resend client - lazy loaded
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -168,232 +169,8 @@ const BRAND = {
   white:        '#FFFFFF',
 };
 
-// ============================================================================
-// SVG ICON LIBRARY  (inline, email-safe, 20×20 viewBox)
-// ============================================================================
+const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`;
 
-const ICONS: Record<string, string> = {
-  message: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h13A1.5 1.5 0 0 1 18 4.5v8A1.5 1.5 0 0 1 16.5 14H11l-3.5 3v-3H3.5A1.5 1.5 0 0 1 2 12.5v-8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 7.5h8M6 10.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-
-  announcement: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7.5h1.5m0 0V13a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1.5M4.5 7.5H16a1 1 0 0 0 0-2H4.5a1 1 0 0 0 0 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 5.5v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="15" cy="15.5" r="1" fill="currentColor"/></svg>`,
-
-  flag: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 3v14M5 3h10l-2.5 4L15 11H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-
-  calendar: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="4" width="15" height="13.5" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 8.5h15M7 2.5V5.5M13 2.5V5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="12" r="1" fill="currentColor"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="13" cy="12" r="1" fill="currentColor"/></svg>`,
-
-  bookmark: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 3h10a1 1 0 0 1 1 1v13l-6-4-6 4V4a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
-
-  chart: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 14.5l4.5-5 3.5 3 4-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 17h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-
-  eye: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
-
-  bell: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a6 6 0 0 1 6 6v3l1.5 2.5H2.5L4 11V8a6 6 0 0 1 6-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 15.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-};
-
-/** Renders an icon in a circle on dark bg for use in the body */
-function iconCircle(iconKey: string, size = 48): string {
-  const svg = ICONS[iconKey] ?? ICONS['bell']!;
-  return `
-    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
-      <tr>
-        <td style="width:${size}px;height:${size}px;background-color:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:12px;text-align:center;vertical-align:middle;">
-          <div style="display:inline-block;color:${BRAND.green};width:20px;height:20px;margin-top:${Math.floor((size - 20) / 2) - 1}px;">
-            ${svg.replace('currentColor', BRAND.green)}
-          </div>
-        </td>
-      </tr>
-    </table>`;
-}
-
-/** Small icon for the header pill (white, 16×16) */
-function headerPillIcon(iconKey: string): string {
-  const svg = ICONS[iconKey] ?? ICONS['bell']!;
-  return svg
-    .replace(/width="20"/g, 'width="14"')
-    .replace(/height="20"/g, 'height="14"')
-    .replace(/viewBox="0 0 20 20"/g, 'viewBox="0 0 20 20"')
-    .replace(/currentColor/g, 'rgba(255,255,255,0.85)');
-}
-
-/**
- * Shared premium layout shell.
- * Dark warm header · cream body · subtle footer
- */
-function emailShell(opts: {
-  previewText: string;
-  headerLabel: string;
-  headerIconKey: string;
-  iconKey: string;
-  title: string;
-  body: string;
-  cta: { label: string; url: string };
-  greeting?: string;
-  footerNote?: string;
-}): string {
-  const { previewText, headerLabel, headerIconKey, iconKey, title, body, cta, greeting, footerNote } = opts;
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <meta name="color-scheme" content="light" />
-  <title>${title}</title>
-  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
-  <style>
-    @media only screen and (max-width:620px){
-      .wrap{width:100%!important;padding:0 12px!important;}
-      .card{border-radius:12px!important;}
-      .body-pad{padding:28px 24px!important;}
-      .head-pad{padding:22px 24px!important;}
-      .foot-pad{padding:16px 24px!important;}
-      .cta-btn{display:block!important;text-align:center!important;}
-    }
-  </style>
-</head>
-<body style="margin:0;padding:0;background-color:${BRAND.subtle};-webkit-text-size-adjust:100%;" bgcolor="${BRAND.subtle}">
-
-  <!-- Preheader -->
-  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${BRAND.subtle};">${previewText}&#8203;&#65279;&#65279;&#65279;&#65279;&#65279;&#65279;</div>
-
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr>
-      <td align="center" style="padding:32px 16px;">
-        <table role="presentation" class="wrap" width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;">
-
-          <!-- ═══ GREEN ACCENT BAR ═══ -->
-          <tr>
-            <td style="height:4px;background:linear-gradient(90deg,${BRAND.green} 0%,${BRAND.greenDark} 100%);border-radius:12px 12px 0 0;line-height:4px;font-size:4px;">&nbsp;</td>
-          </tr>
-
-          <!-- ═══ HEADER ═══ -->
-          <tr>
-            <td class="head-pad" style="background-color:${BRAND.dark};padding:24px 36px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td valign="middle">
-                    <a href="${baseUrl}" style="text-decoration:none;display:inline-block;">
-                      <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:21px;font-weight:700;letter-spacing:-0.6px;color:${BRAND.white};">Helm</span><span style="font-size:21px;font-weight:700;letter-spacing:-0.6px;color:${BRAND.green};">.</span>
-                    </a>
-                  </td>
-                  <td valign="middle" align="right">
-                    <span style="display:inline-block;vertical-align:middle;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-table;">
-                        <tr>
-                          <td style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);border-radius:20px;padding:5px 12px 5px 10px;white-space:nowrap;">
-                            <span style="display:inline-block;vertical-align:middle;margin-right:6px;line-height:0;">${headerPillIcon(headerIconKey)}</span>
-                            <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:500;color:rgba(255,255,255,0.65);letter-spacing:0.3px;vertical-align:middle;">${headerLabel}</span>
-                          </td>
-                        </tr>
-                      </table>
-                    </span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- ═══ BODY ═══ -->
-          <tr>
-            <td class="body-pad" style="background-color:${BRAND.cream};padding:36px 36px 28px;border-left:1px solid ${BRAND.border};border-right:1px solid ${BRAND.border};">
-
-              ${greeting ? `<p style="margin:0 0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:500;color:${BRAND.muted};">${greeting}</p>` : ''}
-
-              ${iconCircle(iconKey)}
-
-              <!-- Title -->
-              <h1 style="margin:0 0 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;color:${BRAND.dark};">${title}</h1>
-
-              <!-- Body -->
-              ${body}
-
-              <!-- CTA -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;">
-                <tr>
-                  <td style="border-radius:8px;background:linear-gradient(135deg,${BRAND.green} 0%,${BRAND.greenDark} 100%);">
-                    <a href="${cta.url}" class="cta-btn"
-                       style="display:inline-block;padding:13px 26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:${BRAND.white};text-decoration:none;letter-spacing:0.1px;line-height:1.4;white-space:nowrap;">
-                      ${cta.label}&nbsp;&nbsp;&rarr;
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-            </td>
-          </tr>
-
-          <!-- ═══ DIVIDER ═══ -->
-          <tr>
-            <td style="height:1px;background-color:${BRAND.border};line-height:1px;font-size:1px;">&nbsp;</td>
-          </tr>
-
-          <!-- ═══ FOOTER ═══ -->
-          <tr>
-            <td class="foot-pad" style="background-color:${BRAND.white};padding:18px 36px;border-radius:0 0 12px 12px;border:1px solid ${BRAND.border};border-top:none;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td>
-                    <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:${BRAND.muted};">
-                      ${footerNote ?? 'You\'re receiving this because you\'re part of a Helm Sports team.'}
-                      &nbsp;&middot;&nbsp;
-                      <a href="${baseUrl}/golf/dashboard/settings" style="color:${BRAND.muted};text-decoration:underline;">Manage preferences</a>
-                    </p>
-                  </td>
-                  <td align="right" style="white-space:nowrap;padding-left:16px;">
-                    <a href="${baseUrl}" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:${BRAND.warm400};text-decoration:none;font-weight:500;">helmsportslabs.com</a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-}
-
-/** Renders a key-value detail row used in several templates */
-function detailRow(label: string, value: string): string {
-  return `
-    <tr>
-      <td style="padding:10px 16px;border-bottom:1px solid ${BRAND.border};">
-        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:${BRAND.muted};">${label}</span>
-      </td>
-      <td style="padding:10px 16px;border-bottom:1px solid ${BRAND.border};text-align:right;">
-        <span style="font-size:14px;font-weight:500;color:${BRAND.dark};">${value}</span>
-      </td>
-    </tr>`;
-}
-
-/** Wraps detail rows in a table */
-function detailTable(rows: string): string {
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="border:1px solid ${BRAND.border};border-radius:8px;overflow:hidden;margin:20px 0;border-collapse:collapse;">
-      <tbody>${rows}</tbody>
-    </table>`;
-}
-
-/** Quote block for message previews */
-function quoteBlock(text: string): string {
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
-      <tr>
-        <td style="border-left:3px solid ${BRAND.green};padding:12px 20px;background:${BRAND.greenLight};border-radius:0 8px 8px 0;">
-          <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.dark};font-style:italic;">"${text}"</p>
-        </td>
-      </tr>
-    </table>`;
-}
-
-/** Badge pill (for urgency, stage labels, etc.) */
-function badge(text: string, color: string, bg: string): string {
-  return `<span style="display:inline-block;padding:3px 10px;background:${bg};color:${color};border-radius:12px;font-size:12px;font-weight:600;letter-spacing:0.2px;">${text}</span>`;
-}
 
 // ── Urgency config ────────────────────────────────────────────────────────────
 const URGENCY: Record<string, { label: string; color: string; bg: string }> = {
@@ -403,13 +180,41 @@ const URGENCY: Record<string, { label: string; color: string; bg: string }> = {
   urgent: { label: 'Urgent',          color: '#DC2626', bg: '#FEF2F2' },
 };
 
+/** Badge pill (for urgency, stage labels, etc.) */
+function badge(text: string, color: string, bg: string): string {
+  return `<span style="display:inline-block;padding:3px 10px;background:${bg};color:${color};border-radius:12px;font-size:12px;font-weight:600;letter-spacing:0.2px;">${text}</span>`;
+}
+
+/** Quote block for message previews */
+function quoteBlock(text: string): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
+      <tr>
+        <td style="border-left:3px solid ${BRAND.green};padding:12px 20px;background:${BRAND.greenLight};border-radius:0 8px 8px 0;">
+          <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.dark};font-style:italic;">"${text}"</p>
+        </td>
+      </tr>
+    </table>`;
+}
+
+/** Greeting paragraph — renders only when non-empty */
+function greetingHtml(greeting: string): string {
+  return greeting
+    ? `<p style="margin:0 0 20px;font-family:${FONT};font-size:15px;font-weight:500;color:${BRAND.dark};">${esc(greeting)}</p>`
+    : '';
+}
+
 /**
- * Generate premium email template based on notification type
+ * Generate premium email template based on notification type.
+ * All templates now route through renderBrandedEmail.
  */
 function generateEmailTemplate(
   type: NotificationType,
   data: Record<string, unknown>
 ): EmailTemplate {
+
+  const greeting = String(data._greeting || '');
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
   switch (type) {
 
@@ -420,24 +225,22 @@ function generateEmailTemplate(
       const messageUrl = String(data.messageUrl || '#');
       return {
         subject: `New message from ${senderName}`,
-        html: emailShell({
-          previewText: `${senderName}: ${preview}`,
-          headerLabel: 'Direct Message',
-          headerIconKey: 'message',
-          iconKey: 'message',
-          title: `Message from ${senderName}`,
-          body: `
-            <p style="margin:0 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">
-              <strong style="color:${BRAND.dark};">${senderName}</strong> sent you a message.
+        html: renderBrandedEmail({
+          preheader: `${senderName}: ${preview}`,
+          eyebrow: 'Direct Message',
+          heading: `Message from ${senderName}`,
+          bodyHtml: `
+            ${greetingHtml(greeting)}
+            <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">
+              <strong style="color:${BRAND.dark};">${esc(senderName)}</strong> sent you a message.
             </p>
-            ${quoteBlock(preview + (preview.length >= 200 ? '\u2026' : ''))}
-            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};line-height:1.5;">Reply directly in Helm to keep the conversation going.</p>
+            ${quoteBlock(esc(preview + (preview.length >= 200 ? '…' : '')))}
+            <p style="margin:0;font-family:${FONT};font-size:13px;color:${BRAND.muted};line-height:1.5;">Reply directly in Helm to keep the conversation going.</p>
           `,
-          greeting: String(data._greeting || ''),
           cta: { label: 'Open Conversation', url: messageUrl },
           footerNote: 'You received this because someone sent you a message on Helm.',
         }),
-        text: `New message from ${senderName}: "${preview}"\n\nReply at: ${messageUrl}`,
+        text: `${greeting ? greeting + '\n\n' : ''}New message from ${senderName}: "${preview}"\n\nReply at: ${messageUrl}`,
       };
     }
 
@@ -452,87 +255,83 @@ function generateEmailTemplate(
       const preview         = content.replace(/<[^>]*>/g, '').slice(0, 160);
       return {
         subject: `Team Announcement: ${title}`,
-        html: emailShell({
-          previewText: `${coachName}: ${preview}`,
-          headerLabel: 'Team Announcement',
-          headerIconKey: 'announcement',
-          iconKey: 'announcement',
-          title,
-          body: `
+        html: renderBrandedEmail({
+          preheader: `${coachName}: ${preview}`,
+          eyebrow: 'Team Announcement',
+          heading: title,
+          bodyHtml: `
+            ${greetingHtml(greeting)}
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
               <tr>
                 <td>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">From&nbsp;&nbsp;</span>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
+                  <span style="font-family:${FONT};font-size:13px;color:${BRAND.muted};">From&nbsp;&nbsp;</span>
+                  <strong style="font-family:${FONT};font-size:13px;color:${BRAND.dark};">${esc(coachName)}</strong>
                   <span style="margin-left:10px;">${badge(urg.label, urg.color, urg.bg)}</span>
                 </td>
               </tr>
             </table>
             <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:20px 22px;">
-              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:${BRAND.darkMid};">${content}</p>
+              <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.75;color:${BRAND.darkMid};">${content}</p>
             </div>
           `,
-          greeting: String(data._greeting || ''),
           cta: { label: 'View Full Announcement', url: announcementUrl },
         }),
-        text: `Team Announcement from ${coachName}: ${title}\n\n${preview}\n\nView at: ${announcementUrl}`,
+        text: `${greeting ? greeting + '\n\n' : ''}Team Announcement from ${coachName}: ${title}\n\n${preview}\n\nView at: ${announcementUrl}`,
       };
     }
 
     // ── QUALIFIER CREATED ─────────────────────────────────────────────────────
     case 'qualifier_created': {
       const qualifierName = String(data.qualifierName || 'New Qualifier');
-      const startDate     = String(data.startDate || '');
-      const numRounds     = String(data.numRounds || '');
+      const rawStartDate  = String(data.startDate || '');
+      const startDate     = safeFormatDate(rawStartDate, null, 'date');
+      const numRoundsRaw  = Number(data.numRounds) || 1;
+      const numRoundsStr  = String(numRoundsRaw);
       const qualifierUrl  = String(data.qualifierUrl || '#');
       return {
         subject: `New Qualifier: ${qualifierName}`,
-        html: emailShell({
-          previewText: `A new qualifier has been posted \u2014 ${qualifierName}`,
-          headerLabel: 'Qualifier',
-          headerIconKey: 'flag',
-          iconKey: 'flag',
-          title: qualifierName,
-          body: `
-            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">A new qualifier has been posted. Review the details and prepare your rounds.</p>
-            ${detailTable(
-              detailRow('Start Date', startDate) +
-              detailRow('Rounds', `${numRounds} round${Number(numRounds) !== 1 ? 's' : ''}`)
-            )}
+        html: renderBrandedEmail({
+          preheader: `A new qualifier has been posted — ${qualifierName}`,
+          eyebrow: 'Qualifier',
+          heading: qualifierName,
+          bodyHtml: `
+            ${greetingHtml(greeting)}
+            <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">A new qualifier has been posted. Review the details and prepare your rounds.</p>
           `,
-          greeting: String(data._greeting || ''),
+          details: [
+            { label: 'Start Date', value: startDate },
+            { label: 'Rounds', value: `${numRoundsStr} round${numRoundsRaw !== 1 ? 's' : ''}` },
+          ],
           cta: { label: 'View Qualifier', url: qualifierUrl },
         }),
-        text: `New qualifier: ${qualifierName}\nStart: ${startDate} \u00b7 ${numRounds} rounds\n\nView at: ${qualifierUrl}`,
+        text: `${greeting ? greeting + '\n\n' : ''}New qualifier: ${qualifierName}\nStart: ${startDate} · ${numRoundsStr} round${numRoundsRaw !== 1 ? 's' : ''}\n\nView at: ${qualifierUrl}`,
       };
     }
 
     // ── EVENT RSVP REMINDER ───────────────────────────────────────────────────
     case 'event_rsvp_reminder': {
       const eventName = String(data.eventName || 'Upcoming Event');
-      const eventDate = String(data.eventDate || '');
+      const rawDate   = String(data.eventDate || '');
+      const eventDate = safeFormatDate(rawDate, String(data.eventTimezone || ''), 'datetime');
       const location  = String(data.location  || '');
       const eventUrl  = String(data.eventUrl  || '#');
+      const detailRows: Array<{ label: string; value: string }> = [{ label: 'Date & Time', value: eventDate }];
+      if (location) detailRows.push({ label: 'Location', value: location });
       return {
         subject: `RSVP needed: ${eventName}`,
-        html: emailShell({
-          previewText: `Please confirm your attendance for ${eventName} \u2014 ${eventDate}`,
-          headerLabel: 'RSVP Reminder',
-          headerIconKey: 'calendar',
-          iconKey: 'calendar',
-          title: `RSVP for ${eventName}`,
-          body: `
-            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">Your coach is collecting RSVPs for this event. Please confirm whether you\u2019ll be attending.</p>
-            ${detailTable(
-              detailRow('Date', eventDate) +
-              (location ? detailRow('Location', location) : '')
-            )}
+        html: renderBrandedEmail({
+          preheader: `Please confirm your attendance for ${eventName} — ${eventDate}`,
+          eyebrow: 'RSVP Reminder',
+          heading: `RSVP for ${eventName}`,
+          bodyHtml: `
+            ${greetingHtml(greeting)}
+            <p style="margin:0 0 4px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">Your coach is collecting RSVPs for this event. Please confirm whether you’ll be attending.</p>
           `,
-          greeting: String(data._greeting || ''),
+          details: detailRows,
           cta: { label: 'RSVP Now', url: eventUrl },
           footerNote: 'You received this because you have an upcoming team event on Helm.',
         }),
-        text: `RSVP reminder: ${eventName}\nDate: ${eventDate}${location ? `\nLocation: ${location}` : ''}\n\nRSVP at: ${eventUrl}`,
+        text: `${greeting ? greeting + '\n\n' : ''}RSVP reminder: ${eventName}\nDate: ${eventDate}${location ? `\nLocation: ${location}` : ''}\n\nRSVP at: ${eventUrl}`,
       };
     }
 
@@ -543,26 +342,24 @@ function generateEmailTemplate(
       const profileUrl = String(data.profileUrl || '#');
       return {
         subject: `${coachName} added you to their watchlist`,
-        html: emailShell({
-          previewText: `${coachName} from ${schoolName} is watching your profile`,
-          headerLabel: 'Watchlist',
-          headerIconKey: 'bookmark',
-          iconKey: 'bookmark',
-          title: "You're on a coach\u2019s watchlist",
-          body: `
-            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">
-              <strong style="color:${BRAND.dark};">${coachName}</strong> from <strong style="color:${BRAND.dark};">${schoolName}</strong> added you to their recruiting watchlist.
+        html: renderBrandedEmail({
+          preheader: `${coachName} from ${schoolName} is watching your profile`,
+          eyebrow: 'Watchlist',
+          heading: "You’re on a coach’s watchlist",
+          bodyHtml: `
+            ${greetingHtml(greeting)}
+            <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">
+              <strong style="color:${BRAND.dark};">${esc(coachName)}</strong> from <strong style="color:${BRAND.dark};">${esc(schoolName)}</strong> added you to their recruiting watchlist.
             </p>
             <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:10px;padding:16px 20px;">
-              <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.green};">What this means</p>
-              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Coaches watchlist players they\u2019re seriously considering. Keep your profile complete and stay active.</p>
+              <p style="margin:0 0 6px;font-family:${FONT};font-size:13px;font-weight:600;color:${BRAND.green};">What this means</p>
+              <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Coaches watchlist players they’re seriously considering. Keep your profile complete and stay active.</p>
             </div>
           `,
-          greeting: String(data._greeting || ''),
           cta: { label: 'View Your Profile', url: profileUrl },
           footerNote: 'You received this because a coach saved your BaseballHelm profile.',
         }),
-        text: `${coachName} from ${schoolName} added you to their watchlist.\n\nView your profile: ${profileUrl}`,
+        text: `${greeting ? greeting + '\n\n' : ''}${coachName} from ${schoolName} added you to their watchlist.\n\nView your profile: ${profileUrl}`,
       };
     }
 
@@ -572,39 +369,37 @@ function generateEmailTemplate(
       const newStage   = String(data.newStage   || '');
       const journeyUrl = String(data.journeyUrl || '#');
       const stageLabels: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
-        high_priority:  { label: 'High Priority',  color: '#92400E', bg: '#FFFBEB', border: '#FDE68A', desc: "They've moved you to high priority \u2014 a strong signal of serious interest." },
-        offer_extended: { label: 'Offer Extended', color: BRAND.greenDeep, bg: BRAND.greenXLight, border: BRAND.greenLight, desc: 'Congratulations \u2014 a formal offer has been extended to you.' },
-        committed:      { label: 'Committed',      color: '#1E3A8A', bg: '#EFF6FF', border: '#BFDBFE', desc: "You're committed. A significant milestone in your journey." },
+        high_priority:  { label: 'High Priority',  color: '#92400E', bg: '#FFFBEB', border: '#FDE68A', desc: "They’ve moved you to high priority — a strong signal of serious interest." },
+        offer_extended: { label: 'Offer Extended', color: BRAND.greenDeep, bg: BRAND.greenXLight, border: BRAND.greenLight, desc: 'Congratulations — a formal offer has been extended to you.' },
+        committed:      { label: 'Committed',      color: '#1E3A8A', bg: '#EFF6FF', border: '#BFDBFE', desc: "You’re committed. A significant milestone in your journey." },
         uninterested:   { label: 'Not Proceeding', color: BRAND.warm600, bg: BRAND.subtle, border: BRAND.border, desc: 'The program has decided not to proceed at this time.' },
-        watchlist:      { label: 'Watchlist',      color: '#5B21B6', bg: '#F5F3FF', border: '#DDD6FE', desc: "You've been added to their watchlist for continued monitoring." },
+        watchlist:      { label: 'Watchlist',      color: '#5B21B6', bg: '#F5F3FF', border: '#DDD6FE', desc: "You’ve been added to their watchlist for continued monitoring." },
       };
       const stage = stageLabels[newStage] ?? { label: newStage, color: BRAND.green, bg: BRAND.greenXLight, border: BRAND.greenLight, desc: 'Your recruiting status has been updated.' };
       return {
         subject: `Update from ${schoolName}: ${stage.label}`,
-        html: emailShell({
-          previewText: `${schoolName} updated your recruiting status`,
-          headerLabel: 'Recruiting Update',
-          headerIconKey: 'chart',
-          iconKey: 'chart',
-          title: `Status update from ${schoolName}`,
-          body: `
+        html: renderBrandedEmail({
+          preheader: `${schoolName} updated your recruiting status`,
+          eyebrow: 'Recruiting Update',
+          heading: `Status update from ${schoolName}`,
+          bodyHtml: `
+            ${greetingHtml(greeting)}
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
               <tr>
                 <td>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">New status&nbsp;&nbsp;</span>
+                  <span style="font-family:${FONT};font-size:13px;color:${BRAND.muted};">New status&nbsp;&nbsp;</span>
                   ${badge(stage.label, stage.color, stage.bg)}
                 </td>
               </tr>
             </table>
             <div style="background:${stage.bg};border:1px solid ${stage.border};border-radius:10px;padding:16px 20px;">
-              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${stage.color};">${stage.desc}</p>
+              <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;color:${stage.color};">${stage.desc}</p>
             </div>
           `,
-          greeting: String(data._greeting || ''),
           cta: { label: 'View Your Journey', url: journeyUrl },
           footerNote: 'You received this because a coach updated your status on BaseballHelm.',
         }),
-        text: `${schoolName} updated your recruiting status to: ${stage.label}.\n${stage.desc}\n\nView your journey: ${journeyUrl}`,
+        text: `${greeting ? greeting + '\n\n' : ''}${schoolName} updated your recruiting status to: ${stage.label}.\n${stage.desc}\n\nView your journey: ${journeyUrl}`,
       };
     }
 
@@ -614,26 +409,24 @@ function generateEmailTemplate(
       const profileUrl = String(data.profileUrl || '#');
       return {
         subject: `${viewerInfo} viewed your profile`,
-        html: emailShell({
-          previewText: `${viewerInfo} just checked out your BaseballHelm profile`,
-          headerLabel: 'Profile View',
-          headerIconKey: 'eye',
-          iconKey: 'eye',
-          title: 'Your profile was viewed',
-          body: `
-            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">
-              <strong style="color:${BRAND.dark};">${viewerInfo}</strong> viewed your recruiting profile. This is a signal of interest \u2014 make sure your profile is complete.
+        html: renderBrandedEmail({
+          preheader: `${viewerInfo} just checked out your BaseballHelm profile`,
+          eyebrow: 'Profile View',
+          heading: 'Your profile was viewed',
+          bodyHtml: `
+            ${greetingHtml(greeting)}
+            <p style="margin:0 0 20px;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">
+              <strong style="color:${BRAND.dark};">${esc(viewerInfo)}</strong> viewed your recruiting profile. This is a signal of interest — make sure your profile is complete.
             </p>
             <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;">
-              <p style="margin:0 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.green};">Pro tip</p>
-              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${BRAND.muted};">Profiles with a highlight video get significantly more coach messages. Add yours to stand out.</p>
+              <p style="margin:0 0 4px;font-family:${FONT};font-size:13px;font-weight:600;color:${BRAND.green};">Pro tip</p>
+              <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BRAND.muted};">Profiles with a highlight video get significantly more coach messages. Add yours to stand out.</p>
             </div>
           `,
-          greeting: String(data._greeting || ''),
           cta: { label: 'Update Your Profile', url: profileUrl },
           footerNote: 'You received this because a coach viewed your BaseballHelm profile.',
         }),
-        text: `${viewerInfo} viewed your profile.\n\nUpdate it at: ${profileUrl}`,
+        text: `${greeting ? greeting + '\n\n' : ''}${viewerInfo} viewed your profile.\n\nUpdate it at: ${profileUrl}`,
       };
     }
 
@@ -641,36 +434,30 @@ function generateEmailTemplate(
     case 'task_assigned': {
       const taskTitle       = String(data.taskTitle || 'New Task');
       const taskDescription = String(data.taskDescription || '');
-      const dueDate         = String(data.dueDate || '');
+      const rawDueDate      = String(data.dueDate || '');
+      const dueDate         = safeFormatDate(rawDueDate, null, 'date');
       const coachName       = String(data.coachName || 'Your Coach');
       const taskUrl         = String(data.taskUrl || '#');
       return {
         subject: `New task assigned: ${taskTitle}`,
-        html: emailShell({
-          previewText: `${coachName} assigned you a task — ${taskTitle}`,
-          headerLabel: 'Task Assigned',
-          headerIconKey: 'flag',
-          iconKey: 'flag',
-          greeting: String(data._greeting || ''),
-          title: taskTitle,
-          body: `
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-              <tr>
-                <td>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">Assigned by&nbsp;&nbsp;</span>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
-                </td>
-              </tr>
-            </table>
+        html: renderBrandedEmail({
+          preheader: `${coachName} assigned you a task — ${taskTitle}`,
+          eyebrow: 'Task Assigned',
+          heading: taskTitle,
+          bodyHtml: `
+            ${greetingHtml(greeting)}
+            <p style="margin:0 0 16px;font-family:${FONT};font-size:13px;color:${BRAND.muted};">
+              Assigned by&nbsp;&nbsp;<strong style="color:${BRAND.dark};">${esc(coachName)}</strong>
+            </p>
             ${taskDescription ? `
-            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;margin-bottom:20px;">
-              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.7;color:${BRAND.darkMid};">${taskDescription}</p>
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;margin-bottom:4px;">
+              <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.7;color:${BRAND.darkMid};">${esc(taskDescription)}</p>
             </div>` : ''}
-            ${dueDate ? detailTable(detailRow('Due Date', dueDate)) : ''}
           `,
+          details: dueDate ? [{ label: 'Due Date', value: dueDate }] : undefined,
           cta: { label: 'View Task', url: taskUrl },
         }),
-        text: `New task from ${coachName}: ${taskTitle}${taskDescription ? `\n\n${taskDescription}` : ''}${dueDate ? `\nDue: ${dueDate}` : ''}\n\nView at: ${taskUrl}`,
+        text: `${greeting ? greeting + '\n\n' : ''}New task from ${coachName}: ${taskTitle}${taskDescription ? `\n\n${taskDescription}` : ''}${dueDate ? `\nDue: ${dueDate}` : ''}\n\nView at: ${taskUrl}`,
       };
     }
 
@@ -681,35 +468,28 @@ function generateEmailTemplate(
       const coachName = String(data.coachName || 'Your Coach');
       const planUrl   = String(data.planUrl || '#');
       const areaLabel = areaType
-        ? areaType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+        ? areaType.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
         : '';
       return {
         subject: `New development plan: ${planTitle}`,
-        html: emailShell({
-          previewText: `${coachName} created a development plan for you — ${planTitle}`,
-          headerLabel: 'Development Plan',
-          headerIconKey: 'chart',
-          iconKey: 'chart',
-          greeting: String(data._greeting || ''),
-          title: planTitle,
-          body: `
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-              <tr>
-                <td>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">From&nbsp;&nbsp;</span>
-                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
-                  ${areaLabel ? `<span style="margin-left:10px;">${badge(areaLabel, BRAND.green, BRAND.greenXLight)}</span>` : ''}
-                </td>
-              </tr>
-            </table>
+        html: renderBrandedEmail({
+          preheader: `${coachName} created a development plan for you — ${planTitle}`,
+          eyebrow: 'Development Plan',
+          heading: planTitle,
+          bodyHtml: `
+            ${greetingHtml(greeting)}
+            <p style="margin:0 0 16px;font-family:${FONT};font-size:13px;color:${BRAND.muted};">
+              From&nbsp;&nbsp;<strong style="color:${BRAND.dark};">${esc(coachName)}</strong>
+              ${areaLabel ? `&nbsp;&nbsp;${badge(areaLabel, BRAND.green, BRAND.greenXLight)}` : ''}
+            </p>
             <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:10px;padding:16px 20px;">
-              <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.green};">Your coach has created a plan for your development</p>
-              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Review the goals, drills, and targets your coach has set. Track your progress from your dashboard.</p>
+              <p style="margin:0 0 6px;font-family:${FONT};font-size:13px;font-weight:600;color:${BRAND.green};">Your coach has created a plan for your development</p>
+              <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Review the goals, drills, and targets your coach has set. Track your progress from your dashboard.</p>
             </div>
           `,
           cta: { label: 'View Development Plan', url: planUrl },
         }),
-        text: `New development plan from ${coachName}: ${planTitle}${areaLabel ? ` (${areaLabel})` : ''}\n\nView at: ${planUrl}`,
+        text: `${greeting ? greeting + '\n\n' : ''}New development plan from ${coachName}: ${planTitle}${areaLabel ? ` (${areaLabel})` : ''}\n\nView at: ${planUrl}`,
       };
     }
 
@@ -717,21 +497,20 @@ function generateEmailTemplate(
     default:
       return {
         subject: 'New notification from Helm',
-        html: emailShell({
-          previewText: 'You have a new notification from Helm Sports',
-          headerLabel: 'Notification',
-          headerIconKey: 'bell',
-          iconKey: 'bell',
-          title: 'You have a new notification',
-          body: `<p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">Log in to Helm to see the latest updates from your team.</p>`,
-          greeting: String(data._greeting || ''),
-          cta: { label: 'Open Helm', url: process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com' },
+        html: renderBrandedEmail({
+          preheader: 'You have a new notification from Helm Sports',
+          eyebrow: 'Notification',
+          heading: 'You have a new notification',
+          bodyHtml: `
+            ${greetingHtml(greeting)}
+            <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;color:${BRAND.muted};">Log in to Helm to see the latest updates from your team.</p>
+          `,
+          cta: { label: 'Open Helm', url: baseUrl },
         }),
-        text: 'You have a new notification from Helm Sports. Log in to see updates.',
+        text: `${greeting ? greeting + '\n\n' : ''}You have a new notification from Helm Sports. Log in to see updates.`,
       };
   }
 }
-
 
 /**
  * Resolve a personalized greeting for the recipient.

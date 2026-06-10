@@ -203,6 +203,15 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
 
     revalidatePath('/golf/dashboard');
 
+    // TODO(welcome-email): Wire sendWelcomeEmail here once the send path is
+    // confirmed stable in production.
+    //
+    //   import { sendWelcomeEmail } from '@/lib/email/send-welcome';
+    //   // Fire-and-forget — never blocks onboarding success, never throws.
+    //   void sendWelcomeEmail(user.id).catch(() => {/* swallowed — already logged internally */});
+    //
+    // The function resolves coach/org/team from the DB so no extra args needed.
+
     return {
       success: true,
       data: {

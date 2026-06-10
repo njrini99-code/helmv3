@@ -305,7 +305,7 @@ async function dispatchReminders(
     event_id: event.id,
     notification_type: kind,
     title: kind === 'event_reminder_24h'
-      ? `Tomorrow: ${event.title}`
+      ? `${dayLabel(now, new Date(event.start_time))}: ${event.title}`
       : `Starting soon: ${event.title}`,
     message: buildMessage(event, kind),
     action_url: `/golf/dashboard/calendar?event=${event.id}`,
@@ -381,4 +381,22 @@ function buildMessage(event: EventRow, kind: ReminderKind): string {
   return kind === 'event_reminder_24h'
     ? `${timeStr}${locationStr}`
     : `Starts at ${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${locationStr}`;
+}
+
+/**
+ * Returns "Today" when the event falls on the same calendar date as `now`
+ * (comparing UTC year/month/day), "Tomorrow" otherwise.
+ *
+ * Both inputs are treated in UTC because the event cron runs without a
+ * per-team timezone context. The result is conservative — a same-UTC-day
+ * event never gets labelled "Tomorrow".
+ */
+function dayLabel(now: Date, eventStart: Date): string {
+  const nowY = now.getUTCFullYear();
+  const nowM = now.getUTCMonth();
+  const nowD = now.getUTCDate();
+  const evY  = eventStart.getUTCFullYear();
+  const evM  = eventStart.getUTCMonth();
+  const evD  = eventStart.getUTCDate();
+  return nowY === evY && nowM === evM && nowD === evD ? 'Today' : 'Tomorrow';
 }

@@ -54,6 +54,7 @@ interface DigestSummary {
   coaches_eligible: number;
   sent: number;
   skipped: number;
+  skipped_offseason: number;
   failed: number;
   reasons: Record<string, number>;
 }
@@ -67,6 +68,7 @@ export async function GET(req: NextRequest): Promise<NextResponse | Response> {
     coaches_eligible: 0,
     sent: 0,
     skipped: 0,
+    skipped_offseason: 0,
     failed: 0,
     reasons: {},
   };
@@ -165,7 +167,11 @@ export async function GET(req: NextRequest): Promise<NextResponse | Response> {
           const result = await processCoach(supabase, coach);
           if (result.sent) summary.sent += 1;
           else if (result.skipped) {
-            summary.skipped += 1;
+            if (result.reason === 'offseason') {
+              summary.skipped_offseason += 1;
+            } else {
+              summary.skipped += 1;
+            }
             if (result.reason) {
               summary.reasons[result.reason] =
                 (summary.reasons[result.reason] ?? 0) + 1;
@@ -216,9 +222,11 @@ async function processCoach(
 ): Promise<CoachResult> {
   // Collect every player id on any team this coach staffs, so the digest
   // cron isn't bound to a single team (coaches commonly staff JV + varsity).
+  // Only include teams where season_active = true — skip the coach entirely
+  // when all their teams are in the off-season.
   const { data: staffTeams, error: teamsErr } = await supabase
     .from('golf_team_coach_staff')
-    .select('team_id')
+    .select('team_id, team:golf_teams ( id, season_active )')
     .eq('coach_id', coach.coach_id);
   if (teamsErr) {
     await logServerError(
@@ -233,9 +241,21 @@ async function processCoach(
     return { sent: false, skipped: false, reason: 'teams-query' };
   }
 
-  const teamIds = Array.from(
-    new Set((staffTeams ?? []).map((row) => row.team_id).filter(Boolean)),
+   
+  const activeTeamIds = Array.from(
+    new Set(
+      (staffTeams ?? [])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((row) => (row as any).team?.season_active !== false)
+        .map((row) => row.team_id)
+        .filter(Boolean),
+    ),
   );
+  if (activeTeamIds.length === 0) {
+    return { sent: false, skipped: true, reason: 'offseason' };
+  }
+
+  const teamIds = activeTeamIds;
   if (teamIds.length === 0) {
     return { sent: false, skipped: true, reason: 'no-teams' };
   }

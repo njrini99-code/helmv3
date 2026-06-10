@@ -8,14 +8,20 @@
  * Design constraints (from Wave 1C brief):
  *   - Transactional voice. No marketing CTAs, no promotional blocks.
  *   - Resend-friendly, email-client-safe HTML. Tables for layout; inline
- *     styles only; brand tokens mirror `src/lib/notifications/email.ts` so
- *     coaches see a consistent look across transactional mail.
+ *     styles only; brand tokens mirror the shared layout so coaches see a
+ *     consistent look across transactional mail.
  *   - Plain-text fallback is content-complete — no feature gap vs HTML.
  *   - Deep links anchor-target insights on the coach dashboard so clicking
  *     goes straight to the card (`#insight-{id}`).
+ *
+ * Retrofit (2026-06-10): outer shell now uses renderBrandedEmail so the
+ * digest gets the standard logo, card, and footer. Inner cards remain
+ * custom because they use a non-standard multi-block layout.
  */
 
-// ─── Brand tokens (kept in sync with src/lib/notifications/email.ts) ────────
+import { renderBrandedEmail, escapeHtml } from '@/lib/email/layout';
+
+// ─── Brand tokens ─────────────────────────────────────────────────────────────
 
 const BRAND = {
   green: '#16A34A',
@@ -38,7 +44,9 @@ const BRAND = {
   amberBg: '#FEF3C7',
 } as const;
 
-// ─── Public types ────────────────────────────────────────────────────────────
+const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`;
+
+// ─── Public types ─────────────────────────────────────────────────────────────
 
 export interface CoachDigestInsight {
   title: string;
@@ -80,15 +88,6 @@ export interface RenderedCoachDigest {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function formatStrokes(n: number): string {
   const abs = Math.abs(n);
   if (!Number.isFinite(abs)) return '0.0';
@@ -109,7 +108,7 @@ function defaultBaseUrl(): string {
   );
 }
 
-// ─── HTML section builders ───────────────────────────────────────────────────
+// ─── HTML section builders ────────────────────────────────────────────────────
 
 function renderInsightRow(insight: CoachDigestInsight, baseUrl: string): string {
   const url = absoluteUrl(baseUrl, insight.deep_link);
@@ -125,16 +124,16 @@ function renderInsightRow(insight: CoachDigestInsight, baseUrl: string): string 
                style="border:1px solid ${BRAND.border};border-radius:10px;background:${BRAND.white};">
           <tr>
             <td style="padding:18px 20px 14px;">
-              <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.muted};">
+              <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.muted};">
                 ${player}&nbsp;·&nbsp;${strokes} strokes
               </p>
-              <p style="margin:0 0 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;line-height:1.35;color:${BRAND.dark};">
+              <p style="margin:0 0 8px;font-family:${FONT};font-size:16px;font-weight:600;line-height:1.35;color:${BRAND.dark};">
                 ${title}
               </p>
-              <p style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:${BRAND.warm700};">
+              <p style="margin:0 0 14px;font-family:${FONT};font-size:14px;line-height:1.55;color:${BRAND.warm700};">
                 ${content}
               </p>
-              <a href="${escapeHtml(url)}" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.green};text-decoration:none;">
+              <a href="${escapeHtml(url)}" style="font-family:${FONT};font-size:13px;font-weight:600;color:${BRAND.green};text-decoration:none;">
                 Open in CoachHelm&nbsp;&rarr;
               </a>
             </td>
@@ -152,7 +151,7 @@ function renderCelebration(
   const player = escapeHtml(celebration.player_name);
   const title = escapeHtml(celebration.title);
   const link = celebration.deep_link
-    ? `<a href="${escapeHtml(absoluteUrl(baseUrl, celebration.deep_link))}" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.greenDeep};text-decoration:none;">Open in CoachHelm&nbsp;&rarr;</a>`
+    ? `<a href="${escapeHtml(absoluteUrl(baseUrl, celebration.deep_link))}" style="font-family:${FONT};font-size:13px;font-weight:600;color:${BRAND.greenDeep};text-decoration:none;">Open in CoachHelm&nbsp;&rarr;</a>`
     : '';
 
   return `
@@ -162,10 +161,10 @@ function renderCelebration(
                style="border:1px solid ${BRAND.greenLight};border-radius:10px;background:${BRAND.greenXLight};">
           <tr>
             <td style="padding:16px 20px;">
-              <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.greenDeep};">
+              <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.greenDeep};">
                 Bright spot
               </p>
-              <p style="margin:0 0 ${link ? '10px' : '0'};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;line-height:1.5;color:${BRAND.greenDeep};">
+              <p style="margin:0 0 ${link ? '10px' : '0'};font-family:${FONT};font-size:15px;font-weight:500;line-height:1.5;color:${BRAND.greenDeep};">
                 ${player} just resolved ${title}. Send them props.
               </p>
               ${link}
@@ -181,7 +180,7 @@ function renderWatch(watch: CoachDigestWatch, baseUrl: string): string {
   const player = escapeHtml(watch.player_name);
   const title = escapeHtml(watch.title);
   const link = watch.deep_link
-    ? `<a href="${escapeHtml(absoluteUrl(baseUrl, watch.deep_link))}" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.amber};text-decoration:none;">Open in CoachHelm&nbsp;&rarr;</a>`
+    ? `<a href="${escapeHtml(absoluteUrl(baseUrl, watch.deep_link))}" style="font-family:${FONT};font-size:13px;font-weight:600;color:${BRAND.amber};text-decoration:none;">Open in CoachHelm&nbsp;&rarr;</a>`
     : '';
 
   return `
@@ -191,10 +190,10 @@ function renderWatch(watch: CoachDigestWatch, baseUrl: string): string {
                style="border:1px solid #FDE68A;border-radius:10px;background:${BRAND.amberBg};">
           <tr>
             <td style="padding:16px 20px;">
-              <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.amber};">
+              <p style="margin:0 0 6px;font-family:${FONT};font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:${BRAND.amber};">
                 On the watch list
               </p>
-              <p style="margin:0 0 ${link ? '10px' : '0'};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;line-height:1.5;color:${BRAND.amber};">
+              <p style="margin:0 0 ${link ? '10px' : '0'};font-family:${FONT};font-size:15px;font-weight:500;line-height:1.5;color:${BRAND.amber};">
                 ${player} is trending toward a concern — ${title}. Keep an eye.
               </p>
               ${link}
@@ -206,27 +205,27 @@ function renderWatch(watch: CoachDigestWatch, baseUrl: string): string {
   `;
 }
 
-// ─── Main renderer ──────────────────────────────────────────────────────────
+// ─── Main renderer ────────────────────────────────────────────────────────────
 
 export function renderCoachDigest(data: CoachDigestData): RenderedCoachDigest {
   const baseUrl = data.baseUrl ?? defaultBaseUrl();
-  const coachName = escapeHtml(data.coachName || 'Coach');
-  const teamName = escapeHtml(data.teamName || 'your team');
-  const date = escapeHtml(data.date || '');
+  const coachName = data.coachName || 'Coach';
+  const teamName = data.teamName || 'your team';
+  const date = data.date || '';
 
   const subject = '3 things to know about your team this morning';
 
   const previewText = data.topInsights[0]
     ? `${data.topInsights[0].player_name}: ${data.topInsights[0].title}`
-    : `Morning digest for ${data.teamName}`;
+    : `Morning digest for ${teamName}`;
 
-  // ─── Body sections ────────────────────────────────────────────────────────
+  // ─── Body sections ─────────────────────────────────────────────────────────
 
-  const topConcernHeading = data.topInsights.length
+  const topConcernLabel = data.topInsights.length
     ? `
       <tr>
         <td style="padding:0 0 10px;">
-          <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;color:${BRAND.muted};">
+          <p style="margin:0;font-family:${FONT};font-size:13px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;color:${BRAND.muted};">
             ${data.topInsights.length === 1 ? 'Top concern today' : 'Top concerns today'}
           </p>
         </td>
@@ -243,98 +242,39 @@ export function renderCoachDigest(data: CoachDigestData): RenderedCoachDigest {
 
   const watchHtml = data.watch ? renderWatch(data.watch, baseUrl) : '';
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <meta name="color-scheme" content="light" />
-  <title>${escapeHtml(subject)}</title>
-  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
-</head>
-<body style="margin:0;padding:0;background-color:${BRAND.subtle};-webkit-text-size-adjust:100%;" bgcolor="${BRAND.subtle}">
-  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${BRAND.subtle};">${escapeHtml(previewText)}&#8203;&#65279;&#65279;&#65279;&#65279;&#65279;&#65279;</div>
+  const settingsUrl = absoluteUrl(baseUrl, '/golf/dashboard/settings/coaching-intelligence');
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-    <tr>
-      <td align="center" style="padding:32px 16px;">
-        <table role="presentation" width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;">
+  const bodyHtml = `
+    <p style="margin:0 0 4px;font-family:${FONT};font-size:13px;font-weight:500;color:${BRAND.muted};">${escapeHtml(date)}</p>
+    <p style="margin:0 0 6px;font-family:${FONT};font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-0.4px;color:${BRAND.dark};">Good morning, ${escapeHtml(coachName)}.</p>
+    <p style="margin:0 0 24px;font-family:${FONT};font-size:14px;line-height:1.55;color:${BRAND.warm700};">Here is what changed overnight on ${escapeHtml(teamName)}.</p>
 
-          <tr>
-            <td style="height:4px;background:linear-gradient(90deg,${BRAND.green} 0%,${BRAND.greenDark} 100%);border-radius:12px 12px 0 0;line-height:4px;font-size:4px;">&nbsp;</td>
-          </tr>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      ${topConcernLabel}
+      ${insightsHtml}
+      ${celebrationHtml}
+      ${watchHtml}
+    </table>
 
-          <tr>
-            <td style="background-color:${BRAND.dark};padding:22px 32px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td valign="middle">
-                    <a href="${escapeHtml(baseUrl)}" style="text-decoration:none;display:inline-block;">
-                      <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:-0.6px;color:${BRAND.white};">Helm</span><span style="font-size:20px;font-weight:700;letter-spacing:-0.6px;color:${BRAND.green};">.</span>
-                    </a>
-                  </td>
-                  <td valign="middle" align="right">
-                    <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:500;letter-spacing:0.3px;color:rgba(255,255,255,0.65);">
-                      Morning digest
-                    </span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+    <p style="margin:8px 0 0;font-family:${FONT};font-size:12px;line-height:1.6;color:${BRAND.muted};">
+      <a href="${escapeHtml(settingsUrl)}" style="color:${BRAND.muted};text-decoration:underline;">Manage digest preferences</a>
+    </p>
+  `;
 
-          <tr>
-            <td style="background-color:${BRAND.cream};padding:32px 32px 8px;border-left:1px solid ${BRAND.border};border-right:1px solid ${BRAND.border};">
-              <p style="margin:0 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:500;color:${BRAND.muted};">
-                ${date}
-              </p>
-              <h1 style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-0.4px;color:${BRAND.dark};">
-                Good morning, ${coachName}.
-              </h1>
-              <p style="margin:0 0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:${BRAND.warm700};">
-                Here is what changed overnight on ${teamName}.
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="background-color:${BRAND.cream};padding:0 32px 24px;border-left:1px solid ${BRAND.border};border-right:1px solid ${BRAND.border};">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                ${topConcernHeading}
-                ${insightsHtml}
-                ${celebrationHtml}
-                ${watchHtml}
-              </table>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="height:1px;background-color:${BRAND.border};line-height:1px;font-size:1px;">&nbsp;</td>
-          </tr>
-
-          <tr>
-            <td style="background-color:${BRAND.white};padding:16px 32px;border-radius:0 0 12px 12px;border:1px solid ${BRAND.border};border-top:none;">
-              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:${BRAND.muted};">
-                You are receiving this because daily digests are enabled on your coaching profile.
-                &nbsp;&middot;&nbsp;
-                <a href="${escapeHtml(absoluteUrl(baseUrl, '/golf/dashboard/settings/coaching-intelligence'))}" style="color:${BRAND.muted};text-decoration:underline;">Manage digest</a>
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+  const html = renderBrandedEmail({
+    preheader: previewText,
+    eyebrow: 'Morning Digest',
+    heading: `${escapeHtml(coachName)}'s morning digest`,
+    bodyHtml,
+    footerNote: 'You are receiving this because daily digests are enabled on your coaching profile.',
+  });
 
   const text = buildPlainText(data);
 
   return { subject, html, text };
 }
 
-// ─── Plain-text variant ─────────────────────────────────────────────────────
+// ─── Plain-text variant ───────────────────────────────────────────────────────
 
 function buildPlainText(data: CoachDigestData): string {
   const baseUrl = data.baseUrl ?? defaultBaseUrl();

@@ -10,9 +10,6 @@ import {
   isWebPushAvailable,
 } from '@/lib/coachhelm/v3/foundation/push';
 
-// Email service configuration
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Helm Sports <notifications@helmsportslabs.com>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
 // VAPID keys are now configured inside v3/foundation/push.ts. See W9-pt3.
@@ -382,15 +379,15 @@ async function sendInAppNotification(task: GolfTask): Promise<void> {
 }
 
 /**
- * Send email notification using Resend
- * Sends task reminder emails to assignee and optionally creator
+ * Send email notification for a task reminder.
+ *
+ * Replaces the former raw-fetch Resend call with the shared
+ * `sendEmailNotification` from @/lib/notifications/email so that:
+ *   - User email preferences are respected (shouldSendEmail check).
+ *   - The branded layout (renderBrandedEmail) is used consistently.
+ *   - The `task_reminder` type maps to `email_task_reminders` preference.
  */
 async function sendEmailNotification(task: GolfTask): Promise<void> {
-  if (!RESEND_API_KEY) {
-    console.warn('[TaskReminders] Email skipped: RESEND_API_KEY not configured');
-    return;
-  }
-
   // Get full task with user details
   const supabase = await createClient();
   const { data: taskWithUsers } = await supabase
@@ -408,104 +405,53 @@ async function sendEmailNotification(task: GolfTask): Promise<void> {
     return;
   }
 
-  // Collect email recipients
-  const recipients: string[] = [];
-  if (fullTask.assignee?.email) {
-    recipients.push(fullTask.assignee.email);
+  // Build recipient list: assignee + creator (if different)
+  interface EmailRecipient { id: string; email: string }
+  const recipientMap = new Map<string, EmailRecipient>();
+  if (fullTask.assignee?.id && fullTask.assignee.email) {
+    recipientMap.set(fullTask.assignee.id, { id: fullTask.assignee.id, email: fullTask.assignee.email });
   }
-  if (fullTask.creator?.email && fullTask.creator.email !== fullTask.assignee?.email) {
-    recipients.push(fullTask.creator.email);
+  if (
+    fullTask.creator?.id &&
+    fullTask.creator.email &&
+    fullTask.creator.id !== fullTask.assignee?.id
+  ) {
+    recipientMap.set(fullTask.creator.id, { id: fullTask.creator.id, email: fullTask.creator.email });
   }
+  const recipients = Array.from(recipientMap.values());
 
   if (recipients.length === 0) {
     return;
   }
 
-  const dueText = task.due_date
-    ? new Date(task.due_date).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : 'soon';
-
   const taskUrl = `${APP_URL}/golf/dashboard/tasks?task=${task.id}`;
 
-  // Send email to each recipient using Resend API
-  for (const email of recipients) {
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: FROM_EMAIL,
-          to: email,
-          subject: `Task Reminder: ${task.title}`,
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="text-align: center; margin-bottom: 32px;">
-                <h1 style="color: #16A34A; margin: 0; font-size: 24px;">Helm Sports</h1>
-              </div>
+  // Use the shared prefs-checking sender — picks up brandedEmail layout,
+  // respects email_task_reminders preference, and handles missing API key.
+  const { sendEmailNotification: sharedSend } = await import('@/lib/notifications/email');
 
-              <h2 style="color: #1c1917; margin-bottom: 16px; font-size: 20px;">Task Reminder</h2>
+  const results = await Promise.allSettled(
+    recipients.map((r) =>
+      sharedSend('task_reminder', r.id, r.email, {
+        taskTitle: task.title,
+        taskDescription: task.description ?? '',
+        dueDate: task.due_date ?? '',
+        taskUrl,
+      }),
+    ),
+  );
 
-              <div style="background-color: #FFFEFA; border: 1px solid #e7e5e4; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-                <h3 style="color: #16A34A; margin: 0 0 12px 0; font-size: 18px;">${escapeHtml(task.title)}</h3>
-                ${task.description ? `<p style="color: #525252; margin: 0 0 12px 0; font-size: 14px; line-height: 1.5;">${escapeHtml(task.description)}</p>` : ''}
-                <p style="color: #78716c; margin: 0; font-size: 14px;">
-                  <strong>Due:</strong> ${dueText}
-                </p>
-                ${task.priority && task.priority !== 'normal' ? `
-                <p style="color: ${task.priority === 'urgent' ? '#DC2626' : task.priority === 'high' ? '#F59E0B' : '#78716c'}; margin: 8px 0 0 0; font-size: 14px;">
-                  <strong>Priority:</strong> ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                </p>` : ''}
-              </div>
-
-              <a href="${taskUrl}"
-                 style="display: inline-block; background-color: #16A34A; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 14px;">
-                View Task
-              </a>
-
-              <p style="color: #94A3B8; font-size: 12px; margin-top: 32px; line-height: 1.5;">
-                This is an automated reminder from Helm Sports Labs.<br>
-                You can manage your notification preferences in your account settings.
-              </p>
-            </div>
-          `,
-          text: `Task Reminder: ${task.title}\n\n${task.description || ''}\n\nDue: ${dueText}\n\nView task: ${taskUrl}`,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        await logServerError(`[TaskReminders] Failed to send email to ${email}: ${errorText}`, { action: 'task_reminders.sendEmailNotification' });
-        throw new Error(`Email send failed: ${errorText}`);
-      }
-
-    } catch (err) {
-      await logServerError(`[TaskReminders] Error sending email to ${email}: ${err instanceof Error ? err.message : String(err)}`, { action: 'task_reminders.sendEmailNotification' });
-      throw err;
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      await logServerError(
+        `[TaskReminders] sendEmailNotification rejected: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
+        { action: 'task_reminders.sendEmailNotification' },
+      );
     }
   }
 }
 
-/**
- * Escape HTML special characters to prevent XSS in emails
- */
-function escapeHtml(text: string): string {
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m] || m);
-}
+
 
 /**
  * Send push notification using Web Push API

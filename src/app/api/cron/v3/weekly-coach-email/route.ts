@@ -30,6 +30,7 @@ interface SendSummary {
   sent: number;
   skipped_no_email: number;
   skipped_provider_unset: number;
+  skipped_offseason: number;
   errors: number;
   duration_ms: number;
 }
@@ -53,15 +54,24 @@ async function handle(): Promise<NextResponse> {
     sent: 0,
     skipped_no_email: 0,
     skipped_provider_unset: 0,
+    skipped_offseason: 0,
     errors: 0,
     duration_ms: 0,
   };
   const weekEndIso = new Date().toISOString();
 
-  // All teams that have at least one active member.
-  const { data: teams } = await sb.from('golf_teams').select('id');
-  const teamIds = (teams ?? []).map((t) => t.id);
-  summary.teams_considered = teamIds.length;
+  // Fetch all teams; separate active vs offseason so we can count both.
+  // season_active was added via migration 20260610160000 — cast through
+  // unknown because the generated types predate the column.
+  type TeamRow = { id: string; season_active: boolean | null };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: teamsRaw } = await (sb as any).from('golf_teams').select('id, season_active') as { data: TeamRow[] | null };
+  const allTeams = teamsRaw ?? [];
+  // season_active defaults to true — treat null/undefined as active.
+  const activeTeams = allTeams.filter((t) => t.season_active !== false);
+  summary.skipped_offseason = allTeams.length - activeTeams.length;
+  const teamIds = activeTeams.map((t) => t.id);
+  summary.teams_considered = activeTeams.length;
 
   for (const team_id of teamIds) {
     try {
