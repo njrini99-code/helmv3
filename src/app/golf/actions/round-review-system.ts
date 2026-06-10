@@ -249,6 +249,7 @@ interface RoundData {
   total_fairways: number | null;
   total_gir: number | null;
   total_gir_possible: number | null;
+  holes_played?: number | null;
   status?: string;
 }
 
@@ -273,6 +274,20 @@ interface ComparisonRoundRow {
   holes_played?: number | null;
 }
 
+/**
+ * Player/team comparison averages. Each field is independently null when the
+ * round history can't honestly support it (no 18-hole rounds for avgScore,
+ * no putt/GIR/fairway data for the others). Consumers must SKIP a comparison
+ * whose average is null — never substitute a fabricated benchmark.
+ */
+export interface ComparisonAverages {
+  avgScore: number | null;
+  avgScoreToPar: number | null;
+  avgPutts: number | null;
+  avgGirPct: number | null;
+  avgFairwayPct: number | null;
+}
+
 // Shot row from golf_shots table
 interface ShotRow {
   hole_number: number;
@@ -295,20 +310,18 @@ interface ShotRow {
 // HELPER FUNCTIONS
 // ============================================================================
 
-function calculateComparisonAverages(rounds: ComparisonRoundRow[]): {
-  avgScore: number;
-  avgScoreToPar: number;
-  avgPutts: number;
-  avgGirPct: number;
-  avgFairwayPct: number;
-} | null {
+function calculateComparisonAverages(rounds: ComparisonRoundRow[]): ComparisonAverages | null {
   const valid = rounds.filter(r => r.total_score !== null);
   if (valid.length < 3) return null;
 
+  // Null-honest throughout: when a stat has no supporting data we return null
+  // for that field instead of a fabricated benchmark (72 / 32 / 50%). These
+  // values are presented to players as "your averages" — fabricating them
+  // turns the comparison card into fiction.
   const rounds18 = valid.filter(r => (r.holes_played ?? 18) === 18);
   const avgScore = rounds18.length > 0
     ? rounds18.reduce((sum, round) => sum + (round.total_score ?? 0), 0) / rounds18.length
-    : 72;
+    : null;
 
   const roundsWithToPar = valid.filter(r => r.score_to_par !== null);
   const avgScoreToPar = roundsWithToPar.length > 0
@@ -316,24 +329,27 @@ function calculateComparisonAverages(rounds: ComparisonRoundRow[]): {
       const holesPlayed = round.holes_played ?? 18;
       return sum + ((round.score_to_par ?? 0) * (18 / holesPlayed));
     }, 0) / roundsWithToPar.length
-    : avgScore - 72;
+    : null;
 
   const puttRounds = valid.filter(r => r.total_putts !== null);
   const puttHoles = puttRounds.reduce((sum, round) => sum + (round.holes_played ?? 18), 0);
   const totalPutts = puttRounds.reduce((sum, round) => sum + (round.total_putts ?? 0), 0);
   // Round at the source so no consumer (UI labels, tooltips) ever prints a raw
   // float like "76.11111111111113%". Grade/comparison logic is unaffected.
-  const avgPutts = puttHoles > 0 ? Math.round((totalPutts / puttHoles) * 18) : 32;
+  const avgPutts = puttHoles > 0 ? Math.round((totalPutts / puttHoles) * 18) : null;
 
+  // Weighted averages: (Σ made ÷ Σ opportunities) × 100, NOT the mean of
+  // per-round percentages — a 9-hole round contributes 9 opportunities, not a
+  // full vote, so short or partial rounds no longer skew the average.
   const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
-  const avgGirPct = girRounds.length > 0
-    ? Math.round(girRounds.reduce((sum, round) => sum + ((round.total_gir ?? 0) / (round.total_gir_possible ?? 18)) * 100, 0) / girRounds.length)
-    : 50;
+  const girHit = girRounds.reduce((sum, round) => sum + (round.total_gir ?? 0), 0);
+  const girPossible = girRounds.reduce((sum, round) => sum + (round.total_gir_possible ?? 0), 0);
+  const avgGirPct = girPossible > 0 ? Math.round((girHit / girPossible) * 100) : null;
 
   const fwRounds = valid.filter(r => r.total_fairways_hit !== null && r.total_fairways);
-  const avgFairwayPct = fwRounds.length > 0
-    ? Math.round(fwRounds.reduce((sum, round) => sum + ((round.total_fairways_hit ?? 0) / (round.total_fairways ?? 14)) * 100, 0) / fwRounds.length)
-    : 50;
+  const fwHit = fwRounds.reduce((sum, round) => sum + (round.total_fairways_hit ?? 0), 0);
+  const fwPossible = fwRounds.reduce((sum, round) => sum + (round.total_fairways ?? 0), 0);
+  const avgFairwayPct = fwPossible > 0 ? Math.round((fwHit / fwPossible) * 100) : null;
 
   return { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };
 }
@@ -713,7 +729,7 @@ function determineGrade(
   girPct: number | null,
   fairwayPct: number | null,
   putts: number,
-  playerAvgs?: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null
+  playerAvgs?: ComparisonAverages | null
 ): OverallGrade {
   let score = 0;
   let factors = 0;
@@ -732,29 +748,37 @@ function determineGrade(
   };
 
   if (playerAvgs) {
-    // Player-relative grading: compare to their own history
-    const avgScoreToPar = playerAvgs.avgScoreToPar;
-    const scoreVal = relativeGrade(scoreToPar, avgScoreToPar, 'lower');
-    score += scoreVal * 2;
-    factors += 2;
+    // Player-relative grading: compare to their own history. Each average can
+    // independently be null (no supporting round data) — skip that factor
+    // rather than grade against a fabricated benchmark.
+    if (playerAvgs.avgScoreToPar !== null) {
+      const scoreVal = relativeGrade(scoreToPar, playerAvgs.avgScoreToPar, 'lower');
+      score += scoreVal * 2;
+      factors += 2;
+    }
 
-    if (girPct !== null) {
+    if (girPct !== null && playerAvgs.avgGirPct !== null) {
       const girVal = relativeGrade(girPct, playerAvgs.avgGirPct, 'higher');
       score += girVal;
       factors++;
     }
 
-    if (fairwayPct !== null) {
+    if (fairwayPct !== null && playerAvgs.avgFairwayPct !== null) {
       const fwVal = relativeGrade(fairwayPct, playerAvgs.avgFairwayPct, 'higher');
       score += fwVal;
       factors++;
     }
 
-    const puttVal = relativeGrade(putts, playerAvgs.avgPutts, 'lower');
-    score += puttVal;
-    factors++;
-  } else {
-    // Fallback: fixed benchmarks (college-level)
+    if (playerAvgs.avgPutts !== null) {
+      const puttVal = relativeGrade(putts, playerAvgs.avgPutts, 'lower');
+      score += puttVal;
+      factors++;
+    }
+  }
+
+  if (factors === 0) {
+    // Fallback: fixed benchmarks (college-level). Reached when playerAvgs is
+    // null (< 3 comparison rounds) or when every usable average was null.
     const scoreVal = scoreToPar <= -3 ? 5 : scoreToPar <= -1 ? 4 : scoreToPar <= 1 ? 3.5 : scoreToPar <= 3 ? 3 : scoreToPar <= 5 ? 2 : 1;
     score += scoreVal * 2;
     factors += 2;
@@ -790,7 +814,7 @@ function determineGrade(
 function generateReviewContent(
   round: RoundData,
   holes: HoleBreakdown[],
-  playerAvgs: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null,
+  playerAvgs: ComparisonAverages | null,
   shotRows: ShotRow[] = []
 ): RoundReviewContent {
   const highlights: RoundReviewHighlight[] = [];
@@ -801,6 +825,14 @@ function generateReviewContent(
   // Always use round-level totals as ground truth — shot data may be incomplete
   const scoreToPar = round.score_to_par ?? 0;
   const totalScore = round.total_score ?? 72;
+
+  // 18-hole-equivalent factor. The player averages (avgScoreToPar, avgPutts)
+  // are 18-normalized, so a 9-hole round's raw counts must be scaled ×18/9
+  // before any comparison or grading — otherwise every short round grades as
+  // exceptional (e.g. 16 putts over 9 holes vs a 32-putt average). Displayed
+  // values stay raw; only comparison inputs use the scaled figures.
+  const holesPlayed = round.holes_played ?? 18;
+  const to18 = holesPlayed > 0 ? 18 / holesPlayed : 1;
 
   // ===== Compute stats from hole breakdowns, cross-referenced with round-level data =====
   const shotPutts = holes.reduce((s, h) => s + h.putts, 0);
@@ -1059,7 +1091,9 @@ function generateReviewContent(
 
   // ===== SENTIMENT & GRADE =====
   const sentiment = determineSentiment(scoreToPar);
-  const overallGrade = determineGrade(scoreToPar, girPct, fairwayPct, totalPutts, playerAvgs);
+  // Grade on 18-hole-equivalent score/putts so 9-hole rounds compare honestly
+  // against the 18-normalized averages (and fixed 18-hole benchmarks).
+  const overallGrade = determineGrade(scoreToPar * to18, girPct, fairwayPct, totalPutts * to18, playerAvgs);
 
   // ===== SUMMARY =====
   let summary = '';
@@ -1092,15 +1126,19 @@ function generateReviewContent(
   }
 
   // ===== KEY STATS =====
-  // Use stat-appropriate thresholds instead of a universal ±1
-  const cmp = (val: number, avg: number | undefined, better: 'lower' | 'higher', threshold: number = 1): StatComparison => {
-    if (!avg) return 'average';
+  // Use stat-appropriate thresholds instead of a universal ±1.
+  // A null/undefined average means "no honest baseline" — the comparison is
+  // skipped by reporting the neutral 'average' (no above/below claim is made).
+  const cmp = (val: number, avg: number | null | undefined, better: 'lower' | 'higher', threshold: number = 1): StatComparison => {
+    if (avg === null || avg === undefined || avg === 0) return 'average';
     const diff = val - avg;
     if (better === 'lower') return diff < -threshold ? 'above' : diff > threshold ? 'below' : 'average';
     return diff > threshold ? 'above' : diff < -threshold ? 'below' : 'average';
   };
 
-  keyStats.push({ label: 'Total Putts', value: `${totalPutts}`, comparison: cmp(totalPutts, playerAvgs?.avgPutts, 'lower', 2) });
+  // Display the raw putt count, but compare the 18-hole equivalent against
+  // the 18-normalized avgPutts (see `to18` above).
+  keyStats.push({ label: 'Total Putts', value: `${totalPutts}`, comparison: cmp(totalPutts * to18, playerAvgs?.avgPutts, 'lower', 2) });
   if (girPct !== null) {
     keyStats.push({ label: 'Greens in Reg', value: `${girHitsCount}/${girTotal} (${girPct}%)`, comparison: cmp(girPct, playerAvgs?.avgGirPct, 'higher', 5) });
   }
@@ -1383,7 +1421,7 @@ export async function generateAndStoreRoundReview(
 
     const { data: round, error: roundError } = await supabase
       .from('golf_rounds')
-      .select('id, player_id, course_name, round_date, total_score, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, status')
+      .select('id, player_id, course_name, round_date, total_score, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, holes_played, status')
       .eq('id', roundId)
       .single();
 
@@ -1589,8 +1627,8 @@ export async function getStatAverages(
   teamId?: string
 ): Promise<{
   success: boolean;
-  playerAvg?: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number };
-  teamAvg?: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number };
+  playerAvg?: ComparisonAverages;
+  teamAvg?: ComparisonAverages;
   error?: string;
 }> {
   const supabase = await createClient();

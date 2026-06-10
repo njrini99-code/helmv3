@@ -32,6 +32,7 @@
  * ========================================================================== */
 
 import { createClient } from '@/lib/supabase/server';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import { logServerError } from '@/lib/server-error-logger';
@@ -107,7 +108,13 @@ const APPROACH_PROXIMITY_CEILING_FT = 150;
 /** Ignore approach attempts shorter than this band floor (yd). */
 const APPROACH_MIN_BEFORE_YD = 50;
 
-/** Cap raw rows pulled per surface to stay within statement_timeout. */
+/**
+ * Overall safety ceiling on raw shot rows pulled per surface. Enforced via
+ * page accumulation in the paginated fetches below — NEVER via a single
+ * `.limit()`: PostgREST hard-caps every response at 1000 rows server-side,
+ * so `.limit(MAX_SHOT_ROWS)` silently returned ≤1000 rows and truncated
+ * every aggregate past the first 1000 shots.
+ */
 const MAX_SHOT_ROWS = 20000;
 
 // ============================================================================
@@ -182,11 +189,18 @@ async function completedRoundIds(
   playerIds: string[],
 ): Promise<string[]> {
   if (playerIds.length === 0) return [];
-  const { data } = await supabase
-    .from('golf_rounds')
-    .select('id')
-    .in('player_id', playerIds)
-    .eq('status', 'completed');
+  // Paginated: PostgREST caps each response at 1000 rows, so a roster's
+  // season can silently truncate an unpaginated id fetch (rounds beyond the
+  // first 1000 would vanish from every leak map).
+  const { data } = await fetchAllRowsResult((from, to) =>
+    supabase
+      .from('golf_rounds')
+      .select('id')
+      .in('player_id', playerIds)
+      .eq('status', 'completed')
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
   return (data ?? [])
     .map((r) => (r as { id: string }).id)
     .filter((id): id is string => typeof id === 'string');
@@ -210,15 +224,21 @@ async function buildPuttBuckets(
   const gradeable = new Map<string, number>();
 
   if (roundIds.length > 0) {
-    const { data } = await supabase
-      .from('golf_shots')
-      .select('round_id, putt_distance_feet, putt_made')
-      .in('round_id', roundIds)
-      .eq('shot_type', 'putting')
-      .not('putt_distance_feet', 'is', null)
-      .limit(MAX_SHOT_ROWS);
+    // Paginated past the PostgREST 1000-row cap; MAX_SHOT_ROWS is enforced by
+    // stopping page accumulation (a single `.limit()` silently capped at 1000).
+    const { data } = await fetchAllRowsResult<PuttRow>((from, to) => {
+      if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
+      return supabase
+        .from('golf_shots')
+        .select('round_id, putt_distance_feet, putt_made')
+        .in('round_id', roundIds)
+        .eq('shot_type', 'putting')
+        .not('putt_distance_feet', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
+    });
 
-    for (const row of (data ?? []) as PuttRow[]) {
+    for (const row of data ?? []) {
       const ft = row.putt_distance_feet;
       if (ft === null || Number.isNaN(ft)) continue;
       const band = bandFor(PUTT_BANDS, ft);
@@ -261,21 +281,27 @@ async function buildApproachBuckets(
   const count = new Map<string, number>();
 
   if (roundIds.length > 0) {
-    const { data } = await supabase
-      .from('golf_shots')
-      .select('round_id, distance_to_hole_before, distance_to_hole_after, distance_unit_after, result')
-      .in('round_id', roundIds)
-      .eq('shot_type', 'approach')
-      // ON-GREEN ONLY: proximity is a green-surface distance, so only approaches that
-      // FOUND the green count. A missed approach finishes off-green (stored in YARDS);
-      // including it ×3'd those finishes into "feet" and inflated every band ~2× (the
-      // "175+ → 63 ft" artifact). Green-hit rate covers the missed approaches instead.
-      .in('result', ['green', 'hole', 'gir'])
-      .not('distance_to_hole_before', 'is', null)
-      .not('distance_to_hole_after', 'is', null)
-      .limit(MAX_SHOT_ROWS);
+    // Paginated past the PostgREST 1000-row cap; MAX_SHOT_ROWS is enforced by
+    // stopping page accumulation (a single `.limit()` silently capped at 1000).
+    const { data } = await fetchAllRowsResult<ApproachRow>((from, to) => {
+      if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
+      return supabase
+        .from('golf_shots')
+        .select('round_id, distance_to_hole_before, distance_to_hole_after, distance_unit_after, result')
+        .in('round_id', roundIds)
+        .eq('shot_type', 'approach')
+        // ON-GREEN ONLY: proximity is a green-surface distance, so only approaches that
+        // FOUND the green count. A missed approach finishes off-green (stored in YARDS);
+        // including it ×3'd those finishes into "feet" and inflated every band ~2× (the
+        // "175+ → 63 ft" artifact). Green-hit rate covers the missed approaches instead.
+        .in('result', ['green', 'hole', 'gir'])
+        .not('distance_to_hole_before', 'is', null)
+        .not('distance_to_hole_after', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
+    });
 
-    for (const row of (data ?? []) as ApproachRow[]) {
+    for (const row of data ?? []) {
       const beforeYd = row.distance_to_hole_before;
       const afterRaw = row.distance_to_hole_after;
       if (beforeYd === null || Number.isNaN(beforeYd)) continue;

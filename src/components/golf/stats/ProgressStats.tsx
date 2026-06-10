@@ -533,7 +533,7 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
       </Suspense>
 
       <div className="text-xs text-warm-500 text-center mt-3">
-        Distance buckets show make percentage from first putt
+        Distance buckets show make percentage for every putt from that distance
       </div>
     </div>
   );

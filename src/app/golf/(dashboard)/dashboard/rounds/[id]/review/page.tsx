@@ -26,6 +26,7 @@ import {
   getStatAverages,
   getPlayerStandingForReview,
   shareRoundReviewWithCoach,
+  type ComparisonAverages,
   type RoundReviewWithRound,
 } from '@/app/golf/actions/round-review-system';
 import { markReviewAsViewed } from '@/app/golf/actions/round-reviews';
@@ -66,6 +67,7 @@ interface RoundData {
   total_fairways: number | null;
   total_gir: number | null;
   total_gir_possible: number | null;
+  holes_played: number | null;
   holes?: Array<{
     hole_number: number;
     score: number | null;
@@ -143,6 +145,24 @@ function derivePromoteSuggestion(
   return null;
 }
 
+/** Adapts the null-honest `ComparisonAverages` shape to the optional-number
+ *  props `RoundStatsComparison` expects. A null average means "no honest
+ *  baseline for this stat" — mapping it to `undefined` makes the component
+ *  skip that comparison entirely instead of comparing against a fabricated
+ *  number. */
+function toComparisonProps(avg: ComparisonAverages | null): {
+  avgGirPct?: number;
+  avgFairwayPct?: number;
+  avgPutts?: number;
+} | null {
+  if (!avg) return null;
+  return {
+    avgGirPct: avg.avgGirPct ?? undefined,
+    avgFairwayPct: avg.avgFairwayPct ?? undefined,
+    avgPutts: avg.avgPutts ?? undefined,
+  };
+}
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -156,18 +176,11 @@ export default function RoundReviewPage() {
   // State
   const [round, setRound] = useState<RoundData | null>(null);
   const [storedReview, setStoredReview] = useState<RoundReviewWithRound | null>(null);
-  const [playerAvg, setPlayerAvg] = useState<{
-    avgScore: number;
-    avgPutts: number;
-    avgGirPct: number;
-    avgFairwayPct: number;
-  } | null>(null);
-  const [teamAvg, setTeamAvg] = useState<{
-    avgScore: number;
-    avgPutts: number;
-    avgGirPct: number;
-    avgFairwayPct: number;
-  } | null>(null);
+  // Null-honest averages: each field is independently null when the player's
+  // history can't support it (see ComparisonAverages). Comparisons with a
+  // null average are skipped, never faked.
+  const [playerAvg, setPlayerAvg] = useState<ComparisonAverages | null>(null);
+  const [teamAvg, setTeamAvg] = useState<ComparisonAverages | null>(null);
   // Season-level standing (PGA + team + you) keyed by canonical metric_id.
   // Redesign-only: feeds the StandingBar "where this sits" band below the
   // round stats. Empty `{}` until the season standing cron has populated rows
@@ -601,6 +614,15 @@ export default function RoundReviewPage() {
   const firPct = round.total_fairways_hit !== null && round.total_fairways
     ? Math.round((round.total_fairways_hit / round.total_fairways) * 100)
     : null;
+  // avgPutts is an 18-hole figure, so normalize the round's raw putt count to
+  // an 18-hole equivalent (×18/holes_played) before comparing — otherwise a
+  // 9-hole round reads "16 putts vs a 32-putt average". GIR/FIR are already
+  // scale-invariant percentages; score is never compared against an average
+  // on this page (only score-to-par framing), so putts is the lone count stat.
+  const holesPlayed = round.holes_played ?? 18;
+  const putts18 = round.total_putts !== null && holesPlayed > 0
+    ? Math.round(round.total_putts * (18 / holesPlayed))
+    : round.total_putts;
   // Note: scramble percentage not available at round level - would need hole-level data
   const scramblePct = null;
 
@@ -694,12 +716,12 @@ export default function RoundReviewPage() {
           roundStats={{
             girPct,
             firPct,
-            putts: round.total_putts,
+            putts: putts18,
             penalties: null, // Not tracked at round level
             scramblePct,
           }}
-          playerAvg={playerAvg}
-          teamAvg={teamAvg}
+          playerAvg={toComparisonProps(playerAvg)}
+          teamAvg={toComparisonProps(teamAvg)}
         />
 
         {/* Where this sits vs PGA + team — REDESIGN ONLY.

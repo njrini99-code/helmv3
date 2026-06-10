@@ -944,6 +944,9 @@ async function queryDetailedStatsWithClient(
       round_date: r.round_date,
       course_name: r.course_name || 'Unknown Course',
       round_type: r.round_type ? roundTypeFromDb(r.round_type) : null,
+      // Without this the engine infers 18-vs-9 from the hole-row count, which
+      // misclassifies partially-entered rounds (matches player-profile-stats).
+      holes_played: r.holes_played,
     }));
 
     const holesInfo: HoleInfo[] = (holesData || []).map(h => ({
@@ -1496,7 +1499,19 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
   // Personal bests
   const personalBests = {
     bestScore: findBest(rounds, 'score', true),
-    bestToPar: findBest(rounds, 'toPar', true),
+    // Normalize to-par to an 18-hole equivalent before comparing — a raw -1
+    // over 9 holes must not beat E over 18 (matches bestScore, whose `score`
+    // is already 18-hole-normalized above).
+    bestToPar: findBest(
+      rounds.map(r => ({
+        ...r,
+        toParNormalized: r.holesPlayed > 0
+          ? Math.round(r.toPar * (18 / r.holesPlayed))
+          : r.toPar,
+      })),
+      'toParNormalized',
+      true
+    ),
     bestGir: findBest(rounds.filter(r => r.girPct !== null) as (RoundTrendData & { girPct: number })[], 'girPct', false),
     lowestPutts: findBest(rounds.filter(r => r.putts !== null) as (RoundTrendData & { putts: number })[], 'putts', true),
   };
@@ -2325,13 +2340,18 @@ export async function getCoachRosterStats(teamId: string): Promise<CoachRosterPl
       .select('id, first_name, last_name, avatar_url, graduation_year, handicap')
       .in('id', playerIds)
       .order('last_name'),
-    supabase
+    // A full roster's season history easily exceeds the PostgREST hard
+    // 1000-row cap — unpaginated, later players silently lost ALL rounds.
+    // The id tiebreaker keeps page boundaries stable within a date.
+    fetchAllRowsResult((from, to) => supabase
       .from('golf_rounds')
-      .select('player_id, total_score, round_date, holes_played')
+      .select('id, player_id, total_score, round_date, holes_played')
       .in('player_id', playerIds)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
-      .order('round_date', { ascending: false }),
+      .order('round_date', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to)), // paginate past PostgREST 1000-row cap
   ]);
 
   if (!teamPlayers || teamPlayers.length === 0) return [];

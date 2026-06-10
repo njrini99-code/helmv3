@@ -5766,8 +5766,13 @@ export async function getRoundShotDetails(
         approach_distance: null,
         approach_proximity: null,
         first_putt_distance: firstPuttDistance,
-        scramble_attempt: hole.up_and_down !== null,
-        scramble_made: hole.up_and_down === true,
+        // Canonical scramble definition (matches the DB round-stats trigger):
+        // attempt = missed GIR with a recorded score (gir=false AND score IS
+        // NOT NULL); made = that attempt scored par or better. The old
+        // up_and_down-based flag counted "has an up/down entry" as an attempt,
+        // which both over- and under-counted vs every stats surface.
+        scramble_attempt: hole.gir === false && hole.score !== null,
+        scramble_made: hole.gir === false && hole.score !== null && hole.score <= hole.par,
         sand_save_attempt: hole.sand_save !== null,
         sand_save_made: hole.sand_save === true,
         shots: holeShots,

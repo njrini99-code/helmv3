@@ -9,8 +9,9 @@
  * behind `isRedesignEnabled()`. Coach-workflow order (playbook §3):
  *
  *   MASTHEAD  → ViewHeader "Team Stats" + the ONE primary CTA.
- *   HERO      → Team Strokes Gained tornado (team-mean of per-player standing
- *               sg_* rows, plotted around x=0 = PGA), with an SG-total Readout.
+ *   HERO      → Team Strokes Gained tornado (rounds-weighted team mean of
+ *               per-player standing sg_* rows, plotted around x=0 = PGA),
+ *               with an SG-total Readout.
  *   LEAK MAPS → putt-make% + approach-proximity LeakMaps vs the PGA curve
  *               (the 10-15 ft putting cliff is the hero finding).
  *   PER-PLAYER→ one InstrumentPanel tile per roster player, each carrying a
@@ -87,22 +88,36 @@ const SG_CATEGORY_BARS: ReadonlyArray<{ metric: MetricId; label: string }> = [
 ];
 
 /**
- * Mean of `player_value` for a metric across every player that carries the row.
- * Returns null when no player has the metric (→ honest-empty, never a fake 0).
+ * Rounds-weighted mean of `player_value` for a metric across every player that
+ * carries the row: Σ(value × rounds) ÷ Σ rounds — a 2-round walk-on must not
+ * weigh the same as a 40-round starter. `PlayerStanding` carries no round
+ * count, so weights come from the roster's `rounds_played` (keyed by player
+ * id). Falls back to the unweighted mean when no carrier has a positive round
+ * count; returns null when no player has the metric (→ honest-empty, never a
+ * fake 0). Exported for unit tests.
  */
-function teamMeanFor(
+export function teamMeanFor(
   metric: MetricId,
   standingByPlayer: Map<string, Map<MetricId, PlayerStanding>>,
+  roundsByPlayer: ReadonlyMap<string, number>,
 ): number | null {
+  let weightedSum = 0;
+  let totalRounds = 0;
   let sum = 0;
   let n = 0;
-  for (const map of standingByPlayer.values()) {
+  for (const [playerId, map] of standingByPlayer) {
     const row = map.get(metric);
     if (row && typeof row.player_value === 'number' && !Number.isNaN(row.player_value)) {
       sum += row.player_value;
       n += 1;
+      const rounds = roundsByPlayer.get(playerId) ?? 0;
+      if (rounds > 0 && !Number.isNaN(rounds)) {
+        weightedSum += row.player_value * rounds;
+        totalRounds += rounds;
+      }
     }
   }
+  if (totalRounds > 0) return weightedSum / totalRounds;
   return n > 0 ? sum / n : null;
 }
 
@@ -223,11 +238,25 @@ function classifyScoringTrend(trend: number | null): TrendDisplay | null {
     : { verdict: 'declining', label: 'Declining', cls: 'text-fw-warning', arrow: '↗', magnitude };
 }
 
-/** Team average of a metric across players that carry it; null when no samples. */
-function teamAvg(
+/**
+ * Team average of a metric across players that carry it; null when no samples.
+ *
+ * Weighted by each player's `rounds_played` by default (Σ value × rounds ÷
+ * Σ rounds) — the canonical team-average rule. `TeamPlayerStats` carries only
+ * already-derived rates (no fairways_hit/fairways_total numerators), so
+ * rounds-weighting is the closest available proxy for Σ made ÷ Σ opportunities
+ * on FW%/GIR%, and is exact for per-round stats (scoring average, putts).
+ * Pass `weigh` to override — e.g. handicap is a player attribute, not a
+ * round-derived rate, so it stays an equal-weight mean. Falls back to the
+ * unweighted mean when no carrier has positive weight. Exported for unit tests.
+ */
+export function teamAvg(
   players: TeamPlayerStats[],
   pick: (p: TeamPlayerStats) => number | null,
+  weigh: (p: TeamPlayerStats) => number = (p) => p.rounds_played,
 ): number | null {
+  let weightedSum = 0;
+  let totalWeight = 0;
   let sum = 0;
   let n = 0;
   for (const p of players) {
@@ -235,8 +264,14 @@ function teamAvg(
     if (v !== null && !Number.isNaN(v)) {
       sum += v;
       n += 1;
+      const w = weigh(p);
+      if (w > 0 && !Number.isNaN(w)) {
+        weightedSum += v * w;
+        totalWeight += w;
+      }
     }
   }
+  if (totalWeight > 0) return weightedSum / totalWeight;
   return n > 0 ? sum / n : null;
 }
 
@@ -251,20 +286,27 @@ export function FairwayTeamStats({
   leakMaps,
   standingByPlayer,
 }: FairwayTeamStatsProps) {
-  // ── SG hero data (team-mean per category) ──────────────────────────────────
+  // ── SG hero data (rounds-weighted team mean per category) ──────────────────
+  // Standing rows carry no round count, so the weight lookup comes from the
+  // same roster payload the rest of the page renders.
+  const roundsByPlayer = React.useMemo(
+    () => new Map(players.map((p) => [p.id, p.rounds_played])),
+    [players],
+  );
+
   const sgData: SGCategory[] = React.useMemo(() => {
     return SG_CATEGORY_BARS.map(({ metric, label }) => ({
       metric,
       label,
-      value: teamMeanFor(metric, standingByPlayer),
+      value: teamMeanFor(metric, standingByPlayer, roundsByPlayer),
     }))
       .filter((d): d is { metric: MetricId; label: string; value: number } => d.value !== null)
       .map(({ label, value }) => ({ label, value }));
-  }, [standingByPlayer]);
+  }, [standingByPlayer, roundsByPlayer]);
 
   const sgTotalMean = React.useMemo(
-    () => teamMeanFor('sg_total', standingByPlayer),
-    [standingByPlayer],
+    () => teamMeanFor('sg_total', standingByPlayer, roundsByPlayer),
+    [standingByPlayer, roundsByPlayer],
   );
 
   const hasSg = sgData.length > 0;
@@ -658,8 +700,8 @@ function PlayerTile({
 
 // ============================================================================
 // TEAM-AVERAGE FOOTER — mirrors the legacy table's summary row, enriched to the
-// full metric set. Every figure is an honest mean over players that carry the
-// metric (em-dash when none do — never a fabricated 0).
+// full metric set. Every figure is an honest rounds-weighted mean over players
+// that carry the metric (em-dash when none do — never a fabricated 0).
 // ============================================================================
 
 function TeamAverageFooter({ players }: { players: TeamPlayerStats[] }) {
@@ -670,7 +712,9 @@ function TeamAverageFooter({ players }: { players: TeamPlayerStats[] }) {
       .filter((v): v is number => v !== null && !Number.isNaN(v));
     return bests.length > 0 ? Math.min(...bests) : null;
   })();
-  const avgHandicap = teamAvg(players, (p) => p.handicap);
+  // Handicap is a per-player attribute (not derived from the rounds in this
+  // window), so every player weighs equally.
+  const avgHandicap = teamAvg(players, (p) => p.handicap, () => 1);
   const avgFw = teamAvg(players, (p) => p.fairway_pct);
   const avgGir = teamAvg(players, (p) => p.gir_pct);
   const avgPutts = teamAvg(players, (p) => p.putts_per_round);

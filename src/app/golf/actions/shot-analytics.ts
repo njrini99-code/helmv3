@@ -517,19 +517,20 @@ export async function getPlayerShotAnalytics(
     const threePlusPutts = allHolesWithPutts.filter(h => (h.putts || 0) >= 3).length;
     const holesWithPutts = allHolesWithPutts.length || 1;
 
-    // Putts/round normalized to 18 holes so 9-hole rounds don't deflate the average
-    // (matches dashboard-data.ts and the personal stats page). Raw totalPutts/rounds
-    // would count a 9-hole round as a full round.
+    // Putts/round — HOLE-WEIGHTED: (sum putts ÷ sum holes played) × 18, matching
+    // the canonical cache (update_player_stats_complete), the personal stats page,
+    // and dashboard-data.ts. A mean of per-round normalized values over-weights
+    // short rounds; the hole-weighted form treats every hole equally.
     const normalizedPuttsPerRound = (rs: RoundRow[]): number => {
-      const perRound = rs
-        .filter((r): r is RoundRow & { total_putts: number } => r.total_putts != null)
-        .map(r => {
-          const hp = r.holes_played ?? 18;
-          return hp > 0 && hp < 18 ? (r.total_putts * 18) / hp : r.total_putts;
-        });
-      return perRound.length > 0
-        ? perRound.reduce((a, b) => a + b, 0) / perRound.length
-        : 0;
+      let putts = 0;
+      let holes = 0;
+      for (const r of rs) {
+        if (r.total_putts != null) {
+          putts += r.total_putts;
+          holes += r.holes_played ?? 18;
+        }
+      }
+      return holes > 0 ? (putts / holes) * 18 : 0;
     };
     const avgPuttsPerRound = normalizedPuttsPerRound(rounds);
 

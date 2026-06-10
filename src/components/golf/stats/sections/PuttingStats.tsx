@@ -21,6 +21,34 @@ interface PuttingStatsProps {
   selectedRoundId?: string | 'overall';
 }
 
+/**
+ * PostgREST hard-caps every response at 1000 rows — a single large `.limit()`
+ * silently truncates past that. This is a client component (browser supabase
+ * client), so it can't import the server-side fetch-all-rows util; paginate
+ * inline with a stable `.order('id')` + `.range()`, stopping on a short page.
+ */
+const PAGE_SIZE = 1000;
+/** Overall safety ceiling across pages — far above any single player's data. */
+const MAX_FETCH_ROWS = 20000;
+
+async function fetchAllPages<T>(
+  makeQuery: (
+    from: number,
+    to: number,
+  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[] | null> {
+  const all: T[] = [];
+  for (let from = 0; from < MAX_FETCH_ROWS; from += PAGE_SIZE) {
+    const { data, error } = await makeQuery(from, from + PAGE_SIZE - 1);
+    // Match the unpaginated contract: a first-page error reads as "no data".
+    if (error) return from === 0 ? null : all;
+    const rows = data ?? [];
+    all.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
 export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: PuttingStatsProps) {
   const prefersReducedMotion = useReducedMotion();
   const [selectedBreak, setSelectedBreak] = useState<'left_to_right' | 'right_to_left' | 'straight' | 'multiple' | null>(null);
@@ -40,28 +68,36 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
       if (selectedRoundId && selectedRoundId !== 'overall') {
         roundIds = [selectedRoundId];
       } else {
-        const { data: rounds } = await supabase
-          .from('golf_rounds')
-          .select('id')
-          .eq('player_id', playerId)
-          .eq('status', 'completed')
-          .order('round_date', { ascending: false })
-          .limit(200);
-        roundIds = (rounds ?? []).map((r) => r.id as string);
+        // These ids scope the putt fetch below (not a display-bounded list),
+        // so truncating them would silently drop older rounds from the
+        // "overall" heatmap — paginate past the 1000-row cap instead.
+        const rounds = await fetchAllPages((from, to) =>
+          supabase
+            .from('golf_rounds')
+            .select('id')
+            .eq('player_id', playerId)
+            .eq('status', 'completed')
+            .order('id', { ascending: true })
+            .range(from, to),
+        );
+        roundIds = (rounds ?? []).map((r) => r.id);
       }
       if (cancelled) return;
       if (roundIds.length === 0) {
         setPutts([]);
         return;
       }
-      const { data, error } = await supabase
-        .from('golf_shots')
-        .select('round_id, hole_number, putt_distance_feet, putt_made, miss_direction')
-        .in('round_id', roundIds)
-        .not('putt_distance_feet', 'is', null)
-        .limit(5000);
+      const data = await fetchAllPages((from, to) =>
+        supabase
+          .from('golf_shots')
+          .select('round_id, hole_number, putt_distance_feet, putt_made, miss_direction')
+          .in('round_id', roundIds)
+          .not('putt_distance_feet', 'is', null)
+          .order('id', { ascending: true })
+          .range(from, to),
+      );
       if (cancelled) return;
-      if (error || !data) {
+      if (!data) {
         setPutts([]);
         return;
       }
