@@ -38,6 +38,7 @@ import {
   AlertTriangle,
   Trash2,
   Check,
+  Ban,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -50,6 +51,18 @@ import type {
   RecurrenceFrequency,
   RecurringEditScope,
 } from '@/components/golf/calendar/EventDetailModal';
+import {
+  computeAttendeeChanges,
+  summarizeAttendeeChanges,
+  toDateTimeLocalValue,
+  buildRecurrenceRule,
+  recurrenceFieldsFromRule,
+  WEEKDAY_OPTIONS,
+  MIN_RECURRENCE_COUNT,
+  MAX_RECURRENCE_COUNT,
+  type RecurrenceEndMode,
+} from '@/components/golf/calendar/event-form-helpers';
+import { parseRecurrenceRule, describeRecurrenceRule } from '@/lib/golf/recurrence';
 import { tintFor } from './FairwayCalendarMemberRail';
 
 interface TeamPlayer {
@@ -67,6 +80,12 @@ export interface FairwayEventEditorProps {
   isCoach: boolean;
   onSave: (data: GolfEventFormData) => Promise<void>;
   onDelete?: (scope?: RecurringEditScope) => Promise<void>;
+  /**
+   * Restore a soft-cancelled event (status back to confirmed). When the
+   * event is cancelled, editing is disabled and this is the only action
+   * offered. Optional — the affordance only renders when wired.
+   */
+  onRestore?: () => Promise<void>;
   isSaving: boolean;
   teamPlayers?: TeamPlayer[];
   currentUserId?: string;
@@ -88,6 +107,7 @@ const RECURRENCE_OPTIONS: ReadonlyArray<{ value: RecurrenceFrequency; label: str
   { value: 'none', label: 'Does not repeat' },
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Every 2 weeks' },
   { value: 'monthly', label: 'Monthly' },
 ];
 
@@ -129,14 +149,19 @@ const DEFAULT_FORM: GolfEventFormData = {
   attendeeIds: [],
   recurrence: 'none',
   recurrenceCount: 10,
+  recurrenceWeekdays: [],
+  recurrenceEndMode: 'count',
+  recurrenceUntil: null,
 };
 
 export function FairwayEventEditor({
   open,
   onClose,
   event,
+  isCoach,
   onSave,
   onDelete,
+  onRestore,
   isSaving,
   teamPlayers = [],
   currentUserId,
@@ -161,6 +186,11 @@ export function FairwayEventEditor({
   const [error, setError] = React.useState<string | null>(null);
   const [conflicts, setConflicts] = React.useState<ConflictData | null>(null);
   const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+  // Existing golf_event_attendance baseline for the event being edited.
+  // null = not hydrated (loading or failed) — removals are NEVER computed
+  // against a null baseline, so a slow/failed fetch can't wipe attendees.
+  const [existingAttendeeIds, setExistingAttendeeIds] = React.useState<string[] | null>(null);
+  const [attendeeHydration, setAttendeeHydration] = React.useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
   // Edit prefill / create reset — verbatim from the legacy modal.
   React.useEffect(() => {
@@ -186,7 +216,9 @@ export function FairwayEventEditor({
           endTime = `${String(endD.getHours()).padStart(2, '0')}:${String(endD.getMinutes()).padStart(2, '0')}`;
         }
       }
-      const rsvpDeadline = event.rsvp_deadline ? new Date(event.rsvp_deadline).toISOString().slice(0, 16) : null;
+      // Convert to the user's LOCAL wall-clock for the datetime-local input
+      // (the old toISOString prefill displayed UTC wall-time — audit #15).
+      const rsvpDeadline = toDateTimeLocalValue(event.rsvp_deadline);
       const isAllDay = event.all_day ?? false;
       setFormData({
         title: event.title || '',
@@ -206,6 +238,9 @@ export function FairwayEventEditor({
         attendeeIds: [],
         recurrence: 'none',
         recurrenceCount: 10,
+        recurrenceWeekdays: [],
+        recurrenceEndMode: 'count',
+        recurrenceUntil: null,
       });
     } else {
       setFormData({ ...DEFAULT_FORM, startDate: getTodayDate() });
@@ -215,11 +250,83 @@ export function FairwayEventEditor({
     setConflicts(null);
   }, [open, event, isCreating]);
 
+  // Hydrate the attendee selection from the event's EXISTING attendance rows
+  // (audit #4 — the edit form used to seed attendeeIds:[] and the save path
+  // then deleted every invitee that wasn't re-selected). Toggles stay
+  // disabled until this resolves so the selection always reflects reality.
+  // Keyed on `event` IDENTITY to stay in lockstep with the reset effect above.
+  React.useEffect(() => {
+    if (!open || !event || isCreating) {
+      setExistingAttendeeIds(null);
+      setAttendeeHydration('idle');
+      return;
+    }
+    let cancelled = false;
+    setAttendeeHydration('loading');
+    setExistingAttendeeIds(null);
+    (async () => {
+      try {
+        const { getEventRSVP } = await import('@/app/golf/actions/golf');
+        const result = await getEventRSVP(event.id);
+        if (cancelled) return;
+        if (result.success && result.data) {
+          const ids = result.data.summary.attendees.map((a) => a.playerId);
+          setExistingAttendeeIds(ids);
+          setFormData((prev) => ({ ...prev, attendeeIds: ids }));
+          setAttendeeHydration('loaded');
+        } else {
+          setAttendeeHydration('error');
+        }
+      } catch {
+        if (!cancelled) setAttendeeHydration('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, event, isCreating]);
+
+  // Series-root edits: prefill the recurrence pattern from the stored rule so
+  // the series can be extended (more occurrences / later end date) or
+  // re-shaped (e.g. add Wednesdays to a M/F practice).
+  const isSeriesRoot = !isCreating && Boolean(event?.recurrence_rule) && !event?.parent_event_id;
+  React.useEffect(() => {
+    if (!open || !isSeriesRoot || !event?.recurrence_rule) return;
+    const rule = parseRecurrenceRule(event.recurrence_rule);
+    if (rule) {
+      setFormData((prev) => ({ ...prev, ...recurrenceFieldsFromRule(rule), recurrenceRule: rule }));
+    }
+  }, [open, isSeriesRoot, event]);
+
+  // Pending attendee delta vs the hydrated baseline. Null until hydration
+  // succeeds — removals are only ever computed from a loaded baseline.
+  const attendeeChanges = React.useMemo(() => {
+    if (isCreating || existingAttendeeIds === null) return null;
+    return computeAttendeeChanges(existingAttendeeIds, formData.attendeeIds);
+  }, [isCreating, existingAttendeeIds, formData.attendeeIds]);
+  const attendeeChangeSummary = attendeeChanges ? summarizeAttendeeChanges(attendeeChanges) : null;
+
+  // In edit mode only check conflicts for NEWLY added players — existing
+  // invitees already have this event in their schedule, so checking them
+  // would flag the event against itself.
+  const conflictCheckIds = React.useMemo(() => {
+    if (!isCreating && attendeeChanges) return attendeeChanges.addAttendeeIds;
+    return formData.attendeeIds;
+  }, [isCreating, formData.attendeeIds, attendeeChanges]);
+
+  // Live human-readable summary of the pattern being built, e.g.
+  // "Every 2 weeks on Mon, Wed, Fri until Aug 15, 2026".
+  const recurrencePreview = React.useMemo(() => {
+    if (formData.recurrence === 'none') return null;
+    const rule = buildRecurrenceRule(formData, formData.startDate);
+    return rule ? describeRecurrenceRule(rule) : null;
+  }, [formData]);
+
   // Debounced conflict check — verbatim contract (checkScheduleConflicts).
   React.useEffect(() => {
     let cancelled = false;
     async function check() {
-      if (formData.attendeeIds.length === 0 || !formData.startDate || formData.allDay) {
+      if (conflictCheckIds.length === 0 || !formData.startDate || formData.allDay) {
         setConflicts(null);
         return;
       }
@@ -234,7 +341,7 @@ export function FairwayEventEditor({
           formData.startTime,
           formData.endDate || formData.startDate,
           formData.endTime,
-          formData.attendeeIds,
+          conflictCheckIds,
         );
         if (!cancelled && result.success && result.data) setConflicts(result.data as ConflictData);
       } catch {
@@ -246,16 +353,41 @@ export function FairwayEventEditor({
       cancelled = true;
       clearTimeout(t);
     };
-  }, [formData.attendeeIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
+  }, [conflictCheckIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
 
   const isInSeries = !isCreating && Boolean(event && (event.parent_event_id || event.recurrence_rule));
   const [pendingScopeAction, setPendingScopeAction] = React.useState<null | 'edit' | 'delete'>(null);
+
+  /**
+   * Assemble the outgoing payload (mirrors the legacy EventDetailModal):
+   * - recurrenceRule: structured rule built from the form's pattern fields
+   *   (create, or series-root edit where the pattern can be extended).
+   * - addAttendeeIds / removeAttendeeIds: explicit delta vs the hydrated
+   *   attendance baseline. If hydration failed, everything selected is sent
+   *   as an add and NO removals are sent (additive-only fail-safe).
+   */
+  const buildSubmitData = (): GolfEventFormData => {
+    const rule = (isCreating || isSeriesRoot)
+      ? buildRecurrenceRule(formData, formData.startDate)
+      : null;
+    const data: GolfEventFormData = { ...formData, recurrenceRule: rule };
+    if (!isCreating) {
+      if (attendeeChanges) {
+        data.addAttendeeIds = attendeeChanges.addAttendeeIds;
+        data.removeAttendeeIds = attendeeChanges.removeAttendeeIds;
+      } else {
+        data.addAttendeeIds = formData.attendeeIds;
+        data.removeAttendeeIds = [];
+      }
+    }
+    return data;
+  };
 
   const submitWithScope = async (scope: RecurringEditScope) => {
     setError(null);
     try {
       if (pendingScopeAction === 'edit') {
-        await onSave({ ...formData, editScope: scope });
+        await onSave({ ...buildSubmitData(), editScope: scope });
       } else if (pendingScopeAction === 'delete' && onDelete) {
         await onDelete(scope);
       }
@@ -278,9 +410,19 @@ export function FairwayEventEditor({
       return;
     }
     try {
-      await onSave(formData);
+      await onSave(buildSubmitData());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save event');
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!onRestore) return;
+    setError(null);
+    try {
+      await onRestore();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to restore event');
     }
   };
 
@@ -302,6 +444,18 @@ export function FairwayEventEditor({
     }
   };
 
+  const toggleRecurrenceWeekday = (day: number) => {
+    setFormData((prev) => {
+      const current = prev.recurrenceWeekdays ?? [];
+      return {
+        ...prev,
+        recurrenceWeekdays: current.includes(day)
+          ? current.filter((d) => d !== day)
+          : [...current, day].sort((a, b) => a - b),
+      };
+    });
+  };
+
   const toggleAttendee = (id: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -321,6 +475,12 @@ export function FairwayEventEditor({
 
   const initials = (p: TeamPlayer) => `${p.first_name?.[0] ?? ''}${p.last_name?.[0] ?? ''}`.toUpperCase() || '—';
 
+  // Soft-cancelled events are read-only — the only offered action is
+  // Restore (when wired). Re-cancelling is a no-op, so Delete is hidden too.
+  const isCancelled = !isCreating && event?.status === 'cancelled';
+  const locked = isSaving || isCancelled;
+  const attendeesLoading = attendeeHydration === 'loading';
+
   return (
     <ModalShell
       open={open}
@@ -328,7 +488,7 @@ export function FairwayEventEditor({
         if (!o) onClose();
       }}
       size="xl"
-      title={isCreating ? 'New event' : 'Edit event'}
+      title={isCreating ? 'New event' : isCancelled ? 'Cancelled event' : 'Edit event'}
       data-slot="event-editor"
     >
       {/* Recurring-series scope picker (edit/delete) — overrides the body */}
@@ -338,27 +498,52 @@ export function FairwayEventEditor({
             {pendingScopeAction === 'delete' ? 'Delete recurring event' : 'Edit recurring event'}
           </p>
           <p className="font-fw-sans text-body-sm text-text-tertiary">
-            This event is part of a series. Apply to:
+            This event is part of a series. Choose how the change should apply.
           </p>
           <div className="mt-1 flex flex-col gap-2">
             {([
-              { scope: 'this' as const, label: 'This event only' },
-              { scope: 'thisAndFuture' as const, label: 'This and all future events' },
-              { scope: 'all' as const, label: 'All events in the series' },
-            ]).map(({ scope, label }) => (
+              {
+                scope: 'this' as const,
+                label: 'This event only',
+                sub: pendingScopeAction === 'edit'
+                  ? 'Other occurrences keep their current details.'
+                  : 'This occurrence is cancelled and attendees are notified. The rest of the series stays.',
+              },
+              {
+                scope: 'thisAndFuture' as const,
+                label: 'This and all future events',
+                sub: pendingScopeAction === 'edit'
+                  ? 'Past occurrences are left alone.'
+                  : 'Permanently removes this and every later occurrence. Past ones are left alone.',
+              },
+              {
+                scope: 'all' as const,
+                label: 'All events in the series',
+                sub: pendingScopeAction === 'edit'
+                  ? 'Every occurrence picks up the change.'
+                  : 'Permanently removes the whole series, including past occurrences.',
+              },
+            ]).map(({ scope, label, sub }) => (
               <Button
                 key={scope}
                 variant={pendingScopeAction === 'delete' && scope !== 'this' ? 'danger' : 'secondary'}
-                className="w-full justify-start"
+                className="h-auto w-full flex-col items-start gap-0.5 py-2.5 text-left"
                 disabled={isSaving}
+                autoFocus={scope === 'this'}
                 onClick={() => submitWithScope(scope)}
               >
-                {label}
+                <span className="font-fw-sans text-body-sm font-medium">{label}</span>
+                <span className="font-fw-sans text-caption font-normal opacity-80">{sub}</span>
               </Button>
             ))}
             <Button variant="ghost" className="w-full" disabled={isSaving} onClick={() => setPendingScopeAction(null)}>
               Cancel
             </Button>
+            {pendingScopeAction === 'delete' ? (
+              <p className="font-fw-sans text-caption text-fw-danger/80">
+                Removing future or all occurrences is permanent — it can&apos;t be undone.
+              </p>
+            ) : null}
           </div>
         </ModalShell.Body>
       ) : (
@@ -371,6 +556,31 @@ export function FairwayEventEditor({
               </div>
             ) : null}
 
+            {/* Cancelled banner — soft-cancel lifecycle. Editing is disabled;
+                the only action offered is Restore (when wired). */}
+            {isCancelled ? (
+              <div
+                role="status"
+                className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken px-4 py-3"
+              >
+                <span className="flex items-center gap-2 font-fw-sans text-body-sm text-text-secondary">
+                  <Ban className="h-4 w-4 flex-shrink-0 text-text-tertiary" aria-hidden />
+                  This event is cancelled. Editing is disabled.
+                </span>
+                {isCoach && onRestore ? (
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={handleRestore}
+                    disabled={isSaving}
+                    className="flex-shrink-0"
+                  >
+                    Restore event
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+
             {/* Title — with a green editorial spine */}
             <div className="flex items-center gap-3">
               <span aria-hidden className="h-7 w-1 flex-shrink-0 rounded-full bg-accent-500" />
@@ -378,7 +588,7 @@ export function FairwayEventEditor({
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                disabled={isSaving}
+                disabled={locked}
                 placeholder="Event name…"
                 aria-label="Event title"
                 className="w-full flex-1 border-none bg-transparent px-0 py-1 font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary outline-none placeholder:text-text-tertiary"
@@ -395,7 +605,7 @@ export function FairwayEventEditor({
                     key={type}
                     type="button"
                     onClick={() => setFormData({ ...formData, eventType: type })}
-                    disabled={isSaving}
+                    disabled={locked}
                     aria-pressed={active}
                     className={cn(
                       'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-fw-sans text-caption font-medium transition-colors',
@@ -423,7 +633,7 @@ export function FairwayEventEditor({
                       type="date"
                       value={formData.startDate}
                       onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      disabled={isSaving}
+                      disabled={locked}
                       className={cn(fieldCls, 'bg-surface')}
                       required
                     />
@@ -435,7 +645,7 @@ export function FairwayEventEditor({
                       type="date"
                       value={formData.endDate || ''}
                       onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
-                      disabled={isSaving}
+                      disabled={locked}
                       className={cn(fieldCls, 'bg-surface')}
                     />
                   </div>
@@ -453,7 +663,7 @@ export function FairwayEventEditor({
                         type="time"
                         value={formData.startTime || ''}
                         onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
-                        disabled={isSaving}
+                        disabled={locked}
                         className={cn(fieldCls, 'bg-surface')}
                       />
                     </div>
@@ -464,7 +674,7 @@ export function FairwayEventEditor({
                         type="time"
                         value={formData.endTime || ''}
                         onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
-                        disabled={isSaving}
+                        disabled={locked}
                         className={cn(fieldCls, 'bg-surface')}
                       />
                     </div>
@@ -481,7 +691,7 @@ export function FairwayEventEditor({
                   label="All day"
                   checked={formData.allDay}
                   onCheckedChange={(checked) => setFormData({ ...formData, allDay: checked })}
-                  disabled={isSaving}
+                  disabled={locked}
                 />
               </div>
             </div>
@@ -498,7 +708,7 @@ export function FairwayEventEditor({
                 type="text"
                 value={formData.location || ''}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
-                disabled={isSaving}
+                disabled={locked}
                 placeholder="Course, facility, or address"
                 className={fieldCls}
               />
@@ -515,7 +725,7 @@ export function FairwayEventEditor({
                 id="ev-desc"
                 value={formData.description || ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value || null })}
-                disabled={isSaving}
+                disabled={locked}
                 rows={2}
                 placeholder="Details for the team…"
                 className={cn(fieldCls, 'resize-none')}
@@ -529,7 +739,7 @@ export function FairwayEventEditor({
                 description="Players respond Going / Maybe / Decline"
                 checked={formData.requiresRsvp}
                 onCheckedChange={(checked) => setFormData({ ...formData, requiresRsvp: checked })}
-                disabled={isSaving}
+                disabled={locked}
               />
               {formData.requiresRsvp && (
                 <div className="grid grid-cols-2 gap-3">
@@ -540,9 +750,10 @@ export function FairwayEventEditor({
                       type="datetime-local"
                       value={formData.rsvpDeadline || ''}
                       onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
-                      disabled={isSaving}
+                      disabled={locked}
                       className={cn(fieldCls, 'bg-surface')}
                     />
+                    <p className="mt-1 font-fw-sans text-caption text-text-tertiary">Your local time</p>
                   </div>
                   <div>
                     <label htmlFor="ev-max" className={labelCls}>Max attendees</label>
@@ -556,7 +767,7 @@ export function FairwayEventEditor({
                         setFormData({ ...formData, maxAttendees: e.target.value ? parseInt(e.target.value, 10) : null })
                       }
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                      disabled={isSaving}
+                      disabled={locked}
                       placeholder="No limit"
                       className={cn(fieldCls, 'bg-surface')}
                     />
@@ -580,6 +791,22 @@ export function FairwayEventEditor({
                     </span>
                   ) : null}
                 </div>
+
+                {attendeesLoading ? (
+                  <p role="status" className="mb-2 font-fw-sans text-caption text-text-tertiary">
+                    Loading current invitees...
+                  </p>
+                ) : null}
+
+                {attendeeHydration === 'error' ? (
+                  <p
+                    role="status"
+                    className="mb-2 rounded-fw-md border border-warm-300 bg-fw-warning-bg px-3 py-2 font-fw-sans text-caption text-warm-800"
+                  >
+                    Couldn&apos;t load the current invitees. You can still add players — existing invites won&apos;t be changed.
+                  </p>
+                ) : null}
+
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {availablePlayers.map((p) => {
                     const selected = formData.attendeeIds.includes(p.id);
@@ -589,7 +816,7 @@ export function FairwayEventEditor({
                         key={p.id}
                         type="button"
                         onClick={() => toggleAttendee(p.id)}
-                        disabled={isSaving}
+                        disabled={locked || attendeesLoading}
                         aria-pressed={selected}
                         className={cn(
                           'flex items-center gap-2.5 rounded-fw-md border p-2 text-left transition-colors',
@@ -620,6 +847,23 @@ export function FairwayEventEditor({
                     );
                   })}
                 </div>
+
+                {/* Pending attendee changes — the save summary. Removals only
+                    ever come from explicit deselects against the hydrated
+                    baseline, and they're called out before saving. */}
+                {!isCancelled && attendeeChangeSummary ? (
+                  <p
+                    role="status"
+                    className={cn(
+                      'mt-3 rounded-fw-md border px-3 py-2 font-fw-sans text-caption',
+                      (attendeeChanges?.removeAttendeeIds.length ?? 0) > 0
+                        ? 'border-warm-300 bg-fw-warning-bg text-warm-800'
+                        : 'border-accent-100 bg-accent-50 text-accent-700',
+                    )}
+                  >
+                    Saving will update invites: {attendeeChangeSummary}.
+                  </p>
+                ) : null}
 
                 {/* Conflict notice */}
                 {conflicts?.hasConflict ? (
@@ -654,50 +898,132 @@ export function FairwayEventEditor({
               </div>
             )}
 
-            {/* Recurrence (create only) */}
-            {isCreating && (
+            {/* Recurrence pattern — on create, and on series-root edit (the
+                series-extend affordance: bump the count or push the end date
+                to add occurrences, or re-shape the weekday pattern). Child
+                occurrences don't carry the pattern; their edits go through
+                the scope picker instead. */}
+            {!isCancelled && (isCreating || isSeriesRoot) && (
               <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
                 <span className={cn(labelCls, 'mb-0')}>
                   <span className="inline-flex items-center gap-1.5">
-                    <Repeat className="h-3.5 w-3.5 text-accent-700" /> Repeat
+                    <Repeat className="h-3.5 w-3.5 text-accent-700" /> {isSeriesRoot ? 'Series pattern' : 'Repeat'}
                   </span>
                 </span>
-                <div className="grid grid-cols-2 gap-3">
-                  <select
-                    value={formData.recurrence}
-                    onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as RecurrenceFrequency })}
-                    disabled={isSaving}
-                    aria-label="Recurrence"
-                    className={cn(fieldCls, 'bg-surface')}
-                  >
-                    {RECURRENCE_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                  {formData.recurrence !== 'none' && (
-                    <div>
-                      <input
-                        type="number"
-                        min={2}
-                        max={52}
-                        inputMode="numeric"
-                        value={formData.recurrenceCount}
-                        onChange={(e) =>
-                          setFormData({ ...formData, recurrenceCount: parseInt(e.target.value, 10) || 1 })
-                        }
-                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                        disabled={isSaving}
-                        aria-label="Number of occurrences"
-                        className={cn(fieldCls, 'bg-surface')}
-                      />
+                <select
+                  value={formData.recurrence}
+                  onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as RecurrenceFrequency })}
+                  disabled={locked}
+                  aria-label="Recurrence"
+                  className={cn(fieldCls, 'bg-surface')}
+                >
+                  {/* A series root can't be flipped back to a one-off here —
+                      that's a delete-with-scope, not a pattern change. */}
+                  {RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+
+                {(formData.recurrence === 'weekly' || formData.recurrence === 'biweekly') && (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex gap-1.5" role="group" aria-label="Repeat on days">
+                      {WEEKDAY_OPTIONS.map((day) => {
+                        const selected = (formData.recurrenceWeekdays ?? []).includes(day.value);
+                        return (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => toggleRecurrenceWeekday(day.value)}
+                            disabled={locked}
+                            aria-pressed={selected}
+                            aria-label={day.long}
+                            className={cn(
+                              'grid h-8 w-8 place-items-center rounded-full font-fw-sans text-caption font-medium transition-colors disabled:opacity-50',
+                              selected
+                                ? 'bg-accent-500 text-text-on-accent shadow-flat'
+                                : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
+                            )}
+                          >
+                            {day.short}
+                          </button>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-                {formData.recurrence !== 'none' ? (
+                    {(formData.recurrenceWeekdays ?? []).length === 0 ? (
+                      <p className="font-fw-sans text-caption text-text-tertiary">
+                        No days picked — repeats on the start date&apos;s weekday.
+                      </p>
+                    ) : null}
+                  </div>
+                )}
+
+                {formData.recurrence !== 'none' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="ev-recurrence-end" className={labelCls}>Series ends</label>
+                      <select
+                        id="ev-recurrence-end"
+                        value={formData.recurrenceEndMode ?? 'count'}
+                        onChange={(e) =>
+                          setFormData({ ...formData, recurrenceEndMode: e.target.value as RecurrenceEndMode })
+                        }
+                        disabled={locked}
+                        className={cn(fieldCls, 'bg-surface')}
+                      >
+                        <option value="count">After a number of events</option>
+                        <option value="until">On a date</option>
+                      </select>
+                    </div>
+                    {(formData.recurrenceEndMode ?? 'count') === 'count' ? (
+                      <div>
+                        <label htmlFor="ev-recurrence-count" className={labelCls}>Occurrences</label>
+                        <input
+                          id="ev-recurrence-count"
+                          type="number"
+                          min={MIN_RECURRENCE_COUNT}
+                          max={MAX_RECURRENCE_COUNT}
+                          inputMode="numeric"
+                          value={formData.recurrenceCount}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              recurrenceCount: Math.max(
+                                MIN_RECURRENCE_COUNT,
+                                Math.min(MAX_RECURRENCE_COUNT, parseInt(e.target.value, 10) || 10),
+                              ),
+                            })
+                          }
+                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                          disabled={locked}
+                          className={cn(fieldCls, 'bg-surface')}
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label htmlFor="ev-recurrence-until" className={labelCls}>Repeat until</label>
+                        <input
+                          id="ev-recurrence-until"
+                          type="date"
+                          min={formData.startDate}
+                          value={formData.recurrenceUntil || ''}
+                          onChange={(e) => setFormData({ ...formData, recurrenceUntil: e.target.value || null })}
+                          disabled={locked}
+                          className={cn(fieldCls, 'bg-surface')}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {recurrencePreview ? (
+                  <p className="font-fw-sans text-caption text-text-tertiary">{recurrencePreview}</p>
+                ) : null}
+
+                {isSeriesRoot ? (
                   <p className="font-fw-sans text-caption text-text-tertiary">
-                    Creates {formData.recurrenceCount} occurrences.
+                    Raising the count or pushing the end date later extends this series with new occurrences.
                   </p>
                 ) : null}
               </div>
@@ -705,7 +1031,12 @@ export function FairwayEventEditor({
           </ModalShell.Body>
 
           <ModalShell.Footer>
-            {!isCreating && onDelete ? (
+            {/* deleteGolfEvent is a SOFT CANCEL for one-off events (status →
+                cancelled, RSVPs kept, attendees notified), so the copy says
+                "Cancel event"; series deletes go through the scope picker
+                where permanent removal is spelled out. Hidden on an already-
+                cancelled event — re-cancelling is a no-op. */}
+            {!isCreating && onDelete && !isCancelled ? (
               <Button
                 variant={confirmingDelete ? 'danger' : 'ghost'}
                 type="button"
@@ -714,15 +1045,17 @@ export function FairwayEventEditor({
                 leftIcon={<Trash2 className="h-4 w-4" />}
                 className="sm:mr-auto"
               >
-                {confirmingDelete ? 'Tap to confirm' : 'Delete'}
+                {confirmingDelete ? 'Tap to confirm' : isInSeries ? 'Delete' : 'Cancel event'}
               </Button>
             ) : null}
             <Button variant="secondary" type="button" onClick={onClose} disabled={isSaving}>
-              Cancel
+              {isCancelled ? 'Close' : 'Cancel'}
             </Button>
-            <Button variant="primary" type="button" onClick={handleSubmit} busy={isSaving} disabled={isSaving}>
-              {isCreating ? 'Create event' : 'Save changes'}
-            </Button>
+            {!isCancelled ? (
+              <Button variant="primary" type="button" onClick={handleSubmit} busy={isSaving} disabled={isSaving}>
+                {isCreating ? 'Create event' : 'Save changes'}
+              </Button>
+            ) : null}
           </ModalShell.Footer>
         </>
       )}

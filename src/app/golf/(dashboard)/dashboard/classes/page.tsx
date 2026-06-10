@@ -128,9 +128,13 @@ export default function GolfClassesPage() {
 
     if (error) throw error;
 
-    // Sync to calendar
+    // Sync to calendar (timezoneOffset so class times store as local wall-time,
+    // matching the event timestamp convention — not UTC wall-time)
     if (newClass) {
-      await syncClassToCalendar(formData, newClass.id, playerId, teamId);
+      await syncClassToCalendar(
+        { ...formData, timezoneOffset: new Date().getTimezoneOffset() },
+        newClass.id, playerId, teamId,
+      );
     }
 
     await fetchClasses();
@@ -165,8 +169,11 @@ export default function GolfClassesPage() {
 
     if (error) throw error;
 
-    // Re-sync to calendar (deletes old events and creates new ones)
-    await syncClassToCalendar(formData, formData.id, playerId, teamId);
+    // Re-sync to calendar (diff-upserts the series)
+    await syncClassToCalendar(
+      { ...formData, timezoneOffset: new Date().getTimezoneOffset() },
+      formData.id, playerId, teamId,
+    );
 
     await fetchClasses();
     setShowAddModal(false);
@@ -264,6 +271,7 @@ export default function GolfClassesPage() {
             semesterStartDate: confirmedClass.semesterStartDate,
             color: confirmedClass.color || generateClassColor(),
             notes: '',
+            timezoneOffset: new Date().getTimezoneOffset(),
           }, insertedClass.id, playerId, teamId);
         });
 

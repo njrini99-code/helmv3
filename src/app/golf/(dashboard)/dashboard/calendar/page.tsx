@@ -1,14 +1,31 @@
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
-import { EditorialCalendarSurface } from '@/components/golf/calendar/editorial/EditorialCalendarSurface';
+import { CalendarSkeleton } from '@/components/ui/skeleton';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
-import { FairwayCalendar } from '@/components/fairway/pages/calendar/FairwayCalendar';
 import type { Metadata } from 'next';
+
+// Code-split the two calendar surfaces: the route serves EXACTLY ONE of them
+// per request (redesign flag), so static imports made every visitor download
+// both implementations (~97KB gzip marginal, audit finding #26). next/dynamic
+// gives each its own chunk, loaded only when actually rendered.
+const EditorialCalendarSurface = dynamic(
+  () =>
+    import('@/components/golf/calendar/editorial/EditorialCalendarSurface').then(
+      (m) => m.EditorialCalendarSurface,
+    ),
+  { loading: () => <CalendarSkeleton /> },
+);
+const FairwayCalendar = dynamic(
+  () =>
+    import('@/components/fairway/pages/calendar/FairwayCalendar').then((m) => m.FairwayCalendar),
+  { loading: () => <CalendarSkeleton /> },
+);
 
 export const metadata: Metadata = {
   title: 'Calendar | Helm Sports',
@@ -50,7 +67,10 @@ export default async function GolfCalendarPage() {
     teamId = coachTeamId || playerTeamResult.data?.team_id || null;
     coachList = coachListResult.data || [];
   } catch {
-    // Network failure — proceed with null teamId and empty coachList
+    // Team resolution failed (network/DB) — rendering an empty calendar here
+    // is indistinguishable from "my season got wiped" (audit finding #20).
+    // Throw so the route error boundary renders a real, retryable error state.
+    throw new Error('Failed to load your team for the calendar. Please try again.');
   }
 
   let events: CalendarEvent[] = [];
@@ -62,44 +82,51 @@ export default async function GolfCalendarPage() {
   const threeMonthsAhead = new Date();
   threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
 
-  let eventsData: { id: string; team_id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null; description: string | null; status: string | null; all_day: boolean | null; created_by: string | null; requires_rsvp: boolean | null; rsvp_deadline: string | null; max_attendees: number | null }[] | null = null;
+  let eventsData: { id: string; team_id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null; description: string | null; status: string | null; all_day: boolean | null; created_by: string | null; requires_rsvp: boolean | null; rsvp_deadline: string | null; max_attendees: number | null; parent_event_id: string | null; recurrence_rule: string | null }[] | null = null;
   let playersData: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }[] = [];
   let teamTimezone: string | null = null;
 
   if (teamId) {
-    try {
-      const [eventsResult, teamMembersResult, teamSettingsResult] = await Promise.all([
-        supabase
-          .from('golf_events')
-          .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, created_by, requires_rsvp, rsvp_deadline, max_attendees')
-          .eq('team_id', teamId)
-          .neq('status', 'cancelled')
-          .gte('start_time', threeMonthsAgo.toISOString())
-          .lte('start_time', threeMonthsAhead.toISOString())
-          .order('start_time', { ascending: true })
-          .limit(500),
-        // Get players via golf_team_members junction table
-        supabase
-          .from('golf_team_members')
-          .select('player:golf_players(id, first_name, last_name, avatar_url)')
-          .eq('team_id', teamId)
-          .limit(100),
-        // Get team timezone
-        supabase
-          .from('golf_team_settings')
-          .select('timezone')
-          .eq('team_id', teamId)
-          .maybeSingle(),
-      ]);
+    // NOTE: cancelled events are INCLUDED on purpose — they render distinctly
+    // (strike/badge) instead of silently disappearing (soft-cancel lifecycle).
+    // parent_event_id + recurrence_rule are REQUIRED end-to-end: without them
+    // series members render as one-offs and the edit/delete scope picker never
+    // appears (audit finding #6, which armed the P0 cascade delete).
+    const [eventsResult, teamMembersResult, teamSettingsResult] = await Promise.all([
+      supabase
+        .from('golf_events')
+        .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, created_by, requires_rsvp, rsvp_deadline, max_attendees, parent_event_id, recurrence_rule')
+        .eq('team_id', teamId)
+        .gte('start_time', threeMonthsAgo.toISOString())
+        .lte('start_time', threeMonthsAhead.toISOString())
+        .order('start_time', { ascending: true })
+        .limit(500),
+      // Get players via golf_team_members junction table
+      supabase
+        .from('golf_team_members')
+        .select('player:golf_players(id, first_name, last_name, avatar_url)')
+        .eq('team_id', teamId)
+        .limit(100),
+      // Get team timezone
+      supabase
+        .from('golf_team_settings')
+        .select('timezone')
+        .eq('team_id', teamId)
+        .maybeSingle(),
+    ]);
 
-      eventsData = eventsResult.data;
-      playersData = (teamMembersResult.data ?? [])
-        .map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player)
-        .filter((p): p is NonNullable<typeof p> => p !== null);
-      teamTimezone = teamSettingsResult.data?.timezone || null;
-    } catch {
-      // Network failure — proceed with empty data
+    // A failed events fetch must NOT render as a cheerful empty calendar
+    // (audit finding #20) — throw to the route error boundary, which offers
+    // a retry. Players/timezone failures degrade gracefully below.
+    if (eventsResult.error) {
+      throw new Error('Failed to load calendar events. Please try again.');
     }
+
+    eventsData = eventsResult.data;
+    playersData = (teamMembersResult.data ?? [])
+      .map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player)
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+    teamTimezone = teamSettingsResult.data?.timezone || null;
   }
 
   // Map golf_events to CalendarEvent format
@@ -138,6 +165,8 @@ export default async function GolfCalendarPage() {
       requires_rsvp: event.requires_rsvp ?? false,
       rsvp_deadline: event.rsvp_deadline,
       max_attendees: event.max_attendees,
+      parent_event_id: event.parent_event_id,
+      recurrence_rule: event.recurrence_rule,
     };
   });
 
@@ -165,9 +194,12 @@ export default async function GolfCalendarPage() {
   }
 
   // Count upcoming events using a stable server timestamp to avoid hydration mismatch.
-  // Used by the editorial hero subtitle.
+  // Used by the editorial hero subtitle. Cancelled events still render (struck
+  // through) but don't count as upcoming.
   const serverNow = new Date().toISOString();
-  const upcomingCount = events.filter(e => (e.start_time || e.start_date) >= serverNow).length;
+  const upcomingCount = events.filter(
+    e => (e.start_time || e.start_date) >= serverNow && e.status !== 'cancelled'
+  ).length;
 
   // ── Fairway redesign fork (ADDITIVE + GATED) ─────────────────────────────
   // When NEXT_PUBLIC_REDESIGN is on, render the re-skinned Calendar shell. It
@@ -186,6 +218,9 @@ export default async function GolfCalendarPage() {
           upcomingCount={upcomingCount}
           serverNow={serverNow}
           currentUserId={coach?.id ?? playerId ?? undefined}
+          teamId={teamId}
+          loadedRangeStart={threeMonthsAgo.toISOString()}
+          loadedRangeEnd={threeMonthsAhead.toISOString()}
         />
       </div>
     );

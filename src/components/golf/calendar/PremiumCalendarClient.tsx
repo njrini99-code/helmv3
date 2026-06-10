@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { format, startOfWeek as startOfWeekFn, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
-import { createClient } from '@/lib/supabase/client';
+import dynamic from 'next/dynamic';
+import { format, startOfWeek as startOfWeekFn, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { toast } from '@/components/ui/sonner';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
@@ -19,24 +19,63 @@ import {
 } from '@dnd-kit/core';
 import { CalendarHeader, type CalendarView } from '@/components/golf/calendar/CalendarHeader';
 import { CalendarAvatarSidebar, PLAYER_COLORS } from '@/components/golf/calendar/CalendarAvatarSidebar';
-import { AvailabilityDayView } from '@/components/golf/calendar/AvailabilityDayView';
-import { WeekView } from '@/components/golf/calendar/WeekView';
-import { MonthView } from '@/components/golf/calendar/MonthView';
-import { DayView } from '@/components/golf/calendar/DayView';
 import { EventCard } from '@/components/golf/calendar/EventCard';
-import { EventDetailModal, type GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
+import type { GolfEventFormData } from '@/components/golf/calendar/EventDetailModal';
 import { NotificationCenter } from '@/components/golf/calendar/NotificationCenter';
-import { MobileEventSheet, type MobileEventFormData } from '@/components/golf/calendar/MobileEventSheet';
-import { CalendarDayViewSwipeable } from '@/components/golf/calendar/CalendarDayViewSwipeable';
-import { QuickAddEventFAB } from '@/components/golf/calendar/QuickAddEventFAB';
+import type { MobileEventFormData } from '@/components/golf/calendar/MobileEventSheet';
 import type { RSVPResponse } from '@/components/golf/calendar/MobileRSVPButtons';
 import '@/styles/calendar-tokens.css';
 import { usePlayerEventRSVP, useEventRSVP } from '@/hooks/useRSVP';
+import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useCalendarKeyboard } from '@/hooks/golf/use-calendar-keyboard';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { calendarSpring } from '@/lib/coachhelm/v3/motion';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { Button } from '@/components/ui/button';
+
+// ── Code-split the calendar bodies + editors (audit finding #26) ────────────
+// Only the ACTIVE view's chunk loads, and the heavy create/edit machinery
+// (EventDetailModal / MobileEventSheet / QuickAddEventFAB) loads on first
+// open instead of shipping to every player who can never use it.
+function ViewLoadingSkeleton() {
+  return (
+    <div className="flex-1 p-6 space-y-3" aria-busy="true" aria-label="Loading calendar view">
+      <div className="h-8 w-1/3 rounded-lg bg-warm-100/70 animate-pulse" />
+      <div className="h-32 rounded-xl bg-warm-100/60 animate-pulse" />
+      <div className="h-32 rounded-xl bg-warm-100/50 animate-pulse" />
+    </div>
+  );
+}
+
+const WeekView = dynamic(
+  () => import('@/components/golf/calendar/WeekView').then((mod) => mod.WeekView),
+  { loading: () => <ViewLoadingSkeleton /> },
+);
+const MonthView = dynamic(
+  () => import('@/components/golf/calendar/MonthView').then((mod) => mod.MonthView),
+  { loading: () => <ViewLoadingSkeleton /> },
+);
+const DayView = dynamic(
+  () => import('@/components/golf/calendar/DayView').then((mod) => mod.DayView),
+  { loading: () => <ViewLoadingSkeleton /> },
+);
+const AvailabilityDayView = dynamic(
+  () => import('@/components/golf/calendar/AvailabilityDayView').then((mod) => mod.AvailabilityDayView),
+  { loading: () => <ViewLoadingSkeleton /> },
+);
+const CalendarDayViewSwipeable = dynamic(
+  () => import('@/components/golf/calendar/CalendarDayViewSwipeable').then((mod) => mod.CalendarDayViewSwipeable),
+  { loading: () => <ViewLoadingSkeleton /> },
+);
+const EventDetailModal = dynamic(
+  () => import('@/components/golf/calendar/EventDetailModal').then((mod) => mod.EventDetailModal),
+);
+const MobileEventSheet = dynamic(
+  () => import('@/components/golf/calendar/MobileEventSheet').then((mod) => mod.MobileEventSheet),
+);
+const QuickAddEventFAB = dynamic(
+  () => import('@/components/golf/calendar/QuickAddEventFAB').then((mod) => mod.QuickAddEventFAB),
+);
 
 export interface TeamMember {
   id: string;
@@ -143,18 +182,31 @@ export function PremiumCalendarClient({
   // Track initial event type for pre-filling from quick-add FAB
   const [initialEventType, setInitialEventType] = useState<string | undefined>(undefined);
 
+  // Latch-mount the heavy editors: the dynamic chunk loads on FIRST open and
+  // stays mounted afterwards so close animations still play.
+  const [hasOpenedEventModal, setHasOpenedEventModal] = useState(false);
+  const [hasOpenedMobileSheet, setHasOpenedMobileSheet] = useState(false);
+  useEffect(() => {
+    if (isEventModalOpen) setHasOpenedEventModal(true);
+  }, [isEventModalOpen]);
+  useEffect(() => {
+    if (isMobileSheetOpen) setHasOpenedMobileSheet(true);
+  }, [isMobileSheetOpen]);
+
   // RSVP State - Track user's RSVP status for all events
   const [userRsvpStatuses, setUserRsvpStatuses] = useState<Map<string, RSVPResponse>>(new Map());
 
-  // Get RSVP status for selected event (for mobile sheet)
+  // Get RSVP status for selected event (for mobile sheet) — players only
   const { status: selectedEventRsvpStatus } = usePlayerEventRSVP(
     selectedEvent?.id,
     !isCoach && !!selectedEvent
   );
 
-  // Get RSVP summary for coaches viewing an event
+  // Get RSVP summary for coaches viewing an event — gated by role so the
+  // player-only invitations fetch never fires from the coach grid (audit #31).
   const { rsvpSummary: selectedEventRsvpSummary } = useEventRSVP(
-    isCoach && selectedEvent?.id ? selectedEvent.id : ''
+    selectedEvent?.id ?? '',
+    isCoach && !!selectedEvent
   );
 
   // Drag-and-drop state
@@ -349,33 +401,65 @@ export function PremiumCalendarClient({
     fetchCurrentUserAvailability();
   }, [currentDate, view, selectedPlayerIds, isCoach]);
 
-  // Real-time subscription for calendar events — refresh on any change
+  // Derive a VALUE-stable teamId (string) so realtime/range effects below
+  // don't churn when the server hands us fresh array identities on refresh
+  // (audit finding #25 — channel leave/join per navigation).
+  const derivedTeamId = useMemo(() => {
+    return (
+      teamIdProp ||
+      initialEvents[0]?.team_id ||
+      ((teamMembers[0] as unknown as Record<string, unknown> | undefined)?.team_id as
+        | string
+        | undefined) ||
+      null
+    );
+  }, [teamIdProp, initialEvents, teamMembers]);
+
+  // Visible range for the current view — drives range-driven fetching.
+  const visibleRange = useMemo(() => {
+    if (view === 'day') {
+      return { start: startOfDay(currentDate), end: endOfDay(currentDate) };
+    }
+    if (view === 'week') {
+      return {
+        start: startOfWeekFn(currentDate, { weekStartsOn: 0 }),
+        end: endOfWeek(currentDate, { weekStartsOn: 0 }),
+      };
+    }
+    return { start: startOfMonth(currentDate), end: endOfMonth(currentDate) };
+  }, [view, currentDate]);
+
+  // Range-driven events + ONE stable realtime channel (refetches the visible
+  // range on every (re)subscribe so gap events are recovered). Fixes the
+  // fixed ±3-month window that was never refetched on navigation (audit #9).
+  const {
+    events: rangeEvents,
+    isLoadingRange,
+    rangeError,
+    retryRange,
+  } = useCalendarRangeEvents({
+    teamId: derivedTeamId,
+    initialEvents,
+    visibleStart: visibleRange.start,
+    visibleEnd: visibleRange.end,
+    realtime: true,
+    onRealtimeEvent: () => router.refresh(),
+  });
+
+  // Follow initialDate / initialView prop changes WITHOUT a keyed remount —
+  // lets host shells (Fairway/editorial) move the focus date while this
+  // component (and its realtime channel) stays mounted.
+  const initialDateMs = initialDate
+    ? new Date(initialDate.getFullYear(), initialDate.getMonth(), initialDate.getDate()).getTime()
+    : null;
   useEffect(() => {
-    // Derive teamId from prop, events, or team members
-    const teamId = teamIdProp || initialEvents[0]?.team_id || (teamMembers[0] as unknown as Record<string, unknown> | undefined)?.team_id as string | undefined;
-    if (!teamId) return;
-
-    const supabase = createClient();
-    const channel = supabase
-      .channel('calendar-events')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'golf_events',
-          filter: `team_id=eq.${teamId}`,
-        },
-        () => {
-          router.refresh();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [teamIdProp, initialEvents, teamMembers, router]);
+    if (initialDateMs === null) return;
+    setCurrentDate((prev) => (prev.getTime() === initialDateMs ? prev : new Date(initialDateMs)));
+  }, [initialDateMs]);
+  useEffect(() => {
+    if (!initialView) return;
+    setView((prev) => (prev === initialView ? prev : initialView));
+  }, [initialView]);
 
   // Configure drag sensors - require 8px movement before drag starts
   const sensors = useSensors(
@@ -405,7 +489,7 @@ export function PremiumCalendarClient({
 
   // When no players are selected (ALL mode), show all team events
   // When players are selected, still show all team events (availability overlay handles the rest)
-  const filteredEvents = initialEvents;
+  const filteredEvents = rangeEvents;
 
   // When ALL is clicked (selection cleared), reset to week view if we were in day/availability mode
   useEffect(() => {
@@ -483,6 +567,26 @@ export function PremiumCalendarClient({
     // Modal will use currentDate for default date
   };
 
+  // After creating an event, make sure the user can SEE it: if its date is
+  // outside the currently visible range, navigate there (the range hook then
+  // fetches that window). Without this, an October tournament created in June
+  // silently vanished after save — indistinguishable from data loss (audit #9).
+  const navigateToDateIfHidden = useCallback(
+    (startDate: string) => {
+      if (!startDate) return;
+      const [y, mo, d] = startDate.slice(0, 10).split('-').map(Number);
+      if (!y || !mo || !d) return;
+      const eventDay = new Date(y, mo - 1, d);
+      if (
+        eventDay.getTime() < startOfDay(visibleRange.start).getTime() ||
+        eventDay.getTime() > endOfDay(visibleRange.end).getTime()
+      ) {
+        setCurrentDate(eventDay);
+      }
+    },
+    [visibleRange]
+  );
+
   // Save event (create or update)
   const handleSaveEvent = async (data: GolfEventFormData) => {
     setIsSavingEvent(true);
@@ -490,11 +594,14 @@ export function PremiumCalendarClient({
     try {
       if (isCreatingEvent) {
         if (data.recurrence && data.recurrence !== 'none') {
-          // Build a minimal RRULE; createRecurringEvent expands into one row
-          // per occurrence under the hood since golf_events has no
-          // parent_event_id column.
-          const freq = data.recurrence.toUpperCase();
-          const recurrenceRule = `RRULE:FREQ=${freq};INTERVAL=1;COUNT=${data.recurrenceCount}`;
+          // Serialize the editor's STRUCTURED rule (weekday sets, biweekly,
+          // until-a-date) — rebuilding a minimal FREQ/COUNT rule here dropped
+          // every pattern beyond "every N". Falls back to the legacy minimal
+          // rule only when the editor didn't supply a structured rule.
+          const { serializeRecurrenceRule } = await import('@/lib/golf/recurrence');
+          const recurrenceRule = data.recurrenceRule
+            ? serializeRecurrenceRule(data.recurrenceRule)
+            : `RRULE:FREQ=${data.recurrence.toUpperCase()};INTERVAL=1;COUNT=${data.recurrenceCount}`;
           const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
           const result = await createRecurringEvent({
             title: data.title,
@@ -543,6 +650,7 @@ export function PremiumCalendarClient({
         // path so the action's existing logic for attendees / RSVP / etc.
         // continues to apply.
         if (data.editScope && data.editScope !== 'this') {
+          const { serializeRecurrenceRule } = await import('@/lib/golf/recurrence');
           const { editRecurringEvent } = await import('@/app/golf/actions/recurring-events');
           const result = await editRecurringEvent({
             eventId: selectedEvent.id,
@@ -557,6 +665,10 @@ export function PremiumCalendarClient({
               startTime: data.allDay ? undefined : (data.startTime || undefined),
               endTime: data.allDay ? undefined : (data.endTime || undefined),
               location: data.location || undefined,
+              // Forward a re-patterned series rule when the editor produced one.
+              recurrenceRule: data.recurrenceRule
+                ? serializeRecurrenceRule(data.recurrenceRule)
+                : undefined,
             },
           });
           if (!result.success) {
@@ -579,7 +691,12 @@ export function PremiumCalendarClient({
             requiresRsvp: data.requiresRsvp,
             rsvpDeadline: data.rsvpDeadline || undefined,
             maxAttendees: data.maxAttendees || undefined,
+            // ADDITIVE-ONLY attendee contract: attendeeIds/addAttendeeIds insert
+            // missing rows; removals ONLY happen via explicit removeAttendeeIds
+            // (no more wipe-and-reseed of RSVP history).
             attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
+            addAttendeeIds: data.addAttendeeIds,
+            removeAttendeeIds: data.removeAttendeeIds,
             timezoneOffset,
           });
           if (!result.success) {
@@ -589,6 +706,9 @@ export function PremiumCalendarClient({
       }
       setIsEventModalOpen(false);
       setSelectedEvent(null);
+      if (isCreatingEvent) {
+        navigateToDateIfHidden(data.startDate);
+      }
       router.refresh();
     } catch (err) {
       // Stale deployment: server action IDs changed after a new deploy
@@ -659,7 +779,7 @@ export function PremiumCalendarClient({
     if (!dropData || dropData.type !== 'timeSlot') return;
 
     // Find the dragged event
-    const draggedEvent = initialEvents.find((e) => e.id === eventId);
+    const draggedEvent = rangeEvents.find((e) => e.id === eventId);
     if (!draggedEvent) return;
 
     void triggerHaptic('medium');
@@ -717,7 +837,7 @@ export function PremiumCalendarClient({
 
   // Get the dragged event for overlay
   const draggedEvent = activeDragId
-    ? initialEvents.find((e) => e.id === activeDragId)
+    ? rangeEvents.find((e) => e.id === activeDragId)
     : null;
 
   const weekStart = view === 'week' ? startOfWeekFn(currentDate, { weekStartsOn: 0 }) : currentDate;
@@ -833,7 +953,9 @@ export function PremiumCalendarClient({
               </div>
             )}
 
-            {/* Header with Notification Center */}
+            {/* Header. NOTE: no desktop NotificationCenter here — the global
+                bell in GolfDashboardShell already covers desktop; mounting a
+                second one doubled the 30s notification poller (audit #32). */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-white/20">
               <CalendarHeader
                 view={view}
@@ -845,8 +967,33 @@ export function PremiumCalendarClient({
                 secondaryTimezone={secondaryTimezone}
                 onSecondaryTimezoneChange={setSecondaryTimezone}
               />
-              {!isMobile && <NotificationCenter />}
             </div>
+
+            {/* Range-fetch affordances: loading when navigating into a
+                not-yet-loaded window; a RETRYABLE error state distinct from
+                an empty calendar when that fetch fails (audit #9, #20). */}
+            {isLoadingRange && (
+              <div
+                className="flex items-center gap-2 px-4 py-1.5 border-b border-white/20 bg-cream-100/50"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="h-2 w-2 rounded-full bg-primary-500 animate-pulse" aria-hidden="true" />
+                <span className="text-xs font-medium text-warm-500">Loading events for this date range…</span>
+              </div>
+            )}
+            {rangeError && !isLoadingRange && (
+              <div className="flex items-center justify-between gap-2 px-4 py-1.5 border-b border-white/20 bg-rose-50/80">
+                <span className="text-xs font-medium text-rose-700">{rangeError}</span>
+                <Button
+                  variant="ghost"
+                  onClick={retryRange}
+                  className="px-2.5 py-1 rounded-md text-xs font-semibold text-rose-700 hover:bg-rose-100 min-h-0 h-auto"
+                >
+                  Retry
+                </Button>
+              </div>
+            )}
 
             {/* Calendar view content with spring transition */}
             <AnimatePresence mode="wait" initial={false}>
@@ -959,7 +1106,9 @@ export function PremiumCalendarClient({
         </DragOverlay>
       </DndContext>
 
-      {/* Event Detail/Create Modal (Desktop) */}
+      {/* Event Detail/Create Modal (Desktop) — mounted on first open so the
+          dynamic chunk never loads for users who never open it. */}
+      {hasOpenedEventModal && (
       <EventDetailModal
         isOpen={isEventModalOpen}
         onClose={() => {
@@ -975,8 +1124,10 @@ export function PremiumCalendarClient({
         teamPlayers={teamMembers}
         currentUserId={currentUserId}
       />
+      )}
 
-      {/* Mobile Event Sheet */}
+      {/* Mobile Event Sheet — same first-open mount as the modal above. */}
+      {hasOpenedMobileSheet && (
       <MobileEventSheet
         isOpen={isMobileSheetOpen}
         onClose={() => {
@@ -1048,6 +1199,9 @@ export function PremiumCalendarClient({
             setIsMobileSheetOpen(false);
             setSelectedEvent(null);
             setInitialEventType(undefined);
+            if (isCreatingEvent) {
+              navigateToDateIfHidden(data.startDate);
+            }
             router.refresh();
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -1087,6 +1241,7 @@ export function PremiumCalendarClient({
         rsvpSummary={isCoach ? selectedEventRsvpSummary : null}
         initialEventType={initialEventType as 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | undefined}
       />
+      )}
 
       {/* Mobile FAB for quick event creation (coaches only) */}
       {showMobileUI && isCoach && (

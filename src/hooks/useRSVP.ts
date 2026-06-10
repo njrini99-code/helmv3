@@ -10,6 +10,52 @@ import { createClient } from '@/lib/supabase/client';
 
 export type RSVPStatus = 'pending' | 'accepted' | 'declined' | 'tentative';
 
+/**
+ * Typed RSVP lock reasons. The server actions return these as an optional
+ * `code` on failure results so clients can render a specific locked state
+ * instead of a generic error string.
+ */
+export type RsvpLockCode =
+  | 'rsvp_deadline_passed'
+  | 'event_started'
+  | 'event_cancelled'
+  | 'rsvp_locked';
+
+export interface RsvpRespondResult {
+  success: boolean;
+  error?: string;
+  /** Present when the failure is an RSVP lock (deadline/started/cancelled). */
+  code?: RsvpLockCode | string;
+}
+
+/**
+ * Extract the optional typed lock code from a server action result without
+ * widening the action's declared return type.
+ */
+export function readRsvpLockCode(result: unknown): RsvpLockCode | string | undefined {
+  if (result && typeof result === 'object' && 'code' in result) {
+    const code = (result as { code?: unknown }).code;
+    return typeof code === 'string' ? code : undefined;
+  }
+  return undefined;
+}
+
+/** Map a typed lock code (or raw error) to user-facing locked copy. */
+export function rsvpLockMessage(code: string | undefined, fallback: string): string {
+  switch (code) {
+    case 'rsvp_deadline_passed':
+      return 'RSVPs are locked — the deadline has passed.';
+    case 'event_started':
+      return 'RSVPs are locked — this event has already started.';
+    case 'event_cancelled':
+      return 'This event has been cancelled.';
+    case 'rsvp_locked':
+      return 'RSVPs are locked for this event.';
+    default:
+      return fallback;
+  }
+}
+
 export interface EventInvitation {
   eventId: string;
   eventTitle: string;
@@ -52,7 +98,7 @@ interface UseRSVPResult {
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  respond: (eventId: string, status: RSVPStatus) => Promise<{ success: boolean; error?: string }>;
+  respond: (eventId: string, status: RSVPStatus) => Promise<RsvpRespondResult>;
 }
 
 interface PlayerEventRSVPResult {
@@ -61,7 +107,7 @@ interface PlayerEventRSVPResult {
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  respond: (status: RSVPStatus) => Promise<{ success: boolean; error?: string }>;
+  respond: (status: RSVPStatus) => Promise<RsvpRespondResult>;
 }
 
 // ============================================================================
@@ -150,7 +196,7 @@ export function useRSVP({
   const respond = useCallback(async (
     targetEventId: string,
     status: RSVPStatus
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<RsvpRespondResult> => {
     try {
       const result = await respondToEvent(targetEventId, status);
 
@@ -169,7 +215,9 @@ export function useRSVP({
         }
       }
 
-      return result;
+      return result.success
+        ? { success: true }
+        : { success: false, error: result.error, code: readRsvpLockCode(result) };
     } catch (err) {
       return {
         success: false,
@@ -236,10 +284,16 @@ export function usePendingInvitations() {
 }
 
 /**
- * Hook specifically for event RSVP summary (coach view)
+ * Hook specifically for event RSVP summary (coach view).
+ *
+ * GATING: an empty eventId previously fell through to the PLAYER-ONLY
+ * getPendingInvitations fetch (audit finding #31 — the coach grid fired it
+ * on every mount and got an error payload back). An empty/missing eventId
+ * now disables the hook entirely, and callers can pass `enabled` to gate
+ * by role.
  */
-export function useEventRSVP(eventId: string) {
-  return useRSVP({ eventId });
+export function useEventRSVP(eventId: string, enabled: boolean = true) {
+  return useRSVP({ eventId: eventId || undefined, enabled: enabled && !!eventId });
 }
 
 /**
@@ -282,7 +336,7 @@ export function usePlayerEventRSVP(
 
   const respond = useCallback(async (
     nextStatus: RSVPStatus
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<RsvpRespondResult> => {
     if (!eventId) {
       return { success: false, error: 'Missing event id' };
     }
@@ -292,11 +346,12 @@ export function usePlayerEventRSVP(
     if (result.success) {
       setStatus(nextStatus);
       setRespondedAt(new Date().toISOString());
-    } else if (result.error) {
+      return { success: true };
+    }
+    if (result.error) {
       setError(result.error);
     }
-
-    return result;
+    return { success: false, error: result.error, code: readRsvpLockCode(result) };
   }, [eventId]);
 
   useEffect(() => {

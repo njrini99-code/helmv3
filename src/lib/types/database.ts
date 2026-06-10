@@ -6299,6 +6299,7 @@ export type Database = {
       }
       golf_event_attendance: {
         Row: {
+          attendance_status: string | null
           checked_in: boolean | null
           checked_in_at: string | null
           created_at: string | null
@@ -6311,6 +6312,7 @@ export type Database = {
           status: string | null
         }
         Insert: {
+          attendance_status?: string | null
           checked_in?: boolean | null
           checked_in_at?: string | null
           created_at?: string | null
@@ -6323,6 +6325,7 @@ export type Database = {
           status?: string | null
         }
         Update: {
+          attendance_status?: string | null
           checked_in?: boolean | null
           checked_in_at?: string | null
           created_at?: string | null

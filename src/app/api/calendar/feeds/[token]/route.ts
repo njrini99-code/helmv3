@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 /**
  * Calendar Feed API Route
@@ -21,6 +22,13 @@ import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 60;
 const RATE_LIMIT_WINDOW_MS = 60000;
+
+// Feed event window: external calendar apps only need recent history plus the
+// season ahead. Without a window, a team that accrues >1000 event rows would
+// have the PostgREST cap silently serve only the OLDEST rows — upcoming events
+// would vanish from subscribers.
+const FEED_PAST_WINDOW_MS = 90 * 24 * 60 * 60 * 1000; // 90 days back
+const FEED_FUTURE_WINDOW_MS = 400 * 24 * 60 * 60 * 1000; // 400 days ahead
 
 function checkRateLimit(token: string): boolean {
   const now = Date.now();
@@ -108,17 +116,28 @@ function generateVEvent(event: CalendarFeedEvent): string {
   const lines: string[] = [];
 
   lines.push('BEGIN:VEVENT');
+  // UID must stay stable for the same event across fetches so external
+  // calendar apps update in place instead of duplicating entries.
   lines.push(`UID:${event.id}@helm-golf`);
   lines.push(`DTSTAMP:${formatICalDate(new Date().toISOString())}`);
 
+  // Belt-and-braces against inverted ranges (end before start): emit
+  // DTEND=DTSTART rather than exporting a negative-duration VEVENT that
+  // external parsers reject or render unpredictably. Bad rows are being
+  // repaired separately; this guards against any that remain or recur.
+  const endTime =
+    event.end_time && new Date(event.end_time).getTime() < new Date(event.start_time).getTime()
+      ? event.start_time
+      : event.end_time;
+
   if (event.all_day) {
     lines.push(`DTSTART;VALUE=DATE:${formatICalDateOnly(event.start_time)}`);
-    if (event.end_time) {
-      lines.push(`DTEND;VALUE=DATE:${formatICalDateOnly(event.end_time)}`);
+    if (endTime) {
+      lines.push(`DTEND;VALUE=DATE:${formatICalDateOnly(endTime)}`);
     }
   } else {
     lines.push(`DTSTART:${formatICalDate(event.start_time)}`);
-    lines.push(`DTEND:${formatICalDate(event.end_time || event.start_time)}`);
+    lines.push(`DTEND:${formatICalDate(endTime || event.start_time)}`);
   }
 
   lines.push(`SUMMARY:${escapeICalText(event.title)}`);
@@ -225,16 +244,8 @@ export async function GET(
       .eq('id', typedFeed.id)
       .then(() => {});
 
-    // Build events query scoped to the feed's team
-    let eventsQuery = supabase
-      .from('golf_events')
-      .select('id, title, description, location, event_type, start_time, end_time, all_day, status')
-      .order('start_time', { ascending: true });
-
     // All feed types must be scoped to a team for security
-    if (typedFeed.team_id) {
-      eventsQuery = eventsQuery.eq('team_id', typedFeed.team_id);
-    } else {
+    if (!typedFeed.team_id) {
       // No team_id means we can't scope events — return empty calendar
       const emptyContent = generateICal([], typedFeed.name || 'Helm Golf Calendar', DEFAULT_TIMEZONE);
       return new NextResponse(emptyContent, {
@@ -244,18 +255,38 @@ export async function GET(
         },
       });
     }
+    const teamId = typedFeed.team_id;
 
-    // Additional filtering by feed type
-    if (typedFeed.feed_type === 'tournaments' || typedFeed.feed_type === 'tournament') {
-      eventsQuery = eventsQuery.eq('event_type', 'tournament');
-    } else if (typedFeed.feed_type === 'practices') {
-      eventsQuery = eventsQuery.eq('event_type', 'practice');
-    } else if (typedFeed.feed_type === 'qualifying') {
-      eventsQuery = eventsQuery.eq('event_type', 'qualifying');
-    }
-    // 'all_events' — no additional filter needed
+    // Windowed (past 90d → future 400d), ordered ASC on a stable key, and
+    // paginated within the window so the PostgREST 1000-row cap can't
+    // silently truncate upcoming events.
+    const now = Date.now();
+    const windowStart = new Date(now - FEED_PAST_WINDOW_MS).toISOString();
+    const windowEnd = new Date(now + FEED_FUTURE_WINDOW_MS).toISOString();
 
-    const { data: events, error: eventsError } = await eventsQuery;
+    const { data: events, error: eventsError } = await fetchAllRowsResult((from, to) => {
+      let eventsQuery = supabase
+        .from('golf_events')
+        .select('id, title, description, location, event_type, start_time, end_time, all_day, status')
+        .eq('team_id', teamId)
+        .gte('start_time', windowStart)
+        .lte('start_time', windowEnd);
+
+      // Additional filtering by feed type
+      if (typedFeed.feed_type === 'tournaments' || typedFeed.feed_type === 'tournament') {
+        eventsQuery = eventsQuery.eq('event_type', 'tournament');
+      } else if (typedFeed.feed_type === 'practices') {
+        eventsQuery = eventsQuery.eq('event_type', 'practice');
+      } else if (typedFeed.feed_type === 'qualifying') {
+        eventsQuery = eventsQuery.eq('event_type', 'qualifying');
+      }
+      // 'all_events' — no additional filter needed
+
+      return eventsQuery
+        .order('start_time', { ascending: true })
+        .order('id', { ascending: true }) // unique tiebreaker: stable page boundaries
+        .range(from, to);
+    });
 
     if (eventsError) {
       return new NextResponse('Failed to fetch events', { status: 500 });
@@ -266,7 +297,7 @@ export async function GET(
     const { data: teamSettings } = await supabase
       .from('golf_team_settings')
       .select('timezone')
-      .eq('team_id', typedFeed.team_id)
+      .eq('team_id', teamId)
       .maybeSingle();
 
     feedTimezone = getValidTimezone(teamSettings?.timezone);

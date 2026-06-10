@@ -235,3 +235,61 @@ describe('logError → monitoring sink', () => {
     expect(body.severity).toBe('high');
   });
 });
+
+/**
+ * Client-side report de-duplication (shouldThrottleClientReport).
+ *
+ * Regression guard for the production incident where a single flaky/backgrounded
+ * tab wrote 320 identical `severity:error` rows in 8h. The throttle is private,
+ * so we exercise it through logError() and assert the fetch (sink) call count.
+ */
+describe('logError → client-report throttle', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.resetModules(); // resets the module-level reportLedger between tests
+    fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('collapses identical (severity|component|message) reports within the window', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('network error'), { component: 'GolfRoot' }, 'medium');
+    logError(new Error('network error'), { component: 'GolfRoot' }, 'medium');
+    logError(new Error('network error'), { component: 'GolfRoot' }, 'medium');
+    // First sent, repeats inside the 60s window suppressed.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('never suppresses distinct messages or distinct components', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('network error'), { component: 'GolfRoot' }, 'medium');
+    logError(new Error('a different error'), { component: 'GolfRoot' }, 'medium'); // distinct message
+    logError(new Error('network error'), { component: 'OtherRoot' }, 'medium');   // distinct component
+    logError(new Error('network error'), { route: '/golf/x' }, 'medium');          // falls back to route key
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  it('caps identical reports at 8 per tab even across many windows', async () => {
+    vi.useFakeTimers();
+    const { logError } = await import('@/lib/error-logging');
+    for (let i = 0; i < 12; i++) {
+      logError(new Error('network error'), { component: 'GolfRoot' }, 'medium');
+      vi.advanceTimersByTime(61_000); // step past the 60s dedup window each time
+    }
+    // Window never throttles (we advance past it), so only the hard session cap bites.
+    expect(fetchMock).toHaveBeenCalledTimes(8);
+  });
+
+  it('treats severity as part of the throttle key', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error('network error'), { component: 'GolfRoot' }, 'medium');
+    logError(new Error('network error'), { component: 'GolfRoot' }, 'high'); // different severity → own budget
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});

@@ -49,6 +49,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
+import dynamic from 'next/dynamic';
 import {
   format,
   startOfWeek as startOfWeekFn,
@@ -58,13 +59,18 @@ import {
   addDays,
   addMonths,
 } from 'date-fns';
-import { Segmented } from '@/components/fairway';
+import { CalendarPlus, RefreshCw } from 'lucide-react';
+import { Segmented, Sheet, Button as FwButton } from '@/components/fairway';
 import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrapper';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
-import type { RSVPStatus } from '@/hooks/useRSVP';
+import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
+import { readRsvpLockCode } from '@/hooks/useRSVP';
+import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
 import { PLAYER_COLORS } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import type { CalendarFeed } from '@/components/golf/calendar/FeedCard';
+import type { FeedType } from '@/components/golf/calendar/CalendarFeedManager';
 import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/calendar/EventDetailModal';
 import { FairwayCalendarHero } from './FairwayCalendarHero';
 import { FairwayAgendaView } from './FairwayAgendaView';
@@ -73,6 +79,17 @@ import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
 import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
 import { FairwayEventEditor } from './FairwayEventEditor';
+
+// Code-split: the ICS feed manager (legacy component, reused UNCHANGED) only
+// loads when the Subscribe sheet is opened.
+const CalendarFeedManager = dynamic(
+  () =>
+    import('@/components/golf/calendar/CalendarFeedManager').then((m) => m.CalendarFeedManager),
+);
+
+async function loadCalendarFeedActions() {
+  return import('@/app/golf/actions/calendar-feeds');
+}
 
 type ViewId = 'day' | 'week' | 'month' | 'agenda';
 
@@ -87,6 +104,12 @@ export interface FairwayCalendarProps {
   serverNow: string;
   /** Current coach/player id — excluded from the attendee picker. */
   currentUserId?: string;
+  /** Team id — enables range-driven refetch + the stable realtime channel. */
+  teamId?: string | null;
+  /** ISO start of the server-loaded events window (page ±3 months). */
+  loadedRangeStart?: string;
+  /** ISO end of the server-loaded events window (page ±3 months). */
+  loadedRangeEnd?: string;
 }
 
 /** Local midnight of the day represented by the given Date. */
@@ -102,13 +125,16 @@ const VIEW_OPTIONS: ReadonlyArray<{ value: ViewId; label: string }> = [
 ];
 
 export function FairwayCalendar({
-  events,
+  events: initialEvents,
   teamMembers,
   isCoach,
   teamTimezone,
   upcomingCount,
   serverNow,
   currentUserId,
+  teamId,
+  loadedRangeStart,
+  loadedRangeEnd,
 }: FairwayCalendarProps) {
   const router = useRouter();
   // ── serverNow → nowRef deferred hydration (mirrors the legacy surface) ──────
@@ -133,6 +159,44 @@ export function FairwayCalendar({
   // DEFAULT AGENDA — on the all-past demo the current week is empty; Agenda
   // surfaces the real Feb–Apr events immediately. Week stays one tap away.
   const [view, setView] = React.useState<ViewId>('agenda');
+
+  // ── Visible window — varies with the active lens. ───────────────────────────
+  const visibleWindow = React.useMemo(() => {
+    if (view === 'month') {
+      return { start: startOfMonth(focusDate), end: endOfMonth(focusDate) };
+    }
+    if (view === 'agenda') {
+      // Agenda gets a wide window so the demo's full Feb–Apr season shows: from
+      // 3 months before the focused day through 3 months after.
+      return { start: addMonths(focusDate, -3), end: addMonths(focusDate, 3) };
+    }
+    return {
+      start: startOfWeekFn(focusDate, { weekStartsOn: 0 }),
+      end: endOfWeekFn(focusDate, { weekStartsOn: 0 }),
+    };
+  }, [focusDate, view]);
+
+  // ── Range-driven events + ONE stable realtime channel ──────────────────────
+  // Navigating outside the server's ±3-month payload now FETCHES that range
+  // (with a loading affordance + retryable error state) instead of rendering
+  // a silent empty calendar (audit #9, #20). The realtime channel lives in
+  // the hook keyed on teamId ONLY — no leave/join per navigation — and the
+  // visible range is refetched on every (re)subscribe (audit #25).
+  const {
+    events,
+    isLoadingRange,
+    rangeError,
+    retryRange,
+  } = useCalendarRangeEvents({
+    teamId: teamId ?? initialEvents[0]?.team_id ?? null,
+    initialEvents,
+    visibleStart: visibleWindow.start,
+    visibleEnd: visibleWindow.end,
+    loadedStart: loadedRangeStart,
+    loadedEnd: loadedRangeEnd,
+    realtime: true,
+    onRealtimeEvent: () => router.refresh(),
+  });
 
   // ── Coach availability filter (avatar rail → overlay player schedules) ──────
   // Multi-select up to 8 (color-coded). Empty = "All" (team calendar). When
@@ -234,8 +298,13 @@ export function FairwayCalendar({
       try {
         if (!editorEvent) {
           if (data.recurrence && data.recurrence !== 'none') {
-            const freq = data.recurrence.toUpperCase();
-            const recurrenceRule = `RRULE:FREQ=${freq};INTERVAL=1;COUNT=${data.recurrenceCount}`;
+            // Serialize the editor's STRUCTURED rule (weekday sets, biweekly,
+            // until-a-date); fall back to the legacy minimal rule only when no
+            // structured rule was supplied.
+            const { serializeRecurrenceRule } = await import('@/lib/golf/recurrence');
+            const recurrenceRule = data.recurrenceRule
+              ? serializeRecurrenceRule(data.recurrenceRule)
+              : `RRULE:FREQ=${data.recurrence.toUpperCase()};INTERVAL=1;COUNT=${data.recurrenceCount}`;
             const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
             const result = await createRecurringEvent({
               title: data.title,
@@ -276,6 +345,7 @@ export function FairwayCalendar({
             if (!result.success) throw new Error(result.error || 'Failed to create event');
           }
         } else if (data.editScope && data.editScope !== 'this') {
+          const { serializeRecurrenceRule } = await import('@/lib/golf/recurrence');
           const { editRecurringEvent } = await import('@/app/golf/actions/recurring-events');
           const result = await editRecurringEvent({
             eventId: editorEvent.id,
@@ -290,6 +360,10 @@ export function FairwayCalendar({
               startTime: data.allDay ? undefined : data.startTime || undefined,
               endTime: data.allDay ? undefined : data.endTime || undefined,
               location: data.location || undefined,
+              // Forward a re-patterned series rule when the editor produced one.
+              recurrenceRule: data.recurrenceRule
+                ? serializeRecurrenceRule(data.recurrenceRule)
+                : undefined,
             },
           });
           if (!result.success) throw new Error(result.error || 'Failed to update recurring event');
@@ -310,13 +384,33 @@ export function FairwayCalendar({
             requiresRsvp: data.requiresRsvp,
             rsvpDeadline: data.rsvpDeadline || undefined,
             maxAttendees: data.maxAttendees || undefined,
+            // ADDITIVE-ONLY attendee contract: attendeeIds/addAttendeeIds insert
+            // missing rows; removals ONLY happen via explicit removeAttendeeIds.
             attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
+            addAttendeeIds: data.addAttendeeIds,
+            removeAttendeeIds: data.removeAttendeeIds,
             timezoneOffset,
           } as never);
           if (!result.success) throw new Error(result.error || 'Failed to update event');
         }
+        const wasCreate = !editorEvent;
         setEditorOpen(false);
         setEditorEvent(null);
+        // A newly created event must never silently vanish: if its date falls
+        // outside the visible window, move focus there — the range hook then
+        // loads that window (audit #9).
+        if (wasCreate && data.startDate) {
+          const [y, mo, d] = data.startDate.slice(0, 10).split('-').map(Number);
+          if (y && mo && d) {
+            const eventDay = new Date(y, mo - 1, d);
+            if (
+              eventDay.getTime() < visibleWindow.start.getTime() ||
+              eventDay.getTime() > visibleWindow.end.getTime() + 24 * 60 * 60 * 1000 - 1
+            ) {
+              setFocusDate(eventDay);
+            }
+          }
+        }
         router.refresh();
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -329,7 +423,7 @@ export function FairwayCalendar({
         setIsSavingEvent(false);
       }
     },
-    [editorEvent, router],
+    [editorEvent, router, visibleWindow],
   );
 
   const handleDeleteEvent = React.useCallback(
@@ -363,6 +457,9 @@ export function FairwayCalendar({
     [editorEvent, router],
   );
 
+  // ── ICS "Add to phone" sheet — reachable for BOTH roles incl. mobile. ──────
+  const [subscribeOpen, setSubscribeOpen] = React.useState(false);
+
   // ── Drawer + RSVP state (Agenda taps open the Fairway drawer; the Week/Month
   //    grid keeps opening the legacy EventDetailModal inside the wrapper). ─────
   const [drawerEvent, setDrawerEvent] = React.useState<CalendarEvent | null>(null);
@@ -377,22 +474,6 @@ export function FairwayCalendar({
     pending: number;
     total: number;
   } | null>(null);
-
-  // ── Visible window — varies with the active lens. ───────────────────────────
-  const visibleWindow = React.useMemo(() => {
-    if (view === 'month') {
-      return { start: startOfMonth(focusDate), end: endOfMonth(focusDate) };
-    }
-    if (view === 'agenda') {
-      // Agenda gets a wide window so the demo's full Feb–Apr season shows: from
-      // 3 months before the focused day through 3 months after.
-      return { start: addMonths(focusDate, -3), end: addMonths(focusDate, 3) };
-    }
-    return {
-      start: startOfWeekFn(focusDate, { weekStartsOn: 0 }),
-      end: endOfWeekFn(focusDate, { weekStartsOn: 0 }),
-    };
-  }, [focusDate, view]);
 
   // Count of events in the visible window (for the hero status line).
   const windowCount = React.useMemo(() => {
@@ -498,8 +579,10 @@ export function FairwayCalendar({
   );
 
   // Player RSVP submit — REUSES the existing respondToEvent action UNCHANGED.
+  // Typed lock codes (deadline passed / event started / cancelled) are passed
+  // through so the drawer can render a specific locked state.
   const handleRespond = React.useCallback(
-    async (eventId: string, status: RSVPStatus) => {
+    async (eventId: string, status: RSVPStatus): Promise<RsvpRespondResult> => {
       try {
         const { respondToEvent } = await import('@/app/golf/actions/golf');
         const result = await respondToEvent(eventId, status);
@@ -511,7 +594,11 @@ export function FairwayCalendar({
           });
           return { success: true };
         }
-        return { success: false, error: result.error ?? 'Could not save your response.' };
+        return {
+          success: false,
+          error: result.error ?? 'Could not save your response.',
+          code: readRsvpLockCode(result),
+        };
       } catch (err) {
         return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
       }
@@ -532,6 +619,7 @@ export function FairwayCalendar({
       events
         .filter((e) => {
           if (e.requires_rsvp === false) return false;
+          if (e.status === 'cancelled') return false; // never prompt for cancelled events
           const s = e.start_time || e.start_date;
           if (!s) return false;
           if (new Date(s).getTime() < nowMs) return false; // future only
@@ -565,7 +653,6 @@ export function FairwayCalendar({
 
   const isAgenda = view === 'agenda';
   const isDay = view === 'day';
-  const dateKey = format(focusDate, 'yyyy-MM-dd');
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-2 md:gap-6 md:px-6">
@@ -585,13 +672,55 @@ export function FairwayCalendar({
         primaryActionLabel={primaryActionLabel}
       />
 
-      {/* ── View toggle (default Agenda) ─────────────────────────────────────── */}
-      <Segmented<ViewId>
-        options={VIEW_OPTIONS}
-        value={view}
-        onValueChange={setView}
-        aria-label="Calendar view"
-      />
+      {/* ── View toggle (default Agenda) + Subscribe entry point ─────────────── */}
+      {/* "Add to phone" is reachable for BOTH roles, including mobile — the
+          flagship "team schedule in my phone" path was previously desktop-
+          coach-only (audit finding #10). */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="min-w-0 flex-1">
+          <Segmented<ViewId>
+            options={VIEW_OPTIONS}
+            value={view}
+            onValueChange={setView}
+            aria-label="Calendar view"
+          />
+        </div>
+        <FwButton
+          variant="secondary"
+          size="sm"
+          leftIcon={<CalendarPlus className="h-4 w-4" aria-hidden />}
+          onClick={() => setSubscribeOpen(true)}
+        >
+          Add to phone
+        </FwButton>
+      </div>
+
+      {/* ── Range-fetch affordances (loading + retryable error ≠ empty) ──────── */}
+      {isLoadingRange ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2.5 rounded-fw-md bg-surface-sunken px-4 py-2.5"
+        >
+          <span className="h-2 w-2 animate-pulse rounded-full bg-accent-500" aria-hidden />
+          <span className="font-fw-sans text-caption text-text-tertiary">
+            Loading events for this date range…
+          </span>
+        </div>
+      ) : null}
+      {rangeError && !isLoadingRange ? (
+        <div className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken px-4 py-2.5">
+          <span className="font-fw-sans text-caption text-fw-danger">{rangeError}</span>
+          <FwButton
+            variant="secondary"
+            size="sm"
+            leftIcon={<RefreshCw className="h-3.5 w-3.5" aria-hidden />}
+            onClick={retryRange}
+          >
+            Retry
+          </FwButton>
+        </div>
+      ) : null}
 
       {/* ── Coach member rail (avatar filter → availability overlay) ──────────── */}
       {/* Shown where the body is native (agenda/day) or while comparing — NOT over
@@ -689,11 +818,12 @@ export function FairwayCalendar({
         //    UNCHANGED via its existing GolfCalendarWrapper. Coaches need its
         //    create flow (EventDetailModal via FAB / grid "+" / N), drag-to-
         //    reschedule, recurring-series, and realtime — the engine the shell
-        //    deliberately reuses. Keyed on `${view}:${date}` so a view switch
-        //    remounts it seeded off the focused date. We do NOT touch the grid. ─
+        //    deliberately reuses. NO key: the grid FOLLOWS initialView /
+        //    initialDate prop changes internally, so navigating no longer
+        //    remounts it (which tore down and rejoined its realtime channel on
+        //    every navigation — audit finding #25). ─────────────────────────────
         <div className="overflow-hidden rounded-card">
           <GolfCalendarWrapper
-            key={`${view}:${dateKey}`}
             initialEvents={events}
             teamMembers={teamMembers}
             isCoach={isCoach}
@@ -744,7 +874,160 @@ export function FairwayCalendar({
           timezone={teamTimezone}
         />
       ) : null}
+
+      {/* ── Subscribe / Add to phone (ICS feeds — reuses the legacy manager) ──── */}
+      <FairwaySubscribeSheet
+        open={subscribeOpen}
+        onOpenChange={setSubscribeOpen}
+        canManageTeamFeed={isCoach && Boolean(teamId ?? initialEvents[0]?.team_id)}
+      />
     </div>
+  );
+}
+
+// ============================================================================
+// FairwaySubscribeSheet — ICS feed manager in a Fairway Sheet
+// ----------------------------------------------------------------------------
+// Reuses the EXISTING CalendarFeedManager (FeedCard + SubscriptionInstructions
+// + calendar-feeds server actions) UNCHANGED — same plumbing as the legacy
+// GolfCalendarWrapper drawer, surfaced where players and mobile coaches can
+// actually reach it (audit finding #10). The manager chunk loads on first open.
+// ============================================================================
+interface FairwaySubscribeSheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Coaches manage the team feed; players get a personal feed only. */
+  canManageTeamFeed: boolean;
+}
+
+function FairwaySubscribeSheet({ open, onOpenChange, canManageTeamFeed }: FairwaySubscribeSheetProps) {
+  const [feeds, setFeeds] = React.useState<CalendarFeed[]>([]);
+  const [feedsLoading, setFeedsLoading] = React.useState(false);
+  const [feedsError, setFeedsError] = React.useState<string | null>(null);
+  const allowedTypes = React.useMemo<FeedType[]>(
+    () => (canManageTeamFeed ? ['team', 'personal'] : ['personal']),
+    [canManageTeamFeed],
+  );
+
+  const loadFeeds = React.useCallback(async () => {
+    setFeedsLoading(true);
+    setFeedsError(null);
+    try {
+      const { getCalendarFeeds } = await loadCalendarFeedActions();
+      const result = await getCalendarFeeds();
+      if (result.success && result.data) {
+        setFeeds(result.data);
+      } else {
+        setFeeds([]);
+        setFeedsError(result.error || 'Failed to load calendar feeds');
+      }
+    } catch {
+      setFeeds([]);
+      setFeedsError('Unable to load calendar feeds. Please check your connection and try again.');
+    }
+    setFeedsLoading(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (open) void loadFeeds();
+  }, [open, loadFeeds]);
+
+  const handleCreateFeed = React.useCallback(
+    async (type: FeedType, _name: string) => {
+      void _name;
+      if (type === 'team' && !canManageTeamFeed) {
+        setFeedsError('Only coaches can manage team feeds');
+        throw new Error('Only coaches can manage team feeds');
+      }
+      const { createCalendarFeed } = await loadCalendarFeedActions();
+      const result = await createCalendarFeed(type as 'team' | 'personal');
+      if (!result.success || !result.data) {
+        setFeedsError(result.error || 'Failed to create feed');
+        throw new Error(result.error || 'Failed to create feed');
+      }
+      setFeeds((prev) => {
+        const existingIndex = prev.findIndex((feed) => feed.type === type);
+        if (existingIndex === -1) return [...prev, result.data!];
+        const next = [...prev];
+        next[existingIndex] = result.data!;
+        return next;
+      });
+      return result.data;
+    },
+    [canManageTeamFeed],
+  );
+
+  const handleRegenerateFeed = React.useCallback(
+    async (feedId: string) => {
+      const target = feeds.find((feed) => feed.id === feedId);
+      if (!target) return;
+      if (target.type === 'team' && !canManageTeamFeed) {
+        setFeedsError('Only coaches can manage team feeds');
+        return;
+      }
+      const { regenerateCalendarFeed } = await loadCalendarFeedActions();
+      const result = await regenerateCalendarFeed(target.type as 'team' | 'personal');
+      if (!result.success || !result.data) {
+        setFeedsError(result.error || 'Failed to regenerate feed');
+        throw new Error(result.error || 'Failed to regenerate feed');
+      }
+      setFeeds((prev) => prev.map((feed) => (feed.id === feedId ? result.data! : feed)));
+    },
+    [feeds, canManageTeamFeed],
+  );
+
+  const handleDeleteFeed = React.useCallback(
+    async (feedId: string) => {
+      const target = feeds.find((feed) => feed.id === feedId);
+      if (!target) return;
+      if (target.type === 'team' && !canManageTeamFeed) {
+        setFeedsError('Only coaches can manage team feeds');
+        return;
+      }
+      const { deleteCalendarFeed } = await loadCalendarFeedActions();
+      const result = await deleteCalendarFeed(target.type as 'team' | 'personal');
+      if (!result.success) {
+        setFeedsError(result.error || 'Failed to disable feed');
+        throw new Error(result.error || 'Failed to disable feed');
+      }
+      setFeeds((prev) => prev.filter((feed) => feed.id !== feedId));
+    },
+    [feeds, canManageTeamFeed],
+  );
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={onOpenChange}
+      side="bottom"
+      title="Subscribe to your calendar"
+      className="sm:mx-auto sm:max-w-xl"
+    >
+      <Sheet.Body className="flex flex-col gap-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+        <p className="font-fw-sans text-body-sm text-text-secondary">
+          Add the team schedule to Apple Calendar, Google Calendar, or Outlook. It stays in sync
+          automatically when events change.
+        </p>
+        {feedsError ? (
+          <p className="font-fw-sans text-caption text-fw-danger">{feedsError}</p>
+        ) : null}
+        {feedsLoading ? (
+          <div className="space-y-3" aria-busy="true" aria-label="Loading calendar feeds">
+            <div className="h-16 animate-pulse rounded-fw-md bg-surface-sunken" />
+            <div className="h-16 animate-pulse rounded-fw-md bg-surface-sunken" />
+          </div>
+        ) : (
+          <CalendarFeedManager
+            feeds={feeds}
+            onCreateFeed={handleCreateFeed}
+            onRegenerateFeed={handleRegenerateFeed}
+            onDeleteFeed={handleDeleteFeed}
+            allowedTypes={allowedTypes}
+            showNameInput={false}
+          />
+        )}
+      </Sheet.Body>
+    </Sheet>
   );
 }
 

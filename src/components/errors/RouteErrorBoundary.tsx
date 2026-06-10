@@ -73,6 +73,19 @@ function isGenericLoadFailure(error: Error): boolean {
 }
 
 /**
+ * An HTTP 5xx surfaced in the error message is a BACKEND failure, not
+ * client-side transience. `isTransientError` matches 502/503/504 (so we still
+ * auto-retry them), but for LOGGING they must stay at 'error' severity — a real
+ * outage has to cross Sentry's error alert threshold even though we retry it.
+ * Only pure client transience (raw `TypeError: network error`, timeouts,
+ * "Load failed") gets the noise-reducing downgrade.
+ */
+function isServerStatusError(error: Error): boolean {
+  const msg = error.message?.toLowerCase() || '';
+  return msg.includes('502') || msg.includes('503') || msg.includes('504');
+}
+
+/**
  * Reusable Route Error Boundary Component
  *
  * Use this in Next.js 13+ error.tsx files to handle route-level errors
@@ -120,6 +133,7 @@ export function RouteErrorBoundary({
   const isStaleAction = isStaleServerActionError(error);
   const isTransient = isTransientError(error);
   const isGenericLoad = isGenericLoadFailure(error);
+  const isServer5xx = isServerStatusError(error);
 
   // For chunk load or stale server action errors, a full page reload is the only real fix.
   // Stale-action reloads delegate to softReloadForStaleServerAction so this boundary and the
@@ -189,8 +203,16 @@ export function RouteErrorBoundary({
           return { chunkErrorReloaded: 'unavailable', staleActionReloaded: 'unavailable' };
         }
       })(),
-    }, 'high');
-  }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, retryCount]);
+      // Transient-network and generic-load failures are auto-retried below and
+      // shown to the user as "temporary" — they are NOT incidents. Logging them
+      // at 'error' let a single flaky/backgrounded tab flood error_logs + Sentry
+      // (one client wrote 320 `severity:error` rows from /rounds/new in 8h).
+      // Downgrade to 'medium' (warning) so they stay discoverable without
+      // polluting the error feed — but ONLY for pure client transience. A real
+      // HTTP 5xx (isServer5xx) stays at 'high' so a backend outage still pages,
+      // and chunk-load / unknown errors keep 'high' too.
+    }, (isTransient || isGenericLoad) && !isServer5xx ? 'medium' : 'high');
+  }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, isServer5xx, retryCount]);
 
   // Auto-retry once for transient errors OR generic load failures ("Load failed" / "Failed to fetch")
   useEffect(() => {

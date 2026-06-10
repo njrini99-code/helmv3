@@ -99,6 +99,26 @@ function buildDateTimeString(date: string, time: string | undefined, timezoneOff
 }
 
 /**
+ * Normalize an RSVP deadline through the SAME timezone-offset convention that
+ * start_time uses (buildDateTimeString). The UI sends datetime-local wall
+ * time ("YYYY-MM-DDTHH:MM"); storing that verbatim made Postgres treat it as
+ * UTC, shifting an ET coach's 6 PM deadline to 2 PM (audit finding #15).
+ * Strings that already carry an explicit offset (Z or ±HH:MM) pass through.
+ */
+function buildRsvpDeadlineString(
+  deadline: string | undefined | null,
+  timezoneOffset?: number
+): string | null {
+  if (!deadline) return null;
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/.test(deadline)) return deadline;
+  const [date, time] = deadline.split('T');
+  if (!date) return null;
+  // datetime-local yields HH:MM (occasionally HH:MM:SS) — buildDateTimeString
+  // accepts either; date-only deadlines resolve to midnight in the coach's tz.
+  return buildDateTimeString(date, time || '00:00', timezoneOffset);
+}
+
+/**
  * Golf event insert data
  * Note: Maps to the actual golf_events table which uses:
  * - start_time (required string) as the primary date/time field
@@ -117,6 +137,9 @@ interface GolfEventInsertData {
   description?: string | null;
   created_by?: string | null;
   status?: string | null;
+  requires_rsvp?: boolean | null;
+  rsvp_deadline?: string | null;
+  max_attendees?: number | null;
   // Fields that might not exist in schema but we want to track
   [key: string]: unknown;
 }
@@ -383,6 +406,43 @@ const dateString = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3
 const timeString = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'Time must be HH:MM');
 const golfEventType = z.enum(['practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other', 'class']);
 
+/**
+ * End must not precede start (audit finding #17 — 3 inverted rows reached
+ * prod and exported inverted DTEND to external calendars). The DB CHECK
+ * golf_events_end_after_start is live as the backstop; this refine produces a
+ * friendly message first. Wall-time string comparison is valid because both
+ * sides carry the same timezone offset.
+ */
+function refineEventEndAfterStart(
+  d: { startDate?: string; endDate?: string; startTime?: string; endTime?: string; allDay?: boolean },
+  ctx: z.RefinementCtx
+): void {
+  if (!d.startDate) return;
+  // A strictly earlier end DATE is inverted under every all-day/timed
+  // convention (create defaults allDay→true, update defaults timed — only
+  // flag what is wrong in both).
+  if (d.endDate && d.endDate < d.startDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'End date must be on or after the start date',
+      path: ['endDate'],
+    });
+    return;
+  }
+  // Explicitly timed with both times on the same effective dates.
+  if (d.allDay === false && d.startTime && d.endTime) {
+    const start = `${d.startDate}T${d.startTime}`;
+    const end = `${d.endDate || d.startDate}T${d.endTime}`;
+    if (end < start) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'End time must be after the start time',
+        path: ['endTime'],
+      });
+    }
+  }
+}
+
 const golfEventSchema = z.object({
   title: z.string().min(1).max(200),
   eventType: golfEventType,
@@ -402,7 +462,7 @@ const golfEventSchema = z.object({
   attendeeIds: z.array(z.string().uuid()).optional(),
   // Timezone offset from client (minutes from UTC, e.g. 360 for UTC-6)
   timezoneOffset: z.number().int().optional(),
-});
+}).superRefine(refineEventEndAfterStart);
 
 const golfQualifierSchema = z
   .object({
@@ -492,7 +552,7 @@ interface GolfRoundInputComprehensive {
   qualifierRoundNumber?: number;
 }
 
-interface GolfEventInput {
+export interface GolfEventInput {
   title: string;
   eventType: 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
   startDate: string;
@@ -512,6 +572,48 @@ interface GolfEventInput {
   // Timezone offset from client (minutes from UTC, e.g. 360 for UTC-6)
   timezoneOffset?: number;
 }
+
+/**
+ * Input contract for updateGolfEvent.
+ *
+ * ATTENDEE SEMANTICS (2026-06-10, audit finding #4): the legacy `attendeeIds`
+ * field is ADDITIVE-ONLY — players missing from the list are NEVER removed
+ * (edit forms used to seed it empty and silently wipe every existing RSVP).
+ * Removals must be explicit via `removeAttendeeIds`.
+ */
+export type GolfEventUpdateInput = Partial<GolfEventInput> & {
+  /** Players to invite (attendance row + invitation). Additive. */
+  addAttendeeIds?: string[];
+  /** Players to explicitly remove from the event's attendance list. */
+  removeAttendeeIds?: string[];
+};
+
+/** Options for deleteGolfEvent. Default (no options) = soft cancellation. */
+export interface DeleteGolfEventOptions {
+  /**
+   * Permanently delete the row. Only permitted when the event is already
+   * cancelled OR has zero attendance rows — otherwise the action fails and
+   * the caller must cancel first.
+   */
+  hard?: boolean;
+  /** Optional cancellation reason shown to attendees (soft-cancel only). */
+  reason?: string;
+}
+
+/**
+ * Machine-readable RSVP failure codes the UI can branch on. The lock strings
+ * match useRSVP's RsvpLockCode union (rsvpLockMessage renders them).
+ */
+export type RSVPErrorCode =
+  | 'rsvp_deadline_passed'
+  | 'event_started'
+  | 'event_cancelled'
+  | 'not_team_member'
+  | 'write_failed';
+
+export type RespondToEventResult =
+  | { success: true; data: undefined }
+  | { success: false; error: string; code?: RSVPErrorCode };
 
 interface GolfQualifierInput {
   name: string;
@@ -1880,11 +1982,28 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       all_day: isAllDay,
       location: validatedData.location || null,
       description: validatedData.description || null,
+      // RSVP config (audit finding #5): these were silently dropped — every
+      // event created with RSVP on landed disarmed. The deadline goes through
+      // the same timezone-offset convention as start_time (finding #15).
+      requires_rsvp: validatedData.requiresRsvp ?? false,
+      rsvp_deadline: buildRsvpDeadlineString(validatedData.rsvpDeadline, tz),
+      max_attendees: validatedData.maxAttendees ?? null,
     };
 
     // Only add created_by if it's not null (coaches only)
     if (createdBy) {
       insertData.created_by = createdBy;
+    }
+
+    // Legacy UI shape: timed event with an endDate but no endTime resolves to
+    // midnight, which can precede a same-day timed start. The DB CHECK
+    // golf_events_end_after_start (live) would reject the row — store an open
+    // end instead. (Explicitly inverted endTime is rejected by zod above.)
+    if (
+      insertData.end_time &&
+      new Date(insertData.end_time).getTime() < new Date(insertData.start_time).getTime()
+    ) {
+      insertData.end_time = null;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1895,6 +2014,10 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       .single();
 
     if (error) {
+      // 23514 = CHECK violation (golf_events_end_after_start backstop).
+      if ((error as { code?: string }).code === '23514') {
+        return { success: false, error: 'End time must be after the start time.' };
+      }
       return { success: false, error: 'Failed to create event. Please try again.' };
     }
 
@@ -1908,47 +2031,55 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       }
     }
 
-    // Notify all team players about the new event (in-app + email + push)
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: teamMembers } = await (supabase as any)
-        .from('golf_team_members')
-        .select('player_id')
-        .eq('team_id', teamId)
-        .eq('status', 'active');
+    // Notify all team players about the new event (in-app + email + push).
+    // 2026-06-10 (audit finding #11): the save previously awaited a sequential
+    // per-player email loop (prefs query + Resend HTTP each), adding ~3–10s of
+    // latency on a 15-player roster. The whole fan-out now runs post-response
+    // via next/server `after()` (same pattern as invalidateOnRoundComplete),
+    // with the three channels parallelized through Promise.allSettled. Reads
+    // inside the callback use the admin client — the request-scoped client is
+    // not guaranteed usable once the response has flushed.
+    const fanOutEventId: string = event.id;
+    const fanOutTeamId = teamId;
+    const fanOutTitle = validatedData.title;
+    const fanOutStartDate = validatedData.startDate;
+    const fanOutLocation = validatedData.location || '';
+    after(async () => {
+      try {
+        const adminClient = createAdminClient();
+        const { data: teamMembers } = await adminClient
+          .from('golf_team_members')
+          .select('player_id')
+          .eq('team_id', fanOutTeamId)
+          .eq('status', 'active');
 
-      if (teamMembers && teamMembers.length > 0) {
-        const playerIds = teamMembers.map((m: { player_id: string }) => m.player_id);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: players } = await (supabase as any)
+        const playerIds = (teamMembers ?? [])
+          .map((m) => m.player_id)
+          .filter((id): id is string => Boolean(id));
+        if (playerIds.length === 0) return;
+
+        const { data: players } = await adminClient
           .from('golf_players')
           .select('id, user_id')
           .in('id', playerIds);
 
-        const validPlayers = (players || []).filter(
-          (p: { id: string; user_id: string | null }) => Boolean(p.user_id)
-        ) as Array<{ id: string; user_id: string }>;
-        const userIds = validPlayers.map((p) => p.user_id);
+        const userIds = (players ?? [])
+          .map((p) => p.user_id)
+          .filter((id): id is string => Boolean(id));
+        if (userIds.length === 0) return;
 
-        if (userIds.length > 0) {
-          // 1. In-app notifications (golf_calendar_notifications)
-          const notifications = userIds.map((uid: string) => ({
+        // 1. In-app notifications (golf_calendar_notifications)
+        const inAppPromise = (async () => {
+          const notifications = userIds.map((uid) => ({
             user_id: uid,
-            event_id: event.id,
+            event_id: fanOutEventId,
             notification_type: 'event_invitation',
-            title: `New event: ${validatedData.title}`,
-            message: `${validatedData.startDate}${validatedData.location ? ` at ${validatedData.location}` : ''}`,
+            title: `New event: ${fanOutTitle}`,
+            message: `${fanOutStartDate}${fanOutLocation ? ` at ${fanOutLocation}` : ''}`,
             action_url: `/golf/dashboard/calendar`,
           }));
-
-          // Use admin client to bypass RLS — coach is inserting notifications
-          // for other users (team players), which is a system-level operation
-          const adminClient = createAdminClient();
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error: notifError } = await (adminClient as any)
-            .from('golf_calendar_notifications')
+          const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
             .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
-
           if (notifError) {
             await logServerError(`createGolfEvent notification insert failed: ${notifError.message}`, {
               action: 'createGolfEvent.insertNotifications',
@@ -1956,51 +2087,68 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
               extra: { errorCode: notifError.code },
             });
           }
+        })();
 
-          // 2. Email notifications (fire-and-forget)
-          const { sendBulkEmailNotification } = await import('@/lib/notifications/email');
-          const { data: userRows } = await supabase
+        // 2. Email notifications — parallel per recipient (the bulk helper
+        // loops sequentially; Promise.allSettled keeps one slow Resend call
+        // from serializing the rest).
+        const emailPromise = (async () => {
+          const { sendEmailNotification } = await import('@/lib/notifications/email');
+          const { data: userRows } = await adminClient
             .from('users')
             .select('id, email')
             .in('id', userIds);
-
-          if (userRows) {
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
-            await sendBulkEmailNotification(
-              'event_rsvp_reminder',
-              userRows.filter(u => u.email).map(u => ({ id: u.id, email: u.email! })),
-              {
-                eventName: validatedData.title,
-                eventDate: validatedData.startDate,
-                location: validatedData.location || '',
+          const recipients = (userRows ?? [])
+            .filter((u) => Boolean(u.email))
+            .map((u) => ({ id: u.id, email: u.email as string }));
+          if (recipients.length === 0) return;
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+          const results = await Promise.allSettled(
+            recipients.map((u) =>
+              sendEmailNotification('event_rsvp_reminder', u.id, u.email, {
+                eventName: fanOutTitle,
+                eventDate: fanOutStartDate,
+                location: fanOutLocation,
                 eventUrl: `${baseUrl}/golf/dashboard/calendar`,
-              }
-            ).catch((err) => {
-              logServerError(`createGolfEvent email notification failed: ${err instanceof Error ? err.message : String(err)}`, {
-                action: 'createGolfEvent.emailNotification',
-                featureArea: 'events',
-              });
-            });
-          }
-
-          // 3. Push notifications (fire-and-forget)
-          const { sendBulkPushNotification } = await import('@/lib/notifications/push');
-          await sendBulkPushNotification('event_rsvp_reminder', userIds, {
-            eventName: validatedData.title,
-          }).catch((err) => {
-            logServerError(`createGolfEvent push notification failed: ${err instanceof Error ? err.message : String(err)}`, {
-              action: 'createGolfEvent.pushNotification',
+              })
+            )
+          );
+          const failed = results.filter((r) => r.status === 'rejected').length;
+          if (failed > 0) {
+            await logServerError(`createGolfEvent email notification failed for ${failed}/${recipients.length} recipients`, {
+              action: 'createGolfEvent.emailNotification',
               featureArea: 'events',
             });
+          }
+        })();
+
+        // 3. Push notifications
+        const pushPromise = (async () => {
+          const { sendBulkPushNotification } = await import('@/lib/notifications/push');
+          await sendBulkPushNotification('event_rsvp_reminder', userIds, {
+            eventName: fanOutTitle,
           });
+        })();
+
+        const channelResults = await Promise.allSettled([inAppPromise, emailPromise, pushPromise]);
+        const channelNames = ['inApp', 'email', 'push'] as const;
+        for (let i = 0; i < channelResults.length; i++) {
+          const result = channelResults[i];
+          if (result?.status === 'rejected') {
+            await logServerError(`createGolfEvent ${channelNames[i]} fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`, {
+              action: 'createGolfEvent.notificationFanOut',
+              featureArea: 'events',
+              extra: { channel: channelNames[i], eventId: fanOutEventId },
+            });
+          }
         }
+      } catch (notifErr) {
+        await logServerError(`createGolfEvent notification creation failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+          action: 'createGolfEvent.notifications',
+          featureArea: 'events',
+        });
       }
-    } catch (notifErr) {
-      await logServerError(`createGolfEvent notification creation failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
-        action: 'createGolfEvent.notifications',
-        featureArea: 'events',
-      });
-    }
+    });
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/calendar');
@@ -2011,7 +2159,8 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: 'Invalid event data. Please check your inputs.' };
+      const firstIssue = error.issues[0]?.message;
+      return { success: false, error: firstIssue || 'Invalid event data. Please check your inputs.' };
     }
     return formatSafeErrorResponse(error);
   }
@@ -2031,13 +2180,19 @@ const golfEventUpdateSchema = z.object({
   requiresRsvp: z.boolean().optional(),
   rsvpDeadline: z.string().optional(),
   maxAttendees: z.number().int().positive().optional(),
+  // ADDITIVE-ONLY (audit finding #4): players listed here are invited if
+  // missing; players absent from this list are never touched.
   attendeeIds: z.array(z.string().uuid()).optional(),
+  addAttendeeIds: z.array(z.string().uuid()).optional(),
+  // The ONLY way to remove attendees — explicit, never derived from an
+  // incomplete client list.
+  removeAttendeeIds: z.array(z.string().uuid()).optional(),
   timezoneOffset: z.number().int().optional(),
-});
+}).superRefine(refineEventEndAfterStart);
 
 export async function updateGolfEvent(
   eventId: string,
-  data: Partial<GolfEventInput>
+  data: GolfEventUpdateInput
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
@@ -2115,7 +2270,12 @@ export async function updateGolfEvent(
     if (validatedData.location !== undefined) updateData.location = validatedData.location || null;
     if (validatedData.description !== undefined) updateData.description = validatedData.description || null;
     if (validatedData.requiresRsvp !== undefined) updateData.requires_rsvp = validatedData.requiresRsvp;
-    if (validatedData.rsvpDeadline !== undefined) updateData.rsvp_deadline = validatedData.rsvpDeadline || null;
+    // Deadline goes through the same timezone-offset convention as start_time
+    // (audit finding #15: stored as UTC wall-time, shifting the coach's
+    // intended deadline by the UTC offset).
+    if (validatedData.rsvpDeadline !== undefined) {
+      updateData.rsvp_deadline = buildRsvpDeadlineString(validatedData.rsvpDeadline, tz);
+    }
     if (validatedData.maxAttendees !== undefined) updateData.max_attendees = validatedData.maxAttendees;
 
     let query = supabase
@@ -2133,6 +2293,12 @@ export async function updateGolfEvent(
     const { data: updatedRows, error } = await query.select('id');
 
     if (error) {
+      // 23514 = CHECK violation (golf_events_end_after_start). Partial updates
+      // can invert against the UNCHANGED half of the range (e.g. moving the
+      // start past the existing end) — the DB constraint is the arbiter.
+      if ((error as { code?: string }).code === '23514') {
+        return { success: false, error: 'End time must be after the start time. Adjust the event end as well.' };
+      }
       return { success: false, error: 'Failed to update event' };
     }
 
@@ -2140,16 +2306,29 @@ export async function updateGolfEvent(
       return { success: false, error: 'Event could not be updated. You may not have permission to edit this event.' };
     }
 
-    if (validatedData.attendeeIds) {
+    // Attendee sync — ADDITIVE-ONLY contract (audit finding #4).
+    // Previously this diffed golf_event_attendance against the client's
+    // attendeeIds and DELETED every player missing from the list. Edit forms
+    // seeded attendeeIds: [] — so adding one player silently wiped every other
+    // attendance row (RSVPs, check-in state, reminder eligibility). House rule:
+    // no destructive deletes driven by incomplete client state.
+    //
+    // New contract: attendeeIds + addAttendeeIds insert missing players and
+    // NEVER delete; removals happen only via explicit removeAttendeeIds.
+    const inviteIds = Array.from(new Set([
+      ...(validatedData.attendeeIds ?? []),
+      ...(validatedData.addAttendeeIds ?? []),
+    ]));
+    const removeIds = validatedData.removeAttendeeIds ?? [];
+
+    if (inviteIds.length > 0) {
       const { data: attendanceRows } = await supabase
         .from('golf_event_attendance')
         .select('player_id')
         .eq('event_id', eventId);
 
       const existingIds = new Set((attendanceRows || []).map(row => row.player_id));
-      const nextIds = new Set(validatedData.attendeeIds);
-      const toAdd = validatedData.attendeeIds.filter((id) => !existingIds.has(id));
-      const toRemove = Array.from(existingIds).filter((id) => !nextIds.has(id));
+      const toAdd = inviteIds.filter((id) => !existingIds.has(id));
 
       if (toAdd.length > 0) {
         try {
@@ -2159,13 +2338,22 @@ export async function updateGolfEvent(
           // Don't fail the whole update if invitations fail
         }
       }
+    }
 
-      if (toRemove.length > 0) {
-        await supabase
-          .from('golf_event_attendance')
-          .delete()
-          .eq('event_id', eventId)
-          .in('player_id', toRemove);
+    if (removeIds.length > 0) {
+      const { error: removeError } = await supabase
+        .from('golf_event_attendance')
+        .delete()
+        .eq('event_id', eventId)
+        .in('player_id', removeIds);
+
+      if (removeError) {
+        await logServerError(`updateGolfEvent attendee removal failed: ${removeError.message}`, {
+          action: 'updateGolfEvent.removeAttendees',
+          featureArea: 'events',
+          extra: { eventId, removeIds },
+        });
+        return { success: false, error: 'Event updated, but removing attendees failed. Please retry.' };
       }
     }
 
@@ -2196,14 +2384,29 @@ export async function updateGolfEvent(
 
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return { success: false, error: 'Invalid input data' };
+      const firstIssue = err.issues[0]?.message;
+      return { success: false, error: firstIssue || 'Invalid input data' };
     }
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
 
+/**
+ * Delete a golf event.
+ *
+ * 2026-06-10 (audit finding #19): the default is now a SOFT CANCELLATION —
+ * the event's status flips to 'cancelled' (cancelled_at/cancellation_reason
+ * set), attendees are notified (in-app + email), and all RSVP rows are kept.
+ * The previous behavior was a hard DELETE whose FK cascade silently erased
+ * every attendance row and the attendees' notification history with no
+ * warning to anyone.
+ *
+ * A hard delete ({ hard: true } or deleteGolfEventPermanently) is only
+ * permitted when the event is already cancelled OR has zero attendance rows.
+ */
 export async function deleteGolfEvent(
-  eventId: string
+  eventId: string,
+  options?: DeleteGolfEventOptions
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
@@ -2234,7 +2437,7 @@ export async function deleteGolfEvent(
     // Verify event belongs to coach's team
     const { data: existingEvent } = await supabase
       .from('golf_events')
-      .select('team_id')
+      .select('team_id, title, status, start_time, location')
       .eq('id', eventId)
       .single();
 
@@ -2246,20 +2449,171 @@ export async function deleteGolfEvent(
       return { success: false, error: 'Access denied' };
     }
 
-    const deleteQuery = supabase
-      .from('golf_events')
-      .delete()
-      .eq('id', eventId)
-      .eq('team_id', teamId);
+    if (options?.hard) {
+      // Hard delete is gated: only an already-cancelled event, or one with
+      // zero attendance rows, may be permanently removed (the FK cascade
+      // destroys RSVPs and attendee notification history).
+      if (existingEvent.status !== 'cancelled') {
+        const { count } = await supabase
+          .from('golf_event_attendance')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_id', eventId);
 
-    const { data: deletedRows, error } = await deleteQuery.select('id');
+        if ((count ?? 0) > 0) {
+          return {
+            success: false,
+            error: 'This event has invitees. Cancel it first — permanent deletion is only allowed for cancelled events or events with no attendance records.',
+          };
+        }
+      }
 
-    if (error) {
-      return { success: false, error: 'Failed to delete event' };
-    }
+      const { data: deletedRows, error } = await supabase
+        .from('golf_events')
+        .delete()
+        .eq('id', eventId)
+        .eq('team_id', teamId)
+        .select('id');
 
-    if (!deletedRows || deletedRows.length === 0) {
-      return { success: false, error: 'Event could not be deleted. You may not have permission to delete this event.' };
+      if (error) {
+        return { success: false, error: 'Failed to delete event' };
+      }
+
+      if (!deletedRows || deletedRows.length === 0) {
+        return { success: false, error: 'Event could not be deleted. You may not have permission to delete this event.' };
+      }
+    } else {
+      // Soft cancellation — keep the row + every RSVP, mark cancelled,
+      // notify attendees.
+      if (existingEvent.status === 'cancelled') {
+        // Idempotent: already cancelled, don't re-notify.
+        revalidatePath('/golf/dashboard/calendar');
+        updateTag(CACHE_TAGS.DASHBOARD);
+        updateTag(CACHE_TAGS.CALENDAR);
+        return { success: true };
+      }
+
+      const { data: cancelledRows, error } = await supabase
+        .from('golf_events')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: options?.reason ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', eventId)
+        .eq('team_id', teamId)
+        .select('id');
+
+      if (error) {
+        return { success: false, error: 'Failed to cancel event' };
+      }
+
+      if (!cancelledRows || cancelledRows.length === 0) {
+        return { success: false, error: 'Event could not be cancelled. You may not have permission to modify this event.' };
+      }
+
+      // Notify every invited player post-response (same after() pattern as
+      // the create fan-out): in-app 'event_cancelled' rows + email.
+      const cancelTitle = existingEvent.title;
+      const cancelStart = existingEvent.start_time;
+      const cancelLocation = existingEvent.location;
+      const cancelReason = options?.reason ?? '';
+      after(async () => {
+        try {
+          const adminClient = createAdminClient();
+          const { data: attendances } = await adminClient
+            .from('golf_event_attendance')
+            .select('player:golf_players(user_id)')
+            .eq('event_id', eventId);
+
+          const userIds = (attendances ?? [])
+            .map((row) => {
+              const playerRef = (row as { player: { user_id: string | null } | Array<{ user_id: string | null }> | null }).player;
+              const playerRow = Array.isArray(playerRef) ? playerRef[0] ?? null : playerRef;
+              return playerRow?.user_id ?? null;
+            })
+            .filter((id): id is string => Boolean(id));
+          if (userIds.length === 0) return;
+
+          const startLabel = cancelStart
+            ? new Date(cancelStart).toLocaleString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+              })
+            : 'TBD';
+          const detail = `${startLabel}${cancelLocation ? ` at ${cancelLocation}` : ''}${cancelReason ? ` — ${cancelReason}` : ''}`;
+
+          const inAppPromise = (async () => {
+            const notifications = userIds.map((uid) => ({
+              user_id: uid,
+              event_id: eventId,
+              notification_type: 'event_cancelled',
+              title: `Cancelled: ${cancelTitle}`,
+              message: detail,
+              action_url: `/golf/dashboard/calendar?event=${eventId}`,
+            }));
+            const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
+              .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: false });
+            if (notifError) {
+              await logServerError(`deleteGolfEvent cancellation notification insert failed: ${notifError.message}`, {
+                action: 'deleteGolfEvent.insertNotifications',
+                featureArea: 'events',
+                extra: { eventId },
+              });
+            }
+          })();
+
+          const emailPromise = (async () => {
+            const { sendEmailNotification } = await import('@/lib/notifications/email');
+            const { data: userRows } = await adminClient
+              .from('users')
+              .select('id, email')
+              .in('id', userIds);
+            const recipients = (userRows ?? [])
+              .filter((u) => Boolean(u.email))
+              .map((u) => ({ id: u.id, email: u.email as string }));
+            if (recipients.length === 0) return;
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+            const results = await Promise.allSettled(
+              recipients.map((u) =>
+                sendEmailNotification('team_announcement', u.id, u.email, {
+                  title: `Event cancelled: ${cancelTitle}`,
+                  content: `This event has been cancelled. ${detail}`,
+                  announcementUrl: `${baseUrl}/golf/dashboard/calendar`,
+                })
+              )
+            );
+            const failed = results.filter((r) => r.status === 'rejected').length;
+            if (failed > 0) {
+              await logServerError(`deleteGolfEvent cancellation email failed for ${failed}/${recipients.length} recipients`, {
+                action: 'deleteGolfEvent.emailNotification',
+                featureArea: 'events',
+                extra: { eventId },
+              });
+            }
+          })();
+
+          const channelResults = await Promise.allSettled([inAppPromise, emailPromise]);
+          for (const result of channelResults) {
+            if (result.status === 'rejected') {
+              await logServerError(`deleteGolfEvent cancellation fan-out failed: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`, {
+                action: 'deleteGolfEvent.cancellationFanOut',
+                featureArea: 'events',
+                extra: { eventId },
+              });
+            }
+          }
+        } catch (notifErr) {
+          await logServerError(`deleteGolfEvent cancellation notify failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+            action: 'deleteGolfEvent.cancellationNotify',
+            featureArea: 'events',
+            extra: { eventId },
+          });
+        }
+      });
     }
 
     revalidatePath('/golf/dashboard/calendar');
@@ -2270,6 +2624,16 @@ export async function deleteGolfEvent(
   } catch {
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+/**
+ * Permanently delete an event. Gated: only allowed when the event is already
+ * cancelled OR has zero attendance rows (see deleteGolfEvent).
+ */
+export async function deleteGolfEventPermanently(
+  eventId: string
+): Promise<{ success: boolean; error?: string }> {
+  return deleteGolfEvent(eventId, { hard: true });
 }
 
 // ============================================================================
@@ -2670,10 +3034,23 @@ export async function updatePlayerStatus(
 /**
  * Player responds to an event invitation
  */
+/**
+ * Player self-RSVP.
+ *
+ * 2026-06-10 (audit findings #8, #16):
+ * - Authz is team membership, not a pre-seeded invite: any ACTIVE member of
+ *   the event's team may RSVP. The write is an upsert on
+ *   (event_id, player_id) — the golf_event_attendance_insert_self RLS policy
+ *   (live) lets a player INSERT their own row, so whole-team events no longer
+ *   hard-error for players the coach didn't pre-pick.
+ * - Locks: RSVPs are rejected after the event starts and after rsvp_deadline
+ *   (enforced inside updateRSVP). Failures carry a machine-readable `code`
+ *   the UI can branch on.
+ */
 export async function respondToEvent(
   eventId: string,
   status: 'pending' | 'accepted' | 'declined' | 'tentative'
-): Promise<ActionResult> {
+): Promise<RespondToEventResult> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -2693,13 +3070,52 @@ export async function respondToEvent(
       return { success: false, error: 'Player profile not found' };
     }
 
-    const { updateRSVP, RSVPDeadlinePassedError } = await import('@/lib/calendar/rsvp');
+    // Authorize: the event must be visible and the caller must be an ACTIVE
+    // member of its team. The RLS INSERT policy enforces the same rule at the
+    // DB — this check exists to return a typed, renderable error instead of a
+    // generic write failure.
+    const { data: event } = await supabase
+      .from('golf_events')
+      .select('id, team_id')
+      .eq('id', eventId)
+      .maybeSingle();
+
+    if (!event) {
+      return { success: false, error: 'Event not found' };
+    }
+
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('team_id', event.team_id)
+      .eq('player_id', player.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (!membership) {
+      return {
+        success: false,
+        error: "Only active members of this event's team can RSVP.",
+        code: 'not_team_member',
+      };
+    }
+
+    const { updateRSVP, RSVPDeadlinePassedError, RSVPLockedError } = await import('@/lib/calendar/rsvp');
     const { WriteIntegrityError } = await import('@/lib/calendar/write-integrity');
     try {
       await updateRSVP(eventId, player.id, status, supabase);
     } catch (err) {
       if (err instanceof RSVPDeadlinePassedError) {
-        return { success: false, error: 'RSVP deadline has passed for this event.' };
+        return { success: false, error: 'RSVP deadline has passed for this event.', code: 'rsvp_deadline_passed' };
+      }
+      if (err instanceof RSVPLockedError) {
+        const message = err.code === 'event_cancelled'
+          ? 'This event has been cancelled — RSVPs are closed.'
+          : 'This event has already started — RSVPs are locked.';
+        // Lib code 'deadline_passed' is unreachable here (caught above) but
+        // map it anyway so the union stays exhaustive.
+        const code: RSVPErrorCode = err.code === 'deadline_passed' ? 'rsvp_deadline_passed' : err.code;
+        return { success: false, error: message, code };
       }
       // 2026-05-17: closes audit Finding 4 + Q-NEW-14. Previously this
       // catch was bare (`catch {}`) — every error returned the same
@@ -2716,6 +3132,7 @@ export async function respondToEvent(
         return {
           success: false,
           error: 'Could not record your RSVP. Please try again or contact your coach.',
+          code: 'write_failed',
         };
       }
       throw err;
@@ -2732,7 +3149,7 @@ export async function respondToEvent(
       featureArea: 'calendar',
       extra: { stack: err instanceof Error ? err.stack : undefined },
     }, 'warning');
-    return { success: false, error: 'Failed to update RSVP' };
+    return { success: false, error: 'Failed to update RSVP', code: 'write_failed' };
   }
 }
 
@@ -2875,15 +3292,21 @@ export async function checkScheduleConflicts(
   endDate: string,
   endTime: string,
   attendeeIds: string[],
-  excludeEventId?: string
+  excludeEventId?: string,
+  /** Client timezone offset (Date.getTimezoneOffset() minutes). When provided,
+   * the proposed window is anchored to the coach's wall clock instead of the
+   * server's (audit finding #7 — server-TZ parse made the comparison window
+   * drift against UTC-stored timed events). Omitted → UTC, which matches the
+   * previous prod behavior deterministically. */
+  timezoneOffset?: number
 ): Promise<ActionResult<ConflictResult>> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Unauthorized');
 
-    const start = new Date(`${startDate}T${startTime}`);
-    const end = new Date(`${endDate}T${endTime}`);
+    const start = new Date(buildDateTimeString(startDate, startTime, timezoneOffset));
+    const end = new Date(buildDateTimeString(endDate, endTime, timezoneOffset));
 
     const { checkEventConflicts } = await import('@/lib/calendar/conflicts');
     const result = await checkEventConflicts(
@@ -2916,7 +3339,11 @@ export async function checkScheduleConflicts(
 export async function getPlayerAvailability(
   memberId: string,
   startDate: string, // YYYY-MM-DD
-  endDate: string // YYYY-MM-DD
+  endDate: string, // YYYY-MM-DD
+  /** Client timezone offset (Date.getTimezoneOffset() minutes). Anchors the
+   * day window to the viewer's local day; omitted → UTC day (deterministic,
+   * matches previous prod behavior). */
+  timezoneOffset?: number
 ): Promise<ActionResult<SerializedBusyPeriod[]>> {
   try {
     const supabase = await createClient();
@@ -3016,8 +3443,10 @@ export async function getPlayerAvailability(
       return { success: false, error: 'Not authorized to view this schedule' };
     }
 
-    const dayStart = new Date(`${startDate}T00:00:00`);
-    const dayEnd = new Date(`${endDate}T23:59:59`);
+    // Deterministic window bounds — the old bare `new Date('...T00:00:00')`
+    // parsed in the SERVER's timezone (audit finding #7).
+    const dayStart = new Date(buildDateTimeString(startDate, '00:00:00', timezoneOffset));
+    const dayEnd = new Date(buildDateTimeString(endDate, '23:59:59', timezoneOffset));
 
     const { getUserBusyPeriods } = await import('@/lib/calendar/availability');
     const busyPeriods = await getUserBusyPeriods(
@@ -3049,7 +3478,10 @@ export async function getPlayerAvailability(
  */
 export async function getCurrentUserBusyPeriods(
   startDate: string, // YYYY-MM-DD
-  endDate: string // YYYY-MM-DD
+  endDate: string, // YYYY-MM-DD
+  /** Client timezone offset (Date.getTimezoneOffset() minutes) — see
+   * getPlayerAvailability. */
+  timezoneOffset?: number
 ): Promise<ActionResult<SerializedBusyPeriod[]>> {
   try {
     const supabase = await createClient();
@@ -3059,8 +3491,8 @@ export async function getCurrentUserBusyPeriods(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const dayStart = new Date(`${startDate}T00:00:00`);
-    const dayEnd = new Date(`${endDate}T23:59:59`);
+    const dayStart = new Date(buildDateTimeString(startDate, '00:00:00', timezoneOffset));
+    const dayEnd = new Date(buildDateTimeString(endDate, '23:59:59', timezoneOffset));
 
     const { getUserBusyPeriods } = await import('@/lib/calendar/availability');
     const busyPeriods = await getUserBusyPeriods(

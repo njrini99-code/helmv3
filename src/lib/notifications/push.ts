@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationType, NotificationPreferences } from './types';
 import { getUserNotificationPreferences } from './email';
 
@@ -117,7 +117,13 @@ function generatePushPayload(
 }
 
 /**
- * Send a push notification to a single user via the APNs Edge Function
+ * Send a push notification to a single user via the APNs Edge Function.
+ *
+ * SECURITY CONTRACT: `userId` MUST be server-sourced (authenticated session or
+ * trusted DB lookup) — NEVER raw user input. The device-token read below uses
+ * the service-role client (so it works from background notifier/cron contexts),
+ * which BYPASSES RLS; a user-supplied `userId` would leak another user's device
+ * tokens. All current callers pass DB-derived ids.
  */
 export async function sendPushNotification(
   type: NotificationType,
@@ -131,7 +137,15 @@ export async function sendPushNotification(
       return { success: true }; // User opted out
     }
 
-    const supabase = await createClient();
+    // Service-role client: sendPushNotification is invoked from BOTH request
+    // scopes (a coach posts a message) AND background contexts (the CoachHelm
+    // insight-notifier hook fired from the upsert/cron path). The cookie-based
+    // server client calls `cookies()`, which throws "cookies was called outside
+    // a request scope" in the background path — surfacing as recurring
+    // "insight-notifier: push send reported failure" warnings. The admin client
+    // never reads cookies and works in both contexts; device-token reads/writes
+    // here are server-trusted and keyed by user_id.
+    const supabase = createAdminClient();
 
     // Get user's active device tokens
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

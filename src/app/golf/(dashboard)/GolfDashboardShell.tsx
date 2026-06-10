@@ -6,6 +6,7 @@ import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { usePresence } from '@/hooks/use-presence';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { NotificationCenter } from '@/components/golf/calendar/NotificationCenter';
@@ -46,6 +47,12 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
   const isCoach = userData.role === 'coach';
   const mobileSidebarRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
+  // Desktop check for the global notification bell. The bell was previously
+  // ALWAYS mounted and only CSS-hidden on mobile, so its 30s notification
+  // poller ran invisibly on every mobile page — duplicating the poller the
+  // calendar surfaces mount themselves (audit finding #32). Conditional
+  // MOUNT (not just hidden) means exactly one poller runs per viewport.
+  const isDesktopViewport = useMediaQuery('(min-width: 768px)');
 
   // Track user online presence (deferred by 5s so it doesn't compete with page load)
   usePresence();
@@ -202,10 +209,13 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         </div>
       </main>
 
-      {/* Global Notification Bell — top-right of viewport */}
-      <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-overlay hidden md:block">
-        <NotificationCenter />
-      </div>
+      {/* Global Notification Bell — top-right of viewport (desktop only,
+          conditionally MOUNTED so the 30s poller never runs on mobile) */}
+      {isDesktopViewport && (
+        <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-overlay hidden md:block">
+          <NotificationCenter />
+        </div>
+      )}
 
       {/* Mobile Bottom Navigation removed May 2026 — replaced by the
           hamburger button that lives in every page's <LargeTitleHeader> /

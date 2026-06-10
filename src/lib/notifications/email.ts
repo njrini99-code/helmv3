@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 
@@ -35,12 +36,25 @@ async function getResendClient() {
  * Get user's notification preferences
  * Reads from users.notification_preferences JSONB column.
  * Falls back to defaults if preferences not set or column missing.
+ *
+ * SECURITY CONTRACT: `userId` MUST be server-sourced (derived from an
+ * authenticated session or a trusted DB lookup) — NEVER pass raw user input.
+ * This read uses the service-role client (it runs from background cron/notifier
+ * contexts where the cookie client throws), which BYPASSES RLS. A user-supplied
+ * `userId` would therefore be an IDOR. All current callers pass DB-derived ids.
  */
 export async function getUserNotificationPreferences(
   userId: string
 ): Promise<NotificationPreferences> {
   try {
-    const supabase = await createClient();
+    // Service-role client: this preference read runs from background contexts
+    // (the insight-notifier push hook, the cron roster sweep) where the
+    // cookie-based server client throws "cookies was called outside a request
+    // scope". That exception was being swallowed by the catch below and
+    // silently returning DEFAULTS — so a player who turned push OFF still
+    // received background insight pushes. The admin client reads the real row
+    // by id in any context.
+    const supabase = createAdminClient();
     // .maybeSingle() returns null (no error) when the user row does not exist.
     // The cron roster sweep can hand us stale or detached player_ids whose
     // backing `users` row was deleted; .single() would throw PGRST116
