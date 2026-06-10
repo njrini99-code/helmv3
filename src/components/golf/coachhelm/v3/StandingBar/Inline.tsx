@@ -43,7 +43,7 @@ export function Inline(props: StandingBarProps) {
   const cohortText = showTeam
     ? teamRelativeText(props.player_value, props.team_avg, props.direction)
     : '';
-  const refLabel = pgaReferenceLabel(props.metric_id).short;
+  const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
 
   const toneColor =
     delta.tone === 'good' ? 'text-primary-700' :
