@@ -90,10 +90,10 @@ export function ReminderPicker({
     <div className={cn('space-y-3', className)}>
       {/* Toggle */}
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm font-medium text-warm-700">
+        <span className="flex items-center gap-2 text-sm font-medium text-warm-700">
           <IconBell size={16} className="text-warm-500" />
           Set Reminder
-        </label>
+        </span>
         <IconButton variant="primary" aria-label="Set reminder"
           type="button"
           role="switch"
@@ -124,9 +124,9 @@ export function ReminderPicker({
       {isEnabled && dueDate && (
         <div className="space-y-3 pl-6 border-l-2 border-primary-100">
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-warm-600">
+            <p className="block text-xs font-medium text-warm-600">
               When to remind
-            </label>
+            </p>
             <div className="flex flex-wrap gap-2">
               {PRESETS.map((preset) => (
                 <Button variant="primary"
@@ -153,8 +153,9 @@ export function ReminderPicker({
           {selectedPreset === 'custom' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">Date</label>
+                <label htmlFor="rp-custom-date" className="block text-xs font-medium text-warm-600 mb-1">Date</label>
                 <input
+                  id="rp-custom-date"
                   type="date"
                   value={customDate}
                   onChange={(e) => handleCustomChange(e.target.value, customTime)}
@@ -163,8 +164,9 @@ export function ReminderPicker({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">Time</label>
+                <label htmlFor="rp-custom-time" className="block text-xs font-medium text-warm-600 mb-1">Time</label>
                 <input
+                  id="rp-custom-time"
                   type="time"
                   value={customTime}
                   onChange={(e) => handleCustomChange(customDate, e.target.value)}

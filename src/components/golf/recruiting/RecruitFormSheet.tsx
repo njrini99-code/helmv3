@@ -163,9 +163,9 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
         <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 space-y-5">
           {/* Status selector */}
           <div>
-            <label className="block text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-2">
+            <p className="block text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-2">
               Status
-            </label>
+            </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {RECRUIT_STATUSES.map((s) => {
                 const active = form.status === s.value;

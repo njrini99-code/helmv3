@@ -86,6 +86,7 @@ export const USStateMap = memo(function USStateMap({
   const singleSelectedLabel = singleSelectedState ? STATE_CODE_TO_NAME[singleSelectedState] : null;
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- mouse-only tooltip positioning, no interactive behavior
     <div className={cn('relative', className)} onMouseMove={handleMouseMove}>
       {/* Premium Selection Badge */}
       {selectedStates.length > 0 && (

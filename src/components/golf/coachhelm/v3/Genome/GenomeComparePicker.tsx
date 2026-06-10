@@ -56,7 +56,7 @@ export function GenomeComparePicker({
           No active roster — add players in roster settings.
         </p>
       ) : (
-        <ul role="list" className="space-y-1 max-h-72 overflow-y-auto pr-1">
+        <ul className="space-y-1 max-h-72 overflow-y-auto pr-1">
           {roster.map((p, i) => {
             const isSelected = p.id === selectedId;
             const isOther = p.id === otherId;

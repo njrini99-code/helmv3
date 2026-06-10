@@ -224,16 +224,28 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             </button>
           )}
           {rightIcon && !isPassword && (
-            <div
-              className={cn(
-                'absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-200',
-                isFocused ? 'text-warm-600' : 'text-warm-400',
-                onRightIconClick && 'cursor-pointer hover:text-warm-700'
-              )}
-              onClick={onRightIconClick}
-            >
-              {rightIcon}
-            </div>
+            onRightIconClick ? (
+              <button
+                type="button"
+                onClick={onRightIconClick}
+                className={cn(
+                  'absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-200',
+                  isFocused ? 'text-warm-600' : 'text-warm-400',
+                  'cursor-pointer hover:text-warm-700 bg-transparent border-0 p-0 flex items-center'
+                )}
+              >
+                {rightIcon}
+              </button>
+            ) : (
+              <div
+                className={cn(
+                  'absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-200',
+                  isFocused ? 'text-warm-600' : 'text-warm-400',
+                )}
+              >
+                {rightIcon}
+              </div>
+            )
           )}
         </div>
         {hint && !error && !success && (

@@ -147,10 +147,12 @@ export function EventDetailModal({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
         className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -237,9 +239,9 @@ export function EventDetailModal({
           {/* Description */}
           {event.description && (
             <div>
-              <label className={labelClass}>
+              <p className={labelClass}>
                 Notes
-              </label>
+              </p>
               <p className="text-sm text-warm-700 bg-warm-50 rounded-xl p-3">
                 {event.description}
               </p>
@@ -248,9 +250,9 @@ export function EventDetailModal({
 
           {/* Status */}
           <div>
-            <label className={labelClass}>
+            <p className={labelClass}>
               Status
-            </label>
+            </p>
             <div className="flex flex-wrap gap-2">
               {STATUS_OPTIONS.map((opt) => {
                 const OptIcon = opt.icon;
@@ -281,13 +283,13 @@ export function EventDetailModal({
                 <IconCheck size={16} className="text-primary-600" />
                 Mark as Completed
               </h4>
-              <textarea
+              {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
+              <textarea autoFocus
                 value={outcome}
                 onChange={(e) => setOutcome(e.target.value)}
                 placeholder="How did it go? Any notes?"
                 className={`${inputClass} resize-none min-h-[100px]`}
                 rows={3}
-                autoFocus
               />
               <div className="flex justify-end gap-3">
                 <Button variant="ghost"

@@ -218,6 +218,7 @@ export function PipelineView({
           const stageColors = getStageStatusColor(stage);
 
           return (
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag-and-drop zone; keyboard reordering not yet implemented
             <div
               key={stage.id}
               className="min-w-0 flex flex-col"

@@ -20,12 +20,16 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
 
     return (
       <label
+        htmlFor={checkboxId}
         className="flex items-start gap-3 cursor-pointer group min-h-[44px] py-2"
-        onMouseDown={() => setIsPressed(true)}
-        onMouseUp={() => setIsPressed(false)}
-        onMouseLeave={() => setIsPressed(false)}
       >
-        <div className="relative flex-shrink-0 mt-0.5">
+        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- presentational press-state tracker, no interactive behavior */}
+        <div
+          className="relative flex-shrink-0 mt-0.5"
+          onMouseDown={() => setIsPressed(true)}
+          onMouseUp={() => setIsPressed(false)}
+          onMouseLeave={() => setIsPressed(false)}
+        >
           <input
             ref={(el) => {
               if (el) {

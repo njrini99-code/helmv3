@@ -1051,6 +1051,7 @@ export function FairwayCoachHelmSignals({
   return (
     <CoachHelmShell
       active="signals"
+      // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={signalCount}
       title={title ?? 'Signals'}

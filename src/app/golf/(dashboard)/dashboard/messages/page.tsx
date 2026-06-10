@@ -660,6 +660,7 @@ function LegacyGolfMessagesPage() {
                                 onChange={(e) => setEditContent(e.target.value)}
                                 className="w-full bg-transparent text-sm text-warm-900 resize-none focus:outline-none min-w-[200px]"
                                 rows={Math.min(5, editContent.split('\n').length || 1)}
+                                // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: inline edit textarea needs focus when editing starts
                                 autoFocus
                               />
                               <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-primary-200">

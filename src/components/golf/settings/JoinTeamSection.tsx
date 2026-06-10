@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { createTeamJoinRequest, getPlayerJoinRequests, cancelJoinRequest } from '@/app/golf/actions/teams';
 import { createClient } from '@/lib/supabase/client';
@@ -32,6 +32,7 @@ interface PendingRequest {
 }
 
 export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps) {
+  const uid = useId();
   const router = useRouter();
   const supabase = createClient();
   const [inviteCode, setInviteCode] = useState('');
@@ -237,9 +238,9 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
           {/* Pending Requests */}
           {!loadingRequests && pendingRequests.length > 0 && (
             <div className="mb-6 space-y-3">
-              <label className="block text-sm font-medium text-warm-700">
+              <p className="block text-sm font-medium text-warm-700">
                 Pending Requests
-              </label>
+              </p>
               {pendingRequests.map((request) => (
                 <div
                   key={request.id}
@@ -303,11 +304,12 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
       {!currentTeam && (
         <form onSubmit={handleRequestJoin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor={`${uid}-invite-code`} className="block text-sm font-medium text-warm-700 mb-2">
               Request to Join a Team
             </label>
             <div className="space-y-3">
               <Input
+                id={`${uid}-invite-code`}
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
                 placeholder="Enter team code (e.g., ABC12345)"

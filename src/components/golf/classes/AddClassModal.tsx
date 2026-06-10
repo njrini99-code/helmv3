@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
@@ -148,6 +148,7 @@ function detectConflicts(
 }
 
 export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingClasses = [] }: AddClassModalProps) {
+  const uid = useId();
   const [loading, setLoading] = useState(false);
   const [conflicts, setConflicts] = useState<ClassConflict[]>([]);
   const [showConflictWarning, setShowConflictWarning] = useState(false);
@@ -282,10 +283,11 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Course Code & Name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-course-code`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 Course ID <span className="text-red-500">*</span>
               </label>
               <Input
+                id={`${uid}-course-code`}
                 value={formData.course_code}
                 onChange={(e) => setFormData(prev => ({ ...prev, course_code: e.target.value.toUpperCase() }))}
                 placeholder="BUAD 123"
@@ -293,10 +295,11 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-course-name`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 Course Name <span className="text-red-500">*</span>
               </label>
               <Input
+                id={`${uid}-course-name`}
                 value={formData.course_name}
                 onChange={(e) => setFormData(prev => ({ ...prev, course_name: e.target.value }))}
                 placeholder="Business Fundamentals"
@@ -307,9 +310,9 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
 
           {/* Days */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <p className="block text-sm font-medium text-warm-700 mb-2">
               Days
-            </label>
+            </p>
             <div className="flex items-center gap-2 mb-2">
               {DAYS.map(day => (
                 <Button variant="primary"
@@ -349,20 +352,22 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-start-time`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 Start Time
               </label>
               <Input
+                id={`${uid}-start-time`}
                 type="time"
                 value={formData.start_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-end-time`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 End Time
               </label>
               <Input
+                id={`${uid}-end-time`}
                 type="time"
                 value={formData.end_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
@@ -373,20 +378,22 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Location */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-building`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 Building
               </label>
               <Input
+                id={`${uid}-building`}
                 value={formData.building}
                 onChange={(e) => setFormData(prev => ({ ...prev, building: e.target.value }))}
                 placeholder="HAL"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-room`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 Room
               </label>
               <Input
+                id={`${uid}-room`}
                 value={formData.room}
                 onChange={(e) => setFormData(prev => ({ ...prev, room: e.target.value }))}
                 placeholder="101"
@@ -397,28 +404,30 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Instructor & Credits */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-professor`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 Professor
               </label>
               <Input
+                id={`${uid}-professor`}
                 value={formData.instructor}
                 onChange={(e) => setFormData(prev => ({ ...prev, instructor: e.target.value }))}
                 placeholder="Dr. Smith (optional)"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-credits`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 Credits
               </label>
               <Input
+                id={`${uid}-credits`}
                 type="number"
                 min="0"
                 max="6"
                 step="0.5"
                 value={formData.credits || ''}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  credits: e.target.value ? parseFloat(e.target.value) : null 
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  credits: e.target.value ? parseFloat(e.target.value) : null
                 }))}
                 placeholder="3"
               />
@@ -428,10 +437,11 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Semester & Color */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-semester`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 Semester
               </label>
               <select
+                id={`${uid}-semester`}
                 value={formData.semester}
                 onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
                 aria-label="Semester"
@@ -444,11 +454,12 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-color`} className="block text-sm font-medium text-warm-700 mb-1.5">
                 Color
               </label>
               <div className="flex items-center gap-2">
                 <input
+                  id={`${uid}-color`}
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
@@ -461,10 +472,11 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">
+            <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-warm-700 mb-1.5">
               Notes
             </label>
             <textarea
+              id={`${uid}-notes`}
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Any additional notes... (optional)"

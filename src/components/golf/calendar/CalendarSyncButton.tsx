@@ -242,9 +242,9 @@ export function CalendarSyncButton({
               <>
                 {/* Copy URL */}
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-2">
+                  <p className="block text-sm font-medium text-warm-700 mb-2">
                     Calendar Feed URL
-                  </label>
+                  </p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 min-w-0 px-3 py-2.5 rounded-lg bg-warm-50 border border-warm-200">
                       <code className="text-xs text-warm-600 truncate block font-mono">

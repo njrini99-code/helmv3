@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Division, ProgramType } from '../crm-config';
@@ -27,6 +27,7 @@ const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py
 const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
 
 export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
+  const uid = useId();
   const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'done'>('upload');
   const [csvText, setCsvText] = useState('');
   const [parsedData, setParsedData] = useState<ParsedCoach[]>([]);
@@ -275,8 +276,9 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
           {step === 'upload' && (
             <div className="space-y-6">
               <div>
-                <label className={labelClass}>Division</label>
+                <label htmlFor={`${uid}-division`} className={labelClass}>Division</label>
                 <select
+                  id={`${uid}-division`}
                   value={division}
                   onChange={(e) => setDivision(e.target.value as Division)}
                   className={`${inputClass} bg-white/60`}
@@ -287,8 +289,9 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               </div>
 
               <div>
-                <label className={labelClass}>Upload CSV File</label>
+                <label htmlFor={`${uid}-csv-file`} className={labelClass}>Upload CSV File</label>
                 <input
+                  id={`${uid}-csv-file`}
                   type="file"
                   accept=".csv"
                   onChange={handleFileUpload}
@@ -297,8 +300,9 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               </div>
 
               <div>
-                <label className={labelClass}>Or Paste CSV Data</label>
+                <label htmlFor={`${uid}-csv-text`} className={labelClass}>Or Paste CSV Data</label>
                 <textarea
+                  id={`${uid}-csv-text`}
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
                   placeholder="Conference,School,Coach Name,Title,Email,Program"

@@ -147,8 +147,11 @@ export function PlayerCard({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       className="bg-white rounded-xl border border-warm-200 p-4 shadow-sm hover:shadow-md hover:border-warm-300 active:scale-[0.98] transition-all duration-200 cursor-pointer"
       onClick={handleCardClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(); } }}
     >
       {/* Player header with avatar + name */}
       <div className="flex items-start justify-between gap-3 mb-3">

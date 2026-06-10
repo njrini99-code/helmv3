@@ -407,8 +407,10 @@ export default function TeamsPage() {
       {/* Create Team Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
+          <button
+            type="button"
+            aria-label="Close modal"
+            className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm w-full h-full border-0 cursor-default"
             onClick={() => setShowCreateModal(false)}
           />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
@@ -424,10 +426,11 @@ export default function TeamsPage() {
                 required
               />
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                <label htmlFor="team-description" className="block text-sm font-medium text-warm-700 mb-1.5">
                   Description
                 </label>
                 <textarea
+                  id="team-description"
                   placeholder="Brief description of your team..."
                   value={newTeam.description}
                   onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
@@ -437,11 +440,12 @@ export default function TeamsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label htmlFor="team-primary-color" className="block text-sm font-medium text-warm-700 mb-1.5">
                     Primary Color
                   </label>
                   <div className="flex items-center gap-2">
                     <input
+                      id="team-primary-color"
                       type="color"
                       value={newTeam.primary_color}
                       onChange={(e) => setNewTeam({ ...newTeam, primary_color: e.target.value })}
@@ -455,11 +459,12 @@ export default function TeamsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label htmlFor="team-secondary-color" className="block text-sm font-medium text-warm-700 mb-1.5">
                     Secondary Color
                   </label>
                   <div className="flex items-center gap-2">
                     <input
+                      id="team-secondary-color"
                       type="color"
                       value={newTeam.secondary_color}
                       onChange={(e) => setNewTeam({ ...newTeam, secondary_color: e.target.value })}

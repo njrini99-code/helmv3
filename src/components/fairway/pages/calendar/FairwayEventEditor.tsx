@@ -529,6 +529,7 @@ export function FairwayEventEditor({
                 variant={pendingScopeAction === 'delete' && scope !== 'this' ? 'danger' : 'secondary'}
                 className="h-auto w-full flex-col items-start gap-0.5 py-2.5 text-left"
                 disabled={isSaving}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus={scope === 'this'}
                 onClick={() => submitWithScope(scope)}
               >

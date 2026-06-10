@@ -297,7 +297,7 @@ function NotificationGroup({
           {label}
         </p>
       </div>
-      <ul role="list" className="divide-y divide-warm-100">
+      <ul className="divide-y divide-warm-100">
         <AnimatePresence initial={false}>
           {items.map((notification) => (
             <NotificationRow

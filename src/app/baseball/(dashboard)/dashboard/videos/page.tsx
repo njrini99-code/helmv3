@@ -599,8 +599,9 @@ function VideoCard({
     <Card variant="glass" className="hover:shadow-lg hover:scale-[1.005] transition-all duration-200">
       <CardContent className="p-3 sm:p-4">
         {/* Video player with click to view modal */}
-        <div 
-          className="relative cursor-pointer group"
+        <button
+          type="button"
+          className="relative cursor-pointer group w-full text-left appearance-none bg-transparent border-0 p-0"
           onClick={onView}
         >
           {video.url && (
@@ -630,8 +631,8 @@ function VideoCard({
               {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
             </div>
           )}
-        </div>
-        
+        </button>
+
         <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
           {/* Show player info for coach view or team videos */}
           {(isCoach || showPlayer) && video.player && (

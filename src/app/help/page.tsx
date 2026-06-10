@@ -233,13 +233,13 @@ export default function HelpPage() {
               <Mail size={20} />
               Email Support
             </a>
-            <a
-              href="#"
+            <button
+              type="button"
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-500 transition-colors"
             >
               <MessageCircle size={20} />
               Live Chat
-            </a>
+            </button>
           </div>
         </div>
       </main>

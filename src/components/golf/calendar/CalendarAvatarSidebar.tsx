@@ -266,7 +266,7 @@ export function CalendarAvatarSidebar({
               · {selectedPlayers.length}
             </span>
           </div>
-          <ul className="flex flex-col gap-1" role="list">
+          <ul className="flex flex-col gap-1">
             {selectedPlayers.map((player, index) => {
               const color = PLAYER_COLORS[index % PLAYER_COLORS.length]!;
               return (

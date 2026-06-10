@@ -658,6 +658,7 @@ export function FairwayPlayerInsight({
             <div className="mt-3">
               <ThemesPanel
                 themes={themes}
+                // eslint-disable-next-line jsx-a11y/aria-role
                 role="coach"
                 onMakePlan={handleMakePlan}
                 makePlanPendingId={makePlanPendingId}

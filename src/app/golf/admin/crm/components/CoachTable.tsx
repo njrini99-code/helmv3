@@ -199,6 +199,7 @@ const CoachTableRow = React.memo(
               <IconChevronDown size={12} className="opacity-50" />
             </Button>
             {isStatusOpen && (
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents row click from closing dropdown
               <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
                 {ALL_STATUSES.map(status => (
                   <Button variant="primary"
@@ -281,6 +282,7 @@ const CoachTableRow = React.memo(
               <IconMoreHorizontal size={16} />
             </IconButton>
             {isActionOpen && (
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents row click from closing action menu
               <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
                 <Button variant="ghost"
                   onClick={() => { onLogContact(coach); onOpenAction(null); }}
@@ -426,9 +428,10 @@ const CoachTableCard = React.memo(
     const handleStar = () => onToggleStar(coach.id, coach.is_starred);
 
     return (
-      <div
+      <button
+        type="button"
         className={cn(
-          'cursor-pointer group transition-colors duration-150 px-4 py-3.5',
+          'cursor-pointer group transition-colors duration-150 px-4 py-3.5 w-full text-left',
           isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-500',
           !isSelected && isFocused && 'bg-white/60',
           !isSelected && !isFocused && 'hover:bg-white/60',
@@ -437,6 +440,7 @@ const CoachTableCard = React.memo(
       >
         {/* Top row: checkbox + name/title + star + action menu */}
         <div className="flex items-start gap-3">
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click when interacting with checkbox */}
           <div className="pt-0.5" onClick={e => e.stopPropagation()}>
             <input
               type="checkbox"
@@ -452,6 +456,7 @@ const CoachTableCard = React.memo(
             <p className="text-sm text-warm-800 truncate mt-0.5">{coach.school}</p>
           </div>
 
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click when interacting with action buttons */}
           <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
             {/* Star */}
             <IconButton variant="default" aria-label="Favorite"
@@ -470,6 +475,7 @@ const CoachTableCard = React.memo(
                 <IconMoreHorizontal size={16} />
               </IconButton>
               {isActionOpen && (
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click from closing action menu
                 <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
                   <Button variant="ghost"
                     onClick={() => { onLogContact(coach); onOpenAction(null); }}
@@ -549,6 +555,7 @@ const CoachTableCard = React.memo(
         </div>
 
         {/* Meta chips: division + conference + engagement + status dropdown + email + priority */}
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click while interacting with meta chips/dropdowns */}
         <div className="mt-3 flex flex-wrap items-center gap-2 pl-7" onClick={e => e.stopPropagation()}>
           {/* Division */}
           <span className={cn(
@@ -581,6 +588,7 @@ const CoachTableCard = React.memo(
               <IconChevronDown size={12} className="opacity-50" />
             </Button>
             {isStatusOpen && (
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click from closing status dropdown
               <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
                 {ALL_STATUSES.map(status => (
                   <Button variant="primary"
@@ -636,7 +644,7 @@ const CoachTableCard = React.memo(
             </div>
           )}
         </div>
-      </div>
+      </button>
     );
   },
   (prev, next) => {

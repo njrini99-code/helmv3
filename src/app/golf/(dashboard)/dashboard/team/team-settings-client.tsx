@@ -139,9 +139,9 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
 
         <div className="surface-matte rounded-2xl p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <p className="block text-sm font-medium text-warm-700 mb-2">
               Team Name
-            </label>
+            </p>
             <Input
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
@@ -151,9 +151,9 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <p className="block text-sm font-medium text-warm-700 mb-2">
               Season
-            </label>
+            </p>
             <Input
               value={season}
               onChange={(e) => setSeason(e.target.value)}
@@ -206,9 +206,9 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
         <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Team Information</h2>
 
         <div>
-          <label className="block text-sm font-medium text-warm-700 mb-2">
+          <p className="block text-sm font-medium text-warm-700 mb-2">
             Team Name
-          </label>
+          </p>
           <Input
             value={teamName}
             onChange={(e) => setTeamName(e.target.value)}
@@ -218,9 +218,9 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-warm-700 mb-2">
+          <p className="block text-sm font-medium text-warm-700 mb-2">
             Season
-          </label>
+          </p>
           <Input
             value={season}
             onChange={(e) => setSeason(e.target.value)}

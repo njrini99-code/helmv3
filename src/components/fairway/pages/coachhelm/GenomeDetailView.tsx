@@ -222,6 +222,7 @@ export function GenomeDetailView({
   return (
     <CoachHelmShell
       active="players"
+      // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={signalCount}
       title={playerName}
@@ -305,6 +306,7 @@ export function GenomeDetailView({
                     <FocusAreaCard
                       key={fa.id}
                       focusArea={fa}
+                      // eslint-disable-next-line jsx-a11y/aria-role
                       role="coach"
                       index={i}
                       onRecordOutcome={handleRecordOutcome}

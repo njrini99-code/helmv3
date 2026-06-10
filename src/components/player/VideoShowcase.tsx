@@ -262,6 +262,7 @@ function VideoModal({ video, onClose }: VideoModalProps) {
           {video?.url ? (
             <iframe
               src={video.url}
+              title={video.title ?? 'Player video'}
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [expiresIn, setExpiresIn] = useState<number>(30); // days
+  const uid = useId();
 
   async function generateInviteLink() {
     setGenerating(true);
@@ -106,10 +107,11 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
               </p>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-warm-700 mb-2">
+                <label htmlFor={`${uid}-expires`} className="block text-sm font-medium text-warm-700 mb-2">
                   Link expires in (days)
                 </label>
                 <Input
+                  id={`${uid}-expires`}
                   type="number"
                   min="1"
                   max="365"
@@ -149,11 +151,12 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-warm-700 mb-2">
+                <label htmlFor={`${uid}-link`} className="block text-sm font-medium text-warm-700 mb-2">
                   Invite Link
                 </label>
                 <div className="flex items-center gap-2">
                   <Input
+                    id={`${uid}-link`}
                     type="text"
                     value={`${window.location.origin}/join/${inviteCode}`}
                     readOnly

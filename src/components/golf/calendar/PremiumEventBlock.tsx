@@ -55,11 +55,12 @@ export function PremiumEventBlock({
   const hasRSVP = event.requires_rsvp && (event.rsvp_total_count ?? 0) > 0;
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
       className={cn(
         // Base glass styles
-        'relative pl-2.5 pr-2 cursor-pointer',
+        'relative pl-2.5 pr-2 cursor-pointer text-left w-full',
         'border-l-[3px] rounded-lg',
         // Glass treatment
         'backdrop-blur-sm',
@@ -143,7 +144,7 @@ export function PremiumEventBlock({
           <EventStatusBadge status={event.status} compact={compact} />
         </div>
       )}
-    </div>
+    </button>
   );
 }
 

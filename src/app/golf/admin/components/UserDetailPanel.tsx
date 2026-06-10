@@ -85,7 +85,12 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
+      <button
+        type="button"
+        aria-label="Close panel"
+        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       {/* Panel */}
       <div className={cn(

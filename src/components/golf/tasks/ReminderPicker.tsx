@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { cn } from '@/lib/utils';
 import { REMINDER_PRESETS, ReminderType, ReminderPreset } from '@/lib/types/golf';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -23,6 +23,7 @@ export function ReminderPicker({
   disabled = false,
   className,
 }: ReminderPickerProps) {
+  const uid = useId();
   const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [customDate, setCustomDate] = useState('');
   const [customTime, setCustomTime] = useState('09:00');
@@ -125,7 +126,7 @@ export function ReminderPicker({
     <div className={cn('space-y-3', className)}>
       {/* Toggle */}
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm font-medium text-warm-700">
+        <p className="flex items-center gap-2 text-sm font-medium text-warm-700">
           <svg
             width="16"
             height="16"
@@ -141,7 +142,7 @@ export function ReminderPicker({
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
           Set Reminder
-        </label>
+        </p>
         <IconButton variant="primary"
           type="button"
           role="switch"
@@ -174,9 +175,9 @@ export function ReminderPicker({
         <div className="space-y-3 pl-6 border-l-2 border-primary-100">
           {/* Preset options */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-warm-600">
+            <p className="block text-xs font-medium text-warm-600">
               When to remind
-            </label>
+            </p>
             <div className="flex flex-wrap gap-2">
               {REMINDER_PRESETS.map((preset) => (
                 <Button variant="primary"
@@ -203,10 +204,11 @@ export function ReminderPicker({
           {selectedPreset === 'custom' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">
+                <label htmlFor={`${uid}-custom-date`} className="block text-xs font-medium text-warm-600 mb-1">
                   Date
                 </label>
                 <input
+                  id={`${uid}-custom-date`}
                   type="date"
                   value={customDate}
                   onChange={(e) => handleCustomChange(e.target.value, customTime)}
@@ -215,10 +217,11 @@ export function ReminderPicker({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">
+                <label htmlFor={`${uid}-custom-time`} className="block text-xs font-medium text-warm-600 mb-1">
                   Time
                 </label>
                 <input
+                  id={`${uid}-custom-time`}
                   type="time"
                   value={customTime}
                   onChange={(e) => handleCustomChange(customDate, e.target.value)}
@@ -231,9 +234,9 @@ export function ReminderPicker({
 
           {/* Notification type */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-warm-600">
+            <p className="block text-xs font-medium text-warm-600">
               How to notify
-            </label>
+            </p>
             <div className="flex flex-wrap gap-2">
               {[
                 { value: 'in_app', label: 'In-app', icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },

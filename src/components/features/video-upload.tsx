@@ -175,10 +175,13 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
       <CardContent className="space-y-4">
         {!file ? (
           <div
+            role="button"
+            tabIndex={0}
             onClick={() => fileInputRef.current?.click()}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
             className={cn(
               'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all',
               dragOver ? 'border-brand-500 bg-brand-50' : 'border-border hover:border-brand-400 hover:bg-cream-50 active:bg-cream-100'
@@ -203,6 +206,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
           <div className="space-y-4">
             {preview && (
               <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption -- user-uploaded preview, no captions available */}
                 <video src={preview} controls className="w-full h-full" />
                 <IconButton variant="default" aria-label="Close" onClick={clearFile} className="absolute top-3 right-3 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors">
                   <IconX size={16} />
@@ -230,8 +234,9 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
               placeholder="Add context about this video - date, event, what to look for..."
               rows={3}
             />
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-cream-50 active:bg-cream-100 transition-colors">
+            <label htmlFor="vu-is-primary" aria-label="Set as primary video" className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-cream-50 active:bg-cream-100 transition-colors">
               <input
+                id="vu-is-primary"
                 type="checkbox"
                 checked={form.is_primary}
                 onChange={(e) => setForm(f => ({ ...f, is_primary: e.target.checked }))}

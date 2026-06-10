@@ -244,6 +244,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
     <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
       {/* Video Preview */}
       <div className="relative bg-black aspect-video">
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption -- user-uploaded video, no captions available */}
         <video
           ref={videoRef}
           src={video.url ?? undefined}
@@ -284,6 +285,12 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
         {/* Timeline Track */}
         <div
           ref={timelineRef}
+          role="slider"
+          aria-label="Video timeline"
+          aria-valuenow={Math.round(currentPercent)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          tabIndex={0}
           className="relative h-12 bg-warm-200 rounded-lg cursor-pointer"
           onClick={(e) => {
             if (!timelineRef.current || !duration) return;
@@ -294,6 +301,12 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
               videoRef.current.currentTime = time;
               setCurrentTime(time);
             }
+          }}
+          onKeyDown={(e) => {
+            if (!duration || !videoRef.current) return;
+            const step = duration * 0.01;
+            if (e.key === 'ArrowLeft') { const t = Math.max(0, currentTime - step); videoRef.current.currentTime = t; setCurrentTime(t); }
+            if (e.key === 'ArrowRight') { const t = Math.min(duration, currentTime + step); videoRef.current.currentTime = t; setCurrentTime(t); }
           }}
         >
           {/* Selected Range */}
@@ -306,6 +319,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
           />
 
           {/* Start Handle */}
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag handle, pointer-only interaction */}
           <div
             className={cn(
               'absolute top-0 bottom-0 w-3 cursor-ew-resize transition-colors',
@@ -321,6 +335,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
           </div>
 
           {/* End Handle */}
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag handle, pointer-only interaction */}
           <div
             className={cn(
               'absolute top-0 bottom-0 w-3 cursor-ew-resize transition-colors',

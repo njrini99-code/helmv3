@@ -257,11 +257,12 @@ export function CalendarView({
                 const isCurrentDay = isToday(date);
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={date.toISOString()}
                     onClick={() => onSlotClick?.(date)}
                     className={cn(
-                      'border-r border-warm-100/30 last:border-r-0 p-1.5 cursor-pointer transition-colors',
+                      'text-left border-r border-warm-100/30 last:border-r-0 p-1.5 cursor-pointer transition-colors',
                       !isCurrentMonth && 'bg-warm-50/20',
                       isCurrentMonth && 'hover:bg-warm-50/40',
                       isCurrentDay && 'bg-primary-50/30'
@@ -280,13 +281,14 @@ export function CalendarView({
                       {dayEvents.slice(0, 3).map((event) => {
                         const config = EVENT_TYPE_CONFIG[event.event_type];
                         return (
-                          <div
+                          <button
+                            type="button"
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); onEventClick?.(event); }}
                             onMouseEnter={() => setHoveredEvent(event.id)}
                             onMouseLeave={() => setHoveredEvent(null)}
                             className={cn(
-                              'flex items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-lg truncate cursor-pointer transition-all font-medium',
+                              'flex items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-lg truncate cursor-pointer transition-all font-medium w-full text-left',
                               config.pillBg,
                               config.pillText,
                               hoveredEvent === event.id && 'ring-1 ring-offset-1 ring-warm-300 shadow-sm'
@@ -294,7 +296,7 @@ export function CalendarView({
                           >
                             <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', config.dotColor)} />
                             <span className="truncate">{event.title}</span>
-                          </div>
+                          </button>
                         );
                       })}
                       {dayEvents.length > 3 && (
@@ -303,7 +305,7 @@ export function CalendarView({
                         </div>
                       )}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -374,9 +376,10 @@ export function CalendarView({
                   className="flex-1 border-l border-warm-100/30 relative"
                 >
                   {hours.map((hour) => (
-                    <div
+                    <button
+                      type="button"
                       key={hour}
-                      className="h-16 border-b border-warm-100/30 hover:bg-warm-50/30 cursor-pointer transition-colors"
+                      className="h-16 w-full border-b border-warm-100/30 hover:bg-warm-50/30 cursor-pointer transition-colors"
                       onClick={() => onSlotClick?.(setHours(setMinutes(date, 0), hour))}
                     />
                   ))}
@@ -395,13 +398,14 @@ export function CalendarView({
                     const config = EVENT_TYPE_CONFIG[event.event_type];
                     
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={event.id}
                         onClick={(e) => { e.stopPropagation(); onEventClick?.(event); }}
                         onMouseEnter={() => setHoveredEvent(event.id)}
                         onMouseLeave={() => setHoveredEvent(null)}
                         className={cn(
-                          'absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer transition-all overflow-hidden',
+                          'absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer transition-all overflow-hidden text-left',
                           'border-l-[3px]',
                           config.softBg,
                           config.borderColor,
@@ -423,7 +427,7 @@ export function CalendarView({
                             {event.coach_name}
                           </div>
                         )}
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -474,9 +478,10 @@ export function CalendarView({
             {/* Event Column */}
             <div className="flex-1 border-l border-warm-100/30 relative">
               {hours.map((hour) => (
-                <div
+                <button
+                  type="button"
                   key={hour}
-                  className="h-20 border-b border-warm-100/30 hover:bg-warm-50/30 cursor-pointer transition-colors"
+                  className="h-20 w-full border-b border-warm-100/30 hover:bg-warm-50/30 cursor-pointer transition-colors"
                   onClick={() => onSlotClick?.(setHours(setMinutes(currentDate, 0), hour))}
                 />
               ))}
@@ -488,20 +493,21 @@ export function CalendarView({
                 const startHour = startTime.getHours();
                 const startMinute = startTime.getMinutes();
                 const duration = differenceInMinutes(endTime, startTime);
-                
+
                 const top = ((startHour - 7) * 80) + ((startMinute / 60) * 80);
                 const height = Math.max((duration / 60) * 80, 40);
-                
+
                 const config = EVENT_TYPE_CONFIG[event.event_type];
-                
+
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={event.id}
                     onClick={(e) => { e.stopPropagation(); onEventClick?.(event); }}
                     onMouseEnter={() => setHoveredEvent(event.id)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     className={cn(
-                      'absolute left-2 right-4 rounded-xl px-4 py-2.5 cursor-pointer transition-all',
+                      'absolute left-2 right-4 rounded-xl px-4 py-2.5 cursor-pointer transition-all text-left',
                       'border-l-[3px]',
                       config.softBg,
                       config.borderColor,
@@ -529,7 +535,7 @@ export function CalendarView({
                         {event.location}
                       </div>
                     )}
-                  </div>
+                  </button>
                 );
               })}
             </div>

@@ -207,9 +207,9 @@ export function PromoteToFocusAreaButton({
           >
           {/* Read-only area-type chip */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">
+            <p className="block text-sm font-medium text-warm-700 mb-1.5">
               Area
-            </label>
+            </p>
             <span
               className={cn(
                 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full',
@@ -229,6 +229,7 @@ export function PromoteToFocusAreaButton({
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Tighten lag putts from 20-30 ft"
             required
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             maxLength={120}
           />

@@ -302,8 +302,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">First Name *</label>
+                  <label htmlFor="cpe-first-name" className="block text-sm font-medium text-warm-700 mb-1.5">First Name *</label>
                   <input
+                    id="cpe-first-name"
                     type="text"
                     value={formData.first_name || ''}
                     onChange={(e) => handleInputChange('first_name', e.target.value)}
@@ -313,8 +314,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Last Name *</label>
+                  <label htmlFor="cpe-last-name" className="block text-sm font-medium text-warm-700 mb-1.5">Last Name *</label>
                   <input
+                    id="cpe-last-name"
                     type="text"
                     value={formData.last_name || ''}
                     onChange={(e) => handleInputChange('last_name', e.target.value)}
@@ -326,13 +328,14 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label htmlFor="cpe-city" className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
                       <IconMapPin size={14} className="text-warm-400" />
                       City
                     </span>
                   </label>
                   <input
+                    id="cpe-city"
                     type="text"
                     value={formData.city || ''}
                     onChange={(e) => handleInputChange('city', e.target.value)}
@@ -341,8 +344,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">State *</label>
+                  <label htmlFor="cpe-state" className="block text-sm font-medium text-warm-700 mb-1.5">State *</label>
                   <select
+                    id="cpe-state"
                     value={formData.state || ''}
                     onChange={(e) => handleInputChange('state', e.target.value)}
                     className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
@@ -357,8 +361,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1.5">About Me</label>
+                <label htmlFor="cpe-about-me" className="block text-sm font-medium text-warm-700 mb-1.5">About Me</label>
                 <textarea
+                  id="cpe-about-me"
                   value={formData.about_me || ''}
                   onChange={(e) => handleInputChange('about_me', e.target.value)}
                   rows={4}
@@ -379,8 +384,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Primary Position *</label>
+                  <label htmlFor="cpe-primary-pos" className="block text-sm font-medium text-warm-700 mb-1.5">Primary Position *</label>
                   <select
+                    id="cpe-primary-pos"
                     value={formData.primary_position || ''}
                     onChange={(e) => handleInputChange('primary_position', e.target.value)}
                     className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
@@ -394,8 +400,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Secondary Position</label>
+                  <label htmlFor="cpe-secondary-pos" className="block text-sm font-medium text-warm-700 mb-1.5">Secondary Position</label>
                   <select
+                    id="cpe-secondary-pos"
                     value={formData.secondary_position || ''}
                     onChange={(e) => handleInputChange('secondary_position', e.target.value)}
                     className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
@@ -410,8 +417,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Bats</label>
+                  <label htmlFor="cpe-bats" className="block text-sm font-medium text-warm-700 mb-1.5">Bats</label>
                   <select
+                    id="cpe-bats"
                     value={formData.bats || ''}
                     onChange={(e) => handleInputChange('bats', e.target.value)}
                     className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
@@ -424,8 +432,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Throws</label>
+                  <label htmlFor="cpe-throws" className="block text-sm font-medium text-warm-700 mb-1.5">Throws</label>
                   <select
+                    id="cpe-throws"
                     value={formData.throws || ''}
                     onChange={(e) => handleInputChange('throws', e.target.value)}
                     className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
@@ -437,9 +446,10 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Height</label>
+                  <label htmlFor="cpe-height-ft" className="block text-sm font-medium text-warm-700 mb-1.5">Height</label>
                   <div className="flex gap-1.5">
                     <input
+                      id="cpe-height-ft"
                       type="number"
                       placeholder="Ft"
                       min="4"
@@ -449,6 +459,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       className="w-1/2 px-2 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 text-center"
                     />
                     <input
+                      aria-label="Height inches"
                       type="number"
                       placeholder="In"
                       min="0"
@@ -461,9 +472,10 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Weight</label>
+                  <label htmlFor="cpe-weight" className="block text-sm font-medium text-warm-700 mb-1.5">Weight</label>
                   <div className="relative">
                     <input
+                      id="cpe-weight"
                       type="number"
                       value={formData.weight_lbs || ''}
                       onChange={(e) => handleInputChange('weight_lbs', e.target.value ? parseInt(e.target.value) : null)}
@@ -479,9 +491,10 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 <h4 className="text-sm font-semibold text-warm-700 mb-3">Performance Metrics</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1.5">Pitch Velo</label>
+                    <label htmlFor="cpe-pitch-velo" className="block text-sm font-medium text-warm-700 mb-1.5">Pitch Velo</label>
                     <div className="relative">
                       <input
+                        id="cpe-pitch-velo"
                         type="number"
                         value={formData.pitch_velo || ''}
                         onChange={(e) => handleInputChange('pitch_velo', e.target.value ? parseInt(e.target.value) : null)}
@@ -493,9 +506,10 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1.5">Exit Velo</label>
+                    <label htmlFor="cpe-exit-velo" className="block text-sm font-medium text-warm-700 mb-1.5">Exit Velo</label>
                     <div className="relative">
                       <input
+                        id="cpe-exit-velo"
                         type="number"
                         value={formData.exit_velo || ''}
                         onChange={(e) => handleInputChange('exit_velo', e.target.value ? parseInt(e.target.value) : null)}
@@ -507,9 +521,10 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1.5">60-Yard</label>
+                    <label htmlFor="cpe-sixty-time" className="block text-sm font-medium text-warm-700 mb-1.5">60-Yard</label>
                     <div className="relative">
                       <input
+                        id="cpe-sixty-time"
                         type="number"
                         step="0.01"
                         value={formData.sixty_time || ''}
@@ -522,9 +537,10 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1.5">Pop Time</label>
+                    <label htmlFor="cpe-pop-time" className="block text-sm font-medium text-warm-700 mb-1.5">Pop Time</label>
                     <div className="relative">
                       <input
+                        id="cpe-pop-time"
                         type="number"
                         step="0.01"
                         value={formData.pop_time || ''}
@@ -549,8 +565,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">GPA</label>
+                  <label htmlFor="cpe-gpa" className="block text-sm font-medium text-warm-700 mb-1.5">GPA</label>
                   <input
+                    id="cpe-gpa"
                     type="number"
                     step="0.01"
                     min="0"
@@ -564,8 +581,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Graduation Year</label>
+                  <label htmlFor="cpe-grad-year" className="block text-sm font-medium text-warm-700 mb-1.5">Graduation Year</label>
                   <input
+                    id="cpe-grad-year"
                     type="number"
                     value={formData.grad_year || ''}
                     onChange={(e) => handleInputChange('grad_year', e.target.value ? parseInt(e.target.value) : null)}
@@ -601,13 +619,14 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label htmlFor="cpe-email" className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
                       <IconMail size={14} className="text-warm-400" />
                       Email *
                     </span>
                   </label>
                   <input
+                    id="cpe-email"
                     type="email"
                     value={formData.email || ''}
                     onChange={(e) => handleInputChange('email', e.target.value)}
@@ -617,13 +636,14 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label htmlFor="cpe-phone" className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
                       <IconPhone size={14} className="text-warm-400" />
                       Phone
                     </span>
                   </label>
                   <input
+                    id="cpe-phone"
                     type="tel"
                     value={formData.phone || ''}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
@@ -635,7 +655,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label htmlFor="cpe-twitter" className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
                       <IconTwitter size={14} className="text-warm-400" />
                       Twitter
@@ -644,6 +664,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   <div className="flex items-center">
                     <span className="px-3 py-2.5 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-500 text-sm">@</span>
                     <input
+                      id="cpe-twitter"
                       type="text"
                       value={formData.twitter || ''}
                       onChange={(e) => handleInputChange('twitter', e.target.value)}
@@ -654,7 +675,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label htmlFor="cpe-instagram" className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
                       <IconInstagram size={14} className="text-warm-400" />
                       Instagram
@@ -663,6 +684,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   <div className="flex items-center">
                     <span className="px-3 py-2.5 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-500 text-sm">@</span>
                     <input
+                      id="cpe-instagram"
                       type="text"
                       value={formData.instagram || ''}
                       onChange={(e) => handleInputChange('instagram', e.target.value)}

@@ -217,9 +217,9 @@ function LogProgressDrawer({
           style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
         >
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">
+            <p className="block text-sm font-medium text-warm-700 mb-1.5">
               Current value
-            </label>
+            </p>
             <div className="px-3 py-2.5 rounded-lg bg-warm-50 border border-warm-200 text-warm-700">
               {currentValue ?? '—'}
               {targetValue != null && (
@@ -240,6 +240,7 @@ function LogProgressDrawer({
             onChange={(e) => setNewValue(e.target.value)}
             placeholder="Enter your latest measurement"
             required
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
           />
 
@@ -338,6 +339,7 @@ export function FairwayMyDevelopment({
       <div className="mx-auto w-full max-w-[760px] px-4 py-2 md:px-6">
         <CoachHelmShell
           active="players"
+          // eslint-disable-next-line jsx-a11y/aria-role
           role="player"
           eyebrow="My Development"
           title="Your focus areas"
@@ -371,6 +373,7 @@ export function FairwayMyDevelopment({
                     INDEPENDENT of the focus-area count. GoalsSection owns its own
                     0-goal / 0-suggestion honest-empty states internally. ── */}
               <GoalsSection
+                // eslint-disable-next-line jsx-a11y/aria-role
                 role="player"
                 canCreate
                 activeGoals={goals ?? []}
@@ -427,6 +430,7 @@ export function FairwayMyDevelopment({
                             <FocusAreaCard
                               key={fa.id}
                               focusArea={fa}
+                              // eslint-disable-next-line jsx-a11y/aria-role
                               role="player"
                               index={i}
                               onLogProgress={handleLogProgress}
@@ -456,6 +460,7 @@ export function FairwayMyDevelopment({
                           <FocusAreaCard
                             key={fa.id}
                             focusArea={fa}
+                            // eslint-disable-next-line jsx-a11y/aria-role
                             role="player"
                             index={i}
                           />

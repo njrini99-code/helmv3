@@ -204,6 +204,7 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your new password"
                   required
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on a single-field auth page
                   autoFocus
                   autoComplete="new-password"
                   autoCapitalize="none"

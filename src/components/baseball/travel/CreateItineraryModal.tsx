@@ -191,8 +191,9 @@ export function CreateItineraryModal({
         />
 
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-1">Notes</label>
+          <label htmlFor="cim-notes" className="text-sm font-medium text-warm-700 block mb-1">Notes</label>
           <textarea
+            id="cim-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional trip details, packing list, dress code..."

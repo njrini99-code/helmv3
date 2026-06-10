@@ -500,6 +500,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
   return (
     <div
+      role="region"
+      aria-label="Documents"
       className="min-h-full bg-transparent"
       onDragOver={isCoach ? handleDragOver : undefined}
       onDragLeave={isCoach ? handleDragLeave : undefined}
@@ -610,8 +612,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 </IconButton>
               </div>
               <div className="px-6 py-5">
-                <label className="block text-xs font-medium text-warm-600 mb-1.5">Folder Name</label>
+                <label htmlFor="docs-new-folder-name" className="block text-xs font-medium text-warm-600 mb-1.5">Folder Name</label>
                 <input
+                  id="docs-new-folder-name"
                   type="text"
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
@@ -620,6 +623,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   enterKeyHint="done"
                   autoComplete="off"
                   className="w-full px-3 py-2.5 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500"
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in create-folder dialog
                   autoFocus
                 />
                 {newFolderName.trim() && folders.includes(newFolderName.trim()) && (
@@ -779,6 +783,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         {/* Content */}
         {documents.length === 0 && currentFolder === null ? (
           <div
+            role="region"
+            aria-label="Upload area"
             className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-16 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
@@ -806,6 +812,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           </div>
         ) : filteredDocuments.length === 0 ? (
           <div
+            role="region"
+            aria-label="Upload area"
             className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-12 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
@@ -850,8 +858,11 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
+                role="button"
+                tabIndex={0}
                 className="group relative surface-matte rounded-3xl overflow-clip hover:shadow-md hover:bg-cream-100/82 transition-colors duration-200 cursor-pointer active:scale-[0.98]"
                 onClick={() => openPreview(doc)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPreview(doc); } }}
               >
                 {/* Color accent bar */}
                 <div className={`h-1 w-full ${
@@ -1032,14 +1043,15 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               )}
 
               {/* Drop zone / Add more files */}
-              <div
-                className="border-2 border-dashed border-warm-200 rounded-xl p-6 text-center hover:border-primary-400 hover:bg-primary-50/30 transition-colors cursor-pointer"
+              <button
+                type="button"
+                className="border-2 border-dashed border-warm-200 rounded-xl p-6 text-center hover:border-primary-400 hover:bg-primary-50/30 transition-colors cursor-pointer w-full"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <IconPlus size={24} className="mx-auto text-warm-400 mb-2" />
                 <p className="text-sm font-medium text-warm-600">Add more files</p>
                 <p className="text-xs text-warm-400 mt-0.5">Click or drag & drop</p>
-              </div>
+              </button>
 
               {/* Pending files list */}
               {pendingFiles.length > 0 && (
@@ -1078,8 +1090,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               {/* Shared settings */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-warm-600 mb-1.5">Category</label>
+                  <label htmlFor="upload-category" className="block text-xs font-medium text-warm-600 mb-1.5">Category</label>
                   <select
+                    id="upload-category"
                     value={uploadCategory}
                     onChange={(e) => setUploadCategory(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
@@ -1089,8 +1102,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-warm-600 mb-1.5">Folder</label>
+                  <label htmlFor="upload-folder" className="block text-xs font-medium text-warm-600 mb-1.5">Folder</label>
                   <select
+                    id="upload-folder"
                     value={uploadFolder}
                     onChange={(e) => setUploadFolder(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
@@ -1169,8 +1183,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               )}
 
               <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1.5">Title *</label>
+                <label htmlFor="edit-doc-title" className="block text-xs font-medium text-warm-600 mb-1.5">Title *</label>
                 <input
+                  id="edit-doc-title"
                   type="text"
                   value={editForm.title}
                   onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
@@ -1179,8 +1194,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1.5">Description</label>
+                <label htmlFor="edit-doc-description" className="block text-xs font-medium text-warm-600 mb-1.5">Description</label>
                 <textarea
+                  id="edit-doc-description"
                   value={editForm.description}
                   onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                   className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500"
@@ -1191,8 +1207,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-warm-600 mb-1.5">Category</label>
+                  <label htmlFor="edit-doc-category" className="block text-xs font-medium text-warm-600 mb-1.5">Category</label>
                   <select
+                    id="edit-doc-category"
                     value={editForm.category}
                     onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
                     className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
@@ -1202,8 +1219,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-warm-600 mb-1.5">Folder</label>
+                  <label htmlFor="edit-doc-folder" className="block text-xs font-medium text-warm-600 mb-1.5">Folder</label>
                   <select
+                    id="edit-doc-folder"
                     value={editForm.folder}
                     onChange={(e) => setEditForm(prev => ({ ...prev, folder: e.target.value }))}
                     className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
@@ -1218,12 +1236,15 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </div>
 
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <div
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={editForm.is_public}
                   onClick={() => setEditForm(prev => ({ ...prev, is_public: !prev.is_public }))}
                   className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer ${editForm.is_public ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}
                 >
                   {editForm.is_public && <IconCheck size={12} className="text-white" />}
-                </div>
+                </button>
                 <span className="text-sm text-warm-700">Visible to players</span>
               </label>
 
@@ -1347,8 +1368,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <p className="text-sm text-warm-500 mb-3">
                 Moving &ldquo;{movingDocument.title}&rdquo;
               </p>
-              <label className="block text-xs font-medium text-warm-600 mb-1.5">Destination Folder</label>
+              <label htmlFor="move-doc-folder" className="block text-xs font-medium text-warm-600 mb-1.5">Destination Folder</label>
               <select
+                id="move-doc-folder"
                 value={moveTargetFolder}
                 onChange={(e) => setMoveTargetFolder(e.target.value)}
                 className="w-full px-3 py-2.5 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"

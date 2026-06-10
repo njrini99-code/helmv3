@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -83,6 +83,7 @@ export function PatternValidationModal({
   onSubmit,
   isLoading = false,
 }: PatternValidationModalProps) {
+  const uid = useId();
   const prefersReducedMotion = useReducedMotion();
   const [selectedSeverity, setSelectedSeverity] = useState<PatternSeverity>(pattern.severity);
   const [notes, setNotes] = useState('');
@@ -128,6 +129,7 @@ export function PatternValidationModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed inset-0 flex items-center justify-center p-4 z-50 pointer-events-none"
           >
+            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/click-events-have-key-events */}
             <div
               ref={modalRef}
               role="dialog"
@@ -196,9 +198,9 @@ export function PatternValidationModal({
 
                 {/* Severity selection */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-warm-700 mb-3">
+                  <p className="block text-sm font-medium text-warm-700 mb-3">
                     Severity Level
-                  </label>
+                  </p>
                   <div className="space-y-2">
                     {severityOptions.map(option => (
                       <Button variant="ghost"
@@ -239,10 +241,11 @@ export function PatternValidationModal({
 
                 {/* Notes */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-warm-700 mb-2">
+                  <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-warm-700 mb-2">
                     Notes (Optional)
                   </label>
                   <textarea
+                    id={`${uid}-notes`}
                     value={notes}
                     onChange={e => setNotes(e.target.value)}
                     placeholder="Add any observations or context about this pattern..."

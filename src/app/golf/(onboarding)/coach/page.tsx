@@ -268,6 +268,7 @@ export default function GolfCoachOnboarding() {
                           onChange={(e) => setOrgName(e.target.value)}
                           placeholder="Texas A&M University"
                           required
+                          // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in onboarding wizard step
                           autoFocus
                         />
 

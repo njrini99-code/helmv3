@@ -131,9 +131,9 @@ export function LogProgressButton({
           >
           {/* Current value (read-only) */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1.5">
+            <p className="block text-sm font-medium text-warm-700 mb-1.5">
               Current value
-            </label>
+            </p>
             <div className="px-3 py-2.5 rounded-lg bg-warm-50 border border-warm-200 text-warm-700">
               {currentValue ?? '—'}
               {targetValue != null && (
@@ -157,6 +157,7 @@ export function LogProgressButton({
             onChange={(e) => setNewValue(e.target.value)}
             placeholder="Enter your latest measurement"
             required
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in progress-logging dialog
             autoFocus
           />
 

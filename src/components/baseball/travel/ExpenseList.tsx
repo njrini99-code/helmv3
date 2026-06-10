@@ -97,8 +97,11 @@ export function ExpenseList({ expenses, onRefresh, isCoach }: ExpenseListProps) 
             className="bg-white rounded-xl border border-warm-200 overflow-hidden hover:shadow-md transition-shadow"
           >
             <div
+              role="button"
+              tabIndex={0}
               className="p-4 flex items-center gap-4 cursor-pointer"
               onClick={() => setExpandedId(isExpanded ? null : expense.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(isExpanded ? null : expense.id); } }}
             >
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${config.color}`}>
                 <span className="text-lg">{config.icon}</span>

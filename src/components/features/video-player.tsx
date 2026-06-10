@@ -69,6 +69,7 @@ export function VideoPlayer({
 
   return (
     <div className={cn('relative rounded-xl overflow-hidden bg-black aspect-video', className)}>
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption -- user-uploaded video content, no captions available */}
       <video
         ref={videoRef}
         src={src}

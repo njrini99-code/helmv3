@@ -114,6 +114,7 @@ export function TaskCard({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- role="button" with keyboard handler already present; div used to preserve layout constraints
     <div
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}

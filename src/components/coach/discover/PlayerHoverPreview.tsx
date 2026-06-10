@@ -157,8 +157,11 @@ export function PlayerHoverPreview({
       {/* Video Preview (if available) */}
       {player.hasVideo && (
         <div className="p-4 pt-3 border-b border-warm-100">
-          <div className="relative rounded-lg overflow-hidden bg-warm-100 aspect-video group cursor-pointer"
+          <button
+            type="button"
+            className="relative rounded-lg overflow-hidden bg-warm-100 aspect-video group cursor-pointer w-full"
             onClick={onView}
+            aria-label={`Watch ${player.firstName} ${player.lastName} video`}
           >
             {player.videoThumbnail ? (
               <Image
@@ -183,7 +186,7 @@ export function PlayerHoverPreview({
             <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/70 text-white text-xs">
               Video Available
             </div>
-          </div>
+          </button>
         </div>
       )}
 

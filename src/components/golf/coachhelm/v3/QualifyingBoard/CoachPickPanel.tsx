@@ -86,7 +86,7 @@ export function CoachPickPanel({ qualifierId, candidates, slotsCoachPick, state 
         </p>
       )}
 
-      <ul role="list" className="divide-y divide-warm-200/40">
+      <ul className="divide-y divide-warm-200/40">
         {eligible.map((c) => {
           const isPicked = c.selection?.selection_type === 'coach_pick';
           const isEditing = drafts[c.player_id] !== undefined;

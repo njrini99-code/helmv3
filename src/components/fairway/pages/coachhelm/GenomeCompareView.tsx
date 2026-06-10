@@ -151,6 +151,7 @@ export function GenomeCompareView({
   return (
     <CoachHelmShell
       active="players"
+      // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={signalCount}
       title={title}

@@ -40,9 +40,20 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
       )}
     >
       {/* Main row */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row click is a pointer convenience; the chevron button below is the accessible toggle */}
       <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setExpanded(!expanded)}>
         {/* Expand toggle */}
-        <Button variant="ghost" type="button" className="text-warm-300 flex-shrink-0">
+        <Button
+          variant="ghost"
+          type="button"
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Collapse issue details' : 'Expand issue details'}
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded(!expanded);
+          }}
+          className="text-warm-300 flex-shrink-0"
+        >
           {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
         </Button>
 

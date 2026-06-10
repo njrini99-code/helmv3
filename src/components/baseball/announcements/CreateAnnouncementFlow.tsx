@@ -114,15 +114,15 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Practice schedule change, game update..."
               required
-              autoFocus
             />
 
             {/* Body */}
             <div>
-              <label className="text-sm font-medium text-warm-700 block mb-1.5">
+              <label htmlFor="caf-body" className="text-sm font-medium text-warm-700 block mb-1.5">
                 Message
               </label>
               <textarea
+                id="caf-body"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 rows={3}

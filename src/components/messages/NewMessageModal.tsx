@@ -145,6 +145,7 @@ export function NewMessageModal({
     >
       <div className="space-y-4">
         {/* Search Input */}
+        {/* eslint-disable jsx-a11y/no-autofocus -- dialog initial focus for immediate search interaction */}
         <SearchBar
           value={searchQuery}
           onChange={setSearchQuery}
@@ -152,6 +153,7 @@ export function NewMessageModal({
           className="w-full"
           autoFocus
         />
+        {/* eslint-enable jsx-a11y/no-autofocus */}
 
         {/* Results */}
         <div className="min-h-[300px] max-h-[400px] overflow-y-auto -mx-6 px-6">

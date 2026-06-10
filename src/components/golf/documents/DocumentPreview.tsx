@@ -239,6 +239,7 @@ export function DocumentPreview({
           return (
             <div className="flex flex-col h-[70vh]">
               <div className="flex-1 flex items-center justify-center bg-black rounded-md overflow-hidden">
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                 <video
                   src={previewUrl}
                   controls
@@ -263,6 +264,7 @@ export function DocumentPreview({
             <div className="flex flex-col items-center justify-center h-[40vh]">
               <FileTypeIcon mimeType={mimeType} className="h-16 w-16 mb-4" />
               <p className="text-lg font-medium mb-4">{fileName}</p>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <audio src={previewUrl} controls className="w-full max-w-md mb-4">
                 Your browser does not support the audio element.
               </audio>

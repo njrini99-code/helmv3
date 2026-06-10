@@ -349,8 +349,10 @@ export default function EventsPage() {
       {/* Create Event Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
+          <button
+            type="button"
+            aria-label="Close modal"
+            className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm w-full h-full border-0 cursor-default"
             onClick={() => setShowCreateModal(false)}
           />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
@@ -380,10 +382,11 @@ export default function EventsPage() {
               />
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label htmlFor="event-start-time" className="block text-sm font-medium text-warm-700 mb-1.5">
                     Start Time
                   </label>
                   <input
+                    id="event-start-time"
                     type="datetime-local"
                     value={newEvent.start_time}
                     onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
@@ -392,10 +395,11 @@ export default function EventsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label htmlFor="event-end-time" className="block text-sm font-medium text-warm-700 mb-1.5">
                     End Time
                   </label>
                   <input
+                    id="event-end-time"
                     type="datetime-local"
                     value={newEvent.end_time}
                     onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
@@ -410,10 +414,11 @@ export default function EventsPage() {
                 onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
               />
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1.5">
+                <label htmlFor="event-description" className="block text-sm font-medium text-warm-700 mb-1.5">
                   Description (Optional)
                 </label>
                 <textarea
+                  id="event-description"
                   value={newEvent.description}
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                   placeholder="Add notes or details about this event..."

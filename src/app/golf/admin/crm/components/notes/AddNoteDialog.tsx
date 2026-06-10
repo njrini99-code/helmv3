@@ -94,6 +94,7 @@ export function AddNoteDialog({
   return (
     <>
       {/* Backdrop */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog */}
       <div
         className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
@@ -161,10 +162,10 @@ export function AddNoteDialog({
                     {body.length}/8000
                   </span>
                 </div>
-                <textarea
+                {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
+                <textarea autoFocus
                   id="note-body"
                   rows={6}
-                  autoFocus
                   required
                   maxLength={8000}
                   value={body}

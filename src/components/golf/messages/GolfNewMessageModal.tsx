@@ -273,6 +273,7 @@ export function GolfNewMessageModal({
             onChange={setSearchQuery}
             placeholder={currentUserRole === 'coach' ? 'Search players...' : 'Search team members...'}
             className="w-full"
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
           />
         )}

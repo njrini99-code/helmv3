@@ -114,6 +114,7 @@ Eyebrow.displayName = 'Eyebrow';
  */
 export const PageTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- content provided via children prop by caller
     <h1
       ref={ref}
       className={cn(

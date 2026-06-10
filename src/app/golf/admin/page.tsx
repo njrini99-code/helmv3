@@ -435,7 +435,9 @@ function AdminDashboardContent() {
     <div className="min-h-dvh bg-[#FFFEF8] flex overflow-x-hidden">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div
+        <button
+          type="button"
+          aria-label="Close menu"
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />

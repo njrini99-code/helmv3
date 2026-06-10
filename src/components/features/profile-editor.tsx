@@ -91,8 +91,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">First Name *</label>
+                <label htmlFor="pe-first-name" className="block text-sm font-medium text-warm-700 mb-1">First Name *</label>
                 <input
+                  id="pe-first-name"
                   type="text"
                   value={formData.first_name || ''}
                   onChange={(e) => handleInputChange('first_name', e.target.value)}
@@ -102,8 +103,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Last Name *</label>
+                <label htmlFor="pe-last-name" className="block text-sm font-medium text-warm-700 mb-1">Last Name *</label>
                 <input
+                  id="pe-last-name"
                   type="text"
                   value={formData.last_name || ''}
                   onChange={(e) => handleInputChange('last_name', e.target.value)}
@@ -115,8 +117,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">City</label>
+                <label htmlFor="pe-city" className="block text-sm font-medium text-warm-700 mb-1">City</label>
                 <input
+                  id="pe-city"
                   type="text"
                   value={formData.city || ''}
                   onChange={(e) => handleInputChange('city', e.target.value)}
@@ -125,8 +128,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">State *</label>
+                <label htmlFor="pe-state" className="block text-sm font-medium text-warm-700 mb-1">State *</label>
                 <select
+                  id="pe-state"
                   value={formData.state || ''}
                   onChange={(e) => handleInputChange('state', e.target.value)}
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
@@ -141,8 +145,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">High School *</label>
+              <label htmlFor="pe-high-school" className="block text-sm font-medium text-warm-700 mb-1">High School *</label>
               <input
+                id="pe-high-school"
                 type="text"
                 value={formData.high_school_name || ''}
                 onChange={(e) => handleInputChange('high_school_name', e.target.value)}
@@ -152,8 +157,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">About Me</label>
+              <label htmlFor="pe-about-me" className="block text-sm font-medium text-warm-700 mb-1">About Me</label>
               <textarea
+                id="pe-about-me"
                 value={formData.about_me || ''}
                 onChange={(e) => handleInputChange('about_me', e.target.value)}
                 rows={4}
@@ -170,8 +176,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Position *</label>
+                <label htmlFor="pe-position" className="block text-sm font-medium text-warm-700 mb-1">Position *</label>
                 <select
+                  id="pe-position"
                   value={formData.primary_position || ''}
                   onChange={(e) => handleInputChange('primary_position', e.target.value)}
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
@@ -185,8 +192,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Graduation Year *</label>
+                <label htmlFor="pe-grad-year" className="block text-sm font-medium text-warm-700 mb-1">Graduation Year *</label>
                 <select
+                  id="pe-grad-year"
                   value={formData.grad_year || ''}
                   onChange={(e) => handleInputChange('grad_year', parseInt(e.target.value))}
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
@@ -202,8 +210,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Bats</label>
+                <label htmlFor="pe-bats" className="block text-sm font-medium text-warm-700 mb-1">Bats</label>
                 <select
+                  id="pe-bats"
                   value={formData.bats || ''}
                   onChange={(e) => handleInputChange('bats', e.target.value)}
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
@@ -216,8 +225,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Throws</label>
+                <label htmlFor="pe-throws" className="block text-sm font-medium text-warm-700 mb-1">Throws</label>
                 <select
+                  id="pe-throws"
                   value={formData.throws || ''}
                   onChange={(e) => handleInputChange('throws', e.target.value)}
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
@@ -231,9 +241,10 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Height</label>
+                <label htmlFor="pe-height-feet" className="block text-sm font-medium text-warm-700 mb-1">Height</label>
                 <div className="grid grid-cols-2 gap-2">
                   <input
+                    id="pe-height-feet"
                     type="number"
                     placeholder="Feet"
                     min="4"
@@ -243,6 +254,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
                     className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600"
                   />
                   <input
+                    aria-label="Height inches"
                     type="number"
                     placeholder="Inches"
                     min="0"
@@ -255,8 +267,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Weight (lbs)</label>
+                <label htmlFor="pe-weight" className="block text-sm font-medium text-warm-700 mb-1">Weight (lbs)</label>
                 <input
+                  id="pe-weight"
                   type="number"
                   value={formData.weight_lbs || ''}
                   onChange={(e) => handleInputChange('weight_lbs', e.target.value ? parseInt(e.target.value) : null)}
@@ -268,8 +281,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Pitch Velocity (mph)</label>
+                <label htmlFor="pe-pitch-velo" className="block text-sm font-medium text-warm-700 mb-1">Pitch Velocity (mph)</label>
                 <input
+                  id="pe-pitch-velo"
                   type="number"
                   value={formData.pitch_velo || ''}
                   onChange={(e) => handleInputChange('pitch_velo', e.target.value ? parseInt(e.target.value) : null)}
@@ -279,8 +293,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Exit Velocity (mph)</label>
+                <label htmlFor="pe-exit-velo" className="block text-sm font-medium text-warm-700 mb-1">Exit Velocity (mph)</label>
                 <input
+                  id="pe-exit-velo"
                   type="number"
                   value={formData.exit_velo || ''}
                   onChange={(e) => handleInputChange('exit_velo', e.target.value ? parseInt(e.target.value) : null)}
@@ -292,8 +307,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">60-Yard Time (sec)</label>
+                <label htmlFor="pe-sixty-time" className="block text-sm font-medium text-warm-700 mb-1">60-Yard Time (sec)</label>
                 <input
+                  id="pe-sixty-time"
                   type="number"
                   step="0.01"
                   value={formData.sixty_time || ''}
@@ -304,8 +320,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Pop Time (sec)</label>
+                <label htmlFor="pe-pop-time" className="block text-sm font-medium text-warm-700 mb-1">Pop Time (sec)</label>
                 <input
+                  id="pe-pop-time"
                   type="number"
                   step="0.01"
                   value={formData.pop_time || ''}
@@ -326,8 +343,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">GPA</label>
+                <label htmlFor="pe-gpa" className="block text-sm font-medium text-warm-700 mb-1">GPA</label>
                 <input
+                  id="pe-gpa"
                   type="number"
                   step="0.01"
                   min="0"
@@ -340,8 +358,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">SAT Score</label>
+                <label htmlFor="pe-sat-score" className="block text-sm font-medium text-warm-700 mb-1">SAT Score</label>
                 <input
+                  id="pe-sat-score"
                   type="number"
                   value={formData.sat_score || ''}
                   onChange={(e) => handleInputChange('sat_score', e.target.value ? parseInt(e.target.value) : null)}
@@ -352,8 +371,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">ACT Score</label>
+              <label htmlFor="pe-act-score" className="block text-sm font-medium text-warm-700 mb-1">ACT Score</label>
               <input
+                id="pe-act-score"
                 type="number"
                 value={formData.act_score || ''}
                 onChange={(e) => handleInputChange('act_score', e.target.value ? parseInt(e.target.value) : null)}
@@ -402,8 +422,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             <h3 className="text-lg font-semibold text-warm-900 mb-4">Social & Contact Information</h3>
 
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Email *</label>
+              <label htmlFor="pe-email" className="block text-sm font-medium text-warm-700 mb-1">Email *</label>
               <input
+                id="pe-email"
                 type="email"
                 value={formData.email || ''}
                 onChange={(e) => handleInputChange('email', e.target.value)}
@@ -413,8 +434,9 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Phone Number</label>
+              <label htmlFor="pe-phone" className="block text-sm font-medium text-warm-700 mb-1">Phone Number</label>
               <input
+                id="pe-phone"
                 type="tel"
                 value={formData.phone || ''}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
@@ -424,10 +446,11 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Twitter Handle</label>
+              <label htmlFor="pe-twitter" className="block text-sm font-medium text-warm-700 mb-1">Twitter Handle</label>
               <div className="flex items-center">
                 <span className="px-3 py-2 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-600">@</span>
                 <input
+                  id="pe-twitter"
                   type="text"
                   value={formData.twitter || ''}
                   onChange={(e) => handleInputChange('twitter', e.target.value)}
@@ -438,10 +461,11 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Instagram Handle</label>
+              <label htmlFor="pe-instagram" className="block text-sm font-medium text-warm-700 mb-1">Instagram Handle</label>
               <div className="flex items-center">
                 <span className="px-3 py-2 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-600">@</span>
                 <input
+                  id="pe-instagram"
                   type="text"
                   value={formData.instagram || ''}
                   onChange={(e) => handleInputChange('instagram', e.target.value)}

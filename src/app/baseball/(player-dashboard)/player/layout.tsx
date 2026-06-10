@@ -20,6 +20,7 @@ export default function PlayerDashboardLayout({ children }: { children: React.Re
       <SessionActivityProvider>
         <LastSeenUpdater />
         <PeekPanelProvider>
+          {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role */}
           <BaseballDashboardShell role="player">{children}</BaseballDashboardShell>
         </PeekPanelProvider>
       </SessionActivityProvider>

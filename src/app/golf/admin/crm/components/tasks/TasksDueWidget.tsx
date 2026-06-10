@@ -170,6 +170,7 @@ function DueRow({ task, onComplete, onClick }: DueRowProps) {
   const dueLabel = due ? formatDistanceToNow(due, { addSuffix: true }) : null;
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- role="button" with keyboard handler already present; li used to preserve list structure
     <li
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}

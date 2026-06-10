@@ -764,7 +764,7 @@ function PersonalInfoPanel({ profile, onUpdate }: { profile: UserProfile; onUpda
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-warm-700 mb-2">Profile Picture</label>
+        <p className="block text-sm font-medium text-warm-700 mb-2">Profile Picture</p>
         <AvatarUpload
           currentAvatarUrl={avatarUrl}
           name={profile.role === 'coach' ? fullName : `${firstName} ${lastName}`}
@@ -824,7 +824,7 @@ function EmailPanel({ currentEmail, onUpdate }: { currentEmail: string; onUpdate
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-sm font-medium text-warm-700 block mb-1">Current Email</label>
+        <p className="text-sm font-medium text-warm-700 block mb-1">Current Email</p>
         <div className="px-3 py-2 bg-warm-50 border border-warm-200 rounded-lg text-sm text-warm-600">{currentEmail}</div>
       </div>
       <Input label="New Email Address" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="new@example.com" />
@@ -1137,7 +1137,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-warm-700 block mb-2">Scoring Format</label>
+        <p className="text-sm font-medium text-warm-700 block mb-2">Scoring Format</p>
         <div className="grid grid-cols-2 gap-2">
           {[
             { val: 'stroke_play', label: 'Stroke Play', desc: 'Total strokes' },
@@ -1159,8 +1159,9 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       </div>
 
       <div>
-        <label className="text-sm font-medium text-warm-700 block mb-2">Handicap System</label>
+        <label htmlFor="settings-handicap-system" className="text-sm font-medium text-warm-700 block mb-2">Handicap System</label>
         <select
+          id="settings-handicap-system"
           value={handicapSystem}
           onChange={(e) => setHandicapSystem(e.target.value)}
           className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus-visible:ring-2 focus-visible:ring-primary-500/40 transition-colors"
@@ -1172,7 +1173,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       </div>
 
       <div>
-        <label className="text-sm font-medium text-warm-700 block mb-2">Default Tees</label>
+        <p className="text-sm font-medium text-warm-700 block mb-2">Default Tees</p>
         <div className="grid grid-cols-4 gap-1.5">
           {['black', 'blue', 'white', 'gold'].map((tee) => (
             <Button variant="primary"
@@ -1190,8 +1191,9 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       </div>
 
       <div>
-        <label className="text-sm font-medium text-warm-700 block mb-2">Timezone</label>
+        <label htmlFor="settings-timezone" className="text-sm font-medium text-warm-700 block mb-2">Timezone</label>
         <select
+          id="settings-timezone"
           value={timezone}
           onChange={(e) => setTimezone(e.target.value)}
           className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus-visible:ring-2 focus-visible:ring-primary-500/40 transition-colors"
@@ -1207,7 +1209,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
 
       {/* E-12: Strokes Gained Benchmark Level */}
       <div className="border-t border-warm-100 pt-4">
-        <label className="text-sm font-medium text-warm-700 block mb-1">Strokes Gained Benchmark</label>
+        <p className="text-sm font-medium text-warm-700 block mb-1">Strokes Gained Benchmark</p>
         <p className="text-xs text-warm-500 mb-3">
           Baseline skill level for SG calculations. Pick the level closest to your team.
         </p>
@@ -1532,7 +1534,7 @@ function InviteSettingsPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-warm-700 block mb-2">Invite Code</label>
+        <p className="text-sm font-medium text-warm-700 block mb-2">Invite Code</p>
         <div className="flex gap-2">
           <div className="flex-1 px-3 py-2.5 bg-warm-50 border border-warm-200 rounded-lg font-mono text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
             {inviteCode || '—'}
@@ -1544,7 +1546,7 @@ function InviteSettingsPanel() {
       </div>
 
       <div>
-        <label className="text-sm font-medium text-warm-700 block mb-2">Invite Link</label>
+        <p className="text-sm font-medium text-warm-700 block mb-2">Invite Link</p>
         <div className="flex gap-2">
           <div className="flex-1 px-3 py-2.5 bg-warm-50 border border-warm-200 rounded-lg text-sm text-warm-600 truncate">
             {inviteUrl}

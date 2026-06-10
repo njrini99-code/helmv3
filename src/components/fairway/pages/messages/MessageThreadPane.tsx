@@ -355,6 +355,7 @@ export function MessageThreadPane({
                           onChange={(e) => onEditContentChange(e.target.value)}
                           className="w-full min-w-[200px] resize-none bg-transparent font-fw-sans text-body-sm text-text-primary focus:outline-none"
                           rows={Math.min(5, editContent.split('\n').length || 1)}
+                          // eslint-disable-next-line jsx-a11y/no-autofocus
                           autoFocus
                         />
                         <div className="mt-2 flex items-center justify-end gap-1 border-t border-accent-200 pt-2">

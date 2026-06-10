@@ -125,8 +125,9 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
             className="bg-white rounded-xl border border-warm-200 overflow-hidden hover:shadow-md transition-shadow"
           >
             {/* Main Row */}
-            <div
-              className="p-4 flex items-center gap-4 cursor-pointer"
+            <button
+              type="button"
+              className="p-4 flex items-center gap-4 cursor-pointer w-full text-left"
               onClick={() => setExpandedId(isExpanded ? null : expense.id)}
             >
               {/* Category Icon */}
@@ -169,7 +170,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
               <div className="text-warm-400">
                 {isExpanded ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
               </div>
-            </div>
+            </button>
 
             {/* Expanded Details */}
             <AnimatePresence>
@@ -272,8 +273,10 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
 
       {/* Receipt Viewer Modal */}
       {viewingReceipt && (
-        <div
-          className="fixed inset-0 bg-warm-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        <button
+          type="button"
+          aria-label="Close receipt viewer"
+          className="fixed inset-0 bg-warm-900/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 w-full border-none cursor-default"
           onClick={() => setViewingReceipt(null)}
         >
           <motion.div
@@ -307,7 +310,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
               )}
             </div>
           </motion.div>
-        </div>
+        </button>
       )}
     </div>
   );

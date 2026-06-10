@@ -208,7 +208,7 @@ export function PhilosophySettingsClient({
               {/* Decline Threshold */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-warm-700">
+                  <label htmlFor="psc-decline-threshold" className="text-sm font-medium text-warm-700">
                     Decline Alert Threshold
                   </label>
                   <span className="text-sm font-semibold text-warm-900">
@@ -216,6 +216,7 @@ export function PhilosophySettingsClient({
                   </span>
                 </div>
                 <input
+                  id="psc-decline-threshold"
                   type="range"
                   min="1"
                   max="5"
@@ -232,7 +233,7 @@ export function PhilosophySettingsClient({
               {/* Pressure Gap Threshold */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-warm-700">
+                  <label htmlFor="psc-pressure-gap" className="text-sm font-medium text-warm-700">
                     Pressure Gap Threshold
                   </label>
                   <span className="text-sm font-semibold text-warm-900">
@@ -240,6 +241,7 @@ export function PhilosophySettingsClient({
                   </span>
                 </div>
                 <input
+                  id="psc-pressure-gap"
                   type="range"
                   min="1"
                   max="5"
@@ -256,7 +258,7 @@ export function PhilosophySettingsClient({
               {/* Bubble Zone Range */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-warm-700">
+                  <label htmlFor="psc-bubble-zone" className="text-sm font-medium text-warm-700">
                     Bubble Zone Range
                   </label>
                   <span className="text-sm font-semibold text-warm-900">
@@ -264,6 +266,7 @@ export function PhilosophySettingsClient({
                   </span>
                 </div>
                 <input
+                  id="psc-bubble-zone"
                   type="range"
                   min="0.5"
                   max="3"

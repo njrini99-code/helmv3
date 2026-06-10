@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { IconX, IconUpload, IconFile } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
 import {
@@ -40,6 +40,7 @@ export function UploadNewVersionModal({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const uid = useId();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,6 +147,7 @@ export function UploadNewVersionModal({
           )}
 
           {/* Drop zone */}
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -203,10 +205,11 @@ export function UploadNewVersionModal({
 
           {/* Change notes */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-warm-700 mb-2">
               Change Notes (optional)
             </label>
             <textarea
+              id={`${uid}-notes`}
               value={changeNotes}
               onChange={(e) => setChangeNotes(e.target.value)}
               placeholder="Describe what changed in this version..."

@@ -165,6 +165,7 @@ export function FairwayCreateTaskModal({
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Complete shot-tracking drill"
             required
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
           />
         </FormField>

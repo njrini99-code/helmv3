@@ -79,7 +79,7 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
         </p>
       </div>
 
-      <ul role="list" className="scrollbar-hide -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1">
+      <ul className="scrollbar-hide -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1">
         {visible.map((c) => {
           const loc = fmtLoc(c);
           return (
