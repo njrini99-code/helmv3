@@ -8,10 +8,8 @@
  * Storage:  localStorage key `golf_distance_unit_pref`
  *           (same localStorage-only pattern as use-appearance-preferences.ts)
  *
- * DB column: `golf_players.distance_unit_preference` (added in migration
- *            20260610160000_add_player_distance_unit_pref.sql). The column is
- *            the source of truth — on first mount this hook loads from localStorage
- *            and optionally syncs from DB via the saveDistanceUnitPreference action.
+ * localStorage is the only store — no DB column. If multi-device sync is
+ * ever needed, add a golf_players column then and sync it here.
  *
  * Design: identical external-store + useSyncExternalStore pattern as
  *         use-appearance-preferences.ts so that any component reading the pref
