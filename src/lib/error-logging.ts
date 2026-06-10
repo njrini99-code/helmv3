@@ -156,6 +156,45 @@ export function isStaleServerActionError(error: unknown): boolean {
 let staleActionWarnedThisSession = false;
 
 /**
+ * Client-side report de-duplication.
+ *
+ * A single flaky tab — e.g. a backgrounded `/golf/dashboard/rounds/new` on a
+ * weak connection throwing `TypeError: network error` every few seconds — was
+ * writing hundreds of identical rows to error_logs + Sentry (one client wrote
+ * 320 in 8 hours). Collapse identical `(severity|component|message)` reports:
+ * always send the first, then at most one per REPORT_WINDOW_MS, capped at
+ * REPORT_SESSION_CAP total per tab. Distinct errors (different message or
+ * component) each get their own budget and are never suppressed, so a genuine
+ * multi-error outage still surfaces — and it spans many tabs/users anyway.
+ */
+const REPORT_WINDOW_MS = 60_000;
+const REPORT_SESSION_CAP = 8;
+const reportLedger = new Map<string, { last: number; count: number }>();
+
+function shouldThrottleClientReport(
+  severity: string,
+  error: Error,
+  context?: ErrorContext,
+): boolean {
+  const who =
+    (typeof context?.component === 'string' && context.component) ||
+    (typeof context?.route === 'string' && context.route) ||
+    'unknown';
+  const key = `${severity}|${who}|${error.message}`;
+  const now = Date.now();
+  const prev = reportLedger.get(key);
+  if (!prev) {
+    reportLedger.set(key, { last: now, count: 1 });
+    return false;
+  }
+  if (prev.count >= REPORT_SESSION_CAP) return true;
+  if (now - prev.last < REPORT_WINDOW_MS) return true;
+  prev.last = now;
+  prev.count += 1;
+  return false;
+}
+
+/**
  * Main error logging function
  * Logs errors to console in development and sends to monitoring service in production
  */
@@ -192,6 +231,12 @@ export function logError(
       console.log('Context:', enrichedContext);
     }
     console.groupEnd();
+  }
+
+  // De-duplicate identical reports from a single tab before paying the
+  // network/Sentry cost. Dev console logging above is unaffected.
+  if (shouldThrottleClientReport(severity, error, context)) {
+    return;
   }
 
   // Send to Sentry — captures stack, breadcrumbs, replay, user context

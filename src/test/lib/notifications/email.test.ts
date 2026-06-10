@@ -33,8 +33,17 @@ const eqSpy = vi.fn(() => ({ maybeSingle: maybeSingleSpy }));
 const selectSpy = vi.fn(() => ({ eq: eqSpy }));
 const fromSpy = vi.fn(() => ({ select: selectSpy }));
 
+// getUserNotificationPreferences now reads through the service-role admin
+// client so it works in background contexts (insight-notifier / cron) where
+// the cookie-based server client throws "cookies was called outside a request
+// scope". The server mock stays so email.ts's other `createClient` import does
+// not pull in real next/headers under vitest.
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({ from: fromSpy }),
+}));
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ from: fromSpy }),
 }));
 
 // --- Helpers --------------------------------------------------------------

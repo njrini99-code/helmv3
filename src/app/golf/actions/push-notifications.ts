@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { z } from 'zod';
 
@@ -61,8 +62,16 @@ export async function registerDeviceToken(
     return { success: false, error: 'Invalid device token payload' };
   }
 
-  // Upsert: if token already exists, update it
-  const { error } = await supabase
+  // Upsert via the service-role client. The session is already verified above
+  // (user is the authenticated caller and user_id is forced to user.id, so a
+  // user can never claim a token for someone else). The admin client is needed
+  // because `onConflict: 'token'` reassigns a SHARED device's existing token row
+  // to the new user — and the row's old owner makes the RLS UPDATE
+  // `USING (auth.uid() = user_id)` clause fail ("new row violates row-level
+  // security policy for table device_tokens"). Reassigning the device to whoever
+  // is currently signed in on it is the intended behaviour.
+  const admin = createAdminClient();
+  const { error } = await admin
     .from('device_tokens')
     .upsert(
       {
