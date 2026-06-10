@@ -2,10 +2,22 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
-import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus, Dumbbell, Trophy, ClipboardList, Plane, MoreHorizontal } from 'lucide-react';
+import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus, Dumbbell, Trophy, ClipboardList, Plane, MoreHorizontal, Ban, Repeat } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import type { RecurrenceRule } from '@/lib/golf/recurrence';
+import {
+  computeAttendeeChanges,
+  summarizeAttendeeChanges,
+  toDateTimeLocalValue,
+  buildRecurrenceRule,
+  recurrenceFieldsFromRule,
+  WEEKDAY_OPTIONS,
+  MIN_RECURRENCE_COUNT,
+  MAX_RECURRENCE_COUNT,
+  type RecurrenceEndMode,
+} from './event-form-helpers';
 import { RSVPStatusSection } from './RSVPStatusSection';
 import { PlayerRSVPCard } from './PlayerRSVPCard';
 import { ConflictWarning } from './ConflictWarning';
@@ -26,8 +38,9 @@ function getTodayDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export type RecurrenceFrequency = 'none' | 'daily' | 'weekly' | 'monthly';
+export type RecurrenceFrequency = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly';
 export type RecurringEditScope = 'this' | 'thisAndFuture' | 'all';
+export type { RecurrenceEndMode } from './event-form-helpers';
 
 export interface GolfEventFormData {
   title: string;
@@ -44,9 +57,33 @@ export interface GolfEventFormData {
   requiresRsvp: boolean;
   rsvpDeadline: string | null;
   maxAttendees: number | null;
+  /**
+   * Full current selection. updateGolfEvent treats this as ADDITIVE-ONLY —
+   * it never deletes attendance rows. Removals must be sent explicitly via
+   * removeAttendeeIds below.
+   */
   attendeeIds: string[];
   recurrence: RecurrenceFrequency;
   recurrenceCount: number;
+  /** Weekdays (0 = Sun … 6 = Sat) for weekly/biweekly patterns. */
+  recurrenceWeekdays?: number[];
+  /** How the series ends: after a fixed count (default) or by a date. */
+  recurrenceEndMode?: RecurrenceEndMode;
+  /** End-by date (YYYY-MM-DD) when recurrenceEndMode === 'until'. */
+  recurrenceUntil?: string | null;
+  /**
+   * Structured recurrence rule built from the fields above (null when the
+   * event doesn't repeat). Parents serialize it with serializeRecurrenceRule
+   * before calling createRecurringEvent / editRecurringEvent.
+   */
+  recurrenceRule?: RecurrenceRule | null;
+  /**
+   * Attendee deltas vs the event's existing golf_event_attendance rows
+   * (edit mode only). Computed against the hydrated attendance baseline, so
+   * a removal only ever reflects an explicit deselect in the form.
+   */
+  addAttendeeIds?: string[];
+  removeAttendeeIds?: string[];
   /**
    * For edits to events that are part of a recurring series, the scope picker
    * sets this so the parent can route to editRecurringEvent. 'this' means the
@@ -129,6 +166,12 @@ interface EventDetailModalProps {
   isCoach: boolean;
   onSave: (data: GolfEventFormData) => Promise<void>;
   onDelete?: (scope?: RecurringEditScope) => Promise<void>;
+  /**
+   * Restore a soft-cancelled event (status back to confirmed). When the
+   * event is cancelled, editing is disabled and this is the only action
+   * offered besides delete.
+   */
+  onRestore?: () => Promise<void>;
   isSaving: boolean;
   teamPlayers?: TeamPlayer[]; // Available for RSVP invitations
   currentUserId?: string; // Current user's player/coach ID to exclude from attendee list
@@ -223,6 +266,7 @@ export function EventDetailModal({
   isCoach,
   onSave,
   onDelete,
+  onRestore,
   isSaving,
   teamPlayers = [],
   currentUserId,
@@ -253,11 +297,19 @@ export function EventDetailModal({
     attendeeIds: [],
     recurrence: 'none',
     recurrenceCount: 10,
+    recurrenceWeekdays: [],
+    recurrenceEndMode: 'count',
+    recurrenceUntil: null,
   });
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [conflicts, setConflicts] = useState<ConflictData | null>(null);
   const [checkingConflicts, setCheckingConflicts] = useState(false);
+  // Existing golf_event_attendance baseline for the event being edited.
+  // null = not hydrated (loading or failed) — removals are NEVER computed
+  // against a null baseline, so a slow/failed fetch can't wipe attendees.
+  const [existingAttendeeIds, setExistingAttendeeIds] = useState<string[] | null>(null);
+  const [attendeeHydration, setAttendeeHydration] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const rsvpEnabled = Boolean(event?.id && formData.requiresRsvp && !isCreating);
   const {
@@ -311,9 +363,9 @@ export function EventDetailModal({
           }
         }
 
-        const rsvpDeadline = event.rsvp_deadline
-          ? new Date(event.rsvp_deadline).toISOString().slice(0, 16)
-          : null;
+        // Convert to the user's LOCAL wall-clock for the datetime-local
+        // input (the old toISOString prefill displayed UTC wall-time).
+        const rsvpDeadline = toDateTimeLocalValue(event.rsvp_deadline);
 
         // Use the authoritative all_day boolean from DB, not a parsing heuristic
         const isAllDay = event.all_day ?? false;
@@ -336,6 +388,9 @@ export function EventDetailModal({
           attendeeIds: [],
           recurrence: 'none',
           recurrenceCount: 10,
+          recurrenceWeekdays: [],
+          recurrenceEndMode: 'count',
+          recurrenceUntil: null,
         });
       } else {
         // Create mode - reset to defaults
@@ -357,6 +412,9 @@ export function EventDetailModal({
           attendeeIds: [],
           recurrence: 'none',
           recurrenceCount: 10,
+          recurrenceWeekdays: [],
+          recurrenceEndMode: 'count',
+          recurrenceUntil: null,
         });
       }
       setError(null);
@@ -365,11 +423,87 @@ export function EventDetailModal({
     }
   }, [isOpen, event, isCreating]);
 
+  // Hydrate the attendee selection from the event's EXISTING attendance rows
+  // (audit #4 — the edit form used to seed attendeeIds:[] and the save path
+  // then deleted every invitee that wasn't re-selected). Toggles stay
+  // disabled until this resolves so the selection always reflects reality.
+  useEffect(() => {
+    if (!isOpen || !event?.id || isCreating || !isCoach) {
+      setExistingAttendeeIds(null);
+      setAttendeeHydration('idle');
+      return;
+    }
+    let cancelled = false;
+    setAttendeeHydration('loading');
+    setExistingAttendeeIds(null);
+    (async () => {
+      try {
+        const { getEventRSVP } = await loadGolfCalendarActions();
+        const result = await getEventRSVP(event.id);
+        if (cancelled) return;
+        if (result.success && result.data) {
+          const ids = result.data.summary.attendees.map((a) => a.playerId);
+          setExistingAttendeeIds(ids);
+          setFormData((prev) => ({ ...prev, attendeeIds: ids }));
+          setAttendeeHydration('loaded');
+        } else {
+          setAttendeeHydration('error');
+        }
+      } catch {
+        if (!cancelled) setAttendeeHydration('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, event?.id, isCreating, isCoach]);
+
+  // Series-root edits: prefill the recurrence pattern from the stored rule so
+  // the series can be extended (more occurrences / later end date) or
+  // re-shaped (e.g. add Wednesdays to a M/F practice).
+  const isSeriesRoot = !isCreating && Boolean(event?.recurrence_rule) && !event?.parent_event_id;
+  useEffect(() => {
+    if (!isOpen || !isSeriesRoot || !event?.recurrence_rule) return;
+    let cancelled = false;
+    import('@/lib/golf/recurrence')
+      .then(({ parseRecurrenceRule }) => {
+        if (cancelled) return;
+        const rule = parseRecurrenceRule(event.recurrence_rule!);
+        if (rule) {
+          setFormData((prev) => ({ ...prev, ...recurrenceFieldsFromRule(rule), recurrenceRule: rule }));
+        }
+      })
+      .catch(() => {
+        // Pattern editor simply stays hidden if the rule can't be parsed.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, isSeriesRoot, event?.recurrence_rule]);
+
+  // Pending attendee delta vs the hydrated baseline. Null until hydration
+  // succeeds — removals are only ever computed from a loaded baseline.
+  const attendeeChanges = useMemo(() => {
+    if (isCreating) return null;
+    if (existingAttendeeIds === null) return null;
+    return computeAttendeeChanges(existingAttendeeIds, formData.attendeeIds);
+  }, [isCreating, existingAttendeeIds, formData.attendeeIds]);
+  const attendeeChangeSummary = attendeeChanges ? summarizeAttendeeChanges(attendeeChanges) : null;
+
+  // In edit mode only check conflicts for NEWLY added players — existing
+  // invitees already have this event in their schedule, so checking them
+  // would flag the event against itself.
+  const conflictCheckIds = useMemo(() => {
+    if (isCreating) return formData.attendeeIds;
+    if (attendeeChanges) return attendeeChanges.addAttendeeIds;
+    return formData.attendeeIds;
+  }, [isCreating, formData.attendeeIds, attendeeChanges]);
+
   // Check for conflicts when attendees or event time changes
   useEffect(() => {
     async function checkConflicts() {
       // Check conflicts when attendees are selected (regardless of RSVP toggle)
-      if (formData.attendeeIds.length === 0 || !formData.startDate) {
+      if (conflictCheckIds.length === 0 || !formData.startDate) {
         setConflicts(null);
         return;
       }
@@ -394,7 +528,7 @@ export function EventDetailModal({
           formData.startTime,
           formData.endDate || formData.startDate,
           formData.endTime,
-          formData.attendeeIds
+          conflictCheckIds
         );
 
         if (result.success && result.data) {
@@ -409,7 +543,7 @@ export function EventDetailModal({
 
     const debounce = setTimeout(checkConflicts, 500);
     return () => clearTimeout(debounce);
-  }, [formData.attendeeIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
+  }, [conflictCheckIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
 
   // Series detection: an event is part of a recurring series if it has a
   // recurrence_rule (root) or a parent_event_id (child). Edit + delete then
@@ -420,11 +554,36 @@ export function EventDetailModal({
   );
   const [pendingScopeAction, setPendingScopeAction] = useState<null | 'edit' | 'delete'>(null);
 
+  /**
+   * Assemble the outgoing payload:
+   * - recurrenceRule: structured rule built from the form's pattern fields
+   *   (create, or series-root edit where the pattern can be extended).
+   * - addAttendeeIds / removeAttendeeIds: explicit delta vs the hydrated
+   *   attendance baseline. If hydration failed, everything selected is sent
+   *   as an add and NO removals are sent (additive-only fail-safe).
+   */
+  const buildSubmitData = (): GolfEventFormData => {
+    const rule = (isCreating || isSeriesRoot)
+      ? buildRecurrenceRule(formData, formData.startDate)
+      : null;
+    const data: GolfEventFormData = { ...formData, recurrenceRule: rule };
+    if (!isCreating) {
+      if (attendeeChanges) {
+        data.addAttendeeIds = attendeeChanges.addAttendeeIds;
+        data.removeAttendeeIds = attendeeChanges.removeAttendeeIds;
+      } else {
+        data.addAttendeeIds = formData.attendeeIds;
+        data.removeAttendeeIds = [];
+      }
+    }
+    return data;
+  };
+
   const submitWithScope = async (scope: RecurringEditScope) => {
     setError(null);
     try {
       if (pendingScopeAction === 'edit') {
-        await onSave({ ...formData, editScope: scope });
+        await onSave({ ...buildSubmitData(), editScope: scope });
       } else if (pendingScopeAction === 'delete' && onDelete) {
         await onDelete(scope);
       }
@@ -450,9 +609,19 @@ export function EventDetailModal({
     }
 
     try {
-      await onSave(formData);
+      await onSave(buildSubmitData());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save event');
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!onRestore) return;
+    setError(null);
+    try {
+      await onRestore();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to restore event');
     }
   };
 
@@ -538,12 +707,34 @@ export function EventDetailModal({
   };
 
   // Both coaches and players can create events
-  // For editing, coaches can edit any event, players can only view
+  // For editing, coaches can edit any event, players can only view.
+  // Soft-cancelled events are read-only for everyone — the only offered
+  // actions are Restore (status back) and Delete.
+  const isCancelled = !isCreating && event?.status === 'cancelled';
   const canEdit = isCreating || isCoach;
-  const isViewMode = !isCreating && !isCoach;
+  const isViewMode = (!isCreating && !isCoach) || isCancelled;
+  const attendeesLoading = attendeeHydration === 'loading';
   const activeTypePill = EVENT_TYPE_PILLS.find(p => p.type === formData.eventType) ?? EVENT_TYPE_PILLS[EVENT_TYPE_PILLS.length - 1]!;
 
-  const modalTitle = isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event';
+  const modalTitle = isCreating
+    ? 'New Event'
+    : isCancelled
+      ? 'Cancelled Event'
+      : isViewMode
+        ? 'Event Details'
+        : 'Edit Event';
+
+  const toggleRecurrenceWeekday = (day: number) => {
+    setFormData(prev => {
+      const current = prev.recurrenceWeekdays ?? [];
+      return {
+        ...prev,
+        recurrenceWeekdays: current.includes(day)
+          ? current.filter(d => d !== day)
+          : [...current, day].sort((a, b) => a - b),
+      };
+    });
+  };
 
   return (
     <Drawer
@@ -576,7 +767,7 @@ export function EventDetailModal({
           </div>
 
           {/* Event Type Selector - Colorful pills */}
-          {canEdit ? (
+          {canEdit && !isCancelled ? (
             <div className="flex flex-wrap gap-2">
               {EVENT_TYPE_PILLS.map((pill) => {
                 const Icon = pill.icon;
@@ -625,6 +816,30 @@ export function EventDetailModal({
             >
               <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
               {error}
+            </div>
+          )}
+
+          {/* Cancelled banner — soft-cancel lifecycle. Editing is disabled;
+              the only actions offered are Restore (when wired) and Delete. */}
+          {isCancelled && (
+            <div
+              role="status"
+              className="flex items-center justify-between gap-3 bg-warm-100 border border-warm-200 px-4 py-3 rounded-xl"
+            >
+              <span className="flex items-center gap-2 text-sm text-warm-700">
+                <Ban className="w-4 h-4 flex-shrink-0 text-warm-500" aria-hidden="true" />
+                This event is cancelled. Editing is disabled.
+              </span>
+              {isCoach && onRestore && (
+                <Button variant="ghost"
+                  type="button"
+                  onClick={handleRestore}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 text-sm font-medium text-primary-700 hover:text-primary-800 hover:bg-primary-50 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
+                >
+                  Restore event
+                </Button>
+              )}
             </div>
           )}
 
@@ -788,7 +1003,7 @@ export function EventDetailModal({
                           setFormData(prev => ({ ...prev, attendeeIds: availablePlayers.map(p => p.id) }));
                         }
                       }}
-                      disabled={isViewMode || isSaving}
+                      disabled={isViewMode || isSaving || attendeesLoading}
                       className="text-xs font-medium text-primary-600 hover:text-primary-700 disabled:opacity-40 transition-colors"
                     >
                       {formData.attendeeIds.length === availablePlayers.length ? 'Clear' : 'Add All'}
@@ -796,6 +1011,18 @@ export function EventDetailModal({
                   )}
                 </div>
               </div>
+
+              {attendeesLoading && (
+                <p className="text-xs text-warm-500" role="status">
+                  Loading current invitees...
+                </p>
+              )}
+
+              {attendeeHydration === 'error' && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2" role="status">
+                  Couldn&apos;t load the current invitees. You can still add players — existing invites won&apos;t be changed.
+                </p>
+              )}
 
               {availablePlayers.length === 0 ? (
                 <p className="text-sm text-warm-500 py-2">
@@ -810,7 +1037,7 @@ export function EventDetailModal({
                         key={player.id}
                         type="button"
                         onClick={() => handleToggleAttendee(player.id)}
-                        disabled={isViewMode || isSaving}
+                        disabled={isViewMode || isSaving || attendeesLoading}
                         className={cn(
                           'group flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150',
                           isSelected
@@ -836,6 +1063,23 @@ export function EventDetailModal({
                 </div>
               )}
 
+              {/* Pending attendee changes — the save summary. Removals only
+                  ever come from explicit deselects against the hydrated
+                  baseline, and they're called out before saving. */}
+              {!isViewMode && attendeeChangeSummary && (
+                <p
+                  role="status"
+                  className={cn(
+                    'text-xs rounded-lg px-3 py-2 border',
+                    (attendeeChanges?.removeAttendeeIds.length ?? 0) > 0
+                      ? 'text-amber-800 bg-amber-50 border-amber-200'
+                      : 'text-primary-700 bg-primary-50 border-primary-100',
+                  )}
+                >
+                  Saving will update invites: {attendeeChangeSummary}.
+                </p>
+              )}
+
               {/* Conflict Warning */}
               {checkingConflicts && (
                 <div className="p-3 bg-warm-100 rounded-xl text-sm text-warm-600 flex items-center gap-2">
@@ -858,17 +1102,20 @@ export function EventDetailModal({
             </div>
           )}
 
-          {/* Recurrence — only on create. Edit-recurring needs a scope dialog
-              and a backing column we don't have yet, so editing here only
-              affects the single occurrence. */}
-          {canEdit && isCreating && (
-            <div className="space-y-2">
+          {/* Recurrence pattern — on create, and on series-root edit (the
+              series-extend affordance: bump the count or push the end date
+              to add occurrences, or re-shape the weekday pattern). Child
+              occurrences don't carry the pattern; their edits go through
+              the scope picker instead. */}
+          {canEdit && !isCancelled && (isCreating || isSeriesRoot) && (
+            <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <label
                   htmlFor="event-recurrence"
-                  className="text-sm font-medium text-warm-700"
+                  className="text-sm font-medium text-warm-700 flex items-center gap-2"
                 >
-                  Repeats
+                  <Repeat className="w-4 h-4 text-warm-500" aria-hidden="true" />
+                  {isSeriesRoot ? 'Series pattern' : 'Repeats'}
                 </label>
                 <select
                   id="event-recurrence"
@@ -880,28 +1127,110 @@ export function EventDetailModal({
                   disabled={isSaving}
                   className="px-3 py-1.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors"
                 >
-                  <option value="none">Doesn&apos;t repeat</option>
+                  {/* A series root can't be flipped back to a one-off here —
+                      that's a delete-with-scope, not a pattern change. */}
+                  {!isSeriesRoot && <option value="none">Doesn&apos;t repeat</option>}
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
+                  <option value="biweekly">Every 2 weeks</option>
                   <option value="monthly">Monthly</option>
                 </select>
               </div>
+
+              {(formData.recurrence === 'weekly' || formData.recurrence === 'biweekly') && (
+                <div className="space-y-1.5">
+                  <div className="flex gap-1.5" role="group" aria-label="Repeat on days">
+                    {WEEKDAY_OPTIONS.map((day) => {
+                      const selected = (formData.recurrenceWeekdays ?? []).includes(day.value);
+                      return (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleRecurrenceWeekday(day.value)}
+                          disabled={isSaving}
+                          aria-pressed={selected}
+                          aria-label={day.long}
+                          className={cn(
+                            'w-8 h-8 rounded-full text-xs font-medium transition-colors',
+                            selected
+                              ? 'bg-primary-600 text-white shadow-sm'
+                              : 'bg-warm-100 text-warm-600 hover:bg-warm-200',
+                            'disabled:opacity-50',
+                          )}
+                        >
+                          {day.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(formData.recurrenceWeekdays ?? []).length === 0 && (
+                    <p className="text-label text-warm-400">
+                      No days picked — repeats on the start date&apos;s weekday.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {formData.recurrence !== 'none' && (
                 <div className="flex items-center justify-between gap-3 pl-1 text-sm text-warm-600">
-                  <span>Number of occurrences</span>
-                  <input
-                    type="number"
-                    min={2}
-                    max={52}
-                    value={formData.recurrenceCount}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      recurrenceCount: Math.max(2, Math.min(52, Number(e.target.value) || 10)),
-                    })}
-                    disabled={isSaving}
-                    className="w-20 px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white tabular-nums text-right"
-                  />
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="event-recurrence-end" className="sr-only">Series ends</label>
+                    <select
+                      id="event-recurrence-end"
+                      value={formData.recurrenceEndMode ?? 'count'}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        recurrenceEndMode: e.target.value as RecurrenceEndMode,
+                      })}
+                      disabled={isSaving}
+                      className="px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors"
+                    >
+                      <option value="count">Ends after</option>
+                      <option value="until">Ends on date</option>
+                    </select>
+                  </div>
+                  {(formData.recurrenceEndMode ?? 'count') === 'count' ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={MIN_RECURRENCE_COUNT}
+                        max={MAX_RECURRENCE_COUNT}
+                        value={formData.recurrenceCount}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          recurrenceCount: Math.max(
+                            MIN_RECURRENCE_COUNT,
+                            Math.min(MAX_RECURRENCE_COUNT, Number(e.target.value) || 10),
+                          ),
+                        })}
+                        disabled={isSaving}
+                        aria-label="Number of occurrences"
+                        className="w-20 px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white tabular-nums text-right"
+                      />
+                      <span className="text-warm-500">events</span>
+                    </div>
+                  ) : (
+                    <input
+                      type="date"
+                      min={formData.startDate}
+                      value={formData.recurrenceUntil || ''}
+                      onChange={(e) => setFormData({ ...formData, recurrenceUntil: e.target.value || null })}
+                      disabled={isSaving}
+                      aria-label="Series end date"
+                      className="px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors"
+                    />
+                  )}
                 </div>
+              )}
+
+              {recurrencePreview && (
+                <p className="text-label text-warm-500 pl-1">{recurrencePreview}</p>
+              )}
+
+              {isSeriesRoot && (
+                <p className="text-label text-warm-400 pl-1">
+                  Raising the count or pushing the end date later extends this series with new occurrences.
+                </p>
               )}
             </div>
           )}

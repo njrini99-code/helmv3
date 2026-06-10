@@ -353,6 +353,11 @@ export async function getOrCreateCalendarFeedToken(): Promise<ActionResult<{ url
 /**
  * Regenerate the calendar feed token for the current user.
  * Invalidates the old URL and creates a new one.
+ *
+ * Scoping: only the feed being rotated (the one getOrCreateCalendarFeedToken
+ * surfaces — the user's most recent active feed) is deactivated. A user's
+ * OTHER feeds (e.g. a coach's separate team feed) must keep working; the old
+ * behavior of deactivating every active feed for the user broke them all.
  */
 export async function regenerateCalendarFeedToken(): Promise<ActionResult<{ url: string; token: string }>> {
   const contextResult = await getUserContext();
@@ -363,15 +368,31 @@ export async function regenerateCalendarFeedToken(): Promise<ActionResult<{ url:
   const { userId, teamId, displayName } = contextResult.data;
   const supabase = await createClient();
 
-  // Deactivate all existing feeds for this user
-  const { error: deactivateError } = await supabase
+  // Find the single targeted feed (same selection getOrCreateCalendarFeedToken
+  // uses: the user's latest active feed).
+  const { data: existingFeed, error: findError } = await supabase
     .from('golf_calendar_feeds')
-    .update({ is_active: false })
+    .select('id')
     .eq('user_id', userId)
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-  if (deactivateError) {
-    return { success: false, error: 'Failed to invalidate old feed' };
+  if (findError) {
+    return { success: false, error: 'Failed to look up existing feed' };
+  }
+
+  // Deactivate ONLY the targeted feed (if one exists).
+  if (existingFeed) {
+    const { error: deactivateError } = await supabase
+      .from('golf_calendar_feeds')
+      .update({ is_active: false })
+      .eq('id', existingFeed.id);
+
+    if (deactivateError) {
+      return { success: false, error: 'Failed to invalidate old feed' };
+    }
   }
 
   // Create a new feed with a new token
