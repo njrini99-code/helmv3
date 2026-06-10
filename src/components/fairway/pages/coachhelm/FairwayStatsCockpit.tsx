@@ -1580,8 +1580,8 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
     { label: 'Putts / GIR', value: fmtNum(s.puttsPerGir, 2) },
     { label: '3-putts / round', value: fmtNum(s.threePuttsPerRound, 2) },
     { label: '1-putts total', value: s.totalPutts > 0 ? fmtInt(s.onePuttsTotal) : '—' },
-    // Avg distance of the first putt — how close approaches leave the ball (feet).
-    { label: 'Approach putt distance', value: fmtFeet(s.firstPuttDistanceAvg) },
+    // Avg distance left after every putt (0 for makes) — the "approach putting" stat.
+    { label: 'Approach putting avg', value: s.approachPuttAvgLeave !== null ? `${s.approachPuttAvgLeave.toFixed(1)} ft avg` : '—' },
   ];
   const makeBands: DetailRow[] = [
     { label: '0-3 ft', value: fmtPct(s.puttMakePct0_3) },
@@ -1594,12 +1594,13 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
     { label: '30-35 ft', value: fmtPct(s.puttMakePct30_35) },
     { label: '35+ ft', value: fmtPct(s.puttMakePct35Plus) },
   ];
-  // First-putt (approach putt) distance distribution — % of first putts that
-  // originated in each distance band. Same band label set/order as make %.
-  const approachPuttBands: DetailRow[] = PUTT_BAND_LABELS.map(({ key, label }) => ({
-    label,
-    value: fmtPct(s.firstPuttDistanceByBand[key]),
-  }));
+  // Approach putting: avg distance left after putts that STARTED in each band.
+  // 0 for made putts; missed putts with unknown leave are excluded (null-honest).
+  // Replaces the old "% of first putts per band" (percentage) display.
+  const approachPuttBands: DetailRow[] = PUTT_BAND_LABELS.map(({ key, label }) => {
+    const v = s.approachPuttAvgLeaveByBand[key];
+    return { label, value: v !== null && v !== undefined ? `${v.toFixed(1)} ft avg` : '—' };
+  });
   const breakMakeBands: DetailRow[] = [
     { label: '0-3 ft', value: fmtPct(breakStats.makePct0_3) },
     { label: '3-5 ft', value: fmtPct(breakStats.makePct3_5) },
@@ -1632,8 +1633,8 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
         {!allDash(makeBands) ? <DetailGrid title="Make % by distance" rows={makeBands} columns={3} /> : null}
         {!allDash(approachPuttBands) ? (
           <DetailGrid
-            title="Approach putt distance by band"
-            hint="Share of first putts that started in each band"
+            title="Approach putting by distance"
+            hint="Avg feet left after a putt from each starting band (0 ft = made)"
             rows={approachPuttBands}
             columns={3}
           />
