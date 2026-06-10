@@ -166,3 +166,21 @@ export function proximateCause(
   if (!h.gir && !h.up_and_down) return 'missed_gir_no_scramble';
   return 'clean';
 }
+
+/**
+ * Newest round date in the player's cache — the cheap input for
+ * staleDataSuffix on shot-source generators (rescore item 3: a 'high'
+ * scrambling alert regenerated today described play 63 days old with no
+ * disclosure). Returns null on missing cache row; THROWS on query error
+ * (NEW-P1 contract: error must not read as no-data).
+ */
+export async function loadLastRoundDate(playerId: string): Promise<string | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('golf_player_stats_cache')
+    .select('last_round_date')
+    .eq('player_id', playerId)
+    .maybeSingle();
+  if (error) throw new Error(`loadLastRoundDate failed: ${error.message}`);
+  return (data?.last_round_date as string | null) ?? null;
+}

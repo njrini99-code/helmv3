@@ -37,6 +37,7 @@ function makeAgg(over: Partial<{
   cause_penalty_pct: number;
 }> = {}) {
   return {
+    last_round_date: '2026-05-25',
     sampleN: over.rounds_with_hole1 ?? 12,
     playerValue: over.playerValue ?? 0.35,
     hole1_avg: over.hole1_avg ?? 0.45,

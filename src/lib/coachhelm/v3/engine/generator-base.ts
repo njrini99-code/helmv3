@@ -498,6 +498,10 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
             level_pct: standing.level_pct,
             pga_value: standing.pga_value,
             pga_delta: standing.pga_delta,
+            // Gender-anchor omission flag (rescore item 1): set in-memory by
+            // applyGenderAnchor but previously DROPPED here, so women's cards
+            // never suppressed a misleading cross-gender Tour marker.
+            pga_omitted: standing.pga_omitted,
             computed_at: standing.computed_at,
           },
           counterfactual,

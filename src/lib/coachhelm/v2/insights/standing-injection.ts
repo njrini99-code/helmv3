@@ -48,6 +48,7 @@ function flatten(s: PlayerStanding): EvidenceStanding {
     team_pct: s.team_pct,
     pga_value: s.pga_value,
     pga_delta: s.pga_delta,
+    pga_omitted: s.pga_omitted,
     computed_at: s.computed_at,
   };
 }

@@ -26,6 +26,8 @@
  * only changes the prose + the priority hint feeding Phase A's floor.
  */
 
+import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { round } from '@/lib/golf/stat-formulas';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadSandShots, type SandShot } from '@/lib/coachhelm/v3/engine/shot-source';
@@ -43,6 +45,8 @@ type ScramblingLie = 'sand';
 type ScramblingFailureMode = 'escape' | 'lag' | 'mixed';
 
 interface ScramblingAggregate extends GeneratorAggregate {
+  /** Newest cache round date — feeds the staleness disclosure. */
+  last_round_date: string | null;
   lie: ScramblingLie;
   attempts: number;
   rounds_played: number;
@@ -134,7 +138,10 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
       failureMode = 'mixed';
     }
 
+    const lastRoundDate = await loadLastRoundDate(this.playerId);
+
     return {
+      last_round_date: lastRoundDate,
       sampleN: attempts,
       playerValue,
       lie: this.lie,
@@ -186,7 +193,9 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
         `dominates yet — keep logging bunker shots to sharpen the read.`;
     }
 
-    const content = `${driver} ${agg.cohort_gender === 'womens' ? "Women's college" : 'Tour'} sand-save average is ~${anchor}%.`;
+    const content =
+      `${driver} ${agg.cohort_gender === 'womens' ? "Women's college" : 'Tour'} sand-save average is ~${anchor}%.` +
+      staleDataSuffix(agg.last_round_date);
 
     return {
       title,

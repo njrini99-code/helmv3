@@ -23,6 +23,7 @@ function makeAgg(opts: {
   const ndFw = opts.ndFw ?? 0.7;
   const ndDist = opts.ndDist ?? 240;
   return {
+    last_round_date: '2026-05-25',
     sampleN: driverAttempts,
     playerValue: driverFw * 100,
     driver: {

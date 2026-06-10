@@ -42,6 +42,8 @@
  * want layback alerts can opt out via the coach settings UI.
  */
 
+import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadTeeShotsForStrategy, type TeeStrategyShot } from '@/lib/coachhelm/v3/engine/shot-source';
 import { isGeneratorEnabledForPlayer } from '@/lib/coachhelm/v3/foundation/generator-toggles';
@@ -104,6 +106,8 @@ interface GroupStats {
 }
 
 interface TeeStrategyAggregate extends GeneratorAggregate {
+  /** Newest cache round date — feeds the staleness disclosure. */
+  last_round_date: string | null;
   driver: GroupStats;
   nonDriver: GroupStats;
   pattern: TeeStrategyPattern;
@@ -187,8 +191,11 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
 
     const roundIds = new Set(rows.map((r) => r.round_id));
 
+    const lastRoundDate = await loadLastRoundDate(this.playerId);
+
     return {
       sampleN: driver.attempts,
+      last_round_date: lastRoundDate,
       playerValue: driver.fairwayPct * 100, // percent for display
       driver,
       nonDriver,
@@ -250,7 +257,7 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
 
     return {
       title,
-      content,
+      content: content + staleDataSuffix(agg.last_round_date),
       // laggy is the only branch framed as costing strokes; sharp/inconclusive are strength/neutral.
       priority: agg.pattern === 'laggy' ? 'high' : 'low',
       signature: `tee_strategy:${agg.pattern}`,
