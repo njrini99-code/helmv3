@@ -186,22 +186,35 @@ describe('intelligence-dashboard actions', () => {
           return { select: patternSelectSpy };
         }
         if (table === 'golf_coach_insights') {
+          // The action now wraps both queries in `applyInsightVisibility`,
+          // which chains .or → .in → .neq AFTER the .eq filters. Model a
+          // self-returning visibility chain that lands on the terminal.
+          const visibilityChain = (terminal: unknown) => {
+            const node: Record<string, unknown> = {};
+            node.or = () => node;
+            node.in = () => node;
+            node.neq = () => node;
+            // Count query: `neq` is the last call before await → make node
+            // awaitable. Data query continues with .order().range().
+            node.then = (resolve: (v: unknown) => void) =>
+              Promise.resolve(resolve(terminal));
+            node.order = () => ({
+              range: async () => terminal,
+            });
+            return node;
+          };
           return {
             select: (_cols: string, opts?: { count?: string; head?: boolean }) => {
               if (opts?.head) {
                 return {
                   eq: () => ({
-                    eq: async () => ({ count: 0, error: null }),
+                    eq: () => visibilityChain({ count: 0, error: null }),
                   }),
                 };
               }
               return {
                 eq: () => ({
-                  eq: () => ({
-                    order: () => ({
-                      range: async () => ({ data: [], error: null }),
-                    }),
-                  }),
+                  eq: () => visibilityChain({ data: [], error: null }),
                 }),
               };
             },

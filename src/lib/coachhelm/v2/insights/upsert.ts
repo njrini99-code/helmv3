@@ -211,7 +211,11 @@ async function updateExisting(
     // and permanently. `status` is deliberately NOT touched: a coach
     // dismissal keeps hiding the row regardless of lifecycle.
     if (existing.lifecycle_state === 'archived') {
-      refreshPayload.lifecycle_state = 'detected';
+      // Resurrection honors the SAME confidence gate as a fresh insert
+      // (regrade NEW-P2): sub-floor confidence comes back pre-maturity
+      // 'tentative' (invisible), never straight to coach-visible 'detected'.
+      refreshPayload.lifecycle_state =
+        evidence.confidence < TENTATIVE_CONFIDENCE_FLOOR ? 'tentative' : 'detected';
       refreshPayload.archived_at = null;
       mergedMetadata.redetected_at = nowIso;
     }
@@ -270,7 +274,9 @@ async function updateExisting(
   // RESURRECTION on movement — see the refresh-branch comment. shouldMature
   // requires lifecycle 'detected', so the two assignments are exclusive.
   if (existing.lifecycle_state === 'archived') {
-    updatePayload.lifecycle_state = 'detected';
+    // Same confidence-gated resurrection as the refresh branch (NEW-P2).
+    updatePayload.lifecycle_state =
+      evidence.confidence < TENTATIVE_CONFIDENCE_FLOOR ? 'tentative' : 'detected';
     updatePayload.archived_at = null;
     mergedMetadata.redetected_at = nowIso;
   }
@@ -296,7 +302,7 @@ async function updateExisting(
     shouldMature
       ? 'matured'
       : existing.lifecycle_state === 'archived'
-        ? 'detected' // resurrected above
+        ? (evidence.confidence < TENTATIVE_CONFIDENCE_FLOOR ? 'tentative' : 'detected') // resurrected above
         : (existing.lifecycle_state ?? 'detected');
   try {
     if (input.player_id) {

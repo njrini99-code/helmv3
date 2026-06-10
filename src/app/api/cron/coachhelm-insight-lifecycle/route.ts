@@ -11,16 +11,31 @@
  *      incremented when checked AND in the healthy band, reset to 0 when
  *      out of band. Upon resolution we set `resolved_at`.
  *
- *   2. detected insights with `metadata.movement_count == 0`, age > 30d,
- *      and no `addressed_at` are archived. Sets `archived_at`.
+ *   2. detected insights with `metadata.movement_count == 0`,
+ *      staleness > 30d, and no `addressed_at` are archived. Sets `archived_at`.
  *
- *   3. Any insight older than 90d that is neither matured nor addressed
- *      is archived. Sets `archived_at`.
+ *   3. Any insight stale for more than 90d that is neither matured nor
+ *      addressed is archived. Sets `archived_at`.
+ *
+ *      STALENESS ANCHOR (Rules 2 & 3): a row the engine is still actively
+ *      refreshing is ALIVE and must NOT be archived. The new generator regen
+ *      refreshes rows nightly (bumping `metadata.last_refreshed_at`) and the
+ *      upsert's resurrection brings archived rows back to `detected`
+ *      (stamping `metadata.redetected_at`). Anchoring archive purely on
+ *      `created_at` would archive a still-emitted insight, the next regen
+ *      would resurrect it, and the cron would re-archive it — a permanent
+ *      nightly flap. So Rules 2 & 3 anchor staleness on the most recent sign
+ *      of life: `max(created_at, metadata.last_refreshed_at,
+ *      metadata.redetected_at)`. Both metadata fields are parsed defensively
+ *      (may be absent or malformed). Rule 4 below deliberately keeps using
+ *      `created_at`-based age (it models DATA recency, not row liveness).
  *
  *   4. Recompute `evidence.confidence_factors.recency` using age vs.
  *      window_days: if (age - window_days) > 0, drop recency by 0.2 per
  *      30 days of overage. Re-derive confidence. If confidence falls below
  *      0.4 AND the insight is still in `detected`, demote to `tentative`.
+ *      NB: `age` here is `created_at`-based on purpose (data recency), NOT
+ *      the liveness anchor used by Rules 2 & 3.
  *
  * Schedule: `0 2 * * *` (see vercel.json).
  * Auth:     Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
@@ -292,6 +307,19 @@ export async function GET(req: NextRequest) {
 }
 
 /**
+ * Defensively parse a metadata timestamp into epoch-ms. Returns
+ * Number.NEGATIVE_INFINITY for absent / non-string / unparseable values so it
+ * never wins a `Math.max(...)` against a real `created_at`. Used by the Rule
+ * 2/3 liveness anchor where `metadata.last_refreshed_at` and
+ * `metadata.redetected_at` may be missing or malformed.
+ */
+function parseMetadataMs(value: unknown): number {
+  if (typeof value !== 'string') return Number.NEGATIVE_INFINITY;
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? Number.NEGATIVE_INFINITY : ms;
+}
+
+/**
  * Pure function: given a row, decide what to write. Returns null when no
  * change is needed. Exported-for-test would be nice but keeping private
  * since the cron is exercised end-to-end.
@@ -305,9 +333,23 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
   const lifecycle = row.lifecycle_state;
   const metadata: JsonRecord = { ...(row.metadata ?? {}) };
 
-  // --- Rule 3: hard archive at >90d if not matured and not addressed ---------
+  // Staleness anchor for the archive rules (2 & 3): the most recent sign of
+  // life. A row the engine is still refreshing nightly (last_refreshed_at) or
+  // that resurrection just brought back (redetected_at) is ALIVE and must not
+  // be archived just because it was first CREATED long ago — otherwise the
+  // nightly regen/resurrection vs. cron-archive flap is permanent. Both
+  // metadata timestamps are parsed defensively: absent or malformed values
+  // contribute nothing (they fall back to createdMs via the max()).
+  const lastAliveMs = Math.max(
+    createdMs,
+    parseMetadataMs(metadata.last_refreshed_at),
+    parseMetadataMs(metadata.redetected_at),
+  );
+  const staleDays = Math.max(0, (nowMs - lastAliveMs) / MS_PER_DAY);
+
+  // --- Rule 3: hard archive at >90d stale if not matured and not addressed ---
   const isHardArchivable =
-    ageDays > ARCHIVE_HARD_AGE_DAYS &&
+    staleDays > ARCHIVE_HARD_AGE_DAYS &&
     lifecycle !== 'matured' &&
     lifecycle !== 'addressed';
   if (isHardArchivable) {
@@ -317,13 +359,13 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
     return patch;
   }
 
-  // --- Rule 2: detected + 0 movements + age>30d + no addressed_at -> archive --
+  // --- Rule 2: detected + 0 movements + stale>30d + no addressed_at -> archive
   const movementCount = typeof metadata.movement_count === 'number'
     ? (metadata.movement_count as number)
     : 0;
   const isSoftArchivable =
     lifecycle === 'detected' &&
-    ageDays > ARCHIVE_DETECTED_AGE_DAYS &&
+    staleDays > ARCHIVE_DETECTED_AGE_DAYS &&
     movementCount === 0 &&
     !row.addressed_at;
   if (isSoftArchivable) {

@@ -21,7 +21,8 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
-import { loadCompletedHoles, proximateCause } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
+import { loadCompletedHoles, LIFETIME_WINDOW_DAYS, proximateCause } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
+import { lifetimeSpanDays, staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -62,6 +63,10 @@ interface CourseMgmtAggregate extends GeneratorAggregate {
   cause_three_putt_pct: number;
   /** Top per-hole-number average-to-par offenders (n>=3 plays), worst first. */
   worst_holes: Array<{ hole_number: number; avg_to_par: number; n: number }>;
+  /** Honest lifetime span of the cache data (regrade VAL-P2). */
+  spanDays: number | null;
+  first_round_date: string | null;
+  last_round_date: string | null;
 }
 
 export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
@@ -90,11 +95,12 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     const { data, error } = await supabase
       .from('golf_player_stats_cache')
       .select(
-        'rounds_played, penalty_strokes_per_round, eagles, birdies, pars, bogeys, double_bogeys, triple_plus',
+        'rounds_played, penalty_strokes_per_round, eagles, birdies, pars, bogeys, double_bogeys, triple_plus, first_round_date, last_round_date',
       )
       .eq('player_id', this.playerId)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) throw new Error(`course-mgmt aggregate query failed: ${error.message}`);
+    if (!data) return null;
     const roundsPlayed = data.rounds_played ?? 0;
 
     let value: number | null = null;
@@ -119,7 +125,9 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
 
     // C3: decompose the big numbers by proximate cause + find worst holes. The
     // cache scalar stays playerValue; this only fuels the cause-naming prose.
-    const holes = await loadCompletedHoles(this.playerId);
+    // LIFETIME holes — the headline value is the lifetime cache scalar, so the
+    // cause split must share its denominator (regrade VAL-P1/P2).
+    const holes = await loadCompletedHoles(this.playerId, LIFETIME_WINDOW_DAYS);
     let penaltyN = 0, missedGirN = 0, threePuttN = 0, doublePlusN = 0;
     const byHole = new Map<number, { sum: number; n: number }>();
     for (const h of holes) {
@@ -172,6 +180,12 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       cause_penalty_pct: cpct(penaltyN),
       cause_missed_gir_pct: cpct(missedGirN),
       cause_three_putt_pct: cpct(threePuttN),
+      spanDays: lifetimeSpanDays(
+        (data as { first_round_date?: string | null }).first_round_date ?? null,
+        (data as { last_round_date?: string | null }).last_round_date ?? null,
+      ),
+      first_round_date: (data as { first_round_date?: string | null }).first_round_date ?? null,
+      last_round_date: (data as { last_round_date?: string | null }).last_round_date ?? null,
       worst_holes: worstHoles,
     };
   }
@@ -241,7 +255,8 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
           `Across your last ${agg.rounds_played} rounds you're averaging ` +
           `${valueDisp} penalty strokes per round. ${anchorClause}.` +
           causeClause + worstClause +
-          ` Every penalty avoided is worth ~1.5 strokes per round.`,
+          ` Every penalty avoided is worth ~1.5 strokes per round.` +
+          staleDataSuffix(agg.last_round_date),
         // Severity anchored to the cohort the counterfactual uses (cm-1): >0.3 over
         // anchor is high, >0.1 over medium, at/under the anchor low. PGA fallback
         // (0.3) keeps the pre-cm-1 thresholds (0.6 high / 0.3 medium) at cold-start.
@@ -257,9 +272,11 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
           comparison_label: 'PGA Tour avg',
           comparison_source: 'pga_baseline',
           sample_n: agg.rounds_played,
-          window_days: 90,
-          window_start: '',
-          window_end: '',
+          // Honest lifetime span — this generator reads LIFETIME cache columns
+          // (regrade VAL-P2: rows older than 90d sat inside the claimed window).
+          window_days: agg.spanDays ?? 0,
+          window_start: agg.first_round_date ?? '',
+          window_end: agg.last_round_date ?? '',
           strokes_impact: 0,
           strokes_impact_method: 'peer_delta',
           confidence: 0,
@@ -283,7 +300,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
         `Across your last ${agg.rounds_played} rounds, ${valueDisp} of holes ` +
         `ended in double bogey or worse. ${anchorClause}. Per Research doc §4 ` +
         `this is the #1 separator between 70s and 80s rounds.` +
-        causeClause + worstClause,
+        causeClause + worstClause + staleDataSuffix(agg.last_round_date),
       // Severity anchored to the cohort the counterfactual uses (cm-1): >2pp over
       // anchor is high, >0.5pp over medium, at/under the anchor low. PGA fallback
       // (2%) keeps the pre-cm-1 thresholds (4% high / 2% medium) at cold-start.
@@ -299,9 +316,9 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
         comparison_label: 'PGA Tour avg',
         comparison_source: 'pga_baseline',
         sample_n: agg.rounds_played,
-        window_days: 90,
-        window_start: '',
-        window_end: '',
+        window_days: agg.spanDays ?? 0,
+        window_start: agg.first_round_date ?? '',
+        window_end: agg.last_round_date ?? '',
         strokes_impact: 0,
         strokes_impact_method: 'peer_delta',
         confidence: 0,

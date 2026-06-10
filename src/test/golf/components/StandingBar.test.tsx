@@ -330,6 +330,67 @@ describe('StandingBar render states — hero', () => {
 });
 
 // ---------------------------------------------------------------------------
+// P3: omitted reference marker (women on metrics with no credible anchor)
+// ---------------------------------------------------------------------------
+
+describe('StandingBar pga_omitted (P3)', () => {
+  it('card: drops the PGA value + omits it from the aria label', () => {
+    const { container } = render(
+      <StandingBar
+        {...HAPPY}
+        metric_id="big_number_rate"
+        metric_label="Double Bogey-or-Worse Rate"
+        unit="percent"
+        pga_value={2}
+        pga_omitted
+      />,
+    );
+    // The reference value text must be gone (no "PGA 2%").
+    expect(screen.queryByText(/PGA 2%/)).toBeNull();
+    // You is still shown.
+    expect(screen.getByText(/You 38%/)).toBeTruthy();
+    // aria label must not narrate the men's reference.
+    const aria = container.querySelector('[role="img"]')?.getAttribute('aria-label') ?? '';
+    expect(aria).not.toContain('PGA Tour');
+    expect(aria).toContain('You: 38%');
+  });
+
+  it('card: still renders the reference normally when pga_omitted is absent', () => {
+    render(<StandingBar {...HAPPY} />);
+    expect(screen.getByText(/PGA 36%/)).toBeTruthy();
+  });
+
+  it('inline: drops the dot-separated reference segment', () => {
+    render(
+      <StandingBar
+        {...HAPPY}
+        size="inline"
+        metric_id="penalty_rate_per_round"
+        unit="count"
+        pga_value={0.3}
+        pga_omitted
+      />,
+    );
+    expect(screen.queryByText(/PGA/)).toBeNull();
+    expect(screen.getByText(/You 38/)).toBeTruthy();
+  });
+
+  it('hero: drops the reference value from the secondary row', () => {
+    render(
+      <StandingBar
+        {...HAPPY}
+        size="hero"
+        metric_id="scoring_par_4"
+        unit="strokes"
+        pga_value={4.1}
+        pga_omitted
+      />,
+    );
+    expect(screen.queryByText(/PGA/)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Size dispatch
 // ---------------------------------------------------------------------------
 

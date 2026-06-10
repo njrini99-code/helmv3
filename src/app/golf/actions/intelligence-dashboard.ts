@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess as sharedVerifyTeamAccess } from '@/lib/auth/verify-player-access';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 // ============================================================================
 // TYPES
@@ -227,36 +228,43 @@ export async function getTeamInsightsSummary(
     const limit = Math.min(pagination?.limit ?? 50, 100); // Max 100 per request
     const offset = pagination?.offset ?? 0;
 
-    // First get total count for pagination
-    const { count: totalCount } = await supabase
-      .from('golf_coach_insights')
-      .select('id', { count: 'exact', head: true })
-      .eq('team_id', teamId)
-      .eq('dismissed', false);
+    // First get total count for pagination. Apply the SAME shared product-
+    // visibility contract (P2 legacy-surface) so this legacy intelligence list
+    // never counts/renders stale v2 phantoms or archived/tentative rows if the
+    // redesign flag is ever flipped off.
+    const { count: totalCount } = await applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select('id', { count: 'exact', head: true })
+        .eq('team_id', teamId)
+        .eq('dismissed', false),
+    );
 
     // Fetch active insights for the team using actual database columns
-    const { data: insightsData, error: insightsError } = await supabase
-      .from('golf_coach_insights')
-      .select(`
-        id,
-        coach_id,
-        player_id,
-        team_id,
-        insight_type,
-        title,
-        content,
-        priority,
-        status,
-        acknowledged_at,
-        dismissed,
-        dismissed_at,
-        metadata,
-        created_at,
-        updated_at,
-        player:golf_players(id, first_name, last_name)
-      `)
-      .eq('team_id', teamId)
-      .eq('dismissed', false)
+    const { data: insightsData, error: insightsError } = await applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select(`
+          id,
+          coach_id,
+          player_id,
+          team_id,
+          insight_type,
+          title,
+          content,
+          priority,
+          status,
+          acknowledged_at,
+          dismissed,
+          dismissed_at,
+          metadata,
+          created_at,
+          updated_at,
+          player:golf_players(id, first_name, last_name)
+        `)
+        .eq('team_id', teamId)
+        .eq('dismissed', false),
+    )
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

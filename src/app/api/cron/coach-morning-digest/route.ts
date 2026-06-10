@@ -24,6 +24,7 @@ import {
 } from '@/lib/email/coach-digest-template';
 import { sendCoachDigest } from '@/lib/email/resend-client';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -313,20 +314,28 @@ async function fetchInsights(
   lifecycles: string[],
   limit: number,
 ): Promise<InsightQueryRow[]> {
-  const { data, error } = await supabase
-    .from('golf_coach_insights')
-    .select(`
-      id,
-      player_id,
-      title,
-      content,
-      evidence,
-      lifecycle_state,
-      player:golf_players ( first_name, last_name )
-    `)
-    .in('player_id', playerIds)
+  // Apply the SAME product-visibility contract every coach surface uses
+  // (DEL-1 / P1): the digest must NOT surface stale v2 rows (the par_scoring
+  // phantoms the engine retired) or archived/dismissed rows. `applyInsightVisibility`
+  // chains the v3-engine + visible-lifecycle + not-dismissed predicates; the
+  // per-slot `.in('lifecycle_state', lifecycles)` below narrows the already-
+  // visible superset to this slot's states (matured/addressed | resolved |
+  // detected — all subsets of VISIBLE_LIFECYCLE_STATES).
+  const { data, error } = await applyInsightVisibility(
+    supabase
+      .from('golf_coach_insights')
+      .select(`
+        id,
+        player_id,
+        title,
+        content,
+        evidence,
+        lifecycle_state,
+        player:golf_players ( first_name, last_name )
+      `)
+      .in('player_id', playerIds),
+  )
     .in('lifecycle_state', lifecycles)
-    .neq('status', 'dismissed')
     .not('evidence', 'is', null)
     .order('created_at', { ascending: false })
     .limit(Math.max(limit * 5, 10)); // over-fetch, then rank client-side

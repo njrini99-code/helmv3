@@ -154,7 +154,11 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     this.metricId = DIR_TO_METRIC_ID[weakestDirection];
   }
 
-  /** Both directional instances aggregate the SAME data and emit the same signature ('putt_bias:balanced' or the data-derived weakest direction), so they share the whole putt_bias scope; the post-emit keep makes the sweep idempotent across the pair, and a heal to 'balanced' retracts the stale directional row. */
+  /** Single instance owns the whole putt_bias scope (the orchestrator runs
+   * exactly one since regrade NEW-P2 — the aggregate derives the weakest
+   * direction from data, so a second directional instance was redundant and
+   * raced this sweep). A heal to 'balanced' retracts the stale directional
+   * row; a band move retracts the old band via the post-emit keep. */
   protected override signatureScope(): string {
     return 'putt_bias:';
   }
@@ -171,7 +175,8 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
         data: Array<{ id: string }> | null;
         error: { message: string } | null;
       };
-    if (rErr || !rounds || rounds.length === 0) return null;
+    if (rErr) throw new Error(`putt-bias rounds query failed: ${rErr.message}`);
+    if (!rounds || rounds.length === 0) return null;
     const roundIds = rounds.map((r) => r.id);
 
     const { data: putts, error: pErr } = await fromUntyped(supabase, 'golf_shots')
@@ -187,7 +192,8 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
         }> | null;
         error: { message: string } | null;
       };
-    if (pErr || !putts) return null;
+    if (pErr) throw new Error(`putt-bias putts query failed: ${pErr.message}`);
+    if (!putts) return null;
 
     const rows: PuttRow[] = [];
     for (const p of putts) {

@@ -35,7 +35,8 @@ export function Inline(props: StandingBarProps) {
   const showTeam = shouldShowTeamMarker(props);
   const youPct = toScalePct(props.player_value, props.scale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
-  const pgaPct = toScalePct(props.pga_value, props.scale);
+  // P3: omit the reference marker entirely when the anchor is suppressed.
+  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, props.scale);
   const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
   // EC-2: suppress the team-relative caption when the team marker is hidden
   // (tiny roster) — same team_n>=5 floor the marker uses.
@@ -74,8 +75,12 @@ export function Inline(props: StandingBarProps) {
           <>T {formatValue(props.team_avg, props.unit)} · </>
         )}
         <span className="text-warm-900 font-medium">You {formatValue(props.player_value, props.unit)}</span>
-        {' · '}
-        {refLabel} {formatValue(props.pga_value, props.unit)}
+        {!props.pga_omitted && (
+          <>
+            {' · '}
+            {refLabel} {formatValue(props.pga_value, props.unit)}
+          </>
+        )}
       </div>
 
       {/* Bar */}

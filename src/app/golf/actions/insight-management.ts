@@ -18,6 +18,7 @@ import type {
   InsightWithPlayer,
 } from '@/lib/coachhelm/insight-types';
 import { logServerError } from '@/lib/server-error-logger';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 // ============================================================================
 // TYPES
@@ -83,18 +84,24 @@ export async function searchInsights({
   const supabase = await createClient();
 
   try {
-    // Build the query
+    // Build the query. Apply the SAME shared product-visibility contract (P2
+    // legacy-surface) so the legacy InsightsPageContent search never surfaces
+    // stale v2 phantoms or archived/tentative rows if the redesign flag is ever
+    // flipped off. The text-search `.or(...)` chained below ANDs with the
+    // helper's v3-engine `.or(...)` per PostgREST semantics.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let queryBuilder = (supabase as any)
-      .from('golf_coach_insights')
-      .select(
-        `
+    let queryBuilder = applyInsightVisibility(
+      (supabase as any)
+        .from('golf_coach_insights')
+        .select(
+          `
         *,
         player:golf_players(id, first_name, last_name, avatar_url)
       `,
-        { count: 'exact' }
-      )
-      .eq('coach_id', coachId);
+          { count: 'exact' }
+        )
+        .eq('coach_id', coachId),
+    );
 
     // Text search on title and content.
     // NOTE: live schema has `content` (not `description`). The old `.or()`
@@ -693,11 +700,16 @@ export async function getInsightsStats(
   const supabase = await createClient();
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: insights, error } = await (supabase as any)
-      .from('golf_coach_insights')
-      .select('status, priority, insight_type')
-      .eq('coach_id', coachId);
+    // Apply the SAME shared product-visibility contract (P2 legacy-surface) so
+    // the legacy stats counts reflect the product-visible truth (e.g. 212),
+    // not every stale v2 / archived / tentative row (313).
+    const { data: insights, error } = await applyInsightVisibility(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from('golf_coach_insights')
+        .select('status, priority, insight_type')
+        .eq('coach_id', coachId),
+    );
 
     if (error) {
       await logServerError(`[Stats Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.getInsightsStats' });

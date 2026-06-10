@@ -8,6 +8,7 @@ import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerInsight } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
 import { logServerError } from '@/lib/server-error-logger';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 export const metadata: Metadata = {
   title: 'Player Insight | Helm Golf',
@@ -181,12 +182,18 @@ export default async function PlayerInsightPage({
 
     // Insights (not dismissed). `tone` + `acknowledged` columns don't
     // exist on live schema — they're derived from metadata / acknowledged_at
-    // in the client component.
-    supabase
-      .from('golf_coach_insights')
-      .select('id, title, content, metadata, dismissed, acknowledged_at, created_at')
-      .eq('player_id', playerId)
-      .eq('dismissed', false)
+    // in the client component. Apply the SAME shared product-visibility
+    // contract (P2 legacy-surface): this SSR fetch feeds the flag-off
+    // PlayerInsightClient, so it must not surface stale v2 phantoms or
+    // archived/tentative rows. (In the redesign branch FairwayPlayerInsight
+    // re-fetches via the already-filtered getInsightsForCoach.)
+    applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select('id, title, content, metadata, dismissed, acknowledged_at, created_at')
+        .eq('player_id', playerId)
+        .eq('dismissed', false),
+    )
       .order('created_at', { ascending: false })
       .limit(20),
 

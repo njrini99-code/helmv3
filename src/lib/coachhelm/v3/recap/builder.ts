@@ -13,6 +13,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 type Sb = SupabaseClient<Database>;
 
@@ -116,12 +117,18 @@ export async function buildWeeklyRecap(
   let insightsCount = 0;
   const insightTypeCount = new Map<string, Set<string>>();
   if (playerIds.length > 0) {
-    const { data: insights } = await sb
-      .from('golf_coach_insights')
-      .select('insight_type, player_id, created_at')
-      .in('player_id', playerIds)
-      .gte('created_at', weekStart.toISOString())
-      .lte('created_at', weekEnd.toISOString());
+    // Apply the SAME product-visibility contract (P2): the weekly recap email's
+    // "insights surfaced" totals + top-pattern rollup must count only
+    // product-visible rows — never stale v2, archived, tentative, or dismissed
+    // rows the coach would never actually see in-app.
+    const { data: insights } = await applyInsightVisibility(
+      sb
+        .from('golf_coach_insights')
+        .select('insight_type, player_id, created_at')
+        .in('player_id', playerIds)
+        .gte('created_at', weekStart.toISOString())
+        .lte('created_at', weekEnd.toISOString()),
+    );
     insightsCount = (insights ?? []).length;
     for (const row of insights ?? []) {
       if (!row.player_id) continue;

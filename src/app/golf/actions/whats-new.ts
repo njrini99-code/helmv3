@@ -16,6 +16,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 // ============================================================================
 // TYPES
@@ -143,22 +144,32 @@ export async function getWhatsNewForCoach(): Promise<{
       focusCreatedResult,
       focusCompletedResult,
     ] = await Promise.all([
-      // 1) Insights matured or resolved (lifecycle transitions)
-      supabase
-        .from('golf_coach_insights')
-        .select('id, player_id, title, content, lifecycle_state, resolved_at, updated_at')
-        .eq('team_id', teamId)
-        .in('lifecycle_state', ['matured', 'resolved'])
-        .or(`resolved_at.gte.${sinceIso},updated_at.gte.${sinceIso}`)
+      // 1) Insights matured or resolved (lifecycle transitions). Apply the
+      //    SAME product-visibility contract (P2): the change feed must not
+      //    announce stale v2 / dismissed rows. The explicit ['matured','resolved']
+      //    narrows the visible-lifecycle superset to just these two transitions.
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select('id, player_id, title, content, lifecycle_state, resolved_at, updated_at')
+          .eq('team_id', teamId)
+          .in('lifecycle_state', ['matured', 'resolved'])
+          .or(`resolved_at.gte.${sinceIso},updated_at.gte.${sinceIso}`),
+      )
         .order('updated_at', { ascending: false })
         .limit(60),
 
-      // 2) Insights detected (newly created)
-      supabase
-        .from('golf_coach_insights')
-        .select('id, player_id, title, content, created_at')
-        .eq('team_id', teamId)
-        .gte('created_at', sinceIso)
+      // 2) Insights detected (newly created). Without a visibility filter this
+      //    branch had NO lifecycle/engine guard at all, so newly-written
+      //    tentative / archived / v2 rows surfaced as "detected" events. The
+      //    shared helper restricts it to product-visible v3 rows.
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select('id, player_id, title, content, created_at')
+          .eq('team_id', teamId)
+          .gte('created_at', sinceIso),
+      )
         .order('created_at', { ascending: false })
         .limit(60),
 

@@ -18,6 +18,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 import { GET } from '@/app/api/cron/coach-morning-digest/route';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendCoachDigest } from '@/lib/email/resend-client';
+import { V3_ENGINE_FILTER } from '@/lib/coachhelm/v3/insight-visibility';
 
 const createAdminMock = vi.mocked(createAdminClient);
 const sendMock = vi.mocked(sendCoachDigest);
@@ -97,10 +98,22 @@ function buildSupabase(cfg: MockConfig) {
   }
 
   function makeInsightsBuilder() {
+    // The cron now routes through `applyInsightVisibility`, which chains
+    //   .or(V3_ENGINE_FILTER).in('lifecycle_state', VISIBLE).neq('status','dismissed')
+    // BEFORE the per-slot .in('lifecycle_state', lifecycles). We track BOTH the
+    // engine .or() and the slot-specific (last) lifecycle .in() so the test data
+    // is keyed off the slot list, and so we can assert the v3 filter was applied.
     let lifecycleFilter: string[] = [];
+    let orCalled = false;
     const builder = {
       select: vi.fn().mockReturnThis(),
+      or: vi.fn((_expr: string) => {
+        orCalled = true;
+        return builder;
+      }),
       in: vi.fn((col: string, vals: string[]) => {
+        // The LAST lifecycle .in wins — that's the per-slot narrowing list
+        // (VISIBLE_LIFECYCLE_STATES superset applied first, slot list second).
         if (col === 'lifecycle_state') lifecycleFilter = vals;
         return builder;
       }),
@@ -108,6 +121,10 @@ function buildSupabase(cfg: MockConfig) {
       not: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn((_n: number) => {
+        // Guard the audit fix: the v3 engine filter MUST have been applied.
+        if (!orCalled) {
+          throw new Error('digest insight query missing v3 engine .or() filter');
+        }
         const key = [...lifecycleFilter].sort().join(',');
         const rows = cfg.insightsByLifecycle[key] ?? [];
         return Promise.resolve(thenableResult(rows, null));
@@ -363,6 +380,92 @@ describe('GET /api/cron/coach-morning-digest', () => {
     expect(arg?.coachId).toBe('c1');
     expect(arg?.html).toContain('Good morning');
     expect(arg?.text.length ?? 0).toBeGreaterThan(0);
+  });
+
+  it('applies the shared v3 product-visibility filter to the insight query (DEL-1)', async () => {
+    // Capture the `.or()` expression passed to the insight query so we can prove
+    // the digest now scopes to the v3 engine (the audit P1 fix) using the shared
+    // constant — not a hand-rolled string.
+    const orExprs: string[] = [];
+
+    function buildCapturingClient(): ReturnType<typeof createAdminClient> {
+      const makeStaff = () => {
+        let coachIdFilter: string | null = null;
+        const b = {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn((col: string, val: string) => {
+            if (col === 'coach_id') coachIdFilter = val;
+            return b;
+          }),
+          then: (onF?: ((v: unknown) => unknown) | null) => {
+            const data = coachIdFilter
+              ? [{ team_id: 't1' }]
+              : [coachStaffRow('c1', 'c1@example.com', 't1', true)];
+            const p = Promise.resolve({ data, error: null });
+            return onF ? p.then(onF) : p;
+          },
+        };
+        return b;
+      };
+      const makeMembers = () => {
+        const b = {
+          select: vi.fn().mockReturnThis(),
+          in: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          then: (onF?: ((v: unknown) => unknown) | null) => {
+            const p = Promise.resolve({ data: [{ player_id: 'p1' }], error: null });
+            return onF ? p.then(onF) : p;
+          },
+        };
+        return b;
+      };
+      const makeInsights = () => {
+        let lifecycle: string[] = [];
+        const b = {
+          select: vi.fn().mockReturnThis(),
+          or: vi.fn((expr: string) => {
+            orExprs.push(expr);
+            return b;
+          }),
+          in: vi.fn((col: string, vals: string[]) => {
+            if (col === 'lifecycle_state') lifecycle = vals;
+            return b;
+          }),
+          neq: vi.fn().mockReturnThis(),
+          not: vi.fn().mockReturnThis(),
+          order: vi.fn().mockReturnThis(),
+          limit: vi.fn(() => {
+            const key = [...lifecycle].sort().join(',');
+            const rows =
+              key === 'addressed,matured' ? [insightRow('i1', 'p1')] : [];
+            return Promise.resolve({ data: rows, error: null });
+          }),
+        };
+        return b;
+      };
+      return {
+        from: vi.fn((table: string) => {
+          if (table === 'golf_team_coach_staff') return makeStaff();
+          if (table === 'golf_team_members') return makeMembers();
+          if (table === 'golf_coach_insights') return makeInsights();
+          throw new Error(`Unexpected table: ${table}`);
+        }),
+      } as unknown as ReturnType<typeof createAdminClient>;
+    }
+
+    createAdminMock.mockReturnValueOnce(buildCapturingClient());
+
+    await GET(
+      new Request('http://x/api/cron/coach-morning-digest', {
+        headers: { authorization: 'Bearer cs' },
+      }) as unknown as import('next/server').NextRequest,
+    );
+
+    // 3 slots (top / celebration / watch) → 3 insight queries, each scoped to v3.
+    expect(orExprs.length).toBeGreaterThanOrEqual(1);
+    for (const expr of orExprs) {
+      expect(expr).toBe(V3_ENGINE_FILTER);
+    }
   });
 
   it('counts a failure when sendCoachDigest throws', async () => {

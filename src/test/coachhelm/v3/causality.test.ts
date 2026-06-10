@@ -121,6 +121,7 @@ describe('METRIC_SOURCE registry coverage (drift catcher)', () => {
   it('classifies every metric into a known kind', () => {
     const validKinds = new Set([
       'rounds',
+      'round_stats_cache_avg',
       'round_stats_cache_ratio',
       'round_stats_cache_computed',
       'hole_level_avg',
@@ -226,6 +227,7 @@ describe('METRIC_SOURCE registry coverage (drift catcher)', () => {
     // Snapshot the coverage so future drift is visible in the diff.
     // If you add a new source, bump these numbers.
     let rounds = 0;
+    let cacheAvg = 0;
     let ratio = 0;
     let computed = 0;
     let holeLevelAvg = 0;
@@ -233,17 +235,34 @@ describe('METRIC_SOURCE registry coverage (drift catcher)', () => {
     for (const id of METRIC_IDS) {
       const def = METRIC_SOURCE[id];
       if (def.kind === 'rounds') rounds += 1;
+      else if (def.kind === 'round_stats_cache_avg') cacheAvg += 1;
       else if (def.kind === 'round_stats_cache_ratio') ratio += 1;
       else if (def.kind === 'round_stats_cache_computed') computed += 1;
       else if (def.kind === 'hole_level_avg') holeLevelAvg += 1;
       else intentional += 1;
     }
-    expect(rounds).toBe(6);          // 5 SG headline + penalty_rate_per_round
+    expect(rounds).toBe(5);          // 5 SG headline (penalty moved off golf_rounds)
+    expect(cacheAvg).toBe(1);        // penalty_rate_per_round (canonical cache column)
     expect(ratio).toBe(2);           // gir_pct + scrambling_pct_sand
     expect(computed).toBe(1);        // big_number_rate
     expect(holeLevelAvg).toBe(3);    // scoring_par_3, scoring_par_4, scoring_par_5
     expect(intentional).toBe(16);    // the remaining intentional-null metrics
-    expect(rounds + ratio + computed + holeLevelAvg + intentional).toBe(METRIC_IDS.length);
+    expect(rounds + cacheAvg + ratio + computed + holeLevelAvg + intentional).toBe(METRIC_IDS.length);
+  });
+
+  it('P1: penalty_rate_per_round reads the canonical cache column, NOT the drifted golf_rounds.total_penalties', () => {
+    // golf_rounds.total_penalties drifted from the per-hole source; migration
+    // 20260608140000 made golf_round_stats_cache.penalty_strokes canonical
+    // (= SUM(golf_holes.penalty_strokes)). The attribution source must read the
+    // canonical column so before/after deltas are computed from true values.
+    const def = lookupMetricSource('penalty_rate_per_round');
+    expect(def).toBeTruthy();
+    expect(def!.kind).toBe('round_stats_cache_avg');
+    // Belt-and-suspenders: must NOT be the old drifted golf_rounds column.
+    expect(def).not.toEqual({ kind: 'rounds', column: 'total_penalties' });
+    if (def!.kind === 'round_stats_cache_avg') {
+      expect(def!.column).toBe('penalty_strokes');
+    }
   });
 });
 
@@ -559,6 +578,59 @@ describe('averageInWindow (W35 follow-up dispatch)', () => {
     if (!result.ok) throw new Error('expected ok: true');
     expect(result.avg).toBeCloseTo(0, 5);
   });
+
+  it('P1: penalty_rate_per_round averages golf_round_stats_cache.penalty_strokes (canonical), not golf_rounds', async () => {
+    // 3 rounds: 1, 0, 2 penalty strokes → mean = 1.0. Read from the cache table
+    // (canonical-from-holes), never golf_rounds.total_penalties (drifted).
+    const { builder } = buildRoundsBuilder([
+      { penalty_strokes: 1 },
+      { penalty_strokes: 0 },
+      { penalty_strokes: 2 },
+    ]);
+    const sb = makeFakeSupabase((table) => {
+      expect(table).toBe('golf_round_stats_cache');
+      return builder;
+    });
+    const result = await averageInWindow(
+      sb,
+      'player-1',
+      'penalty_rate_per_round',
+      '2026-04-01T00:00:00.000Z',
+      '2026-05-01T00:00:00.000Z',
+    );
+    if (!result.ok) throw new Error('expected ok: true');
+    expect(result.n).toBe(3);
+    expect(result.avg).toBeCloseTo(1.0, 5);
+  });
+
+  it('P1: penalty_rate_per_round skips non-numeric penalty_strokes and returns no-data on empty window', async () => {
+    const { builder } = buildRoundsBuilder([
+      { penalty_strokes: null },
+      { penalty_strokes: 3 },
+    ]);
+    const sb = makeFakeSupabase(() => builder);
+    const result = await averageInWindow(
+      sb,
+      'player-1',
+      'penalty_rate_per_round',
+      '2026-04-01T00:00:00.000Z',
+      '2026-05-01T00:00:00.000Z',
+    );
+    if (!result.ok) throw new Error('expected ok: true');
+    expect(result.n).toBe(1); // null skipped
+    expect(result.avg).toBeCloseTo(3, 5);
+
+    const { builder: empty } = buildRoundsBuilder([]);
+    const sbEmpty = makeFakeSupabase(() => empty);
+    const emptyResult = await averageInWindow(
+      sbEmpty,
+      'player-1',
+      'penalty_rate_per_round',
+      '2026-04-01T00:00:00.000Z',
+      '2026-05-01T00:00:00.000Z',
+    );
+    expect(emptyResult).toEqual({ ok: false, reason: 'no-data' });
+  });
 });
 
 describe('computeAttribution (W35 follow-up integration)', () => {
@@ -743,5 +815,99 @@ describe('Phase H/H3: ambient counterfactual isolation', () => {
     if (!result.ok) throw new Error('expected ok: true');
     expect(result.row.delta).toBeCloseTo(1, 5);
     expect(result.row.lift).toBeNull(); // gated — 1 ambient round is noise
+  });
+});
+
+/**
+ * P2 — the pre and post windows must EXCLUDE the surfaced calendar day, so the
+ * triggering round (usually ingested/surfaced the same day, and usually the
+ * outlier that fired the insight) is never averaged into BOTH baseline and post.
+ * The window functions filter the DATE column round_date with inclusive
+ * gte/lte on the .slice(0,10) date string, so the boundary that matters is the
+ * calendar day, not the instant.
+ */
+describe('P2: surfaced-day window exclusion', () => {
+  it('pre window ends BEFORE the surfaced day and post starts AFTER it', async () => {
+    const surfaced = '2026-04-15T18:30:00.000Z'; // mid-day surfacing
+    const surfacedDate = surfaced.slice(0, 10); // '2026-04-15'
+    const { sb, windows } = buildWindowAwareSupabase(() => [
+      { strokes_gained_total: 0 },
+      { strokes_gained_total: 0 },
+    ]);
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-day',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'sg_total',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+
+    // NO queried window may include round_date == surfacedDate. A window covers
+    // surfacedDate iff start <= surfacedDate <= end (inclusive, date-only).
+    const surfacedDayCovered = windows.some(
+      (w) =>
+        w.start.slice(0, 10) <= surfacedDate && w.end.slice(0, 10) >= surfacedDate,
+    );
+    expect(
+      surfacedDayCovered,
+      'the surfaced calendar day must not fall inside any pre/post/ambient window',
+    ).toBe(false);
+
+    // Concretely: the pre window (the one ending nearest, but before, surfaced)
+    // must end on or before surfacedDate − 1 day, and the post window must start
+    // on or after surfacedDate + 1 day.
+    const dayBefore = new Date(
+      new Date(`${surfacedDate}T00:00:00.000Z`).getTime() - 86400_000,
+    )
+      .toISOString()
+      .slice(0, 10);
+    const dayAfter = new Date(
+      new Date(`${surfacedDate}T00:00:00.000Z`).getTime() + 86400_000,
+    )
+      .toISOString()
+      .slice(0, 10);
+    const preWindow = windows.find((w) => w.end.slice(0, 10) === dayBefore);
+    const postWindow = windows.find((w) => w.start.slice(0, 10) === dayAfter);
+    expect(preWindow, 'pre window must end the day before surfaced').toBeTruthy();
+    expect(postWindow, 'post window must start the day after surfaced').toBeTruthy();
+  });
+
+  it('the surfaced-day round contaminates neither baseline nor post (lift is not biased toward zero)', async () => {
+    // Baseline (strictly before surfaced day) = 0. Post (strictly after) = +2.
+    // A round ON the surfaced day carries the pre-intervention value 0. If it
+    // leaked into post it would drag post toward 0 (bias toward zero). With the
+    // fix it's excluded from both windows, so delta stays a clean +2.
+    const surfaced = '2026-04-15T18:30:00.000Z';
+    const surfacedDate = surfaced.slice(0, 10);
+    const { sb } = buildWindowAwareSupabase((start, end) => {
+      const s = start.slice(0, 10);
+      const e = end.slice(0, 10);
+      // Any window that (incorrectly) included the surfaced day would also see
+      // the contaminating round; we model that round as value 0 sitting on
+      // surfacedDate. Post window: strictly-after rounds all read +2.
+      const rows: Array<Record<string, unknown>> = [];
+      if (s > surfacedDate) {
+        rows.push({ strokes_gained_total: 2 }, { strokes_gained_total: 2 });
+      } else {
+        rows.push({ strokes_gained_total: 0 }, { strokes_gained_total: 0 });
+      }
+      // If a window spans the surfaced day, inject the contaminating 0-round —
+      // this only happens under the OLD (buggy) inclusive boundary.
+      if (s <= surfacedDate && e >= surfacedDate) {
+        rows.push({ strokes_gained_total: 0 });
+      }
+      return rows;
+    });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-clean',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'sg_total',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+    // Post is a clean +2 (no surfaced-day contamination), baseline a clean 0.
+    expect(result.row.post_value).toBeCloseTo(2, 5);
+    expect(result.row.baseline_value).toBeCloseTo(0, 5);
+    expect(result.row.delta).toBeCloseTo(2, 5);
   });
 });

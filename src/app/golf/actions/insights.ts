@@ -38,6 +38,7 @@ import type {
   InsightTone,
 } from '@/lib/coachhelm/v2/types';
 import type { InsightType, InsightPriority } from '@/lib/coachhelm/insight-types';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
@@ -1089,17 +1090,24 @@ export async function getActiveInsights(limit: number = 10) {
       return { success: false, error: 'Coach not found', insights: [] };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: insights, error } = await (supabase as any)
-      .from('golf_coach_insights')
-      .select(
-        `
+    // Apply the SAME shared product-visibility contract (P2 orphan): even
+    // though this action currently has no live caller, if it is ever re-wired
+    // it must not return stale v2 phantoms or archived/tentative rows. The
+    // helper adds the v3-engine + visible-lifecycle + not-dismissed guards on
+    // top of the existing coach + status='active' scope.
+    const { data: insights, error } = await applyInsightVisibility(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from('golf_coach_insights')
+        .select(
+          `
         *,
         player:golf_players(id, first_name, last_name, avatar_url)
       `
-      )
-      .eq('coach_id', coach.id)
-      .eq('status', 'active')
+        )
+        .eq('coach_id', coach.id)
+        .eq('status', 'active'),
+    )
       .order('priority', { ascending: true })
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -2548,19 +2556,21 @@ async function loadEvidenceBackedInsights(
   try {
     // W36: also pull insight_type so we can apply the per-coach
     // ranking weight before returning.
-    const { data, error } = await supabase
-      .from('golf_coach_insights')
-      .select('id, title, content, evidence, category, insight_type, priority, lifecycle_state, metadata, created_at')
-      .eq('player_id', playerId)
-      .not('evidence', 'is', null)
-      // Scope to the v3 engine, matching every insight-delivery.ts fetcher.
-      // Without this, legacy v2 rows (stale 'scoring'/'course_management' with
-      // physically-impossible strokes_impact up to ~42/round) whose
-      // lifecycle_state is still detected/matured/addressed leak in and, after
-      // the score.ts ceiling clamp, still outrank every correct v3 insight —
-      // ranking stale phantoms #1–#3 in the player feed.
-      .or('engine_version.eq.v3,signature.like.v3:%')
-      .in('lifecycle_state', ['detected', 'matured', 'addressed'])
+    // Route through the SINGLE shared product-visibility helper (P3) instead of
+    // a hand-rolled copy of the v3-engine + lifecycle + dismissed predicates,
+    // so any future change to the shared constants propagates here too. Without
+    // the v3 scope, legacy v2 rows (stale 'scoring'/'course_management' with
+    // physically-impossible strokes_impact up to ~42/round) leak in and, after
+    // the score.ts ceiling clamp, still outrank every correct v3 insight. We
+    // ALSO keep `.eq('dismissed', false)` for the boolean column (the shared
+    // helper guards `status<>'dismissed'`; both exclusions are belt-and-braces).
+    const { data, error } = await applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select('id, title, content, evidence, category, insight_type, priority, lifecycle_state, metadata, created_at')
+        .eq('player_id', playerId)
+        .not('evidence', 'is', null),
+    )
       .eq('dismissed', false)
       .order('created_at', { ascending: false })
       .limit(10);

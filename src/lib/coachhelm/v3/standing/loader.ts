@@ -13,7 +13,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 
+import { applyGenderAnchor } from './gender-anchor';
 import type { PlayerStanding } from './types';
 
 const SELECT_FIELDS =
@@ -47,6 +49,13 @@ function toStanding(row: RawRow): PlayerStanding | null {
  * Load a single (player, metric) standing snapshot. Returns null when
  * the cron hasn't populated it yet (cold-start) or no PGA standard
  * exists for the metric.
+ *
+ * Gender-aware (audit P1): the DB pga_value is the men's Tour value for EVERY
+ * row. Before returning we resolve the player's cohort (loadPlayerCohort — the
+ * same path the generators use) and apply {@link applyGenderAnchor}, so a
+ * women's-team player's reference becomes the women's anchor (sand-save 38%,
+ * not 50%) and the StandingBar agrees with the prose. Men's / unknown cohorts
+ * are returned UNCHANGED.
  */
 export async function loadStandingForMetric(
   playerId: string,
@@ -65,12 +74,21 @@ export async function loadStandingForMetric(
     throw new Error(`loadStandingForMetric(${playerId}, ${metricId}): ${error.message}`);
   }
   if (!data) return null;
-  return toStanding(data);
+  const standing = toStanding(data);
+  if (!standing) return null;
+  const cohort = await loadPlayerCohort(playerId);
+  return applyGenderAnchor(standing, cohort.gender);
 }
 
 /**
  * Load all standing rows for a single player. Returns a Map keyed by
  * metric_id. Useful for dashboard hero / per-player tile rendering.
+ *
+ * Gender-aware (audit P1): the player's cohort is resolved ONCE and
+ * {@link applyGenderAnchor} is applied to every row, so a women's-team
+ * player's standing tiles render women's anchors (and omit the marker on
+ * metrics with no credible women's baseline). Men's / unknown cohorts are
+ * returned UNCHANGED.
  */
 export async function loadPlayerStandingMap(
   playerId: string,
@@ -85,10 +103,11 @@ export async function loadPlayerStandingMap(
   if (error) {
     throw new Error(`loadPlayerStandingMap(${playerId}): ${error.message}`);
   }
+  const cohort = await loadPlayerCohort(playerId);
   const map = new Map<MetricId, PlayerStanding>();
   for (const row of data ?? []) {
     const s = toStanding(row);
-    if (s) map.set(s.metric_id, s);
+    if (s) map.set(s.metric_id, applyGenderAnchor(s, cohort.gender));
   }
   return map;
 }

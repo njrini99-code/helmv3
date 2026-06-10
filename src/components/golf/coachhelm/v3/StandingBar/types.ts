@@ -35,6 +35,16 @@ export interface StandingBarProps {
   /** PGA Tour reference value. */
   pga_value: number;
 
+  /**
+   * Suppress the PGA/Field reference marker + value (audit P3). Set true when
+   * the metric has NO credible cohort anchor for this player (e.g. a women's
+   * player on course_management / par-type scoring, where the men's value would
+   * mislead and no women's baseline exists). When true the bar renders You (and
+   * Team) only, drops the reference value text, and omits the reference from the
+   * aria label. Default false — the marker renders as usual.
+   */
+  pga_omitted?: boolean;
+
   /** Player percentile within team (0-100, higher = better). Null in cold-start. */
   team_pct?: number | null;
 

@@ -182,12 +182,42 @@ export function leveragePriorityFloor(
   // leak (Grace par_4 @ 0.27, n=8) must not auto-promote to the Alert Center.
   // Below that confidence it can still reach 'medium' but never 'high'. A null
   // confidence keeps the prior unconditional behavior (back-compat).
-  const MIN_CONF_FOR_HIGH = 0.5;
   const confOk = confidence == null || confidence >= MIN_CONF_FOR_HIGH;
   const floor: InsightPriority | null =
     s >= 1.0 && confOk ? 'high' : s >= 0.5 ? 'medium' : null;
   if (floor && PRIORITY_RANK[floor] > PRIORITY_RANK[current ?? 'low']) return floor;
   return current;
+}
+
+/** DC-CONF-2 threshold: 'high'/'urgent' requires at least this confidence. */
+export const MIN_CONF_FOR_HIGH = 0.5;
+
+/**
+ * Matured rows in a generator's scope are archived only after going
+ * un-refreshed this many days (regrade LIFE-P2): matured carries movement
+ * history, so retraction waits for this many consecutive non-emitting daily
+ * runs instead of firing immediately like tentative/detected.
+ */
+export const MATURED_RETRACT_AFTER_DAYS = 7;
+
+/**
+ * Write-side priority honesty (DC-CONF-2 closure, regrade VAL-P1): the floor
+ * above only ever UPGRADES, so a generator that COMPOSES 'high'/'urgent'
+ * directly (course_management's anchoredPriority) bypassed the confidence
+ * gate entirely — 7 live sub-0.5-confidence 'high' rows auto-surfaced in the
+ * Alert Center. Every written priority must clear the same gate regardless of
+ * which path produced it: below MIN_CONF_FOR_HIGH a row can be at most
+ * 'medium'. Pure + exported for tests.
+ */
+export function enforcePriorityConfidenceGate(
+  priority: InsightPriority | undefined,
+  confidence: number,
+): InsightPriority | undefined {
+  if (!priority) return priority;
+  if ((priority === 'high' || priority === 'urgent') && confidence < MIN_CONF_FOR_HIGH) {
+    return 'medium';
+  }
+  return priority;
 }
 
 export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggregate> {
@@ -260,27 +290,77 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
     try {
       const supabase = createAdminClient();
       const nowIso = new Date().toISOString();
-      let query = supabase
+      // Matured rows carry movement history, so they get a CONSERVATIVE bound
+      // rather than immediate retraction (regrade LIFE-P2: 3 dequalified
+      // matured warmup rows were stuck visible forever): archive only after
+      // the row has gone un-refreshed for MATURED_RETRACT_AFTER_DAYS — every
+      // re-emit bumps updated_at via updateExisting, so "stale matured" means
+      // that many consecutive daily runs stopped emitting it.
+      const maturedStaleBeforeIso = new Date(
+        Date.now() - MATURED_RETRACT_AFTER_DAYS * 86400_000,
+      ).toISOString();
+
+      // SELECT-then-per-row-UPDATE (not a single bulk UPDATE) so each archive
+      // can merge provenance into metadata (regrade LIFE-P3: sweep archives
+      // were indistinguishable from coach/cron archives) and carry an
+      // optimistic lifecycle guard against a concurrent run touching the row.
+      let sel = supabase
         .from('golf_coach_insights')
-        .update({ lifecycle_state: 'archived', archived_at: nowIso, updated_at: nowIso })
+        .select('id, metadata, lifecycle_state, updated_at')
         .eq('player_id', this.playerId)
         .like('signature', `${V3_SIGNATURE_PREFIX}${scope}%`)
-        .in('lifecycle_state', ['tentative', 'detected'])
+        .in('lifecycle_state', ['tentative', 'detected', 'matured'])
         .eq('status', 'active')
         .is('acknowledged_at', null)
         .is('addressed_at', null);
       if (keepSignature) {
-        query = query.neq('signature', keepSignature);
+        sel = sel.neq('signature', keepSignature);
       }
-      const { data, error } = await query.select('id');
-      if (error) {
+      const { data: rows, error: selErr } = await sel;
+      if (selErr) {
         await logServerError(
-          `${this.name} stale-scope retraction failed for player=${this.playerId} scope=${scope}: ${error.message}`,
+          `${this.name} stale-scope retraction select failed for player=${this.playerId} scope=${scope}: ${selErr.message}`,
           { action: `v3.generator.${this.name}.retract` },
         );
         return 0;
       }
-      return data?.length ?? 0;
+
+      const targets = (rows ?? []).filter(
+        (r) =>
+          r.lifecycle_state !== 'matured' ||
+          (typeof r.updated_at === 'string' && r.updated_at < maturedStaleBeforeIso),
+      );
+
+      let archived = 0;
+      for (const r of targets) {
+        const metadata = {
+          ...((r.metadata as Record<string, unknown> | null) ?? {}),
+          archived_by: 'generator-scope-sweep',
+          archive_reason: `scope:${scope}`,
+          retracted_at: nowIso,
+        };
+        const { error } = await supabase
+          .from('golf_coach_insights')
+          .update({
+            lifecycle_state: 'archived',
+            archived_at: nowIso,
+            updated_at: nowIso,
+            metadata,
+          })
+          .eq('id', r.id)
+          // Optimistic guard: if a concurrent run already moved this row
+          // (re-emit refresh, coach action), skip rather than clobber.
+          .eq('lifecycle_state', r.lifecycle_state);
+        if (error) {
+          await logServerError(
+            `${this.name} stale-scope retraction update failed for insight=${r.id}: ${error.message}`,
+            { action: `v3.generator.${this.name}.retract` },
+          );
+          continue;
+        }
+        archived += 1;
+      }
+      return archived;
     } catch (err) {
       await logServerError(
         `${this.name} stale-scope retraction threw for player=${this.playerId}: ${err instanceof Error ? err.message : String(err)}`,
@@ -299,7 +379,12 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       // when the team has the generator off.
       const enabled = await this.isEnabled();
       if (!enabled) {
-        return { id: null, gated: true };
+        // Team explicitly disabled this generator — its existing rows must
+        // not keep rendering an insight type the team opted out of (regrade
+        // NEW-P3). Sweep the full scope; resurrection restores them the
+        // moment the toggle comes back on and the generator re-emits.
+        const retracted = await this.retractStaleInScope(null);
+        return { id: null, gated: true, retracted };
       }
 
       const agg = await this.aggregate();
@@ -420,6 +505,14 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         } as typeof composed.evidence;
       }
 
+      // Write-side honesty gate (regrade VAL-P1): no row ships 'high'/'urgent'
+      // below MIN_CONF_FOR_HIGH, regardless of whether the priority came from
+      // the generator's own composition or the leverage floor.
+      const honestPriority = enforcePriorityConfidenceGate(
+        effectivePriority,
+        evidence.confidence,
+      );
+
       const supabase = createAdminClient();
       const result = await upsertInsightV3(supabase, {
         player_id: this.playerId,
@@ -428,7 +521,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         signature: `${V3_SIGNATURE_PREFIX}${composed.signature}`,
         title: composed.title,
         content: composed.content,
-        priority: effectivePriority,
+        priority: honestPriority,
         evidence: evidence as typeof composed.evidence,
       });
 
