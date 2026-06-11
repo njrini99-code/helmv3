@@ -33,8 +33,11 @@ export function BulkActionsBar({
 
   return (
     <div className={cn(
-      'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]',
-      'flex items-center gap-3 px-4 py-2.5 rounded-2xl',
+      'fixed z-50 pb-[env(safe-area-inset-bottom)]',
+      // Mobile: full-width above the browser toolbar, actions wrap to fit.
+      // Desktop (sm+): centered floating pill on a single row.
+      'left-3 right-3 bottom-20 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-6',
+      'flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 sm:gap-3 px-4 py-2.5 rounded-2xl',
       'bg-white/80 backdrop-blur-xl text-warm-800 shadow-2xl',
       'border border-white/20',
       'animate-slide-up'
@@ -42,7 +45,7 @@ export function BulkActionsBar({
       {/* Count */}
       <span className="text-sm font-medium tabular-nums text-warm-900">{selectedCount} selected</span>
 
-      <div className="w-px h-5 bg-warm-200" />
+      <div className="hidden sm:block w-px h-5 bg-warm-200" />
 
       {/* Move to Status */}
       <DropdownMenu>
@@ -90,7 +93,7 @@ export function BulkActionsBar({
         <IconStar size={14} className="text-warm-400" /> Unstar
       </Button>
 
-      <div className="w-px h-5 bg-warm-200" />
+      <div className="hidden sm:block w-px h-5 bg-warm-200" />
 
       {/* Delete */}
       {confirmDelete ? (
@@ -108,7 +111,7 @@ export function BulkActionsBar({
         </Button>
       )}
 
-      <div className="w-px h-5 bg-warm-200" />
+      <div className="hidden sm:block w-px h-5 bg-warm-200" />
 
       {/* Dismiss */}
       <IconButton variant="default" onClick={onClear} aria-label="Clear selection" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900">
