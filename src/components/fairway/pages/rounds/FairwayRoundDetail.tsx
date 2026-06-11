@@ -180,12 +180,16 @@ export function FairwayRoundDetail({
   const reviewHref = `/golf/dashboard/rounds/${round.id}/review`;
 
   // ── Masthead copy ──────────────────────────────────────────────────────────
+  // round_date is a DATE column ('YYYY-MM-DD') → new Date() = midnight UTC.
+  // Pin the formatters to UTC so SSR (server TZ) and hydration (client TZ) agree —
+  // without this, west-of-UTC clients render the previous day (React #418 + off-by-one).
   const roundDate = new Date(round.round_date);
-  const dayOfWeek = roundDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const dayOfWeek = roundDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
   const dateLabel = roundDate.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   });
   const heroTitle = `${dayOfWeek} at ${shortCourse(round.course_name)}`;
   const holesPlayed = round.holes_played ?? 18;
