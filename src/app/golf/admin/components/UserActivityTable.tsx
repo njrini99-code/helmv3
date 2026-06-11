@@ -172,11 +172,11 @@ export function UserActivityTable({ users }: Props) {
             className="w-full pl-9 pr-3 py-2 text-sm bg-white/60 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/30 text-warm-700 placeholder-warm-400"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide">
           <Button variant="primary"
             onClick={() => { setRoleFilter('all'); setPage(0); }}
             className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+              'shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
               roleFilter === 'all' ? 'bg-warm-900 text-white' : 'bg-white/50 text-warm-500 hover:bg-white/70'
             )}
           >
@@ -187,7 +187,7 @@ export function UserActivityTable({ users }: Props) {
               key={role}
               onClick={() => { setRoleFilter(role); setPage(0); }}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize',
+                'shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize',
                 roleFilter === role ? 'bg-warm-900 text-white' : 'bg-white/50 text-warm-500 hover:bg-white/70'
               )}
             >
