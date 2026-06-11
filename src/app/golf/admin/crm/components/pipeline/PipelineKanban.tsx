@@ -315,7 +315,7 @@ export function PipelineKanban({
       >
         <div
           className={cn(
-            'flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory',
+            'flex flex-nowrap gap-4 overflow-x-auto pb-3 snap-x snap-mandatory',
             'lg:snap-none',
           )}
         >

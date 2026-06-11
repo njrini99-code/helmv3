@@ -178,7 +178,7 @@ export default function DataFreshnessAlerts({
                 </p>
               ) : (
                 <>
-                  <div className="overflow-hidden rounded-xl border border-white/20">
+                  <div className="overflow-x-auto rounded-xl border border-white/20">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-warm-200/50 bg-white/30">
@@ -272,7 +272,7 @@ export default function DataFreshnessAlerts({
                 </p>
               ) : (
                 <>
-                  <div className="overflow-hidden rounded-xl border border-white/20">
+                  <div className="overflow-x-auto rounded-xl border border-white/20">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-warm-200/50 bg-white/30">
@@ -348,7 +348,7 @@ export default function DataFreshnessAlerts({
                 </p>
               ) : (
                 <>
-                  <div className="overflow-hidden rounded-xl border border-white/20">
+                  <div className="overflow-x-auto rounded-xl border border-white/20">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-warm-200/50 bg-white/30">

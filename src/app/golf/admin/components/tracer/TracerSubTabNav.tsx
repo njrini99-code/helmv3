@@ -20,7 +20,7 @@ export function TracerSubTabNav({ tabs, activeTab, onTabChange }: TracerSubTabNa
       value={activeTab}
       onChange={(v) => onTabChange(v as TracerSubTab)}
     >
-      <TabsList className="max-w-full overflow-x-auto bg-warm-100/50">
+      <TabsList className="max-w-full overflow-x-auto flex-nowrap scrollbar-hide bg-warm-100/50">
         {tabs.map((tab) => {
           const isErrorTab = tab.id === 'errors';
           return (
@@ -34,7 +34,7 @@ export function TracerSubTabNav({ tabs, activeTab, onTabChange }: TracerSubTabNa
                     : tab.badge
                   : undefined
               }
-              className={cn(isErrorTab && 'data-[state=inactive]:text-red-500')}
+              className={cn('shrink-0 whitespace-nowrap', isErrorTab && 'data-[state=inactive]:text-red-500')}
             >
               {tab.label}
             </TabsTrigger>

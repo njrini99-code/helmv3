@@ -645,6 +645,19 @@ export default function CRMPage() {
               );
             })}
           </div>
+          {/* Import / Export — surfaced on mobile (desktop has them in the sidebar) */}
+          <IconButton variant="default" aria-label="Import coaches"
+            onClick={() => setShowImportModal(true)}
+            className="flex-shrink-0 p-1.5 rounded-xl text-warm-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+          >
+            <IconUpload size={16} />
+          </IconButton>
+          <IconButton variant="default" aria-label="Export CSV"
+            onClick={exportToCSV}
+            className="flex-shrink-0 p-1.5 rounded-xl text-warm-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+          >
+            <IconDownload size={16} />
+          </IconButton>
           <IconButton variant="primary" aria-label="Add"
             onClick={() => setShowAddModal(true)}
             className="flex-shrink-0 p-1.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-all duration-200 shadow-sm"
@@ -803,7 +816,7 @@ export default function CRMPage() {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-6 bg-cream-100">
+        <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-6 bg-cream-100">
           {/* ── Dashboard Tab ── */}
           {activeTab === 'dashboard' && (
             <CRMDashboard

@@ -379,8 +379,8 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 </div>
               )}
 
-              <div className="border border-warm-100 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto">
-                <table className="w-full text-sm">
+              <div className="border border-warm-100 rounded-xl max-h-[300px] overflow-y-auto overflow-x-auto">
+                <table className="w-full text-sm min-w-[520px]">
                   <thead className="bg-warm-50 sticky top-0">
                     <tr>
                       <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Name</th>
