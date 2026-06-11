@@ -193,12 +193,12 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
 
   return (
     <div className="glass-standard rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
           <p className="text-sm font-semibold text-warm-900">Daily volume</p>
           <p className="text-xs text-warm-500 mt-0.5">Sends, delivers, opens, and clicks per day</p>
         </div>
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-3 text-xs flex-wrap">
           <LegendDot color="bg-warm-400"     label="Sent" />
           <LegendDot color="bg-emerald-500" label="Delivered" />
           <LegendDot color="bg-blue-500"    label="Opened" />

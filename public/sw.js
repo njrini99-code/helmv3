@@ -16,7 +16,7 @@
  * - Dashboard pages: Network-first with cache fallback
  */
 
-const CACHE_VERSION = 'golfhelm-va534d388';
+const CACHE_VERSION = 'golfhelm-v78ed219';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const API_CACHE = `${CACHE_VERSION}-api`;

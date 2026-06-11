@@ -806,6 +806,18 @@ export function CoachTable({
     }
   };
 
+  // Select-all-across-pages (Gmail style). The header checkbox only toggles the
+  // current page; this selects every coach matching the active filter/search so
+  // you can bulk-email the whole filtered set, not just one page.
+  const pageAllSelected = paginatedCoaches.length > 0 && paginatedCoaches.every(c => selectedIds.has(c.id));
+  const allFilteredSelected = sortedCoaches.length > 0 && sortedCoaches.every(c => selectedIds.has(c.id));
+  const selectAllFiltered = () => {
+    const next = new Set(selectedIds);
+    sortedCoaches.forEach(c => next.add(c.id));
+    onSelectionChange(next);
+  };
+  const clearSelection = () => onSelectionChange(new Set());
+
   const SortArrow = ({ field }: { field: SortField }) => (
     <span className="ml-0.5 text-micro">{sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}</span>
   );
@@ -865,6 +877,28 @@ export function CoachTable({
 
   return (
     <div className="overflow-x-auto">
+      {/* Select-all-filtered banner — act on every coach matching the current
+          filter/search, not just the current page. Feeds the bulk Email action. */}
+      {pageAllSelected && sortedCoaches.length > paginatedCoaches.length && (
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-2 bg-primary-50/70 border-b border-primary-100 text-sm text-primary-800">
+          {allFilteredSelected ? (
+            <>
+              <span>All <strong className="tabular-nums">{sortedCoaches.length}</strong> coaches matching this filter are selected.</span>
+              <Button variant="ghost" onClick={clearSelection} className="px-2 py-0.5 rounded-lg font-semibold text-primary-700 hover:bg-primary-100 transition-colors">
+                Clear selection
+              </Button>
+            </>
+          ) : (
+            <>
+              <span><strong className="tabular-nums">{paginatedCoaches.length}</strong> on this page selected.</span>
+              <Button variant="ghost" onClick={selectAllFiltered} className="px-2 py-0.5 rounded-lg font-semibold text-primary-700 hover:bg-primary-100 transition-colors">
+                Select all {sortedCoaches.length} coaches
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Desktop table — hidden on <md, horizontally scrollable from md up */}
       <table className="hidden md:table w-full table-fixed min-w-[600px]">
         <thead>
