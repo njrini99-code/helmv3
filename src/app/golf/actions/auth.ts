@@ -25,18 +25,36 @@ export type LoginResult = {
   redirectTo?: string;
 };
 
+// Demo account email — configure via DEMO_ACCOUNT_EMAIL env var.
+// Never hardcode credentials; the value is checked server-side only.
+const DEMO_ACCOUNT_EMAIL =
+  (process.env.DEMO_ACCOUNT_EMAIL ?? 'demo@golfhelmdemo.com').toLowerCase().trim();
+
+/**
+ * Sanitize a demo ref param: trim, cap at 80 chars, strip control characters.
+ */
+function sanitizeRef(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined;
+  // eslint-disable-next-line no-control-regex
+  const cleaned = raw.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, 80);
+  return cleaned || undefined;
+}
+
 /**
  * Golf-specific login with rate limiting and account lockout protection
  */
 export async function loginAction(
   email: string,
-  password: string
+  password: string,
+  ref?: string
 ): Promise<LoginResult> {
   const normalizedEmail = email.toLowerCase().trim();
 
   const headersList = await headers();
   const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
   const userAgent = headersList.get('user-agent') || 'unknown';
+  const country = headersList.get('x-vercel-ip-country') ?? undefined;
+  const city = headersList.get('x-vercel-ip-city') ?? undefined;
 
   // Check account lockout
   const lockoutStatus = await checkAccountLockout(normalizedEmail);
@@ -115,7 +133,16 @@ export async function loginAction(
   await resetLoginAttempts(normalizedEmail);
 
   // Log successful login event (fire-and-forget)
-  logLogin(data.user.id, normalizedEmail, { ip }).catch(() => {});
+  // Capture demo-login tracing metadata server-side (is_demo is never trusted from client)
+  const is_demo = normalizedEmail === DEMO_ACCOUNT_EMAIL;
+  logLogin(data.user.id, normalizedEmail, {
+    ip,
+    userAgent,
+    ref: sanitizeRef(ref),
+    country,
+    city,
+    is_demo,
+  }).catch(() => {});
 
   // Get user role and profile status to determine redirect
   const { data: userData } = await supabase

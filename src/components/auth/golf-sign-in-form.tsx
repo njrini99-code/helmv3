@@ -37,12 +37,22 @@ export function GolfSignInForm() {
   // Get returnTo from URL params (e.g., /golf/login?returnTo=/golf/join/ABC123)
   const returnTo = searchParams.get('returnTo');
 
-  // Store returnTo in sessionStorage so it persists through login
+  // Get ref from URL params (e.g., /golf/login?ref=coach_nick_rini)
+  // Used for demo-login tracing — stash it so it survives any redirect cycle.
+  const refParam = searchParams.get('ref');
+
+  // Store returnTo + ref in sessionStorage so they persist through login
   useEffect(() => {
     if (returnTo) {
       sessionStorage.setItem('golf_login_returnTo', returnTo);
     }
   }, [returnTo]);
+
+  useEffect(() => {
+    if (refParam) {
+      sessionStorage.setItem('golf_login_ref', refParam);
+    }
+  }, [refParam]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,7 +62,9 @@ export function GolfSignInForm() {
     void triggerHaptic('light');
 
     try {
-      const result = await loginAction(email, password);
+      // Read ref from sessionStorage (set on mount from URL param, persists through any redirect cycle)
+      const storedRef = sessionStorage.getItem('golf_login_ref') ?? undefined;
+      const result = await loginAction(email, password, storedRef);
 
       if (!result.success) {
         void triggerHaptic('error');
@@ -84,6 +96,9 @@ export function GolfSignInForm() {
       // If they still need onboarding, send them there first — the join page will
       // redirect to onboarding with the joinCode anyway.
       const needsOnboarding = result.redirectTo === '/golf/coach' || result.redirectTo === '/golf/player';
+
+      // Clear ref regardless of path — it's been forwarded to the server already
+      sessionStorage.removeItem('golf_login_ref');
 
       let destination: string;
       if (storedReturnTo && !needsOnboarding && isValidReturnTo(storedReturnTo)) {
