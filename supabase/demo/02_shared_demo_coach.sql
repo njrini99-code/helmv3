@@ -102,7 +102,7 @@ BEGIN
     ) VALUES (
       gen_random_uuid(),
       v_user_id,
-      '__DEMO_EMAIL__',      -- provider_id = email address for email provider
+      v_user_id::text,       -- provider_id = user UUID (matches this project's email identities)
       'email',
       jsonb_build_object(
         'sub',   v_user_id::text,
