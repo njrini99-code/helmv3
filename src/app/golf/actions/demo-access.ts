@@ -68,6 +68,13 @@ function validateInput(input: EnterDemoInput): string | null {
  * 5. Redirects to DEMO_LANDING_PATH?demo=1 on success.
  *
  * The shared account holds many concurrent sessions — that is expected.
+ *
+ * INTENTIONALLY PUBLIC / unauthenticated. This is the pre-auth demo gate: the
+ * visitor has no session yet (acquiring one is the whole point), so the
+ * "every server action must call supabase.auth.getUser()" hard rule
+ * (helmv3-server-action-missing-auth-check) does not apply here and is
+ * suppressed inline at the single DB write below. Abuse is bounded by the
+ * per-IP rate limit above (RATE_LIMITS.DEMO_GATE).
  */
 export async function enterDemo(input: EnterDemoInput): Promise<EnterDemoResult> {
   // --- 1. Validate input ---------------------------------------------------
@@ -120,6 +127,7 @@ export async function enterDemo(input: EnterDemoInput): Promise<EnterDemoResult>
     // migration + `npm run db:types` land; cast through unknown until then.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyAdmin = adminDb as unknown as { from: (table: string) => any };
+    // nosemgrep: helmv3-server-action-missing-auth-check -- public demo gate; see JSDoc above.
     await anyAdmin.from('golf_demo_sessions').insert({
       name,
       email,
