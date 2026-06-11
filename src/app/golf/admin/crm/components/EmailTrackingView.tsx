@@ -531,7 +531,7 @@ export function EmailTrackingView() {
                       if (!coach) return null;
                       return (
                         <div key={entry.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-warm-50/50 transition-colors">
-                          <div className="min-w-0">
+                          <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-warm-800 truncate">{coach.name}</p>
                             <p className="text-xs text-warm-400 truncate">{coach.school} · {entry.subject || '(no subject)'}</p>
                           </div>

@@ -222,25 +222,25 @@ export function ConferenceGroupView({
                 onClick={() => toggleConference(group.conference)}
                 aria-expanded={isExpanded}
                 aria-controls={panelId}
-                className="flex-1 flex items-center gap-3 -m-2 p-2 rounded-lg hover:bg-warm-50/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 transition-colors text-left"
+                className="flex-1 min-w-0 flex items-center gap-3 -m-2 p-2 rounded-lg hover:bg-warm-50/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 transition-colors text-left"
               >
-                <span className="text-warm-400" aria-hidden="true">
+                <span className="text-warm-400 flex-shrink-0" aria-hidden="true">
                   {isExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                 </span>
 
-                <span className="flex-1 flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-semibold text-warm-900">{group.conference}</h3>
-                  <span className="px-2 py-0.5 rounded-full bg-warm-100 text-label font-bold text-warm-600 tabular-nums">
+                <span className="flex-1 min-w-0 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-warm-900 truncate">{group.conference}</h3>
+                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-warm-100 text-label font-bold text-warm-600 tabular-nums">
                     {group.coaches.length}
                   </span>
                   {activeCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-primary-50 text-label font-bold text-primary-700 tabular-nums">
+                    <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-primary-50 text-label font-bold text-primary-700 tabular-nums">
                       {activeCount} active
                     </span>
                   )}
                 </span>
 
-                <span className="flex items-center gap-1.5">
+                <span className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
                   {group.divisions.d2 > 0 && (
                     <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-micro font-bold text-blue-700 tabular-nums">
                       D2: {group.divisions.d2}
@@ -253,7 +253,7 @@ export function ConferenceGroupView({
                   )}
                 </span>
 
-                <span className="flex items-center gap-0.5">
+                <span className="hidden sm:flex items-center gap-0.5 flex-shrink-0">
                   {Object.entries(group.statusBreakdown)
                     .sort(([, a], [, b]) => b - a)
                     .slice(0, 3)
