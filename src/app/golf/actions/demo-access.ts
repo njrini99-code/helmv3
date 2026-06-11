@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logLogin } from '@/lib/admin-logger';
+import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/rate-limit';
 import { DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { getDemoCoachCredentials } from '@/lib/demo/config.server';
 
@@ -87,6 +88,18 @@ export async function enterDemo(input: EnterDemoInput): Promise<EnterDemoResult>
     'unknown';
   const userAgent = headersList.get('user-agent') ?? 'unknown';
   const referrer = headersList.get('referer') ?? headersList.get('referrer') ?? '';
+
+  // --- 2b. Rate limit by IP ------------------------------------------------
+  //    The gate is public and signs into a shared account, so without this a
+  //    single client could flood golf_demo_sessions and hammer signInWithPassword.
+  const rateLimit = await checkRateLimit(`demo:ip:${ip}`, RATE_LIMITS.DEMO_GATE);
+  if (!rateLimit.allowed) {
+    const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
+    return {
+      success: false,
+      error: `Too many demo attempts. Please try again in ${remaining}.`,
+    };
+  }
 
   // --- 3. Check demo credentials are configured ----------------------------
   const creds = getDemoCoachCredentials();
