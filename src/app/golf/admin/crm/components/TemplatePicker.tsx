@@ -84,22 +84,6 @@ function getCategoryColor(cat: string) {
   return CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.general;
 }
 
-function replaceMergeTags(text: string, data?: Record<string, string | undefined>): string {
-  if (!data) return text;
-  return text
-    .replace(/\{name\}/g, data.name ?? '')
-    .replace(/\{first_name\}/g, data.first_name ?? data.name?.split(' ')[0] ?? '')
-    .replace(/\{last_name\}/g, data.last_name ?? data.name?.split(' ').slice(1).join(' ') ?? '')
-    .replace(/\{email\}/g, data.email ?? '')
-    .replace(/\{school\}/g, data.school ?? '')
-    .replace(/\{conference\}/g, data.conference ?? '')
-    .replace(/\{title\}/g, data.title ?? '')
-    .replace(/\{division\}/g, data.division ?? '')
-    .replace(/\{program\}/g, data.program ?? '')
-    .replace(/\{team_size\}/g, data.team_size ?? '')
-    .replace(/\{current_software\}/g, data.current_software ?? '');
-}
-
 // ── Skeleton ──
 function TemplateSkeleton() {
   return (
@@ -216,7 +200,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
   );
 }
 
-export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
+export function TemplatePicker({ onSelect }: TemplatePickerProps) {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<TemplateCategory | 'all'>('all');
@@ -259,10 +243,14 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
     // Default to 'plain' if the column hasn't been backfilled yet — keeps
     // the picker tolerant of older rows in the wild.
     const format: TemplateFormat = template.format === 'html' ? 'html' : 'plain';
+    // Pass the RAW template (merge tokens intact). Per-recipient substitution
+    // happens server-side in /api/admin/crm/send-email so every coach gets their
+    // own {email}/{first_name} — critical for the demo CTA's ?ref= click tracking.
+    // The modal preview substitutes a sample coach separately for display only.
     onSelect({
       id: template.id,
-      subject: replaceMergeTags(template.subject, coachData),
-      body: replaceMergeTags(template.body, coachData),
+      subject: template.subject,
+      body: template.body,
       format,
     });
   };

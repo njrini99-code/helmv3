@@ -412,65 +412,115 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
         return; // Skip the normal send path
       }
 
-      const res = await fetch('/api/admin/crm/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipients: coachesWithEmail.map(c => {
-            const nameParts = c.name.split(' ');
-            return {
-              id: c.id,
-              email: c.email!,
-              name: c.name,
-              first_name: nameParts[0],
-              last_name: nameParts.slice(1).join(' '),
-              title: c.title || undefined,
-              school: c.school,
-              conference: c.conference,
-              division: c.division || undefined,
-              program: c.program || undefined,
-              team_size: c.team_size || undefined,
-              current_software: c.current_software || undefined,
-            };
-          }),
-          subject: subject.trim(),
-          body: body.trim(),
-          templateId: selectedTemplateId,
-          format: bodyFormat,
-        }),
+      const recipientsPayload = coachesWithEmail.map(c => {
+        const nameParts = c.name.split(' ');
+        return {
+          id: c.id,
+          email: c.email!,
+          name: c.name,
+          first_name: nameParts[0],
+          last_name: nameParts.slice(1).join(' '),
+          title: c.title || undefined,
+          school: c.school,
+          conference: c.conference,
+          division: c.division || undefined,
+          program: c.program || undefined,
+          team_size: c.team_size || undefined,
+          current_software: c.current_software || undefined,
+        };
       });
 
-      if (!res.ok) {
-        // Try to parse JSON error body; fall back to status text if response isn't JSON
-        let errorMessage = `Failed to send emails (${res.status})`;
+      // The route caps at 100 recipients per POST. Chunk so a large selection
+      // (e.g. all 303 prospects) sends across sequential requests instead of
+      // failing the whole batch with a single HTTP 400 (which sent ZERO before).
+      const BATCH_SIZE = 100;
+      let aggSent = 0;
+      let aggSkipped = 0;
+      let aggFailed = 0;
+      const aggDetails: NonNullable<HelmSendResult['details']> = [];
+      let stopMessage: string | null = null;
+
+      for (let start = 0; start < recipientsPayload.length; start += BATCH_SIZE) {
+        const batch = recipientsPayload.slice(start, start + BATCH_SIZE);
         try {
-          const data = await res.json();
-          if (res.status === 401 || res.status === 403) {
-            errorMessage = 'Your session has expired. Please log in again to send emails.';
+          const res = await fetch('/api/admin/crm/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipients: batch,
+              subject: subject.trim(),
+              body: body.trim(),
+              templateId: selectedTemplateId,
+              format: bodyFormat,
+            }),
+          });
+
+          if (!res.ok) {
+            let errorMessage = `Failed to send emails (${res.status})`;
+            let hardStop = false;
+            try {
+              const data = await res.json();
+              if (res.status === 401 || res.status === 403) {
+                errorMessage = 'Your session has expired. Please log in again to send emails.';
+                hardStop = true;
+              } else if (res.status === 429) {
+                errorMessage = data.error || 'Daily email limit reached (500/day). The remaining recipients were not sent — resume tomorrow.';
+                hardStop = true;
+              } else {
+                errorMessage = data.error || errorMessage;
+              }
+            } catch {
+              errorMessage = `Server error: ${res.status} ${res.statusText}`;
+            }
+            stopMessage = stopMessage ?? errorMessage;
+            if (hardStop) break; // session/limit — remaining batches would also fail
+            aggFailed += batch.length; // transient batch error — keep going
           } else {
-            errorMessage = data.error || errorMessage;
+            const data = await res.json();
+            aggSent += data.sent ?? 0;
+            aggSkipped += data.skipped ?? 0;
+            aggFailed += data.failed ?? 0;
+            if (Array.isArray(data.details)) aggDetails.push(...data.details);
           }
-        } catch {
-          // Response wasn't JSON (e.g. HTML error page)
-          errorMessage = `Server error: ${res.status} ${res.statusText}`;
+        } catch (batchErr) {
+          aggFailed += batch.length;
+          stopMessage = stopMessage ?? (batchErr instanceof Error ? `Network error: ${batchErr.message}` : 'Network error. Please try again.');
         }
-        setError(errorMessage);
+
+        setSendProgress({
+          current: Math.min(start + batch.length, recipientsPayload.length),
+          total: recipientsPayload.length,
+        });
+        // brief gap between batches to stay friendly to Resend rate limits
+        if (start + BATCH_SIZE < recipientsPayload.length) {
+          await new Promise(resolve => setTimeout(resolve, 400));
+        }
+      }
+
+      if (aggSent === 0) {
+        setError(stopMessage ?? 'No emails were sent.');
         return;
       }
 
-      const data = await res.json();
-
       setHelmResult({
-        sent: data.sent ?? 0,
-        skipped: data.skipped ?? 0,
-        failed: data.failed ?? 0,
-        details: data.details,
+        sent: aggSent,
+        skipped: aggSkipped,
+        failed: aggFailed,
+        details: aggDetails.length ? aggDetails : undefined,
       });
-      setSendProgress({ current: coachesWithEmail.length, total: coachesWithEmail.length });
-      setTimeout(() => {
+      setSendProgress({ current: recipientsPayload.length, total: recipientsPayload.length });
+
+      if (stopMessage) {
+        // Partial send (e.g. hit the daily cap mid-run). Keep the modal open so
+        // the operator sees how many went out and why the rest didn't.
+        setError(stopMessage);
         onSuccess();
-        onClose();
-      }, 3000);
+      } else {
+        setTimeout(() => {
+          onSuccess();
+          onClose();
+        }, 3000);
+      }
     } catch (err) {
       setError(
         err instanceof Error
