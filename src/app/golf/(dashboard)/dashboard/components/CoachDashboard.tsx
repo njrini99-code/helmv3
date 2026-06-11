@@ -322,12 +322,12 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
             >
                 <JoinRequestAlert />
 
-                {team?.join_code && stats.rosterSize < 20 && (
+                {team?.join_code && team.join_code !== 'DEMO01' && stats.rosterSize < 20 && (
                     <m.div className="mb-4" variants={itemVariants}>
                         <InviteCodeCard inviteCode={team.join_code} />
                     </m.div>
                 )}
-                {team?.join_code && stats.rosterSize >= 20 && (
+                {team?.join_code && team.join_code !== 'DEMO01' && stats.rosterSize >= 20 && (
                     <div className="mb-6 px-5 py-3.5 rounded-2xl bg-amber-50/70 ring-1 ring-amber-200/55 text-body-sm text-amber-700">
                         Invite code is hidden because your roster has reached the 20-player limit.
                     </div>
@@ -506,7 +506,9 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                 {topPlayers.length > 0 ? (
                                     <div className="divide-y divide-warm-200/30">
                                         {topPlayers.slice(0, 5).map((player, i) => (
-                                            <TopPerformerRow key={player.id} rank={i + 1} name={player.name} avgScore={player.avg_score} rounds={player.rounds} />
+                                            <Link key={player.id} href={`/golf/dashboard/players/${player.id}`} prefetch={false}>
+                                                <TopPerformerRow rank={i + 1} name={player.name} avgScore={player.avg_score} rounds={player.rounds} />
+                                            </Link>
                                         ))}
                                     </div>
                                 ) : (

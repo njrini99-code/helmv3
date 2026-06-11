@@ -74,6 +74,16 @@ export interface MessageThreadPaneProps {
   onCancelDelete: () => void;
   onSetMobileActions: (id: string | null) => void;
 
+  /**
+   * Bug fix #1 — group sender resolution.
+   * Maps user_id → { name, avatar } for every participant in a group
+   * conversation.  FairwayMessages fetches this via golf_conversation_participants
+   * → golf_coaches / golf_players whenever a group conv is selected, mirroring
+   * the legacy fetchGroupParticipants pattern.  Undefined (or empty Map) on
+   * 1:1 conversations — the component falls back to other_participant for those.
+   */
+  groupParticipants?: Map<string, { name: string; avatar: string | null }>;
+
   className?: string;
 }
 
@@ -134,6 +144,7 @@ export function MessageThreadPane({
   onConfirmDelete,
   onCancelDelete,
   onSetMobileActions,
+  groupParticipants,
   children,
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
@@ -162,7 +173,7 @@ export function MessageThreadPane({
         depth="raised"
         padding="none"
         aria-label="Conversation"
-        className={cn('flex min-h-[60vh] flex-col overflow-hidden', className)}
+        className={cn('flex min-h-[40vh] flex-col overflow-hidden', className)}
       >
         <div className="flex flex-1 items-center justify-center bg-surface px-4 py-5">
           <EmptyState
@@ -204,7 +215,7 @@ export function MessageThreadPane({
       depth="raised"
       padding="none"
       aria-label="Conversation"
-      className={cn('flex min-h-[60vh] flex-col overflow-hidden', className)}
+      className={cn('flex min-h-[40vh] flex-col overflow-hidden', className)}
     >
       {/* Thread bezel header — name + subtitle, mobile back affordance. */}
       <header className="flex min-w-0 items-center gap-3 border-b border-border-subtle px-4 py-3 sm:px-5">
@@ -271,6 +282,18 @@ export function MessageThreadPane({
               const editedAt = (msg as MessageWithReadStatus & { edited_at?: string | null }).edited_at;
               const hasAttachments = (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments;
 
+              // Bug fix #1 — resolve the real sender name + avatar for this message.
+              // For group convs: look up in groupParticipants map (user_id → name/avatar).
+              // For 1:1 convs: use other_participant directly (unchanged behaviour).
+              const senderInfo = isGroup
+                ? (groupParticipants?.get(msg.sender_id) ?? null)
+                : {
+                    name: conversation.other_participant?.name ?? 'Unknown',
+                    avatar: conversation.other_participant?.avatar ?? null,
+                  };
+              const senderName = senderInfo?.name ?? 'Unknown';
+              const senderAvatar = senderInfo?.avatar ?? null;
+
               return (
                 <div
                   key={msg.id}
@@ -285,8 +308,8 @@ export function MessageThreadPane({
                     <div className="flex w-8 flex-shrink-0 flex-col items-center">
                       {isFirstInGroup ? (
                         <Avatar
-                          name={isGroup ? msg.sender_id.slice(0, 8) : conversation.other_participant?.name || 'User'}
-                          src={isGroup ? undefined : conversation.other_participant?.avatar}
+                          name={senderName}
+                          src={senderAvatar}
                           size="sm"
                         />
                       ) : null}
@@ -297,7 +320,7 @@ export function MessageThreadPane({
                     {/* Sender name above first incoming bubble */}
                     {!isOwn && isFirstInGroup && (
                       <span className="ml-1 font-fw-sans text-eyebrow font-medium text-text-tertiary">
-                        {conversation.other_participant?.name || 'User'}
+                        {senderName}
                       </span>
                     )}
 

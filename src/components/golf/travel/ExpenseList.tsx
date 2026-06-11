@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   IconEdit,
   IconTrash,
+  IconX,
   IconEye,
   IconChevronDown,
   IconChevronUp,
@@ -284,11 +285,11 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
           >
             <div className="p-4 border-b border-warm-200 flex items-center justify-between">
               <h3 className="font-medium text-warm-900">Receipt</h3>
-              <IconButton variant="default" aria-label="Delete"
+              <IconButton variant="default" aria-label="Close receipt"
                 onClick={() => setViewingReceipt(null)}
                 className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
               >
-                <IconTrash size={18} />
+                <IconX size={18} />
               </IconButton>
             </div>
             <div className="p-4 max-h-[60vh] overflow-auto">

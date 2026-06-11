@@ -90,6 +90,7 @@ function replaceMergeTags(text: string, data?: Record<string, string | undefined
     .replace(/\{name\}/g, data.name ?? '')
     .replace(/\{first_name\}/g, data.first_name ?? data.name?.split(' ')[0] ?? '')
     .replace(/\{last_name\}/g, data.last_name ?? data.name?.split(' ').slice(1).join(' ') ?? '')
+    .replace(/\{email\}/g, data.email ?? '')
     .replace(/\{school\}/g, data.school ?? '')
     .replace(/\{conference\}/g, data.conference ?? '')
     .replace(/\{title\}/g, data.title ?? '')

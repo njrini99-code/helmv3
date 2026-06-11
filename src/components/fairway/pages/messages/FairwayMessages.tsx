@@ -43,6 +43,7 @@
 import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Users } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 import { fairwayScope } from '@/lib/redesign/flag';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
@@ -106,6 +107,65 @@ export function FairwayMessages() {
   const [isEditSaving, setIsEditSaving] = React.useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
   const [mobileActionsId, setMobileActionsId] = React.useState<string | null>(null);
+
+  // ── Group participant name map: user_id → { name, avatar } (Bug fix #1) ─────
+  // For group conversations, each incoming bubble's sender_id is resolved to a
+  // real name + avatar by fetching golf_conversation_participants → coaches/players.
+  // Mirrors the legacy fetchGroupParticipants / groupParticipants pattern.
+  const [groupParticipants, setGroupParticipants] = React.useState<
+    Map<string, { name: string; avatar: string | null }>
+  >(new Map());
+
+  const fetchGroupParticipants = React.useCallback(async (conversationId: string) => {
+    const supabase = createClient();
+    const { data: participants } = await supabase
+      .from('golf_conversation_participants')
+      .select('user_id')
+      .eq('conversation_id', conversationId);
+
+    if (!participants || participants.length === 0) return;
+
+    const userIds = participants.map(p => p.user_id);
+
+    const [{ data: coaches }, { data: players }] = await Promise.all([
+      supabase
+        .from('golf_coaches')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', userIds),
+      supabase
+        .from('golf_players')
+        .select('user_id, first_name, last_name, avatar_url')
+        .in('user_id', userIds),
+    ]);
+
+    const map = new Map<string, { name: string; avatar: string | null }>();
+    (coaches ?? []).forEach(c => {
+      if (c.user_id) {
+        map.set(c.user_id, { name: c.full_name ?? 'Coach', avatar: c.avatar_url ?? null });
+      }
+    });
+    (players ?? []).forEach(p => {
+      if (p.user_id) {
+        const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Player';
+        map.set(p.user_id, { name, avatar: p.avatar_url ?? null });
+      }
+    });
+    setGroupParticipants(map);
+  }, []);
+
+  // Fetch participant names whenever we enter a group conversation; clear on 1:1.
+  React.useEffect(() => {
+    if (!selectedConversationId) {
+      setGroupParticipants(new Map());
+      return;
+    }
+    const conv = conversations.find(c => c.id === selectedConversationId);
+    if (conv?.is_group) {
+      fetchGroupParticipants(selectedConversationId);
+    } else {
+      setGroupParticipants(new Map());
+    }
+  }, [selectedConversationId, conversations, fetchGroupParticipants]);
 
   // Thread-count meta — HONEST: count only, NO unread chip in the masthead.
   const threadCount = conversations.length;
@@ -297,8 +357,12 @@ export function FairwayMessages() {
   }
 
   return (
-    <div className={fairwayScope('h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] bg-canvas')}>
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-8">
+    // Bug fix #2 — scroll: overflow-hidden + flex flex-col propagates the fixed
+    // dvh height down to the grid so the thread pane's flex-1 overflow-y-auto
+    // activates. Without overflow-hidden the inner flex-1 has no bounded parent
+    // and the message list grows instead of scrolling.
+    <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] flex-col overflow-hidden bg-canvas')}>
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col overflow-hidden px-4 py-6 sm:px-6 lg:py-8">
         {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ── */}
         <ViewHeader
           eyebrow="Messages"
@@ -329,13 +393,15 @@ export function FairwayMessages() {
         />
 
         {/* ── Two-pane inbox: rail (supporting aside) + thread (focal hero) ──── */}
-        <div className="grid grid-cols-12 items-start gap-5 md:gap-6">
+        {/* flex-1 min-h-0 on the grid so it fills remaining height without
+            overflowing; min-h-0 overrides the implicit min-h-auto on flex items. */}
+        <div className="mt-6 flex min-h-0 flex-1 grid-cols-12 items-stretch gap-5 md:grid md:gap-6">
           {/* TRIAGE — conversation rail. On mobile it hides when a chat is open. */}
           <aside
             className={
               mobileShowChat
-                ? 'hidden md:sticky md:top-6 md:col-span-5 md:block lg:col-span-4'
-                : 'col-span-12 md:sticky md:top-6 md:col-span-5 lg:col-span-4'
+                ? 'hidden md:col-span-5 md:flex md:flex-col lg:col-span-4'
+                : 'col-span-12 flex flex-col md:col-span-5 lg:col-span-4'
             }
           >
             <PullToRefresh onRefresh={handleConversationsRefresh} className="overscroll-contain touch-pan-y">
@@ -349,8 +415,9 @@ export function FairwayMessages() {
             </PullToRefresh>
           </aside>
 
-          {/* PULSE — the open thread (focal hero) + WHAT'S-NEXT composer track. */}
-          <div className={mobileShowChat ? 'col-span-12 md:col-span-7 lg:col-span-8' : 'hidden md:col-span-7 md:block lg:col-span-8'}>
+          {/* PULSE — the open thread (focal hero) + WHAT'S-NEXT composer track.
+              flex flex-col min-h-0 so MessageThreadPane fills the grid cell height. */}
+          <div className={mobileShowChat ? 'flex min-h-0 flex-col md:col-span-7 lg:col-span-8' : 'hidden min-h-0 flex-col md:col-span-7 md:flex lg:col-span-8'}>
             <MessageThreadPane
               conversation={selectedConversation}
               messages={messages}
@@ -373,6 +440,8 @@ export function FairwayMessages() {
               onConfirmDelete={handleConfirmDelete}
               onCancelDelete={handleCancelDelete}
               onSetMobileActions={setMobileActionsId}
+              groupParticipants={groupParticipants}
+              className="flex-1 min-h-0"
             >
               {selectedConversation ? (
                 <MessageComposer

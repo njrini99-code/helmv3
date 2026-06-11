@@ -135,7 +135,20 @@ export interface FairwayDocumentsProps {
   isCoach: boolean;
 }
 
-const CATEGORIES = ['Schedule', 'Rules', 'Forms', 'Training', 'Other'] as const;
+/** Canonical lowercase values stored in golf_documents.category. */
+const CATEGORIES = ['schedule', 'tournament', 'policy', 'academic', 'rules', 'forms', 'training', 'other'] as const;
+
+/** Human-readable labels for category filter pills and select options. */
+const CATEGORY_LABELS: Record<(typeof CATEGORIES)[number], string> = {
+  schedule: 'Schedule',
+  tournament: 'Tournament',
+  policy: 'Policy',
+  academic: 'Academic',
+  rules: 'Rules',
+  forms: 'Forms',
+  training: 'Training',
+  other: 'Other',
+};
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest first' },
@@ -813,7 +826,7 @@ export function FairwayDocuments({
                   count={count}
                   onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
                 >
-                  {cat}
+                  {CATEGORY_LABELS[cat]}
                 </FilterPill>
               );
             })}
@@ -1077,7 +1090,7 @@ export function FairwayDocuments({
                 placeholder="None"
                 value={uploadCategory}
                 onValueChange={(v: string | null) => setUploadCategory(v ?? '')}
-                options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+                options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABELS[c] }))}
                 aria-label="Upload category"
               />
             </div>
@@ -1193,7 +1206,7 @@ export function FairwayDocuments({
                 placeholder="No category"
                 value={editForm.category}
                 onValueChange={(v: string | null) => setEditForm((p) => ({ ...p, category: v ?? '' }))}
-                options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+                options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABELS[c] }))}
                 aria-label="Edit category"
               />
             </div>
@@ -1505,7 +1518,7 @@ function DocumentCard({
           </Chip>
           {doc.category && (
             <Chip size="sm" tone="accent" variant="outline">
-              {doc.category}
+              {CATEGORY_LABELS[doc.category as (typeof CATEGORIES)[number]] ?? doc.category}
             </Chip>
           )}
           {showFolderChip && (

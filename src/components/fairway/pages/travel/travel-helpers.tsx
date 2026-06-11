@@ -76,13 +76,23 @@ export interface TripStatus {
   pulse: boolean;
 }
 
+/**
+ * Parse a bare ISO date string ("YYYY-MM-DD") as **local** midnight, avoiding
+ * the UTC-midnight shift that `new Date("YYYY-MM-DD")` applies in browsers
+ * (which causes dates to read as the prior calendar day in US timezones).
+ */
+function parseDateLocal(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y!, (m! - 1), d!);
+}
+
 export function getTripStatus(itinerary: TravelItinerary, now: Date | null): TripStatus {
   // Until `now` resolves on the client, render a calm neutral "Upcoming" so the
   // server + first client paint agree.
   if (!now) return { label: 'Upcoming', tone: 'neutral', pulse: false };
 
-  const departure = new Date(itinerary.departure_date);
-  const returnDate = itinerary.return_date ? new Date(itinerary.return_date) : null;
+  const departure = parseDateLocal(itinerary.departure_date);
+  const returnDate = itinerary.return_date ? parseDateLocal(itinerary.return_date) : null;
   const diffMs = departure.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 

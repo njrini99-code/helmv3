@@ -120,7 +120,20 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   ref,
 ) {
   const reduceMotion = useReducedMotion();
+
+  // Uncontrolled collapse — seed from localStorage on first render so the
+  // user's choice survives page navigation. SSR-safe: localStorage access
+  // only runs in the effect (client side).
   const [internalCollapsed, setInternalCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('fairway-sidebar-collapsed');
+      if (stored === 'true') setInternalCollapsed(true);
+    } catch {
+      /* storage may be unavailable (private browsing, quota, etc.) */
+    }
+  }, []);
+
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
@@ -133,7 +146,14 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
 
   const toggleCollapsed = useCallback(() => {
     const next = !collapsed;
-    if (!isControlled) setInternalCollapsed(next);
+    if (!isControlled) {
+      setInternalCollapsed(next);
+      try {
+        localStorage.setItem('fairway-sidebar-collapsed', String(next));
+      } catch {
+        /* ignore storage errors */
+      }
+    }
     onCollapsedChange?.(next);
   }, [collapsed, isControlled, onCollapsedChange]);
 

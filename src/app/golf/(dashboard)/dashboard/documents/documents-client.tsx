@@ -60,7 +60,20 @@ interface DocumentsClientProps {
   isCoach: boolean;
 }
 
-const CATEGORIES = ['Schedule', 'Rules', 'Forms', 'Training', 'Other'];
+// Values must match what is stored in golf_documents.category (lowercase, DB-canonical)
+const CATEGORIES = ['schedule', 'tournament', 'policy', 'academic', 'rules', 'forms', 'training', 'other'];
+
+// Human-readable labels for display
+const CATEGORY_LABELS: Record<string, string> = {
+  schedule: 'Schedule',
+  tournament: 'Tournament',
+  policy: 'Policy',
+  academic: 'Academic',
+  rules: 'Rules',
+  forms: 'Forms',
+  training: 'Training',
+  other: 'Other',
+};
 
 // ─── File Type Helpers ───────────────────────────────────────────────
 
@@ -724,7 +737,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                         : 'bg-cream-100/82 text-warm-600 border border-warm-200 hover:bg-white hover:border-warm-300'
                     )}
                   >
-                    {cat}
+                    {CATEGORY_LABELS[cat] ?? cat}
                   </Button>
                 );
               })}
@@ -959,7 +972,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     </span>
                     {doc.category && (
                       <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-primary-50 text-primary-700">
-                        {doc.category}
+                        {CATEGORY_LABELS[doc.category] ?? doc.category}
                       </span>
                     )}
                     {doc.folder && currentFolder !== doc.folder && (
@@ -1085,7 +1098,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">None</option>
-                    {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    {CATEGORIES.map(cat => <option key={cat} value={cat}>{CATEGORY_LABELS[cat] ?? cat}</option>)}
                   </select>
                 </div>
                 <div>
@@ -1105,10 +1118,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </div>
 
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${uploadIsPublic ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}>
+                <div
+                  onClick={() => setUploadIsPublic(v => !v)}
+                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer ${uploadIsPublic ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}
+                >
                   {uploadIsPublic && <IconCheck size={12} className="text-white" />}
                 </div>
-                <span className="text-sm text-warm-700">Visible to players</span>
+                <span className="text-sm text-warm-700" onClick={() => setUploadIsPublic(v => !v)}>Visible to players</span>
               </label>
 
               {/* Progress bar */}
@@ -1136,10 +1152,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               >
                 Cancel
               </Button>
-              <IconButton variant="default" aria-label="Toggle public visibility"
-                onClick={() => { setUploadIsPublic(!uploadIsPublic); }}
-                className="hidden"
-              ><span className="sr-only">Toggle public visibility</span></IconButton>
               <Button variant="primary"
                 onClick={handleUpload}
                 disabled={uploading || pendingFiles.length === 0}
@@ -1198,7 +1210,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">No category</option>
-                    {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    {CATEGORIES.map(cat => <option key={cat} value={cat}>{CATEGORY_LABELS[cat] ?? cat}</option>)}
                   </select>
                 </div>
                 <div>

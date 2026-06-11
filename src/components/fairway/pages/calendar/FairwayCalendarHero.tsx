@@ -46,6 +46,8 @@ export interface FairwayCalendarHeroProps {
   windowCount: number;
   /** Whether the active lens is the month grid (affects the "this …" label). */
   isMonthView: boolean;
+  /** Whether the active lens is the agenda (wide range — label changes to "in view"). */
+  isAgendaView?: boolean;
   isCoach: boolean;
   /** Prev / Today / Next. */
   onNavigate: (direction: 'prev' | 'next' | 'today') => void;
@@ -69,6 +71,7 @@ export function FairwayCalendarHero({
   upcomingCount,
   windowCount,
   isMonthView,
+  isAgendaView = false,
   isCoach,
   onNavigate,
   onSelectDate,
@@ -77,7 +80,8 @@ export function FairwayCalendarHero({
 }: FairwayCalendarHeroProps) {
   const monthTitle = format(focusDate, 'MMMM yyyy');
   const focusIsToday = isSameDay(focusDate, nowRef);
-  const windowLabel = isMonthView ? 'month' : 'week';
+  // Agenda lens spans ±3 months — "this week/month" is misleading; use "in view".
+  const windowLabel = isAgendaView ? 'in view' : isMonthView ? 'this month' : 'this week';
 
   return (
     // The ONE hero plinth — a warm matte Surface (bg-surface), shadow elevation

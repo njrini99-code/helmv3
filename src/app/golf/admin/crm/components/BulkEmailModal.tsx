@@ -44,6 +44,7 @@ const MERGE_TAGS = [
   { label: '{name}', value: '{name}' },
   { label: '{first_name}', value: '{first_name}' },
   { label: '{last_name}', value: '{last_name}' },
+  { label: '{email}', value: '{email}' },
   { label: '{school}', value: '{school}' },
   { label: '{conference}', value: '{conference}' },
   { label: '{title}', value: '{title}' },
@@ -196,6 +197,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
       .replace(/\{name\}/g, firstCoach.name || 'Coach')
       .replace(/\{first_name\}/g, nameParts[0] || '')
       .replace(/\{last_name\}/g, nameParts.slice(1).join(' ') || '')
+      .replace(/\{email\}/g, firstCoach.email || '')
       .replace(/\{school\}/g, firstCoach.school || 'University')
       .replace(/\{conference\}/g, firstCoach.conference || 'Conference')
       .replace(/\{title\}/g, firstCoach.title || '')
@@ -502,6 +504,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
         name: firstCoach.name,
         first_name: firstCoach.name.split(' ')[0],
         last_name: firstCoach.name.split(' ').slice(1).join(' '),
+        email: firstCoach.email ?? undefined,
         school: firstCoach.school,
         conference: firstCoach.conference,
         title: firstCoach.title || undefined,

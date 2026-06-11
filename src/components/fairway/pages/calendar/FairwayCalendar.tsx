@@ -665,6 +665,7 @@ export function FairwayCalendar({
         upcomingCount={upcomingCount}
         windowCount={windowCount}
         isMonthView={view === 'month'}
+        isAgendaView={isAgenda}
         isCoach={isCoach}
         onNavigate={navigate}
         onSelectDate={(d) => setFocusDate(d)}
