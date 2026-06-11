@@ -244,7 +244,10 @@ export function FairwayTravel({
   /* ── masthead meta (honest counts; only > 0) ────────────────────────────── */
   const upcomingCount = React.useMemo(() => {
     if (!now) return 0;
-    return itineraries.filter((i) => new Date(i.departure_date) > now).length;
+    return itineraries.filter((i) => {
+      const [y, m, d] = i.departure_date.split('-').map(Number);
+      return new Date(y!, (m! - 1), d!) > now;
+    }).length;
   }, [itineraries, now]);
   const pastCount = itineraries.length - upcomingCount;
 

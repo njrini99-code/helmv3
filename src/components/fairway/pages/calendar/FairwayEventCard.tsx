@@ -64,6 +64,8 @@ export interface FairwayEventCardProps {
   showRsvp?: boolean;
   /** Click handler — opens the detail drawer. */
   onClick?: (event: CalendarEvent) => void;
+  /** True for events whose day has already passed — renders at reduced opacity. */
+  isPast?: boolean;
   className?: string;
 }
 
@@ -94,6 +96,7 @@ export function FairwayEventCard({
   rsvpStatus,
   showRsvp = false,
   onClick,
+  isPast = false,
   className,
 }: FairwayEventCardProps) {
   const { label: typeLabel, tone: typeTone } = typeMeta(event.event_type);
@@ -116,6 +119,7 @@ export function FairwayEventCard({
         'active:translate-y-[0.5px] active:shadow-flat',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0',
+        isPast && 'opacity-50',
         className,
       )}
     >

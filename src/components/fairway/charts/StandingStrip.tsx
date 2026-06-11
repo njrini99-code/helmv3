@@ -167,11 +167,14 @@ function StripTrack({
 
       {/* The track — defined ring so it reads against the card */}
       <div className="relative h-2.5 w-full rounded-full bg-inset ring-1 ring-inset ring-border-strong">
-        {/* Reference tick — black, high contrast (PGA, or "FIELD AVG" for SG) */}
-        <Tick leftPct={pga} barClass="bg-text-primary" labelClass="text-text-secondary" label={refLabel} />
-        {/* Team tick — mid grey (omitted in cold-start) */}
+        {/* Reference tick — black, high contrast (PGA, or "FIELD AVG" for SG).
+            Label goes BELOW the bar so it never collides with the TEAM label. */}
+        <Tick leftPct={pga} barClass="bg-text-primary" labelClass="text-text-secondary" label={refLabel} labelSide="below" />
+        {/* Team tick — mid grey (omitted in cold-start).
+            Label goes ABOVE the bar so it can never overwrite the reference label
+            even when the two ticks land within a few pixels of each other. */}
         {team !== null ? (
-          <Tick leftPct={team} barClass="bg-text-tertiary" labelClass="text-text-tertiary" label="TEAM" />
+          <Tick leftPct={team} barClass="bg-text-tertiary" labelClass="text-text-tertiary" label="TEAM" labelSide="above" />
         ) : null}
         {/* You — the green hero dot, drawn last so it sits on top */}
         <span
@@ -189,11 +192,17 @@ function Tick({
   barClass,
   labelClass,
   label,
+  labelSide,
 }: {
   leftPct: number;
   barClass: string;
   labelClass: string;
   label: string;
+  /** Which side of the bar the text label appears on.
+   *  'below' (default) places the label under the track;
+   *  'above' places it above — use for the TEAM tick so it never
+   *  collides with the reference tick label when both are close together. */
+  labelSide: 'above' | 'below';
 }) {
   return (
     <span
@@ -204,7 +213,10 @@ function Tick({
       <span className={cn('block h-4 w-[2.5px] rounded-full', barClass)} />
       <span
         className={cn(
-          'absolute left-1/2 top-[calc(100%+5px)] -translate-x-1/2 font-fw-mono text-eyebrow font-semibold uppercase tracking-wide',
+          'absolute left-1/2 -translate-x-1/2 font-fw-mono text-eyebrow font-semibold uppercase tracking-wide whitespace-nowrap',
+          labelSide === 'above'
+            ? 'bottom-[calc(100%+5px)]'
+            : 'top-[calc(100%+5px)]',
           labelClass,
         )}
       >

@@ -27,6 +27,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
 
 import { AppShell } from '@/components/fairway/app-shell/AppShell';
+import { useSidebarCollapsed } from '@/components/fairway/app-shell/FairwaySidebar';
 import type { Breadcrumb, NavSection, ShellLinkComponent } from '@/components/fairway/app-shell/types';
 import { FAIRWAY_SCOPE } from '@/lib/redesign/flag';
 
@@ -211,32 +212,45 @@ const ShellLink: ShellLinkComponent = ({ href, children, ...rest }) => (
 );
 
 /**
- * GolfHelm brand for the rail header (logo + wordmark). Collapse is disabled in
- * this shell, so the rail is always full-width and the wordmark never clips.
+ * GolfHelm brand for the rail header. Reads collapsed state from
+ * SidebarCollapseContext so it can hide the wordmark in icon-only mode.
  */
-const Brand = (
-  <Link href="/golf/dashboard" prefetch aria-label="GolfHelm home" className="flex items-center gap-2.5">
-    <Image
-      src="/helm-golf-logo-transparent.png"
-      alt=""
-      width={32}
-      height={32}
-      className="h-8 w-8 object-contain"
-      priority
-      unoptimized
-    />
-    <span className="font-fw-display text-body-lg font-medium leading-none tracking-[-0.012em] text-nav-text">
-      Golf<span className="text-nav-accent">Helm</span>
-    </span>
-  </Link>
-);
+function Brand() {
+  const collapsed = useSidebarCollapsed();
+  return (
+    <Link
+      href="/golf/dashboard"
+      prefetch
+      aria-label="GolfHelm home"
+      className={cn('flex items-center', collapsed ? 'justify-center' : 'gap-2.5')}
+    >
+      <Image
+        src="/helm-golf-logo-transparent.png"
+        alt=""
+        width={32}
+        height={32}
+        className="h-8 w-8 flex-shrink-0 object-contain"
+        priority
+        unoptimized
+      />
+      {!collapsed && (
+        <span className="font-fw-display text-body-lg font-medium leading-none tracking-[-0.012em] text-nav-text">
+          Golf<span className="text-nav-accent">Helm</span>
+        </span>
+      )}
+    </Link>
+  );
+}
 
-/** Pinned rail footer — Settings + Sign out, styled for the warm-black rail. */
+/** Pinned rail footer — Settings + Sign out, styled for the warm-black rail.
+ * Reads collapsed state from SidebarCollapseContext to render icon-only when
+ * the rail is collapsed. */
 function ShellFooter() {
   const router = useRouter();
   const pathname = usePathname();
   const { setMobileOpen } = useSidebar();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const collapsed = useSidebarCollapsed();
   const settingsActive = pathname.startsWith('/golf/dashboard/settings');
 
   const handleSignOut = useCallback(async () => {
@@ -248,8 +262,11 @@ function ShellFooter() {
     router.push('/golf/login');
   }, [router, isSigningOut]);
 
-  const rowBase =
-    'flex w-full items-center gap-3 rounded-fw-md px-3.5 py-2.5 text-body-sm font-medium font-fw-sans tracking-[-0.005em] transition-colors [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none';
+  const rowBase = cn(
+    'flex w-full items-center rounded-fw-md text-body-sm font-medium font-fw-sans tracking-[-0.005em]',
+    'transition-colors [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none',
+    collapsed ? 'justify-center px-2 py-2.5 min-h-11' : 'gap-3 px-3.5 py-2.5',
+  );
 
   return (
     <div className="flex flex-col gap-1">
@@ -258,6 +275,8 @@ function ShellFooter() {
         prefetch
         onClick={() => setMobileOpen(false)}
         aria-current={settingsActive ? 'page' : undefined}
+        aria-label={collapsed ? 'Settings' : undefined}
+        title={collapsed ? 'Settings' : undefined}
         className={cn(
           rowBase,
           settingsActive
@@ -270,16 +289,20 @@ function ShellFooter() {
           aria-hidden
           className={cn('flex-shrink-0', settingsActive ? 'text-nav-accent' : 'text-nav-text-dim')}
         />
-        <span className="min-w-0 flex-1 truncate">Settings</span>
+        {!collapsed && <span className="min-w-0 flex-1 truncate">Settings</span>}
       </Link>
       <button
         type="button"
         onClick={handleSignOut}
         disabled={isSigningOut}
+        aria-label={collapsed ? (isSigningOut ? 'Signing out…' : 'Sign out') : undefined}
+        title={collapsed ? 'Sign out' : undefined}
         className={cn(rowBase, 'text-nav-text-dim hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50')}
       >
         <IconLogout size={18} aria-hidden className="flex-shrink-0 text-nav-text-dim" />
-        <span className="min-w-0 flex-1 truncate text-left">{isSigningOut ? 'Signing out…' : 'Sign out'}</span>
+        {!collapsed && (
+          <span className="min-w-0 flex-1 truncate text-left">{isSigningOut ? 'Signing out…' : 'Sign out'}</span>
+        )}
       </button>
     </div>
   );
@@ -368,12 +391,12 @@ function FairwayDashboardContent({
       <AppShell
         sections={sections}
         user={{ name: userData.name, teamName: userData.teamName, avatarUrl: userData.avatarUrl }}
-        brand={Brand}
+        brand={<Brand />}
         sidebarFooter={<ShellFooter />}
         pathname={pathname}
         linkComponent={ShellLink}
         breadcrumbs={breadcrumbs}
-        collapsible={false}
+        collapsible={true}
         // Pages own their gutters (horizontal padding + max-width) and their
         // page-title blocks, exactly as in the legacy shell whose <main> had no
         // content padding. The shell keeps only the bottom home-indicator pad.

@@ -286,14 +286,21 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
               </span>
             </div>
 
-            {/* Right (coach view): player avatar */}
+            {/* Right (coach view): player name + avatar */}
             {userRole === 'coach' && round.player && (
-              <Avatar
-                src={round.player.avatar_url}
-                name={playerName}
-                size="sm"
-                className="flex-shrink-0"
-              />
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {playerName && (
+                  <span className="truncate max-w-[140px] text-body-sm font-medium text-warm-700 group-hover/card:text-warm-900 transition-colors duration-200">
+                    {playerName}
+                  </span>
+                )}
+                <Avatar
+                  src={round.player.avatar_url}
+                  name={playerName}
+                  size="sm"
+                  className="flex-shrink-0"
+                />
+              </div>
             )}
           </div>
 

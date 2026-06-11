@@ -355,7 +355,7 @@ export function RoundRow({
                     'truncate',
                     showPlayer ? 'text-body-sm text-warm-500' : 'font-medium text-body text-warm-900 tracking-[-0.005em]'
                 )}>
-                    {courseName}
+                    {toTitleCase(courseName)}
                 </p>
                 <p className="text-caption text-warm-400 mt-0.5" suppressHydrationWarning>
                     {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -376,6 +376,25 @@ export function RoundRow({
 // ============================================================================
 // RECENT ROUND CARD (Premium — Coach Dashboard)
 // ============================================================================
+
+/** Title-case a course name that may have been entered in all-lowercase.
+ *  Preserves existing uppercase letters (e.g. "TPC", "GC", "No."),
+ *  so it is safe to run on already-cased strings. */
+function toTitleCase(name: string): string {
+    // Minor words that should stay lowercase unless first word
+    const MINOR = new Set(['a', 'an', 'the', 'at', 'by', 'for', 'in', 'of', 'on', 'to', 'up', 'and', 'as', 'but', 'or', 'nor']);
+    return name
+        .trim()
+        .split(' ')
+        .map((word, i) => {
+            if (!word) return word;
+            // If the word is already mixed-case (has any uppercase), leave it alone
+            if (word !== word.toLowerCase()) return word;
+            if (i > 0 && MINOR.has(word.toLowerCase())) return word.toLowerCase();
+            return word.charAt(0).toUpperCase() + word.slice(1);
+        })
+        .join(' ');
+}
 
 function formatRelativeDate(dateStr: string, now?: Date | null): string {
     const date = new Date(dateStr);
@@ -487,7 +506,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                         {/* Course name + round type */}
                         <div className="flex items-center gap-2 mb-3">
                             <p className="text-body-sm text-warm-500 truncate">
-                                {courseName}
+                                {toTitleCase(courseName)}
                             </p>
                             {roundType && (
                                 <>

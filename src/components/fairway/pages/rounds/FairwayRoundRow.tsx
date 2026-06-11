@@ -153,14 +153,21 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
         )}
       </div>
 
-      {/* Coach: player avatar */}
+      {/* Coach: player avatar + name */}
       {userRole === 'coach' && round.player && (
-        <Avatar
-          src={round.player.avatar_url}
-          name={playerName || undefined}
-          size="sm"
-          className="flex-shrink-0"
-        />
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          <Avatar
+            src={round.player.avatar_url}
+            name={playerName || undefined}
+            size="sm"
+            className="flex-shrink-0"
+          />
+          {playerName && (
+            <span className="max-w-[96px] truncate font-fw-sans text-body-sm font-medium text-warm-700">
+              {playerName}
+            </span>
+          )}
+        </div>
       )}
 
       {/* Hover affordance */}

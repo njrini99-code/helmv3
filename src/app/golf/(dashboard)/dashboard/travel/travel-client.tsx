@@ -142,10 +142,25 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
     }
   };
 
+  // Parse a bare date string ("YYYY-MM-DD") as local midnight to avoid the
+  // UTC-midnight shift that causes new Date("2026-05-28") to land on May 27
+  // in US timezones.
+  const parseDateLocal = (dateStr: string): Date => {
+    const parts = dateStr.split('T')[0]?.split('-');
+    if (parts && parts.length === 3) {
+      return new Date(
+        parseInt(parts[0]!, 10),
+        parseInt(parts[1]!, 10) - 1,
+        parseInt(parts[2]!, 10),
+      );
+    }
+    return new Date(dateStr);
+  };
+
   const getTripStatus = (itinerary: TravelItinerary) => {
     const now = new Date();
-    const departure = new Date(itinerary.departure_date);
-    const returnDate = itinerary.return_date ? new Date(itinerary.return_date) : null;
+    const departure = parseDateLocal(itinerary.departure_date);
+    const returnDate = itinerary.return_date ? parseDateLocal(itinerary.return_date) : null;
     const diffMs = departure.getTime() - now.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 

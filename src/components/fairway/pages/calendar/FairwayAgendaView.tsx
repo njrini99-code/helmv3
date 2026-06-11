@@ -20,7 +20,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { format, isSameDay, addDays, startOfDay } from 'date-fns';
+import { format, isSameDay, addDays, startOfDay, isBefore } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Surface, EmptyState, Button } from '@/components/fairway';
 import { CalendarDays } from 'lucide-react';
@@ -203,6 +203,12 @@ export function FairwayAgendaView({
     <div className={cn('flex flex-col gap-7', className)}>
       {buckets.map((bucket) => {
         const bucketIsToday = nowRef ? isSameDay(bucket.date, nowRef) : false;
+        // Days strictly before today are rendered at reduced opacity — they are
+        // historical record, not actionable upcoming items. `nowRef` is the
+        // server-seeded "now" so this stays stable across SSR/CSR.
+        const bucketIsPast = nowRef
+          ? !bucketIsToday && isBefore(bucket.date, startOfDay(nowRef))
+          : false;
         return (
           <section key={bucket.key} aria-label={bucket.label}>
             {/* Day header — eyebrow rule + count. */}
@@ -229,6 +235,7 @@ export function FairwayAgendaView({
                   showRsvp={!isCoach}
                   rsvpStatus={userRsvpStatuses?.get(ev.id) ?? null}
                   onClick={onEventClick}
+                  isPast={bucketIsPast}
                 />
               ))}
             </div>

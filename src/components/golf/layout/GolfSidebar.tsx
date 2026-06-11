@@ -193,16 +193,19 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
     >
       {/* Collapse Toggle Button (desktop only) */}
       {!isMobile && (
-        <Button variant="ghost"
+        <button
+          type="button"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
             'absolute -right-3 top-7 z-50',
             'w-6 h-6 rounded-full bg-[rgba(28,25,23,0.96)] ring-1 ring-white/15',
-            'flex items-center justify-center',
-            'shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:bg-white/8',
-            'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+            'flex items-center justify-center flex-shrink-0',
+            'shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:bg-white/[0.08]',
+            'transition-colors duration-300 ease-out',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-1 focus-visible:ring-offset-[rgba(28,25,23,0.96)]',
+            'cursor-pointer'
           )}
         >
           {isCollapsed ? (
@@ -210,7 +213,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           ) : (
             <IconChevronLeft size={14} className="text-white/65" aria-hidden="true" />
           )}
-        </Button>
+        </button>
       )}
 
       {/* Logo */}

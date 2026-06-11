@@ -110,6 +110,24 @@ function formatToPar(toPar: number): string {
   return toPar > 0 ? `+${toPar}` : `${toPar}`;
 }
 
+/** Title-case a course name that may have been entered in all-lowercase.
+ *  Preserves existing uppercase letters (e.g. "TPC", "GC", "No."),
+ *  so it is safe to run on already-cased strings. */
+function toTitleCase(name: string): string {
+  const MINOR = new Set(['a', 'an', 'the', 'at', 'by', 'for', 'in', 'of', 'on', 'to', 'up', 'and', 'as', 'but', 'or', 'nor']);
+  return name
+    .trim()
+    .split(' ')
+    .map((word, i) => {
+      if (!word) return word;
+      // If the word is already mixed-case (has any uppercase), leave it alone
+      if (word !== word.toLowerCase()) return word;
+      if (i > 0 && MINOR.has(word.toLowerCase())) return word.toLowerCase();
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(' ');
+}
+
 function shortDate(iso: string): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -240,8 +258,8 @@ export function FairwayCoachDashboard({
       : undefined;
 
   const showInviteNotice =
-    !!team.join_code && stats.rosterSize < 20;
-  const rosterFull = !!team.join_code && stats.rosterSize >= 20;
+    !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize < 20;
+  const rosterFull = !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize >= 20;
 
   // Recent-rounds DataTable columns
   const roundColumns: ColumnDef<RoundRow, unknown>[] = [
@@ -264,7 +282,7 @@ export function FairwayCoachDashboard({
       header: 'Course',
       meta: { noWrap: true },
       cell: (ctx) => (
-        <span className="text-text-secondary">{ctx.getValue() as string}</span>
+        <span className="text-text-secondary">{toTitleCase(ctx.getValue() as string)}</span>
       ),
     },
     {
@@ -552,34 +570,40 @@ export function FairwayCoachDashboard({
               <ul className="flex flex-col gap-2">
                 {topPlayers.slice(0, 5).map((p, i) => (
                   <li key={p.id}>
-                    <Inset
-                      padding="sm"
-                      className="flex items-center justify-between gap-3"
+                    <Link
+                      href={`/golf/dashboard/players/${p.id}`}
+                      prefetch={false}
+                      className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                     >
-                      <span className="flex min-w-0 items-center gap-3">
-                        <span
-                          className={cn(
-                            'grid h-6 w-6 shrink-0 place-items-center rounded-full font-fw-mono text-caption font-medium tabular-nums',
-                            i === 0
-                              ? 'bg-accent-500 text-text-on-accent'
-                              : 'bg-surface text-text-tertiary',
-                          )}
-                        >
-                          {i + 1}
+                      <Inset
+                        padding="sm"
+                        className="flex items-center justify-between gap-3 transition-colors hover:bg-surface-hover"
+                      >
+                        <span className="flex min-w-0 items-center gap-3">
+                          <span
+                            className={cn(
+                              'grid h-6 w-6 shrink-0 place-items-center rounded-full font-fw-mono text-caption font-medium tabular-nums',
+                              i === 0
+                                ? 'bg-accent-500 text-text-on-accent'
+                                : 'bg-surface text-text-tertiary',
+                            )}
+                          >
+                            {i + 1}
+                          </span>
+                          <span className="truncate font-fw-sans text-body font-medium text-text-primary">
+                            {p.name}
+                          </span>
                         </span>
-                        <span className="truncate font-fw-sans text-body font-medium text-text-primary">
-                          {p.name}
+                        <span className="flex shrink-0 items-baseline gap-2">
+                          <span className="font-fw-mono text-body font-medium tabular-nums text-text-primary">
+                            {p.avg_score.toFixed(1)}
+                          </span>
+                          <span className="font-fw-sans text-caption text-text-tertiary">
+                            {p.rounds} rd
+                          </span>
                         </span>
-                      </span>
-                      <span className="flex shrink-0 items-baseline gap-2">
-                        <span className="font-fw-mono text-body font-medium tabular-nums text-text-primary">
-                          {p.avg_score.toFixed(1)}
-                        </span>
-                        <span className="font-fw-sans text-caption text-text-tertiary">
-                          {p.rounds} rd
-                        </span>
-                      </span>
-                    </Inset>
+                      </Inset>
+                    </Link>
                   </li>
                 ))}
               </ul>

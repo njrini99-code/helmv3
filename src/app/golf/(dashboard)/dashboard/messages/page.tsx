@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import { Avatar } from '@/components/ui/avatar';
@@ -69,6 +70,62 @@ function LegacyGolfMessagesPage() {
 
   // Attachment support
   const { sendMessageWithAttachments } = useMessageAttachments();
+
+  // Participant name map for group conversations: user_id → { name, avatar }
+  const [groupParticipants, setGroupParticipants] = useState<Map<string, { name: string; avatar: string | null }>>(new Map());
+
+  const fetchGroupParticipants = useCallback(async (conversationId: string) => {
+    const supabase = createClient();
+    const { data: participants } = await supabase
+      .from('golf_conversation_participants')
+      .select('user_id')
+      .eq('conversation_id', conversationId);
+
+    if (!participants || participants.length === 0) return;
+
+    const userIds = participants.map(p => p.user_id);
+
+    const [{ data: coaches }, { data: players }] = await Promise.all([
+      supabase
+        .from('golf_coaches')
+        .select('user_id, full_name, avatar_url')
+        .in('user_id', userIds),
+      supabase
+        .from('golf_players')
+        .select('user_id, first_name, last_name, avatar_url')
+        .in('user_id', userIds),
+    ]);
+
+    const map = new Map<string, { name: string; avatar: string | null }>();
+    (coaches ?? []).forEach(c => {
+      if (c.user_id) {
+        map.set(c.user_id, { name: c.full_name ?? 'Coach', avatar: c.avatar_url ?? null });
+      }
+    });
+    (players ?? []).forEach(p => {
+      if (p.user_id) {
+        const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Player';
+        map.set(p.user_id, { name, avatar: p.avatar_url ?? null });
+      }
+    });
+    setGroupParticipants(map);
+  }, []);
+
+  // Fetch participant names whenever we enter a group conversation.
+  // Note: we derive is_group from conversations[] directly to avoid a
+  // forward-reference to the selectedConversation useMemo.
+  useEffect(() => {
+    if (!selectedConversationId) {
+      setGroupParticipants(new Map());
+      return;
+    }
+    const conv = conversations.find(c => c.id === selectedConversationId);
+    if (conv?.is_group) {
+      fetchGroupParticipants(selectedConversationId);
+    } else {
+      setGroupParticipants(new Map());
+    }
+  }, [selectedConversationId, conversations, fetchGroupParticipants]);
 
   // State for editing messages
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -327,7 +384,7 @@ function LegacyGolfMessagesPage() {
   }
 
   return (
-    <AnimatedPage className="h-[calc(100dvh-var(--golf-mobile-bottom-nav-offset))] lg:h-[100dvh] flex">
+    <AnimatedPage className="h-[calc(100dvh-var(--golf-mobile-bottom-nav-offset))] lg:h-[100dvh] flex overflow-hidden">
       {/* Conversation List */}
       <div className={cn(
         'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200/60 surface-matte flex flex-col',
@@ -536,33 +593,38 @@ function LegacyGolfMessagesPage() {
                         )}
                       >
                         {/* Avatar + sender name for incoming messages */}
-                        {!isOwn && (
-                          <div className="w-8 shrink-0 flex flex-col items-center">
-                            {isFirstInGroup ? (
-                              selectedConversation?.is_group ? (
+                        {!isOwn && (() => {
+                          const senderInfo = selectedConversation?.is_group
+                            ? groupParticipants.get(msg.sender_id)
+                            : { name: selectedConversation?.other_participant?.name ?? 'User', avatar: selectedConversation?.other_participant?.avatar ?? null };
+                          const senderName = senderInfo?.name ?? 'Unknown';
+                          const senderAvatar = senderInfo?.avatar ?? null;
+                          return (
+                            <div className="w-8 shrink-0 flex flex-col items-center">
+                              {isFirstInGroup ? (
                                 <Avatar
-                                  name={msg.sender_id.slice(0, 8)}
+                                  name={senderName}
+                                  src={senderAvatar}
                                   size="sm"
                                 />
-                              ) : (
-                                <Avatar
-                                  name={selectedConversation?.other_participant?.name || 'User'}
-                                  src={selectedConversation?.other_participant?.avatar}
-                                  size="sm"
-                                />
-                              )
-                            ) : null}
-                          </div>
-                        )}
+                              ) : null}
+                            </div>
+                          );
+                        })()}
 
                         {/* Message bubble with edit/delete controls */}
                         <div className={cn('group relative flex flex-col gap-1 max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
                           {/* Sender name above first incoming message in group */}
-                          {!isOwn && isFirstInGroup && (
-                            <span className="text-eyebrow font-medium text-warm-500 ml-1 mb-0.5">
-                              {selectedConversation?.other_participant?.name || 'User'}
-                            </span>
-                          )}
+                          {!isOwn && isFirstInGroup && (() => {
+                            const senderInfo = selectedConversation?.is_group
+                              ? groupParticipants.get(msg.sender_id)
+                              : { name: selectedConversation?.other_participant?.name ?? 'User' };
+                            return (
+                              <span className="text-eyebrow font-medium text-warm-500 ml-1 mb-0.5">
+                                {senderInfo?.name ?? 'Unknown'}
+                              </span>
+                            );
+                          })()}
                           {/* Edit/Delete buttons for own messages — desktop: hover, mobile: tap row below bubble */}
                           {isOwn && editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
                             <>

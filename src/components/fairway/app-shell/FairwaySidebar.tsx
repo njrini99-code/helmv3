@@ -21,11 +21,22 @@
  *   • Motion: slow width/opacity transitions (--fw-ease-glide), reduced-motion safe.
  * ========================================================================== */
 
-import { forwardRef, useCallback } from 'react';
+import { createContext, forwardRef, useCallback, useContext } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
+
+/**
+ * Lets footer/slot children read whether the rail is collapsed without
+ * requiring prop-drilling through the caller's render tree.
+ */
+export const SidebarCollapseContext = createContext<boolean>(false);
+
+/** Hook for sidebar footer slots. Returns `true` when the rail is collapsed. */
+export function useSidebarCollapsed(): boolean {
+  return useContext(SidebarCollapseContext);
+}
 
 /** Default link element — a plain anchor (works in isolation + tests). */
 const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
@@ -167,6 +178,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
   }, []);
 
   return (
+    <SidebarCollapseContext.Provider value={isCollapsed}>
     <aside
       ref={ref}
       aria-label="Main navigation"
@@ -291,5 +303,6 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
         </motion.div>
       )}
     </aside>
+    </SidebarCollapseContext.Provider>
   );
 });
