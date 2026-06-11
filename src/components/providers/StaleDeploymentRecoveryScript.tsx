@@ -7,6 +7,25 @@ const staleDeploymentRecoveryScript = `
 
   const RELOAD_KEY = 'chunk-error-reload';
   const RELOAD_PARAM = '__deployment_refresh';
+  // A deploy that lands during a traffic spike leaves the CDN edge briefly cold,
+  // so the FIRST reload can hit the same cold window and fail again — leaving the
+  // user stuck on a half-loaded page. Allow a few COOLDOWN-spaced retries instead
+  // of one-and-stuck, but keep a HARD cap so a genuinely broken bundle can never
+  // trigger an infinite reload loop. The cap is encoded in the URL param so it
+  // survives the reload even when sessionStorage is unavailable (Safari private
+  // mode), which the original one-shot guard did NOT protect against.
+  const MAX_RELOADS = 3;
+  const RELOAD_COOLDOWN_MS = 12000;
+  let reloadScheduled = false;
+
+  function currentReloadCount() {
+    try {
+      const v = parseInt(new URL(window.location.href).searchParams.get(RELOAD_PARAM) || '0', 10);
+      return Number.isFinite(v) && v > 0 ? v : 0;
+    } catch {
+      return 0;
+    }
+  }
 
   function isStaleDeploymentError(message) {
     const lower = String(message || '').toLowerCase();
@@ -91,20 +110,40 @@ const staleDeploymentRecoveryScript = `
   }
 
   async function reloadFresh() {
+    // One reload per page load — a cold load throws several chunk errors at once.
+    if (reloadScheduled) return;
+
+    const count = currentReloadCount();
+    // Hard cap (lives in the URL → survives reload with or without storage): a
+    // broken bundle can do at most MAX_RELOADS reloads, then we stop and let the
+    // page show whatever it can rather than loop forever.
+    if (count >= MAX_RELOADS) return;
+    reloadScheduled = true;
+
+    // Space successive retries by a cooldown so the cold edge has time to warm;
+    // the first attempt fires immediately. The timestamp is best-effort via
+    // sessionStorage — if it's unavailable the retry is simply immediate (still
+    // bounded by the URL cap).
+    let lastAt = 0;
     try {
-      if (window.sessionStorage.getItem(RELOAD_KEY)) return;
-      window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+      lastAt = parseInt(window.sessionStorage.getItem(RELOAD_KEY) || '0', 10) || 0;
+    } catch {}
+    const wait = count === 0 ? 0 : Math.max(0, RELOAD_COOLDOWN_MS - (Date.now() - lastAt));
+    try {
+      window.sessionStorage.setItem(RELOAD_KEY, String(Date.now() + wait));
     } catch {}
 
     await clearStaleState();
 
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.set(RELOAD_PARAM, String(Date.now()));
-      window.location.replace(url.toString());
-    } catch {
-      window.location.reload();
-    }
+    setTimeout(() => {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set(RELOAD_PARAM, String(count + 1));
+        window.location.replace(url.toString());
+      } catch {
+        window.location.reload();
+      }
+    }, wait);
   }
 
   window.addEventListener(
