@@ -31,10 +31,26 @@ COMMENT ON TABLE public.golf_demo_sessions IS
 -- Enable RLS (no-op if already enabled).
 ALTER TABLE public.golf_demo_sessions ENABLE ROW LEVEL SECURITY;
 
--- No public select/insert policies.
--- Service-role key bypasses RLS entirely, so the gate action and admin view
--- work without any policy grant. Admins read via createAdminClient() which
--- uses the service-role key.
+-- No public access. The service-role key bypasses RLS entirely, so the gate
+-- action and admin view work without any grant. We still ship an explicit
+-- RESTRICTIVE deny-all policy so the table's access model is unambiguous and to
+-- satisfy the project rule that every RLS-enabled table defines >= 1 policy.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'golf_demo_sessions'
+      AND policyname = 'golf_demo_sessions_deny_all'
+  ) THEN
+    CREATE POLICY "golf_demo_sessions_deny_all"
+      ON public.golf_demo_sessions
+      AS RESTRICTIVE
+      FOR ALL
+      USING (false)
+      WITH CHECK (false);
+  END IF;
+END $$;
 
 -- Speed index for the admin tracing view (list by entry time).
 CREATE INDEX IF NOT EXISTS golf_demo_sessions_entered_at_idx
