@@ -245,14 +245,14 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                       >
                         <Button variant="ghost"
                           onClick={() => setShowDemoForm(true)}
-                          className="w-full py-4 rounded-2xl text-white font-semibold text-body tracking-wide
+                          className="w-full py-4 rounded-2xl font-semibold text-body tracking-wide
                                      active:scale-[0.98] transition-transform duration-150"
                           style={{
                             background: 'linear-gradient(135deg, #1c1917 0%, #292524 100%)',
                             boxShadow: '0 4px 24px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)',
                           }}
                         >
-                          Get Early Access
+                          <span className="text-white">Get Early Access</span>
                         </Button>
                         <p className="text-center text-xs text-warm-400 tracking-wide">
                           BaseballHelm & GolfHelm
@@ -311,7 +311,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                           <Button variant="ghost"
                             type="submit"
                             disabled={isSubmitting || !email.trim()}
-                            className="flex-1 py-3.5 rounded-xl text-white font-semibold text-body-sm
+                            className="flex-1 py-3.5 rounded-xl font-semibold text-body-sm text-white
                                      disabled:opacity-40 disabled:cursor-not-allowed
                                      active:scale-[0.98] transition-all duration-150"
                             style={{
@@ -319,13 +319,13 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                             }}
                           >
                             {isSubmitting ? (
-                              <span className="inline-flex items-center gap-2">
+                              <span className="inline-flex items-center gap-2 text-white">
                                 <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
                                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeDashoffset="8" strokeLinecap="round" />
                                 </svg>
                                 Sending
                               </span>
-                            ) : 'Submit'}
+                            ) : <span className="text-white">Submit</span>}
                           </Button>
                         </div>
                       </m.form>

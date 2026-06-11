@@ -134,6 +134,13 @@ export function ConferenceGroupView({
     onSelectionChange(next);
   };
 
+  // Select every coach across all conferences matching the active filter, so the
+  // whole filtered set can be bulk-emailed in one shot.
+  const allFilteredSelected = coaches.length > 0 && coaches.every(c => selectedIds.has(c.id));
+  const toggleSelectAllFiltered = () => {
+    onSelectionChange(allFilteredSelected ? new Set() : new Set(coaches.map(c => c.id)));
+  };
+
   // Loading skeleton
   if (loading) {
     return (
@@ -169,12 +176,24 @@ export function ConferenceGroupView({
   return (
     <div className="space-y-3">
       {/* Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-warm-500">
           <span className="font-semibold text-warm-700">{conferenceGroups.length}</span> conferences &middot;{' '}
           <span className="font-semibold text-warm-700">{coaches.length}</span> coaches
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="ghost"
+            type="button"
+            onClick={toggleSelectAllFiltered}
+            className={cn(
+              'px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
+              allFilteredSelected
+                ? 'text-primary-700 bg-primary-50 hover:bg-primary-100'
+                : 'text-primary-700 hover:bg-primary-50'
+            )}
+          >
+            {allFilteredSelected ? `Clear selection` : `Select all ${coaches.length}`}
+          </Button>
           <Button variant="ghost"
             type="button"
             onClick={expandAll}
