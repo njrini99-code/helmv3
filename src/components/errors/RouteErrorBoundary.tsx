@@ -214,16 +214,45 @@ export function RouteErrorBoundary({
     }, (isTransient || isGenericLoad) && !isServer5xx ? 'medium' : 'high');
   }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, isServer5xx, retryCount]);
 
-  // Auto-retry once for transient errors OR generic load failures ("Load failed" / "Failed to fetch")
+  // Auto-retry for transient errors OR generic load failures. Two guards stop the
+  // self-perpetuating retry loop a backgrounded /rounds/new tab created: reset()
+  // remounts this boundary and resets the in-component retryCount to 0, so
+  // component state alone can never cap retries across reset cycles.
   useEffect(() => {
-    if (autoRetry && (isTransient || isGenericLoad) && retryCount === 0) {
-      const timer = setTimeout(() => {
-        handleRetry();
-      }, 2000);
-      return () => clearTimeout(timer);
+    if (!autoRetry || !(isTransient || isGenericLoad) || retryCount !== 0) {
+      return undefined;
     }
-    return undefined;
-  }, [autoRetry, isTransient, isGenericLoad, retryCount, handleRetry]);
+
+    // 1. Never auto-retry a hidden tab: the user isn't watching and retrying a
+    //    transient just spins. Every flood record had visibilityState 'hidden'.
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      return undefined;
+    }
+
+    // 2. Persistent, remount-surviving budget so reset()-driven remounts can't
+    //    re-arm the one-shot retry forever (mirrors the chunk/stale guards above).
+    const AUTO_RETRY_BUDGET = 2;
+    const budgetKey = `route-auto-retry:${route}`;
+    let used = 0;
+    try {
+      used = Number(sessionStorage.getItem(budgetKey)) || 0;
+    } catch {
+      used = 0;
+    }
+    if (used >= AUTO_RETRY_BUDGET) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      try {
+        sessionStorage.setItem(budgetKey, String(used + 1));
+      } catch {
+        // best-effort; the visibility gate already breaks the loop
+      }
+      handleRetry();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [autoRetry, isTransient, isGenericLoad, retryCount, handleRetry, route]);
 
   // Better default messages for different error types
   const getDefaultMessage = () => {
