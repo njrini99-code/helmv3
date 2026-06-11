@@ -18,6 +18,9 @@ import {
 import { validatePassword } from '@/lib/auth/password-validation';
 import { logSignup, logLogin, logSecurityEvent } from '@/lib/admin-logger';
 import { logServerError } from '@/lib/server-error-logger';
+import { DEMO_ENTER_EVENT } from '@/lib/demo/config';
+import { isDemoCoachEmail } from '@/lib/demo/config.server';
+import { captureServer } from '@/lib/analytics/posthog-server';
 
 export type LoginResult = {
   success: boolean;
@@ -116,6 +119,11 @@ export async function loginAction(
 
   // Log successful login event (fire-and-forget)
   logLogin(data.user.id, normalizedEmail, { ip }).catch(() => {});
+
+  // Trace demo coach logins server-side (fire-and-forget; never throws)
+  if (isDemoCoachEmail(normalizedEmail)) {
+    captureServer(DEMO_ENTER_EVENT, data.user.id, { ip }).catch(() => {});
+  }
 
   // Get user role and profile status to determine redirect
   const { data: userData } = await supabase

@@ -16,6 +16,7 @@ import { NotificationBadgeProvider } from '@/contexts/notification-badge-context
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
+import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
 import { LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -267,6 +268,7 @@ export function GolfDashboardShell({
                 <AppearanceMotionConfig>
                   <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
                     <LastSeenUpdater />
+                    <DemoEnterTracker />
                     <GolfDashboardContent userData={userData}>
                       {children}
                     </GolfDashboardContent>
