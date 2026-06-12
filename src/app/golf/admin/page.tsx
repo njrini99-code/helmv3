@@ -377,18 +377,27 @@ function AdminDashboardContent() {
         // SIGNED_IN or USER_UPDATED: the auth identity in this tab just
         // changed. Re-verify the role is still admin; if not, stop polling.
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          supabase
-            .from('users')
-            .select('role')
-            .eq('id', session.user.id)
-            .single()
-            .then(({ data, error }) => {
-              // Same null-vs-error trap as the catch above: only treat a
-              // null role as non-admin when the read actually succeeded.
+          void (async () => {
+            try {
+              const { data, error } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', session.user.id)
+                .single();
+              // Same null-vs-error trap as the catch above: only treat
+              // a null role as non-admin when the read actually
+              // succeeded.
               if (!error && (data?.role as string | undefined) !== 'admin') {
                 setSessionExpired(true);
               }
-            });
+            } catch {
+              // Promise itself rejected (rare — supabase-js usually
+              // resolves with { error }). Stop polling conservatively
+              // so we don't keep hitting /golf/admin if the probe is
+              // structurally broken.
+              setSessionExpired(true);
+            }
+          })();
         }
       },
     );
