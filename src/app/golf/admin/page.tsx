@@ -305,13 +305,39 @@ function AdminDashboardContent() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load dashboard';
 
-      // If the error is auth-related, stop polling and show session expired UI.
-      // Flipping sessionExpired=true passes null to useVisibilityAwareInterval
-      // below, which tears the timer down.
-      if (message === 'Unauthorized' || message === 'Forbidden') {
+      // Next.js production builds mask thrown server-action error messages
+      // (the client sees a generic digest, not "Unauthorized"/"Forbidden"),
+      // so the literal string match was a no-op in prod — the silent refresh
+      // kept ticking every 5 min for hours after the user's session went bad,
+      // producing the dominant /golf/admin 500 flood in the runtime logs.
+      // Re-verify against the client-side Supabase session: if the cookie is
+      // gone or the role isn't admin, treat as an auth failure regardless of
+      // the masked message.
+      let isAuthFailure = message === 'Unauthorized' || message === 'Forbidden';
+      if (!isAuthFailure) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            isAuthFailure = true;
+          } else {
+            const { data: row } = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+            if ((row?.role as string | undefined) !== 'admin') {
+              isAuthFailure = true;
+            }
+          }
+        } catch {
+          // Auth probe itself failed — fall through to generic error handling.
+        }
+      }
+
+      if (isAuthFailure) {
         setSessionExpired(true);
         if (!silent) {
-          setError(message);
+          setError('Your session has expired or your admin access was revoked.');
         }
         return;
       }
@@ -328,6 +354,39 @@ function AdminDashboardContent() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Belt-and-suspenders: react to auth state changes (sign-out in another
+  // tab, sign-in as a different account — e.g. the demo coach — same tab)
+  // the moment they happen instead of waiting for the next 5-min polling
+  // tick to fail. Prevents the runtime-log flood even in races where the
+  // cookie is invalidated mid-tick.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          setSessionExpired(true);
+          return;
+        }
+        // SIGNED_IN or USER_UPDATED: the auth identity in this tab just
+        // changed. Re-verify the role is still admin; if not, stop polling.
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single()
+            .then(({ data }) => {
+              if ((data?.role as string | undefined) !== 'admin') {
+                setSessionExpired(true);
+              }
+            });
+        }
+      },
+    );
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const refreshTick = useCallback(() => {
     loadData(true);
