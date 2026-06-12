@@ -316,16 +316,23 @@ function AdminDashboardContent() {
       let isAuthFailure = message === 'Unauthorized' || message === 'Forbidden';
       if (!isAuthFailure) {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
+          // getUser() re-validates the JWT against the auth server, vs
+          // getSession() which reads cached state from local storage —
+          // the right call for a security-sensitive admin-access check.
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
             isAuthFailure = true;
           } else {
-            const { data: row } = await supabase
+            // Supabase resolves (doesn't reject) on query errors. Without
+            // the error check, a transient DB blip would surface as
+            // row=null → role=undefined → !== 'admin' and incorrectly
+            // kick a legitimate admin out of the dashboard.
+            const { data: row, error: roleError } = await supabase
               .from('users')
               .select('role')
-              .eq('id', session.user.id)
+              .eq('id', user.id)
               .single();
-            if ((row?.role as string | undefined) !== 'admin') {
+            if (!roleError && (row?.role as string | undefined) !== 'admin') {
               isAuthFailure = true;
             }
           }
@@ -375,8 +382,10 @@ function AdminDashboardContent() {
             .select('role')
             .eq('id', session.user.id)
             .single()
-            .then(({ data }) => {
-              if ((data?.role as string | undefined) !== 'admin') {
+            .then(({ data, error }) => {
+              // Same null-vs-error trap as the catch above: only treat a
+              // null role as non-admin when the read actually succeeded.
+              if (!error && (data?.role as string | undefined) !== 'admin') {
                 setSessionExpired(true);
               }
             });
