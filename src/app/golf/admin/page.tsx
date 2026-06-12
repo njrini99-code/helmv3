@@ -368,10 +368,16 @@ function AdminDashboardContent() {
   // tick to fail. Prevents the runtime-log flood even in races where the
   // cookie is invalidated mid-tick.
   useEffect(() => {
+    // Guard against the race where an auth event fires just before
+    // unmount: subscription.unsubscribe() stops future events but can't
+    // cancel an in-flight role probe, so its .then() would call a setter
+    // on an unmounted component. React 18+ silently ignores this, but
+    // the isMounted ref makes it explicit.
+    let isMounted = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_OUT' || !session) {
-          setSessionExpired(true);
+          if (isMounted) setSessionExpired(true);
           return;
         }
         // SIGNED_IN or USER_UPDATED: the auth identity in this tab just
@@ -384,6 +390,7 @@ function AdminDashboardContent() {
                 .select('role')
                 .eq('id', session.user.id)
                 .single();
+              if (!isMounted) return;
               // Same null-vs-error trap as the catch above: only treat
               // a null role as non-admin when the read actually
               // succeeded.
@@ -395,13 +402,14 @@ function AdminDashboardContent() {
               // resolves with { error }). Stop polling conservatively
               // so we don't keep hitting /golf/admin if the probe is
               // structurally broken.
-              setSessionExpired(true);
+              if (isMounted) setSessionExpired(true);
             }
           })();
         }
       },
     );
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, [supabase]);
