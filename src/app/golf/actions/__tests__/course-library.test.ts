@@ -13,7 +13,7 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
 let currentClient: unknown = null;
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => currentClient }));
 
-import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses } from '../course-library';
+import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse } from '../course-library';
 
 // ── A scriptable, chainable Supabase query-builder mock ──────────────────────
 type Scripted = { maybeSingle?: unknown; single?: unknown; resolve?: unknown };
@@ -207,6 +207,35 @@ describe('getTeamSavedCourses — soft-delete must not leak into a team library'
     expect(tees._calls.is).toContainEqual(['deleted_at', null]);
     // And the soft-deleted course drops out of the library entirely.
     expect(res).toEqual([]);
+  });
+});
+
+describe('Phase 5 — unique normalized_name index: 23505 collision handling', () => {
+  it('updateCourse surfaces a rename collision as a clear message (not a generic failure)', async () => {
+    const before = { id: 'c1', name: 'Old Name', normalized_name: 'old name', deleted_at: null };
+    const courses = tableBuilder({
+      maybeSingle: { data: before, error: null },                              // the "before" fetch
+      single: { data: null, error: { code: '23505', message: 'duplicate key' } }, // the update collides
+    });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: courses,
+    });
+
+    const res = await updateCourse('c1', { name: 'Pinehurst No. 2' });
+    expect(res).toEqual({ success: false, error: 'Another course already uses that name' });
+  });
+
+  it('restoreCourse refuses to un-delete into an active name collision (23505)', async () => {
+    const courses = tableBuilder({ resolve: { data: null, error: { code: '23505', message: 'duplicate key' } } });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: courses,
+    });
+
+    const res = await restoreCourse('c1');
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error).toContain('Rename the active one');
   });
 });
 

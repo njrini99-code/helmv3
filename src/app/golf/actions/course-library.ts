@@ -490,6 +490,11 @@ export async function updateCourse(
     await logServerError(`updateCourse failed: ${error?.message ?? 'no row'}`, {
       action: 'updateCourse', featureArea: 'course-library', extra: { courseId, code: error?.code },
     });
+    // The partial-unique normalized_name index (Phase 5) rejects a rename that
+    // collides with another active facility — surface that as a clear message.
+    if (error?.code === '23505') {
+      return { success: false, error: 'Another course already uses that name' };
+    }
     return { success: false, error: 'Failed to update course' };
   }
 
@@ -528,7 +533,14 @@ async function setCourseDeleted(courseId: string, deleted: boolean): Promise<Res
       last_edited_at: new Date().toISOString(),
     })
     .eq('id', courseId);
-  if (error) return { success: false, error: 'Failed to update course' };
+  if (error) {
+    // Restoring (deleted=false) re-enters the active partial-unique index; if an
+    // active course already holds this normalized_name the index rejects it.
+    if (!deleted && error.code === '23505') {
+      return { success: false, error: 'Can’t restore — an active course already uses that name. Rename the active one first.' };
+    }
+    return { success: false, error: 'Failed to update course' };
+  }
 
   await appendCourseHistory(supabase, courseId, actor, deleted ? 'soft_delete' : 'restore', null);
   revalidateLibrary();
