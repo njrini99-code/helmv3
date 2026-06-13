@@ -63,28 +63,22 @@ BEGIN
 END $$;
 
 -- ============================================================================
--- STEP 2 — Replace old (metric_id, season) unique key with (metric_id, season, tour)
+-- STEP 2 — Re-key the table so (metric_id, season) can hold both a PGA and an
+-- LPGA row. PROD uses a PRIMARY KEY on (metric_id, season) (constraint
+-- golf_pga_standards_pkey), NOT a separate unique — add `tour` to the PK.
+-- (No table references golf_pga_standards via FK, so the PK swap is safe.)
 -- ============================================================================
 
 DO $$
 BEGIN
-  -- Drop the old 2-column unique constraint if it exists
   IF EXISTS (
     SELECT 1 FROM pg_constraint
-    WHERE conname = 'golf_pga_standards_metric_id_season_key'
+    WHERE conname = 'golf_pga_standards_pkey'
+      AND pg_get_constraintdef(oid) = 'PRIMARY KEY (metric_id, season)'
   ) THEN
+    ALTER TABLE public.golf_pga_standards DROP CONSTRAINT golf_pga_standards_pkey;
     ALTER TABLE public.golf_pga_standards
-      DROP CONSTRAINT golf_pga_standards_metric_id_season_key;
-  END IF;
-
-  -- Add the new 3-column unique constraint if not already present
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'golf_pga_standards_metric_id_season_tour_key'
-  ) THEN
-    ALTER TABLE public.golf_pga_standards
-      ADD CONSTRAINT golf_pga_standards_metric_id_season_tour_key
-      UNIQUE (metric_id, season, tour);
+      ADD CONSTRAINT golf_pga_standards_pkey PRIMARY KEY (metric_id, season, tour);
   END IF;
 END $$;
 

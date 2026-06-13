@@ -45,8 +45,10 @@ $$;
 COMMENT ON FUNCTION public.is_golf_team_head_coach(uuid) IS
   'True if the current user is a head_coach (any is_primary) on the specified team. Use for team-management policies so a program head can manage BOTH of their teams. SECURITY DEFINER avoids RLS recursion.';
 
--- Least privilege: authenticated + service_role only (NOT anon).
-REVOKE ALL ON FUNCTION public.is_golf_team_head_coach(uuid) FROM PUBLIC;
+-- Least privilege: authenticated + service_role only (NOT anon). Supabase grants
+-- EXECUTE to anon directly by default on new functions, so REVOKE FROM PUBLIC is
+-- insufficient — revoke from anon explicitly.
+REVOKE EXECUTE ON FUNCTION public.is_golf_team_head_coach(uuid) FROM anon, PUBLIC;
 GRANT EXECUTE ON FUNCTION public.is_golf_team_head_coach(uuid) TO authenticated, service_role;
 
 -- ── 3. Repoint the two management policies: primary → head_coach ────────────────
