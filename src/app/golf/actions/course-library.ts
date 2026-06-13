@@ -314,10 +314,13 @@ async function loadTeamSaved(
   const courseIds = [...new Set(savedRows.map((r) => r.course_id as string))];
   const teeIds = savedRows.map((r) => r.default_tee_id as string | null).filter(Boolean) as string[];
 
+  // Mirror every other read path: never surface soft-deleted courses/tees. A
+  // course soft-deleted from the global catalog must also vanish from each
+  // team's saved library; a soft-deleted default tee resolves back to null.
   const [{ data: courseRows }, teeRes] = await Promise.all([
-    supabase.from('golf_courses').select('*').in('id', courseIds),
+    supabase.from('golf_courses').select('*').in('id', courseIds).is('deleted_at', null),
     teeIds.length
-      ? supabase.from('golf_course_tees').select('*').in('id', teeIds)
+      ? supabase.from('golf_course_tees').select('*').in('id', teeIds).is('deleted_at', null)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ]);
 
@@ -327,7 +330,7 @@ async function loadTeamSaved(
   return savedRows
     .map((row) => {
       const course = courseById.get(row.course_id as string);
-      if (!course) return null; // course hard-deleted out from under the save
+      if (!course) return null; // course soft- or hard-deleted out from under the save
       return {
         ...mapSavedRow(row),
         course,

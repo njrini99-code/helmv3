@@ -13,7 +13,7 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
 let currentClient: unknown = null;
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => currentClient }));
 
-import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults } from '../course-library';
+import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses } from '../course-library';
 
 // ── A scriptable, chainable Supabase query-builder mock ──────────────────────
 type Scripted = { maybeSingle?: unknown; single?: unknown; resolve?: unknown };
@@ -182,6 +182,31 @@ describe('getTeeRoundDefaults (new-round loader)', () => {
       golf_course_tee_holes: tableBuilder({ resolve: { data: [], error: null } }),
     });
     expect(await getTeeRoundDefaults('t1')).toBeNull();
+  });
+});
+
+describe('getTeamSavedCourses — soft-delete must not leak into a team library', () => {
+  it('filters soft-deleted courses AND default tees out of the saved library', async () => {
+    // A saved row pointing at a course (and default tee) that have since been
+    // soft-deleted from the global catalog. Every other read path filters them
+    // out; loadTeamSaved must too, or a deleted course lingers in team libraries.
+    const savedRow = { course_id: 'c-del', default_tee_id: 't-del', pinned: false, last_played_at: null };
+    const courses = tableBuilder({ resolve: { data: [], error: null } }); // soft-deleted ⇒ filtered ⇒ none returned
+    const tees = tableBuilder({ resolve: { data: [], error: null } });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: { id: 'co1', organization_id: 'org1' }, error: null } }),
+      golf_team_saved_courses: tableBuilder({ resolve: { data: [savedRow], error: null } }),
+      golf_courses: courses,
+      golf_course_tees: tees,
+    });
+
+    const res = await getTeamSavedCourses();
+
+    // Both backing queries scope to active rows (the fix being locked).
+    expect(courses._calls.is).toContainEqual(['deleted_at', null]);
+    expect(tees._calls.is).toContainEqual(['deleted_at', null]);
+    // And the soft-deleted course drops out of the library entirely.
+    expect(res).toEqual([]);
   });
 });
 
