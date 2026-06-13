@@ -6,9 +6,12 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
 import type { HoleFormat } from './shared-primitives';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { yardsToDisplay, yardsLabel } from '@/lib/golf/distance-units';
 
 export function ScoringStats({ stats, holeFormat = 'all' }: { stats: GolfStats; holeFormat?: HoleFormat }) {
   const prefersReducedMotion = useReducedMotion();
+  const { distancePref } = useDistanceUnits();
   const hasBothFormats = stats.roundsPlayed18 > 0 && stats.roundsPlayed9 > 0;
   const has18 = stats.roundsPlayed18 > 0;
 
@@ -191,7 +194,7 @@ export function ScoringStats({ stats, holeFormat = 'all' }: { stats: GolfStats; 
         <StatRow label="Most Pars in a Row" value={formatStatInt(stats.mostParsRow)} index={2} />
         <StatRow label="Current No 3-Putt Streak" value={`${formatStatInt(stats.currentNo3PuttStreak)} holes`} index={3} />
         <StatRow label="Longest No 3-Putt Streak" value={`${formatStatInt(stats.longestNo3PuttStreak)} holes`} index={4} />
-        <StatRow label="Longest Hole Out" value={stats.longestHoleOut ? `${Math.round(stats.longestHoleOut)} yards` : '-'} index={5} />
+        <StatRow label="Longest Hole Out" value={stats.longestHoleOut ? `${yardsToDisplay(Math.round(stats.longestHoleOut), distancePref)} ${yardsLabel(distancePref)}` : '-'} index={5} />
       </StatSection>
     </motion.div>
   );

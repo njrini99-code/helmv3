@@ -12,7 +12,12 @@ node_modules/
 
 # Next.js
 .next/
+.next
 out/
+
+# Worktree build-cache symlinks (machine-specific; never commit)
+.bin
+.cache
 
 # Production
 build/
