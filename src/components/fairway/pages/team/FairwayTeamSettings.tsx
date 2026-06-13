@@ -44,11 +44,13 @@ import {
   IconLink,
   IconUsers,
   IconCalendar,
+  IconPlus,
 } from '@/components/icons';
 import {
   createTeam,
   updateTeam,
   regenerateJoinCode,
+  addSecondTeam,
 } from '@/app/golf/actions/teams';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
@@ -102,6 +104,31 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
   // Form state for creating / editing the team (verbatim seeding from legacy).
   const [teamName, setTeamName] = useState(team?.name || '');
   const [season, setSeason] = useState(() => team?.season || defaultSeason());
+
+  // Add-second-team panel state (only shown to coaches who already have a team)
+  const [showAddTeam, setShowAddTeam] = useState(false);
+  const [secondTeamName, setSecondTeamName] = useState('');
+  const [secondTeamGender, setSecondTeamGender] = useState<'mens' | 'womens'>('womens');
+  const [addTeamPending, startAddTeamTransition] = useTransition();
+
+  const handleAddSecondTeam = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!secondTeamName.trim()) {
+      fairwayToast.error('Please enter a team name');
+      return;
+    }
+    startAddTeamTransition(async () => {
+      const result = await addSecondTeam(secondTeamName.trim(), secondTeamGender);
+      if (result.success) {
+        fairwayToast.success('Second team created successfully');
+        setShowAddTeam(false);
+        setSecondTeamName('');
+        router.refresh();
+      } else {
+        fairwayToast.error(result.error || 'Failed to create team');
+      }
+    });
+  };
 
   const handleCreateTeam = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -385,6 +412,93 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
             </InlineNotice>
           )}
         </Surface>
+      </section>
+
+      {/* ── Add a second team (program head affordance) ─────────────────── */}
+      <section className="mt-10">
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h2 className="font-fw-display text-h2 text-text-primary">
+              Add a team
+            </h2>
+            <p className="font-fw-sans text-body text-text-secondary">
+              Run both a Men&rsquo;s and Women&rsquo;s program? Add a second team under
+              the same organization.
+            </p>
+          </div>
+          {!showAddTeam && (
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<IconPlus size={16} />}
+              onClick={() => setShowAddTeam(true)}
+              className="flex-shrink-0 mt-0.5"
+            >
+              Add team
+            </Button>
+          )}
+        </div>
+
+        {showAddTeam && (
+          <Surface elevation="border" padding="md">
+            <Form spacing="roomy" onSubmit={handleAddSecondTeam}>
+              <FormSection
+                title="New team"
+                description="Choose the gender and give the team a name."
+              >
+                <div className="flex flex-col gap-5">
+                  {/* Gender picker */}
+                  <FormField label="Team gender" required>
+                    <div className="flex gap-2">
+                      {(['mens', 'womens'] as const).map((g) => (
+                        <Button
+                          key={g}
+                          type="button"
+                          variant={secondTeamGender === g ? 'primary' : 'secondary'}
+                          size="sm"
+                          onClick={() => setSecondTeamGender(g)}
+                          className="flex-1"
+                        >
+                          {g === 'mens' ? "Men's" : "Women's"}
+                        </Button>
+                      ))}
+                    </div>
+                  </FormField>
+                  <FormField label="Team name" required>
+                    <Input
+                      name="secondTeamName"
+                      value={secondTeamName}
+                      onChange={(e) => setSecondTeamName(e.target.value)}
+                      placeholder={secondTeamGender === 'mens' ? "Men's Golf" : "Women's Golf"}
+                      disabled={addTeamPending}
+                      required
+                    />
+                  </FormField>
+                </div>
+              </FormSection>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => { setShowAddTeam(false); setSecondTeamName(''); }}
+                  disabled={addTeamPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  busy={addTeamPending}
+                  disabled={!secondTeamName.trim()}
+                  leftIcon={<IconPlus size={16} />}
+                >
+                  Create team
+                </Button>
+              </div>
+            </Form>
+          </Surface>
+        )}
       </section>
 
       {/* Quiet coach attribution — honest about what we know. */}
