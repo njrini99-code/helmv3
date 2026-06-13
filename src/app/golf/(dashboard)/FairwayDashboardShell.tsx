@@ -41,6 +41,7 @@ import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { TeamSwitcher } from '@/components/golf/TeamSwitcher';
+import { normalizeTeamGender, teamAccentVar, type TeamGender } from '@/lib/golf/team-theme';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { usePresence } from '@/hooks/use-presence';
 import { createClient } from '@/lib/supabase/client';
@@ -326,11 +327,36 @@ function FairwayDashboardContent({
 
   // TeamSwitcher (program heads only): renders in the glass top bar's action
   // cluster — desktop AND mobile — when the coach is a multi-team head coach.
-  const coachTeams = userData.coachTeams ?? [];
-  const teamSwitcher =
-    role === 'coach' && userData.canSwitchTeams && coachTeams.length > 1 && userData.teamId ? (
-      <TeamSwitcher teams={coachTeams} activeTeamId={userData.teamId} canSwitch />
-    ) : null;
+  const coachTeams = useMemo(() => userData.coachTeams ?? [], [userData.coachTeams]);
+  const showSwitcher =
+    role === 'coach' && !!userData.canSwitchTeams && coachTeams.length > 1 && !!userData.teamId;
+
+  // Active team's gender → accent (men's = helm green, women's = violet). Held
+  // optimistically so the shell's accent wash + top-bar underline flip the
+  // instant the toggle is clicked — before the RSC refresh — then re-seed from
+  // the server-resolved team once the refresh lands. Undefined (no theming) for
+  // single-team coaches and players.
+  const serverGender = useMemo(
+    () =>
+      showSwitcher
+        ? normalizeTeamGender(coachTeams.find((t) => t.id === userData.teamId)?.gender)
+        : null,
+    [showSwitcher, coachTeams, userData.teamId],
+  );
+  const [optimisticGender, setOptimisticGender] = useState<TeamGender | null>(serverGender);
+  useEffect(() => {
+    setOptimisticGender(serverGender);
+  }, [serverGender]);
+  const accentColor = showSwitcher ? teamAccentVar(optimisticGender ?? serverGender) : undefined;
+
+  const teamSwitcher = showSwitcher ? (
+    <TeamSwitcher
+      teams={coachTeams}
+      activeTeamId={userData.teamId!}
+      canSwitch
+      onOptimisticSwitch={setOptimisticGender}
+    />
+  ) : null;
 
   // Track presence (deferred internally so it doesn't compete with page load).
   usePresence();
@@ -405,6 +431,7 @@ function FairwayDashboardContent({
         brand={<Brand />}
         sidebarFooter={<ShellFooter />}
         topBarActions={teamSwitcher}
+        accentColor={accentColor}
         pathname={pathname}
         linkComponent={ShellLink}
         breadcrumbs={breadcrumbs}

@@ -59,6 +59,14 @@ export interface AppShellProps {
   searchSlot?: React.ReactNode;
   /** Top-bar right action cluster. */
   topBarActions?: React.ReactNode;
+  /**
+   * Optional accent (any CSS color / `var(...)`) for an app that themes its top
+   * chrome — renders a faint top wash behind the content column plus a 2px
+   * underline under the glass top bar, both cross-fading when it changes. Omit
+   * (the default) leaves the shell unthemed. Used by GolfHelm's men's/women's
+   * active-team toggle.
+   */
+  accentColor?: string;
 
   /** Current pathname — drives nav active-state AND the route reveal key. */
   pathname?: string;
@@ -111,6 +119,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     searchPlaceholder = DEFAULT_PLACEHOLDER,
     searchSlot,
     topBarActions,
+    accentColor,
     pathname,
     linkComponent,
     collapsed: collapsedProp,
@@ -242,6 +251,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     searchPlaceholder,
     searchSlot,
     actions: topBarActions,
+    accentColor,
     onMenuOpen: openMobile,
     linkComponent,
   };
@@ -311,11 +321,27 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
 
       {/* ── Content column (offset by the rail) ── */}
       <div
-        className={cn('flex min-h-dvh flex-col transition-[padding] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none', railOffset)}
+        className={cn('relative flex min-h-dvh flex-col transition-[padding] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none', railOffset)}
         // In-page sticky sub-headers offset below the glass top bar (4rem tall
         // + the notch inset). The immersive branch sets this var elsewhere.
         style={{ '--golf-mobile-header-offset': 'calc(4rem + env(safe-area-inset-top, 0px))' } as React.CSSProperties}
       >
+        {/* Faint accent wash: a low-alpha team tint bleeding down from the top,
+            masked into transparency so it dissolves into the warm cream. Sits
+            BEHIND the (translucent glass) top bar + content (z-[-1]); its
+            background-color cross-fades when the active team changes. */}
+        {accentColor && (
+          <div
+            aria-hidden
+            data-testid="fw-accent-wash"
+            className={cn(
+              'pointer-events-none absolute inset-x-0 top-0 z-[-1] h-[220px]',
+              '[mask-image:linear-gradient(180deg,#000_0%,transparent_100%)] [-webkit-mask-image:linear-gradient(180deg,#000_0%,transparent_100%)]',
+              'transition-[background-color] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none',
+            )}
+            style={{ backgroundColor: `color-mix(in oklch, ${accentColor} 12%, transparent)` }}
+          />
+        )}
         <FairwayTopBar {...topBarProps} />
 
         <main className="flex-1">

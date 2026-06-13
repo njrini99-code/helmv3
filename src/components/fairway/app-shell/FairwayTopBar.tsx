@@ -70,6 +70,12 @@ export interface FairwayTopBarProps {
   searchSlot?: React.ReactNode;
   /** Right-aligned action cluster (primary CTA, avatar menu, etc.). */
   actions?: React.ReactNode;
+  /**
+   * Optional accent (any CSS color / `var(...)`) — renders a 2px underline at
+   * the bar's bottom edge that cross-fades when it changes. Used by the
+   * men's/women's active-team toggle; omit for the default glass border only.
+   */
+  accentColor?: string;
   /** Mobile hamburger handler — renders the menu affordance when present. */
   onMenuOpen?: () => void;
   /** Link element (defaults to a plain `<a>`). */
@@ -123,7 +129,7 @@ function BreadcrumbTrail({
 }
 
 export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(function FairwayTopBar(
-  { breadcrumbs, onSearchOpen, searchPlaceholder = 'Search or jump to…', searchSlot, actions, onMenuOpen, linkComponent, className },
+  { breadcrumbs, onSearchOpen, searchPlaceholder = 'Search or jump to…', searchSlot, actions, accentColor, onMenuOpen, linkComponent, className },
   ref,
 ) {
   const Link = linkComponent ?? DefaultLink;
@@ -194,6 +200,20 @@ export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(functio
         {/* Action cluster */}
         {actions && <div className="flex flex-shrink-0 items-center gap-2">{actions}</div>}
       </div>
+
+      {/* Active-team accent underline — overlays the glass bottom border, cross-
+          fades on team switch. Sits above the `before:` sheen (later in DOM). */}
+      {accentColor && (
+        <div
+          aria-hidden
+          data-testid="fw-accent-underline"
+          className={cn(
+            'pointer-events-none absolute inset-x-0 bottom-0 h-[2px]',
+            'transition-[background-color] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none',
+          )}
+          style={{ backgroundColor: accentColor }}
+        />
+      )}
     </header>
   );
 });
