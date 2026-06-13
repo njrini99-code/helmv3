@@ -19,6 +19,7 @@ import type {
 } from '@/lib/coachhelm/insight-types';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // TYPES
@@ -624,14 +625,11 @@ export async function getInsightFilterOptions(
       return { success: false, error: 'Coach organization not found' };
     }
 
-    // Get team
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
+    // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
+    // and the men's/women's toggle). Falls back to the coach's primary team.
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coachId);
 
-    if (!team) {
+    if (!teamId) {
       return { success: false, error: 'Team not found' };
     }
 
@@ -639,7 +637,7 @@ export async function getInsightFilterOptions(
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', team.id)
+      .eq('team_id', teamId)
       .eq('status', 'active');
 
     const playerIds = (teamMembers || []).map((m) => m.player_id);

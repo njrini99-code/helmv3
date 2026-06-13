@@ -28,12 +28,14 @@ SELECT ok(
   'golf_team_coach_staff_insert policy exists as INSERT policy'
 );
 
--- Test 2: the policy references team_id ownership in the WITH CHECK expression.
--- Before the fix, the expression only mentioned coach_id and auth.uid().
--- After the fix, it must require primary-coach ownership of the target team.
+-- Test 2: the policy requires HEAD-coach ownership of the target team in the
+-- WITH CHECK expression. (Team-toggle build: repointed from is_golf_team_primary_coach
+-- to is_golf_team_head_coach so a program head — who is is_primary on only one of
+-- their teams — can still self-bootstrap onto the other team they head. Assistants,
+-- role <> 'head_coach', remain blocked.)
 SELECT ok(
-  tests.policy_with_check_contains('public', 'golf_team_coach_staff', 'golf_team_coach_staff_insert', 'is_golf_team_primary_coach'),
-  'INSERT WITH CHECK requires primary coach ownership of team_id'
+  tests.policy_with_check_contains('public', 'golf_team_coach_staff', 'golf_team_coach_staff_insert', 'is_golf_team_head_coach'),
+  'INSERT WITH CHECK requires head coach ownership of team_id'
 );
 
 -- Test 3: the policy still verifies coach_id ownership too (no regression on

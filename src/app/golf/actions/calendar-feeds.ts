@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { getAppUrl } from '@/lib/utils/env';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 type FeedType = 'team' | 'personal';
 type UserRole = 'coach' | 'player';
@@ -53,15 +54,10 @@ async function getUserContext(): Promise<ActionResult<UserContext>> {
     .maybeSingle();
 
   if (coach) {
-    // Get team_id from golf_teams via organization_id
+    // Resolve the coach's active team (cookie-aware, multi-team safe)
     let teamId: string | null = null;
     if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? null;
+      teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
     }
 
     return {

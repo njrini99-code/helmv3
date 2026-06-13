@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { logServerError } from '@/lib/server-error-logger';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 
 // ============================================================================
 // VALIDATION SCHEMAS (Zod)
@@ -220,7 +221,7 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
     // Verify user is a coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
     if (!coach) {
@@ -234,19 +235,11 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
       .eq('id', validatedData.id)
       .maybeSingle();
     if (!itineraryRecord) return { success: false, error: 'Itinerary not found' };
-    // Check team membership via coach's organization
-    const { data: coachTeam } = await supabase
-      .from('golf_coaches')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single();
-    const { data: teamMatch } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coachTeam?.organization_id ?? '')
-      .eq('id', itineraryRecord.team_id)
-      .maybeSingle();
-    if (!teamMatch) return { success: false, error: 'Not authorized for this team' };
+    // Staff-strict: the coach must be staffed on the itinerary's team (works for
+    // a program head on both teams; not tied to the active toggle).
+    if (!(await validateCoachTeamAccess(supabase, coach.id, itineraryRecord.team_id, coach.organization_id))) {
+      return { success: false, error: 'Not authorized for this team' };
+    }
 
     // Extract update data (omit id and fields that don't exist in the database)
     const { id, check_in_date: _checkIn, check_out_date: _checkOut, ...rawUpdateData } = validatedData;
@@ -338,7 +331,7 @@ export async function deleteGolfTravelItinerary(itineraryId: string) {
   // Verify user is a coach
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id')
+    .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
   if (!coach) {
@@ -352,18 +345,10 @@ export async function deleteGolfTravelItinerary(itineraryId: string) {
     .eq('id', parsed.data)
     .maybeSingle();
   if (!itineraryRecord) return { success: false, error: 'Itinerary not found' };
-  const { data: coachTeam } = await supabase
-    .from('golf_coaches')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single();
-  const { data: teamMatch } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('organization_id', coachTeam?.organization_id ?? '')
-    .eq('id', itineraryRecord.team_id)
-    .maybeSingle();
-  if (!teamMatch) return { success: false, error: 'Not authorized for this team' };
+  // Staff-strict: the coach must be staffed on the itinerary's team.
+  if (!(await validateCoachTeamAccess(supabase, coach.id, itineraryRecord.team_id, coach.organization_id))) {
+    return { success: false, error: 'Not authorized for this team' };
+  }
 
   const { error } = await supabase
     .from('golf_travel_itineraries')

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
@@ -202,6 +202,7 @@ function LegacyGolfSettingsPage() {
   async function handleSignOut() {
     void triggerHaptic('heavy');
     const supabase = createClient();
+    await clearActiveTeam();
     await supabase.auth.signOut();
     window.location.href = '/golf/login';
   }
@@ -1317,6 +1318,11 @@ function PlayerGolfDetailsPanel({
 function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
   const supabase = createClient();
   const { showToast } = useToast();
+  const golfUser = useGolfUser();
+  // ACTIVE team from the layout-resolved context (cookie-aware) — the panel
+  // must show and EDIT the same team every server page renders, so a program
+  // head toggled to Women's edits the women's team here, never the default.
+  const activeTeamId = golfUser.teamId ?? null;
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
@@ -1331,26 +1337,13 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!activeTeamId) { setLoaded(true); return; }
 
-      const { data: coach } = await supabase
-        .from('golf_coaches')
-        .select('organization_id')
-        .eq('user_id', user.id)
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id, name, season, organization_id')
+        .eq('id', activeTeamId)
         .maybeSingle();
-
-      if (!coach?.organization_id) { setLoaded(true); return; }
-
-      // Deterministic org→team resolution (handles orgs with >1 team)
-      const resolvedTeamId = await resolveCoachTeamId(supabase, coach.organization_id);
-      const { data: team } = resolvedTeamId
-        ? await supabase
-            .from('golf_teams')
-            .select('id, name, season, organization_id')
-            .eq('id', resolvedTeamId)
-            .maybeSingle()
-        : { data: null };
 
       if (team) {
         setTeamId(team.id);
@@ -1376,7 +1369,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
       }
       setLoaded(true);
     })();
-  }, [supabase]);
+  }, [supabase, activeTeamId]);
 
   async function handleSave() {
     if (!teamId || !teamName.trim()) {
@@ -1455,6 +1448,10 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
 function InviteSettingsPanel() {
   const supabase = createClient();
   const { showToast } = useToast();
+  const golfUser = useGolfUser();
+  // ACTIVE team from the layout-resolved context (cookie-aware) — invite codes
+  // must be generated for the team the program head is currently viewing.
+  const activeTeamId = golfUser.teamId ?? null;
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
@@ -1463,26 +1460,13 @@ function InviteSettingsPanel() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!activeTeamId) { setLoaded(true); return; }
 
-      const { data: coach } = await supabase
-        .from('golf_coaches')
-        .select('organization_id')
-        .eq('user_id', user.id)
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id, join_code')
+        .eq('id', activeTeamId)
         .maybeSingle();
-
-      if (!coach?.organization_id) { setLoaded(true); return; }
-
-      // Deterministic org→team resolution (handles orgs with >1 team)
-      const resolvedTeamId = await resolveCoachTeamId(supabase, coach.organization_id);
-      const { data: team } = resolvedTeamId
-        ? await supabase
-            .from('golf_teams')
-            .select('id, join_code')
-            .eq('id', resolvedTeamId)
-            .maybeSingle()
-        : { data: null };
 
       if (team) {
         setTeamId(team.id);
@@ -1490,7 +1474,7 @@ function InviteSettingsPanel() {
       }
       setLoaded(true);
     })();
-  }, [supabase]);
+  }, [supabase, activeTeamId]);
 
   async function generateNewCode() {
     if (!teamId) return;

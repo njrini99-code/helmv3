@@ -17,6 +17,7 @@ import { revalidatePath } from 'next/cache';
 import type { MinedPattern, PatternTrend } from '@/lib/coachhelm/v2/types';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // ============================================================================
@@ -259,16 +260,9 @@ export async function getTeamPatterns(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Get team_id from organization
-    let teamId: string | null = null;
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? null;
-    }
+    // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
+    // and the men's/women's toggle). Falls back to the coach's primary team.
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (!teamId) {
       return { success: false, error: 'No team assigned' };
@@ -808,16 +802,9 @@ export async function getPatternStats(): Promise<{
       return { success: false, error: 'Coach not found' };
     }
 
-    // Get team_id from organization
-    let teamId: string | null = null;
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? null;
-    }
+    // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
+    // and the men's/women's toggle). Falls back to the coach's primary team.
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (!teamId) {
       return { success: false, error: 'No team assigned' };

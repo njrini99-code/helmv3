@@ -22,6 +22,7 @@ import {
   type PlayerStatsCache,
 } from '@/lib/cache/golf-stats-calculator';
 import { logServerError } from '@/lib/server-error-logger';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // TYPES
@@ -201,17 +202,13 @@ export async function refreshStatsCacheAction(
 
       if (coach && coach.organization_id) {
         // Coach - verify player is on their team
-        const { data: team } = await supabase
-          .from('golf_teams')
-          .select('id')
-          .eq('organization_id', coach.organization_id)
-          .single();
+        const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
-        if (team) {
+        if (teamId) {
           const { data: membership } = await supabase
             .from('golf_team_members')
             .select('id')
-            .eq('team_id', team.id)
+            .eq('team_id', teamId)
             .eq('player_id', targetPlayerId)
             .eq('status', 'active')
             .single();
@@ -290,17 +287,13 @@ export async function getTeamStatsAction(): Promise<
     }
 
     // Get team
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .single();
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
-    if (!team) {
+    if (!teamId) {
       return { success: false, error: 'Team not found' };
     }
 
-    const statsMap = await getTeamPlayerStats(team.id);
+    const statsMap = await getTeamPlayerStats(teamId);
     return { success: true, data: statsMap };
   } catch (error) {
     await logServerError(`getTeamStatsAction failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -344,17 +337,13 @@ export async function getTeamTopPlayersAction(
     }
 
     // Get team
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .single();
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
-    if (!team) {
+    if (!teamId) {
       return { success: false, error: 'Team not found' };
     }
 
-    const topPlayers = await getTeamTopPlayers(team.id, limit);
+    const topPlayers = await getTeamTopPlayers(teamId, limit);
     return { success: true, data: topPlayers };
   } catch (error) {
     await logServerError(`getTeamTopPlayersAction failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -400,17 +389,13 @@ async function verifyPlayerOwnershipOrCoach(
     .maybeSingle();
 
   if (coach?.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
-    if (team) {
+    if (teamId) {
       const { data: membership } = await supabase
         .from('golf_team_members')
         .select('id')
-        .eq('team_id', team.id)
+        .eq('team_id', teamId)
         .eq('player_id', playerId)
         .eq('status', 'active')
         .maybeSingle();

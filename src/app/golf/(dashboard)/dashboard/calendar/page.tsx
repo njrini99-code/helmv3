@@ -6,7 +6,7 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { CalendarSkeleton } from '@/components/ui/skeleton';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import type { Metadata } from 'next';
 
@@ -54,7 +54,7 @@ export default async function GolfCalendarPage() {
   try {
     const [coachTeamId, playerTeamResult, coachListResult] = await Promise.all([
       orgId
-        ? resolveCoachTeamId(supabase, orgId, coach?.id ?? null)
+        ? resolveCoachTeamIdWithCookie(supabase, orgId, coach?.id ?? null)
         : Promise.resolve(null),
       playerId
         ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()

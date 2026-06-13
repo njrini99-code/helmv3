@@ -46,6 +46,7 @@ import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLl
 import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
 import { Button } from '@/components/ui/button';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { useGolfUser } from '@/contexts/golf-user-context';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
@@ -173,6 +174,12 @@ export default function RoundReviewPage() {
   const { addToast } = useToast();
   const roundId = params.id as string;
 
+  // Layout-resolved user context (cookie-aware active team + all staffed
+  // teams) — used to authorize coach access across every team they staff.
+  const golfUser = useGolfUser();
+  const activeTeamId = golfUser.role === 'coach' ? golfUser.teamId ?? null : null;
+  const coachTeamIdsKey = (golfUser.coachTeams ?? []).map((t) => t.id).join(',');
+
   // State
   const [round, setRound] = useState<RoundData | null>(null);
   const [storedReview, setStoredReview] = useState<RoundReviewWithRound | null>(null);
@@ -223,6 +230,8 @@ export default function RoundReviewPage() {
   // (the dependent effect early-returns when `round` stays null), so the page
   // hung on the "Loading review..." skeleton forever for coach sessions.
   useEffect(() => {
+    // Rebuilt from the stable joined key so the effect deps stay primitive.
+    const coachTeamIds = coachTeamIdsKey ? coachTeamIdsKey.split(',') : [];
     async function fetchRound() {
       setLoadingRound(true);
       try {
@@ -267,16 +276,27 @@ export default function RoundReviewPage() {
         const isOwnRound = currentPlayerId !== null && roundData.player_id === currentPlayerId;
         let isCoachOnTeam = false;
         if (!isOwnRound && coachOrgId) {
-          // Deterministic org→team resolution (handles orgs with >1 team)
-          const orgTeamId = await resolveCoachTeamId(supabase, coachOrgId, coachRecord?.id ?? null);
-          if (orgTeamId) {
-            const { data: teamMembership } = await supabase
+          // Authorize against EVERY team the coach staffs (context, cookie-aware)
+          // — a program head can review rounds from any of their teams,
+          // regardless of which team the toggle currently shows. Falls back to
+          // the deterministic org resolver when the context has no teams.
+          const candidateTeamIds = [
+            ...new Set(
+              [activeTeamId, ...coachTeamIds].filter((id): id is string => Boolean(id)),
+            ),
+          ];
+          if (candidateTeamIds.length === 0) {
+            const orgTeamId = await resolveCoachTeamId(supabase, coachOrgId, coachRecord?.id ?? null);
+            if (orgTeamId) candidateTeamIds.push(orgTeamId);
+          }
+          if (candidateTeamIds.length > 0) {
+            const { data: teamMemberships } = await supabase
               .from('golf_team_members')
               .select('id')
-              .eq('team_id', orgTeamId)
+              .in('team_id', candidateTeamIds)
               .eq('player_id', roundData.player_id)
-              .maybeSingle();
-            isCoachOnTeam = !!teamMembership;
+              .limit(1);
+            isCoachOnTeam = (teamMemberships?.length ?? 0) > 0;
           }
         }
 
@@ -297,7 +317,7 @@ export default function RoundReviewPage() {
     }
 
     fetchRound();
-  }, [roundId, supabase]);
+  }, [roundId, supabase, activeTeamId, coachTeamIdsKey]);
 
   // Fetch stored review and averages. Resets `loadingStoredReview` regardless
   // of whether `round` resolved — previously an early `if (!round) return;`
@@ -750,6 +770,8 @@ export default function RoundReviewPage() {
                   team_n={st.team_n}
                   team_pct={st.team_pct}
                   pga_value={st.pga_value}
+                  pga_omitted={st.pga_omitted}
+                  is_womens={st.is_womens}
                   direction={cfg.direction}
                   unit={cfg.unit}
                   scale={cfg.default_scale}

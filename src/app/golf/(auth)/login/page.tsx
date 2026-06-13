@@ -11,6 +11,7 @@ import { CourseScene } from '@/components/golf/scenes/CourseScene';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { createClient } from '@/lib/supabase/client';
+import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
 
@@ -70,6 +71,7 @@ function LoginContent() {
 
   async function handleSignOut() {
     setIsLoggingOut(true);
+    await clearActiveTeam();
     await supabase.auth.signOut();
     setIsLoggedIn(false);
     setIsLoggingOut(false);

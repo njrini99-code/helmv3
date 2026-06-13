@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { TeamSettingsClient } from './team-settings-client';
 import { TeamInfoPlayer } from './team-info-player';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeam } from '@/components/fairway/pages/team';
 import type { Metadata } from 'next';
@@ -44,7 +44,7 @@ export default async function TeamSettingsPage() {
   // the chosen team's display fields by id.
   let coachData: CoachWithTeam | null = null;
   if (coach?.organization_id) {
-    const orgTeamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+    const orgTeamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
     const { data: orgTeam } = orgTeamId
       ? await supabase
           .from('golf_teams')

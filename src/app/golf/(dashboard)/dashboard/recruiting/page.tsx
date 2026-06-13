@@ -13,7 +13,11 @@ export const metadata: Metadata = {
   description: 'Track prospects from watchlist to commitment.',
 };
 
-export const revalidate = 60;
+// Recruiting HQ scopes to the coach's ACTIVE team (getRecruits → resolveCoachAndTeam
+// → resolveCoachTeamIdWithCookie reads the golf_active_team cookie). Render per
+// request so a program head's team toggle is honored — a static 60s cache would
+// pin the watchlist to one team.
+export const dynamic = 'force-dynamic';
 
 export default async function RecruitingPage() {
   const session = await getGolfSessionProfile();

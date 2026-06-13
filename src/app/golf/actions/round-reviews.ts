@@ -5,6 +5,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { pct } from '@/lib/golf/stat-formulas';
 
 // UUID format validation
@@ -992,15 +993,10 @@ export async function getPendingCoachReviews(_coachId?: string): Promise<{
       return { success: true, reviews: [] };
     }
 
-    // Get the coach's team
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .limit(1)
-      .maybeSingle();
+    // Get the coach's active team (cookie-aware, multi-team safe)
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
-    if (!team) {
+    if (!teamId) {
       return { success: true, reviews: [] };
     }
 
@@ -1008,7 +1004,7 @@ export async function getPendingCoachReviews(_coachId?: string): Promise<{
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', team.id)
+      .eq('team_id', teamId)
       .eq('status', 'active');
 
     if (!teamMembers || teamMembers.length === 0) {
@@ -1655,18 +1651,13 @@ export async function markReviewViewedByCoach(
 
     // Verify the player is on the coach's team
     if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .limit(1)
-        .maybeSingle();
+      const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
-      if (team) {
+      if (teamId) {
         const { data: teamMember } = await supabase
           .from('golf_team_members')
           .select('id')
-          .eq('team_id', team.id)
+          .eq('team_id', teamId)
           .eq('player_id', review.player_id)
           .eq('status', 'active')
           .maybeSingle();

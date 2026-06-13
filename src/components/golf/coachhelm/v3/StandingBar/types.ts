@@ -45,6 +45,14 @@ export interface StandingBarProps {
    */
   pga_omitted?: boolean;
 
+  /**
+   * True when the player's team is a women's program. When set, the Tour
+   * reference label changes from "PGA" to "LPGA" (and `pga_value` is expected
+   * to already carry the LPGA anchor via `applyGenderAnchor`). Defaults to
+   * false — men's / unknown teams are unchanged.
+   */
+  is_womens?: boolean;
+
   /** Player percentile within team (0-100, higher = better). Null in cold-start. */
   team_pct?: number | null;
 

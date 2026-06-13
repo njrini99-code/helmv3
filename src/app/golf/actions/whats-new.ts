@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // TYPES
@@ -99,28 +100,12 @@ export async function getWhatsNewForCoach(): Promise<{
   const sinceIso = sevenDaysAgoISO();
 
   try {
-    // Resolve coach's team via organization
-    const { data: team, error: teamError } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .limit(1)
-      .maybeSingle();
+    // Resolve coach's active team (cookie-aware, multi-team safe)
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
-    if (teamError) {
-      await logServerError(`getWhatsNewForCoach team lookup failed: ${teamError.message}`, {
-        action: 'getWhatsNewForCoach',
-        featureArea: 'whats-new',
-        extra: { coachId: coach.id, errorCode: teamError.code },
-      });
-      return { success: false, error: 'Failed to resolve team' };
-    }
-
-    if (!team) {
+    if (!teamId) {
       return { success: true, items: [] };
     }
-
-    const teamId = team.id;
 
     // Roster — used to scope pattern_validated to team players
     const { data: rosterRows } = await supabase

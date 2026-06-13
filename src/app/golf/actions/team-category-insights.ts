@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // TYPES
@@ -318,17 +319,15 @@ export async function getTeamOverview(
     if (teamIdArg) {
       team = { id: teamIdArg };
     } else {
-      const { data: teamRow, error: teamError } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', orgId)
-        .limit(1)
-        .single();
-
-      if (teamError || !teamRow) {
+      const resolvedTeamId = await resolveCoachTeamIdWithCookie(
+        supabase,
+        orgId,
+        session.coach.id,
+      );
+      if (!resolvedTeamId) {
         return { success: false, error: 'Team not found' };
       }
-      team = teamRow;
+      team = { id: resolvedTeamId };
     }
 
     // 3. Get active players via golf_team_members
@@ -644,17 +643,15 @@ export async function getTeamCategoryInsights(
     if (teamIdArg) {
       team = { id: teamIdArg };
     } else {
-      const { data: teamRow, error: teamError } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', orgId)
-        .limit(1)
-        .single();
-
-      if (teamError || !teamRow) {
+      const resolvedTeamId = await resolveCoachTeamIdWithCookie(
+        supabase,
+        orgId,
+        session.coach.id,
+      );
+      if (!resolvedTeamId) {
         return { success: false, error: 'Team not found' };
       }
-      team = teamRow;
+      team = { id: resolvedTeamId };
     }
 
     // 3. Get active players via golf_team_members

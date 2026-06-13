@@ -6,7 +6,7 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamStats } from '@/components/fairway/pages/coachhelm/FairwayTeamStats';
 import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -58,7 +58,7 @@ export default async function TeamStatsPage() {
 
   // Get team_id from golf_teams via organization_id (deterministic: handles
   // orgs with >1 team), then load the chosen team's display name.
-  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   let team: { name: string } | null = null;
   if (teamId) {
     const { data: chosenTeam } = await supabase

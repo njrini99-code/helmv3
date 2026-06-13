@@ -7503,6 +7503,8 @@ export type Database = {
           season: string
           source: string | null
           updated_at: string
+          /** Tour discriminator: 'pga' = PGA Tour values; 'lpga' = LPGA Tour values. Ahead of prod until 20260610170000_seed_lpga_standards.sql is applied. */
+          tour: string
         }
         Insert: {
           display_label: string
@@ -7519,6 +7521,7 @@ export type Database = {
           season: string
           source?: string | null
           updated_at?: string
+          tour?: string
         }
         Update: {
           display_label?: string
@@ -7535,6 +7538,7 @@ export type Database = {
           season?: string
           source?: string | null
           updated_at?: string
+          tour?: string
         }
         Relationships: [
           {
@@ -10071,6 +10075,7 @@ export type Database = {
           organization_id: string | null
           primary_color: string | null
           season: string | null
+          season_active: boolean
           secondary_color: string | null
           timezone: string
           updated_at: string | null
@@ -10087,6 +10092,7 @@ export type Database = {
           organization_id?: string | null
           primary_color?: string | null
           season?: string | null
+          season_active?: boolean
           secondary_color?: string | null
           timezone?: string
           updated_at?: string | null
@@ -10103,6 +10109,7 @@ export type Database = {
           organization_id?: string | null
           primary_color?: string | null
           season?: string | null
+          season_active?: boolean
           secondary_color?: string | null
           timezone?: string
           updated_at?: string | null

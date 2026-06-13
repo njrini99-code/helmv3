@@ -19,7 +19,8 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 import { notifyTeamAnnouncement } from '@/lib/notifications';
 import { sendBulkPushNotification } from '@/lib/notifications/push';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 
@@ -57,10 +58,12 @@ const createAnnouncementSchema = z.object({
 
 async function getCoachTeamId(
   supabase: SupabaseClient,
-  organizationId: string | null
+  organizationId: string | null,
+  coachId: string | null
 ): Promise<string | null> {
-  // Delegates to the shared deterministic resolver (never throws on orgs with >1 team).
-  return resolveCoachTeamId(supabase, organizationId);
+  // Cookie-aware: honours the program head's golf_active_team selection
+  // (validated server-side) so coach WRITES target the toggled team.
+  return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
 
 async function getTeamPlayerIds(
@@ -102,7 +105,7 @@ export async function createEnrichedAnnouncement(input: {
       .single();
     if (!coach) return { success: false, error: 'Coach profile not found' };
 
-    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
     if (!teamId) return { success: false, error: 'Coach not assigned to a team' };
 
     // 1. Create the announcement
@@ -295,14 +298,12 @@ export async function getAnnouncementsWithMeta(
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (coachCheck?.organization_id) {
-      const { data: teamCheck } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', teamId)
-        .eq('organization_id', coachCheck.organization_id)
-        .maybeSingle();
-      if (!teamCheck && !playerCheck) {
+    if (coachCheck) {
+      // Staff-strict: authorize the coach iff staffed on the requested team
+      // (a program head on both men's & women's can read either), instead of
+      // authorizing ANY same-org team. Not tied to the active-team toggle.
+      const coachAuthorized = await validateCoachTeamAccess(supabase, coachCheck.id, teamId, coachCheck.organization_id);
+      if (!coachAuthorized && !playerCheck) {
         return { success: false, error: 'Not authorized for this team' };
       }
     } else if (playerCheck) {
@@ -486,14 +487,10 @@ export async function getAnnouncementDetail(
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (coachCheck?.organization_id) {
-      const { data: teamCheck } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', ann.team_id)
-        .eq('organization_id', coachCheck.organization_id)
-        .maybeSingle();
-      if (!teamCheck && !playerCheck) {
+    if (coachCheck) {
+      // Staff-strict: authorize the coach iff staffed on the announcement's team.
+      const coachAuthorized = await validateCoachTeamAccess(supabase, coachCheck.id, ann.team_id, coachCheck.organization_id);
+      if (!coachAuthorized && !playerCheck) {
         return { success: false, error: 'Not authorized for this team' };
       }
     } else if (playerCheck) {

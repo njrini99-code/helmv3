@@ -191,6 +191,7 @@ vi.mock('@/lib/golf/resolve-team', () => ({
 }));
 
 import RoundReviewPage from '../page';
+import { GolfUserProvider } from '@/contexts/golf-user-context';
 
 describe('RoundReviewPage — stats comparison inputs', () => {
   beforeEach(() => {
@@ -198,7 +199,16 @@ describe('RoundReviewPage — stats comparison inputs', () => {
   });
 
   it('normalizes a 9-hole round’s putts to an 18-hole equivalent and skips null averages', async () => {
-    render(<RoundReviewPage />);
+    // The page reads the layout-resolved user context (active team +
+    // staffed teams) for the coach access check — provide it like the
+    // dashboard layout does. This test exercises the PLAYER own-round path.
+    render(
+      <GolfUserProvider
+        userData={{ role: 'player', userId: 'user-1', name: 'Player', playerId: 'player-1' }}
+      >
+        <RoundReviewPage />
+      </GolfUserProvider>,
+    );
 
     await waitFor(() => {
       expect(capturedStatsProps).not.toBeNull();

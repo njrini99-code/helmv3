@@ -34,6 +34,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -163,21 +164,77 @@ function bandFor<T extends { min: number; max: number | null }>(
   return null;
 }
 
-/** Pull the PGA reference rows for a set of metric ids once. */
+/**
+ * Pull reference rows for a set of metric ids, gender-routed.
+ *
+ * Women's teams get LPGA rows (tour='lpga') first; any metric not covered by
+ * an LPGA row falls back to the PGA row automatically. Men's / unknown teams
+ * get PGA rows (tour='pga') only — unchanged behaviour.
+ *
+ * The column `pga_tour_value` is the "tour average for this row's tour" in
+ * both cases (the column name is reused to avoid a breaking schema rename).
+ */
 async function loadPgaRefs(
   supabase: Awaited<ReturnType<typeof createClient>>,
   metricIds: string[],
+  teamGender?: string | null,
 ): Promise<Map<string, PgaRefRow>> {
   const refs = new Map<string, PgaRefRow>();
   if (metricIds.length === 0) return refs;
-  const { data } = await supabase
-    .from('golf_pga_standards')
-    .select('metric_id, pga_tour_value, div1_avg_value')
-    .in('metric_id', metricIds);
-  for (const row of (data ?? []) as PgaRefRow[]) {
-    refs.set(row.metric_id, row);
+
+  if (teamGender === 'womens') {
+    // Step 1: load LPGA rows
+    const { data: lpgaData } = await supabase
+      .from('golf_pga_standards')
+      .select('metric_id, pga_tour_value, div1_avg_value')
+      .in('metric_id', metricIds)
+      .eq('tour', 'lpga');
+    for (const row of (lpgaData ?? []) as PgaRefRow[]) {
+      refs.set(row.metric_id, row);
+    }
+    // Step 2: PGA fallback for any metric missing an LPGA row
+    const missingIds = metricIds.filter((id) => !refs.has(id));
+    if (missingIds.length > 0) {
+      const { data: pgaData } = await supabase
+        .from('golf_pga_standards')
+        .select('metric_id, pga_tour_value, div1_avg_value')
+        .in('metric_id', missingIds)
+        .eq('tour', 'pga');
+      for (const row of (pgaData ?? []) as PgaRefRow[]) {
+        refs.set(row.metric_id, row);
+      }
+    }
+  } else {
+    // Men's / unknown — PGA only (unchanged behaviour)
+    const { data } = await supabase
+      .from('golf_pga_standards')
+      .select('metric_id, pga_tour_value, div1_avg_value')
+      .in('metric_id', metricIds)
+      .eq('tour', 'pga');
+    for (const row of (data ?? []) as PgaRefRow[]) {
+      refs.set(row.metric_id, row);
+    }
   }
   return refs;
+}
+
+/**
+ * Resolve a player's team gender. Used by player-scoped leak-map functions to
+ * select the correct tour benchmark set (LPGA for women's teams, PGA otherwise).
+ * Fails safe to null (PGA fallback) if the player has no active team membership.
+ */
+async function resolvePlayerTeamGender(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from('golf_team_members')
+    .select('golf_teams(gender)')
+    .eq('player_id', playerId)
+    .eq('status', 'active')
+    .maybeSingle();
+  const team = (data as { golf_teams: { gender?: string | null } | null } | null)?.golf_teams;
+  return team?.gender ?? null;
 }
 
 /**
@@ -213,11 +270,12 @@ async function completedRoundIds(
 async function buildPuttBuckets(
   supabase: Awaited<ReturnType<typeof createClient>>,
   roundIds: string[],
+  teamGender?: string | null,
 ): Promise<LeakBucket[]> {
   const metricIds = PUTT_BANDS
     .map((b) => b.metric_id)
     .filter((id): id is string => id !== null);
-  const refs = await loadPgaRefs(supabase, metricIds);
+  const refs = await loadPgaRefs(supabase, metricIds, teamGender);
 
   // attempts = gradeable putts (putt_made non-null); made = putt_made === true.
   const made = new Map<string, number>();
@@ -274,8 +332,9 @@ async function buildPuttBuckets(
 async function buildApproachBuckets(
   supabase: Awaited<ReturnType<typeof createClient>>,
   roundIds: string[],
+  teamGender?: string | null,
 ): Promise<LeakBucket[]> {
-  const refs = await loadPgaRefs(supabase, APPROACH_BANDS.map((b) => b.metric_id));
+  const refs = await loadPgaRefs(supabase, APPROACH_BANDS.map((b) => b.metric_id), teamGender);
 
   const sumFt = new Map<string, number>();
   const count = new Map<string, number>();
@@ -354,15 +413,24 @@ export async function getTeamLeakMaps(
     const supabase = await createClient();
 
     let resolvedTeamId: string | null = teamId ?? null;
+    let teamGender: string | null = null;
     if (!resolvedTeamId && session.coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', session.coach.organization_id)
-        .maybeSingle();
-      resolvedTeamId = team?.id ?? null;
+      resolvedTeamId = await resolveCoachTeamIdWithCookie(
+        supabase,
+        session.coach.organization_id,
+        session.coach.id,
+      );
     }
     if (!resolvedTeamId) return { success: false, error: 'No team found for coach' };
+
+    // Fetch the team's gender (drives gender-specific PGA/LPGA refs) now that we
+    // have the resolved id — covers both the caller-supplied and resolved paths.
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('gender')
+      .eq('id', resolvedTeamId)
+      .maybeSingle();
+    teamGender = (team as { gender?: string } | null)?.gender ?? null;
 
     const { data: members } = await supabase
       .from('golf_team_members')
@@ -377,8 +445,8 @@ export async function getTeamLeakMaps(
     const roundIds = await completedRoundIds(supabase, playerIds);
 
     const [putting, approach] = await Promise.all([
-      buildPuttBuckets(supabase, roundIds),
-      buildApproachBuckets(supabase, roundIds),
+      buildPuttBuckets(supabase, roundIds, teamGender),
+      buildApproachBuckets(supabase, roundIds, teamGender),
     ]);
 
     return {
@@ -405,8 +473,11 @@ export async function getPuttMakeLeakMap(
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
       return { success: false, error: 'Unauthorized' };
     }
-    const roundIds = await completedRoundIds(supabase, [playerId]);
-    const putting = await buildPuttBuckets(supabase, roundIds);
+    const [roundIds, teamGender] = await Promise.all([
+      completedRoundIds(supabase, [playerId]),
+      resolvePlayerTeamGender(supabase, playerId),
+    ]);
+    const putting = await buildPuttBuckets(supabase, roundIds, teamGender);
     return { success: true, data: { putting, roundsIncluded: roundIds.length } };
   } catch (error) {
     await logServerError(`[LeakMaps] getPuttMakeLeakMap: ${describeError(error)}`, {
@@ -427,8 +498,11 @@ export async function getApproachProximityLeakMap(
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
       return { success: false, error: 'Unauthorized' };
     }
-    const roundIds = await completedRoundIds(supabase, [playerId]);
-    const approach = await buildApproachBuckets(supabase, roundIds);
+    const [roundIds, teamGender] = await Promise.all([
+      completedRoundIds(supabase, [playerId]),
+      resolvePlayerTeamGender(supabase, playerId),
+    ]);
+    const approach = await buildApproachBuckets(supabase, roundIds, teamGender);
     return { success: true, data: { approach, roundsIncluded: roundIds.length } };
   } catch (error) {
     await logServerError(`[LeakMaps] getApproachProximityLeakMap: ${describeError(error)}`, {
@@ -450,10 +524,13 @@ export async function getPlayerLeakMaps(
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
       return { success: false, error: 'Unauthorized' };
     }
-    const roundIds = await completedRoundIds(supabase, [playerId]);
+    const [roundIds, teamGender] = await Promise.all([
+      completedRoundIds(supabase, [playerId]),
+      resolvePlayerTeamGender(supabase, playerId),
+    ]);
     const [putting, approach] = await Promise.all([
-      buildPuttBuckets(supabase, roundIds),
-      buildApproachBuckets(supabase, roundIds),
+      buildPuttBuckets(supabase, roundIds, teamGender),
+      buildApproachBuckets(supabase, roundIds, teamGender),
     ]);
     return {
       success: true,
@@ -489,6 +566,7 @@ export async function getPlayerStandingRows(
       team_pct: s.team_pct,
       pga_value: s.pga_value,
       pga_delta: s.pga_delta,
+      is_womens: s.is_womens,
     }));
     return { success: true, data: rows };
   } catch (error) {

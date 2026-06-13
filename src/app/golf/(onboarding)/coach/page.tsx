@@ -52,6 +52,7 @@ export default function GolfCoachOnboarding() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [teamName, setTeamName] = useState('');
+  const [gender, setGender] = useState<'mens' | 'womens'>('mens');
 
   // Profile data
   const [fullName, setFullName] = useState('');
@@ -147,6 +148,7 @@ export default function GolfCoachOnboarding() {
         city: city || undefined,
         state: state || undefined,
         teamName: teamName || undefined,
+        gender,
         fullName,
         title: title || undefined,
       });
@@ -320,13 +322,33 @@ export default function GolfCoachOnboarding() {
                         <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
                           Team
                         </p>
-                        <Input
-                          label="Team Name"
-                          value={teamName}
-                          onChange={(e) => setTeamName(e.target.value)}
-                          placeholder="Men's Golf"
-                          hint={orgName ? `Leave blank to default to "${orgName} Golf"` : 'e.g., Men\'s Golf, Women\'s Golf'}
-                        />
+                        <div className="space-y-3">
+                          {/* Gender selector — pill toggle */}
+                          <div>
+                            <p className="text-xs font-medium text-warm-500 mb-2">Team Gender</p>
+                            <div className="flex gap-2">
+                              {(['mens', 'womens'] as const).map((g) => (
+                                <Button
+                                  key={g}
+                                  type="button"
+                                  onClick={() => setGender(g)}
+                                  variant={gender === g ? 'primary' : 'secondary'}
+                                  size="sm"
+                                  className="flex-1"
+                                >
+                                  {g === 'mens' ? "Men's" : "Women's"}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                          <Input
+                            label="Team Name (optional)"
+                            value={teamName}
+                            onChange={(e) => setTeamName(e.target.value)}
+                            placeholder={gender === 'mens' ? "Men's Golf" : "Women's Golf"}
+                            hint={orgName ? `Leave blank to default to "${orgName} Golf"` : "e.g., Men's Golf, Women's Golf"}
+                          />
+                        </div>
                       </div>
                     </div>
 
