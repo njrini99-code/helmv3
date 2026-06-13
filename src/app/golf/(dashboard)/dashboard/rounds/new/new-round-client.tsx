@@ -98,7 +98,11 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
-  const [showResumePrompt, setShowResumePrompt] = useState(!!existingInProgressRound);
+  // Unfinished rounds are surfaced on the /rounds page (UnfinishedRoundsSection),
+  // not as a gate here — starting a New Round lands straight on the course
+  // carousel. (existingInProgressRound is still used for emergency-save/status
+  // wiring below; we just never show the resume prompt.)
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
   const resumePromptUpdatedAtRef = useRef<string | undefined>(undefined);
 
   // Hide mobile bottom nav for entire round flow (setup → holes → tracking → submit)
