@@ -7502,9 +7502,8 @@ export type Database = {
           pga_tour_value: number | null
           season: string
           source: string | null
-          updated_at: string
-          /** Tour discriminator: 'pga' = PGA Tour values; 'lpga' = LPGA Tour values. Ahead of prod until 20260610170000_seed_lpga_standards.sql is applied. */
           tour: string
+          updated_at: string
         }
         Insert: {
           display_label: string
@@ -7520,8 +7519,8 @@ export type Database = {
           pga_tour_value?: number | null
           season: string
           source?: string | null
-          updated_at?: string
           tour?: string
+          updated_at?: string
         }
         Update: {
           display_label?: string
@@ -7537,8 +7536,8 @@ export type Database = {
           pga_tour_value?: number | null
           season?: string
           source?: string | null
-          updated_at?: string
           tour?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -11130,6 +11129,7 @@ export type Database = {
       }
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
+      is_golf_team_head_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_primary_coach: {
         Args: { team_uuid: string }

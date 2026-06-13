@@ -108,10 +108,14 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
     // Step 1: Create organization
     // Note: golf_coaches.organization_id FK to golf_organizations was dropped in production.
     // All existing data references the shared 'organizations' table.
+    // Trim the name so whitespace variants ("University of Lynchburg " vs
+    // "University of Lynchburg") can't create duplicate-school org rows. The DB
+    // unique index organizations_normalized_name_uidx is the hard backstop.
+    const orgName = validatedData.orgName.trim();
     const { data: org, error: orgError } = await supabase
       .from('organizations')
       .insert({
-        name: validatedData.orgName,
+        name: orgName,
         type: 'college',
         division: validatedData.division || null,
         conference: validatedData.conference || null,
@@ -122,6 +126,16 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       .single();
 
     if (orgError || !org) {
+      // 23505 = unique violation on organizations_normalized_name_uidx: a school
+      // with this name already exists. Don't silently create a duplicate org —
+      // direct the coach to be added to the existing program instead.
+      if ((orgError as { code?: string } | null)?.code === '23505') {
+        await logServerError(`[Onboarding] Duplicate organization name rejected: "${orgName}"`, { action: 'onboarding.completeCoachOnboarding' });
+        return {
+          success: false,
+          error: `An organization named "${orgName}" already exists. Ask your program's head coach to add you to the team, or contact support if you believe this is a mistake.`,
+        };
+      }
       await logServerError(`[Onboarding] Organization creation failed: ${orgError instanceof Error ? orgError.message : String(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
       return { success: false, error: 'Failed to create organization. Please try again.' };
     }
@@ -159,7 +173,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       .from('golf_teams')
       .insert({
         organization_id: org.id,
-        name: validatedData.teamName || `${validatedData.orgName} Golf`,
+        name: validatedData.teamName || `${orgName} Golf`,
         season: validatedData.season || getCurrentSeason(),
         join_code: joinCode,
         created_by: coach.id,
