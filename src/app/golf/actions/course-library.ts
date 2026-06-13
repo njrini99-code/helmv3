@@ -35,6 +35,7 @@ import {
   mapTeeRow,
   mapTeeHoleRow,
   mapSavedRow,
+  isCourseImagePublicUrl,
 } from '@/lib/golf/course-library';
 import type {
   GolfCourse,
@@ -147,6 +148,25 @@ export async function listCourses(opts: ListCoursesOptions = {}): Promise<GolfCo
   return data.map(mapCourseRow);
 }
 
+/** Active tee-set counts per course id (for card "N tees" labels). */
+export async function getCourseTeeCounts(courseIds: string[]): Promise<Record<string, number>> {
+  if (courseIds.length === 0) return {};
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return {};
+  const { data } = await supabase
+    .from('golf_course_tees')
+    .select('course_id')
+    .is('deleted_at', null)
+    .in('course_id', courseIds);
+  const counts: Record<string, number> = {};
+  for (const r of data ?? []) {
+    const cid = r.course_id as string;
+    counts[cid] = (counts[cid] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** A course with its ACTIVE tee sets (carousel/detail payload). */
 export async function getCourseDetail(
   courseId: string,
@@ -207,6 +227,8 @@ export interface TeeRoundDefaults {
   category: GolfTeeCategory | null;
   courseId: string;
   courseName: string;
+  courseCity: string | null;
+  courseState: string | null;
   holesCount: number;
   isDraft: boolean;
   courseRating: number | null;
@@ -222,7 +244,7 @@ export async function getTeeRoundDefaults(teeId: string): Promise<TeeRoundDefaul
 
   const { data: course } = await supabase
     .from('golf_courses')
-    .select('name')
+    .select('name, city, state')
     .eq('id', tee.course_id)
     .maybeSingle();
 
@@ -232,6 +254,8 @@ export async function getTeeRoundDefaults(teeId: string): Promise<TeeRoundDefaul
     category: tee.category,
     courseId: tee.course_id,
     courseName: (course?.name as string) ?? '',
+    courseCity: (course?.city as string) ?? null,
+    courseState: (course?.state as string) ?? null,
     holesCount: tee.holes_count,
     isDraft: tee.is_draft,
     courseRating: tee.course_rating,
@@ -505,6 +529,45 @@ async function setCourseDeleted(courseId: string, deleted: boolean): Promise<Res
 
   await appendCourseHistory(supabase, courseId, actor, deleted ? 'soft_delete' : 'restore', null);
   revalidateLibrary();
+  return { success: true, data: undefined };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COURSE IMAGE  (client uploads directly to the public course-images bucket —
+// avoids the 2 MB server-action body limit — then sets the validated URL here)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Set golf_courses.image_url to a freshly-uploaded course photo. Accepts ONLY a
+ * public URL we minted in our own course-images bucket (never an arbitrary
+ * external URL). Goes through the audited updateCourse path (attribution +
+ * edit-history).
+ */
+export async function setCourseImageUrl(
+  courseId: string,
+  imageUrl: string,
+): Promise<Result<{ imageUrl: string }>> {
+  const supabase = await createClient();
+  const actor = await getActor(supabase);
+  if (!actor) return { success: false, error: 'You must be logged in' };
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  if (!isCourseImagePublicUrl(imageUrl, supabaseUrl)) {
+    return { success: false, error: 'Invalid image URL' };
+  }
+
+  const result = await updateCourse(courseId, { imageUrl });
+  if (!result.success) return { success: false, error: result.error };
+  return { success: true, data: { imageUrl } };
+}
+
+/** Clear a course's photo (keeps the storage object; only the uploader can purge it). */
+export async function removeCourseImage(courseId: string): Promise<Result<void>> {
+  const supabase = await createClient();
+  const actor = await getActor(supabase);
+  if (!actor) return { success: false, error: 'You must be logged in' };
+  const result = await updateCourse(courseId, { imageUrl: null });
+  if (!result.success) return { success: false, error: result.error };
   return { success: true, data: undefined };
 }
 

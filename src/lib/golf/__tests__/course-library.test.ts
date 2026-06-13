@@ -8,6 +8,8 @@ import {
   diffFields,
   mapCourseRow,
   mapTeeRow,
+  isCourseImagePublicUrl,
+  courseImageExt,
 } from '@/lib/golf/course-library';
 
 describe('normalizeName (TS mirror of SQL golf_normalize_name)', () => {
@@ -145,5 +147,42 @@ describe('row mappers', () => {
     expect(t.is_draft).toBe(false);
     expect(t.holes_count).toBe(18);
     expect(t.tee_name).toBe('Blue');
+  });
+});
+
+describe('courseImageExt', () => {
+  it('maps each supported mime to its canonical extension', () => {
+    expect(courseImageExt('image/jpeg')).toBe('jpg');
+    expect(courseImageExt('image/png')).toBe('png');
+    expect(courseImageExt('image/webp')).toBe('webp');
+    expect(courseImageExt('image/avif')).toBe('avif');
+  });
+  it('defaults to jpg for an unknown / empty mime', () => {
+    expect(courseImageExt('image/gif')).toBe('jpg');
+    expect(courseImageExt('application/octet-stream')).toBe('jpg');
+    expect(courseImageExt('')).toBe('jpg');
+  });
+});
+
+describe('isCourseImagePublicUrl (image_url anti-spoofing guard)', () => {
+  const base = 'https://qmnssrrolpinvwjjnufo.supabase.co';
+  const ok = `${base}/storage/v1/object/public/course-images/abc/cover.jpg`;
+
+  it('accepts a public URL we minted in our own course-images bucket', () => {
+    expect(isCourseImagePublicUrl(ok, base)).toBe(true);
+  });
+  it('rejects an arbitrary external URL', () => {
+    expect(isCourseImagePublicUrl('https://evil.example.com/pic.jpg', base)).toBe(false);
+    expect(isCourseImagePublicUrl('https://qmnssrrolpinvwjjnufo.supabase.co.evil.com/x', base)).toBe(false);
+  });
+  it('rejects a URL pointed at a different bucket or a private path', () => {
+    expect(isCourseImagePublicUrl(`${base}/storage/v1/object/public/avatars/x.jpg`, base)).toBe(false);
+    expect(isCourseImagePublicUrl(`${base}/storage/v1/object/course-images/x.jpg`, base)).toBe(false);
+    expect(isCourseImagePublicUrl(`${base}/storage/v1/object/sign/course-images/x.jpg`, base)).toBe(false);
+  });
+  it('rejects when either argument is empty (never trusts a blank base)', () => {
+    expect(isCourseImagePublicUrl('', base)).toBe(false);
+    expect(isCourseImagePublicUrl(ok, '')).toBe(false);
+    expect(isCourseImagePublicUrl('/storage/v1/object/public/course-images/x.jpg', '')).toBe(false);
   });
 });

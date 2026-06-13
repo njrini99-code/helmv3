@@ -40,6 +40,32 @@ export function namesMatch(a: string | null | undefined, b: string | null | unde
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Course image upload constants (shared by the client uploader + the server
+// URL validator so they can't drift). Mirrors the course-images bucket config
+// in 20260613180000_course_images_storage.sql.
+// ─────────────────────────────────────────────────────────────────────────────
+export const COURSE_IMAGE_BUCKET = 'course-images';
+export const MAX_COURSE_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+export const ALLOWED_COURSE_IMAGE_MIME = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/avif',
+] as const;
+
+/** File extension for a supported image mime (defaults to jpg). */
+export function courseImageExt(mime: string): string {
+  const map: Record<string, string> = {
+    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/avif': 'avif',
+  };
+  return map[mime] ?? 'jpg';
+}
+
+/** True only for a public URL we minted in our own course-images bucket. Guards
+ *  against setting image_url to an arbitrary external URL. */
+export function isCourseImagePublicUrl(url: string, supabaseUrl: string): boolean {
+  if (!url || !supabaseUrl) return false;
+  return url.startsWith(`${supabaseUrl}/storage/v1/object/public/${COURSE_IMAGE_BUCKET}/`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tee completeness — an 18-hole tee with < 18 hole rows (or a 9-hole tee with
 // < 9) is a DRAFT: visible + editable, but not offered for official tracking.
 // ─────────────────────────────────────────────────────────────────────────────
