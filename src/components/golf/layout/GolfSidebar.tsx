@@ -19,9 +19,7 @@ import {
   IconCalendar,
   IconFlag,
   IconChartBar,
-  IconMessage,
-  IconMapPin,
-  IconSettings,
+  IconMessage,  IconSettings,
   IconLogout,
   IconGolf,
   IconBook,
@@ -74,9 +72,7 @@ const coachSecondaryNav: NavItem[] = [
   { name: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
   { name: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
   { name: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
-  { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
-  { name: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
-];
+  { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },];
 
 // Player primary nav — 7 daily-use destinations
 const playerNavItems: NavItem[] = [
@@ -93,9 +89,7 @@ const playerNavItems: NavItem[] = [
 // Cmd+K only: Team Info, Travel, Tasks, Announcements
 const playerSecondaryNav: NavItem[] = [
   { name: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
-  { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
-  { name: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
-  { name: 'Classes', href: '/golf/dashboard/classes', icon: IconBook },
+  { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },  { name: 'Classes', href: '/golf/dashboard/classes', icon: IconBook },
 ];
 
 // Player secondary, REDESIGN (Fairway) variant — the Team Hub consolidates
@@ -105,9 +99,7 @@ const playerSecondaryNav: NavItem[] = [
 // is byte-for-byte unchanged.
 const playerSecondaryNavRedesign: NavItem[] = [
   { name: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
-  { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
-  { name: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
-  { name: 'Team Hub', href: '/golf/dashboard/team-hub', icon: IconLayoutGrid },
+  { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },  { name: 'Team Hub', href: '/golf/dashboard/team-hub', icon: IconLayoutGrid },
 ];
 
 interface GolfSidebarProps {
