@@ -122,4 +122,46 @@ test.describe('Cloud Course Library — authenticated flow', () => {
       dialog.getByPlaceholder(/Search courses/i).or(page.getByPlaceholder(/Search courses/i)),
     ).toBeVisible();
   });
+
+  // Capture screenshots of the premium course picker for review as CI artifacts
+  // (uploaded by .github/workflows/playwright.yml). Requires
+  // NEXT_PUBLIC_REDESIGN=true so the redesign FairwayCoursePicker renders
+  // (otherwise this shoots the legacy TeePickerDrawer). Best-effort — the point
+  // is the image, not a gate; a missing affordance skips rather than fails.
+  test('capture: premium course picker screenshots', async ({ page }) => {
+    const dir = 'e2e-screenshots';
+
+    await page.goto('/golf/dashboard/rounds/new');
+    const browse = page.getByRole('button', { name: /Browse course library/i });
+    if (!(await browse.isVisible().catch(() => false))) {
+      test.skip(true, 'New-round "Browse course library" CTA not present (resuming a round?).');
+      return;
+    }
+    await browse.click();
+
+    // Wait for the picker sheet, then let the entrance + coverflow settle.
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `${dir}/picker-desktop-stage-a.png` });
+
+    // If the carousel has cards, advance it once to capture the coverflow mid-state.
+    const next = page.getByRole('button', { name: /Next course/i });
+    if (await next.isVisible().catch(() => false)) {
+      await next.click();
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: `${dir}/picker-desktop-coverflow.png` });
+    }
+
+    // Mobile full-screen view (the primary form factor for this sheet).
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${dir}/picker-mobile-stage-a.png` });
+
+    // The standalone library page too (CourseLibraryClient), for completeness.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(COURSES_PATH);
+    await expect(page.locator('h1')).toContainText('Courses', { timeout: 10000 });
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${dir}/course-library-page.png`, fullPage: true });
+  });
 });

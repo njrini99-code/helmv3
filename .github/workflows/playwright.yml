@@ -31,6 +31,15 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       COMMIT_SHA: ${{ github.sha }}
+      # Render the redesign (Fairway) shell — what production serves — so the
+      # authenticated specs exercise FairwayCoursePicker, not the legacy picker.
+      NEXT_PUBLIC_REDESIGN: 'true'
+      # Optional seeded golf login. When set as repo Action secrets, the
+      # opt-in authenticated specs (incl. the course-picker screenshot capture)
+      # run; absent, those specs test.skip() and CI stays green. The harness
+      # fills these into the login form at runtime.
+      E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
+      E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,6 +81,15 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
+
+      - name: Upload course-picker screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: course-picker-screenshots
+          path: e2e-screenshots/
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Upload test results JSON
         if: always()

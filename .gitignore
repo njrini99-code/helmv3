@@ -128,3 +128,6 @@ scripts/rotate-demo-passwords.mjs
 GolfHelm-CoachHelm-Showcase.pdf
 GolfHelm-Fairway-Guide.pdf
 statsfixresults.pdf
+
+# Local Playwright screenshot artifacts
+e2e-screenshots/
