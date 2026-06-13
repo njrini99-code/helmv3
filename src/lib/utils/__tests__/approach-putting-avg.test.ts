@@ -149,8 +149,12 @@ describe('calculateStatsFromShots — approachPuttAvgLeave', () => {
     expect(stats.approachPuttAvgLeave).toBe(0);
   });
 
-  it('is null for a putt with no starting distance (excluded from denominator)', () => {
-    // A putt with null distance_to_hole_before — no band can be assigned, excluded.
+  it('counts a putt with no starting distance in the OVERALL average (only the band split needs a start distance)', () => {
+    // Spec: missing starting distance only excludes the per-band metric — the
+    // headline average still counts any putt with a known outcome/leave. A holed
+    // putt with null distance_to_hole_before has a known leave of 0, so it must
+    // contribute 0 to the overall average (NOT be dropped, which would bias the
+    // advertised average upward).
     const shots = [
       makeRawShot({ hole_number: 1, shot_type: 'tee', lie_before: 'tee',
         distance_to_hole_before: 400, distance_unit_before: 'yards',
@@ -170,8 +174,56 @@ describe('calculateStatsFromShots — approachPuttAvgLeave', () => {
       [makeHoleInfo({ hole_number: 1, par: 4 })],
       [round],
     );
-    // No eligible putts (starting distance unknown) → null, never fabricated.
-    expect(stats.approachPuttAvgLeave).toBeNull();
+    // The holed putt (leave 0) counts in the overall average even though it has
+    // no starting distance: sum 0 / count 1 = 0.
+    expect(stats.approachPuttAvgLeave).toBe(0);
+    // ...but it is excluded from every per-band entry (no start distance → no band key).
+    expect(stats.approachPuttAvgLeaveByBand).toEqual({});
+  });
+
+  it('overall average counts an unbanded putt while the band split drops it', () => {
+    // Hole 1: a missed putt from a KNOWN 20 ft start (leave 5) — banded.
+    // Hole 2: a missed putt with UNKNOWN start (leave 1) — counts overall, no band.
+    // Overall: (5 + 1) / 2 = 3.0. Band 15_20: 5/1 = 5. No band for the unbanded putt.
+    const shots = [
+      makeRawShot({ hole_number: 1, shot_type: 'tee', lie_before: 'tee',
+        distance_to_hole_before: 400, distance_unit_before: 'yards',
+        result: 'fairway', distance_to_hole_after: 150, distance_unit_after: 'yards', shot_distance: 250 }),
+      makeRawShot({ hole_number: 1, shot_type: 'approach',
+        distance_to_hole_before: 150, distance_unit_before: 'yards',
+        result: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet' }),
+      makePutt(20, 5, false, 1),
+      makePutt(5, 0, true, 1),
+      makeRawShot({ hole_number: 2, shot_type: 'tee', lie_before: 'tee',
+        distance_to_hole_before: 350, distance_unit_before: 'yards',
+        result: 'fairway', distance_to_hole_after: 140, distance_unit_after: 'yards', shot_distance: 210 }),
+      makeRawShot({ hole_number: 2, shot_type: 'approach',
+        distance_to_hole_before: 140, distance_unit_before: 'yards',
+        result: 'green', distance_to_hole_after: 12, distance_unit_after: 'feet' }),
+      // Missed putt, start distance unknown, leave 1.
+      makeRawShot({
+        hole_number: 2, shot_number: 3, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: null, distance_unit_before: 'feet',
+        result: 'green', distance_to_hole_after: 1, distance_unit_after: 'feet',
+        putt_distance_feet: null, putt_made: false,
+      }),
+      makePutt(1, 0, true, 2),
+    ];
+    const stats = calculateStatsFromShots(
+      shots,
+      [
+        makeHoleInfo({ hole_number: 1, par: 4 }),
+        makeHoleInfo({ hole_number: 2, par: 4 }),
+      ],
+      [round],
+    );
+    // Overall: leaves 5, 0 (5ft make), 1 (unbanded miss), 0 (1ft make) → (5+0+1+0)/4 = 1.5.
+    expect(stats.approachPuttAvgLeave).toBeCloseTo(1.5, 3);
+    // 20 ft → band 15_20, leave 5.
+    expect(stats.approachPuttAvgLeaveByBand['15_20']).toBe(5);
+    // The unbanded leave-1 putt does NOT create any band keyed on a fabricated start.
+    // (5 ft make → 3_5 band leave 0; 1 ft make → 0_3 band leave 0; no '?'/null band key.)
+    expect(Object.keys(stats.approachPuttAvgLeaveByBand).sort()).toEqual(['0_3', '15_20', '3_5']);
   });
 
   it('aggregates across multiple holes (sum/sum, not average-of-averages)', () => {

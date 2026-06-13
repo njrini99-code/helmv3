@@ -1598,8 +1598,10 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
   // 0 for made putts; missed putts with unknown leave are excluded (null-honest).
   // Replaces the old "% of first putts per band" (percentage) display.
   const approachPuttBands: DetailRow[] = PUTT_BAND_LABELS.map(({ key, label }) => {
+    // A band with no qualifying putts is omitted from the record (undefined),
+    // shown null-honestly as an em dash. Present keys are always real numbers.
     const v = s.approachPuttAvgLeaveByBand[key];
-    return { label, value: v !== null && v !== undefined ? `${v.toFixed(1)} ft avg` : '—' };
+    return { label, value: v !== undefined ? `${v.toFixed(1)} ft avg` : '—' };
   });
   const breakMakeBands: DetailRow[] = [
     { label: '0-3 ft', value: fmtPct(breakStats.makePct0_3) },
