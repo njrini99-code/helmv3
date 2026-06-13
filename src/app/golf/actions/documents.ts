@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GolfDocument, DocumentVersion, VersionComparison } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 
 // Type helper for golf_document_versions table (until types are regenerated)
 interface DocumentVersionRow {
@@ -40,20 +41,21 @@ async function verifyTeamAccess(
   userId: string,
   teamId: string
 ): Promise<boolean> {
-  // Check coach path: coach.organization_id matches team.organization_id
+  // Check coach path: a coach may access a team's documents iff they are STAFFED
+  // on that team (golf_team_coach_staff). Previously this authorized ANY team
+  // sharing the coach's org, which leaked the other team's documents in a
+  // two-team (men's/women's) program. Staff-strict: a director-of-golf staffed
+  // on both teams can access both; a single-team coach only their own. Note this
+  // checks STAFFING, not the active-team toggle — a coach can access any team
+  // they staff regardless of which one is currently selected.
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('organization_id')
+    .select('id, organization_id')
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (coach?.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('organization_id')
-      .eq('id', teamId)
-      .single();
-    if (team?.organization_id === coach.organization_id) return true;
+  if (coach) {
+    if (await validateCoachTeamAccess(supabase, coach.id, teamId, coach.organization_id)) return true;
   }
 
   // Check player path: player is an active member of the team

@@ -75,7 +75,12 @@ function coachContextScripts() {
     golf_coaches: [
       { data: { id: 'coach-1', full_name: 'Coach One', organization_id: 'org-1' }, error: null },
     ],
-    golf_teams: [{ data: { id: 'team-1' }, error: null }],
+    // The coach's active team now resolves via resolveCoachTeamIdWithCookie:
+    // with no request cookie it takes the staff-first path (every coach has a
+    // head_coach staff row post-backfill). golf_teams is an ARRAY for the
+    // org-fallback list query (resolveCoachTeamId), should it be reached.
+    golf_team_coach_staff: [{ data: [{ team_id: 'team-1', is_primary: true }], error: null }],
+    golf_teams: [{ data: [{ id: 'team-1', created_at: '2024-01-01T00:00:00Z' }], error: null }],
   };
 }
 

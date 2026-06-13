@@ -15,6 +15,7 @@
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
 
 const WINDOW_DAYS = 90;
@@ -60,16 +61,16 @@ async function authorizePlayerAccess(
   if (session.player?.id === playerId) return { ok: true };
 
   if (session.coach?.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', session.coach.organization_id)
-      .maybeSingle();
-    if (team?.id) {
+    const teamId = await resolveCoachTeamIdWithCookie(
+      supabase,
+      session.coach.organization_id,
+      session.coach.id,
+    );
+    if (teamId) {
       const { data: membership } = await supabase
         .from('golf_team_members')
         .select('player_id')
-        .eq('team_id', team.id)
+        .eq('team_id', teamId)
         .eq('player_id', playerId)
         .maybeSingle();
       if (membership) return { ok: true };

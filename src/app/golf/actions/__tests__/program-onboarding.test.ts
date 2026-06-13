@@ -196,13 +196,16 @@ describe('addSecondTeam', () => {
     serverMock.seed('golf_coaches', { id: 'coach-1', organization_id: 'org-1' });
     // Returning the primary staff row signals the prerequisite is met
     serverMock.seed('golf_team_coach_staff', { id: 'staff-primary', is_primary: true });
-    // No gender conflict in existing teams
+    // No gender conflict in existing teams. organization_id is echoed back on the
+    // insert's .select() (real Supabase behaviour) so the addSecondTeam org-match
+    // assertion before the privileged staff insert passes.
     serverMock.seed('golf_teams', {
       id: TEAM_ID,
       name: "Women's Golf",
       season: '2025-2026',
       join_code: JOIN_CODE,
       created_at: new Date().toISOString(),
+      organization_id: 'org-1',
     });
     adminMock.seed('golf_team_coach_staff', null);
   });

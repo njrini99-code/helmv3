@@ -6,6 +6,7 @@ import { notifyDevPlanAssigned } from '@/lib/notifications';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // TYPES
@@ -70,19 +71,18 @@ export async function createFocusArea(
     return { success: false, error: 'Not authorized to create focus areas' };
   }
 
-  // Verify coach manages this player via team membership
+  // Verify coach manages this player via team membership. Resolve the coach's
+  // ACTIVE team (cookie-aware; toggle-safe for a two-team program) rather than
+  // assuming the org has a single team — the old org-filtered .maybeSingle()
+  // throws/nulls when an org runs both a men's and a women's team.
   if (coach.organization_id && data.player_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
-    if (orgTeam?.id) {
+    if (teamId) {
       const { data: membership } = await supabase
         .from('golf_team_members')
         .select('id')
-        .eq('team_id', orgTeam.id)
+        .eq('team_id', teamId)
         .eq('player_id', data.player_id)
         .eq('status', 'active')
         .maybeSingle();

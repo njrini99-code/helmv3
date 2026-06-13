@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { logServerError } from '@/lib/server-error-logger';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 
 // ============================================================================
 // TYPES
@@ -160,18 +161,7 @@ export async function getAnnouncementAcknowledgements(
       return { success: false, error: 'Only coaches can view acknowledgement details' };
     }
 
-    // Get team_id via organization
-    let teamId: string | null = null;
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id || null;
-    }
-
-    // Verify announcement exists and belongs to coach's team
+    // Verify announcement exists, then authorize the coach against ITS team.
     const { data: announcement, error: announcementError } = await supabase
       .from('golf_announcements')
       .select('id, team_id')
@@ -182,7 +172,16 @@ export async function getAnnouncementAcknowledgements(
       return { success: false, error: 'Announcement not found' };
     }
 
-    if (teamId && announcement.team_id !== teamId) {
+    // Staff-strict: the coach must be staffed on the announcement's team (a
+    // program head staffed on both men's & women's can view either; not tied to
+    // the active toggle, and never throws on a two-team org).
+    const authorized = await validateCoachTeamAccess(
+      supabase,
+      coach.id,
+      announcement.team_id,
+      coach.organization_id,
+    );
+    if (!authorized) {
       return { success: false, error: 'Not authorized to view this announcement' };
     }
 

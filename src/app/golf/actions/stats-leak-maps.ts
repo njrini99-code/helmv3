@@ -34,6 +34,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -414,22 +415,22 @@ export async function getTeamLeakMaps(
     let resolvedTeamId: string | null = teamId ?? null;
     let teamGender: string | null = null;
     if (!resolvedTeamId && session.coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id, gender')
-        .eq('organization_id', session.coach.organization_id)
-        .maybeSingle();
-      resolvedTeamId = team?.id ?? null;
-      teamGender = (team as { id?: string; gender?: string } | null)?.gender ?? null;
-    } else if (resolvedTeamId) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('gender')
-        .eq('id', resolvedTeamId)
-        .maybeSingle();
-      teamGender = (team as { gender?: string } | null)?.gender ?? null;
+      resolvedTeamId = await resolveCoachTeamIdWithCookie(
+        supabase,
+        session.coach.organization_id,
+        session.coach.id,
+      );
     }
     if (!resolvedTeamId) return { success: false, error: 'No team found for coach' };
+
+    // Fetch the team's gender (drives gender-specific PGA/LPGA refs) now that we
+    // have the resolved id — covers both the caller-supplied and resolved paths.
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('gender')
+      .eq('id', resolvedTeamId)
+      .maybeSingle();
+    teamGender = (team as { gender?: string } | null)?.gender ?? null;
 
     const { data: members } = await supabase
       .from('golf_team_members')

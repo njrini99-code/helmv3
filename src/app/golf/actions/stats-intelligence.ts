@@ -12,6 +12,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { normalizePlayerMetrics } from '@/lib/coachhelm/v2/stats';
 import { getInsightsForPlayer } from '@/app/golf/actions/insight-delivery';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -161,16 +162,16 @@ async function authorizePlayerAccess(
 
   // Coach of a team that contains this player
   if (session.coach?.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', session.coach.organization_id)
-      .maybeSingle();
-    if (team?.id) {
+    const teamId = await resolveCoachTeamIdWithCookie(
+      supabase,
+      session.coach.organization_id,
+      session.coach.id,
+    );
+    if (teamId) {
       const { data: membership } = await supabase
         .from('golf_team_members')
         .select('player_id')
-        .eq('team_id', team.id)
+        .eq('team_id', teamId)
         .eq('player_id', playerId)
         .maybeSingle();
       if (membership) return { ok: true };
@@ -304,12 +305,11 @@ export async function getTeamStatsIntelligence(
 
     let teamId: string | null = teamIdArg ?? null;
     if (!teamId && session.coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', session.coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? null;
+      teamId = await resolveCoachTeamIdWithCookie(
+        supabase,
+        session.coach.organization_id,
+        session.coach.id,
+      );
     }
     if (!teamId) return { success: false, error: 'No team found for coach' };
 

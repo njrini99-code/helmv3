@@ -52,6 +52,7 @@ function makeSupabaseClient(
       builder['eq'] = vi.fn(chain);
       builder['in'] = vi.fn(chain);
       builder['order'] = vi.fn(chain);
+      builder['limit'] = vi.fn(chain);
       builder['maybeSingle'] = vi.fn(() => Promise.resolve(singleResp));
       // Allow awaiting the builder directly (resolves to the list response).
       Object.defineProperty(builder, 'then', {
@@ -203,8 +204,8 @@ describe('getCoachTeams', () => {
 // validateCoachTeamAccess
 // ---------------------------------------------------------------------------
 
-describe('validateCoachTeamAccess', () => {
-  it('returns true when staff row exists', async () => {
+describe('validateCoachTeamAccess (staff-strict)', () => {
+  it('returns true when a staff row exists for THIS team', async () => {
     const supabase = makeSupabaseClient(
       {},
       { golf_team_coach_staff: makeSingleResponse({ id: 'staff-1' }) },
@@ -213,11 +214,28 @@ describe('validateCoachTeamAccess', () => {
     expect(result).toBe(true);
   });
 
-  it('returns true via org fallback when staff row is absent but team belongs to org', async () => {
+  it("THE WALL: returns FALSE for a sibling org team when the coach has OTHER staff rows", async () => {
+    // No staff row for the requested team, but the coach IS staffed elsewhere.
+    // The org fallback must NOT apply — a men's-only coach cannot reach the
+    // women's team in the same program by changing the cookie.
     const supabase = makeSupabaseClient(
-      {},
+      // anyStaff list query → the coach DOES have staff rows (just not on this team)
+      { golf_team_coach_staff: { data: [{ id: 'staff-on-mens' }], error: null } },
       {
-        golf_team_coach_staff: makeSingleResponse(null),  // no staff row
+        golf_team_coach_staff: makeSingleResponse(null),  // no staff row for THIS team
+        golf_teams: makeSingleResponse({ id: 'team-1' }), // team IS in the org…
+      },
+    );
+    // …but staff-strict gates the org fallback off.
+    const result = await validateCoachTeamAccess(supabase, 'coach-1', 'team-1', 'org-1');
+    expect(result).toBe(false);
+  });
+
+  it('LEGACY fallback: zero staff rows anywhere → an org match grants access', async () => {
+    const supabase = makeSupabaseClient(
+      { golf_team_coach_staff: { data: [], error: null } }, // zero staff rows anywhere
+      {
+        golf_team_coach_staff: makeSingleResponse(null),  // no staff row for this team
         golf_teams: makeSingleResponse({ id: 'team-1' }), // team belongs to org
       },
     );
@@ -225,9 +243,9 @@ describe('validateCoachTeamAccess', () => {
     expect(result).toBe(true);
   });
 
-  it('returns false when neither staff row nor org match exists', async () => {
+  it('returns false when neither a staff row nor a (legacy) org match exists', async () => {
     const supabase = makeSupabaseClient(
-      {},
+      { golf_team_coach_staff: { data: [], error: null } },
       {
         golf_team_coach_staff: makeSingleResponse(null),
         golf_teams: makeSingleResponse(null),
@@ -239,7 +257,7 @@ describe('validateCoachTeamAccess', () => {
 
   it('returns false when organizationId is null and no staff row', async () => {
     const supabase = makeSupabaseClient(
-      {},
+      { golf_team_coach_staff: { data: [], error: null } },
       { golf_team_coach_staff: makeSingleResponse(null) },
     );
     const result = await validateCoachTeamAccess(supabase, 'coach-1', 'team-X', null);

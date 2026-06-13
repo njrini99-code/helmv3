@@ -72,6 +72,7 @@ async function gateCoachHelmEngineCall(userId: string | undefined): Promise<{ al
   return { allowed: true };
 }
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 // ============================================================================
 // TYPES
@@ -663,28 +664,30 @@ async function verifyRoundAccess(
     return { authorized: true, userId: user.id, playerId: player.id };
   }
 
-  // Check if user is coach with access to the player via organization -> team -> membership
+  // Check if user is a coach STAFFED on a team the round's player belongs to.
+  // Staff-scoped (was a single arbitrary org team via .limit(1), which wrongly
+  // denied access to half the players in a two-team program).
   const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (coach?.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .limit(1)
-      .maybeSingle();
+  if (coach?.id) {
+    const { data: staffRows } = await supabase
+      .from('golf_team_coach_staff')
+      .select('team_id')
+      .eq('coach_id', coach.id);
+    const staffTeamIds = (staffRows ?? []).map((r) => r.team_id).filter(Boolean) as string[];
 
-    if (team) {
+    if (staffTeamIds.length > 0) {
       const { data: teamMember } = await supabase
         .from('golf_team_members')
         .select('id')
-        .eq('team_id', team.id)
+        .in('team_id', staffTeamIds)
         .eq('player_id', round.player_id)
         .eq('status', 'active')
+        .limit(1)
         .maybeSingle();
 
       if (teamMember) {
@@ -770,16 +773,9 @@ export async function generateTeamInsights() {
       return { success: false, error: 'Coach not found' };
     }
 
-    // Get team_id from organization
-    let teamId: string | null = null;
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? null;
-    }
+    // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
+    // and the men's/women's toggle). Falls back to the coach's primary team.
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (!teamId) {
       return { success: false, error: 'No team assigned' };
@@ -1851,16 +1847,9 @@ export async function generateTeamInsight(): Promise<{
       return { success: false, error: 'Coach not found' };
     }
 
-    // Get team_id from organization
-    let teamId: string | null = null;
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? null;
-    }
+    // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
+    // and the men's/women's toggle). Falls back to the coach's primary team.
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (!teamId) {
       return { success: false, error: 'No team assigned' };
@@ -3026,16 +3015,9 @@ export async function acknowledgeComposedInsight(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Get team_id from organization
-    let teamId: string | null = null;
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? null;
-    }
+    // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
+    // and the men's/women's toggle). Falls back to the coach's primary team.
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     // Insert the insight with acknowledged status
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -3126,16 +3108,9 @@ export async function dismissComposedInsight(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Get team_id from organization
-    let teamId: string | null = null;
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? null;
-    }
+    // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
+    // and the men's/women's toggle). Falls back to the coach's primary team.
+    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     // Insert the insight with dismissed status
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -3568,17 +3543,15 @@ export async function refreshPlayerAnalysisAsCoach(
 
   const supabase = await createClient();
 
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('organization_id', orgId)
-    .maybeSingle();
-  if (!team?.id) return { success: false, error: 'Coach has no team' };
+  // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
+  // and the men's/women's toggle). Falls back to the coach's primary team.
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, orgId, session.coach.id);
+  if (!teamId) return { success: false, error: 'Coach has no team' };
 
   const { data: membership } = await supabase
     .from('golf_team_members')
     .select('player_id')
-    .eq('team_id', team.id)
+    .eq('team_id', teamId)
     .eq('player_id', playerId)
     .maybeSingle();
   if (!membership) return { success: false, error: 'Player is not on your team' };

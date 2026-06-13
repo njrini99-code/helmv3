@@ -16,6 +16,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 export type RecruitStatus = 'recruiting' | 'watched' | 'offered' | 'committed';
 
@@ -114,14 +115,10 @@ async function resolveCoachAndTeam(): Promise<
     return { ok: false, error: 'Coach profile required' };
   }
 
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('organization_id', coach.organization_id)
-    .maybeSingle();
-  if (!team) return { ok: false, error: 'No team found for coach' };
+  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  if (!teamId) return { ok: false, error: 'No team found for coach' };
 
-  return { ok: true, coachId: coach.id, teamId: team.id, supabase };
+  return { ok: true, coachId: coach.id, teamId, supabase };
 }
 
 export async function getRecruits(): Promise<ActionResult<Recruit[]>> {

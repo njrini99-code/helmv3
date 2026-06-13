@@ -13,6 +13,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
 export interface CommandPalettePlayer {
   id: string;
@@ -79,12 +80,7 @@ export async function getCommandPaletteData(): Promise<CommandPaletteData> {
   // need the team id to scope the queries below.
   let teamId: string | null = null;
   if (isCoach && coach?.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = team?.id ?? null;
+    teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
   } else if (player?.id) {
     const { data: membership } = await supabase
       .from('golf_team_members')
