@@ -73,7 +73,12 @@ test.describe('Cloud Course Library — authenticated flow', () => {
     await page.fill('input[type="email"]', GOLF_EMAIL as string);
     await page.fill('input[type="password"]', GOLF_PASSWORD as string);
     await page.click('button[type="submit"]');
-    await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
+    // Login may land on the dashboard, hub, or onboarding depending on the
+    // account — just wait until we've left the login page (any authed golf URL).
+    await page.waitForURL(
+      (url) => url.pathname.startsWith('/golf/') && !url.pathname.endsWith('/login'),
+      { timeout: 20000 },
+    );
   });
 
   test('renders the course library', async ({ page }) => {
@@ -133,7 +138,11 @@ test.describe('Cloud Course Library — authenticated flow', () => {
 
     await page.goto('/golf/dashboard/rounds/new');
     const browse = page.getByRole('button', { name: /Browse course library/i });
+    await browse.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     if (!(await browse.isVisible().catch(() => false))) {
+      // Capture whatever rendered so the artifact reveals where it's stuck
+      // (login redirect, onboarding, resume prompt) instead of silently skipping.
+      await page.screenshot({ path: `${dir}/picker-debug-no-cta.png`, fullPage: true });
       test.skip(true, 'New-round "Browse course library" CTA not present (resuming a round?).');
       return;
     }
