@@ -1582,6 +1582,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             router.push(`/golf/dashboard/rounds/continue/${existingInProgressRound.id}`)
           }
           onStartFresh={() => setShowResumePrompt(false)}
+          onBrowseCourseLibrary={() => setTeePickerOpen(true)}
           recentCourses={recentCourses}
           onQuickPickConfirm={handleQuickPickConfirm}
           isOnline={connectionStatus.isOnline}
@@ -1662,6 +1663,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           onHolesSave={handleHolesSave}
           onHolesBack={() => setStep('setup')}
         />
+        <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
       </div>
     );
   }
