@@ -13,7 +13,7 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
 let currentClient: unknown = null;
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => currentClient }));
 
-import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse } from '../course-library';
+import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse, contributeCourseFromRound } from '../course-library';
 
 // ── A scriptable, chainable Supabase query-builder mock ──────────────────────
 type Scripted = { maybeSingle?: unknown; single?: unknown; resolve?: unknown };
@@ -236,6 +236,44 @@ describe('Phase 5 — unique normalized_name index: 23505 collision handling', (
     const res = await restoreCourse('c1');
     expect(res.success).toBe(false);
     if (!res.success) expect(res.error).toContain('Rename the active one');
+  });
+});
+
+describe('contributeCourseFromRound — grow the cloud catalog from a saved round', () => {
+  it('dedups to the existing course AND reuses a same-named tee (no duplicate tee insert)', async () => {
+    const existingCourse = { id: 'c1', name: 'Pebble Beach', normalized_name: 'pebble beach', par: 72, deleted_at: null };
+    const tees = tableBuilder({ resolve: { data: [{ id: 't1', normalized_tee_name: 'white' }], error: null } });
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: tableBuilder({ maybeSingle: { data: existingCourse, error: null } }), // createCourse dedup hit
+      golf_course_tees: tees,
+    });
+
+    const res = await contributeCourseFromRound({
+      courseName: 'Pebble Beach',
+      teeName: 'White',
+      holes: [{ holeNumber: 1, par: 4, yardage: 400 }],
+    });
+
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.courseId).toBe('c1');
+      expect(res.data.teeId).toBe('t1');
+    }
+    // The whole point: a same-named tee is REUSED, never re-inserted (which would
+    // trip the per-course (course_id, normalized_tee_name) unique → 23505).
+    expect(tees._calls.insert).toBeUndefined();
+  });
+
+  it('rejects an empty course name and writes nothing', async () => {
+    const courses = tableBuilder();
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: null, error: null } }),
+      golf_courses: courses,
+    });
+    const res = await contributeCourseFromRound({ courseName: '   ', holes: [] });
+    expect(res).toEqual({ success: false, error: 'Course name is required' });
+    expect(courses._calls.insert).toBeUndefined();
   });
 });
 
