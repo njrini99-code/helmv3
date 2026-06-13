@@ -209,7 +209,7 @@ export async function updateCourse(
   // Update course info
   if (data.name || data.city || data.state) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    const { error: infoError } = await (supabase as any)
       .from('golf_courses')
       .update({
         name: data.name,
@@ -219,6 +219,20 @@ export async function updateCourse(
         slope_rating: data.slopeRating,
       })
       .eq('id', courseId);
+    // The Phase-5 partial-unique normalized_name index can reject a rename that
+    // collides with another active course. This UPDATE previously swallowed its
+    // error and returned success — surface it instead of silently no-op'ing.
+    if (infoError) {
+      if (infoError.code === '23505') {
+        return { success: false, error: 'A course with that name already exists' };
+      }
+      await logServerError(`updateCourse failed: ${infoError.message}`, {
+        action: 'updateCourse',
+        featureArea: 'courses',
+        extra: { courseId, errorCode: infoError.code },
+      });
+      return { success: false, error: 'Failed to update course' };
+    }
   }
 
   // Update holes if provided

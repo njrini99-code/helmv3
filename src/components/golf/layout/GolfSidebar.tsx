@@ -20,6 +20,7 @@ import {
   IconFlag,
   IconChartBar,
   IconMessage,
+  IconMapPin,
   IconSettings,
   IconLogout,
   IconGolf,
@@ -74,6 +75,7 @@ const coachSecondaryNav: NavItem[] = [
   { name: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
   { name: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
   { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
+  { name: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
 ];
 
 // Player primary nav — 7 daily-use destinations
@@ -92,6 +94,7 @@ const playerNavItems: NavItem[] = [
 const playerSecondaryNav: NavItem[] = [
   { name: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
   { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
+  { name: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
   { name: 'Classes', href: '/golf/dashboard/classes', icon: IconBook },
 ];
 
@@ -103,6 +106,7 @@ const playerSecondaryNav: NavItem[] = [
 const playerSecondaryNavRedesign: NavItem[] = [
   { name: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
   { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
+  { name: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
   { name: 'Team Hub', href: '/golf/dashboard/team-hub', icon: IconLayoutGrid },
 ];
 

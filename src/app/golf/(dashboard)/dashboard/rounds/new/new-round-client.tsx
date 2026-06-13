@@ -21,6 +21,8 @@ import {
   type PartialRoundData,
 } from '@/app/golf/actions/golf';
 import { RecentCoursesQuickPick } from '@/components/golf/rounds/new/RecentCoursesQuickPick';
+import { TeePickerDrawer } from '@/components/golf/courses/TeePickerDrawer';
+import type { TeeRoundDefaults } from '@/app/golf/actions/course-library';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
@@ -527,6 +529,10 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   // FK to golf_courses (resolved from saved course or server-side fallback)
   const resolvedCourseIdRef = useRef<string | null>(null);
+  // Cloud Course Library tee (golf_course_tees.id) when the round was started
+  // from the tee picker. Cleared whenever a non-library course is chosen.
+  const selectedTeeIdRef = useRef<string | null>(null);
+  const [teePickerOpen, setTeePickerOpen] = useState(false);
   const [preloadedHoleConfigs, setPreloadedHoleConfigs] = useState<SavedCourseHoleConfig[] | null>(null);
   const [saveCourseChecked, setSaveCourseChecked] = useState(false);
   const [courseSearchQuery, setCourseSearchQuery] = useState('');
@@ -677,6 +683,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     setSelectedCourseId(course.id);
     setCourseMode('saved');
     resolvedCourseIdRef.current = course.courseId ?? null;
+    selectedTeeIdRef.current = null; // a recent saved course is not a cloud tee
     setSetupData(prev => ({
       ...prev,
       courseName: course.courseName,
@@ -714,6 +721,35 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     }
   }, []);
 
+  /**
+   * Start from the Cloud Course Library tee picker: populate the setup form +
+   * per-hole defaults from the chosen tee, and record the tee id so the round
+   * links to golf_rounds.tee_id. The round still snapshots its own holes — the
+   * tee only seeds defaults. We leave the user on the setup screen to confirm.
+   */
+  const handleTeePick = useCallback((d: TeeRoundDefaults) => {
+    setCourseMode('saved');
+    setSelectedCourseId(null);
+    resolvedCourseIdRef.current = d.courseId;
+    selectedTeeIdRef.current = d.teeId;
+    setSetupData(prev => ({
+      ...prev,
+      courseName: d.courseName,
+      courseCity: d.courseCity || '',
+      courseState: d.courseState || '',
+      courseRating: d.courseRating != null ? d.courseRating.toString() : '',
+      courseSlope: d.slopeRating != null ? d.slopeRating.toString() : '',
+      teesPlayed: d.teeName,
+    }));
+    const configs: SavedCourseHoleConfig[] = d.holes.map(h => ({
+      holeNumber: h.holeNumber,
+      par: h.par,
+      yardage: h.yardage ?? 0,
+    }));
+    setPreloadedHoleConfigs(configs);
+    if (d.holesCount === 9 || d.holesCount === 18) setHolesPerRound(d.holesCount);
+  }, []);
+
   // Handle saved course selection
   const handleSavedCourseSelect = (courseId: string | null) => {
     setSelectedCourseId(courseId);
@@ -731,6 +767,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       }));
       setPreloadedHoleConfigs(null);
       resolvedCourseIdRef.current = null;
+      selectedTeeIdRef.current = null;
       return;
     }
 
@@ -738,6 +775,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     if (course) {
       // Store the golf_courses FK from the saved course
       resolvedCourseIdRef.current = course.courseId ?? null;
+      selectedTeeIdRef.current = null; // saved course, not a cloud tee
       // Populate form with saved course data
       setSetupData(prev => ({
         ...prev,
@@ -1330,6 +1368,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       const roundData = {
         courseName: recoverySetupData.courseName,
         courseId: resolvedCourseIdRef.current || undefined,
+        teeId: selectedTeeIdRef.current || undefined,
         courseCity: recoverySetupData.courseCity || undefined,
         courseState: recoverySetupData.courseState || undefined,
         courseRating: recoverySetupData.courseRating ? parseFloat(recoverySetupData.courseRating) : undefined,
@@ -1539,6 +1578,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               setCourseMode('new');
               setSelectedCourseId(null);
               resolvedCourseIdRef.current = null;
+              selectedTeeIdRef.current = null;
               setPreloadedHoleConfigs(null);
               setCourseSearchQuery('');
               setSetupData((prev) => ({
@@ -1668,6 +1708,18 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             />
           )}
 
+          {/* Cloud Course Library — pick a course + tee (pre-fills pars/yards). */}
+          {!showResumePrompt && (
+            <Button
+              variant="secondary"
+              onClick={() => setTeePickerOpen(true)}
+              className="w-full justify-center"
+            >
+              <IconMapPin size={16} aria-hidden /> Browse course library
+            </Button>
+          )}
+          <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
+
           <Reveal>
             <div className="surface-stone rounded-3xl p-6 md:p-10">
               <PageHeader
@@ -1730,6 +1782,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           setCourseMode('new');
                           setSelectedCourseId(null);
                           resolvedCourseIdRef.current = null;
+                          selectedTeeIdRef.current = null;
                           setPreloadedHoleConfigs(null);
                           setCourseSearchQuery('');
                           setSetupData(prev => ({

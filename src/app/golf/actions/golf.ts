@@ -547,6 +547,10 @@ interface GolfRoundInputComprehensive {
   courseSlope?: number;
   teesPlayed?: string;
   courseId?: string;
+  /** Cloud Course Library tee set (golf_course_tees.id). Optional; when present
+   *  it records provenance + sources the new-round hole defaults. Par/yards are
+   *  STILL snapshot into golf_holes from `holes` — the tee never rewrites them. */
+  teeId?: string;
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
   holes: HoleStats[];
@@ -778,6 +782,7 @@ interface CompletedRoundUpdatePayload {
   course_rating: number | null;
   course_slope: number | null;
   tees_played: string | null;
+  tee_id: string | null;
   round_type: 'practice' | 'tournament' | 'qualifier';
   round_date: string;
   holes_played: number;
@@ -1273,7 +1278,18 @@ export async function submitGolfRoundComprehensive(
 
     // Prepare round data
     const teamId = await getPlayerTeamId(supabase, player.id);
-    const resolvedCourseId = await resolveCourseId(supabase, data.courseName, data.courseId);
+    let resolvedCourseId = await resolveCourseId(supabase, data.courseName, data.courseId);
+    // When a Cloud Course Library tee is chosen, its course is authoritative for
+    // course_id (more reliable than fuzzy name matching). Par/yards still come
+    // from the client hole payload — the tee only sets provenance + course link.
+    if (data.teeId) {
+      const { data: teeRow } = await supabase
+        .from('golf_course_tees')
+        .select('course_id')
+        .eq('id', data.teeId)
+        .maybeSingle();
+      if (teeRow?.course_id) resolvedCourseId = teeRow.course_id;
+    }
     const roundData: CompletedRoundUpdatePayload = {
       player_id: player.id,
       team_id: teamId,
@@ -1284,6 +1300,7 @@ export async function submitGolfRoundComprehensive(
       course_rating: data.courseRating ?? null,
       course_slope: data.courseSlope ?? null,
       tees_played: data.teesPlayed || null,
+      tee_id: data.teeId || null,
       round_type: data.roundType,
       round_date: data.roundDate,
       holes_played: data.holes.length,
