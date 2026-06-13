@@ -639,6 +639,7 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
                         team_n={row.team_n}
                         team_pct={row.team_pct}
                         pga_value={row.pga_value}
+                        is_womens={row.is_womens}
                         direction={cfg.direction}
                         unit={cfg.unit}
                         scale={cfg.default_scale}
@@ -782,6 +783,7 @@ function SgVerdict({
               team_n={sgTotal.team_n}
               team_pct={sgTotal.team_pct}
               pga_value={sgTotal.pga_value}
+              is_womens={sgTotal.is_womens}
               direction={sgCfg.direction}
               unit={sgCfg.unit}
               scale={sgCfg.default_scale}
@@ -1725,6 +1727,7 @@ function DetailedStandingsSection({
                       team_n={row.team_n}
                       team_pct={row.team_pct}
                       pga_value={row.pga_value}
+                      is_womens={row.is_womens}
                       direction={cfg.direction}
                       unit={cfg.unit}
                       scale={cfg.default_scale}

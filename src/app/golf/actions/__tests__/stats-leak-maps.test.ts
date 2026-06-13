@@ -31,6 +31,12 @@ function createPagedQueryMock(rows: Array<Record<string, unknown>>) {
     to = t;
     return chain;
   });
+  // maybeSingle: used by resolvePlayerTeamGender (golf_team_members) and
+  // other single-row lookups. Returns the first row or null.
+  chain.maybeSingle = vi.fn(async () => ({
+    data: rows.length > 0 ? rows[0] : null,
+    error: null,
+  }));
   // Thenable so both `await query` and `fetchAllRowsResult` page calls work.
   chain.then = (
     resolve: (value: {

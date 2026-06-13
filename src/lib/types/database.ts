@@ -10071,6 +10071,7 @@ export type Database = {
           organization_id: string | null
           primary_color: string | null
           season: string | null
+          season_active: boolean
           secondary_color: string | null
           timezone: string
           updated_at: string | null
@@ -10087,6 +10088,7 @@ export type Database = {
           organization_id?: string | null
           primary_color?: string | null
           season?: string | null
+          season_active?: boolean
           secondary_color?: string | null
           timezone?: string
           updated_at?: string | null
@@ -10103,6 +10105,7 @@ export type Database = {
           organization_id?: string | null
           primary_color?: string | null
           season?: string | null
+          season_active?: boolean
           secondary_color?: string | null
           timezone?: string
           updated_at?: string | null

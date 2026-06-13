@@ -31,14 +31,25 @@ export function toScalePct(value: number, scale: { min: number; max: number }): 
  * Labeling it "PGA 0.00" implies the Tour shoots flat-zero, overstating every
  * elite-amateur weakness. For sg_* metrics the reference reads "Field Avg";
  * for every other metric the PGA Tour value is a genuine Tour standard and
- * keeps the "PGA" label.
+ * keeps the "PGA" / "LPGA" label.
  *
- * `short` is the compact marker label ("Field Avg" / "PGA"); `long` is the
- * a11y phrase ("Field average" / "PGA Tour").
+ * `short` is the compact marker label ("Field Avg" / "PGA" / "LPGA"); `long`
+ * is the a11y phrase ("Field average" / "PGA Tour" / "LPGA Tour").
+ *
+ * @param metric_id - Canonical metric id.
+ * @param isWomens  - True when the player's team is a women's team. When true,
+ *                    non-SG metrics show "LPGA" instead of "PGA". Defaults to
+ *                    false (unchanged behaviour for all existing callers).
  */
-export function pgaReferenceLabel(metric_id: string): { short: string; long: string } {
+export function pgaReferenceLabel(
+  metric_id: string,
+  isWomens?: boolean,
+): { short: string; long: string } {
   if (/^sg_/.test(metric_id)) {
     return { short: 'Field Avg', long: 'Field average' };
+  }
+  if (isWomens) {
+    return { short: 'LPGA', long: 'LPGA Tour' };
   }
   return { short: 'PGA', long: 'PGA Tour' };
 }
@@ -168,7 +179,8 @@ export function deriveAriaLabel(props: StandingBarProps): string {
   // narrated against a misleading men's value.
   if (!props.pga_omitted) {
     // CF-3: SG metrics anchor to the FIELD AVERAGE (0), not a PGA Tour score.
-    const refLabel = pgaReferenceLabel(props.metric_id).long;
+    // Women's teams get "LPGA Tour" instead of "PGA Tour" for non-SG metrics.
+    const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).long;
     parts.push(`${refLabel}: ${formatValue(props.pga_value, props.unit)}.`);
   }
   if (props.team_avg !== null && (props.team_n ?? 0) >= TEAM_MARKER_MIN_N) {

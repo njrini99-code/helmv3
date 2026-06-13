@@ -1,28 +1,47 @@
 /**
- * v3 PGA standards loader.
+ * v3 PGA/LPGA standards loader.
  *
- * Reads from `public.golf_pga_standards` — the per-(metric, season)
- * baseline table seeded in W10. Used by:
+ * Reads from `public.golf_pga_standards` — the per-(metric, season, tour)
+ * baseline table seeded in W10 (PGA) and extended in the LPGA migration
+ * (20260610160000). Used by:
  *   - W11 standing loader (`loadStandingForMetric`) to populate the
- *     "PGA Tour" reference line in StandingBar.
+ *     Tour reference line in StandingBar.
  *   - W17 counterfactual (`computeCounterfactual`) to compute the
  *     projected-score-if-closed delta.
  *
  * Always loads the most recent season available per metric (ORDER BY
  * season DESC); historical seasons stay in the table for backtesting.
+ *
+ * GENDER ROUTING (2026-06-10):
+ *   - `loadPgaStandards()` — unchanged; always loads `tour = 'pga'` rows.
+ *     Used by the standing pipeline which handles women's overrides at the
+ *     read layer via `gender-anchor.ts` / `cohort-baselines.ts`.
+ *   - `loadStandardsForTour(tour)` — explicit tour selector. Use when a
+ *     surface needs to resolve the correct benchmark set before display,
+ *     e.g. the leak-map loader (stats-leak-maps.ts) which directly renders
+ *     `pga_tour_value` as the reference line.
+ *   - `loadStandardsForGender(gender)` — convenience: maps 'womens' →
+ *     'lpga', all others → 'pga'. Falls back to the PGA row when no LPGA
+ *     row exists for a metric (ensures no gaps for metrics with null LPGA data).
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import type { CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 
 export type CohortTier = 'pga' | 'korn_ferry' | 'd1' | 'd2' | 'd3' | 'hs';
+
+/** Tour discriminator stored in `golf_pga_standards.tour`. */
+export type TourKey = 'pga' | 'lpga';
 
 /** Shape of a row in `public.golf_pga_standards`. */
 export interface PgaStandard {
   metric_id: MetricId;
   season: string;
+  /** Tour this row belongs to: 'pga' (men's PGA Tour) or 'lpga' (LPGA Tour). */
+  tour: TourKey;
   display_label: string;
   pga_tour_value: number | null;
   korn_ferry_value: number | null;
@@ -39,6 +58,7 @@ export interface PgaStandard {
 interface RawRow {
   metric_id: string;
   season: string;
+  tour: string;
   display_label: string;
   pga_tour_value: number | null;
   korn_ferry_value: number | null;
@@ -53,28 +73,29 @@ interface RawRow {
 }
 
 const SELECT_FIELDS =
-  'metric_id, season, display_label, pga_tour_value, korn_ferry_value, ' +
+  'metric_id, season, tour, display_label, pga_tour_value, korn_ferry_value, ' +
   'div1_avg_value, div2_avg_value, div3_avg_value, hs_avg_value, ' +
   'pga_p25, pga_p50, pga_p75, source';
 
 /**
- * Load every PGA standard for the most recent season available per
- * metric. Returns a Map keyed by metric_id.
+ * Load standards for a specific tour ('pga' or 'lpga'), returning the most
+ * recent season per metric. Returns a Map keyed by metric_id.
  *
- * Uses the admin client because golf_pga_standards is reference data
- * read by cron jobs (W11 standing-refresh) outside of any user session.
+ * Uses the admin client because golf_pga_standards is reference data read by
+ * cron jobs (W11 standing-refresh) outside of any user session.
  */
-export async function loadPgaStandards(): Promise<Map<MetricId, PgaStandard>> {
+export async function loadStandardsForTour(tour: TourKey): Promise<Map<MetricId, PgaStandard>> {
   const supabase = createAdminClient();
   const { data, error } = await fromUntyped(supabase, 'golf_pga_standards')
     .select(SELECT_FIELDS)
+    .eq('tour', tour)
     .order('season', { ascending: false }) as {
     data: RawRow[] | null;
     error: { message: string } | null;
   };
 
   if (error) {
-    throw new Error(`Failed to load golf_pga_standards: ${error.message}`);
+    throw new Error(`Failed to load golf_pga_standards (tour=${tour}): ${error.message}`);
   }
 
   const map = new Map<MetricId, PgaStandard>();
@@ -87,7 +108,49 @@ export async function loadPgaStandards(): Promise<Map<MetricId, PgaStandard>> {
   return map;
 }
 
-/** Look up a single metric's baseline. Returns null if unknown. */
+/**
+ * Load every PGA Tour standard for the most recent season available per
+ * metric. Returns a Map keyed by metric_id.
+ *
+ * This is the original function — unchanged behaviour. The standing
+ * pipeline calls this and handles women's overrides at the read layer via
+ * gender-anchor.ts / cohort-baselines.ts.
+ */
+export async function loadPgaStandards(): Promise<Map<MetricId, PgaStandard>> {
+  return loadStandardsForTour('pga');
+}
+
+/**
+ * Gender-aware standards loader. Maps 'womens' → LPGA rows, all others → PGA.
+ * Falls back to the PGA row when no LPGA row exists for a given metric (so
+ * callers always get the best available value, never a null gap).
+ *
+ * Use this on surfaces that directly render the reference line from the DB
+ * value without the standing-pipeline's gender-anchor override layer (e.g.
+ * the leak-map surface which renders pga_tour_value as the reference bar).
+ */
+export async function loadStandardsForGender(
+  gender: CohortGender | null | undefined,
+): Promise<Map<MetricId, PgaStandard>> {
+  if (gender !== 'womens') {
+    return loadStandardsForTour('pga');
+  }
+
+  // For women's teams: prefer LPGA, fall back to PGA for any missing metrics.
+  const [lpga, pga] = await Promise.all([
+    loadStandardsForTour('lpga'),
+    loadStandardsForTour('pga'),
+  ]);
+
+  // Merge: LPGA takes precedence; PGA fills any gaps.
+  const merged = new Map<MetricId, PgaStandard>(pga);
+  for (const [metricId, standard] of lpga) {
+    merged.set(metricId, standard);
+  }
+  return merged;
+}
+
+/** Look up a single metric's baseline for the given tour. Returns null if unknown. */
 export async function loadPgaStandard(
   metricId: MetricId,
 ): Promise<PgaStandard | null> {

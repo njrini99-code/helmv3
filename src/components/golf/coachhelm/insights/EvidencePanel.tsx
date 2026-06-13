@@ -50,6 +50,7 @@ function tryRenderV3Standing(evidence: InsightEvidence): React.ReactElement | nu
       team_pct={standing.team_pct}
       pga_value={standing.pga_value}
       pga_omitted={standing.pga_omitted}
+      is_womens={standing.is_womens}
       direction={cfg.direction}
       unit={cfg.unit}
       scale={cfg.default_scale}

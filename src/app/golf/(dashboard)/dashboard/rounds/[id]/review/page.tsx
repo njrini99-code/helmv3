@@ -770,6 +770,8 @@ export default function RoundReviewPage() {
                   team_n={st.team_n}
                   team_pct={st.team_pct}
                   pga_value={st.pga_value}
+                  pga_omitted={st.pga_omitted}
+                  is_womens={st.is_womens}
                   direction={cfg.direction}
                   unit={cfg.unit}
                   scale={cfg.default_scale}
