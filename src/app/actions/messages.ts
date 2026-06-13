@@ -14,6 +14,8 @@ import { notifyNewMessage } from '@/lib/notifications';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 
 type Sport = 'baseball' | 'golf';
 
@@ -1081,5 +1083,86 @@ export async function searchGolfMessages(
     return { results };
   } catch (err) {
     return formatSafeErrorResponse(err);
+  }
+}
+
+/**
+ * Active-team scoping for the golf conversation rail.
+ *
+ * A dual-team head / director-of-golf is a participant in conversations stamped
+ * with BOTH teams' `team_id` (every golf conversation is stamped with the active
+ * team it was created under — see createConversation, golf requires team_id).
+ * The rail's RPC (`get_golf_conversations_with_details`) scopes only by
+ * participant membership, so without this the rail shows the UNION across both
+ * teams. This returns the set of conversation ids that belong to the coach's
+ * ACTIVE team so the client can filter the rail to one team at a time.
+ *
+ * Returns `null` to mean "DO NOT team-scope" — the caller must then behave
+ * exactly as before. This is the no-op contract for:
+ *   - players (no golf_coaches row),
+ *   - coaches staffed on 0 or 1 team (nothing to disambiguate),
+ *   - an unresolved active team (fail-open: never blank the rail).
+ *
+ * Only a coach staffed on >1 team (head OR assistant) ever gets a real allow-set.
+ * Scoping lives server-side + cookie-aware, so flipping the TeamSwitcher (which
+ * rewrites the `golf_active_team` cookie) re-scopes the rail on the next fetch.
+ *
+ * @returns conversation ids for the active team, or `null` for no scoping.
+ */
+export async function getGolfActiveTeamConversationIds(): Promise<string[] | null> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // Only coaches are team-scoped; players are unaffected.
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!coach) return null;
+
+    // No-op for single/zero-team coaches — nothing to disambiguate.
+    // getCoachTeamSwitchContext is the canonical multi-team detector (staff
+    // rows from golf_team_coach_staff, with an org fallback). Gate on team
+    // count (NOT canSwitch) so a dual-team ASSISTANT is also correctly scoped.
+    const ctx = await getCoachTeamSwitchContext(supabase, coach.id, coach.organization_id);
+    if (ctx.teams.length <= 1) return null;
+
+    // Resolve the ACTIVE team (cookie-aware; a forged cookie is validated +
+    // falls back to the coach's staffed/default team inside the resolver).
+    const activeTeam = await resolveCoachTeamIdWithCookie(
+      supabase,
+      coach.organization_id,
+      coach.id,
+    );
+    if (!activeTeam) return null; // fail-open: never blank the rail
+
+    // The user's participant conversations that belong to the active team.
+    const { data: parts } = await supabase
+      .from('golf_conversation_participants')
+      .select('conversation_id')
+      .eq('user_id', user.id);
+    const partIds = [
+      ...new Set((parts ?? []).map((p) => p.conversation_id).filter(Boolean)),
+    ] as string[];
+    if (partIds.length === 0) return [];
+
+    const { data: teamConvs } = await supabase
+      .from('golf_conversations')
+      .select('id')
+      .eq('team_id', activeTeam)
+      .in('id', partIds);
+
+    return (teamConvs ?? []).map((c) => c.id as string);
+  } catch (err) {
+    // Fail-open: a scoping failure must never blank the rail. Returning null
+    // restores the exact pre-change (unscoped) behaviour.
+    await logServerError(
+      `[getGolfActiveTeamConversationIds] ${err instanceof Error ? err.message : 'unknown'}`,
+      { action: 'messages.getGolfActiveTeamConversationIds' },
+    );
+    return null;
   }
 }

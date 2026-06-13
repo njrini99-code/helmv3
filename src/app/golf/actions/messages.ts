@@ -17,6 +17,7 @@ export {
   deleteGolfMessage,
   getGolfPlayerUserId,
   searchGolfMessages,
+  getGolfActiveTeamConversationIds,
   // Alias for backward compatibility
   getGolfPlayerUserId as getPlayerUserId,
   // Type re-exports

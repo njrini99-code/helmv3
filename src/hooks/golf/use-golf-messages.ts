@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage } from '@/app/golf/actions/messages';
+import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds } from '@/app/golf/actions/messages';
 import type { GolfMessageRow } from '@/lib/types';
 
 export interface GolfConversationParticipant {
@@ -394,7 +394,22 @@ export function useGolfConversations() {
       'get_golf_conversations_with_details',
       { p_user_id: userId }
     );
+    // Active-team scoping (multi-team coaches only). A `null` allow-set means
+    // "do NOT scope" — players and single-team coaches see the exact same rail
+    // as before. Fail-open: a scoping error leaves the rail unscoped, never blank.
+    let teamAllow: Set<string> | null = null;
+    try {
+      const allowedIds = await getGolfActiveTeamConversationIds();
+      if (allowedIds !== null) teamAllow = new Set(allowedIds);
+    } catch {
+      teamAllow = null;
+    }
+
     let conversationsData = rawData as ConversationRow[] | null;
+    if (teamAllow) {
+      const allow = teamAllow;
+      conversationsData = (conversationsData ?? []).filter((c) => allow.has(c.id));
+    }
 
     // Also fetch team chat conversations directly (in case DB function doesn't include them)
     const { data: groupConvs } = await supabase
@@ -435,7 +450,12 @@ export function useGolfConversations() {
           created_by: string | null;
         } | null;
 
-        if (conv && conv.is_team_chat && !existingIds.has(conv.id)) {
+        if (
+          conv &&
+          conv.is_team_chat &&
+          !existingIds.has(conv.id) &&
+          (!teamAllow || teamAllow.has(conv.id))
+        ) {
           teamChats.push(conv);
         }
       }
