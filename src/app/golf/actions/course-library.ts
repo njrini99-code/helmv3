@@ -687,6 +687,80 @@ export async function createTee(
   );
 }
 
+export interface ContributeCourseInput {
+  courseName: string;
+  city?: string | null;
+  state?: string | null;
+  /** The tee the player labelled the round with (e.g. "White"); falls back to "Default". */
+  teeName?: string | null;
+  courseRating?: number | null;
+  slopeRating?: number | null;
+  /** Per-hole pars/yards from the round setup. yardage 0/undefined ⇒ stored as null (unknown). */
+  holes: TeeHoleInput[];
+}
+
+/**
+ * Grow the cloud catalog from a REAL, explicitly-saved round (the "grow from
+ * saves" path). Dedup-creates the facility via createCourse (the Phase-5 trigger
+ * sets normalized_name; the UNIQUE index self-heals races) and, if that tee name
+ * isn't already on the course, adds a tee carrying the round's hole pars/yards.
+ *
+ * Returns the resolved cloud courseId + teeId so the caller can link the round
+ * (golf_rounds.course_id / tee_id) to the catalog. Purely ADDITIVE — touches only
+ * golf_courses / golf_course_tees(+holes); NEVER golf_rounds/holes/shots, so the
+ * round's own snapshot is unaffected. Best-effort by contract: the caller treats
+ * failure as "round still submits, just unlinked".
+ */
+export async function contributeCourseFromRound(
+  input: ContributeCourseInput,
+): Promise<Result<{ courseId: string; teeId: string | null }>> {
+  const supabase = await createClient();
+  const actor = await getActor(supabase);
+  if (!actor) return { success: false, error: 'You must be logged in' };
+
+  const name = input.courseName?.trim();
+  if (!name) return { success: false, error: 'Course name is required' };
+
+  // 1) Dedup-create the facility (createCourse returns the existing row on a name match).
+  const courseRes = await createCourse({
+    name,
+    city: input.city ?? null,
+    state: input.state ?? null,
+    source: 'round',
+  });
+  if (!courseRes.success) return courseRes;
+  const courseId = courseRes.data.course.id;
+
+  // 2) Reuse a same-named tee if one already exists on the course (the per-course
+  //    (course_id, normalized_tee_name) unique guard would otherwise 23505).
+  const teeName = (input.teeName ?? '').trim() || 'Default';
+  const normTee = normalizeName(teeName);
+  const { data: existingTees } = await supabase
+    .from('golf_course_tees')
+    .select('id, normalized_tee_name')
+    .eq('course_id', courseId)
+    .is('deleted_at', null);
+  const match = (existingTees ?? []).find((t) => (t.normalized_tee_name as string) === normTee);
+  if (match) return { success: true, data: { courseId, teeId: match.id as string } };
+
+  const teeRes = await createTee(courseId, {
+    teeName,
+    courseRating: input.courseRating ?? null,
+    slopeRating: input.slopeRating ?? null,
+    holesCount: input.holes.length === 9 ? 9 : 18,
+    source: 'round',
+    holes: input.holes.map((h) => ({
+      holeNumber: h.holeNumber,
+      par: h.par,
+      // A round may leave yardage at 0 ("not entered") — keep the catalog honest.
+      yardage: typeof h.yardage === 'number' && h.yardage > 0 ? h.yardage : null,
+    })),
+  });
+  // The facility link is what matters; a tee failure (incl. a race 23505) leaves
+  // the course contributed with teeId null rather than failing the whole call.
+  return { success: true, data: { courseId, teeId: teeRes.success ? teeRes.data.id : null } };
+}
+
 export interface UpdateTeePatch {
   teeName?: string;
   teeColor?: string | null;

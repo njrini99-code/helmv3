@@ -22,7 +22,7 @@ import {
 } from '@/app/golf/actions/golf';
 import { RecentCoursesQuickPick } from '@/components/golf/rounds/new/RecentCoursesQuickPick';
 import { TeePickerDrawer } from '@/components/golf/courses/TeePickerDrawer';
-import type { TeeRoundDefaults } from '@/app/golf/actions/course-library';
+import { contributeCourseFromRound, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
@@ -939,6 +939,28 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         // Add to local state so it appears if they start another round
         setSavedCourses(prev => [result.data, ...prev.filter(c => c.id !== result.data.id)]);
       }
+
+      // Grow the shared Cloud Course Library from this real, explicitly-saved
+      // round — but ONLY when the course wasn't already picked from the library
+      // (no cloud tee selected). Dedup-aware + best-effort: it links the round to
+      // the resulting cloud course/tee but must NEVER block submission.
+      if (selectedTeeIdRef.current == null) {
+        try {
+          const contrib = await contributeCourseFromRound({
+            courseName: setupData.courseName,
+            city: setupData.courseCity || null,
+            state: setupData.courseState || null,
+            teeName: setupData.teesPlayed || null,
+            courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : null,
+            slopeRating: setupData.courseSlope ? parseInt(setupData.courseSlope) : null,
+            holes: holeConfigs.map(h => ({ holeNumber: h.holeNumber, par: h.par, yardage: h.yardage })),
+          });
+          if (contrib.success) {
+            resolvedCourseIdRef.current = contrib.data.courseId;
+            if (contrib.data.teeId) selectedTeeIdRef.current = contrib.data.teeId;
+          }
+        } catch { /* best-effort: catalog growth must never block the round */ }
+      }
     }
 
     setStep('tracking');
@@ -1699,19 +1721,11 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         <MobileNavHeader title="New Round" backHref="/golf/dashboard" backLabel="Dashboard" />
         <div className="min-h-dvh bg-transparent flex items-start justify-center p-4 py-8">
           <div className="w-full max-w-2xl space-y-5">
-          {/* Quick-pick recent courses — sits above the manual setup form
-              and is hidden entirely when the player has no recent courses. */}
-          {recentCourses.length > 0 && !showResumePrompt && (
-            <RecentCoursesQuickPick
-              courses={recentCourses}
-              onConfirmCourse={handleQuickPickConfirm}
-            />
-          )}
-
-          {/* Cloud Course Library — pick a course + tee (pre-fills pars/yards). */}
+          {/* PRIMARY course source: the shared Cloud Course Library (course + tee,
+              pre-fills pars/yards and links the round to the catalog). */}
           {!showResumePrompt && (
             <Button
-              variant="secondary"
+              variant="primary"
               onClick={() => setTeePickerOpen(true)}
               className="w-full justify-center"
             >
@@ -1719,6 +1733,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             </Button>
           )}
           <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
+
+          {/* Fallback: courses you've played before (per-player). Hidden when empty. */}
+          {recentCourses.length > 0 && !showResumePrompt && (
+            <RecentCoursesQuickPick
+              courses={recentCourses}
+              onConfirmCourse={handleQuickPickConfirm}
+            />
+          )}
 
           <Reveal>
             <div className="surface-stone rounded-3xl p-6 md:p-10">
