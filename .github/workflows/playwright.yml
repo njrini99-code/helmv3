@@ -30,6 +30,13 @@ jobs:
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      # Optional seeded golf login for the authenticated E2E flow
+      # (e2e/course-library.spec.ts). When these repo secrets are unset they
+      # resolve to empty strings and the authenticated specs test.skip()
+      # themselves, so CI stays green; set them to a seeded test login to run
+      # the real library + new-round-picker visual/flow coverage.
+      E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
+      E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
       COMMIT_SHA: ${{ github.sha }}
     steps:
       - name: Checkout
