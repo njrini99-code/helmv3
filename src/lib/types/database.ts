@@ -6051,6 +6051,51 @@ export type Database = {
           },
         ]
       }
+      golf_course_edit_history: {
+        Row: {
+          action: string
+          changes: Json | null
+          course_id: string
+          created_at: string
+          edited_by_team_id: string | null
+          edited_by_user_id: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          course_id: string
+          created_at?: string
+          edited_by_team_id?: string | null
+          edited_by_user_id?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          course_id?: string
+          created_at?: string
+          edited_by_team_id?: string | null
+          edited_by_user_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_course_edit_history_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_course_edit_history_edited_by_team_id_fkey"
+            columns: ["edited_by_team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_course_holes: {
         Row: {
           course_id: string
@@ -6089,44 +6134,278 @@ export type Database = {
           },
         ]
       }
+      golf_course_tee_edit_history: {
+        Row: {
+          action: string
+          changes: Json | null
+          created_at: string
+          edited_by_team_id: string | null
+          edited_by_user_id: string | null
+          id: string
+          tee_id: string
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          created_at?: string
+          edited_by_team_id?: string | null
+          edited_by_user_id?: string | null
+          id?: string
+          tee_id: string
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          created_at?: string
+          edited_by_team_id?: string | null
+          edited_by_user_id?: string | null
+          id?: string
+          tee_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_course_tee_edit_history_edited_by_team_id_fkey"
+            columns: ["edited_by_team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_course_tee_edit_history_tee_id_fkey"
+            columns: ["tee_id"]
+            isOneToOne: false
+            referencedRelation: "golf_course_tees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_course_tee_holes: {
+        Row: {
+          created_at: string
+          handicap_index: number | null
+          hole_number: number
+          id: string
+          par: number
+          tee_id: string
+          updated_at: string
+          yardage: number | null
+        }
+        Insert: {
+          created_at?: string
+          handicap_index?: number | null
+          hole_number: number
+          id?: string
+          par: number
+          tee_id: string
+          updated_at?: string
+          yardage?: number | null
+        }
+        Update: {
+          created_at?: string
+          handicap_index?: number | null
+          hole_number?: number
+          id?: string
+          par?: number
+          tee_id?: string
+          updated_at?: string
+          yardage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_course_tee_holes_tee_id_fkey"
+            columns: ["tee_id"]
+            isOneToOne: false
+            referencedRelation: "golf_course_tees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_course_tees: {
+        Row: {
+          category: string | null
+          course_id: string
+          course_rating: number | null
+          created_at: string
+          created_by_team_id: string | null
+          created_by_user_id: string | null
+          deleted_at: string | null
+          holes_count: number
+          id: string
+          is_draft: boolean
+          last_edited_at: string | null
+          last_edited_by_team_id: string | null
+          last_edited_by_user_id: string | null
+          normalized_tee_name: string
+          slope_rating: number | null
+          source: string | null
+          tee_color: string | null
+          tee_name: string
+          total_par: number | null
+          total_yards: number | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          course_id: string
+          course_rating?: number | null
+          created_at?: string
+          created_by_team_id?: string | null
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          holes_count?: number
+          id?: string
+          is_draft?: boolean
+          last_edited_at?: string | null
+          last_edited_by_team_id?: string | null
+          last_edited_by_user_id?: string | null
+          normalized_tee_name: string
+          slope_rating?: number | null
+          source?: string | null
+          tee_color?: string | null
+          tee_name: string
+          total_par?: number | null
+          total_yards?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          course_id?: string
+          course_rating?: number | null
+          created_at?: string
+          created_by_team_id?: string | null
+          created_by_user_id?: string | null
+          deleted_at?: string | null
+          holes_count?: number
+          id?: string
+          is_draft?: boolean
+          last_edited_at?: string | null
+          last_edited_by_team_id?: string | null
+          last_edited_by_user_id?: string | null
+          normalized_tee_name?: string
+          slope_rating?: number | null
+          source?: string | null
+          tee_color?: string | null
+          tee_name?: string
+          total_par?: number | null
+          total_yards?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_course_tees_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_course_tees_created_by_team_id_fkey"
+            columns: ["created_by_team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_course_tees_last_edited_by_team_id_fkey"
+            columns: ["last_edited_by_team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_courses: {
         Row: {
+          address: string | null
           city: string | null
           country: string | null
           course_rating: number | null
           created_at: string | null
+          created_by_team_id: string | null
+          created_by_user_id: string | null
+          deleted_at: string | null
           holes: number | null
           id: string
+          image_url: string | null
+          last_edited_at: string | null
+          last_edited_by_team_id: string | null
+          last_edited_by_user_id: string | null
           name: string
+          normalized_name: string | null
           par: number | null
           slope_rating: number | null
+          slug: string | null
+          source: string | null
           state: string | null
+          updated_at: string | null
+          website: string | null
         }
         Insert: {
+          address?: string | null
           city?: string | null
           country?: string | null
           course_rating?: number | null
           created_at?: string | null
+          created_by_team_id?: string | null
+          created_by_user_id?: string | null
+          deleted_at?: string | null
           holes?: number | null
           id?: string
+          image_url?: string | null
+          last_edited_at?: string | null
+          last_edited_by_team_id?: string | null
+          last_edited_by_user_id?: string | null
           name: string
+          normalized_name?: string | null
           par?: number | null
           slope_rating?: number | null
+          slug?: string | null
+          source?: string | null
           state?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Update: {
+          address?: string | null
           city?: string | null
           country?: string | null
           course_rating?: number | null
           created_at?: string | null
+          created_by_team_id?: string | null
+          created_by_user_id?: string | null
+          deleted_at?: string | null
           holes?: number | null
           id?: string
+          image_url?: string | null
+          last_edited_at?: string | null
+          last_edited_by_team_id?: string | null
+          last_edited_by_user_id?: string | null
           name?: string
+          normalized_name?: string | null
           par?: number | null
           slope_rating?: number | null
+          slug?: string | null
+          source?: string | null
           state?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "golf_courses_created_by_team_id_fkey"
+            columns: ["created_by_team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_courses_last_edited_by_team_id_fkey"
+            columns: ["last_edited_by_team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       golf_document_versions: {
         Row: {
@@ -7502,9 +7781,8 @@ export type Database = {
           pga_tour_value: number | null
           season: string
           source: string | null
-          updated_at: string
-          /** Tour discriminator: 'pga' = PGA Tour values; 'lpga' = LPGA Tour values. Ahead of prod until 20260610170000_seed_lpga_standards.sql is applied. */
           tour: string
+          updated_at: string
         }
         Insert: {
           display_label: string
@@ -7520,8 +7798,8 @@ export type Database = {
           pga_tour_value?: number | null
           season: string
           source?: string | null
-          updated_at?: string
           tour?: string
+          updated_at?: string
         }
         Update: {
           display_label?: string
@@ -7537,8 +7815,8 @@ export type Database = {
           pga_tour_value?: number | null
           season?: string
           source?: string | null
-          updated_at?: string
           tour?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -9331,6 +9609,7 @@ export type Database = {
           strokes_gained_tee: number | null
           strokes_gained_total: number | null
           team_id: string | null
+          tee_id: string | null
           tees_played: string | null
           total_fairways: number | null
           total_fairways_hit: number | null
@@ -9375,6 +9654,7 @@ export type Database = {
           strokes_gained_tee?: number | null
           strokes_gained_total?: number | null
           team_id?: string | null
+          tee_id?: string | null
           tees_played?: string | null
           total_fairways?: number | null
           total_fairways_hit?: number | null
@@ -9419,6 +9699,7 @@ export type Database = {
           strokes_gained_tee?: number | null
           strokes_gained_total?: number | null
           team_id?: string | null
+          tee_id?: string | null
           tees_played?: string | null
           total_fairways?: number | null
           total_fairways_hit?: number | null
@@ -9457,6 +9738,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_rounds_tee_id_fkey"
+            columns: ["tee_id"]
+            isOneToOne: false
+            referencedRelation: "golf_course_tees"
             referencedColumns: ["id"]
           },
         ]
@@ -10008,6 +10296,67 @@ export type Database = {
           },
           {
             foreignKeyName: "golf_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_team_saved_courses: {
+        Row: {
+          course_id: string
+          created_at: string
+          created_by_user_id: string | null
+          default_tee_id: string | null
+          id: string
+          last_played_at: string | null
+          pinned: boolean
+          team_id: string
+          times_played: number
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          default_tee_id?: string | null
+          id?: string
+          last_played_at?: string | null
+          pinned?: boolean
+          team_id: string
+          times_played?: number
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          default_tee_id?: string | null
+          id?: string
+          last_played_at?: string | null
+          pinned?: boolean
+          team_id?: string
+          times_played?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_team_saved_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_team_saved_courses_default_tee_id_fkey"
+            columns: ["default_tee_id"]
+            isOneToOne: false
+            referencedRelation: "golf_course_tees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_team_saved_courses_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
@@ -11111,6 +11460,7 @@ export type Database = {
         }[]
       }
       get_users_with_auth: { Args: never; Returns: Json }
+      golf_normalize_name: { Args: { p: string }; Returns: string }
       heartbeat: { Args: never; Returns: undefined }
       hypopg_reset: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
@@ -11130,6 +11480,7 @@ export type Database = {
       }
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
+      is_golf_team_head_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_primary_coach: {
         Args: { team_uuid: string }
