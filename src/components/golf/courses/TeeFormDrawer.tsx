@@ -380,7 +380,7 @@ export function TeeFormDrawer({
                       className={cn(
                         'min-h-[40px] flex-1 rounded-md text-body font-medium transition-colors',
                         active
-                          ? 'bg-surface text-text-primary shadow-fw-soft'
+                          ? 'bg-surface text-text-primary shadow-soft'
                           : 'text-text-tertiary hover:text-text-primary',
                       )}
                     >

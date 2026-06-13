@@ -22,6 +22,7 @@ import {
 } from '@/app/golf/actions/golf';
 import { RecentCoursesQuickPick } from '@/components/golf/rounds/new/RecentCoursesQuickPick';
 import { TeePickerDrawer } from '@/components/golf/courses/TeePickerDrawer';
+import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/FairwayCoursePicker';
 import { contributeCourseFromRound, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
@@ -1663,7 +1664,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           onHolesSave={handleHolesSave}
           onHolesBack={() => setStep('setup')}
         />
-        <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
+        <FairwayCoursePicker open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
       </div>
     );
   }
@@ -1734,7 +1735,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               <IconMapPin size={16} aria-hidden /> Browse course library
             </Button>
           )}
-          <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
+          {redesign
+            ? <FairwayCoursePicker open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
+            : <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />}
 
           {/* Fallback: courses you've played before (per-player). Hidden when empty. */}
           {recentCourses.length > 0 && !showResumePrompt && (
