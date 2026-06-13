@@ -20,12 +20,9 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { getCoachTeams, getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import type { CoachTeamOption } from '@/lib/golf/resolve-team';
-
-/** Cookie name — keep in sync with the layout reader. */
-export const ACTIVE_TEAM_COOKIE = 'golf_active_team';
-
-/** Max-age in seconds — 90 days. */
-const COOKIE_MAX_AGE = 90 * 24 * 60 * 60;
+// 'use server' modules may only export async functions — the cookie constants
+// live in a plain sibling module.
+import { ACTIVE_TEAM_COOKIE, ACTIVE_TEAM_COOKIE_MAX_AGE } from './team-switcher.constants';
 
 /**
  * Switch the signed-in coach's active team.
@@ -70,7 +67,7 @@ export async function setActiveTeam(
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: COOKIE_MAX_AGE,
+    maxAge: ACTIVE_TEAM_COOKIE_MAX_AGE,
   });
 
   // Bust every coach page that SSR-renders team data.
