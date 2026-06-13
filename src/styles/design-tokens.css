@@ -29,6 +29,17 @@
   --fw-color-accent-300: oklch(0.806 0.105 150);
   --fw-color-accent-400: oklch(0.724 0.132 150);   /* active marker on black sidebar */
   --fw-color-accent-500: oklch(0.648 0.149 149.6); /* #16A34A — helm green, locked */
+
+  /* ---- Team theming (men's/women's program toggle) ---------------------------
+          Men's = the locked helm green; Women's = a refined violet that reads
+          premium on warm cream (≈ #7C3AED, matched in weight to primary-600 so
+          white text on the toggle clears AA). Used ONLY for the active-team
+          toggle accent + the faint top wash + the top-bar underline — the rest
+          of the UI stays green-forward (design philosophy: never a colored
+          gradient app-wide). The wash derives a low-alpha tint from these via
+          color-mix at the consumer. ---- */
+  --fw-color-team-mens:   var(--fw-color-accent-500);
+  --fw-color-team-womens: oklch(0.554 0.213 293);
   --fw-color-accent-600: oklch(0.567 0.142 149.6); /* hover / pressed */
   --fw-color-accent-700: oklch(0.488 0.124 150);
   --fw-color-accent-800: oklch(0.415 0.103 150);

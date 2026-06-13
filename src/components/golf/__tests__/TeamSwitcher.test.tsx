@@ -118,13 +118,33 @@ describe('TeamSwitcher', () => {
     }
   });
 
-  it('active pill segment is filled helm green with white text; inactive is transparent warm', () => {
+  it('active pill segment is the filled accent (white text + shadow); inactive is transparent warm', () => {
     render(<TeamSwitcher teams={[MENS, WOMENS]} activeTeamId="team-m" canSwitch />);
     const mens = screen.getByRole('radio', { name: /Men's team/ });
     const womens = screen.getByRole('radio', { name: /Women's team/ });
-    expect(mens.className).toContain('bg-primary-600');
+    // Active = filled accent pill: white text + soft shadow (the fill colour is
+    // applied via an inline team-accent var, asserted in team-theme.test.ts).
     expect(mens.className).toContain('text-white');
+    expect(mens.className).toContain('shadow-soft');
+    expect(mens.getAttribute('style') ?? '').toMatch(/background/i);
+    // Inactive = transparent warm.
     expect(womens.className).toContain('bg-transparent');
     expect(womens.className).toContain('text-warm-500');
+  });
+
+  it('flips optimistically and reports the picked gender via onOptimisticSwitch', async () => {
+    const onOptimisticSwitch = vi.fn();
+    render(
+      <TeamSwitcher teams={[MENS, WOMENS]} activeTeamId="team-m" canSwitch onOptimisticSwitch={onOptimisticSwitch} />,
+    );
+
+    fireEvent.click(screen.getByRole('radio', { name: /Women's team/ }));
+
+    // Optimistic: women's becomes checked immediately (before any refresh).
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: /Women's team/ })).toHaveAttribute('aria-checked', 'true');
+    });
+    expect(screen.getByRole('radio', { name: /Men's team/ })).toHaveAttribute('aria-checked', 'false');
+    expect(onOptimisticSwitch).toHaveBeenCalledWith('womens');
   });
 });
