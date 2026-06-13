@@ -63,8 +63,25 @@ BEGIN
 END $$;
 
 -- ============================================================================
--- STEP 2 — Replace old (metric_id, season) unique key with (metric_id, season, tour)
+-- STEP 2 — Widen the key to (metric_id, season, tour)
+--
+-- The real identity of the table is its PRIMARY KEY golf_pga_standards_pkey =
+-- (metric_id, season) (see 20260527000000_prod_public_baseline.sql). The LPGA
+-- rows below reuse the existing PGA metric_id/season pairs (e.g.
+-- 'scoring_par_3'/'2024'), so they collide on that 2-column PK. An
+-- ON CONFLICT (metric_id, season, tour) target does NOT cover the PK, so the
+-- seed would otherwise abort with duplicate key (SQLSTATE 23505).
+--
+-- Fix: drop the 2-column PK and recreate it as (metric_id, season, tour) BEFORE
+-- the seed. Existing rows are tour='pga' (STEP 1 DEFAULT + the explicit backfill
+-- below), so they stay unique under the widened key and the PGA data is intact.
+-- A redundant legacy 2-column UNIQUE constraint, if one exists, is also swapped
+-- to the 3-column shape for coherence.
 -- ============================================================================
+
+-- Backfill FIRST so the widened PK never sees a NULL tour on existing rows
+-- (DEFAULT 'pga' already covers them, but make it explicit and order-safe).
+UPDATE public.golf_pga_standards SET tour = 'pga' WHERE tour IS DISTINCT FROM 'pga';
 
 DO $$
 BEGIN
@@ -86,10 +103,23 @@ BEGIN
       ADD CONSTRAINT golf_pga_standards_metric_id_season_tour_key
       UNIQUE (metric_id, season, tour);
   END IF;
-END $$;
 
--- Backfill: make existing rows explicit (DEFAULT already set them, but ensure)
-UPDATE public.golf_pga_standards SET tour = 'pga' WHERE tour IS DISTINCT FROM 'pga';
+  -- Widen the PRIMARY KEY from (metric_id, season) to (metric_id, season, tour).
+  -- This is the constraint the seed actually collides on. Idempotent: only act
+  -- when the 2-column PK is still in place.
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'golf_pga_standards_pkey'
+      AND conrelid = 'public.golf_pga_standards'::regclass
+      AND array_length(conkey, 1) = 2
+  ) THEN
+    ALTER TABLE public.golf_pga_standards
+      DROP CONSTRAINT golf_pga_standards_pkey;
+    ALTER TABLE public.golf_pga_standards
+      ADD CONSTRAINT golf_pga_standards_pkey
+      PRIMARY KEY (metric_id, season, tour);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- STEP 3 — Seed LPGA Tour 2024 values
