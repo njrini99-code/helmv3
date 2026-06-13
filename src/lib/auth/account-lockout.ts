@@ -30,8 +30,21 @@ export async function recordFailedLogin(
   ip: string | null,
   userAgent: string | null
 ): Promise<LoginAttemptResult> {
-  const supabase = createAdminClient();
   const normalizedEmail = email.toLowerCase().trim();
+
+  // Fail OPEN if the lockout store can't be reached at all (e.g. admin client
+  // unconfigured): can't record the attempt, so don't block the login. Query-
+  // level errors below keep their stricter fail-closed handling.
+  let supabase: ReturnType<typeof createAdminClient>;
+  try {
+    supabase = createAdminClient();
+  } catch {
+    return {
+      locked: false,
+      attempts: 0,
+      remainingAttempts: MAX_FAILED_ATTEMPTS,
+    };
+  }
 
   // Get current attempts
   const { data: existing, error: fetchError } = await supabase
@@ -138,52 +151,65 @@ export async function recordFailedLogin(
 export async function checkAccountLockout(
   email: string
 ): Promise<LoginAttemptResult> {
-  const supabase = createAdminClient();
   const normalizedEmail = email.toLowerCase().trim();
 
-  const { data, error } = await supabase
-    .from('login_attempts')
-    .select('*')
-    .eq('email', normalizedEmail)
-    .maybeSingle();
+  // Fail OPEN if the lockout store is unavailable: a pre-login lockout *check*
+  // that cannot run must never take down login. createAdminClient() throws when
+  // SUPABASE_SERVICE_ROLE_KEY is absent (CI / preview), and this runs on every
+  // login attempt — so an unguarded throw here 500s all logins.
+  try {
+    const supabase = createAdminClient();
 
-  if (error || !data) {
+    const { data, error } = await supabase
+      .from('login_attempts')
+      .select('*')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (error || !data) {
+      return {
+        locked: false,
+        attempts: 0,
+        remainingAttempts: MAX_FAILED_ATTEMPTS,
+      };
+    }
+
+    const now = new Date();
+    const lockedUntil = data.locked_until ? new Date(data.locked_until) : undefined;
+
+    // Check if lock has expired
+    if (lockedUntil && lockedUntil > now) {
+      return {
+        locked: true,
+        attempts: data.failed_attempts ?? 0,
+        lockedUntil,
+        remainingAttempts: 0,
+      };
+    }
+
+    // Lock expired, reset attempts
+    if (lockedUntil && lockedUntil <= now) {
+      await resetLoginAttempts(normalizedEmail);
+      return {
+        locked: false,
+        attempts: 0,
+        remainingAttempts: MAX_FAILED_ATTEMPTS,
+      };
+    }
+
+    const currentAttempts = data.failed_attempts ?? 0;
+    return {
+      locked: false,
+      attempts: currentAttempts,
+      remainingAttempts: Math.max(0, MAX_FAILED_ATTEMPTS - currentAttempts),
+    };
+  } catch {
     return {
       locked: false,
       attempts: 0,
       remainingAttempts: MAX_FAILED_ATTEMPTS,
     };
   }
-
-  const now = new Date();
-  const lockedUntil = data.locked_until ? new Date(data.locked_until) : undefined;
-
-  // Check if lock has expired
-  if (lockedUntil && lockedUntil > now) {
-    return {
-      locked: true,
-      attempts: data.failed_attempts ?? 0,
-      lockedUntil,
-      remainingAttempts: 0,
-    };
-  }
-
-  // Lock expired, reset attempts
-  if (lockedUntil && lockedUntil <= now) {
-    await resetLoginAttempts(normalizedEmail);
-    return {
-      locked: false,
-      attempts: 0,
-      remainingAttempts: MAX_FAILED_ATTEMPTS,
-    };
-  }
-
-  const currentAttempts = data.failed_attempts ?? 0;
-  return {
-    locked: false,
-    attempts: currentAttempts,
-    remainingAttempts: Math.max(0, MAX_FAILED_ATTEMPTS - currentAttempts),
-  };
 }
 
 /**
@@ -192,13 +218,17 @@ export async function checkAccountLockout(
  * @param email - User's email
  */
 export async function resetLoginAttempts(email: string): Promise<void> {
-  const supabase = createAdminClient();
   const normalizedEmail = email.toLowerCase().trim();
-
-  await supabase
-    .from('login_attempts')
-    .delete()
-    .eq('email', normalizedEmail);
+  // Best-effort cleanup — never throw (store/admin client may be unavailable).
+  try {
+    const supabase = createAdminClient();
+    await supabase
+      .from('login_attempts')
+      .delete()
+      .eq('email', normalizedEmail);
+  } catch {
+    /* swallow — leaving the counter to expire naturally is harmless */
+  }
 }
 
 /**
