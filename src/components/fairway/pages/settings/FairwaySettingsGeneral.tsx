@@ -32,6 +32,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { createClient } from '@/lib/supabase/client';
+import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { cn } from '@/lib/utils';
 import { useGolfUser } from '@/contexts/golf-user-context';
@@ -247,6 +248,7 @@ export function FairwaySettingsGeneral() {
   const handleSignOut = async () => {
     void triggerHaptic('heavy');
     const supabase = createClient();
+    await clearActiveTeam();
     await supabase.auth.signOut();
     window.location.href = '/golf/login';
   };

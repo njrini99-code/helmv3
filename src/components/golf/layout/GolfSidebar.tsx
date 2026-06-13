@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -157,6 +158,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
   const handleSignOut = async () => {
     void triggerHaptic('heavy');
     setIsSigningOut(true);
+    await clearActiveTeam();
     await supabase.auth.signOut();
     router.push('/golf/login');
   };

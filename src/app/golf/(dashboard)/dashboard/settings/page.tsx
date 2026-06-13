@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { cn } from '@/lib/utils';
@@ -201,6 +202,7 @@ function LegacyGolfSettingsPage() {
   async function handleSignOut() {
     void triggerHaptic('heavy');
     const supabase = createClient();
+    await clearActiveTeam();
     await supabase.auth.signOut();
     window.location.href = '/golf/login';
   }

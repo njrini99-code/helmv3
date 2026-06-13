@@ -44,6 +44,7 @@ import { TeamSwitcher } from '@/components/golf/TeamSwitcher';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { usePresence } from '@/hooks/use-presence';
 import { createClient } from '@/lib/supabase/client';
+import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { cn } from '@/lib/utils';
 import {
@@ -259,6 +260,7 @@ function ShellFooter() {
     setIsSigningOut(true);
     void triggerHaptic('heavy');
     const supabase = createClient();
+    await clearActiveTeam();
     await supabase.auth.signOut();
     router.push('/golf/login');
   }, [router, isSigningOut]);

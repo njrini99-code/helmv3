@@ -105,3 +105,17 @@ export async function getActiveTeamCookie(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get(ACTIVE_TEAM_COOKIE)?.value ?? null;
 }
+
+/**
+ * Clear the active-team selection. Call from the sign-out flow so the
+ * `golf_active_team` cookie (90-day max-age, httpOnly) does NOT carry over to
+ * the next account on a shared / kiosk browser or the shared demo login.
+ *
+ * The read path (validateCoachTeamAccess) is already staff-strict, so a carried
+ * cookie cannot grant cross-coach access — this is hygiene, ensuring a fresh
+ * login starts on the coach's own default team rather than a stale selection.
+ */
+export async function clearActiveTeam(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(ACTIVE_TEAM_COOKIE);
+}

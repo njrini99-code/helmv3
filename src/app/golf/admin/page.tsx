@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import {
   getAdminDashboardData,
   getAdminDashboardRollup,
@@ -360,6 +361,7 @@ function AdminDashboardContent() {
   }, [searchParams, loadData]);
 
   async function handleSignOut() {
+    await clearActiveTeam();
     await supabase.auth.signOut();
     router.push('/golf/login');
   }

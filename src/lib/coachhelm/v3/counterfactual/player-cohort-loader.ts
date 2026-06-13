@@ -21,16 +21,21 @@ const DEFAULT_COHORT: PlayerCohort = { gender: 'mens', level: null };
 export async function loadPlayerCohort(playerId: string): Promise<PlayerCohort> {
   try {
     const admin = createAdminClient();
+    // List (NOT .maybeSingle()) so a data anomaly of 2+ active memberships can
+    // never throw PGRST116 and silently fall back to men's. A player should have
+    // exactly one active membership (enforced in joinGolfTeam), but if any active
+    // team is women's, classify women's deterministically.
     const { data, error } = await admin
       .from('golf_team_members')
       .select('golf_teams(gender)')
       .eq('player_id', playerId)
-      .eq('status', 'active')
-      .maybeSingle();
-    if (error || !data) return DEFAULT_COHORT;
+      .eq('status', 'active');
+    if (error || !data || data.length === 0) return DEFAULT_COHORT;
 
-    const team = (data as { golf_teams: { gender: string | null } | null }).golf_teams;
-    const gender: CohortGender = team?.gender === 'womens' ? 'womens' : 'mens';
+    const rows = data as Array<{ golf_teams: { gender: string | null } | null }>;
+    const gender: CohortGender = rows.some((r) => r.golf_teams?.gender === 'womens')
+      ? 'womens'
+      : 'mens';
     return { gender, level: null };
   } catch (err) {
     await logServerError(
