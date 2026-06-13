@@ -106,9 +106,19 @@ export async function getCoachTeams(
 }
 
 /**
- * Validate that coachId is actually staffed on teamId (golf_team_coach_staff),
- * OR that the team belongs to the coach's organization.
- * Returns true when the coach is authorised to view that team.
+ * Validate that coachId is authorised to act as the given team.
+ *
+ * STAFF-STRICT: a coach is authorised only when they hold an explicit
+ * golf_team_coach_staff row for THAT team. This is the men's/women's wall — a
+ * coach staffed on the men's team cannot reach the sibling women's team in the
+ * same program by forging/keeping the `golf_active_team` cookie. It matches the
+ * write boundary in setActiveTeam (which also requires staff membership).
+ *
+ * Legacy escape hatch: a coach with NO staff rows ANYWHERE predates the
+ * multi-team model. The program-onboarding backfill creates a head_coach row for
+ * every org-having coach, so this branch is dead in practice; it only keeps a
+ * pre-backfill coach from being locked out of their own org's team. The instant
+ * ANY staff row exists for the coach, authorization is staff-strict.
  *
  * SECURITY: always call this before trusting a cookie value.
  */
@@ -118,7 +128,7 @@ export async function validateCoachTeamAccess(
   teamId: string,
   organizationId: string | null | undefined,
 ): Promise<boolean> {
-  // 1. Primary: explicit staff row.
+  // 1. Canonical: explicit staff row for THIS team.
   const { data: staffRow } = await supabase
     .from('golf_team_coach_staff')
     .select('id')
@@ -128,8 +138,16 @@ export async function validateCoachTeamAccess(
 
   if (staffRow) return true;
 
-  // 2. Fallback: team belongs to coach's org.
-  if (organizationId) {
+  // 2. Legacy-only fallback — ONLY when the coach has zero staff rows anywhere.
+  //    A staffed coach can never reach a non-staffed sibling team via the org,
+  //    which is what keeps the men's/women's wall intact.
+  const { data: anyStaff } = await supabase
+    .from('golf_team_coach_staff')
+    .select('id')
+    .eq('coach_id', coachId)
+    .limit(1);
+
+  if ((!anyStaff || anyStaff.length === 0) && organizationId) {
     const { data: team } = await supabase
       .from('golf_teams')
       .select('id')

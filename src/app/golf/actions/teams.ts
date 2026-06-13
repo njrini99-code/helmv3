@@ -303,7 +303,8 @@ export async function processGolfTeamInvitation(joinCode: string, playerId: stri
  */
 export async function createTeam(
   name: string,
-  season: string
+  season: string,
+  gender: 'mens' | 'womens' = 'mens'
 ): Promise<TeamActionResult<TeamData>> {
   const supabase = await createClient();
 
@@ -332,11 +333,13 @@ export async function createTeam(
 
   const joinCode = generateJoinCode();
 
-  // Create team linked to coach's organization
+  // Create team linked to coach's organization. gender is written explicitly so
+  // the legacy create path no longer silently defaults every team to 'mens'.
   const { data: newTeam, error: teamError } = await supabase
     .from('golf_teams')
     .insert({
       name: name.trim(),
+      gender,
       season: season,
       join_code: joinCode,
       organization_id: coach.organization_id,
@@ -346,6 +349,12 @@ export async function createTeam(
     .single();
 
   if (teamError) {
+    // 23505 = golf_teams_org_gender_uidx: the program already has a team of this
+    // gender (one men's + one women's per program).
+    if (teamError.code === '23505') {
+      const label = gender === 'mens' ? "Men's" : "Women's";
+      return { success: false, error: `Your program already has a ${label} team.` };
+    }
     return { success: false, error: 'Failed to create team. Please try again.' };
   }
 
@@ -1202,10 +1211,20 @@ export async function addSecondTeam(
       organization_id: coach.organization_id,
       created_by: coach.id,
     })
-    .select('id, name, season, join_code, created_at')
+    .select('id, name, season, join_code, created_at, organization_id')
     .single();
 
   if (teamError || !newTeam) {
+    // 23505 = the golf_teams_org_gender_uidx partial-unique guard. This catches
+    // the read-then-write race the app pre-check above cannot (two concurrent
+    // addSecondTeam calls), so the DB is the real one-team-per-gender authority.
+    if (teamError?.code === '23505') {
+      const label = gender === 'mens' ? "Men's" : "Women's";
+      return {
+        success: false,
+        error: `You already have a ${label} team in this program. Each program can have one Men's and one Women's team.`,
+      };
+    }
     await logServerError(
       `[addSecondTeam] Team creation failed: ${teamError instanceof Error ? teamError.message : String(teamError)}`,
       { action: 'teams.addSecondTeam' }
@@ -1213,8 +1232,21 @@ export async function addSecondTeam(
     return { success: false, error: 'Failed to create team. Please try again.' };
   }
 
+  // Defense-in-depth: the privileged staff insert below uses the admin client,
+  // so assert the team we are about to grant head-coach on really belongs to the
+  // caller's own organization before crossing the RLS-bypass boundary.
+  if (newTeam.organization_id !== coach.organization_id) {
+    await supabase.from('golf_teams').delete().eq('id', newTeam.id);
+    await logServerError(
+      `[addSecondTeam] org mismatch: team ${newTeam.organization_id} vs coach ${coach.organization_id}`,
+      { action: 'teams.addSecondTeam' }
+    );
+    return { success: false, error: 'Failed to add team. Please try again.' };
+  }
+
   // Use admin client for the staff insert — mirrors onboarding bootstrap pattern.
-  // is_primary = false because this is NOT the coach's primary team.
+  // is_primary = false because this is NOT the coach's primary team; the head
+  // coach still manages it via is_golf_team_head_coach (role-based) RLS.
   const admin = createAdminClient();
   const { error: staffError } = await admin
     .from('golf_team_coach_staff')
