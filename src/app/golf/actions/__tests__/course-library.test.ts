@@ -13,7 +13,7 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
 let currentClient: unknown = null;
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => currentClient }));
 
-import { createCourse, listCourses, saveTeamCourse, updateTee } from '../course-library';
+import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults } from '../course-library';
 
 // ── A scriptable, chainable Supabase query-builder mock ──────────────────────
 type Scripted = { maybeSingle?: unknown; single?: unknown; resolve?: unknown };
@@ -143,6 +143,45 @@ describe('listCourses', () => {
     // Exactly ONE comma — our own separator between the two ilike conditions.
     expect(orArg.split(',')).toHaveLength(2);
     expect(orArg).not.toContain(',deleted_at');
+  });
+});
+
+describe('getTeeRoundDefaults (new-round loader)', () => {
+  it('shapes a tee + its holes (sorted) as new-round defaults', async () => {
+    const teeRow = {
+      id: 't1', course_id: 'c1', tee_name: 'Blue', normalized_tee_name: 'blue',
+      holes_count: 18, is_draft: false, category: 'mens', course_rating: 72.1,
+      slope_rating: 132, deleted_at: null,
+    };
+    const holeRows = [
+      { id: 'h2', tee_id: 't1', hole_number: 2, par: 4, yardage: 410, handicap_index: 5 },
+      { id: 'h1', tee_id: 't1', hole_number: 1, par: 4, yardage: 400, handicap_index: 7 },
+    ];
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_course_tees: tableBuilder({ maybeSingle: { data: teeRow, error: null } }),
+      golf_course_tee_holes: tableBuilder({ resolve: { data: holeRows, error: null } }),
+      golf_courses: tableBuilder({ maybeSingle: { data: { name: 'Pebble Beach' }, error: null } }),
+    });
+
+    const res = await getTeeRoundDefaults('t1');
+    expect(res).not.toBeNull();
+    expect(res!.courseName).toBe('Pebble Beach');
+    expect(res!.teeName).toBe('Blue');
+    expect(res!.courseId).toBe('c1');
+    expect(res!.holes.map((h) => h.holeNumber)).toEqual([1, 2]); // sorted
+    expect(res!.holes[0]).toEqual({ holeNumber: 1, par: 4, yardage: 400, handicapIndex: 7 });
+  });
+
+  it('returns null for a soft-deleted tee (not offered as a default)', async () => {
+    const teeRow = {
+      id: 't1', course_id: 'c1', tee_name: 'Blue', normalized_tee_name: 'blue',
+      holes_count: 18, is_draft: false, deleted_at: '2026-01-01T00:00:00Z',
+    };
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_course_tees: tableBuilder({ maybeSingle: { data: teeRow, error: null } }),
+      golf_course_tee_holes: tableBuilder({ resolve: { data: [], error: null } }),
+    });
+    expect(await getTeeRoundDefaults('t1')).toBeNull();
   });
 });
 

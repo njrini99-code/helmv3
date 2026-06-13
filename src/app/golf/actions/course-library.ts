@@ -198,6 +198,56 @@ export async function getTeeWithHoles(teeId: string): Promise<GolfCourseTeeWithH
   return { ...mapTeeRow(teeRow), holes: (holeRows ?? []).map(mapTeeHoleRow) };
 }
 
+/** Hole-config defaults for the new-round flow, sourced from a tee set. The
+ *  round form snapshots these into golf_holes at submit; the tee is provenance,
+ *  not the live source of truth for an already-recorded round. */
+export interface TeeRoundDefaults {
+  teeId: string;
+  teeName: string;
+  category: GolfTeeCategory | null;
+  courseId: string;
+  courseName: string;
+  holesCount: number;
+  isDraft: boolean;
+  courseRating: number | null;
+  slopeRating: number | null;
+  holes: { holeNumber: number; par: number; yardage: number | null; handicapIndex: number | null }[];
+}
+
+/** Load a tee set shaped as new-round defaults (Phase 4 tee picker calls this). */
+export async function getTeeRoundDefaults(teeId: string): Promise<TeeRoundDefaults | null> {
+  const supabase = await createClient();
+  const tee = await getTeeWithHoles(teeId);
+  if (!tee || tee.deleted_at) return null;
+
+  const { data: course } = await supabase
+    .from('golf_courses')
+    .select('name')
+    .eq('id', tee.course_id)
+    .maybeSingle();
+
+  return {
+    teeId: tee.id,
+    teeName: tee.tee_name,
+    category: tee.category,
+    courseId: tee.course_id,
+    courseName: (course?.name as string) ?? '',
+    holesCount: tee.holes_count,
+    isDraft: tee.is_draft,
+    courseRating: tee.course_rating,
+    slopeRating: tee.slope_rating,
+    holes: tee.holes
+      .slice()
+      .sort((a, b) => a.hole_number - b.hole_number)
+      .map((h) => ({
+        holeNumber: h.hole_number,
+        par: h.par,
+        yardage: h.yardage,
+        handicapIndex: h.handicap_index,
+      })),
+  };
+}
+
 /** Append-only course edit history, newest first. */
 export async function getCourseEditHistory(courseId: string, limit = 50) {
   const supabase = await createClient();
