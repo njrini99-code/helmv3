@@ -194,7 +194,7 @@ function CourseRow({ course, onClick }: { course: GolfCourse; onClick: () => voi
   );
 }
 
-function TeePickRow({ tee, disabled, onClick }: { tee: GolfCourseTee; disabled: boolean; onClick: () => void }) {
+export function TeePickRow({ tee, disabled, onClick }: { tee: GolfCourseTee; disabled: boolean; onClick: () => void }) {
   const cat = tee.category ? CATEGORY_LABEL[tee.category] ?? tee.category : null;
   const facts = [
     typeof tee.total_par === 'number' ? `Par ${tee.total_par}` : null,
@@ -232,7 +232,7 @@ function TeePickRow({ tee, disabled, onClick }: { tee: GolfCourseTee; disabled: 
   );
 }
 
-function SkeletonRows() {
+export function SkeletonRows() {
   return (
     <div className="space-y-2 pt-1">
       {[0, 1, 2].map((i) => (

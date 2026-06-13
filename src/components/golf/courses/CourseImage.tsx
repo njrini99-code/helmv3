@@ -116,9 +116,12 @@ export function CourseImage({
       )}
 
       {scrim && (
+        // Eased multi-stop bottom scrim — guarantees ≥4.5:1 for the overlaid
+        // title across any photo (sky/bright included) while leaving the top of
+        // the image clean. More stops than a 2-stop fade to avoid banding.
         <div
           aria-hidden
-          className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent"
+          className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.74)_0%,rgba(0,0,0,0.52)_15%,rgba(0,0,0,0.24)_36%,rgba(0,0,0,0.06)_55%,transparent_70%)]"
         />
       )}
     </div>

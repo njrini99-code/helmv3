@@ -22,6 +22,7 @@ import {
 } from '@/app/golf/actions/golf';
 import { RecentCoursesQuickPick } from '@/components/golf/rounds/new/RecentCoursesQuickPick';
 import { TeePickerDrawer } from '@/components/golf/courses/TeePickerDrawer';
+import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/FairwayCoursePicker';
 import { contributeCourseFromRound, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
@@ -97,7 +98,11 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
-  const [showResumePrompt, setShowResumePrompt] = useState(!!existingInProgressRound);
+  // Unfinished rounds are surfaced on the /rounds page (UnfinishedRoundsSection),
+  // not as a gate here — starting a New Round lands straight on the course
+  // carousel. (existingInProgressRound is still used for emergency-save/status
+  // wiring below; we just never show the resume prompt.)
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
   const resumePromptUpdatedAtRef = useRef<string | undefined>(undefined);
 
   // Hide mobile bottom nav for entire round flow (setup → holes → tracking → submit)
@@ -749,6 +754,21 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     setPreloadedHoleConfigs(configs);
     if (d.holesCount === 9 || d.holesCount === 18) setHolesPerRound(d.holesCount);
   }, []);
+
+  // Redesign: the course picker IS the first screen of a new round. Auto-open
+  // it once on a fresh start (not resuming, nothing chosen yet) so picking a
+  // course is the landing action; "Browse course library" stays as the reopen
+  // affordance. Closing it without picking falls back to the setup screen and
+  // does not reopen (the ref latches).
+  const autoOpenedPickerRef = useRef(false);
+  useEffect(() => {
+    if (!redesign || showResumePrompt || step !== 'setup') return;
+    if (autoOpenedPickerRef.current) return;
+    const nothingChosenYet =
+      !selectedCourseId && selectedTeeIdRef.current == null && !setupData.courseName;
+    autoOpenedPickerRef.current = true;
+    if (nothingChosenYet) setTeePickerOpen(true);
+  }, [redesign, showResumePrompt, step, selectedCourseId, setupData.courseName]);
 
   // Handle saved course selection
   const handleSavedCourseSelect = (courseId: string | null) => {
@@ -1663,7 +1683,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           onHolesSave={handleHolesSave}
           onHolesBack={() => setStep('setup')}
         />
-        <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
+        <FairwayCoursePicker open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
       </div>
     );
   }
@@ -1734,7 +1754,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               <IconMapPin size={16} aria-hidden /> Browse course library
             </Button>
           )}
-          <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
+          {redesign
+            ? <FairwayCoursePicker open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
+            : <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />}
 
           {/* Fallback: courses you've played before (per-player). Hidden when empty. */}
           {recentCourses.length > 0 && !showResumePrompt && (

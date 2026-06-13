@@ -127,10 +127,14 @@ export async function loginAction(
     };
   }
 
-  // Successful login - reset tracking
+  // Successful login - reset tracking. Best-effort: resetting the failed-
+  // attempt counter must never break a successful login. resetLoginAttempts
+  // uses the service-role admin client, which throws when SUPABASE_SERVICE_ROLE_KEY
+  // is absent (CI / preview); swallow so auth still succeeds (worst case the
+  // counter is left to expire naturally).
   resetRateLimit(`login:email:${normalizedEmail}`);
   resetRateLimit(`login:ip:${ip}`);
-  await resetLoginAttempts(normalizedEmail);
+  await resetLoginAttempts(normalizedEmail).catch(() => {});
 
   // Log successful login event (fire-and-forget)
   // Capture demo-login tracing metadata server-side (is_demo is never trusted from client)

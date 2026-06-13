@@ -73,7 +73,12 @@ test.describe('Cloud Course Library — authenticated flow', () => {
     await page.fill('input[type="email"]', GOLF_EMAIL as string);
     await page.fill('input[type="password"]', GOLF_PASSWORD as string);
     await page.click('button[type="submit"]');
-    await page.waitForURL('**/golf/dashboard**', { timeout: 10000 });
+    // Login may land on the dashboard, hub, or onboarding depending on the
+    // account — just wait until we've left the login page (any authed golf URL).
+    await page.waitForURL(
+      (url) => url.pathname.startsWith('/golf/') && !url.pathname.endsWith('/login'),
+      { timeout: 20000 },
+    );
   });
 
   test('renders the course library', async ({ page }) => {
@@ -121,5 +126,51 @@ test.describe('Cloud Course Library — authenticated flow', () => {
     await expect(
       dialog.getByPlaceholder(/Search courses/i).or(page.getByPlaceholder(/Search courses/i)),
     ).toBeVisible();
+  });
+
+  // Capture screenshots of the premium course picker for review as CI artifacts
+  // (uploaded by .github/workflows/playwright.yml). Requires
+  // NEXT_PUBLIC_REDESIGN=true so the redesign FairwayCoursePicker renders
+  // (otherwise this shoots the legacy TeePickerDrawer). Best-effort — the point
+  // is the image, not a gate; a missing affordance skips rather than fails.
+  test('capture: premium course picker screenshots', async ({ page }) => {
+    const dir = 'e2e-screenshots';
+
+    await page.goto('/golf/dashboard/rounds/new');
+    const browse = page.getByRole('button', { name: /Browse course library/i });
+    await browse.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+    if (!(await browse.isVisible().catch(() => false))) {
+      // Capture whatever rendered so the artifact reveals where it's stuck
+      // (login redirect, onboarding, resume prompt) instead of silently skipping.
+      await page.screenshot({ path: `${dir}/picker-debug-no-cta.png`, fullPage: true });
+      test.skip(true, 'New-round "Browse course library" CTA not present (resuming a round?).');
+      return;
+    }
+    await browse.click();
+
+    // Wait for the picker sheet, then let the entrance + coverflow settle.
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `${dir}/picker-desktop-stage-a.png` });
+
+    // If the carousel has cards, advance it once to capture the coverflow mid-state.
+    const next = page.getByRole('button', { name: /Next course/i });
+    if (await next.isVisible().catch(() => false)) {
+      await next.click();
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: `${dir}/picker-desktop-coverflow.png` });
+    }
+
+    // Mobile full-screen view (the primary form factor for this sheet).
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${dir}/picker-mobile-stage-a.png` });
+
+    // The standalone library page too (CourseLibraryClient), for completeness.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(COURSES_PATH);
+    await expect(page.locator('h1')).toContainText('Courses', { timeout: 10000 });
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${dir}/course-library-page.png`, fullPage: true });
   });
 });

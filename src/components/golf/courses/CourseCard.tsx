@@ -55,9 +55,9 @@ export function CourseCard({
         aria-label={`Open ${course.name}`}
         className={cn(
           'group relative block w-full overflow-hidden rounded-fw-lg text-left',
-          'shadow-fw-soft ring-1 ring-black/5',
-          'transition-transform [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
-          'hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+          'shadow-soft ring-1 ring-black/5',
+          'transition-[transform,box-shadow] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
+          'hover:-translate-y-1 hover:shadow-pop active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
           'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
           className,
         )}
@@ -69,7 +69,7 @@ export function CourseCard({
             scrim
             priority={priority}
             sizes="(max-width: 768px) 100vw, 720px"
-            className="transition-transform [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] group-hover:scale-[1.03] motion-reduce:group-hover:scale-100"
+            className="transition-transform [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] group-hover:scale-[1.06] motion-reduce:group-hover:scale-100"
           />
           {pinned && (
             <span className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-black/35 px-2.5 py-1 text-caption font-medium text-white backdrop-blur-sm">
@@ -77,7 +77,7 @@ export function CourseCard({
             </span>
           )}
           <div className="absolute inset-x-0 bottom-0 p-5">
-            <h3 className="font-fw-display text-title-2 font-semibold tracking-tight text-white drop-shadow-sm">
+            <h3 className="line-clamp-2 font-fw-display text-title-2 font-semibold tracking-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)]">
               {course.name}
             </h3>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-body-sm text-white/85">
@@ -108,9 +108,9 @@ export function CourseCard({
       aria-label={`Open ${course.name}`}
       className={cn(
         'group relative flex w-full flex-col overflow-hidden rounded-fw-card text-left',
-        'bg-surface border border-border-subtle shadow-fw-flat',
+        'bg-surface border border-border-subtle shadow-flat',
         'transition-[transform,box-shadow] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
-        'hover:-translate-y-0.5 hover:shadow-fw-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+        'hover:-translate-y-0.5 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
         className,
       )}
