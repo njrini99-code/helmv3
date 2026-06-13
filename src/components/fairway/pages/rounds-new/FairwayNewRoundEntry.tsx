@@ -70,6 +70,8 @@ export interface FairwayNewRoundEntryProps {
   onContinueResume: () => void;
   onStartFresh: () => void;
 
+  /** Opens the Cloud Course Library tee picker (primary course-selection CTA). */
+  onBrowseCourseLibrary: () => void;
   recentCourses: RecentPlayedCourse[];
   onQuickPickConfirm: (course: RecentPlayedCourse) => void;
   isOnline: boolean;
@@ -318,6 +320,20 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             description="Pick a course, set up your scorecard, then start tracking."
           />
         </m.div>
+
+        {/* PRIMARY course source: the shared Cloud Course Library (course + tee). */}
+        {!showResumePrompt && (
+          <m.div {...enter(i++)}>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={props.onBrowseCourseLibrary}
+              className="w-full justify-center"
+            >
+              <MapPin size={16} aria-hidden /> Browse course library
+            </Button>
+          </m.div>
+        )}
 
         {props.recentCourses.length > 0 && !showResumePrompt && (
           <m.div {...enter(i++)}>
