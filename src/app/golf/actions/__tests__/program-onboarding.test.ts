@@ -168,6 +168,41 @@ describe('completeCoachOnboarding', () => {
     expect(row.is_primary).toBe(true);
   });
 
+  it('trims the organization name before insert (whitespace-variant dup guard)', async () => {
+    const result = await completeCoachOnboarding({
+      orgName: '  State University  ',
+      fullName: 'Jane Coach',
+      gender: 'mens' as const,
+    });
+
+    expect(result.success).toBe(true);
+    const orgInsert = serverMock.insertCalls.find((c) => c.table === 'organizations');
+    expect((orgInsert!.rows as Record<string, unknown>).name).toBe('State University');
+    // The team-name fallback uses the trimmed org name too.
+    const teamInsert = serverMock.insertCalls.find((c) => c.table === 'golf_teams');
+    expect((teamInsert!.rows as Record<string, unknown>).name).toBe('State University Golf');
+  });
+
+  it('returns a friendly error (no duplicate org) when the name already exists', async () => {
+    // Simulate the 23505 raised by organizations_normalized_name_uidx.
+    const dupErr = {
+      message: 'duplicate key value violates unique constraint "organizations_normalized_name_uidx"',
+      code: '23505',
+    };
+    serverMock.seed('organizations', null, dupErr);
+
+    const result = await completeCoachOnboarding({
+      orgName: 'Duke University ',
+      fullName: 'Jane Coach',
+      gender: 'mens' as const,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/already exists/i);
+    // Must NOT proceed to create a coach/team after the org collision.
+    expect(serverMock.insertCalls.find((c) => c.table === 'golf_coaches')).toBeUndefined();
+  });
+
   it('returns success: false when team creation fails', async () => {
     serverMock.seed('golf_teams', null, { message: 'DB error: insert failed' });
 
