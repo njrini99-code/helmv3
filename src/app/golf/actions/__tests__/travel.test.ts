@@ -131,6 +131,27 @@ describe('travel server actions', () => {
       expect(result.error).toContain('Invalid travel itinerary data');
     });
 
+    it('surfaces an actionable message when departure date is empty (iOS picker dismissed)', async () => {
+      // The native iOS date picker returns "" when dismissed without a
+      // selection. The action must hand the UI a field-specific message so the
+      // toast tells the coach what's missing — not the generic copy.
+      const result = await createGolfTravelItinerary({
+        ...validInput,
+        departure_date: '',
+      });
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Departure date is required');
+    });
+
+    it('surfaces an actionable message for a malformed departure date', async () => {
+      const result = await createGolfTravelItinerary({
+        ...validInput,
+        departure_date: '03/15/2026',
+      });
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('YYYY-MM-DD');
+    });
+
     it('returns error for invalid transportation type', async () => {
       const result = await createGolfTravelItinerary({
         ...validInput,

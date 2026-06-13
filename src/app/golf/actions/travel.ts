@@ -198,9 +198,15 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
+      // Surface the departure-date message specifically. It's the one field an
+      // iOS user can silently get wrong (the native date picker returns "" when
+      // dismissed without a selection), and the new toast needs an actionable
+      // message — not the generic "check your inputs" — to tell them what's
+      // missing. Any OTHER field validation still falls back to the generic copy.
+      const dateIssue = error.issues.find((i) => i.path[0] === 'departure_date');
       return {
         success: false,
-        error: 'Invalid travel itinerary data. Please check your inputs.',
+        error: dateIssue?.message || 'Invalid travel itinerary data. Please check your inputs.',
       };
     }
     await logServerError(
