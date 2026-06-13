@@ -4,7 +4,7 @@ import { randomInt } from 'crypto';
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
@@ -508,9 +508,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  */
 async function getCoachTeamId(
   supabase: SupabaseClient,
-  organizationId: string | null
+  organizationId: string | null,
+  coachId: string | null
 ): Promise<string | null> {
-  return resolveCoachTeamId(supabase, organizationId);
+  // Cookie-aware: honours the program head's golf_active_team selection
+  // (validated server-side) so coach WRITES target the toggled team.
+  return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
 
 /**
@@ -1952,7 +1955,7 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
 
     if (coach) {
       // Coach - get team_id via organization
-      teamId = await getCoachTeamId(supabase, coach.organization_id);
+      teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
       if (!teamId) {
         return { success: false, error: 'Coach not assigned to a team' };
       }
@@ -2215,7 +2218,7 @@ export async function updateGolfEvent(
       return { success: false, error: 'Only coaches can update team events' };
     }
 
-    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
     if (!teamId) {
       return { success: false, error: 'Coach not assigned to a team' };
     }
@@ -2429,7 +2432,7 @@ export async function deleteGolfEvent(
       return { success: false, error: 'Only coaches can delete team events' };
     }
 
-    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
     if (!teamId) {
       return { success: false, error: 'Coach not assigned to a team' };
     }
@@ -2871,7 +2874,7 @@ export async function createAnnouncement(data: {
       return { success: false, error: 'Coach profile not found' };
     }
 
-    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
     if (!teamId) {
       return { success: false, error: 'Coach not assigned to a team' };
     }
@@ -2937,7 +2940,7 @@ export async function invitePlayerToTeam(
       return { success: false, error: 'Coach profile not found' };
     }
 
-    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
     if (!teamId) {
       return { success: false, error: 'Coach not assigned to a team' };
     }

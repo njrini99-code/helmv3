@@ -42,6 +42,12 @@ export interface AppShellProps {
   brand?: React.ReactNode;
   /** Pinned rail footer (settings / sign-out). */
   sidebarFooter?: React.ReactNode;
+  /**
+   * Extra content rendered inside the sidebar identity block, below the
+   * user name and team label. Used for the team-switcher (multi-team coaches).
+   * Hidden when the rail is collapsed.
+   */
+  sidebarIdentityExtra?: React.ReactNode;
 
   /** Breadcrumb trail for the top bar. */
   breadcrumbs?: readonly Breadcrumb[];
@@ -99,6 +105,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     user,
     brand,
     sidebarFooter,
+    sidebarIdentityExtra,
     breadcrumbs,
     onSearchOpen,
     searchPlaceholder = DEFAULT_PLACEHOLDER,
@@ -224,6 +231,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     user,
     brand,
     footer: sidebarFooter,
+    identityExtra: sidebarIdentityExtra,
     pathname,
     linkComponent,
   };

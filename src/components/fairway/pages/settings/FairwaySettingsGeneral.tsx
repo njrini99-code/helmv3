@@ -15,7 +15,8 @@
  *
  *   • useGolfUser()                       — '@/contexts/golf-user-context'
  *   • useAppearancePreferences()          — '@/hooks/golf/use-appearance-preferences'
- *   • resolveCoachTeamId / fromUntyped    — '@/lib/golf/resolve-team' / '@/lib/supabase/untyped'
+ *   • fromUntyped                         — '@/lib/supabase/untyped'
+ *     (team panels bind to useGolfUser().teamId — the cookie-aware ACTIVE team)
  *   • BENCHMARK_* (sg benchmark)          — '@/lib/golf/sg-benchmarks'
  *   • AvatarUpload / ConfirmDialog        — '@/components/ui/*'
  *   • JoinTeamSection / CoachHelmToggle   — '@/components/golf/*'
@@ -32,7 +33,6 @@ import Link from 'next/link';
 
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { cn } from '@/lib/utils';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
@@ -1086,8 +1086,14 @@ function PlayerGolfDetailsPanel({
 
 /* ── Team settings (coach) ────────────────────────────────────────────────── */
 
-function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
+/** Exported for tests — must follow the program head's ACTIVE team toggle. */
+export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
   const supabase = createClient();
+  const golfUser = useGolfUser();
+  // ACTIVE team from the layout-resolved context (cookie-aware) — the panel
+  // must show and EDIT the same team every server page renders, so a program
+  // head toggled to Women's edits the women's team here, never the default.
+  const activeTeamId = golfUser.teamId ?? null;
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
@@ -1102,28 +1108,16 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: coach } = await supabase
-        .from('golf_coaches')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!coach?.organization_id) {
+      if (!activeTeamId) {
         setLoaded(true);
         return;
       }
 
-      const resolvedTeamId = await resolveCoachTeamId(supabase, coach.organization_id);
-      const { data: team } = resolvedTeamId
-        ? await supabase
-            .from('golf_teams')
-            .select('id, name, season, organization_id')
-            .eq('id', resolvedTeamId)
-            .maybeSingle()
-        : { data: null };
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id, name, season, organization_id')
+        .eq('id', activeTeamId)
+        .maybeSingle();
 
       if (team) {
         setTeamId(team.id);
@@ -1149,7 +1143,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
       }
       setLoaded(true);
     })();
-  }, [supabase]);
+  }, [supabase, activeTeamId]);
 
   const handleSave = async () => {
     if (!teamId || !teamName.trim()) {
@@ -1252,8 +1246,13 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
 
 /* ── Invite settings (coach) ──────────────────────────────────────────────── */
 
-function InviteSettingsPanel() {
+/** Exported for tests — must follow the program head's ACTIVE team toggle. */
+export function InviteSettingsPanel() {
   const supabase = createClient();
+  const golfUser = useGolfUser();
+  // ACTIVE team from the layout-resolved context (cookie-aware) — invite codes
+  // must be generated for the team the program head is currently viewing.
+  const activeTeamId = golfUser.teamId ?? null;
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
@@ -1262,28 +1261,16 @@ function InviteSettingsPanel() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: coach } = await supabase
-        .from('golf_coaches')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!coach?.organization_id) {
+      if (!activeTeamId) {
         setLoaded(true);
         return;
       }
 
-      const resolvedTeamId = await resolveCoachTeamId(supabase, coach.organization_id);
-      const { data: team } = resolvedTeamId
-        ? await supabase
-            .from('golf_teams')
-            .select('id, join_code')
-            .eq('id', resolvedTeamId)
-            .maybeSingle()
-        : { data: null };
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id, join_code')
+        .eq('id', activeTeamId)
+        .maybeSingle();
 
       if (team) {
         setTeamId(team.id);
@@ -1291,7 +1278,7 @@ function InviteSettingsPanel() {
       }
       setLoaded(true);
     })();
-  }, [supabase]);
+  }, [supabase, activeTeamId]);
 
   const generateNewCode = async () => {
     if (!teamId) return;

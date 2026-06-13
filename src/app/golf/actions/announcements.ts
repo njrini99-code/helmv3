@@ -19,7 +19,7 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 import { notifyTeamAnnouncement } from '@/lib/notifications';
 import { sendBulkPushNotification } from '@/lib/notifications/push';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 
@@ -57,10 +57,12 @@ const createAnnouncementSchema = z.object({
 
 async function getCoachTeamId(
   supabase: SupabaseClient,
-  organizationId: string | null
+  organizationId: string | null,
+  coachId: string | null
 ): Promise<string | null> {
-  // Delegates to the shared deterministic resolver (never throws on orgs with >1 team).
-  return resolveCoachTeamId(supabase, organizationId);
+  // Cookie-aware: honours the program head's golf_active_team selection
+  // (validated server-side) so coach WRITES target the toggled team.
+  return resolveCoachTeamIdWithCookie(supabase, organizationId, coachId);
 }
 
 async function getTeamPlayerIds(
@@ -102,7 +104,7 @@ export async function createEnrichedAnnouncement(input: {
       .single();
     if (!coach) return { success: false, error: 'Coach profile not found' };
 
-    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
     if (!teamId) return { success: false, error: 'Coach not assigned to a team' };
 
     // 1. Create the announcement

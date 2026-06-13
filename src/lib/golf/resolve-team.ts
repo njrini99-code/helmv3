@@ -11,6 +11,188 @@ import type { Database } from '@/lib/types/database';
  */
 type TypedSupabaseClient = SupabaseClient<Database>;
 
+/** Lightweight team descriptor returned by getCoachTeams(). */
+export interface CoachTeamOption {
+  id: string;
+  name: string;
+  gender: string;
+}
+
+/**
+ * Everything the team-switcher needs to decide whether — and what — to render.
+ *
+ * Switching is a PROGRAM-HEAD capability:
+ *   canSwitch = the coach is explicitly staffed on >1 team via
+ *   golf_team_coach_staff AND holds role 'head_coach' on at least one of
+ *   those staff rows. A multi-team assistant keeps default-team behaviour
+ *   (no toggle, no switch). A single-team head coach (e.g. the women's head
+ *   coach of a two-team program) sees only their own team — no toggle.
+ */
+export interface CoachTeamSwitchContext {
+  /** Teams the coach can see (staff-derived; org fallback for display only). */
+  teams: CoachTeamOption[];
+  /** True when ≥1 golf_team_coach_staff row carries role 'head_coach'. */
+  isHeadCoach: boolean;
+  /** True when the switcher should render AND setActiveTeam may switch. */
+  canSwitch: boolean;
+}
+
+/**
+ * Resolve the coach's team list AND the head-coach switching gate in one place.
+ *
+ * - Teams come from golf_team_coach_staff (canonical). When the coach has no
+ *   staff rows, the org-based team list is returned for DISPLAY purposes, but
+ *   `canSwitch` is always false in that case (no staff row ⇒ no head_coach role).
+ * - `canSwitch` requires BOTH >1 staffed team AND a 'head_coach' staff role.
+ */
+export async function getCoachTeamSwitchContext(
+  supabase: TypedSupabaseClient,
+  coachId: string | null | undefined,
+  organizationId: string | null | undefined,
+): Promise<CoachTeamSwitchContext> {
+  if (!coachId) return { teams: [], isHeadCoach: false, canSwitch: false };
+
+  // 1. Canonical: golf_team_coach_staff (the source of truth for multi-team coaches).
+  const { data: staffRows } = await supabase
+    .from('golf_team_coach_staff')
+    .select('team_id, role')
+    .eq('coach_id', coachId);
+
+  const rows = staffRows ?? [];
+  const staffTeamIds = [...new Set(rows.map((r) => r.team_id).filter(Boolean))] as string[];
+  const isHeadCoach = rows.some((r) => r.role === 'head_coach');
+
+  if (staffTeamIds.length > 0) {
+    const { data: teams } = await supabase
+      .from('golf_teams')
+      .select('id, name, gender')
+      .in('id', staffTeamIds)
+      .order('name', { ascending: true });
+    const teamList = (teams ?? []) as CoachTeamOption[];
+    return {
+      teams: teamList,
+      isHeadCoach,
+      canSwitch: isHeadCoach && teamList.length > 1,
+    };
+  }
+
+  // 2. Fallback: org-based lookup (for coaches not yet in golf_team_coach_staff).
+  //    Display-only — no staff rows means no head_coach role, so never switchable.
+  if (organizationId) {
+    const { data: teams } = await supabase
+      .from('golf_teams')
+      .select('id, name, gender')
+      .eq('organization_id', organizationId)
+      .order('name', { ascending: true });
+    return { teams: (teams ?? []) as CoachTeamOption[], isHeadCoach: false, canSwitch: false };
+  }
+
+  return { teams: [], isHeadCoach: false, canSwitch: false };
+}
+
+/**
+ * Return all teams a coach is explicitly staffed on (via golf_team_coach_staff).
+ * Falls back to the org-based lookup when the staff table has no rows for this coach.
+ *
+ * @returns Array of teams (may be empty if the coach has no team assignments).
+ */
+export async function getCoachTeams(
+  supabase: TypedSupabaseClient,
+  coachId: string | null | undefined,
+  organizationId: string | null | undefined,
+): Promise<CoachTeamOption[]> {
+  const ctx = await getCoachTeamSwitchContext(supabase, coachId, organizationId);
+  return ctx.teams;
+}
+
+/**
+ * Validate that coachId is actually staffed on teamId (golf_team_coach_staff),
+ * OR that the team belongs to the coach's organization.
+ * Returns true when the coach is authorised to view that team.
+ *
+ * SECURITY: always call this before trusting a cookie value.
+ */
+export async function validateCoachTeamAccess(
+  supabase: TypedSupabaseClient,
+  coachId: string,
+  teamId: string,
+  organizationId: string | null | undefined,
+): Promise<boolean> {
+  // 1. Primary: explicit staff row.
+  const { data: staffRow } = await supabase
+    .from('golf_team_coach_staff')
+    .select('id')
+    .eq('coach_id', coachId)
+    .eq('team_id', teamId)
+    .maybeSingle();
+
+  if (staffRow) return true;
+
+  // 2. Fallback: team belongs to coach's org.
+  if (organizationId) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('id', teamId)
+      .eq('organization_id', organizationId)
+      .maybeSingle();
+    if (team) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Cookie-aware team resolver.
+ *
+ * Priority order:
+ *   1. `cookieTeamId` value — if provided AND the coach has access to it.
+ *   2. The coach's own staffed team (golf_team_coach_staff; is_primary first,
+ *      then oldest staff row). A coach staffed on a specific team — e.g. the
+ *      women's head coach of a two-team program — always lands on THEIR team,
+ *      never the org's member-ranked pick.
+ *   3. Fall back to the deterministic org-based resolver (existing behaviour).
+ *
+ * SECURITY: the cookie value is validated against golf_team_coach_staff / org
+ * before use so an attacker cannot forge access to another team.
+ *
+ * @param supabase      A server-scoped Supabase client.
+ * @param organizationId The coach's organization_id.
+ * @param coachId       The coach's golf_coaches.id.
+ * @param cookieTeamId  Value from the `golf_active_team` cookie (may be undefined).
+ * @returns The resolved team id, or null when no team can be found.
+ */
+export async function resolveCoachActiveTeamId(
+  supabase: TypedSupabaseClient,
+  organizationId: string | null | undefined,
+  coachId: string | null | undefined,
+  cookieTeamId: string | null | undefined,
+): Promise<string | null> {
+  // Validate the cookie value when one is present.
+  if (cookieTeamId && coachId) {
+    const allowed = await validateCoachTeamAccess(supabase, coachId, cookieTeamId, organizationId);
+    if (allowed) return cookieTeamId;
+    // Invalid / tampered cookie — fall through to default.
+  }
+
+  // No valid cookie → prefer the coach's own staffed team (the canonical
+  // coach↔team relationship). is_primary first, then the oldest staff row
+  // ("the coach's first team").
+  if (coachId) {
+    const { data: staffRows } = await supabase
+      .from('golf_team_coach_staff')
+      .select('team_id, is_primary')
+      .eq('coach_id', coachId)
+      .order('is_primary', { ascending: false })
+      .order('created_at', { ascending: true });
+    const staffTeamId = staffRows?.[0]?.team_id;
+    if (staffTeamId) return staffTeamId;
+  }
+
+  // No staff rows → original deterministic org-based resolution.
+  return resolveCoachTeamId(supabase, organizationId, coachId);
+}
+
 /**
  * Deterministically resolve a coach's `golf_teams.id` from their organization.
  *

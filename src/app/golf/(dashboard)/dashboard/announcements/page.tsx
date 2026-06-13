@@ -11,7 +11,7 @@ import { CreateAnnouncementFlow } from '@/components/golf/announcements/CreateAn
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayAnnouncements } from '@/components/fairway/pages/announcements';
 
@@ -40,7 +40,7 @@ export default async function GolfAnnouncementsPage() {
   try {
     const [coachTeamId, playerTeamResult] = await Promise.all([
       orgId
-        ? resolveCoachTeamId(supabase, orgId, coach?.id ?? null)
+        ? resolveCoachTeamIdWithCookie(supabase, orgId, coach?.id ?? null)
         : Promise.resolve(null),
       playerId
         ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()

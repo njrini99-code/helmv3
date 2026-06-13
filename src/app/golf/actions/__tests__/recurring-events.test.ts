@@ -34,6 +34,12 @@ vi.mock('@/lib/golf/resolve-team', () => ({
   resolveCoachTeamId: vi.fn(async () => 'team-1'),
 }));
 
+// The action now resolves the coach's team via the cookie-aware wrapper
+// (program-head team switcher) — same stub, new import path.
+vi.mock('@/lib/golf/resolve-team-server', () => ({
+  resolveCoachTeamIdWithCookie: vi.fn(async () => 'team-1'),
+}));
+
 // ---------------------------------------------------------------------------
 // Import after mocks
 // ---------------------------------------------------------------------------

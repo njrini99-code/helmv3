@@ -36,6 +36,10 @@ vi.mock('@/lib/golf/resolve-team', () => ({
   resolveCoachTeamId: vi.fn(async () => 'team-1'),
 }));
 
+vi.mock('@/lib/golf/resolve-team-server', () => ({
+  resolveCoachTeamIdWithCookie: vi.fn(async () => 'team-1'),
+}));
+
 vi.mock('@/lib/redesign/flag', () => ({
   isRedesignEnabled: () => false,
   fairwayScope: (s: string) => s,

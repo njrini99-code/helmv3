@@ -10,7 +10,7 @@ import type { Metadata } from 'next';
 import { UnfinishedRoundsSection } from './unfinished-rounds-section';
 import { RoundLibraryClient, type RoundLibraryRound } from '@/components/golf/rounds/RoundLibraryClient';
 import { Button } from '@/components/ui/button';
-import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import {
   FairwayRoundsLibrary,
@@ -51,7 +51,7 @@ export default async function RoundsPage() {
   let teamId: string | null = null;
   if (coach?.organization_id) {
     try {
-      teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+      teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
     } catch {
       // Network failure — proceed with null teamId
     }
