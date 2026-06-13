@@ -751,6 +751,21 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     if (d.holesCount === 9 || d.holesCount === 18) setHolesPerRound(d.holesCount);
   }, []);
 
+  // Redesign: the course picker IS the first screen of a new round. Auto-open
+  // it once on a fresh start (not resuming, nothing chosen yet) so picking a
+  // course is the landing action; "Browse course library" stays as the reopen
+  // affordance. Closing it without picking falls back to the setup screen and
+  // does not reopen (the ref latches).
+  const autoOpenedPickerRef = useRef(false);
+  useEffect(() => {
+    if (!redesign || showResumePrompt || step !== 'setup') return;
+    if (autoOpenedPickerRef.current) return;
+    const nothingChosenYet =
+      !selectedCourseId && selectedTeeIdRef.current == null && !setupData.courseName;
+    autoOpenedPickerRef.current = true;
+    if (nothingChosenYet) setTeePickerOpen(true);
+  }, [redesign, showResumePrompt, step, selectedCourseId, setupData.courseName]);
+
   // Handle saved course selection
   const handleSavedCourseSelect = (courseId: string | null) => {
     setSelectedCourseId(courseId);
