@@ -481,20 +481,36 @@ function CourseCarousel({
   const [scrollable, setScrollable] = useState(false);
 
   // Coverflow: scale + dim + tilt each slide by its distance from the track's
-  // centre. Transforms written straight to the DOM (one rAF per scroll frame).
+  // centre. To hold 60fps we BATCH every layout READ, then every WRITE — reading
+  // a rect *after* a style write forces a synchronous reflow, so an interleaved
+  // read→write→read loop would thrash layout once per slide per frame. One read
+  // batch + one write batch = a single reflow per frame.
   const paint = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
 
+    // ---- READ phase: all layout reads up front ----
     const tr = track.getBoundingClientRect();
     const center = tr.left + tr.width / 2;
     const reach = tr.width * CF_REACH || 1;
+    const scrollLeft = track.scrollLeft;
+    const max = track.scrollWidth - track.clientWidth;
+    const mids = reduceMotion
+      ? null
+      : slideRefs.current.map((el) => {
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return r.left + r.width / 2;
+        });
 
-    if (!reduceMotion) {
-      for (const el of slideRefs.current) {
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        const signed = (r.left + r.width / 2) - center;
+    // ---- WRITE phase: no layout reads here, so the browser reflows once ----
+    if (mids) {
+      const slides = slideRefs.current;
+      for (let i = 0; i < slides.length; i++) {
+        const el = slides[i];
+        const mid = mids[i];
+        if (!el || mid == null) continue;
+        const signed = mid - center;
         const norm = Math.min(Math.abs(signed) / reach, 1);
         const eased = 1 - (1 - norm) * (1 - norm); // ease-out: flat at centre
         const scale = 1 - eased * CF_SCALE_DROP;
@@ -503,19 +519,23 @@ function CourseCarousel({
         el.style.opacity = (1 - eased * CF_OPACITY_DROP).toFixed(4);
       }
     }
-
-    const max = track.scrollWidth - track.clientWidth;
-    const sc = max > 8;
-    setScrollable((p) => (p !== sc ? sc : p));
-    setCanLeft((p) => { const n = track.scrollLeft > 8; return p !== n ? n : p; });
-    setCanRight((p) => { const n = track.scrollLeft < max - 8; return p !== n ? n : p; });
     if (progressRef.current) {
-      const p = max > 0 ? track.scrollLeft / max : 0;
+      const p = max > 0 ? scrollLeft / max : 0;
       progressRef.current.style.transform = `scaleX(${Math.max(0.08, p).toFixed(4)})`;
     }
+
+    // Guarded so the arrow/rail state only flips at the scroll boundaries —
+    // never a per-frame re-render mid-scroll.
+    const sc = max > 8;
+    setScrollable((prev) => (prev !== sc ? sc : prev));
+    setCanLeft((prev) => { const n = scrollLeft > 8; return prev !== n ? n : prev; });
+    setCanRight((prev) => { const n = scrollLeft < max - 8; return prev !== n ? n : prev; });
   }, [reduceMotion]);
 
-  const onScroll = useCallback(() => {
+  // rAF-coalesced scheduler — at most one paint() per frame no matter how many
+  // scroll/resize events fire. Shared by both so resize can't fire a burst of
+  // synchronous paints either.
+  const schedulePaint = useCallback(() => {
     if (rafRef.current != null) return;
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null;
@@ -530,13 +550,12 @@ function CourseCarousel({
   }, [paint, courses.length, withCreateTile]);
 
   useEffect(() => {
-    const onResize = () => paint();
-    window.addEventListener('resize', onResize);
+    window.addEventListener('resize', schedulePaint);
     return () => {
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', schedulePaint);
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
-  }, [paint]);
+  }, [schedulePaint]);
 
   const scrollByCards = (dir: 1 | -1) => {
     const el = trackRef.current;
@@ -565,7 +584,7 @@ function CourseCarousel({
 
       <div
         ref={trackRef}
-        onScroll={onScroll}
+        onScroll={schedulePaint}
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region MUST be focusable for keyboard scrolling; Safari (unlike Chrome) does not add this implicitly (WCAG 2.1.1, ACT 0ssw9k)
         tabIndex={0}
         role="region"
