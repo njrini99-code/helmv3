@@ -9,18 +9,17 @@
  * list (flag-OFF still falls back to that list — see new-round-client.tsx).
  *
  * TWO STAGES, one full-page surface (the picker IS the page, not an overlay):
- *   • Stage A — a dark warm-black "cockpit" header (the figure) over a cream
- *     canvas (the ground) carrying THREE labelled feeds, ONE image-forward
- *     COVERFLOW carousel each: "Recently played", "Team courses", and the full
- *     "Course library" (which ends in a dashed "Add a course" tile). Searching
- *     collapses to a single results carousel. Each coverflow is a native
- *     scroll-snap track of featured CourseCards where the centred card is
- *     full-size/opacity and its neighbours scale down, dim, and tilt by their
- *     distance from centre. The coverflow transforms are written IMPERATIVELY
- *     (one rAF per scroll frame) to each slide's inner element — deliberately
- *     NOT via framer-motion useScroll/useTransform, which require the scroll
- *     container ref to be hydrated at hook-call time and crash under concurrent
- *     React when the track is conditionally rendered (React #310).
+ *   • Stage A — an airy header over a cream canvas carrying THREE labelled feeds,
+ *     ONE image-forward carousel each: "Recently played", "Team courses", and the
+ *     full "Course library" (which ends in a dashed "Add a course" tile). Searching
+ *     collapses to a single results carousel. Each shelf is a plain native
+ *     scroll-snap track of featured CourseCards (peek the next card), with desktop
+ *     arrows and a staggered entrance — deliberately NO per-frame coverflow
+ *     transforms and NO framer-motion useScroll/useTransform on the track. That
+ *     earlier coverflow crashed under concurrent React when the conditionally
+ *     rendered track ref wasn't hydrated at hook-call time (React #310); pure
+ *     native scroll holds 60fps, keeps the whole card a reliable tap target, and
+ *     can't reintroduce that hook-order hazard. Edge-triggered arrow state only.
  *   • Stage B — choose a tee at the picked course. Reuses TeePickRow/SkeletonRows
  *     from TeePickerDrawer (single source of truth for that row), then returns
  *     the tee's TeeRoundDefaults via onPick so the round form pre-fills pars/
@@ -45,6 +44,7 @@ import { useToast } from '@/components/ui/sonner';
 import {
   IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag, IconX,
 } from '@/components/icons';
+import { Skeleton } from '@/components/fairway/feedback';
 import { CourseCard } from '@/components/golf/courses/CourseCard';
 import { CourseFormDrawer } from '@/components/golf/courses/CourseFormDrawer';
 import { TeeFormDrawer } from '@/components/golf/courses/TeeFormDrawer';
@@ -87,6 +87,9 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   const [tees, setTees] = useState<GolfCourseTee[]>([]);
   const [loadingTees, setLoadingTees] = useState(false);
   const [picking, setPicking] = useState(false);
+  // Monotonic token so a fast second course tap can't have its (slower) tee
+  // response overwrite the newer selection's tees.
+  const teeReqRef = useRef(0);
 
   const [createCourseOpen, setCreateCourseOpen] = useState(false);
   const [createTeeOpen, setCreateTeeOpen] = useState(false);
@@ -132,20 +135,24 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
     const raw = q.toLowerCase();
     return courses.filter((c) =>
       `${c.name} ${c.city ?? ''} ${c.state ?? ''}`.toLowerCase().includes(raw) ||
-      (c.normalized_name ?? normalizeName(c.name)).includes(nq),
+      // Guard the empty-normalized case (e.g. "no", "#") — includes('') is true
+      // for every row, which would falsely "match" the whole library.
+      (nq.length > 0 && (c.normalized_name ?? normalizeName(c.name)).includes(nq)),
     );
   }, [courses, query]);
 
   const loadTees = useCallback(async (course: GolfCourse) => {
+    const req = ++teeReqRef.current;
     setLoadingTees(true);
     setTees([]);
     try {
       const detail = await getCourseDetail(course.id);
+      if (teeReqRef.current !== req) return; // superseded by a newer selection
       setTees(detail?.tees ?? []);
     } catch {
-      showToastRef.current('Could not load tees for that course', 'error');
+      if (teeReqRef.current === req) showToastRef.current('Could not load tees for that course', 'error');
     } finally {
-      setLoadingTees(false);
+      if (teeReqRef.current === req) setLoadingTees(false);
     }
   }, []);
 
@@ -352,13 +359,27 @@ function CoursesStage({
   onCreate: () => void;
 }) {
   if (loading) {
+    // Shape-matched to the real browse layout (labelled shelves of featured
+    // cards) so there is ZERO layout shift when the feeds resolve: the tiles use
+    // the EXACT slideCls footprint (aspect-[3/2], w-[80vw] max-w-[360px] sm:w-[340px])
+    // and the same track padding/gap as CourseCarousel. Shimmer, not animate-pulse.
     return (
-      <div className="flex gap-4 overflow-hidden px-[6vw] py-3 sm:px-[16%]">
-        {[0, 1].map((i) => (
-          <div
-            key={i}
-            className="aspect-[16/10] w-[88vw] flex-shrink-0 animate-pulse rounded-fw-lg bg-surface-sunken sm:aspect-[2/1] sm:w-full"
-          />
+      <div role="status" aria-busy="true" aria-live="polite" className="flex flex-col gap-7">
+        <span className="sr-only">Loading courses…</span>
+        {[0, 1].map((shelf) => (
+          <div key={shelf} className="flex flex-col">
+            <div className="mb-2 px-1">
+              <Skeleton className="h-3 w-28 rounded-full" />
+            </div>
+            <div className="flex gap-4 overflow-hidden px-1 py-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton
+                  key={i}
+                  className="aspect-[3/2] w-[80vw] max-w-[360px] flex-shrink-0 rounded-[1.5rem] sm:w-[340px]"
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     );

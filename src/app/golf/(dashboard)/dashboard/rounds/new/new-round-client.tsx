@@ -898,9 +898,16 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       }
     }
 
-    // If using a saved course with hole configs AND at least one valid yardage, skip the hole configuration step
-    const hasValidYardages = preloadedHoleConfigs?.some(h => h.yardage > 0) ?? false;
-    if (preloadedHoleConfigs && preloadedHoleConfigs.length > 0 && hasValidYardages) {
+    // Skip the hole-configuration step when the preloaded config is usable.
+    // A CLOUD-PICKED tee provides authoritative pars; its yardages may legitimately
+    // be absent (a tee entered with pars only), so for a cloud pick we gate on par
+    // — bouncing such a pick to re-enter data the picker already supplied would
+    // break the "pre-fills your pars and yardages" promise. Manual / legacy saved
+    // courses still require a real yardage before skipping config.
+    const isCloudPick = selectedTeeIdRef.current != null;
+    const hasUsableConfig =
+      preloadedHoleConfigs?.some(h => (isCloudPick ? h.par > 0 : h.yardage > 0)) ?? false;
+    if (preloadedHoleConfigs && preloadedHoleConfigs.length > 0 && hasUsableConfig) {
       // Slice to match selected hole count (e.g. user picks 9 on a saved 18-hole course)
       let configs: SavedCourseHoleConfig[];
       if (holesPerRound === 9 && preloadedHoleConfigs.length >= 18 && nineSelection === 'back') {
