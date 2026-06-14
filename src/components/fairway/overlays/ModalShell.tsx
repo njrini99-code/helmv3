@@ -197,9 +197,17 @@ function ModalShellRoot({
                 {!hideClose ? (
                   <Dialog.Close
                     aria-label="Close"
-                    className={cn(CLOSE_BUTTON_CLASS, 'absolute right-4 top-4')}
+                    className={cn(
+                      CLOSE_BUTTON_CLASS,
+                      // Invisible hit-slop expands the tap target to 44px
+                      // without changing the 36px visual (iOS touch floor,
+                      // §7.4). The button is already `absolute`, so it is the
+                      // positioning context for `::before` — no `relative` needed.
+                      "before:absolute before:-inset-1.5 before:content-['']",
+                      'absolute right-4 top-4',
+                    )}
                   >
-                    <X className="h-4 w-4" aria-hidden />
+                    <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
                   </Dialog.Close>
                 ) : null}
               </motion.div>

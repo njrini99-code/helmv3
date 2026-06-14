@@ -31,6 +31,7 @@ import NumberFlow, { type Format } from '@number-flow/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/fairway/feedback';
 
 /** Visual weight of the tile. `default` is the everyday KPI; `hero` gets a
  *  touch more air + a slightly larger numeric for the one lead metric. */
@@ -219,18 +220,16 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
           {...rest}
         >
           <div className="flex items-center justify-between">
-            <span className="h-3 w-24 animate-pulse rounded-full bg-surface-sunken" />
-            {icon ? (
-              <span className="h-5 w-5 animate-pulse rounded-md bg-surface-sunken" />
-            ) : null}
+            <Skeleton className="h-3 w-24 rounded-full" />
+            {icon ? <Skeleton className="h-5 w-5 rounded-md" /> : null}
           </div>
-          <span
+          <Skeleton
             className={cn(
-              'mt-1 animate-pulse rounded-fw-md bg-surface-sunken',
+              'mt-1 rounded-fw-md',
               isHero ? 'h-12 w-40' : isCompact ? 'h-7 w-20' : 'h-9 w-28',
             )}
           />
-          <span className="h-3 w-20 animate-pulse rounded-full bg-surface-sunken" />
+          <Skeleton className="h-3 w-20 rounded-full" />
         </div>
       );
     }
@@ -356,7 +355,7 @@ function DeltaChip({
         )}
         style={{ fontFeatureSettings: '"tnum" 1, "lnum" 1' }}
       >
-        <Icon aria-hidden className="h-3 w-3" strokeWidth={2.5} />
+        <Icon aria-hidden className="h-3 w-3" strokeWidth={1.5} />
         <NumberFlow
           value={delta.value}
           prefix={delta.prefix}

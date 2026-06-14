@@ -199,10 +199,11 @@
   --fw-viz-benchmark: color-mix(in oklch, var(--fw-color-text-secondary) 40%, transparent);
 
   /* ---- Type — the three Fairway roles.
-          These reference the next/font variables attached in src/app/layout.tsx
-          (--font-fairway-display / --font-fairway-sans / --font-fairway-mono).
-          They are AVAILABLE app-wide but the current body font is unchanged:
-          only Fairway components/scopes opt into them. ---- */
+          display + sans resolve to the Apple SF Pro SYSTEM stack (no webfont
+          download — SF Pro renders natively on Apple devices and falls back
+          cleanly elsewhere), so the old Fraunces/General Sans next/font loads
+          were dead weight and have been removed from src/app/layout.tsx. Only
+          mono still pulls a webfont (--font-fairway-mono = Fragment Mono). ---- */
   /* Apple system sans — the real "built by Steve Jobs" type. SF Pro renders
      natively on Apple devices via -apple-system / BlinkMacSystemFont; clean
      system fallbacks elsewhere. NO serif (Fraunces dropped). Numbers stay mono. */

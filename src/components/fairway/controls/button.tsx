@@ -19,9 +19,10 @@
  * Next <Link>) via @radix-ui/react-slot. forwardRef for both.
  * ========================================================================== */
 
-import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from 'react';
+import { type ButtonHTMLAttributes, type MouseEvent, type ReactNode, forwardRef } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { fwDisabled, fwFocusRing, fwTransition } from './_internal';
 
 export type FwButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -118,11 +119,22 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     asChild = false,
     disabled,
     children,
+    onClick,
     ...props
   },
   ref,
 ) {
   const Comp = asChild ? Slot : 'button';
+
+  // Light tactile tap on the real <button> press (fire-and-forget, safe no-op on
+  // web). Skipped under asChild — that path forwards onClick straight to the
+  // child element/Slot and must not be wrapped.
+  const handleClick = asChild
+    ? onClick
+    : (event: MouseEvent<HTMLButtonElement>) => {
+        fwHaptic('light');
+        onClick?.(event);
+      };
 
   // When rendering asChild, the consumer owns the inner element; we cannot inject
   // multiple icon spans into an arbitrary single child, so we pass through children
@@ -154,6 +166,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
       aria-busy={busy || undefined}
       data-slot="fw-button"
       data-variant={variant}
+      onClick={handleClick}
       {...props}
     >
       {content}

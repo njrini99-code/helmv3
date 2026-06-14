@@ -46,6 +46,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/fairway/feedback';
 import {
   HERO_GLASS_CLASS,
   HERO_GLASS_FALLBACK_CSS,
@@ -195,7 +196,7 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
 
     const LeadIcon = tone.icon;
     const leadIcon =
-      icon ?? (hideIcon ? null : <LeadIcon aria-hidden className="h-full w-full" strokeWidth={2} />);
+      icon ?? (hideIcon ? null : <LeadIcon aria-hidden className="h-full w-full" strokeWidth={1.5} />);
 
     /* -- shell classes -- */
     const shell = cn(
@@ -269,14 +270,14 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
         >
           {tintBar}
           {!hideIcon ? (
-            <span className="h-9 w-9 shrink-0 animate-pulse rounded-fw-md bg-surface-sunken" />
+            <Skeleton className="h-9 w-9 shrink-0 rounded-fw-md" />
           ) : null}
           <div className="flex min-w-0 flex-1 flex-col gap-3">
-            <span className="h-4 w-1/2 animate-pulse rounded-full bg-surface-sunken" />
+            <Skeleton className="h-4 w-1/2 rounded-full" />
             {!isCompact ? (
               <>
-                <span className="h-3 w-full animate-pulse rounded-full bg-surface-sunken" />
-                <span className="h-3 w-4/5 animate-pulse rounded-full bg-surface-sunken" />
+                <Skeleton className="h-3 w-full rounded-full" />
+                <Skeleton className="h-3 w-4/5 rounded-full" />
               </>
             ) : null}
           </div>

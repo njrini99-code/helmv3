@@ -53,6 +53,7 @@ import {
   type Variants,
 } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/fairway/feedback';
 import { GlassSurface } from './glass-surface';
 import {
   SearchGlyph,
@@ -401,10 +402,10 @@ export function CommandMenu({
                           key={i}
                           className="flex items-center gap-3 rounded-fw-md px-3 py-2.5"
                         >
-                          <span className="h-8 w-8 shrink-0 animate-pulse rounded-fw-sm bg-inset motion-reduce:animate-none" />
+                          <Skeleton className="h-8 w-8 shrink-0 rounded-fw-sm" />
                           <span className="flex flex-1 flex-col gap-1.5">
-                            <span className="h-3 w-1/3 animate-pulse rounded-full bg-inset motion-reduce:animate-none" />
-                            <span className="h-2.5 w-1/2 animate-pulse rounded-full bg-inset motion-reduce:animate-none" />
+                            <Skeleton className="h-3 w-1/3 rounded-full" />
+                            <Skeleton className="h-2.5 w-1/2 rounded-full" />
                           </span>
                         </div>
                       ))}

@@ -20,6 +20,7 @@ import * as React from "react";
 import { RadioGroup as BaseRadioGroup } from "@base-ui-components/react/radio-group";
 import { Radio as BaseRadio } from "@base-ui-components/react/radio";
 import { cn } from "@/lib/utils";
+import { fwHaptic } from "@/lib/fairway/haptics";
 
 export interface RadioOption {
   label: React.ReactNode;
@@ -43,9 +44,16 @@ export interface RadioGroupProps
  */
 export const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
   function RadioGroup(
-    { options, orientation = "vertical", className, children, ...props },
+    { options, orientation = "vertical", className, children, onValueChange, ...props },
     ref,
   ) {
+    // Selection tick when the chosen option changes (fire-and-forget, no-op on web).
+    const handleValueChange: NonNullable<RadioGroupProps["onValueChange"]> = (
+      ...args
+    ) => {
+      fwHaptic("selection");
+      onValueChange?.(...args);
+    };
     return (
       <BaseRadioGroup
         ref={ref}
@@ -55,6 +63,7 @@ export const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
           orientation === "vertical" ? "flex-col" : "flex-row flex-wrap gap-x-5",
           className,
         )}
+        onValueChange={handleValueChange}
         {...props}
       >
         {options
@@ -114,7 +123,9 @@ export const Radio = React.forwardRef<HTMLButtonElement, RadioProps>(
         {...props}
       >
         <BaseRadio.Indicator className="flex">
-          <span className="h-2 w-2 rounded-full bg-accent-500 motion-safe:animate-scale-in" />
+          {/* Dot springs in with a soft overshoot (scale 0 → 1.2 → 1). Pure
+              transform — layout unchanged; motion-safe gates reduced motion. */}
+          <span className="h-2 w-2 origin-center rounded-full bg-accent-500 motion-safe:animate-check-bounce" />
         </BaseRadio.Indicator>
       </BaseRadio.Root>
     );

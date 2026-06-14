@@ -28,6 +28,7 @@ import {
 import * as RadixTabs from '@radix-ui/react-tabs';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { fwFocusRing, fwTransition } from './_internal';
 
 /** Shares the per-Tabs layoutId so each instance animates its own indicator. */
@@ -41,14 +42,25 @@ export interface TabsProps extends ComponentPropsWithoutRef<typeof RadixTabs.Roo
 }
 
 export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
-  { className, children, ...props },
+  { className, children, onValueChange, ...props },
   ref,
 ) {
   const indicatorId = useId();
   const reduceMotion = useReducedMotion() ?? false;
+  // Selection tick when the active tab changes (fire-and-forget, no-op on web).
+  const handleValueChange = (value: string) => {
+    fwHaptic('selection');
+    onValueChange?.(value);
+  };
   return (
     <TabsCtx.Provider value={{ indicatorId, reduceMotion }}>
-      <RadixTabs.Root ref={ref} className={cn('flex flex-col gap-6', className)} data-slot="fw-tabs" {...props}>
+      <RadixTabs.Root
+        ref={ref}
+        className={cn('flex flex-col gap-6', className)}
+        data-slot="fw-tabs"
+        onValueChange={handleValueChange}
+        {...props}
+      >
         {children}
       </RadixTabs.Root>
     </TabsCtx.Provider>
