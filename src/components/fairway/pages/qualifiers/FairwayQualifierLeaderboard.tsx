@@ -37,7 +37,7 @@ import { Fragment, useMemo } from 'react';
 import { Flag } from 'lucide-react';
 
 import { useQualifierRealtime } from '@/hooks/golf/use-qualifier-realtime';
-import { Surface, EmptyState, InlineNotice, StatusPill } from '@/components/fairway';
+import { Surface, EmptyState, InlineNotice, StatusPill, Skeleton } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway/controls';
 import { cn } from '@/lib/utils';
 
@@ -394,10 +394,10 @@ function Th({
 
 function LeaderboardSkeleton() {
   return (
-    <div role="status" aria-label="Loading leaderboard" className="animate-pulse motion-reduce:animate-none space-y-3">
-      <div className="h-3 w-full rounded bg-inset" />
-      <div className="h-3 w-5/6 rounded bg-inset" />
-      <div className="h-3 w-4/6 rounded bg-inset" />
+    <div role="status" aria-label="Loading leaderboard" className="space-y-3">
+      <Skeleton className="h-3 w-full rounded" />
+      <Skeleton className="h-3 w-5/6 rounded" />
+      <Skeleton className="h-3 w-4/6 rounded" />
     </div>
   );
 }

@@ -25,7 +25,7 @@ import dynamic from 'next/dynamic';
 import { format } from 'date-fns';
 import { Check, X, MapPin, Clock, ExternalLink, Pencil, Lock, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, Inset, Readout, Button, StatusPill } from '@/components/fairway';
+import { Sheet, Inset, Readout, Button, StatusPill, Skeleton } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
@@ -37,7 +37,7 @@ const AttendancePanel = dynamic(
     import('@/components/golf/calendar/AttendancePanel').then((m) => m.AttendancePanel),
   {
     loading: () => (
-      <div className="h-24 animate-pulse rounded-fw-md bg-surface-sunken" aria-hidden />
+      <Skeleton className="h-24 rounded-fw-md" aria-hidden />
     ),
   },
 );
