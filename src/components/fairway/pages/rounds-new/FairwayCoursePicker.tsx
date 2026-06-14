@@ -241,13 +241,13 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
                     type="button"
                     onClick={backToCourses}
                     aria-label="Back to courses"
-                    className="-ml-1 mt-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    className="-ml-1 mt-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                   >
                     <IconChevronLeft size={20} aria-hidden />
                   </button>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-primary-600">
+                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-accent-700">
                     {stage === 'tees' ? 'New round · Tee' : 'New round'}
                   </p>
                   <h1 className="mt-1.5 truncate font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
@@ -268,7 +268,7 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search courses…"
                     aria-label="Search courses"
-                    className="h-12 w-full rounded-full border border-border-subtle bg-surface pl-11 pr-4 font-fw-sans text-body text-text-primary shadow-flat placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-500/12"
+                    className="h-12 w-full rounded-full border border-border-subtle bg-surface pl-11 pr-4 font-fw-sans text-body text-text-primary shadow-flat placeholder:text-text-tertiary focus:border-accent-500 focus:outline-none focus:ring-4 focus:ring-accent-500/25"
                   />
                 </div>
               )}
@@ -513,7 +513,7 @@ function CourseCarousel({
         className={cn(
           'flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto overscroll-x-contain scroll-smooth',
           'px-1 py-2',
-          'rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+          'rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40',
           '[scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden',
           'motion-reduce:scroll-auto',
         )}
@@ -582,11 +582,11 @@ function CreateCourseTile({ onClick }: { onClick: () => void }) {
         'border-2 border-dashed border-border-strong bg-surface-sunken',
         'transition-[transform,border-color,background-color] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
         'hover:-translate-y-1.5 hover:border-accent-500 hover:bg-accent-50/60 active:-translate-y-0.5',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
       )}
     >
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-primary-600 shadow-flat transition-[transform,background-color,color] [transition-duration:var(--fw-dur-base)] group-hover:scale-110 group-hover:bg-accent-500 group-hover:text-white motion-reduce:group-hover:scale-100">
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-accent-700 shadow-flat transition-[transform,background-color,color] [transition-duration:var(--fw-dur-base)] group-hover:scale-110 group-hover:bg-accent-500 group-hover:text-white motion-reduce:group-hover:scale-100">
         <IconPlus size={22} aria-hidden />
       </span>
       <span className="font-fw-display text-title-3 font-semibold text-text-primary">Add a course</span>

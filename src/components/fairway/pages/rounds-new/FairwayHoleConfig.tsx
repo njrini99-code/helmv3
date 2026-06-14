@@ -109,7 +109,7 @@ export function FairwayHoleConfig({
     <div className="rounded-fw-md bg-surface-sunken px-3 py-3 text-center">
       <div
         className={cn(
-          'font-fw-mono text-h3 font-light tabular-nums tracking-[-0.02em]',
+          'font-fw-mono text-h3 tabular-nums tracking-[-0.02em]',
           accent ? 'text-accent-700' : 'text-text-primary',
         )}
       >
