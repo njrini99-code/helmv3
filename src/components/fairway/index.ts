@@ -85,6 +85,7 @@ export {
   MetricCard,
   type MetricCardProps,
   type MetricCardVariant,
+  type MetricCardDensity,
   type MetricDelta,
   type MetricDeltaDirection,
   type MetricGoodDirection,

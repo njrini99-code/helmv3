@@ -36,6 +36,9 @@ import { cn } from '@/lib/utils';
  *  touch more air + a slightly larger numeric for the one lead metric. */
 export type MetricCardVariant = 'default' | 'hero';
 
+/** Tile density — `compact` for dense KPI grids (tighter padding, smaller value). */
+export type MetricCardDensity = 'default' | 'compact';
+
 /** Semantic direction of a delta. `auto` derives from the sign of `value`. */
 export type MetricDeltaDirection = 'up' | 'down' | 'neutral' | 'auto';
 
@@ -88,6 +91,9 @@ export interface MetricCardProps
   icon?: ReactNode;
   /** Visual weight. Default `default`. */
   variant?: MetricCardVariant;
+  /** Tile density. `compact` tightens padding + drops the value one step for
+   *  dense 5/6-up KPI grids. Ignored when `variant='hero'`. Default `default`. */
+  density?: MetricCardDensity;
   /** Adds hover/active affordances (lift + drift). Default false (calm). */
   interactive?: boolean;
   /** Loading → shape-matched skeleton (never a spinner). */
@@ -146,6 +152,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       footnote,
       icon,
       variant = 'default',
+      density = 'default',
       interactive = false,
       loading = false,
       empty = false,
@@ -178,6 +185,9 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
     }, [delta?.decimals, decimals]);
 
     const isHero = variant === 'hero';
+    // Compact: a tighter tile for dense 5/6-up KPI grids where full p-6 reads
+    // cramped. Hero always wins over compact.
+    const isCompact = density === 'compact' && !isHero;
 
     const base = cn(
       'group relative flex flex-col rounded-card bg-surface',
@@ -186,7 +196,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       // --fw-shadow-card is light-cards-only (carries the warm-white top edge).
       'border border-border-subtle [box-shadow:var(--fw-shadow-card)]',
       'transition-[box-shadow,transform,border-color] ease-soft',
-      isHero ? 'p-8 gap-3' : 'p-6 gap-2',
+      isHero ? 'p-8 gap-3' : isCompact ? 'p-4 gap-1.5' : 'p-6 gap-2',
       interactive && [
         'cursor-pointer will-change-transform',
         '[transition-duration:240ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
@@ -217,7 +227,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
           <span
             className={cn(
               'mt-1 animate-pulse rounded-fw-md bg-surface-sunken',
-              isHero ? 'h-12 w-40' : 'h-9 w-28',
+              isHero ? 'h-12 w-40' : isCompact ? 'h-7 w-20' : 'h-9 w-28',
             )}
           />
           <span className="h-3 w-20 animate-pulse rounded-full bg-surface-sunken" />
@@ -233,7 +243,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       <div ref={ref} className={base} {...interactiveProps} {...rest}>
         {/* header: overline label + optional icon */}
         <div className="flex items-start justify-between gap-3">
-          <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+          <span className="min-w-0 truncate font-fw-sans text-eyebrow uppercase text-text-tertiary">
             {label}
           </span>
           {icon ? (
@@ -255,8 +265,8 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
             <div
               className={cn(
                 'font-fw-mono font-medium tabular-nums text-text-primary',
-                // canonical scale: display (40px) for the lead metric, h1 (32px) otherwise
-                isHero ? 'text-display' : 'text-h1',
+                // canonical scale: display (40px) lead, h1 (32px) default, h2 (24px) compact
+                isHero ? 'text-display' : isCompact ? 'text-h2' : 'text-h1',
               )}
               // The brand-green value face is applied via inline style, NOT a
               // `text-accent-700` class: tailwind-merge conflates our custom

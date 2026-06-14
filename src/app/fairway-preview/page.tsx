@@ -523,6 +523,15 @@ export default function FairwayPreviewPage() {
                 goodDirection="down"
               />
             </div>
+            {/* compact density — the dense 6-up grid (truncating overline) */}
+            <div className="mt-5 grid grid-cols-3 gap-3 lg:grid-cols-6">
+              <MetricCard density="compact" label="Fairways" value={61} suffix="%" />
+              <MetricCard density="compact" label="GIR" value={52} suffix="%" />
+              <MetricCard density="compact" label="Scrambling" value={48} suffix="%" />
+              <MetricCard density="compact" label="Putts / round" value={31.2} decimals={1} goodDirection="down" />
+              <MetricCard density="compact" label="Up &amp; down attempts made" value={44} suffix="%" />
+              <MetricCard density="compact" label="3-putt avoidance" value={92} suffix="%" />
+            </div>
           </Section>
 
           {/* ── InsightCard hero ───────────────────────────────────────── */}

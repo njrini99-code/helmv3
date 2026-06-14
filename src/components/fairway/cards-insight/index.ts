@@ -19,6 +19,7 @@ export { MetricCard } from './MetricCard';
 export type {
   MetricCardProps,
   MetricCardVariant,
+  MetricCardDensity,
   MetricDelta,
   MetricDeltaDirection,
   MetricGoodDirection,
