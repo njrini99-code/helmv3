@@ -63,10 +63,11 @@ export function CourseCard({
           className,
         )}
       >
-        <div className="relative aspect-[4/5] w-full sm:aspect-[5/6]">
+        <div className="relative aspect-[3/2] w-full">
           <CourseImage
             name={course.name}
             imageUrl={course.image_url}
+            normalizedName={course.normalized_name}
             scrim
             priority={priority}
             sizes="(max-width: 768px) 90vw, 380px"
@@ -138,6 +139,7 @@ export function CourseCard({
         <CourseImage
           name={course.name}
           imageUrl={course.image_url}
+          normalizedName={course.normalized_name}
           priority={priority}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
           className="transition-transform [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] group-hover:scale-[1.05] motion-reduce:group-hover:scale-100"

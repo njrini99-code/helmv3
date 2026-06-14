@@ -495,7 +495,7 @@ function CourseCarousel({
         };
 
   const count = courses.length + (withCreateTile ? 1 : 0);
-  const slideCls = 'w-[68vw] max-w-[300px] flex-shrink-0 snap-start sm:w-[290px]';
+  const slideCls = 'w-[80vw] max-w-[360px] flex-shrink-0 snap-start sm:w-[340px]';
 
   return (
     <div className="relative">
@@ -578,7 +578,7 @@ function CreateCourseTile({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex aspect-[4/5] w-full flex-col items-center justify-center gap-3 rounded-[1.5rem] text-center sm:aspect-[5/6]',
+        'group flex aspect-[3/2] w-full flex-col items-center justify-center gap-3 rounded-[1.5rem] text-center',
         'border-2 border-dashed border-border-strong bg-surface-sunken',
         'transition-[transform,border-color,background-color] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
         'hover:-translate-y-1.5 hover:border-accent-500 hover:bg-accent-50/60 active:-translate-y-0.5',
