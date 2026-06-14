@@ -1,5 +1,15 @@
 'use server';
 
+/**
+ * ⚠️ DEPRECATED — DO NOT WIRE. Superseded by the cloud Course Library
+ * (`@/app/golf/actions/course-library.ts`). As of 2026-06-14 this module has ZERO
+ * importers. It is retained only for reference and must not be re-introduced:
+ * `updateCourse` here does a DELETE-then-INSERT on hole rows (a destructive write
+ * that can wipe a course's holes on a transient failure — see
+ * feedback_golf_no_destructive_writes). Use `course-library.ts updateTee`'s
+ * stage-and-swap instead. Prefer deleting this file once confirmed unreferenced.
+ */
+
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { CourseSetupData, GolfCourse, GolfCourseHole } from '@/lib/types/golf-course';

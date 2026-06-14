@@ -97,18 +97,23 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   const refreshCourses = useCallback(async (): Promise<GolfCourse[]> => {
     setLoadingCourses(true);
     try {
-      // Three independent feeds, one carousel each. Recent/team are best-effort:
-      // a player with no cloud-linked rounds or no saved team courses just sees
-      // those sections hidden — the library always renders.
+      // Three independent feeds, one carousel each — ALL best-effort so one
+      // failing feed never blanks the others (e.g. a transient library error
+      // shouldn't also hide the recent/team shelves that loaded fine).
       const [lib, rec, tm] = await Promise.all([
-        listCourses({ limit: 200 }),
+        listCourses({ limit: 200 }).catch(() => null),
         getRecentlyPlayedCourses(12).catch(() => [] as GolfCourse[]),
         getTeamSavedCourses().then((rows) => rows.map((r) => r.course)).catch(() => [] as GolfCourse[]),
       ]);
-      setCourses(lib);
+      // Only the library failing (null) is worth surfacing — recent/team degrade silently.
+      if (lib === null && rec.length === 0 && tm.length === 0) {
+        showToastRef.current('Could not load the course library', 'error');
+      }
+      const library = lib ?? [];
+      setCourses(library);
       setRecent(rec);
       setTeam(tm);
-      return lib;
+      return library;
     } catch {
       showToastRef.current('Could not load the course library', 'error');
       return [];

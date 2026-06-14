@@ -3984,6 +3984,9 @@ export interface PartialRoundData {
   courseSlope?: number;
   teesPlayed?: string;
   courseId?: string;
+  /** Cloud Library tee link (golf_course_tees.id) so a draft/partial save keeps
+   *  its catalog tee provenance instead of writing tee_id=NULL. */
+  teeId?: string;
   roundType: 'practice' | 'tournament' | 'qualifier';
   roundDate: string;
   qualifierId?: string;
@@ -4082,6 +4085,9 @@ export async function savePartialRound(
       player_id: player.id,
       team_id: teamId,
       course_id: resolvedCourseId,
+      // Cloud Library tee link — the partial-save RPC reads p_round_data->>'tee_id'
+      // (migration 20260613170000); without this, draft rounds persist tee_id=NULL.
+      tee_id: data.teeId || null,
       course_name: data.courseName,
       course_city: data.courseCity || null,
       course_state: data.courseState || null,
