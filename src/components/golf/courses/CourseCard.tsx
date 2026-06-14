@@ -90,17 +90,17 @@ export function CourseCard({
           </span>
 
           {/* Bottom content */}
-          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-            <h3 className="line-clamp-2 font-fw-display text-title-2 font-semibold leading-tight tracking-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.55)]">
+          <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5">
+            <h3 className="line-clamp-2 font-fw-display text-title-3 font-semibold leading-tight tracking-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.55)] sm:text-title-2">
               {course.name}
             </h3>
             {location && (
-              <p className="mt-1.5 inline-flex items-center gap-1.5 font-fw-sans text-body-sm text-white/85 [text-shadow:0_1px_3px_rgba(0,0,0,0.45)]">
+              <p className="mt-1 inline-flex items-center gap-1.5 font-fw-sans text-caption text-white/85 [text-shadow:0_1px_3px_rgba(0,0,0,0.45)] sm:mt-1.5 sm:text-body-sm">
                 <IconMapPin size={13} aria-hidden /> {location}
               </p>
             )}
             {(teeLabel || meta) && (
-              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <div className="mt-2.5 flex flex-wrap items-center gap-1.5 sm:mt-3">
                 {teeLabel && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-caption font-medium text-white ring-1 ring-white/15 backdrop-blur-sm">
                     <IconFlag size={11} aria-hidden /> {teeLabel}
