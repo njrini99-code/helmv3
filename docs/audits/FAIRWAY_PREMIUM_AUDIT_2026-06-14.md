@@ -150,6 +150,28 @@ All free, most already installed — the gap is WIRING, not new dependencies.
 
 ---
 
+## Implementation status (2026-06-14, this session)
+
+All on branch `fix/picker-premium-redesign` (PR #293, NOT merged). Every change
+tsc + eslint clean and screenshot-verified in `/fairway-preview` (desktop +
+mobile). Shipped in themed waves:
+
+- **Card elevation + micro-interactions** (pre-audit, commit 62350017): deeper warm 2-layer shadows, a lit warm-white top edge on light cards (`--fw-shadow-card`), and a glide-eased 240ms / 2px hover lift + 110ms tactile press on Surface + MetricCard.
+- **Wave A** (51692b83): optical tracking curve (rank 3 — display −0.03em + small-end +tracking), warm skeleton shimmer (rank 6), warm glass speculars (rank 7), drop no-op mono `font-light` (rank 35), CoursePicker off legacy `primary-*` green (rank 17).
+- **Wave B** (8bd95059): surface-tier re-spacing so tint/elevated read (rank 28), tactile spring-press on every Button (rank 44).
+- **Wave C** (e5859027): `fwHaptic` native haptic layer wired into Segmented + toast tones (rank 14, first wiring).
+- **Wave D** (3132dbf4): `PageContainer` (theme 2) + `Eyebrow` (theme 3) systematization primitives, demonstrated in the preview "Foundations" section.
+- **Wave E** (c612eac8): MetricCard `density='compact'` + truncating overline; applied to the cramped 6-up KeyMetricsGrid (rank 12/32).
+
+Also earlier this session: brand-green KPI value faces, and 2 native browser
+dialogs (confirm + prompt) replaced with Fairway dialogs.
+
+**Queued — needs an eyes-on pass (page-level, can't be headlessly verified on authed routes):** migrate the ~21 page roots onto `PageContainer` (rank 2) and the ~220 inline eyebrows onto `<Eyebrow>` (rank 4); the remaining haptic wiring (Button/Switch/Checkbox/Radio/Tabs — rank 14); sheet detents (rank 15); skeleton consolidation (rank 16); focus-ring unification + halo (rank 18/19); section-rhythm + form-field unification (rank 10/11); icon-stroke normalization (rank 40); warm-* role-token mapping (rank 33 — NOTE the warning-tone warm-800 is a *deliberate* dark-on-amber recipe, keep it).
+
+**Preview-gated / brand-risk (do NOT default-merge — A/B in the gallery):** inverse-weight headings (rank 34), mono→sans default numerals (rank 37), cooling the canvas (rank 31). The team is brand-locked on warm + editorial.
+
+---
+
 ## Notes on stale / corrected findings
 
 - **Font finding direction has flipped since the audit was written.** The audit assumed Fraunces/General Sans were INTENDED but mis-bound. Live source (design-tokens.css:208-211: *"Apple system sans — the real built by Steve Jobs type ... NO serif (Fraunces dropped)"*) shows the system has DECIDED on Apple SF Pro. So the correct fix is to DELETE the unused loads + scrub docstrings (rank 1), not rebind the vars. Lower risk, same payoff.
