@@ -11,6 +11,14 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import type { TeeStats, ApproachStats, AroundGreenStats, PuttingAnalytics } from '@/app/golf/actions/shot-analytics';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import {
+  yardsToDisplay,
+  yardsLabel,
+  feetToDisplay,
+  feetLabel,
+  feetRangeLabel,
+} from '@/lib/golf/distance-units';
 
 interface ShotTypeBreakdownProps {
   teeStats?: TeeStats;
@@ -144,6 +152,7 @@ export function ShotTypeBreakdown({
   animated = true,
 }: ShotTypeBreakdownProps) {
   const prefersReducedMotion = useReducedMotion();
+  const { distancePref } = useDistanceUnits();
   return (
     <div className={cn('space-y-6', className)}>
       {/* Tee Shots */}
@@ -210,7 +219,7 @@ export function ShotTypeBreakdown({
             {teeStats.avgDrivingDistance && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-warm-500">Avg. Distance</span>
-                <span className="font-medium text-warm-700">{teeStats.avgDrivingDistance} yards</span>
+                <span className="font-medium text-warm-700">{yardsToDisplay(teeStats.avgDrivingDistance, distancePref)} {yardsLabel(distancePref)}</span>
               </div>
             )}
           </div>
@@ -248,7 +257,7 @@ export function ShotTypeBreakdown({
             {approachStats.avgProximity && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-warm-500">Avg. Proximity</span>
-                <span className="font-medium text-warm-700">{approachStats.avgProximity} ft</span>
+                <span className="font-medium text-warm-700">{feetToDisplay(approachStats.avgProximity, distancePref)} {feetLabel(distancePref)}</span>
               </div>
             )}
 
@@ -367,7 +376,7 @@ export function ShotTypeBreakdown({
 
               {puttingStats.inside5ft.attempts > 0 && (
                 <BarItem
-                  label="Inside 5 ft"
+                  label={`Inside ${feetToDisplay(5, distancePref)} ${feetLabel(distancePref)}`}
                   value={puttingStats.inside5ft.pct}
                   color={getBarColor(puttingStats.inside5ft.pct, 'inside5ft')}
                   subLabel={`${puttingStats.inside5ft.made}/${puttingStats.inside5ft.attempts} made`}
@@ -379,7 +388,7 @@ export function ShotTypeBreakdown({
               {puttingStats.fiveTo10ft.attempts > 0 && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-warm-600">5-10 ft</span>
+                    <span className="text-sm text-warm-600">{feetRangeLabel([5, 10], distancePref)}</span>
                     <span className="text-sm font-medium text-warm-700">{puttingStats.fiveTo10ft.pct}%</span>
                   </div>
                   <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
@@ -399,7 +408,7 @@ export function ShotTypeBreakdown({
               {puttingStats.outside10ft.attempts > 0 && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-warm-600">Outside 10 ft</span>
+                    <span className="text-sm text-warm-600">Outside {feetToDisplay(10, distancePref)} {feetLabel(distancePref)}</span>
                     <span className="text-sm font-medium text-warm-700">{puttingStats.outside10ft.pct}%</span>
                   </div>
                   <div className="h-2 bg-warm-100 rounded-full overflow-hidden">

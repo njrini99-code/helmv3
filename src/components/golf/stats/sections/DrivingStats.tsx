@@ -5,9 +5,13 @@ import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { yardsToDisplay, yardsLabel } from '@/lib/golf/distance-units';
 
 export function DrivingStats({ stats }: { stats: GolfStats }) {
   const prefersReducedMotion = useReducedMotion();
+  const { distancePref } = useDistanceUnits();
+  const isMeters = distancePref === 'meters';
   return (
     <motion.div
       className="space-y-4"
@@ -19,20 +23,24 @@ export function DrivingStats({ stats }: { stats: GolfStats }) {
       <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={containerVariants}>
         <StatCard
           label="Driving Distance"
-          value={stats.drivingDistanceAvg ? `${Math.round(stats.drivingDistanceAvg)}` : '-'}
+          value={stats.drivingDistanceAvg
+            ? `${isMeters ? yardsToDisplay(Math.round(stats.drivingDistanceAvg), 'meters') : Math.round(stats.drivingDistanceAvg)}`
+            : '-'}
           numericValue={stats.drivingDistanceAvg}
           decimals={0}
-          subValue="yards avg"
+          subValue={`${yardsLabel(distancePref)} avg`}
           highlight
           large
           index={0}
         />
         <StatCard
           label="Driver Only"
-          value={stats.drivingDistanceDriverOnly ? `${Math.round(stats.drivingDistanceDriverOnly)}` : '-'}
+          value={stats.drivingDistanceDriverOnly
+            ? `${isMeters ? yardsToDisplay(Math.round(stats.drivingDistanceDriverOnly), 'meters') : Math.round(stats.drivingDistanceDriverOnly)}`
+            : '-'}
           numericValue={stats.drivingDistanceDriverOnly}
           decimals={0}
-          subValue="yards avg"
+          subValue={`${yardsLabel(distancePref)} avg`}
           index={1}
         />
         <StatCard

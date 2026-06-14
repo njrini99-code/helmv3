@@ -5,9 +5,12 @@ import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { feetToDisplay, feetLabel, yardsRangeLabel } from '@/lib/golf/distance-units';
 
 export function ApproachStats({ stats }: { stats: GolfStats }) {
   const prefersReducedMotion = useReducedMotion();
+  const { distancePref } = useDistanceUnits();
   return (
     <motion.div
       className="space-y-4"
@@ -41,7 +44,9 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
         />
         <StatCard
           label="Approach Proximity"
-          value={stats.approachProximityAvg ? `${Math.round(stats.approachProximityAvg)}'` : '-'}
+          value={stats.approachProximityAvg
+            ? `${feetToDisplay(Math.round(stats.approachProximityAvg), distancePref)}${feetLabel(distancePref)}`
+            : '-'}
           numericValue={stats.approachProximityAvg}
           decimals={0}
           index={3}
@@ -57,14 +62,14 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
 
       {/* GIR % by Distance */}
       <StatSection title="GIR % by Approach Distance" delay={0.15} collapsible>
-        <StatRow label="50-75 yards" value={formatStat(stats.girPct50_75, '%')} index={0} />
-        <StatRow label="75-100 yards" value={formatStat(stats.girPct75_100, '%')} index={1} />
-        <StatRow label="100-125 yards" value={formatStat(stats.girPct100_125, '%')} index={2} />
-        <StatRow label="125-150 yards" value={formatStat(stats.girPct125_150, '%')} index={3} />
-        <StatRow label="150-175 yards" value={formatStat(stats.girPct150_175, '%')} index={4} />
-        <StatRow label="175-200 yards" value={formatStat(stats.girPct175_200, '%')} index={5} />
-        <StatRow label="200-225 yards" value={formatStat(stats.girPct200_225, '%')} index={6} />
-        <StatRow label="225+ yards" value={formatStat(stats.girPct225Plus, '%')} index={7} />
+        <StatRow label={yardsRangeLabel([50, 75], distancePref)} value={formatStat(stats.girPct50_75, '%')} index={0} />
+        <StatRow label={yardsRangeLabel([75, 100], distancePref)} value={formatStat(stats.girPct75_100, '%')} index={1} />
+        <StatRow label={yardsRangeLabel([100, 125], distancePref)} value={formatStat(stats.girPct100_125, '%')} index={2} />
+        <StatRow label={yardsRangeLabel([125, 150], distancePref)} value={formatStat(stats.girPct125_150, '%')} index={3} />
+        <StatRow label={yardsRangeLabel([150, 175], distancePref)} value={formatStat(stats.girPct150_175, '%')} index={4} />
+        <StatRow label={yardsRangeLabel([175, 200], distancePref)} value={formatStat(stats.girPct175_200, '%')} index={5} />
+        <StatRow label={yardsRangeLabel([200, 225], distancePref)} value={formatStat(stats.girPct200_225, '%')} index={6} />
+        <StatRow label={yardsRangeLabel([225, null], distancePref)} value={formatStat(stats.girPct225Plus, '%')} index={7} />
       </StatSection>
 
       {/* GIR % by Lie */}
@@ -78,45 +83,51 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
       <StatSection title="Proximity Analysis" delay={0.25}>
         <StatRow
           label="Avg Proximity (All)"
-          value={stats.approachProximityAvg ? `${Math.round(stats.approachProximityAvg)}'` : '-'}
+          value={stats.approachProximityAvg
+            ? `${feetToDisplay(Math.round(stats.approachProximityAvg), distancePref)}${feetLabel(distancePref)}`
+            : '-'}
           index={0}
         />
         <StatRow
           label="When Hit Green"
-          value={stats.approachProximityWhenHitGreen ? `${Math.round(stats.approachProximityWhenHitGreen)}'` : '-'}
+          value={stats.approachProximityWhenHitGreen
+            ? `${feetToDisplay(Math.round(stats.approachProximityWhenHitGreen), distancePref)}${feetLabel(distancePref)}`
+            : '-'}
           index={1}
         />
         <StatRow
           label="When Missed Green"
-          value={stats.approachProximityWhenMissedGreen ? `${Math.round(stats.approachProximityWhenMissedGreen)}'` : '-'}
+          value={stats.approachProximityWhenMissedGreen
+            ? `${feetToDisplay(Math.round(stats.approachProximityWhenMissedGreen), distancePref)}${feetLabel(distancePref)}`
+            : '-'}
           index={2}
         />
       </StatSection>
 
       {/* Proximity by Hole Type */}
-      <StatSection title="Proximity by Hole Type (feet)" delay={0.3}>
-        <StatRow label="Par 3s" value={stats.approachProximityPar3 ? `${Math.round(stats.approachProximityPar3)}'` : '-'} index={0} />
-        <StatRow label="Par 4s" value={stats.approachProximityPar4 ? `${Math.round(stats.approachProximityPar4)}'` : '-'} index={1} />
-        <StatRow label="Par 5s" value={stats.approachProximityPar5 ? `${Math.round(stats.approachProximityPar5)}'` : '-'} index={2} />
+      <StatSection title={`Proximity by Hole Type (${feetLabel(distancePref)})`} delay={0.3}>
+        <StatRow label="Par 3s" value={stats.approachProximityPar3 ? `${feetToDisplay(Math.round(stats.approachProximityPar3), distancePref)}${feetLabel(distancePref)}` : '-'} index={0} />
+        <StatRow label="Par 4s" value={stats.approachProximityPar4 ? `${feetToDisplay(Math.round(stats.approachProximityPar4), distancePref)}${feetLabel(distancePref)}` : '-'} index={1} />
+        <StatRow label="Par 5s" value={stats.approachProximityPar5 ? `${feetToDisplay(Math.round(stats.approachProximityPar5), distancePref)}${feetLabel(distancePref)}` : '-'} index={2} />
       </StatSection>
 
       {/* Proximity by Lie */}
-      <StatSection title="Proximity by Lie (feet)" delay={0.35} collapsible>
-        <StatRow label="From Fairway" value={stats.approachProximityFairway ? `${Math.round(stats.approachProximityFairway)}'` : '-'} index={0} />
-        <StatRow label="From Rough" value={stats.approachProximityRough ? `${Math.round(stats.approachProximityRough)}'` : '-'} index={1} />
-        <StatRow label="From Sand" value={stats.approachProximitySand ? `${Math.round(stats.approachProximitySand)}'` : '-'} index={2} />
+      <StatSection title={`Proximity by Lie (${feetLabel(distancePref)})`} delay={0.35} collapsible>
+        <StatRow label="From Fairway" value={stats.approachProximityFairway ? `${feetToDisplay(Math.round(stats.approachProximityFairway), distancePref)}${feetLabel(distancePref)}` : '-'} index={0} />
+        <StatRow label="From Rough" value={stats.approachProximityRough ? `${feetToDisplay(Math.round(stats.approachProximityRough), distancePref)}${feetLabel(distancePref)}` : '-'} index={1} />
+        <StatRow label="From Sand" value={stats.approachProximitySand ? `${feetToDisplay(Math.round(stats.approachProximitySand), distancePref)}${feetLabel(distancePref)}` : '-'} index={2} />
       </StatSection>
 
       {/* Proximity by Distance */}
-      <StatSection title="Proximity by Distance (feet from hole)" delay={0.4} collapsible>
-        <StatRow label="50-75 yards" value={stats.approachProx30_75 ? `${Math.round(stats.approachProx30_75)}'` : '-'} index={0} />
-        <StatRow label="75-100 yards" value={stats.approachProx75_100 ? `${Math.round(stats.approachProx75_100)}'` : '-'} index={1} />
-        <StatRow label="100-125 yards" value={stats.approachProx100_125 ? `${Math.round(stats.approachProx100_125)}'` : '-'} index={2} />
-        <StatRow label="125-150 yards" value={stats.approachProx125_150 ? `${Math.round(stats.approachProx125_150)}'` : '-'} index={3} />
-        <StatRow label="150-175 yards" value={stats.approachProx150_175 ? `${Math.round(stats.approachProx150_175)}'` : '-'} index={4} />
-        <StatRow label="175-200 yards" value={stats.approachProx175_200 ? `${Math.round(stats.approachProx175_200)}'` : '-'} index={5} />
-        <StatRow label="200-225 yards" value={stats.approachProx200_225 ? `${Math.round(stats.approachProx200_225)}'` : '-'} index={6} />
-        <StatRow label="225+ yards" value={stats.approachProx225Plus ? `${Math.round(stats.approachProx225Plus)}'` : '-'} index={7} />
+      <StatSection title={`Proximity by Distance (${feetLabel(distancePref)} from hole)`} delay={0.4} collapsible>
+        <StatRow label={yardsRangeLabel([50, 75], distancePref)} value={stats.approachProx30_75 ? `${feetToDisplay(Math.round(stats.approachProx30_75), distancePref)}${feetLabel(distancePref)}` : '-'} index={0} />
+        <StatRow label={yardsRangeLabel([75, 100], distancePref)} value={stats.approachProx75_100 ? `${feetToDisplay(Math.round(stats.approachProx75_100), distancePref)}${feetLabel(distancePref)}` : '-'} index={1} />
+        <StatRow label={yardsRangeLabel([100, 125], distancePref)} value={stats.approachProx100_125 ? `${feetToDisplay(Math.round(stats.approachProx100_125), distancePref)}${feetLabel(distancePref)}` : '-'} index={2} />
+        <StatRow label={yardsRangeLabel([125, 150], distancePref)} value={stats.approachProx125_150 ? `${feetToDisplay(Math.round(stats.approachProx125_150), distancePref)}${feetLabel(distancePref)}` : '-'} index={3} />
+        <StatRow label={yardsRangeLabel([150, 175], distancePref)} value={stats.approachProx150_175 ? `${feetToDisplay(Math.round(stats.approachProx150_175), distancePref)}${feetLabel(distancePref)}` : '-'} index={4} />
+        <StatRow label={yardsRangeLabel([175, 200], distancePref)} value={stats.approachProx175_200 ? `${feetToDisplay(Math.round(stats.approachProx175_200), distancePref)}${feetLabel(distancePref)}` : '-'} index={5} />
+        <StatRow label={yardsRangeLabel([200, 225], distancePref)} value={stats.approachProx200_225 ? `${feetToDisplay(Math.round(stats.approachProx200_225), distancePref)}${feetLabel(distancePref)}` : '-'} index={6} />
+        <StatRow label={yardsRangeLabel([225, null], distancePref)} value={stats.approachProx225Plus ? `${feetToDisplay(Math.round(stats.approachProx225Plus), distancePref)}${feetLabel(distancePref)}` : '-'} index={7} />
       </StatSection>
 
       {/* Approach Efficiency by Lie */}
@@ -138,14 +149,14 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
             </thead>
             <tbody>
               {[
-                { label: '50-75 yds', data: stats.approachEff30_75 },
-                { label: '75-100 yds', data: stats.approachEff75_100 },
-                { label: '100-125 yds', data: stats.approachEff100_125 },
-                { label: '125-150 yds', data: stats.approachEff125_150 },
-                { label: '150-175 yds', data: stats.approachEff150_175 },
-                { label: '175-200 yds', data: stats.approachEff175_200 },
-                { label: '200-225 yds', data: stats.approachEff200_225 },
-                { label: '225+ yds', data: stats.approachEff225Plus },
+                { label: yardsRangeLabel([50, 75], distancePref), data: stats.approachEff30_75 },
+                { label: yardsRangeLabel([75, 100], distancePref), data: stats.approachEff75_100 },
+                { label: yardsRangeLabel([100, 125], distancePref), data: stats.approachEff100_125 },
+                { label: yardsRangeLabel([125, 150], distancePref), data: stats.approachEff125_150 },
+                { label: yardsRangeLabel([150, 175], distancePref), data: stats.approachEff150_175 },
+                { label: yardsRangeLabel([175, 200], distancePref), data: stats.approachEff175_200 },
+                { label: yardsRangeLabel([200, 225], distancePref), data: stats.approachEff200_225 },
+                { label: yardsRangeLabel([225, null], distancePref), data: stats.approachEff225Plus },
               ].map((row, idx) => (
                 <motion.tr
                   key={row.label}

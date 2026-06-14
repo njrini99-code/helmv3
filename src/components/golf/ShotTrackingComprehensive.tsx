@@ -15,6 +15,13 @@ import { usePenaltyHandler } from '@/hooks/golf/use-penalty-handler';
 import { useUndoManager } from '@/hooks/golf/use-undo-manager';
 import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
 import { Button, IconButton } from '@/components/ui/button';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import {
+  yardsToDisplay,
+  feetToDisplay,
+  displayToYards,
+  displayToFeet,
+} from '@/lib/golf/distance-units';
 
 // Local alias for the Hole interface used by this component's props
 type Hole = RoundHole;
@@ -73,6 +80,8 @@ const ScorecardHeader = memo(function ScorecardHeader({
   onNavigateToHole,
 }: ScorecardHeaderProps) {
   const headerRef = useRef<HTMLDivElement>(null);
+  const { distancePref: scPref } = useDistanceUnits();
+  const scIsMeters = scPref === 'meters';
 
   const updateCSSProperty = useCallback(() => {
     if (headerRef.current) {
@@ -116,7 +125,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
       <Button variant="primary"
         key={hole.number}
         id={`hole-${hole.number}`}
-        aria-label={`Hole ${hole.number}, Par ${hole.par}, ${hole.yardage} yards${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
+        aria-label={`Hole ${hole.number}, Par ${hole.par}, ${scIsMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage} ${scIsMeters ? 'meters' : 'yards'}${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
         onClick={() => canNavigate && onNavigateToHole?.(holeIndex)}
         disabled={!canNavigate}
         className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-700 transition-colors ${
@@ -131,7 +140,9 @@ const ScorecardHeader = memo(function ScorecardHeader({
       >
         <div className={`text-xs font-medium ${isCurrent ? 'text-white' : 'text-warm-300'}`}>Hole {hole.number}</div>
         <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-400'}`}>Par {hole.par}</div>
-        <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-500'}`}>{hole.yardage} yds</div>
+        <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-500'}`}>
+          {scIsMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage} {scIsMeters ? 'm' : 'yds'}
+        </div>
         <div className={`mt-1 text-body-lg font-medium tracking-[-0.005em] ${scoreColor}`}>
           {hasScore ? hole.score : '-'}
         </div>
@@ -210,7 +221,11 @@ const ScorecardHeader = memo(function ScorecardHeader({
           <div className="min-w-[75px] py-3 px-2 text-center bg-warm-800 border-r-2 border-warm-500">
             <div className="text-xs font-medium text-amber-400">{is9Hole ? 'TOTAL' : 'OUT'}</div>
             <div className="text-xs text-warm-400">Par {front9.reduce((sum, hole) => sum + hole.par, 0)}</div>
-            <div className="text-xs text-warm-500">{front9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
+            <div className="text-xs text-warm-500">
+              {scIsMeters
+                ? yardsToDisplay(front9.reduce((sum, hole) => sum + hole.yardage, 0), 'meters')
+                : front9.reduce((sum, hole) => sum + hole.yardage, 0)}
+            </div>
             <div className="mt-1 text-body-lg font-medium tracking-[-0.005em] text-amber-400">{front9HasScores ? front9Score : '-'}</div>
           </div>
           {!is9Hole && back9.map((hole, index) => renderHoleButton(hole, index + 9))}
@@ -218,7 +233,11 @@ const ScorecardHeader = memo(function ScorecardHeader({
             <div className="min-w-[75px] py-3 px-2 text-center bg-warm-800 border-r-2 border-warm-500">
               <div className="text-xs font-medium text-amber-400">IN</div>
               <div className="text-xs text-warm-400">Par {back9.reduce((sum, hole) => sum + hole.par, 0)}</div>
-              <div className="text-xs text-warm-500">{back9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
+              <div className="text-xs text-warm-500">
+                {scIsMeters
+                  ? yardsToDisplay(back9.reduce((sum, hole) => sum + hole.yardage, 0), 'meters')
+                  : back9.reduce((sum, hole) => sum + hole.yardage, 0)}
+              </div>
               <div className="mt-1 text-body-lg font-medium tracking-[-0.005em] text-amber-400">{back9HasScores ? back9Score : '-'}</div>
             </div>
           )}
@@ -226,7 +245,11 @@ const ScorecardHeader = memo(function ScorecardHeader({
             <div className="min-w-[85px] py-3 px-2 text-center bg-warm-950">
               <div className="text-xs font-medium text-white">TOTAL</div>
               <div className="text-xs text-warm-400">Par {totalPar}</div>
-              <div className="text-xs text-warm-500">{holes.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
+              <div className="text-xs text-warm-500">
+                {scIsMeters
+                  ? yardsToDisplay(holes.reduce((sum, hole) => sum + hole.yardage, 0), 'meters')
+                  : holes.reduce((sum, hole) => sum + hole.yardage, 0)}
+              </div>
               <div className="mt-1 text-body-lg font-medium tracking-[-0.005em] text-white">{(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}</div>
             </div>
           )}
@@ -323,6 +346,12 @@ export default function ShotTrackingComprehensive({
     autoSaveDisabled,
   });
 
+  // Distance-unit preference: 'yards' (default) | 'meters'
+  // This is a DISPLAY-ONLY layer — all canonical state (distanceUnit, distanceAfterUnit)
+  // remains 'yards' or 'feet' and is stored to DB unchanged.
+  const { distancePref } = useDistanceUnits();
+  const isMeters = distancePref === 'meters';
+
   // Destructure state for convenience
   const {
     currentShot, shotHistory, distanceToHole, distanceUnit, currentLie,
@@ -413,9 +442,15 @@ export default function ShotTrackingComprehensive({
       const parsed = parseFloat(trimmed);
       if (!Number.isFinite(parsed) || parsed < 0) return false;
 
-      // Validate reasonable distance for green shots (proximity should be < 150 feet)
+      // Validate reasonable distance for green shots (proximity should be < 150 feet / ~46 m)
       if (resultOfShot === 'green') {
-        const afterInFeet = distanceAfterUnit === 'feet' ? parsed : parsed * 3;
+        let afterInFeet: number;
+        if (isMeters) {
+          // parsed is in meters; 46 m ≈ 150 ft
+          afterInFeet = displayToFeet(parsed, 'meters');
+        } else {
+          afterInFeet = distanceAfterUnit === 'feet' ? parsed : parsed * 3;
+        }
         if (afterInFeet > 150) return false; // Can't be 150+ feet from hole and "on the green"
       }
     }
@@ -467,9 +502,27 @@ export default function ShotTrackingComprehensive({
       unitAfter = 'feet';
     } else {
       // Parse the distance, handling potential whitespace and ensuring valid number
-      const parsedDistance = parseFloat(distanceAfterShot.trim());
-      distanceAfter = Number.isFinite(parsedDistance) && parsedDistance >= 0 ? Math.round(parsedDistance) : 0;
-      unitAfter = distanceAfterUnit;
+      const parsedDisplay = parseFloat(distanceAfterShot.trim());
+      if (!Number.isFinite(parsedDisplay) || parsedDisplay < 0) {
+        isProcessingShotRef.current = false;
+        return;
+      }
+
+      if (isMeters) {
+        // Meters-mode: user typed meters → convert to canonical yards or feet
+        if (isPutting || distanceAfterUnit === 'feet') {
+          // Putt / feet leave: meters → feet
+          distanceAfter = displayToFeet(parsedDisplay, 'meters');
+          unitAfter = 'feet';
+        } else {
+          // Non-putt: meters → yards
+          distanceAfter = displayToYards(parsedDisplay, 'meters');
+          unitAfter = 'yards';
+        }
+      } else {
+        distanceAfter = Math.round(parsedDisplay);
+        unitAfter = distanceAfterUnit;
+      }
 
       if (distanceAfter === 0) {
         isProcessingShotRef.current = false;
@@ -733,7 +786,13 @@ export default function ShotTrackingComprehensive({
                   <>
                     <p className="text-primary-200 text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80">Distance</p>
                     <p className="text-display font-light tracking-[-0.025em] mt-1">
-                      {distanceToHole}<span className="text-xl ml-1 font-medium text-primary-100">{distanceUnit === 'yards' ? 'YDS' : 'FT'}</span>
+                      {isMeters
+                        ? (distanceUnit === 'feet' ? feetToDisplay(distanceToHole, 'meters') : yardsToDisplay(distanceToHole, 'meters'))
+                        : distanceToHole
+                      }
+                      <span className="text-xl ml-1 font-medium text-primary-100">
+                        {isMeters ? 'M' : (distanceUnit === 'yards' ? 'YDS' : 'FT')}
+                      </span>
                     </p>
                   </>
                 )}
@@ -757,7 +816,12 @@ export default function ShotTrackingComprehensive({
                   <span className="w-1.5 h-1.5 rounded-full border border-warm-200/55"></span>
                   Tee
                 </span>
-                <span className="font-medium text-sm">{displayDistance} {displayUnit} left</span>
+                <span className="font-medium text-sm">
+                  {isMeters
+                    ? `${displayUnit === 'feet' ? feetToDisplay(displayDistance, 'meters') : yardsToDisplay(displayDistance, 'meters')} m`
+                    : `${displayDistance} ${displayUnit}`
+                  } left
+                </span>
                 <span className="flex items-center gap-2 font-medium">
                   Hole
                   <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
@@ -781,14 +845,22 @@ export default function ShotTrackingComprehensive({
               <div className="space-y-2">
                 {shotHistory.map((shot) => {
                   const formatResult = (r: string) => r.charAt(0).toUpperCase() + r.slice(1);
-                  const distLabel = shot.distanceUnitBefore === 'feet'
-                    ? `${shot.distanceToHoleBefore}ft`
-                    : `${shot.distanceToHoleBefore}y`;
+                  const distLabel = isMeters
+                    ? (shot.distanceUnitBefore === 'feet'
+                        ? `${feetToDisplay(shot.distanceToHoleBefore, 'meters')}m`
+                        : `${yardsToDisplay(shot.distanceToHoleBefore, 'meters')}m`)
+                    : (shot.distanceUnitBefore === 'feet'
+                        ? `${shot.distanceToHoleBefore}ft`
+                        : `${shot.distanceToHoleBefore}y`);
                   const afterLabel = shot.result === 'hole'
                     ? 'Holed'
-                    : shot.distanceUnitAfter === 'feet'
-                      ? `${shot.distanceToHoleAfter}ft left`
-                      : `${shot.distanceToHoleAfter}y left`;
+                    : isMeters
+                      ? (shot.distanceUnitAfter === 'feet'
+                          ? `${feetToDisplay(shot.distanceToHoleAfter ?? 0, 'meters')}m left`
+                          : `${yardsToDisplay(shot.distanceToHoleAfter ?? 0, 'meters')}m left`)
+                      : (shot.distanceUnitAfter === 'feet'
+                          ? `${shot.distanceToHoleAfter}ft left`
+                          : `${shot.distanceToHoleAfter}y left`);
                   return (
                     <Button variant="danger"
                       key={shot.shotNumber}
@@ -836,7 +908,11 @@ export default function ShotTrackingComprehensive({
                       {/* Shot distance + result badge */}
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {!shot.isPenalty && (
-                          <span className="text-body-sm font-medium text-primary-600">{shot.shotDistance}y</span>
+                          <span className="text-body-sm font-medium text-primary-600">
+                            {isMeters && shot.shotDistance != null
+                              ? `${yardsToDisplay(shot.shotDistance, 'meters')}m`
+                              : `${shot.shotDistance}y`}
+                          </span>
                         )}
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${
                           shot.result === 'hole' ? 'bg-primary-100 text-primary-700'
@@ -1065,8 +1141,8 @@ export default function ShotTrackingComprehensive({
                   </div>
                   <p className="text-xs text-warm-600 mb-4">
                     {isPutting
-                      ? 'Enter how many feet were left after the putt'
-                      : 'Enter the distance to the hole after this shot'}
+                      ? `Enter how many ${isMeters ? 'meters' : 'feet'} were left after the putt`
+                      : `Enter the distance to the hole after this shot (${isMeters ? 'meters' : (distanceAfterUnit === 'feet' ? 'feet' : 'yards')})`}
                   </p>
                   <div className="space-y-3 mb-3">
                     <input
@@ -1075,11 +1151,15 @@ export default function ShotTrackingComprehensive({
                       inputMode="numeric"
                       pattern="[0-9]*"
                       min="0"
-                      aria-label={isPutting ? 'Leave distance in feet or yards' : 'Distance remaining to hole'}
+                      aria-label={isPutting
+                        ? `Leave distance in ${isMeters ? 'meters' : 'feet or yards'}`
+                        : `Distance remaining to hole in ${isMeters ? 'meters' : (distanceAfterUnit === 'feet' ? 'feet' : 'yards')}`}
                       value={distanceAfterShot}
                       onChange={(e) => dispatch({ type: 'SET_DISTANCE_AFTER', payload: e.target.value })}
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                      placeholder="Enter distance"
+                      placeholder={isMeters
+                        ? (isPutting ? 'e.g. 3 m' : 'e.g. 137 m')
+                        : 'Enter distance'}
                       className={`w-full h-14 px-5 rounded-xl text-h1 md:text-display font-light tracking-[-0.025em] text-primary-900 text-center bg-white border-2 focus:ring-4 focus:outline-none transition-colors placeholder:text-warm-300 ${
                         distanceAfterShot && (!Number.isFinite(parseFloat(distanceAfterShot)) || parseFloat(distanceAfterShot) < 0)
                           ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
@@ -1092,57 +1172,89 @@ export default function ShotTrackingComprehensive({
                     {/* Quick-select buttons for common putting distances */}
                     {isPutting && (
                       <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                        {[5, 10, 15, 20, 30, 40].map((ft) => (
-                          <Button variant="primary"
-                            key={ft}
-                            type="button"
-                            onClick={() => {
-                              dispatch({ type: 'SET_DISTANCE_AFTER', payload: String(ft) });
-                              dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' });
-                            }}
-                            className={`py-2 min-h-[44px] rounded-lg text-eyebrow font-medium transition-colors ${
-                              distanceAfterShot === String(ft) && distanceAfterUnit === 'feet'
-                                ? 'bg-primary-600 text-white shadow-sm'
-                                : 'bg-white text-primary-700 border border-primary-200 hover:bg-primary-50 active:bg-primary-100'
-                            }`}
-                          >
-                            {ft}ft
-                          </Button>
-                        ))}
+                        {(isMeters ? [1, 2, 3, 5, 9, 12] : [5, 10, 15, 20, 30, 40]).map((val) => {
+                          // In meters-mode quick-chips are already in meters; in yards-mode they're feet
+                          const isActive = isMeters
+                            ? distanceAfterShot === String(val)
+                            : (distanceAfterShot === String(val) && distanceAfterUnit === 'feet');
+                          return (
+                            <Button variant="primary"
+                              key={val}
+                              type="button"
+                              onClick={() => {
+                                dispatch({ type: 'SET_DISTANCE_AFTER', payload: String(val) });
+                                if (!isMeters) {
+                                  dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' });
+                                }
+                              }}
+                              className={`py-2 min-h-[44px] rounded-lg text-eyebrow font-medium transition-colors ${
+                                isActive
+                                  ? 'bg-primary-600 text-white shadow-sm'
+                                  : 'bg-white text-primary-700 border border-primary-200 hover:bg-primary-50 active:bg-primary-100'
+                              }`}
+                            >
+                              {val}{isMeters ? 'm' : 'ft'}
+                            </Button>
+                          );
+                        })}
                       </div>
                     )}
-                    <div className="inline-flex bg-white rounded-lg p-1 border-2 border-primary-300 w-full">
-                      <Button variant="primary"
-                        onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'yards' })}
-                        className={`flex-1 py-2.5 rounded-md font-medium text-sm uppercase tracking-wide transition-colors ${
-                          distanceAfterUnit === 'yards'
-                            ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
-                            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50 active:bg-warm-100'
-                        }`}
-                      >
-                        Yards
-                      </Button>
-                      <Button variant="primary"
-                        onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' })}
-                        className={`flex-1 py-2.5 rounded-md font-medium text-sm uppercase tracking-wide transition-colors ${
-                          distanceAfterUnit === 'feet'
-                            ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
-                            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50 active:bg-warm-100'
-                        }`}
-                      >
-                        Feet
-                      </Button>
-                    </div>
+                    {/* Yards/Feet toggle: only shown in yards-mode (in meters-mode the unit is fixed to meters) */}
+                    {!isMeters && !isPutting && (
+                      <div className="inline-flex bg-white rounded-lg p-1 border-2 border-primary-300 w-full">
+                        <Button variant="primary"
+                          onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'yards' })}
+                          className={`flex-1 py-2.5 rounded-md font-medium text-sm uppercase tracking-wide transition-colors ${
+                            distanceAfterUnit === 'yards'
+                              ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
+                              : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50 active:bg-warm-100'
+                          }`}
+                        >
+                          Yards
+                        </Button>
+                        <Button variant="primary"
+                          onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' })}
+                          className={`flex-1 py-2.5 rounded-md font-medium text-sm uppercase tracking-wide transition-colors ${
+                            distanceAfterUnit === 'feet'
+                              ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
+                              : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50 active:bg-warm-100'
+                          }`}
+                        >
+                          Feet
+                        </Button>
+                      </div>
+                    )}
+                    {/* In meters-mode, show a static label so the player knows the active unit */}
+                    {isMeters && !isPutting && (
+                      <div className="flex items-center justify-center py-2 px-4 bg-primary-50 rounded-lg border border-primary-200">
+                        <span className="text-sm font-medium text-primary-700 uppercase tracking-wide">Meters (m)</span>
+                      </div>
+                    )}
                   </div>
                   {distanceAfterShot && (
                     <div className="flex items-center justify-between bg-cream-100/68 rounded-lg px-4 py-2.5 border border-primary-200">
                       <span className="text-xs font-medium text-warm-600 uppercase tracking-wide">Shot Distance</span>
                       <span className="text-body-lg font-medium tracking-[-0.005em] text-primary-700">
-                        ~{Math.round(calculateShotDistanceWithDirection(
-                          distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole,
-                          distanceAfterUnit === 'feet' ? (parseFloat(distanceAfterShot) || 0) / 3 : (parseFloat(distanceAfterShot) || 0),
-                          isApproachOrAroundGreen ? (approachMissDirection || missDirection) : missDirection
-                        ))} yards
+                        {(() => {
+                          // Convert user-typed value to yards for distance calculation
+                          const parsedD = parseFloat(distanceAfterShot) || 0;
+                          let afterYards: number;
+                          if (isMeters) {
+                            afterYards = isPutting || distanceAfterUnit === 'feet'
+                              ? displayToFeet(parsedD, 'meters') / 3
+                              : displayToYards(parsedD, 'meters');
+                          } else {
+                            afterYards = distanceAfterUnit === 'feet' ? parsedD / 3 : parsedD;
+                          }
+                          const beforeYards = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
+                          const shotYards = Math.round(calculateShotDistanceWithDirection(
+                            beforeYards, afterYards,
+                            isApproachOrAroundGreen ? (approachMissDirection || missDirection) : missDirection
+                          ));
+                          return isMeters
+                            ? `~${yardsToDisplay(shotYards, 'meters')}m`
+                            : `~${shotYards}y`;
+                        })()}
                       </span>
                     </div>
                   )}
