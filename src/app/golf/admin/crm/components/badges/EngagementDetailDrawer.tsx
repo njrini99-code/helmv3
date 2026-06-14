@@ -82,8 +82,8 @@ const EMAIL_EVENT_LABEL: Record<string, string> = {
 const EMAIL_EVENT_TONE: Record<string, string> = {
   sent: 'bg-blue-50 text-blue-700 border-blue-200',
   delivered: 'bg-blue-50 text-blue-700 border-blue-200',
-  opened: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  clicked: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  opened: 'bg-primary-50 text-primary-700 border-primary-200',
+  clicked: 'bg-primary-50 text-primary-700 border-primary-200',
   bounced: 'bg-red-50 text-red-700 border-red-200',
   complained: 'bg-red-50 text-red-700 border-red-200',
   unsubscribed: 'bg-red-50 text-red-700 border-red-200',

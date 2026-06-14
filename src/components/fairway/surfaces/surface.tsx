@@ -88,16 +88,20 @@ const SurfaceRoot = forwardRef<HTMLDivElement, SurfaceProps>(function Surface(
         // base matte card
         'relative bg-surface rounded-card text-text-primary',
         PADDING[padding],
-        // resting elevation — border OR shadow, never both
+        // resting elevation: a warm hairline + the lit-edge card whisper
+        // (--fw-shadow-card, light-cards-only so the top highlight is safe), or
+        // a borderless soft-lit shadow card.
         elevation === 'border'
-          ? 'border border-border-subtle shadow-flat'
+          ? 'border border-border-subtle [box-shadow:var(--fw-shadow-card)]'
           : 'shadow-soft',
-        // interactive affordance (cinematic, small-distance transforms only)
+        // interactive affordance (cinematic, small-distance transforms only):
+        // a smooth cinematic-glide lift on hover, then a quick tactile press
+        // back down on active for a responsive, physical feel.
         interactive && [
-          'cursor-pointer transition-[box-shadow,transform,border-color]',
-          '[transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
-          'hover:shadow-raise hover:-translate-y-px',
-          'active:translate-y-[0.5px] active:shadow-flat',
+          'cursor-pointer transition-[box-shadow,transform,border-color] will-change-transform',
+          '[transition-duration:240ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
+          'hover:shadow-raise hover:-translate-y-[2px]',
+          'active:translate-y-0 active:shadow-soft active:[transition-duration:110ms]',
           // green focus-visible ring that survives black + cream
           'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           // honor reduced motion — collapse transforms, keep the shadow cue

@@ -60,7 +60,7 @@ import {
   addMonths,
 } from 'date-fns';
 import { CalendarPlus, RefreshCw } from 'lucide-react';
-import { Segmented, Sheet, Button as FwButton } from '@/components/fairway';
+import { Segmented, Sheet, Button as FwButton, Skeleton } from '@/components/fairway';
 import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrapper';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
@@ -1014,8 +1014,8 @@ function FairwaySubscribeSheet({ open, onOpenChange, canManageTeamFeed }: Fairwa
         ) : null}
         {feedsLoading ? (
           <div className="space-y-3" aria-busy="true" aria-label="Loading calendar feeds">
-            <div className="h-16 animate-pulse rounded-fw-md bg-surface-sunken" />
-            <div className="h-16 animate-pulse rounded-fw-md bg-surface-sunken" />
+            <Skeleton className="h-16 rounded-fw-md" />
+            <Skeleton className="h-16 rounded-fw-md" />
           </div>
         ) : (
           <CalendarFeedManager

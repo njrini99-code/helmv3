@@ -354,7 +354,7 @@ export function PlayerProfileClient({
         {/* ── Hero card ────────────────────────────────────────────────── */}
         <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm mb-6 overflow-clip">
           {/* gradient accent bar */}
-          <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-primary-400 to-emerald-400" />
+          <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-primary-400 to-primary-400" />
 
           <div className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-start gap-5">
@@ -635,7 +635,7 @@ export function PlayerProfileClient({
                       </div>
                     )}
                     {aggregates?.avg_exit_velocity != null && (
-                      <div className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-primary-50 to-emerald-50 rounded-xl">
+                      <div className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl">
                         <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
                           <IconBolt size={18} className="text-primary-600" />
                         </div>

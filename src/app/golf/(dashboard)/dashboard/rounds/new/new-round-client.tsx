@@ -537,6 +537,12 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
   const selectedTeeIdRef = useRef<string | null>(null);
+  // Reactive mirror of "a cloud tee is selected" (selectedTeeIdRef is a ref and
+  // can't drive render). Kept in lockstep with selectedTeeIdRef so the setup
+  // screen can show a read-only "Course ready" confirmation for a cloud pick
+  // instead of an editable form — editing the form would otherwise persist the
+  // edited name against the original (now-mismatched) tee_id/course_id.
+  const [cloudPickActive, setCloudPickActive] = useState(false);
   const [teePickerOpen, setTeePickerOpen] = useState(false);
   const [preloadedHoleConfigs, setPreloadedHoleConfigs] = useState<SavedCourseHoleConfig[] | null>(null);
   const [saveCourseChecked, setSaveCourseChecked] = useState(false);
@@ -689,6 +695,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     setCourseMode('saved');
     resolvedCourseIdRef.current = course.courseId ?? null;
     selectedTeeIdRef.current = null; // a recent saved course is not a cloud tee
+    setCloudPickActive(false);
     setSetupData(prev => ({
       ...prev,
       courseName: course.courseName,
@@ -737,6 +744,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     setSelectedCourseId(null);
     resolvedCourseIdRef.current = d.courseId;
     selectedTeeIdRef.current = d.teeId;
+    setCloudPickActive(true);
     setSetupData(prev => ({
       ...prev,
       courseName: d.courseName,
@@ -751,6 +759,18 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       par: h.par,
       yardage: h.yardage ?? 0,
     }));
+    // A DRAFT tee can carry fewer holes than its declared holesCount (e.g. an
+    // 18-hole tee with only a few holes entered). Pad the gap with par-4
+    // placeholders so the round always has a complete hole set and downstream
+    // holes[i] lookups for the missing numbers are never undefined.
+    const targetCount = d.holesCount === 9 || d.holesCount === 18 ? d.holesCount : configs.length;
+    if (configs.length < targetCount) {
+      const have = new Set(configs.map(c => c.holeNumber));
+      for (let n = 1; n <= targetCount; n++) {
+        if (!have.has(n)) configs.push({ holeNumber: n, par: 4, yardage: 0 });
+      }
+      configs.sort((a, b) => a.holeNumber - b.holeNumber);
+    }
     setPreloadedHoleConfigs(configs);
     if (d.holesCount === 9 || d.holesCount === 18) setHolesPerRound(d.holesCount);
   }, []);
@@ -764,11 +784,16 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   useEffect(() => {
     if (!redesign || showResumePrompt || step !== 'setup') return;
     if (autoOpenedPickerRef.current) return;
+    // Don't auto-open the cloud picker offline — listCourses needs the network and
+    // would greet the user with an error toast + empty library. The offline-friendly
+    // saved-course / manual path on the setup screen still works; "Browse course
+    // library" stays available to retry once back online.
+    if (!connectionStatus.isOnline) return;
     const nothingChosenYet =
       !selectedCourseId && selectedTeeIdRef.current == null && !setupData.courseName;
     autoOpenedPickerRef.current = true;
     if (nothingChosenYet) setTeePickerOpen(true);
-  }, [redesign, showResumePrompt, step, selectedCourseId, setupData.courseName]);
+  }, [redesign, showResumePrompt, step, selectedCourseId, setupData.courseName, connectionStatus.isOnline]);
 
   // Handle saved course selection
   const handleSavedCourseSelect = (courseId: string | null) => {
@@ -788,6 +813,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       setPreloadedHoleConfigs(null);
       resolvedCourseIdRef.current = null;
       selectedTeeIdRef.current = null;
+      setCloudPickActive(false);
       return;
     }
 
@@ -796,6 +822,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       // Store the golf_courses FK from the saved course
       resolvedCourseIdRef.current = course.courseId ?? null;
       selectedTeeIdRef.current = null; // saved course, not a cloud tee
+      setCloudPickActive(false);
       // Populate form with saved course data
       setSetupData(prev => ({
         ...prev,
@@ -898,9 +925,16 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       }
     }
 
-    // If using a saved course with hole configs AND at least one valid yardage, skip the hole configuration step
-    const hasValidYardages = preloadedHoleConfigs?.some(h => h.yardage > 0) ?? false;
-    if (preloadedHoleConfigs && preloadedHoleConfigs.length > 0 && hasValidYardages) {
+    // Skip the hole-configuration step when the preloaded config is usable.
+    // A CLOUD-PICKED tee provides authoritative pars; its yardages may legitimately
+    // be absent (a tee entered with pars only), so for a cloud pick we gate on par
+    // — bouncing such a pick to re-enter data the picker already supplied would
+    // break the "pre-fills your pars and yardages" promise. Manual / legacy saved
+    // courses still require a real yardage before skipping config.
+    const isCloudPick = selectedTeeIdRef.current != null;
+    const hasUsableConfig =
+      preloadedHoleConfigs?.some(h => (isCloudPick ? h.par > 0 : h.yardage > 0)) ?? false;
+    if (preloadedHoleConfigs && preloadedHoleConfigs.length > 0 && hasUsableConfig) {
       // Slice to match selected hole count (e.g. user picks 9 on a saved 18-hole course)
       let configs: SavedCourseHoleConfig[];
       if (holesPerRound === 9 && preloadedHoleConfigs.length >= 18 && nineSelection === 'back') {
@@ -916,6 +950,31 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       }));
       setHoles(initialHoles);
       setCompletedHoleStats([]);
+      // Grow the shared Cloud Course Library from a CURATED saved course that
+      // skipped hole-config and isn't in the cloud yet (saved-course origin →
+      // selectedCourseId set, but no resolved cloud course/tee). Curated origin =
+      // safe to contribute without the "save course" opt-in (no typo-pollution
+      // risk, unlike a hand-typed name — those still grow only via handleHolesSave's
+      // opt-in path). Best-effort + dedup-aware: never blocks starting the round.
+      if (selectedCourseId != null && resolvedCourseIdRef.current == null && selectedTeeIdRef.current == null) {
+        void (async () => {
+          try {
+            const contrib = await contributeCourseFromRound({
+              courseName: setupData.courseName,
+              city: setupData.courseCity || null,
+              state: setupData.courseState || null,
+              teeName: setupData.teesPlayed || null,
+              courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : null,
+              slopeRating: setupData.courseSlope ? parseInt(setupData.courseSlope) : null,
+              holes: configs.map(h => ({ holeNumber: h.holeNumber, par: h.par, yardage: h.yardage })),
+            });
+            if (contrib.success) {
+              resolvedCourseIdRef.current = contrib.data.courseId;
+              if (contrib.data.teeId) selectedTeeIdRef.current = contrib.data.teeId;
+            }
+          } catch { /* best-effort: catalog growth must never block the round */ }
+        })();
+      }
       setIsStartingRound(false);
       setStep('tracking');
     } else {
@@ -1009,6 +1068,10 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     return {
       courseName: setupData.courseName,
       courseId: resolvedCourseIdRef.current || undefined,
+      // Persist the cloud tee link on partial/draft saves too — without this a
+      // save-for-later round started from a cloud tee writes tee_id=NULL and loses
+      // its catalog tee link until (if ever) the final submit repairs it.
+      teeId: selectedTeeIdRef.current || undefined,
       courseCity: setupData.courseCity || undefined,
       courseState: setupData.courseState || undefined,
       courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
@@ -1622,6 +1685,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               setSelectedCourseId(null);
               resolvedCourseIdRef.current = null;
               selectedTeeIdRef.current = null;
+              setCloudPickActive(false);
               setPreloadedHoleConfigs(null);
               setCourseSearchQuery('');
               setSetupData((prev) => ({
@@ -1640,9 +1704,15 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           selectedCourseId={selectedCourseId}
           onSavedCourseSelect={handleSavedCourseSelect}
           selectedCourse={selectedCourse}
+          cloudPickActive={cloudPickActive}
           onClearSelectedCourse={() => {
             setSelectedCourseId(null);
             setPreloadedHoleConfigs(null);
+            // Clear any cloud-link so a subsequently hand-typed course can't inherit
+            // a stale tee_id/course_id from the previously selected course.
+            resolvedCourseIdRef.current = null;
+            selectedTeeIdRef.current = null;
+            setCloudPickActive(false);
             setSetupData((prev) => ({
               ...prev,
               courseName: '',
@@ -1754,9 +1824,11 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               <IconMapPin size={16} aria-hidden /> Browse course library
             </Button>
           )}
-          {redesign
-            ? <FairwayCoursePicker open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
-            : <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />}
+          {/* This legacy setup block is only reached with redesign OFF — the
+              redesign path returns early above (the `redesign && step==='setup'`
+              guard) and renders FairwayCoursePicker there. So this is always the
+              legacy drawer; the old `redesign ? …` ternary here was dead. */}
+          <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
 
           {/* Fallback: courses you've played before (per-player). Hidden when empty. */}
           {recentCourses.length > 0 && !showResumePrompt && (

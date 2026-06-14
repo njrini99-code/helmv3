@@ -46,14 +46,16 @@ export function ConfirmDialog({
 
   const variantStyles = {
     danger: {
-      icon: 'bg-red-50 text-[#FF3B30]',
-      // iOS SF Red (#FF3B30) for destructive
-      button: 'bg-[#FF3B30] hover:bg-[#E0352B] text-white',
+      // Icon tint must read as destructive text on a light tile — the raw
+      // `destructive` token (#FF3B30) is ~3.7:1 on white and fails WCAG AA,
+      // so darken to #B91C1C (~6.8:1 on white) for the foreground glyph.
+      icon: 'bg-destructive/10 text-[#B91C1C]',
+      button: 'bg-destructive hover:bg-[#E0352B] text-white',
     },
     warning: {
-      // iOS SF Orange (#FF9500)
-      icon: 'bg-[#FF9500]/10 text-[#FF9500]',
-      button: 'bg-[#FF9500] hover:bg-[#E08600] text-white',
+      // Amber `warning` token (#F59E0B) — replaces the divergent SF Orange (#FF9500).
+      icon: 'bg-warning/10 text-warning',
+      button: 'bg-warning hover:bg-[#D97706] text-white',
     },
     default: {
       icon: 'bg-warm-100 text-warm-600',
@@ -90,7 +92,9 @@ export function ConfirmDialog({
               type="button"
               onClick={handleConfirm}
               disabled={isLoading}
-              className="w-full px-5 py-3.5 text-[17px] font-semibold text-[#FF3B30] active:bg-warm-100/80 transition-colors disabled:opacity-50"
+              // Destructive label on a light sheet — darkened from the
+              // #FF3B30 destructive token (fails AA) to #B91C1C (~6.8:1) for WCAG AA.
+              className="w-full px-5 py-3.5 text-[17px] font-semibold text-[#B91C1C] active:bg-warm-100/80 transition-colors disabled:opacity-50"
             >
               {isLoading ? 'Please wait…' : confirmLabel}
             </button>

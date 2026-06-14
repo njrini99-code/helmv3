@@ -294,7 +294,7 @@ export default function ResetPasswordPage() {
                       ${confirmPassword && confirmPassword !== password
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
                         : confirmPassword && confirmPassword === password
-                        ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/10'
+                        ? 'border-primary-300 focus:border-primary-500 focus:ring-primary-500/10'
                         : 'border-warm-200 focus:border-primary-600 focus:ring-primary-600/10'
                       }
                     `}
@@ -306,7 +306,7 @@ export default function ResetPasswordPage() {
                     </p>
                   )}
                   {confirmPassword && confirmPassword === password && password.length >= 8 && (
-                    <p className="text-xs text-emerald-600 flex items-center gap-1">
+                    <p className="text-xs text-primary-600 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3" />
                       Passwords match
                     </p>

@@ -489,8 +489,8 @@ export function CRMDashboard({
             <EmailStatBox
               label="Delivery Rate"
               value={emailStats.total_sent > 0 ? Math.round((emailStats.delivered / emailStats.total_sent) * 100) : 0}
-              color="text-emerald-600"
-              bgColor="bg-emerald-50/50"
+              color="text-primary-600"
+              bgColor="bg-primary-50/50"
             />
             <EmailStatBox
               label="Open Rate"

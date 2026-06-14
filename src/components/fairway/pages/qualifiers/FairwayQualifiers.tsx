@@ -113,7 +113,7 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
     <Button variant="primary" asChild>
       <Link href={CREATE_HREF}>
         <IconPlus size={16} />
-        <span>Create Qualifier</span>
+        <span>Create qualifier</span>
       </Link>
     </Button>
   ) : undefined;
@@ -169,7 +169,7 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
                   <Button variant="primary" asChild>
                     <Link href={CREATE_HREF}>
                       <IconPlus size={16} />
-                      <span>Create Qualifier</span>
+                      <span>Create qualifier</span>
                     </Link>
                   </Button>
                 ) : undefined

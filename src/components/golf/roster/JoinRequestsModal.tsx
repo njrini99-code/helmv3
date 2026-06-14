@@ -244,7 +244,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                           )}
                           {request.player?.handicap !== null && request.player?.handicap !== undefined && (
                             <span>
-                              HCP: {request.player.handicap > 0 ? `+${request.player.handicap}` : request.player.handicap}
+                              HCP: {request.player.handicap < 0 ? `+${Math.abs(request.player.handicap)}` : request.player.handicap}
                             </span>
                           )}
                         </div>

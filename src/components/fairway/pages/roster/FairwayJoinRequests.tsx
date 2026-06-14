@@ -122,7 +122,7 @@ function initialsFromName(name: string): string {
 }
 
 function formatHandicap(handicap: number): string {
-  return handicap > 0 ? `+${handicap}` : String(handicap);
+  return handicap < 0 ? `+${Math.abs(handicap)}` : String(handicap);
 }
 
 /* ---------------------------------------------------------------------------
@@ -245,14 +245,36 @@ function RequestRow({
   const hometown = request.player?.hometown;
   const state = request.player?.state;
 
-  // Destructive reject — explicit confirm, single + scoped, never auto-fire.
-  const confirmReject = () => {
-    if (busy) return;
-    const ok = window.confirm(
-      `Decline ${name}'s request to join your team? This can't be undone.`,
-    );
-    if (ok) onReject(request.id);
-  };
+  // Destructive reject — explicit two-step confirm rendered INLINE (a calm
+  // Fairway prompt, never the off-brand native window.confirm). rejectJoinRequest
+  // fires only on the second, explicit "Decline" click, so it can never
+  // auto-fire. Rendered inline (not a nested dialog) so it works identically in
+  // the inline accordion and inside the auto-popup ModalShell without stacking.
+  const [confirming, setConfirming] = React.useState(false);
+
+  const declineConfirm = (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <span className="font-fw-sans text-caption text-text-secondary">
+        Decline {name}? This can&rsquo;t be undone.
+      </span>
+      <Button variant="ghost" size="sm" disabled={busy} onClick={() => setConfirming(false)}>
+        Cancel
+      </Button>
+      <Button
+        variant="danger"
+        size="sm"
+        busy={busy}
+        disabled={busy}
+        leftIcon={busy ? undefined : <IconX size={15} />}
+        onClick={() => {
+          onReject(request.id);
+          setConfirming(false);
+        }}
+      >
+        Decline
+      </Button>
+    </div>
+  );
 
   return (
     <motion.div
@@ -310,7 +332,50 @@ function RequestRow({
             ) : null}
 
             {layout === 'modal' ? (
-              <div className="mt-3 flex items-center gap-2">
+              confirming ? (
+                <div className="mt-3">{declineConfirm}</div>
+              ) : (
+                <div className="mt-3 flex items-center gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    busy={busy}
+                    disabled={busy}
+                    leftIcon={busy ? undefined : <IconCheck size={15} />}
+                    onClick={() => onAccept(request.id)}
+                    className="flex-1"
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    disabled={busy}
+                    leftIcon={<IconX size={15} />}
+                    onClick={() => setConfirming(true)}
+                  >
+                    Decline
+                  </Button>
+                </div>
+              )
+            ) : null}
+          </div>
+
+          {layout === 'inline' ? (
+            confirming ? (
+              <div className="flex-shrink-0">{declineConfirm}</div>
+            ) : (
+              <div className="flex flex-shrink-0 items-center gap-2">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  disabled={busy}
+                  aria-label={`Decline ${name}`}
+                  leftIcon={<IconX size={15} />}
+                  onClick={() => setConfirming(true)}
+                >
+                  Decline
+                </Button>
                 <Button
                   variant="primary"
                   size="sm"
@@ -318,46 +383,11 @@ function RequestRow({
                   disabled={busy}
                   leftIcon={busy ? undefined : <IconCheck size={15} />}
                   onClick={() => onAccept(request.id)}
-                  className="flex-1"
                 >
                   Accept
                 </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  disabled={busy}
-                  leftIcon={<IconX size={15} />}
-                  onClick={confirmReject}
-                >
-                  Decline
-                </Button>
               </div>
-            ) : null}
-          </div>
-
-          {layout === 'inline' ? (
-            <div className="flex flex-shrink-0 items-center gap-2">
-              <Button
-                variant="danger"
-                size="sm"
-                disabled={busy}
-                aria-label={`Decline ${name}`}
-                leftIcon={<IconX size={15} />}
-                onClick={confirmReject}
-              >
-                Decline
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                busy={busy}
-                disabled={busy}
-                leftIcon={busy ? undefined : <IconCheck size={15} />}
-                onClick={() => onAccept(request.id)}
-              >
-                Accept
-              </Button>
-            </div>
+            )
           ) : null}
         </div>
       </Surface>

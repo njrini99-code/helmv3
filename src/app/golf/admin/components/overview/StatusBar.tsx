@@ -33,7 +33,7 @@ export function StatusBar({
 
   const dotColor =
     healthStatus === 'healthy'
-      ? 'bg-green-500'
+      ? 'bg-primary-500'
       : healthStatus === 'warning'
         ? 'bg-amber-500'
         : 'bg-red-500';
@@ -54,7 +54,7 @@ export function StatusBar({
       <span
         className={cn(
           'text-xs sm:text-sm font-semibold tabular-nums',
-          incidents > 0 ? 'text-red-600' : 'text-green-600'
+          incidents > 0 ? 'text-red-600' : 'text-primary-600'
         )}
       >
         {incidents} open incident{incidents !== 1 ? 's' : ''}

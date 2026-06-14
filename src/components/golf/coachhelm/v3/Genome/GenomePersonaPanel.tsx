@@ -83,9 +83,9 @@ function Section({
 
 const ACCENT_STYLES = {
   emerald: {
-    dot: 'bg-emerald-500',
-    glow: 'shadow-[0_0_0_3px_rgba(16,185,129,0.12)]',
-    text: 'text-emerald-900',
+    dot: 'bg-primary-500',
+    glow: 'shadow-[0_0_0_3px_rgba(22,163,74,0.12)]',
+    text: 'text-primary-900',
   },
   amber: {
     dot: 'bg-amber-500',

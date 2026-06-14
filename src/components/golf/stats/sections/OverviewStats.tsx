@@ -136,7 +136,7 @@ export function OverviewStats({
               )}
               {playerProfile?.handicap !== null && playerProfile?.handicap !== undefined && (
                 <span className="px-2.5 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
-                  {playerProfile.handicap > 0 ? '+' : ''}{playerProfile.handicap} HCP
+                  {playerProfile.handicap < 0 ? '+' : ''}{Math.abs(playerProfile.handicap)} HCP
                 </span>
               )}
             </div>

@@ -160,7 +160,7 @@ function groupIntoCampaigns(emails: EmailRecord[]): Campaign[] {
 
 const STATUS_ICON_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   sent:      { icon: <IconClock size={14} />,          color: 'text-warm-400',    label: 'Sent' },
-  delivered: { icon: <IconCheckCircle2 size={14} />,   color: 'text-emerald-500', label: 'Delivered' },
+  delivered: { icon: <IconCheckCircle2 size={14} />,   color: 'text-primary-500', label: 'Delivered' },
   opened:    { icon: <IconEye size={14} />,            color: 'text-blue-500',    label: 'Opened' },
   clicked:   { icon: <MousePointerClick size={14} />,  color: 'text-violet-500',  label: 'Clicked' },
   bounced:   { icon: <Ban size={14} />,                color: 'text-red-500',     label: 'Bounced' },
@@ -169,7 +169,7 @@ const STATUS_ICON_CONFIG: Record<string, { icon: React.ReactNode; color: string;
 const EVENT_TIMELINE_CONFIG: Record<string, { label: string; color: string; dotColor: string }> = {
   'email.sent':      { label: 'Sent',      color: 'text-warm-600',    dotColor: 'bg-warm-400' },
   'email.delivered': { label: 'Delivered', color: 'text-blue-600',    dotColor: 'bg-blue-500' },
-  'email.opened':    { label: 'Opened',   color: 'text-emerald-600', dotColor: 'bg-emerald-500' },
+  'email.opened':    { label: 'Opened',   color: 'text-primary-600', dotColor: 'bg-primary-500' },
   'email.clicked':   { label: 'Clicked',  color: 'text-violet-600',  dotColor: 'bg-violet-500' },
   'email.bounced':   { label: 'Bounced',  color: 'text-red-600',     dotColor: 'bg-red-500' },
   'email.complained':{ label: 'Complained', color: 'text-red-600',   dotColor: 'bg-red-500' },
@@ -475,8 +475,8 @@ export function EmailTrackingView() {
         />
         <StatCard
           icon={<IconCheckCircle2 size={20} />}
-          iconBg="bg-emerald-100"
-          iconColor="text-emerald-600"
+          iconBg="bg-primary-100"
+          iconColor="text-primary-600"
           label="Delivery Rate"
           value={helmOutreach > 0 ? `${deliveryRate}%` : '\u2014'}
           subtitle={helmOutreach > 0 ? `${stats.delivered} of ${helmOutreach} Helm emails` : 'Helm emails only'}
@@ -707,7 +707,7 @@ export function EmailTrackingView() {
                             </div>
                             <div className="hidden sm:flex items-center gap-2 text-xs">
                               {deliveredCount > 0 && (
-                                <span className="flex items-center gap-0.5 text-emerald-500">
+                                <span className="flex items-center gap-0.5 text-primary-500">
                                   <IconCheckCircle2 size={12} />
                                   <span className="tabular-nums">{deliveredCount}</span>
                                 </span>
@@ -812,8 +812,8 @@ export function EmailTrackingView() {
               />
               {bouncedCoaches.length === 0 ? (
                 <div className="py-12 text-center">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-2">
-                    <IconCheckCircle2 size={18} className="text-emerald-400" />
+                  <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center mx-auto mb-2">
+                    <IconCheckCircle2 size={18} className="text-primary-400" />
                   </div>
                   <p className="text-sm font-medium text-warm-500">No bounced emails</p>
                   <p className="text-xs text-warm-400 mt-0.5">All email addresses are healthy</p>

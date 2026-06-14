@@ -10,10 +10,13 @@ interface StatusDotProps {
   size?: 'sm' | 'md';
 }
 
+// Status hues routed through the canonical semantic tokens so a given status
+// reads as ONE hue across status-dot / PatternCard / review icons:
+//   success/active → primary, warning → warning, error → destructive.
 const variantColors: Record<StatusDotVariant, string> = {
   success: 'bg-primary-500',
-  warning: 'bg-amber-500',
-  error: 'bg-red-500',
+  warning: 'bg-warning',
+  error: 'bg-destructive',
   info: 'bg-blue-500',
   neutral: 'bg-warm-400',
   active: 'bg-primary-500',
@@ -58,7 +61,7 @@ export function PipelineStatusDot({
 }) {
   const stageConfig: Record<string, { color: string; label: string }> = {
     watchlist: { color: 'bg-warm-400', label: 'Prospects' },
-    high_priority: { color: 'bg-amber-500', label: 'High Priority' },
+    high_priority: { color: 'bg-warning', label: 'High Priority' },
     offer_extended: { color: 'bg-blue-500', label: 'Offer Extended' },
     committed: { color: 'bg-primary-500', label: 'Committed' },
     uninterested: { color: 'bg-warm-300', label: 'Not Interested' },

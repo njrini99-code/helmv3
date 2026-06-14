@@ -66,7 +66,7 @@ function KpiCard({
   return (
     <div className="glass-premium rounded-2xl p-4 flex flex-col items-center justify-center text-center min-w-0">
       <span
-        className={`text-2xl font-bold tabular-nums ${accent ? 'text-green-600' : 'text-warm-900'}`}
+        className={`text-2xl font-bold tabular-nums ${accent ? 'text-primary-600' : 'text-warm-900'}`}
       >
         {value}
       </span>

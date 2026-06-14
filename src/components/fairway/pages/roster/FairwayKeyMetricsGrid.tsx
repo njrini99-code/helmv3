@@ -52,7 +52,8 @@ export interface FairwayKeyMetricsGridProps {
 
 function formatHandicap(handicap: number | null): string {
   if (handicap === null) return '—';
-  if (handicap > 0) return `+${handicap.toFixed(1)}`;
+  // A leading "+" denotes a PLUS handicap (better than scratch, stored negative).
+  if (handicap < 0) return `+${Math.abs(handicap).toFixed(1)}`;
   return handicap.toFixed(1);
 }
 
@@ -118,13 +119,15 @@ function FairwayMetricTile({ label, value, footnote, tone }: MetricSpec) {
     <div
       data-slot="fw-key-metric"
       className={cn(
-        'flex flex-col gap-2 rounded-card bg-surface p-6',
-        'border border-border-subtle shadow-flat',
+        // compact density for the dense 6-up grid (was cramped at p-6) + the
+        // lit-edge card shadow so it matches the MetricCard premium recipe.
+        'flex flex-col gap-1.5 rounded-card bg-surface p-4',
+        'border border-border-subtle [box-shadow:var(--fw-shadow-card)]',
       )}
     >
-      <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</span>
+      <span className="min-w-0 truncate font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</span>
       <span
-        className="font-fw-mono text-h1 font-medium tabular-nums text-text-primary"
+        className="font-fw-mono text-h2 font-medium tabular-nums text-text-primary"
         style={{ fontFeatureSettings: '"tnum" 1, "lnum" 1' }}
       >
         {value}
@@ -168,7 +171,7 @@ export function FairwayKeyMetricsGridSkeleton({ className }: { className?: strin
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="flex flex-col gap-2 rounded-card border border-border-subtle bg-surface p-6"
+          className="flex flex-col gap-1.5 rounded-card border border-border-subtle bg-surface p-4 [box-shadow:var(--fw-shadow-card)]"
         >
           <Skeleton className="h-3 w-16" />
           <Skeleton className="mt-1 h-8 w-20" />

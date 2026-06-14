@@ -263,7 +263,11 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
         });
 
         if (!result.success) {
-          setError(result.error || 'Failed to update itinerary');
+          const errMsg = result.error || 'Failed to update itinerary';
+          setError(errMsg);
+          // Also toast so the error is visible if the form scroll position or
+          // the iOS keyboard is obscuring the inline error banner.
+          showToast(errMsg, 'error');
           setSaving(false);
           return;
         }
@@ -276,7 +280,11 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
         });
 
         if (!result.success) {
-          setError(result.error || 'Failed to create itinerary');
+          const errMsg = result.error || 'Failed to create itinerary';
+          setError(errMsg);
+          // Also toast so the error is visible if the form scroll position or
+          // the iOS keyboard is obscuring the inline error banner.
+          showToast(errMsg, 'error');
           setSaving(false);
           return;
         }
@@ -291,7 +299,9 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
         window.location.reload();
         return;
       }
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errMsg = err instanceof Error ? err.message : 'An error occurred';
+      setError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setSaving(false);
     }
@@ -792,8 +802,12 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
 
       {/* Create/Edit Itinerary Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl my-8">
+        /* On iOS WKWebView the virtual keyboard shrinks the visual viewport but
+           does NOT reliably reposition a flex-centered fixed overlay. Using
+           `items-start` + `pt-4` + `overflow-y-auto` on the backdrop lets the
+           whole modal card scroll into view even when the keyboard is open. */
+        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-start justify-center z-50 pt-4 pb-4 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl my-4 mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em]">
                 {editingId ? 'Edit Travel Itinerary' : 'Create Travel Itinerary'}
@@ -815,7 +829,10 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               </div>
             )}
 
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+            {/* Removed inner scroll container: the outer backdrop scrolls the
+                whole modal card, so iOS can always reach the submit button
+                even when the keyboard shrinks the visual viewport. */}
+            <div className="space-y-4 pr-2" data-scroll-container>
               {/* Event Name */}
               <div>
                 <label className="block text-sm font-medium text-warm-700 mb-2">Event Name *</label>
@@ -998,7 +1015,10 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4 mt-4 border-t border-warm-200">
+            <div
+              className="flex gap-3 pt-4 mt-4 border-t border-warm-200"
+              style={{ paddingBottom: 'max(0px, env(safe-area-inset-bottom))' }}
+            >
               <Button variant="ghost"
                 onClick={() => {
                   setShowModal(false);

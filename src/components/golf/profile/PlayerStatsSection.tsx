@@ -25,6 +25,15 @@ import {
   type RoundOption,
 } from '@/app/golf/actions/player-profile-stats';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import {
+  yardsToDisplay,
+  yardsLabel,
+  feetToDisplay,
+  feetLabel,
+  feetRangeLabel,
+  yardsRangeLabel,
+} from '@/lib/golf/distance-units';
 import { KeyMetricsGrid } from './KeyMetricsGrid';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import { Shimmer } from '@/components/ui/shimmer';
@@ -260,6 +269,8 @@ function StatRow({ label, value, highlight }: { label: string; value: string; hi
 }
 
 function StatsTabContent({ tab, stats }: { tab: StatsTab; stats: GolfStats }) {
+  const { distancePref } = useDistanceUnits();
+  const fl = feetLabel(distancePref);
   switch (tab) {
     case 'scoring':
       return (
@@ -280,7 +291,7 @@ function StatsTabContent({ tab, stats }: { tab: StatsTab; stats: GolfStats }) {
         <div className="space-y-1">
           <StatRow label="Fairway %" value={stats.fairwayPercentage !== null ? `${stats.fairwayPercentage.toFixed(0)}%` : '—'} highlight />
           <StatRow label="Driver Fairway %" value={stats.fairwayPctDriver !== null ? `${stats.fairwayPctDriver.toFixed(0)}%` : '—'} />
-          <StatRow label="Driving Distance (avg)" value={stats.drivingDistanceAvg !== null ? `${stats.drivingDistanceAvg.toFixed(0)} yds` : '—'} />
+          <StatRow label="Driving Distance (avg)" value={stats.drivingDistanceAvg !== null ? `${yardsToDisplay(Math.round(stats.drivingDistanceAvg), distancePref)} ${yardsLabel(distancePref)}` : '—'} />
           <StatRow label="Miss Left %" value={stats.missLeftPct !== null ? `${stats.missLeftPct.toFixed(0)}%` : '—'} />
           <StatRow label="Miss Right %" value={stats.missRightPct !== null ? `${stats.missRightPct.toFixed(0)}%` : '—'} />
         </div>
@@ -292,9 +303,9 @@ function StatsTabContent({ tab, stats }: { tab: StatsTab; stats: GolfStats }) {
           <StatRow label="GIR %" value={stats.girPercentage !== null ? `${stats.girPercentage.toFixed(0)}%` : '—'} highlight />
           <StatRow label="GIR from Fairway" value={stats.girPctFromFairway !== null ? `${stats.girPctFromFairway.toFixed(0)}%` : '—'} />
           <StatRow label="GIR from Rough" value={stats.girPctFromRough !== null ? `${stats.girPctFromRough.toFixed(0)}%` : '—'} />
-          <StatRow label="Approach Proximity (avg)" value={stats.approachProximityAvg !== null ? `${stats.approachProximityAvg.toFixed(0)} ft` : '—'} />
-          <StatRow label="Proximity 125-150 yds" value={stats.approachProx125_150 !== null ? `${stats.approachProx125_150.toFixed(0)} ft` : '—'} />
-          <StatRow label="Proximity 175-200 yds" value={stats.approachProx175_200 !== null ? `${stats.approachProx175_200.toFixed(0)} ft` : '—'} />
+          <StatRow label="Approach Proximity (avg)" value={stats.approachProximityAvg !== null ? `${feetToDisplay(Math.round(stats.approachProximityAvg), distancePref)} ${fl}` : '—'} />
+          <StatRow label={`Proximity ${yardsRangeLabel([125, 150], distancePref)}`} value={stats.approachProx125_150 !== null ? `${feetToDisplay(Math.round(stats.approachProx125_150), distancePref)} ${fl}` : '—'} />
+          <StatRow label={`Proximity ${yardsRangeLabel([175, 200], distancePref)}`} value={stats.approachProx175_200 !== null ? `${feetToDisplay(Math.round(stats.approachProx175_200), distancePref)} ${fl}` : '—'} />
         </div>
       );
 
@@ -305,9 +316,9 @@ function StatsTabContent({ tab, stats }: { tab: StatsTab; stats: GolfStats }) {
           <StatRow label="Putts / GIR" value={stats.puttsPerGir?.toFixed(2) ?? '—'} />
           <StatRow label="1-Putts" value={stats.onePuttsTotal?.toString() ?? '—'} />
           <StatRow label="3-Putts" value={stats.threePuttsTotal?.toString() ?? '—'} />
-          <StatRow label="Make % (3-5 ft)" value={stats.puttMakePct3_5 !== null ? `${stats.puttMakePct3_5.toFixed(0)}%` : '—'} />
-          <StatRow label="Make % (5-10 ft)" value={stats.puttMakePct5_10 !== null ? `${stats.puttMakePct5_10.toFixed(0)}%` : '—'} />
-          <StatRow label="Make % (10-15 ft)" value={stats.puttMakePct10_15 !== null ? `${stats.puttMakePct10_15.toFixed(0)}%` : '—'} />
+          <StatRow label={`Make % (${feetRangeLabel([3, 5], distancePref)})`} value={stats.puttMakePct3_5 !== null ? `${stats.puttMakePct3_5.toFixed(0)}%` : '—'} />
+          <StatRow label={`Make % (${feetRangeLabel([5, 10], distancePref)})`} value={stats.puttMakePct5_10 !== null ? `${stats.puttMakePct5_10.toFixed(0)}%` : '—'} />
+          <StatRow label={`Make % (${feetRangeLabel([10, 15], distancePref)})`} value={stats.puttMakePct10_15 !== null ? `${stats.puttMakePct10_15.toFixed(0)}%` : '—'} />
         </div>
       );
 

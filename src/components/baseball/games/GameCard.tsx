@@ -13,7 +13,7 @@ function getResultInfo(game: BaseballGame) {
   if (game.status !== 'completed' || game.our_score == null || game.opponent_score == null) {
     return null;
   }
-  if (game.our_score > game.opponent_score) return { label: 'W', color: 'text-green-600 bg-green-50' };
+  if (game.our_score > game.opponent_score) return { label: 'W', color: 'text-primary-600 bg-primary-50' };
   if (game.our_score < game.opponent_score) return { label: 'L', color: 'text-red-600 bg-red-50' };
   return { label: 'T', color: 'text-amber-600 bg-amber-50' };
 }

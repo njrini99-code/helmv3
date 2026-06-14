@@ -208,7 +208,7 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
                   let colorClass = 'text-warm-600';
                   let bgClass = '';
                   if (score != null && par != null) {
-                    if (score < par) { colorClass = 'text-green-700 font-bold'; bgClass = 'bg-green-50/60'; }
+                    if (score < par) { colorClass = 'text-primary-700 font-bold'; bgClass = 'bg-primary-50/60'; }
                     else if (score > par) { colorClass = 'text-red-600 font-bold'; bgClass = 'bg-red-50/60'; }
                     else { colorClass = 'text-warm-600'; bgClass = 'bg-warm-50/40'; }
                   }
@@ -245,7 +245,7 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
                   return (
                     <td key={n} className="px-2 py-2 text-center">
                       {hole?.fairway_hit === true ? (
-                        <IconCheckCircle2 size={13} className="inline text-green-500" />
+                        <IconCheckCircle2 size={13} className="inline text-primary-500" />
                       ) : hole?.fairway_hit === false ? (
                         <IconXCircle size={13} className="inline text-red-400" />
                       ) : (
@@ -266,7 +266,7 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
                   return (
                     <td key={n} className="px-2 py-2 text-center">
                       {hole?.gir === true ? (
-                        <IconCheckCircle2 size={13} className="inline text-green-500" />
+                        <IconCheckCircle2 size={13} className="inline text-primary-500" />
                       ) : hole?.gir === false ? (
                         <IconXCircle size={13} className="inline text-red-400" />
                       ) : (
@@ -412,9 +412,9 @@ function ErrorsList({
     return (
       <section>
         <SectionLabel label="Tracer Errors" />
-        <div className="bg-green-50/40 border border-green-200/30 rounded-xl p-5 text-center">
-          <IconCheckCircle2 size={20} className="mx-auto mb-2 text-green-500" />
-          <p className="text-sm text-green-700 font-medium">No shot-tracking incidents tied to this round</p>
+        <div className="bg-primary-50/40 border border-primary-200/30 rounded-xl p-5 text-center">
+          <IconCheckCircle2 size={20} className="mx-auto mb-2 text-primary-500" />
+          <p className="text-sm text-primary-700 font-medium">No shot-tracking incidents tied to this round</p>
         </div>
       </section>
     );
@@ -727,23 +727,23 @@ function CompletenessChecklist({
               key={check.label}
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-lg text-xs',
-                check.ok ? 'bg-green-50/50' : 'bg-red-50/50'
+                check.ok ? 'bg-primary-50/50' : 'bg-red-50/50'
               )}
             >
               {check.ok ? (
-                <IconCheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
+                <IconCheckCircle2 size={14} className="text-primary-500 flex-shrink-0" />
               ) : (
                 <IconXCircle size={14} className="text-red-400 flex-shrink-0" />
               )}
               <span className={cn(
                 'font-medium',
-                check.ok ? 'text-green-700' : 'text-red-600'
+                check.ok ? 'text-primary-700' : 'text-red-600'
               )}>
                 {check.label}
               </span>
               <span className={cn(
                 'ml-auto text-eyebrow',
-                check.ok ? 'text-green-500' : 'text-red-400'
+                check.ok ? 'text-primary-500' : 'text-red-400'
               )}>
                 {check.detail}
               </span>

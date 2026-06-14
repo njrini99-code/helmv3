@@ -174,7 +174,7 @@ export function FairwayRoundSubmitOverlay({
                     transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.4 }}
                     className="flex items-baseline justify-center gap-2"
                   >
-                    <span className="font-fw-mono text-display font-light tabular-nums tracking-[-0.025em] text-white">
+                    <span className="font-fw-mono text-display tabular-nums tracking-[-0.025em] text-white">
                       {totalScore}
                     </span>
                     <span
@@ -315,7 +315,7 @@ export function FairwayRoundSubmitOverlay({
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="font-fw-mono text-h1 font-light tabular-nums tracking-[-0.025em] text-text-primary">
+                  <span className="font-fw-mono text-h1 tabular-nums tracking-[-0.025em] text-text-primary">
                     {totalScore}
                   </span>
                 </div>

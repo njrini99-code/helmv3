@@ -33,7 +33,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
   const won = game.our_score != null && game.opponent_score != null && game.our_score > game.opponent_score;
   const lost = game.our_score != null && game.opponent_score != null && game.our_score < game.opponent_score;
   const resultLabel = won ? 'W' : lost ? 'L' : 'T';
-  const resultColor = won ? 'text-green-700 bg-green-50' : lost ? 'text-red-700 bg-red-50' : 'text-amber-700 bg-amber-50';
+  const resultColor = won ? 'text-primary-700 bg-primary-50' : lost ? 'text-red-700 bg-red-50' : 'text-amber-700 bg-amber-50';
 
   // Batting totals
   const totals = batting.reduce(
@@ -236,7 +236,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
                       {row.result && (
                         <span
                           className={`px-1.5 py-0.5 rounded font-bold text-eyebrow ${
-                            row.result === 'W' ? 'bg-green-100 text-green-700' :
+                            row.result === 'W' ? 'bg-primary-100 text-primary-700' :
                             row.result === 'L' ? 'bg-red-100 text-red-700' :
                             row.result === 'S' ? 'bg-blue-100 text-blue-700' :
                             'bg-warm-100 text-warm-500'

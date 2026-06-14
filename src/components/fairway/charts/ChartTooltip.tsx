@@ -55,7 +55,7 @@ export function ChartTooltip({ heading, rows, footnote, className }: ChartToolti
       className={cn(
         'pointer-events-none min-w-[9rem] max-w-[16rem] rounded-fw-md px-3 py-2.5',
         // warm cream Liquid Glass (strong tint for legibility over plots)
-        'border border-white/55 shadow-raise backdrop-blur-[16px] backdrop-saturate-150',
+        'border border-[var(--fw-glass-border)] shadow-raise backdrop-blur-[16px] backdrop-saturate-150',
         'bg-[rgb(255_254_250_/_0.82)]',
         // reduced-transparency: collapse to opaque surface + soft shadow
         'motion-reduce:backdrop-blur-0 supports-[not(backdrop-filter:blur(0))]:bg-surface',
@@ -63,7 +63,7 @@ export function ChartTooltip({ heading, rows, footnote, className }: ChartToolti
       )}
       style={{
         boxShadow:
-          'inset 0 1px 0 0 rgb(255 255 255 / 0.65), var(--fw-shadow-raise)',
+          'inset 0 1px 0 0 var(--fw-glass-highlight), var(--fw-shadow-raise)',
       }}
     >
       {heading ? (

@@ -130,7 +130,7 @@ function RecruitingSnapshotCard({
             <p className="text-xs text-warm-500">Profile Views</p>
             {profileViewsChange !== 0 && (
               <div className={`flex items-center justify-center gap-0.5 mt-1 text-xs ${
-                profileViewsChange > 0 ? 'text-green-600' : 'text-red-600'
+                profileViewsChange > 0 ? 'text-primary-600' : 'text-red-600'
               }`}>
                 {profileViewsChange > 0 ? <IconTrendingUp size={12} /> : <IconTrendingDown size={12} />}
                 <span>{profileViewsChange > 0 ? '+' : ''}{profileViewsChange}%</span>
@@ -356,7 +356,7 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
                       >
                         <div className={`w-3 h-3 rounded-full shrink-0 ${
                           event.eventType === 'game' ? 'bg-blue-500' :
-                          event.eventType === 'practice' ? 'bg-green-500' : 'bg-warm-400'
+                          event.eventType === 'practice' ? 'bg-primary-500' : 'bg-warm-400'
                         }`} />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-warm-900 truncate">{event.title}</p>

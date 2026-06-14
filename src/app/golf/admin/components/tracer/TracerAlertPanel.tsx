@@ -57,8 +57,8 @@ export function TracerAlertPanel({ alerts, onNavigate }: TracerAlertPanelProps) 
       {alerts.length === 0 ? (
         /* Empty state */
         <div className="flex flex-col items-center justify-center py-10 text-center">
-          <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mb-3">
-            <IconCheckCircle2 className="text-green-500" size={20} />
+          <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center mb-3">
+            <IconCheckCircle2 className="text-primary-500" size={20} />
           </div>
           <p className="text-sm font-medium text-warm-700">No active alerts</p>
           <p className="text-xs text-warm-400 mt-1">Everything is running smoothly</p>

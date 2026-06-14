@@ -53,7 +53,7 @@ export const STATUS_CONFIG: Record<
 > = {
   pending:    { label: 'Pending',    color: 'text-warm-500',    bgColor: 'bg-warm-100',    icon: <IconClock size={14} /> },
   delayed:    { label: 'Delayed',    color: 'text-amber-600',   bgColor: 'bg-amber-50',    icon: <IconWarning size={14} /> },
-  delivered:  { label: 'Delivered',  color: 'text-emerald-600', bgColor: 'bg-emerald-50',  icon: <IconCheckCircle2 size={14} /> },
+  delivered:  { label: 'Delivered',  color: 'text-primary-600', bgColor: 'bg-primary-50',  icon: <IconCheckCircle2 size={14} /> },
   opened:     { label: 'Opened',     color: 'text-blue-600',    bgColor: 'bg-blue-50',     icon: <IconEye size={14} /> },
   clicked:    { label: 'Clicked',    color: 'text-violet-600',  bgColor: 'bg-violet-50',   icon: <MousePointerClick size={14} /> },
   bounced:    { label: 'Bounced',    color: 'text-red-600',     bgColor: 'bg-red-50',      icon: <Ban size={14} /> },
@@ -65,7 +65,7 @@ export const EVENT_CONFIG: Record<
   { label: string; color: string; dotColor: string; icon: React.ReactNode }
 > = {
   'email.sent':             { label: 'Sent',      color: 'text-warm-600',   dotColor: 'bg-warm-400',    icon: <IconSend size={12} /> },
-  'email.delivered':        { label: 'Delivered', color: 'text-emerald-600', dotColor: 'bg-emerald-500', icon: <IconCheckCircle2 size={12} /> },
+  'email.delivered':        { label: 'Delivered', color: 'text-primary-600', dotColor: 'bg-primary-500', icon: <IconCheckCircle2 size={12} /> },
   'email.delivery_delayed': { label: 'Delayed',   color: 'text-amber-600',  dotColor: 'bg-amber-500',   icon: <IconWarning size={12} /> },
   'email.opened':           { label: 'Opened',    color: 'text-blue-600',   dotColor: 'bg-blue-500',    icon: <IconEye size={12} /> },
   'email.clicked':          { label: 'Clicked',   color: 'text-violet-600', dotColor: 'bg-violet-500',  icon: <MousePointerClick size={12} /> },

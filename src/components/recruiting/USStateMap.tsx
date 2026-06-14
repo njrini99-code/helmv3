@@ -123,7 +123,7 @@ export const USStateMap = memo(function USStateMap({
               <p className="font-semibold text-base leading-tight">
                 {singleSelectedLabel ?? `${selectedStates.length} states`}
               </p>
-              <p className="text-emerald-100 text-sm">
+              <p className="text-primary-100 text-sm">
                 {selectedCount.toLocaleString()} {itemLabelPlural}
               </p>
             </div>

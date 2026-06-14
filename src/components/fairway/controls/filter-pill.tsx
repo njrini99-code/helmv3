@@ -64,7 +64,15 @@ export const FilterPill = forwardRef<HTMLButtonElement, FilterPillProps>(functio
       {...props}
     >
       {selected && showCheck ? (
-        <Check className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={2.5} aria-hidden="true" />
+        // Selected check springs in with a soft overshoot (scale 0 → 1.2 → 1) on
+        // the shared bounce easing. Pure transform — layout unchanged; motion-safe
+        // gates reduced motion. strokeWidth stays 2.5: an intentional bold glyph so
+        // the 14px selected-state check stays legible inside the tinted pill.
+        <Check
+          className="h-3.5 w-3.5 flex-shrink-0 origin-center motion-safe:animate-check-bounce"
+          strokeWidth={2.5}
+          aria-hidden="true"
+        />
       ) : (
         icon && <span className="flex-shrink-0 [&_svg]:h-3.5 [&_svg]:w-3.5">{icon}</span>
       )}

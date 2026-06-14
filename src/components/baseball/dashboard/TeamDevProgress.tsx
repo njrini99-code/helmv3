@@ -20,7 +20,7 @@ interface TeamDevProgressProps {
 
 function ProgressBar({ value, className }: { value: number; className?: string }) {
   const colorClass = value >= 75 
-    ? 'bg-green-500' 
+    ? 'bg-primary-500' 
     : value >= 50 
       ? 'bg-amber-500' 
       : value >= 25 

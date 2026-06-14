@@ -211,7 +211,8 @@ function fmtScore(value: number | null): string {
 /** Handicap with golf-convention sign (+ for over-par index), em-dash when null. */
 function fmtHandicap(value: number | null): string {
   if (value === null || Number.isNaN(value)) return '—';
-  return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+  // "+" denotes a PLUS handicap (better than scratch, stored negative).
+  return value < 0 ? `+${Math.abs(value).toFixed(1)}` : value.toFixed(1);
 }
 
 // ── Scoring-trend classification (matches legacy TeamStatsTable) ──────────────

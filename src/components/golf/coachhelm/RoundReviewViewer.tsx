@@ -1,6 +1,8 @@
 'use client';
 
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { yardsToDisplay, yardsLabel } from '@/lib/golf/distance-units';
 import { cn } from '@/lib/utils';
 import {
   IconSparkles,
@@ -838,6 +840,7 @@ function GameBreakdownSection({
   shortGame: RoundReviewContent['shortGameAnalysis'];
 }) {
   const prefersReducedMotion = useReducedMotion();
+  const { distancePref } = useDistanceUnits();
   const hasDriving = driving && (driving.avgDistance !== null || driving.fairwayPct !== null);
   const hasShortGame = shortGame && (shortGame.scrambleAttempts > 0 || shortGame.sandAttempts > 0);
   const hasPutting = !!putting;
@@ -931,13 +934,17 @@ function GameBreakdownSection({
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
             {driving.avgDistance !== null && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
-                <div className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">{driving.avgDistance}y</div>
+                <div className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
+                  {yardsToDisplay(driving.avgDistance, distancePref)}{yardsLabel(distancePref)}
+                </div>
                 <div className="text-micro text-warm-500 font-medium mt-0.5">Avg Distance</div>
               </div>
             )}
             {driving.longestDrive && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
-                <div className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">{driving.longestDrive.distance}y</div>
+                <div className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
+                  {yardsToDisplay(driving.longestDrive.distance, distancePref)}{yardsLabel(distancePref)}
+                </div>
                 <div className="text-micro text-warm-500 font-medium mt-0.5">Longest (#{driving.longestDrive.hole})</div>
               </div>
             )}

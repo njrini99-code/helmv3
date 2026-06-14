@@ -48,6 +48,7 @@ import {
 } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Button, IconButton } from './button';
 import { Segmented, type SegmentedOption } from './segmented';
 import { FilterPill } from './filter-pill';
@@ -143,6 +144,9 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
   const hasSelection = selectedCount > 0;
+  // Premium scroll-edge fade for the (horizontally scrollable) filter cluster —
+  // a long filter set bleeds off-edge instead of hard-cutting at the hidden bar.
+  const { ref: filtersFadeRef, fadeStyle: filtersFadeStyle } = useScrollFade<HTMLDivElement>('x');
 
   // Detect "stuck" via a zero-height sentinel just above the sticky row. When it
   // scrolls out of view the row is pinned → earn the cream glass. No scroll
@@ -244,7 +248,11 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
 
               {/* filters — horizontally scrollable so a long set never breaks the row */}
               {filters ? (
-                <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div
+                  ref={filtersFadeRef}
+                  style={filtersFadeStyle}
+                  className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
                   {filters}
                 </div>
               ) : null}

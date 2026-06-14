@@ -328,7 +328,7 @@ function CompositeRatingCircle({ rating }: { rating: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={cn('font-fw-mono text-h1 font-light tabular-nums tracking-[-0.025em]', ratingNumberTone(rating))}>
+        <span className={cn('font-fw-mono text-h1 tabular-nums tracking-[-0.025em]', ratingNumberTone(rating))}>
           {Math.round(rating)}
         </span>
         <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-tertiary">Rating</span>
@@ -808,7 +808,7 @@ export function FairwayPlayerInsight({
                       </div>
                       <div className="flex-shrink-0 text-right">
                         {pred.predicted_value !== null ? (
-                          <p className="font-fw-mono text-h3 font-light tabular-nums tracking-[-0.02em] text-text-primary">
+                          <p className="font-fw-mono text-h3 tabular-nums tracking-[-0.02em] text-text-primary">
                             {pred.predicted_value.toFixed(1)}
                           </p>
                         ) : null}

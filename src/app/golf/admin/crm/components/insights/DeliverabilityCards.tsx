@@ -67,8 +67,8 @@ export function DeliverabilityCards({ summary, loading }: DeliverabilityCardsPro
       />
       <KpiCard
         icon={<IconCheckCircle2 size={20} />}
-        iconBg="bg-emerald-100"
-        iconColor="text-emerald-600"
+        iconBg="bg-primary-100"
+        iconColor="text-primary-600"
         label="Delivered"
         value={delivered.toLocaleString()}
         subtitle={

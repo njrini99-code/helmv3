@@ -54,7 +54,7 @@ function MakePercentBars({ bars }: { bars: Bar[] }) {
           const pct = max > 0 ? Math.min(100, (bar.value / max) * 100) : 0;
           const barColor =
             bar.value >= 50
-              ? 'bg-emerald-500'
+              ? 'bg-primary-500'
               : bar.value >= 25
                 ? 'bg-amber-400'
                 : 'bg-red-400';

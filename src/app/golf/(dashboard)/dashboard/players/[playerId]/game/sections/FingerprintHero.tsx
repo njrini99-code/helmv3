@@ -64,7 +64,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
         : 'Steady';
   const trendTone =
     composite.trend === 'up'
-      ? 'text-emerald-600'
+      ? 'text-primary-600'
       : composite.trend === 'down'
         ? 'text-red-500'
         : 'text-warm-500';
@@ -309,7 +309,7 @@ export function MetricPill({ metric }: { metric: FingerprintMetric }) {
       className={cn(
         'inline-flex flex-col gap-0.5 px-3 py-2 rounded-xl border',
         'bg-cream-100/82',
-        metric.tone === 'good' && 'border-emerald-200',
+        metric.tone === 'good' && 'border-primary-200',
         metric.tone === 'bad' && 'border-red-200',
         metric.tone === 'neutral' && 'border-warm-200',
       )}
@@ -323,7 +323,7 @@ export function MetricPill({ metric }: { metric: FingerprintMetric }) {
           className={cn(
             'text-base font-medium tabular-nums',
             metric.tone === 'good'
-              ? 'text-emerald-700'
+              ? 'text-primary-700'
               : metric.tone === 'bad'
                 ? 'text-red-600'
                 : 'text-warm-900',

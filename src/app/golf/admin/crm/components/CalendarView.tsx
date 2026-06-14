@@ -71,13 +71,13 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
 }> = {
   demo: {
     label: 'Demo',
-    dotColor: 'bg-emerald-500',
-    bgColor: 'bg-emerald-500',
+    dotColor: 'bg-primary-500',
+    bgColor: 'bg-primary-500',
     textColor: 'text-white',
-    borderColor: 'border-l-emerald-500',
-    softBg: 'bg-emerald-50',
-    pillBg: 'bg-emerald-50 border border-emerald-200/60',
-    pillText: 'text-emerald-700',
+    borderColor: 'border-l-primary-500',
+    softBg: 'bg-primary-50',
+    pillBg: 'bg-primary-50 border border-primary-200/60',
+    pillText: 'text-primary-700',
   },
   follow_up: {
     label: 'Follow-up',

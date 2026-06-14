@@ -165,8 +165,9 @@ export function FairwayItineraryModal({
           : 'Post a trip and the team sees the plan, lodging, and gear in one place.'
       }
       data-slot="itinerary-editor"
+      className="min-h-[60dvh]"
     >
-      <ModalShell.Body className="flex flex-col gap-5">
+      <ModalShell.Body className="flex min-h-0 flex-col gap-5">
         {shownError ? (
           <InlineNotice tone="danger" title="Couldn't save the itinerary">
             {shownError}

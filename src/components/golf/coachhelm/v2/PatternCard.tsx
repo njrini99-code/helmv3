@@ -24,8 +24,8 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const isNegative = pattern.strokeImpact > 0;
-  const impactColor = isNegative ? 'text-red-600' : 'text-primary-600';
-  const impactBg = isNegative ? 'bg-red-50' : 'bg-primary-50';
+  const impactColor = isNegative ? 'text-destructive' : 'text-primary-600';
+  const impactBg = isNegative ? 'bg-destructive/10' : 'bg-primary-50';
 
   const getPatternIcon = () => {
     switch (pattern.patternType) {

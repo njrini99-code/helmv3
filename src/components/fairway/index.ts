@@ -41,6 +41,16 @@ export {
   type ShellLinkComponent,
 } from './app-shell';
 
+// ── page frame ────────────────────────────────────────────────────────────--
+export {
+  PageContainer,
+  type PageContainerProps,
+  type PageContainerWidth,
+} from './app-shell/PageContainer';
+
+// ── eyebrow (the ONE overline recipe) ───────────────────────────────────────
+export { Eyebrow, type EyebrowProps, type EyebrowTone } from './controls/eyebrow';
+
 // ── view-header ───────────────────────────────────────────────────────────--
 export {
   ViewHeader,
@@ -75,6 +85,7 @@ export {
   MetricCard,
   type MetricCardProps,
   type MetricCardVariant,
+  type MetricCardDensity,
   type MetricDelta,
   type MetricDeltaDirection,
   type MetricGoodDirection,

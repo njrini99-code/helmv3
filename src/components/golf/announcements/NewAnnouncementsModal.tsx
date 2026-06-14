@@ -18,7 +18,7 @@ import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 // ─── Urgency config ─────────────────────────────────────────────────────────
 
-// Brand semantic colors — primary (info/normal), helm-amber (high), red (urgent),
+// Brand semantic colors — primary (info/normal), warning (high), red (urgent),
 // neutral warm for low priority. Accent bar color is kept very soft so it reads
 // as a subtle stripe rather than a loud alert rail.
 type UrgencyStyle = {
@@ -44,10 +44,10 @@ const urgencyConfig: Record<string, UrgencyStyle> = {
     label: 'Normal',
   },
   high: {
-    bar: 'bg-helm-amber-500',
-    badgeBg: 'bg-helm-amber-500/10',
-    badgeText: 'text-helm-amber-700',
-    badgeDot: 'bg-helm-amber-500',
+    bar: 'bg-warning',
+    badgeBg: 'bg-warning/10',
+    badgeText: 'text-warning',
+    badgeDot: 'bg-warning',
     label: 'High',
   },
   urgent: {

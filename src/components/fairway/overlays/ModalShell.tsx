@@ -197,9 +197,17 @@ function ModalShellRoot({
                 {!hideClose ? (
                   <Dialog.Close
                     aria-label="Close"
-                    className={cn(CLOSE_BUTTON_CLASS, 'absolute right-4 top-4')}
+                    className={cn(
+                      CLOSE_BUTTON_CLASS,
+                      // Invisible hit-slop expands the tap target to 44px
+                      // without changing the 36px visual (iOS touch floor,
+                      // §7.4). The button is already `absolute`, so it is the
+                      // positioning context for `::before` — no `relative` needed.
+                      "before:absolute before:-inset-1.5 before:content-['']",
+                      'absolute right-4 top-4',
+                    )}
                   >
-                    <X className="h-4 w-4" aria-hidden />
+                    <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
                   </Dialog.Close>
                 ) : null}
               </motion.div>
@@ -280,14 +288,21 @@ ModalBody.displayName = 'ModalShell.Body';
 const ModalFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
     data-slot="modal-shell-footer"
     className={cn(
-      'flex flex-col-reverse gap-2 px-6 pb-6 pt-4 sm:flex-row sm:justify-end',
+      'flex flex-col-reverse gap-2 px-6 pt-4 sm:flex-row sm:justify-end',
       className,
     )}
+    // Safe-area bottom inset so the footer buttons are never clipped by the
+    // iPhone home indicator (Capacitor contentInset:'never' means the web
+    // code is responsible for honouring env(safe-area-inset-bottom)).
+    style={{
+      paddingBottom: 'max(1.5rem, calc(1rem + env(safe-area-inset-bottom)))',
+      ...style,
+    }}
     {...props}
   />
 ));

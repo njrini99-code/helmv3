@@ -252,6 +252,18 @@
     scroll-margin-bottom: calc(var(--keyboard-height) + 40px);
   }
 
+  /* On web, keyboard focus can land under the blurred sticky header
+     (WCAG 2.2 SC 2.4.11). Apply the same top clearance so focused
+     elements clear the sticky header on every platform, not just Capacitor. */
+  input,
+  textarea,
+  select,
+  [tabindex]:not([tabindex='-1']),
+  a[href],
+  button {
+    scroll-margin-top: 120px;
+  }
+
   /* Native browser tooltips never fire on touch devices, but on the off-chance
      the Capacitor webview surfaces them we explicitly strip the title attribute
      by blanking pointer-events on the pseudo. Belt-and-suspenders: we just
