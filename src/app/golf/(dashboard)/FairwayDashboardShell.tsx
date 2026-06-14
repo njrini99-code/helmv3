@@ -436,6 +436,11 @@ function FairwayDashboardContent({
         linkComponent={ShellLink}
         breadcrumbs={breadcrumbs}
         collapsible={true}
+        // The dashboard route `template.tsx` already owns the route-reveal fade
+        // (one keyed motion div). Disabling the shell's own RouteTransition here
+        // prevents BOTH from fading on navigation — that compounded the opacity
+        // and read as a heavy, laggy double-fade. One fade, one source of truth.
+        disableRouteTransition
         // Pages own their gutters (horizontal padding + max-width) and their
         // page-title blocks, exactly as in the legacy shell whose <main> had no
         // content padding. The shell keeps only the bottom home-indicator pad.
