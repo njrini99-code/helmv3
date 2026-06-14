@@ -41,7 +41,7 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/fairway/controls/button';
 import { useToast } from '@/components/ui/sonner';
 import {
-  IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag,
+  IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag, IconX,
 } from '@/components/icons';
 import { CourseCard } from '@/components/golf/courses/CourseCard';
 import { CourseFormDrawer } from '@/components/golf/courses/CourseFormDrawer';
@@ -192,17 +192,32 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
       <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
         <DrawerContent
           className={cn(
-            // Full-screen on mobile — override the base sheet's mt-24 top gap
-            // (a bottom-anchored fixed element + mt-24 would clip the top 6rem).
-            'mt-0 h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none p-0',
-            'sm:mx-auto sm:mt-24 sm:h-auto sm:max-h-[92vh] sm:w-full sm:max-w-3xl sm:rounded-fw-lg',
+            // The picker IS the page, not a sheet floating over the setup:
+            // full-viewport on every breakpoint with the opaque canvas covering
+            // the setup entirely (mt-0 overrides the base sheet's mt-24 gap).
+            'inset-0 mt-0 h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none p-0',
           )}
         >
           <DrawerTitle className="sr-only">
             {stage === 'tees' && selected ? `Choose a tee at ${selected.name}` : 'Choose a course'}
           </DrawerTitle>
 
-          <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-1 sm:px-6 sm:pb-6">
+          {/* Close — always reachable; backs out to the setup screen. */}
+          {/* eslint-disable-next-line helm/no-raw-button -- floating dismiss control on a full-screen surface */}
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            aria-label="Close"
+            className="absolute right-4 top-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-text-secondary shadow-soft backdrop-blur transition-[transform,color] [transition-duration:var(--fw-dur-fast)] hover:scale-105 hover:text-text-primary active:scale-95 sm:right-6 sm:top-6"
+          >
+            <IconX size={18} aria-hidden />
+          </button>
+
+          {/* Scroll wrapper centers the picker group (header + carousel) on the
+              page; m-auto pins it to the viewport centre when it fits and lets
+              it scroll when it doesn't. */}
+          <div className="flex h-full w-full flex-col overflow-y-auto px-4 py-6 sm:px-6 sm:py-10">
+            <div className="m-auto flex w-full max-w-3xl flex-col">
             {/* Cinematic dark cockpit header (the figure). */}
             <header className="on-dark relative overflow-hidden rounded-card bg-nav-bg px-6 py-6 text-nav-text shadow-soft sm:px-7">
               <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-500/15 blur-[70px]" />
@@ -249,9 +264,9 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
             </header>
 
             {/* Body (the ground) — stage transition. */}
-            <div className="relative mt-4 flex min-h-0 flex-1 flex-col">
+            <div className="relative mt-4 flex flex-col">
               <AnimatePresence mode="wait" initial={false}>
-                <m.div key={stage} {...stageMotion} className="flex min-h-0 flex-1 flex-col">
+                <m.div key={stage} {...stageMotion} className="flex flex-col">
                   {stage === 'courses'
                     ? <CoursesStage
                         loading={loadingCourses}
@@ -274,6 +289,7 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
                       />}
                 </m.div>
               </AnimatePresence>
+            </div>
             </div>
           </div>
         </DrawerContent>
@@ -305,10 +321,10 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
 
 // Premium falloff (centre → neighbour). Eased (centre plateau); flat scale +
 // opacity + a SUBTLE 3D tilt keeps neighbour photos legible.
-const CF_SCALE_DROP = 0.12;   // centre 1.00 → far 0.88
-const CF_OPACITY_DROP = 0.45; // centre 1.00 → far 0.55
-const CF_ROTATE = 12;         // deg tilt at the falloff edge
-const CF_REACH = 0.85;        // fraction of track width the falloff spans
+const CF_SCALE_DROP = 0.10;   // centre 1.00 → far 0.90 (subtle, premium)
+const CF_OPACITY_DROP = 0.34; // centre 1.00 → far 0.66 (neighbours stay legible, not murky)
+const CF_ROTATE = 9;          // deg tilt at the falloff edge (gentler)
+const CF_REACH = 0.9;         // fraction of track width the falloff spans
 
 function CoursesStage({
   loading, courses, filtered, query, reduceMotion, onSelect, onCreate,
@@ -398,9 +414,11 @@ function CoursesStage({
     reduceMotion
       ? {}
       : {
-          initial: { opacity: 0, y: 18 },
+          initial: { opacity: 0, y: 12 },
           animate: { opacity: 1, y: 0 },
-          transition: { type: 'spring' as const, stiffness: 300, damping: 26, delay: Math.min(i, 7) * 0.05 },
+          // Snappy reveal: a quick glide, minimal stagger (capped) so the row
+          // lights up almost at once instead of crawling card-by-card.
+          transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] as const, delay: Math.min(i, 4) * 0.03 },
         };
 
   if (loading) {
