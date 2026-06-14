@@ -261,6 +261,15 @@ export async function deleteRecruit(id: string): Promise<ActionResult> {
     const ctx = await resolveCoachAndTeam();
     if (!ctx.ok) return { success: false, error: ctx.error };
 
+    // Collect the recruit's document storage paths BEFORE deleting. The FK
+    // cascade removes golf_recruit_documents rows, but storage objects are not
+    // cascaded — without this they'd orphan in the private recruit-documents
+    // bucket.
+    const { data: docRows } = await (ctx.supabase as any)
+      .from('golf_recruit_documents')
+      .select('storage_path')
+      .eq('recruit_id', id);
+
     const { error } = await (ctx.supabase as any)
       .from('golf_recruits')
       .delete()
@@ -274,6 +283,20 @@ export async function deleteRecruit(id: string): Promise<ActionResult> {
         extra: { code: error.code, id },
       });
       return { success: false, error: 'Failed to remove recruit' };
+    }
+
+    // Recruit (and its document rows) gone — now purge the storage objects.
+    const paths = ((docRows ?? []) as { storage_path: string | null }[])
+      .map((d) => d.storage_path)
+      .filter((p): p is string => Boolean(p));
+    if (paths.length > 0) {
+      const { error: rmError } = await ctx.supabase.storage.from('recruit-documents').remove(paths);
+      if (rmError) {
+        await logServerError(
+          `deleteRecruit storage purge failed (${paths.length} orphaned objects): ${rmError.message}`,
+          { action: 'recruiting.deleteRecruit', featureArea: 'recruiting', extra: { id } },
+        );
+      }
     }
 
     revalidatePath('/golf/dashboard/recruiting');

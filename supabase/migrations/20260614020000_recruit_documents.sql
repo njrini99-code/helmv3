@@ -1,5 +1,12 @@
 -- Per-recruit documents for Recruiting HQ (coach-only).
 --
+-- VERIFIED: applied to prod (qmnssrrolpinvwjjnufo) 2026-06-14. Confirmed:
+--   table + 4 coach-only RLS policies (no player policy), private bucket + 4
+--   team-scoped storage.objects policies, same-team trigger rejects a mismatched
+--   team_id, and a full upload→list→delete browser pass left 0 rows / 0 storage
+--   objects (no orphans). Purely additive — no existing object is modified.
+-- ROLLBACK: see the commented block at the foot of this file.
+--
 -- WHY A DEDICATED TABLE + BUCKET (not golf_documents):
 -- Recruiting material — notes, schedules, transcripts, film — is coach-confidential.
 -- The Recruiting HQ page already bounces players. golf_documents is the WRONG home:
@@ -153,3 +160,18 @@ create policy recruit_documents_coach_delete on storage.objects
     bucket_id = 'recruit-documents'
     and public.is_golf_team_coach(((storage.foldername(name))[1])::uuid)
   );
+
+-- ── ROLLBACK ─────────────────────────────────────────────────────────────────
+-- Reverses everything above. Drops the storage object policies, empties + removes
+-- the bucket, then drops the table (which removes its policies/triggers) and the
+-- trigger functions. Storage objects must be cleared before the bucket is deleted.
+--
+--   drop policy if exists recruit_documents_coach_select on storage.objects;
+--   drop policy if exists recruit_documents_coach_insert on storage.objects;
+--   drop policy if exists recruit_documents_coach_update on storage.objects;
+--   drop policy if exists recruit_documents_coach_delete on storage.objects;
+--   delete from storage.objects where bucket_id = 'recruit-documents';
+--   delete from storage.buckets where id = 'recruit-documents';
+--   drop table if exists public.golf_recruit_documents;            -- drops its policies + triggers
+--   drop function if exists public.golf_recruit_documents_assert_same_team();
+--   drop function if exists public.golf_recruit_documents_touch_updated_at();

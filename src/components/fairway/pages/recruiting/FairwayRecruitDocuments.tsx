@@ -21,6 +21,7 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 import { Input } from '@/components/fairway/forms/Input';
 import { FormField } from '@/components/fairway/forms/FormField';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+import { openExternalUrl } from '@/lib/utils/capacitor';
 import {
   getRecruitDocuments,
   uploadRecruitDocument,
@@ -136,7 +137,8 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
     try {
       const res = await getRecruitDocumentUrl(doc.id);
       if (!res.success || !res.data) throw new Error(res.error);
-      window.open(res.data.url, '_blank', 'noopener,noreferrer');
+      // Capacitor-safe: in-app browser on native iOS, new tab on web.
+      await openExternalUrl(res.data.url);
     } catch (err) {
       fairwayToast.error('Could not open', {
         description: err instanceof Error ? err.message : 'Try again in a moment.',

@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Note: `as any` casts on the supabase client because golf_recruit_documents was
-// added in 20260614020000_recruit_documents.sql and the regenerated TS types
-// don't include it yet. Once db:types is rerun, the casts can come out.
-
 'use server';
 
 /**
@@ -28,22 +23,28 @@ import { RECRUIT_DOC_CATEGORIES, type RecruitDocCategory } from './recruit-docum
 const BUCKET = 'recruit-documents';
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB — matches the bucket file_size_limit
 
-const ALLOWED_MIME = new Set<string>([
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/heic',
-  'image/gif',
-  'text/plain',
-  'text/csv',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-]);
+// Extension → canonical MIME, covering the bucket's allowed_mime_types. Used to
+// (a) derive an effective type when a browser sends an empty file.type, and
+// (b) supply a correct contentType on upload.
+const EXT_TO_MIME: Record<string, string> = {
+  pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  heic: 'image/heic',
+  gif: 'image/gif',
+  txt: 'text/plain',
+  csv: 'text/csv',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+};
+
+const ALLOWED_MIME = new Set<string>(Object.values(EXT_TO_MIME));
 
 export interface RecruitDocument {
   id: string;
@@ -73,6 +74,10 @@ function normalizeCategory(category?: string | null): RecruitDocCategory {
     : 'other';
 }
 
+function fileExtension(name: string): string {
+  return name.includes('.') ? (name.split('.').pop() ?? '').toLowerCase() : '';
+}
+
 /**
  * List documents for a recruit (RLS-gated to the team's coaches). Returns an
  * empty array on missing recruit / no permission so the panel can render an
@@ -88,7 +93,7 @@ export async function getRecruitDocuments(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('golf_recruit_documents')
       .select('*')
       .eq('recruit_id', recruitId)
@@ -128,7 +133,13 @@ export async function uploadRecruitDocument(
   if (file.size > MAX_FILE_BYTES) {
     return { success: false, error: 'File is too large (max 25 MB)' };
   }
-  if (file.type && !ALLOWED_MIME.has(file.type)) {
+
+  // Resolve the effective MIME from the declared type or the extension. A file
+  // with an empty file.type must NOT bypass the allowlist — reject if neither
+  // the declared type nor the extension maps to an allowed type.
+  const ext = fileExtension(file.name);
+  const effectiveType = file.type || EXT_TO_MIME[ext] || '';
+  if (!effectiveType || !ALLOWED_MIME.has(effectiveType)) {
     return { success: false, error: 'Unsupported file type' };
   }
 
@@ -139,7 +150,7 @@ export async function uploadRecruitDocument(
 
     // Resolve the recruit's team. RLS ensures the coach only sees their own
     // team's recruits, so a miss here means no permission / not found.
-    const { data: recruit, error: recruitError } = await (supabase as any)
+    const { data: recruit, error: recruitError } = await supabase
       .from('golf_recruits')
       .select('id, team_id')
       .eq('id', recruitId)
@@ -149,12 +160,11 @@ export async function uploadRecruitDocument(
     if (!recruit) return { success: false, error: 'Recruit not found' };
 
     const teamId: string = recruit.team_id;
-    const ext = file.name.includes('.') ? file.name.split('.').pop() : null;
     const objectName = `${teamId}/${recruitId}/${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET)
-      .upload(objectName, file, { contentType: file.type || undefined, upsert: false });
+      .upload(objectName, file, { contentType: effectiveType, upsert: false });
 
     if (uploadError) {
       await logServerError(`uploadRecruitDocument storage failed: ${uploadError.message}`, {
@@ -167,7 +177,7 @@ export async function uploadRecruitDocument(
 
     const title = (opts.title ?? '').trim() || file.name;
 
-    const { data: row, error: insertError } = await (supabase as any)
+    const { data: row, error: insertError } = await supabase
       .from('golf_recruit_documents')
       .insert({
         recruit_id: recruitId,
@@ -176,7 +186,7 @@ export async function uploadRecruitDocument(
         category: normalizeCategory(opts.category),
         file_name: file.name,
         storage_path: objectName,
-        file_type: file.type || null,
+        file_type: effectiveType,
         file_size: file.size,
         uploaded_by: user.id,
       })
@@ -185,7 +195,13 @@ export async function uploadRecruitDocument(
 
     if (insertError) {
       // Roll back the orphaned storage object so a failed insert doesn't leak a file.
-      await supabase.storage.from(BUCKET).remove([objectName]);
+      const { error: rollbackError } = await supabase.storage.from(BUCKET).remove([objectName]);
+      if (rollbackError) {
+        await logServerError(
+          `uploadRecruitDocument rollback failed (orphaned object ${objectName}): ${rollbackError.message}`,
+          { action: 'recruit_documents.uploadRecruitDocument', featureArea: 'recruiting', extra: { recruitId } },
+        );
+      }
       await logServerError(`uploadRecruitDocument insert failed: ${insertError.message}`, {
         action: 'recruit_documents.uploadRecruitDocument',
         featureArea: 'recruiting',
@@ -219,7 +235,7 @@ export async function deleteRecruitDocument(documentId: string): Promise<ActionR
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { data: doc, error: fetchError } = await (supabase as any)
+    const { data: doc, error: fetchError } = await supabase
       .from('golf_recruit_documents')
       .select('storage_path')
       .eq('id', documentId)
@@ -228,8 +244,10 @@ export async function deleteRecruitDocument(documentId: string): Promise<ActionR
     if (fetchError) throw fetchError;
     if (!doc) return { success: false, error: 'Document not found' };
 
-    // Delete the row first (RLS-gated); only purge storage once that succeeds.
-    const { error: deleteError } = await (supabase as any)
+    // Delete the row first (RLS-gated, authoritative for the UI); only then purge
+    // storage. If the storage removal fails the row is already gone, so we log the
+    // orphaned object for later cleanup rather than failing the coach's action.
+    const { error: deleteError } = await supabase
       .from('golf_recruit_documents')
       .delete()
       .eq('id', documentId);
@@ -249,7 +267,13 @@ export async function deleteRecruitDocument(documentId: string): Promise<ActionR
     }
 
     if (doc.storage_path) {
-      await supabase.storage.from(BUCKET).remove([doc.storage_path]);
+      const { error: rmError } = await supabase.storage.from(BUCKET).remove([doc.storage_path]);
+      if (rmError) {
+        await logServerError(
+          `deleteRecruitDocument storage remove failed (orphaned object ${doc.storage_path}): ${rmError.message}`,
+          { action: 'recruit_documents.deleteRecruitDocument', featureArea: 'recruiting', extra: { documentId } },
+        );
+      }
     }
 
     revalidatePath('/golf/dashboard/recruiting');
@@ -277,7 +301,7 @@ export async function getRecruitDocumentUrl(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    const { data: doc, error: fetchError } = await (supabase as any)
+    const { data: doc, error: fetchError } = await supabase
       .from('golf_recruit_documents')
       .select('storage_path, file_name, file_type')
       .eq('id', documentId)

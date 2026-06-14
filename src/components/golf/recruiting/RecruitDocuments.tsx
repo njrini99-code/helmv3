@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { FileText, Download, Trash2, Paperclip, UploadCloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
+import { openExternalUrl } from '@/lib/utils/capacitor';
 import {
   getRecruitDocuments,
   uploadRecruitDocument,
@@ -136,7 +137,8 @@ export function RecruitDocuments({ recruitId }: { recruitId: string }) {
     try {
       const res = await getRecruitDocumentUrl(doc.id);
       if (!res.success || !res.data) throw new Error(res.error);
-      window.open(res.data.url, '_blank', 'noopener,noreferrer');
+      // Capacitor-safe: in-app browser on native iOS, new tab on web.
+      await openExternalUrl(res.data.url);
     } catch (err) {
       toast.error('Could not open', err instanceof Error ? err.message : 'Try again in a moment.');
     } finally {
