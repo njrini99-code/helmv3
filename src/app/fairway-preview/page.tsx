@@ -35,6 +35,8 @@ import {
 import {
   // app-shell
   AppShell,
+  PageContainer,
+  Eyebrow,
   type NavSection,
   // view-header
   ViewHeader,
@@ -409,6 +411,29 @@ export default function FairwayPreviewPage() {
             onSegmentChange={setSeg}
             plinth
           />
+
+          {/* ── Foundations (the systematization primitives) ───────────── */}
+          <Section
+            id="foundations"
+            title="Foundations"
+            blurb="The single-source-of-truth frame + overline. PageContainer gives every route one width + one left edge; Eyebrow is the one overline recipe (token-owned tracking/weight), drawn identically everywhere."
+          >
+            <div className="flex flex-col gap-4">
+              <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]">
+                <PageContainer width="prose" flow={false} className="py-6">
+                  <Eyebrow tone="accent">Page frame</Eyebrow>
+                  <p className="mt-2 font-fw-sans text-body-sm text-text-secondary">
+                    A centered column (here <code>width=&quot;prose&quot;</code>) with gutters aligned to the top bar.
+                  </p>
+                </PageContainer>
+              </div>
+              <div className="flex flex-wrap items-center gap-6">
+                <Eyebrow>Neutral overline</Eyebrow>
+                <Eyebrow tone="secondary">Secondary</Eyebrow>
+                <Eyebrow tone="accent">Signal · accent</Eyebrow>
+              </div>
+            </div>
+          </Section>
 
           {/* ── Surfaces ───────────────────────────────────────────────── */}
           <Section
