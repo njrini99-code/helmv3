@@ -250,6 +250,19 @@ export interface GolfStats {
   // first putt FROM (their lag/approach proximity to the green), not make rate.
   firstPuttDistanceByBand: Record<string, number | null>;
 
+  // --- APPROACH PUTTING (average distance left after EVERY putt, 0 for makes) ---
+  // Overall average leave distance across all putts with a known outcome.
+  // A holed putt contributes 0. A missed putt with distance_to_hole_after null
+  // is excluded (null-honest, never fabricated). Keyed by getPuttDistanceBucket
+  // of the putt's starting distance.
+  approachPuttAvgLeave: number | null;
+  // Per-starting-distance-band average leave. Keys match PUTT_BAND_LABELS:
+  // '0_3','3_5','5_10','10_15','15_20','20_25','25_30','30_35','35_plus'.
+  // A band with no qualifying putts is omitted from the record entirely (so a
+  // present key always has count >= 1 → safeAverage returns a real number, never
+  // null). Consumers must treat a missing key (undefined) as "no data".
+  approachPuttAvgLeaveByBand: Record<string, number>;
+
   // Putting proximity (average distance left after first putt)
   puttProximity0_5: number | null;
   puttProximity5_10: number | null;
@@ -1301,6 +1314,8 @@ function aggregateRoundStats(rounds: Array<{
     puttMakeCount15_20: 0,
     firstPuttDistanceAvg: null,
     firstPuttDistanceByBand: {},
+    approachPuttAvgLeave: null,
+    approachPuttAvgLeaveByBand: {},
     puttProximity0_5: null,
     puttProximity5_10: null,
     puttProximity10_15: null,
@@ -1566,6 +1581,13 @@ function aggregateRoundStats(rounds: Array<{
   // ADDITIVE: first-putt approach distance (feet) — total list + per-band counts.
   const firstPuttDistances: number[] = [];
   const firstPuttDistanceBandCounts: Record<string, number> = {};
+
+  // APPROACH PUTTING: average leave distance across ALL putts (0 for makes).
+  // sumLeave / countLeave = overall average; per-band parallel running totals.
+  let approachPuttSumLeave = 0;
+  let approachPuttCountLeave = 0;
+  const approachPuttSumLeaveByBand: Record<string, number> = {};
+  const approachPuttCountLeaveByBand: Record<string, number> = {};
 
   const approachProximities: number[] = [];
   const greenHitProximities: number[] = [];  // Proximity when hit green
@@ -1956,6 +1978,30 @@ function aggregateRoundStats(rounds: Array<{
           if (putt.miss_direction.includes('low')) breakData.missLow++;
           if (putt.miss_direction.includes('high')) breakData.missHigh++;
         }
+      }
+
+      // Approach putting: average leave distance across ALL putts (0 for makes).
+      // The OVERALL average counts every putt with a known outcome/leave — a
+      // missing starting distance does NOT exclude it (only the per-band split
+      // needs a start distance for its band key).
+      // A missed putt with null distance_to_hole_after is excluded (null-honest).
+      for (const putt of hole.shots) {
+        if (putt.shot_type !== 'putting') continue;
+        const holed = putt.result === 'hole' || putt.putt_made === true;
+        // Leave = 0 for holed putts; distance_to_hole_after for misses.
+        // Skip misses whose leave distance is unknown (null-honest).
+        const leave = holed ? 0 : (putt.distance_to_hole_after != null
+          ? normalizePuttFeet(putt.distance_to_hole_after)
+          : null);
+        if (leave === null) continue;
+        // Overall accumulators: every qualifying putt counts (incl. unbanded).
+        approachPuttSumLeave += leave;
+        approachPuttCountLeave++;
+        // Per-band split requires a known starting distance for the band key.
+        if (putt.distance_to_hole_before == null) continue;
+        const band = getPuttDistanceBucket(normalizePuttFeet(putt.distance_to_hole_before));
+        approachPuttSumLeaveByBand[band] = (approachPuttSumLeaveByBand[band] ?? 0) + leave;
+        approachPuttCountLeaveByBand[band] = (approachPuttCountLeaveByBand[band] ?? 0) + 1;
       }
 
       // First putt stats
@@ -2352,6 +2398,19 @@ function aggregateRoundStats(rounds: Array<{
   const firstPuttTotal = firstPuttDistances.length;
   for (const [band, count] of Object.entries(firstPuttDistanceBandCounts)) {
     stats.firstPuttDistanceByBand[band] = safePercent(count, firstPuttTotal);
+  }
+
+  // Approach putting: overall average leave + per-band average leave.
+  // sum/count — never average-of-averages (house rule).
+  stats.approachPuttAvgLeave = safeAverage(approachPuttSumLeave, approachPuttCountLeave);
+  for (const [band, count] of Object.entries(approachPuttCountLeaveByBand)) {
+    // count is always >= 1 here (band only exists once a putt is added), so
+    // safeAverage never returns null for these keys — coalesce to satisfy the
+    // narrowed Record<string, number> type.
+    stats.approachPuttAvgLeaveByBand[band] = safeAverage(
+      approachPuttSumLeaveByBand[band] ?? 0,
+      count,
+    ) ?? 0;
   }
 
   // Putt proximity
