@@ -110,6 +110,7 @@ export function SearchBar({
           <button
             type="button"
             onClick={handleClear}
+            aria-label="Clear search"
             className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] p-2
                        flex items-center justify-center rounded-full
                        text-warm-400 hover:text-warm-600 hover:bg-warm-100

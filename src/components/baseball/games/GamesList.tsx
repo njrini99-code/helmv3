@@ -7,6 +7,7 @@ import { getTeamGames, deleteGame } from '@/app/baseball/actions/games';
 import type { BaseballGame, BaseballGameType } from '@/lib/types';
 import { IconPlus, IconRefresh } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/sonner';
 
 interface GamesListProps {
   teamId: string;
@@ -23,6 +24,7 @@ const SEASON_YEARS = (() => {
 })();
 
 export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton = true, limit }: GamesListProps) {
+  const { showToast } = useToast();
   const [games, setGames] = useState<BaseballGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,7 +67,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
     if (result.success) {
       setGames((prev) => prev.filter((g) => g.id !== gameId));
     } else {
-      alert(result.error ?? 'Failed to delete game');
+      showToast(result.error ?? 'Failed to delete game', 'error');
     }
     setDeletingId(null);
   }

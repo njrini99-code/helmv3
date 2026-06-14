@@ -109,10 +109,11 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
 
     const unresolvedCount = unmatched.filter((u) => !u.resolvedPlayerId).length;
     if (unresolvedCount > 0) {
-      alert(`Please resolve all ${unresolvedCount} unmatched player(s) before saving.`);
+      setUploadError(`Please resolve all ${unresolvedCount} unmatched player(s) before saving.`);
       return;
     }
 
+    setUploadError(null);
     setResolving(true);
 
     const mappings = unmatched.map((u) => ({

@@ -638,6 +638,14 @@ export async function getOfflineStats(): Promise<OfflineStats> {
     getPendingShots().catch(() => [] as OfflineShot[]),
   ]);
 
+  // Also count rounds stranded in the legacy v1 database by saveOfflineRound
+  // (failed-submit recovery writes there). Without this, a round that fails to
+  // submit on a flaky connection shows zero pending in the badge. Graceful
+  // fallback: a v1 failure must never crash v2 stats.
+  const legacyPendingRounds = await import('./indexed-db')
+    .then((m) => m.getPendingRoundCount())
+    .catch(() => 0);
+
   // Count failed items
   const getFailedCount = (store: string): Promise<number> => {
     return new Promise((resolve) => {
@@ -673,7 +681,7 @@ export async function getOfflineStats(): Promise<OfflineStats> {
   }
 
   return {
-    pendingRounds: pendingRounds.length,
+    pendingRounds: pendingRounds.length + legacyPendingRounds,
     pendingHoles: pendingHoles.length,
     pendingShots: pendingShots.length,
     failedItems: failedRounds + failedHoles + failedShots,

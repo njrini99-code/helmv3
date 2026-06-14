@@ -25,8 +25,8 @@ import { Badge, type BadgeTone } from '@/components/ui/badge';
 
 // Type → accent rail color (token-driven; token classes resolve via tailwind).
 const TYPE_RAIL_CLASS: Record<string, string> = {
-  practice: 'bg-sage-500',
-  tournament: 'bg-helm-amber',
+  practice: 'bg-warm-400',
+  tournament: 'bg-warning',
   qualifier: 'bg-primary-500',
   qualifying: 'bg-primary-500',
   travel: 'bg-warm-700',
