@@ -40,14 +40,27 @@ is denied, so every `UPDATE` by `authenticated` matches **zero rows** — silent
 - Course *creation* works (INSERT policy present), so courses are created but cannot be
   edited or soft-deleted in production.
 
-Fix shipped as a migration file only — **`supabase/migrations/20260614010000_course_library_update_policy.sql`**
+Fix: migration **`supabase/migrations/20260614010000_course_library_update_policy.sql`**
 (adds `golf_courses_update_authenticated` mirroring the INSERT gate `auth.uid() IS NOT NULL`;
-no hard-DELETE policy since the table is soft-delete). **Apply via the normal migration/deploy
-path after review** — applying RLS to the live DB is a deploy decision, not done by the audit.
+no hard-DELETE policy since the table is soft-delete). **✅ APPLIED to prod 2026-06-14**
+(user-authorized "fix all") and verified live via `pg_policies` — course editing /
+image-set / soft-delete now work. The migration file ships on the branch too, so the
+normal deploy pipeline re-applies it idempotently (DROP IF EXISTS + CREATE).
 
 ---
 
-## REPORTED — real, but need an owner decision (NOT changed blind on the round-save path)
+## RESOLUTION (2026-06-14, user "fix all", commit 66f52c63)
+
+R1–R5, R7, R9 all **fixed** (tsc clean, 453/453 tests, 0 new lint). R1 took the
+saved-course-origin gate (grows the catalog from curated saved courses, no hand-typed
+pollution). R2 added a read-only "Course ready" confirmation for cloud picks + clears
+the cloud refs on edit/mode-switch. R3 carries tee_id on partial saves. R4 pads draft
+tees. R5 deprecation-marked (dead code). R7/R9 picker resilience + offline guard.
+**The authed new-round flow can't be headlessly screenshotted → needs a manual smoke
+test before merge** (cloud pick → read-only summary, edit-after-pick, offline start,
+draft-tee round, saved-course catalog growth). R6/R8/R10 below remain (LOW / dead-code).
+
+## REPORTED — remaining LOW / not worth the risk to change blind
 
 - **R1 (HIGH) — "Grow the library from saves" only fires for hand-typed courses that reach
   the holes-config step AND have the "save course" box checked** (`new-round-client.tsx:967`,
