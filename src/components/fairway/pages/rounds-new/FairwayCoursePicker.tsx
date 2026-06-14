@@ -8,17 +8,19 @@
  * full-screen, cinematic course chooser that replaces the plain TeePickerDrawer
  * list (flag-OFF still falls back to that list — see new-round-client.tsx).
  *
- * TWO STAGES, one sheet:
+ * TWO STAGES, one full-page surface (the picker IS the page, not an overlay):
  *   • Stage A — a dark warm-black "cockpit" header (the figure) over a cream
- *     canvas (the ground) carrying an image-forward COVERFLOW: a native
- *     scroll-snap track of featured CourseCards where the centered card is
+ *     canvas (the ground) carrying THREE labelled feeds, ONE image-forward
+ *     COVERFLOW carousel each: "Recently played", "Team courses", and the full
+ *     "Course library" (which ends in a dashed "Add a course" tile). Searching
+ *     collapses to a single results carousel. Each coverflow is a native
+ *     scroll-snap track of featured CourseCards where the centred card is
  *     full-size/opacity and its neighbours scale down, dim, and tilt by their
  *     distance from centre. The coverflow transforms are written IMPERATIVELY
  *     (one rAF per scroll frame) to each slide's inner element — deliberately
  *     NOT via framer-motion useScroll/useTransform, which require the scroll
  *     container ref to be hydrated at hook-call time and crash under concurrent
- *     React when the track is conditionally rendered. The final slide is a
- *     dashed "Add a course" tile.
+ *     React when the track is conditionally rendered (React #310).
  *   • Stage B — choose a tee at the picked course. Reuses TeePickRow/SkeletonRows
  *     from TeePickerDrawer (single source of truth for that row), then returns
  *     the tee's TeeRoundDefaults via onPick so the round form pre-fills pars/
@@ -41,14 +43,15 @@ import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/fairway/controls/button';
 import { useToast } from '@/components/ui/sonner';
 import {
-  IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag,
+  IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag, IconX,
 } from '@/components/icons';
 import { CourseCard } from '@/components/golf/courses/CourseCard';
 import { CourseFormDrawer } from '@/components/golf/courses/CourseFormDrawer';
 import { TeeFormDrawer } from '@/components/golf/courses/TeeFormDrawer';
 import { TeePickRow, SkeletonRows } from '@/components/golf/courses/TeePickerDrawer';
 import {
-  listCourses, getCourseDetail, getTeeRoundDefaults, type TeeRoundDefaults,
+  listCourses, getRecentlyPlayedCourses, getTeamSavedCourses,
+  getCourseDetail, getTeeRoundDefaults, type TeeRoundDefaults,
 } from '@/app/golf/actions/course-library';
 import { normalizeName } from '@/lib/golf/course-library';
 import type { GolfCourse, GolfCourseTee } from '@/lib/types/golf-course';
@@ -74,7 +77,9 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   const reduceMotion = !!useReducedMotion();
 
   const [stage, setStage] = useState<Stage>('courses');
-  const [courses, setCourses] = useState<GolfCourse[]>([]);
+  const [courses, setCourses] = useState<GolfCourse[]>([]);     // full shared library
+  const [recent, setRecent] = useState<GolfCourse[]>([]);       // this player's recently played
+  const [team, setTeam] = useState<GolfCourse[]>([]);           // the team's saved courses
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -89,9 +94,18 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   const refreshCourses = useCallback(async (): Promise<GolfCourse[]> => {
     setLoadingCourses(true);
     try {
-      const next = await listCourses({ limit: 200 });
-      setCourses(next);
-      return next;
+      // Three independent feeds, one carousel each. Recent/team are best-effort:
+      // a player with no cloud-linked rounds or no saved team courses just sees
+      // those sections hidden — the library always renders.
+      const [lib, rec, tm] = await Promise.all([
+        listCourses({ limit: 200 }),
+        getRecentlyPlayedCourses(12).catch(() => [] as GolfCourse[]),
+        getTeamSavedCourses().then((rows) => rows.map((r) => r.course)).catch(() => [] as GolfCourse[]),
+      ]);
+      setCourses(lib);
+      setRecent(rec);
+      setTeam(tm);
+      return lib;
     } catch {
       showToastRef.current('Could not load the course library', 'error');
       return [];
@@ -192,17 +206,32 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
       <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
         <DrawerContent
           className={cn(
-            // Full-screen on mobile — override the base sheet's mt-24 top gap
-            // (a bottom-anchored fixed element + mt-24 would clip the top 6rem).
-            'mt-0 h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none p-0',
-            'sm:mx-auto sm:mt-24 sm:h-auto sm:max-h-[92vh] sm:w-full sm:max-w-3xl sm:rounded-fw-lg',
+            // The picker IS the page, not a sheet floating over the setup:
+            // full-viewport on every breakpoint with the opaque canvas covering
+            // the setup entirely (mt-0 overrides the base sheet's mt-24 gap).
+            'inset-0 mt-0 h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none p-0',
           )}
         >
           <DrawerTitle className="sr-only">
             {stage === 'tees' && selected ? `Choose a tee at ${selected.name}` : 'Choose a course'}
           </DrawerTitle>
 
-          <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-1 sm:px-6 sm:pb-6">
+          {/* Close — always reachable; backs out to the setup screen. */}
+          {/* eslint-disable-next-line helm/no-raw-button -- floating dismiss control on a full-screen surface */}
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            aria-label="Close"
+            className="absolute right-4 top-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface/80 text-text-secondary shadow-soft backdrop-blur transition-[transform,color] [transition-duration:var(--fw-dur-fast)] hover:scale-105 hover:text-text-primary active:scale-95 sm:right-6 sm:top-6"
+          >
+            <IconX size={18} aria-hidden />
+          </button>
+
+          {/* Scroll wrapper centers the picker group (header + carousel) on the
+              page; m-auto pins it to the viewport centre when it fits and lets
+              it scroll when it doesn't. */}
+          <div className="flex h-full w-full flex-col overflow-y-auto px-4 py-6 sm:px-6 sm:py-10">
+            <div className="m-auto flex w-full max-w-3xl flex-col">
             {/* Cinematic dark cockpit header (the figure). */}
             <header className="on-dark relative overflow-hidden rounded-card bg-nav-bg px-6 py-6 text-nav-text shadow-soft sm:px-7">
               <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-500/15 blur-[70px]" />
@@ -249,18 +278,20 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
             </header>
 
             {/* Body (the ground) — stage transition. */}
-            <div className="relative mt-4 flex min-h-0 flex-1 flex-col">
+            <div className="relative mt-4 flex flex-col">
               <AnimatePresence mode="wait" initial={false}>
-                <m.div key={stage} {...stageMotion} className="flex min-h-0 flex-1 flex-col">
+                <m.div key={stage} {...stageMotion} className="flex flex-col">
                   {stage === 'courses'
                     ? <CoursesStage
                         loading={loadingCourses}
-                        courses={courses}
+                        library={courses}
+                        recent={recent}
+                        team={team}
                         filtered={filtered}
                         query={query}
                         reduceMotion={reduceMotion}
                         onSelect={(id) => {
-                          const c = courses.find((x) => x.id === id);
+                          const c = [...courses, ...recent, ...team].find((x) => x.id === id);
                           if (c) void selectCourse(c);
                         }}
                         onCreate={() => setCreateCourseOpen(true)}
@@ -274,6 +305,7 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
                       />}
                 </m.div>
               </AnimatePresence>
+            </div>
             </div>
           </div>
         </DrawerContent>
@@ -301,108 +333,34 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   );
 }
 
-// ── Stage A: the cinematic coverflow (imperative, hooks-safe) ────────────────
+// ── Stage A: sectioned cinematic coverflows (imperative, hooks-safe) ─────────
 
 // Premium falloff (centre → neighbour). Eased (centre plateau); flat scale +
 // opacity + a SUBTLE 3D tilt keeps neighbour photos legible.
-const CF_SCALE_DROP = 0.12;   // centre 1.00 → far 0.88
-const CF_OPACITY_DROP = 0.45; // centre 1.00 → far 0.55
-const CF_ROTATE = 12;         // deg tilt at the falloff edge
-const CF_REACH = 0.85;        // fraction of track width the falloff spans
+const CF_SCALE_DROP = 0.10;   // centre 1.00 → far 0.90 (subtle, premium)
+const CF_OPACITY_DROP = 0.34; // centre 1.00 → far 0.66 (neighbours stay legible, not murky)
+const CF_ROTATE = 9;          // deg tilt at the falloff edge (gentler)
+const CF_REACH = 0.9;         // fraction of track width the falloff spans
 
+/**
+ * Stage A — the "choose a course" screen. Three independent feeds, ONE coverflow
+ * carousel each: Recently played, Team courses, and the full Course library
+ * (which carries the "Add a course" tile). Searching collapses to a single
+ * results carousel across the whole library.
+ */
 function CoursesStage({
-  loading, courses, filtered, query, reduceMotion, onSelect, onCreate,
+  loading, library, recent, team, filtered, query, reduceMotion, onSelect, onCreate,
 }: {
   loading: boolean;
-  courses: GolfCourse[];
+  library: GolfCourse[];
+  recent: GolfCourse[];
+  team: GolfCourse[];
   filtered: GolfCourse[];
   query: string;
   reduceMotion: boolean;
   onSelect: (courseId: string) => void;
   onCreate: () => void;
 }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const progressRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
-
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
-  const [scrollable, setScrollable] = useState(false);
-
-  // Coverflow: scale + dim + tilt each slide by its distance from the track's
-  // centre. Transforms written straight to the DOM (one rAF per scroll frame).
-  const paint = useCallback(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    const tr = track.getBoundingClientRect();
-    const center = tr.left + tr.width / 2;
-    const reach = tr.width * CF_REACH || 1;
-
-    if (!reduceMotion) {
-      for (const el of slideRefs.current) {
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        const signed = (r.left + r.width / 2) - center;
-        const norm = Math.min(Math.abs(signed) / reach, 1);
-        const eased = 1 - (1 - norm) * (1 - norm); // ease-out: flat at centre
-        const scale = 1 - eased * CF_SCALE_DROP;
-        const rot = -Math.sign(signed) * eased * CF_ROTATE;
-        el.style.transform = `perspective(1200px) scale(${scale.toFixed(4)}) rotateY(${rot.toFixed(2)}deg)`;
-        el.style.opacity = (1 - eased * CF_OPACITY_DROP).toFixed(4);
-      }
-    }
-
-    const max = track.scrollWidth - track.clientWidth;
-    const sc = max > 8;
-    setScrollable((p) => (p !== sc ? sc : p));
-    setCanLeft((p) => { const n = track.scrollLeft > 8; return p !== n ? n : p; });
-    setCanRight((p) => { const n = track.scrollLeft < max - 8; return p !== n ? n : p; });
-    if (progressRef.current) {
-      const p = max > 0 ? track.scrollLeft / max : 0;
-      progressRef.current.style.transform = `scaleX(${Math.max(0.08, p).toFixed(4)})`;
-    }
-  }, [reduceMotion]);
-
-  const onScroll = useCallback(() => {
-    if (rafRef.current != null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      paint();
-    });
-  }, [paint]);
-
-  // Apply once after layout (entrance keeps cards invisible until then, so no
-  // full-size flash) and whenever the result set changes.
-  useLayoutEffect(() => {
-    paint();
-  }, [paint, filtered.length, loading]);
-
-  useEffect(() => {
-    const onResize = () => paint();
-    window.addEventListener('resize', onResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [paint]);
-
-  const scrollByCards = (dir: 1 | -1) => {
-    const el = trackRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.72, 520), behavior: reduceMotion ? 'auto' : 'smooth' });
-  };
-
-  const enter = (i: number) =>
-    reduceMotion
-      ? {}
-      : {
-          initial: { opacity: 0, y: 18 },
-          animate: { opacity: 1, y: 0 },
-          transition: { type: 'spring' as const, stiffness: 300, damping: 26, delay: Math.min(i, 7) * 0.05 },
-        };
-
   if (loading) {
     return (
       <div className="flex gap-4 overflow-hidden px-[6vw] py-3 sm:px-[16%]">
@@ -416,42 +374,222 @@ function CoursesStage({
     );
   }
 
-  if (courses.length === 0) {
-    return <EmptyCourses onCreate={onCreate} />;
-  }
+  const q = query.trim();
 
-  if (filtered.length === 0) {
+  // Search mode — one results carousel across the whole library.
+  if (q) {
+    if (filtered.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+          <p className="font-fw-sans text-body text-text-secondary">
+            No courses match “{q}”.
+          </p>
+          <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
+            Add it to the shared library so it’s there next time.
+          </p>
+          <Button variant="primary" className="mt-5" onClick={onCreate}>
+            <IconPlus size={16} aria-hidden /> Add “{q}”
+          </Button>
+        </div>
+      );
+    }
     return (
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-        <p className="font-fw-sans text-body text-text-secondary">
-          No courses match “{query.trim()}”.
-        </p>
-        <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
-          Add it to the shared library so it’s there next time.
-        </p>
-        <Button variant="primary" className="mt-5" onClick={onCreate}>
-          <IconPlus size={16} aria-hidden /> Add “{query.trim()}”
-        </Button>
-      </div>
+      <CourseCarousel
+        courses={filtered}
+        reduceMotion={reduceMotion}
+        onSelect={onSelect}
+        regionLabel={`Search results for ${q}`}
+        withCreateTile
+        onCreate={onCreate}
+      />
     );
   }
 
-  const count = filtered.length + 1; // + the "add a course" tile
+  if (library.length === 0 && recent.length === 0 && team.length === 0) {
+    return <EmptyCourses onCreate={onCreate} />;
+  }
+
+  // Browse mode — a labelled coverflow per feed.
+  return (
+    <div className="flex flex-col gap-7">
+      {recent.length > 0 && (
+        <CourseSection label="Recently played" count={recent.length}>
+          <CourseCarousel courses={recent} reduceMotion={reduceMotion} onSelect={onSelect} regionLabel="Recently played courses" />
+        </CourseSection>
+      )}
+      {team.length > 0 && (
+        <CourseSection label="Team courses" count={team.length}>
+          <CourseCarousel courses={team} reduceMotion={reduceMotion} onSelect={onSelect} regionLabel="Team courses" />
+        </CourseSection>
+      )}
+      <CourseSection label="Course library" count={library.length}>
+        <CourseCarousel
+          courses={library}
+          reduceMotion={reduceMotion}
+          onSelect={onSelect}
+          regionLabel="Course library"
+          withCreateTile
+          onCreate={onCreate}
+        />
+      </CourseSection>
+    </div>
+  );
+}
+
+/** Eyebrow label + count above a carousel; aligned to the centred card column. */
+function CourseSection({ label, count, children }: { label: string; count: number; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col">
+      <div className="mb-1 flex items-baseline justify-between px-[6vw] sm:px-[16%]">
+        <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-secondary">
+          {label}
+        </h2>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          {count} {count === 1 ? 'course' : 'courses'}
+        </span>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * One horizontal coverflow carousel: featured cards on a centred scroll-snap
+ * track, scaled/dimmed/tilted by distance from centre — written IMPERATIVELY
+ * (one rAF per scroll frame), deliberately NOT framer useScroll/useTransform
+ * (those need the container ref hydrated at hook-call time and crashed prod with
+ * React #310). Every hook runs unconditionally before any early return; the
+ * whole thing is reduced-motion gated.
+ */
+function CourseCarousel({
+  courses, reduceMotion, onSelect, regionLabel, withCreateTile = false, onCreate,
+}: {
+  courses: GolfCourse[];
+  reduceMotion: boolean;
+  onSelect: (courseId: string) => void;
+  regionLabel: string;
+  withCreateTile?: boolean;
+  onCreate?: () => void;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+  const [scrollable, setScrollable] = useState(false);
+
+  // Coverflow: scale + dim + tilt each slide by its distance from the track's
+  // centre. To hold 60fps we BATCH every layout READ, then every WRITE — reading
+  // a rect *after* a style write forces a synchronous reflow, so an interleaved
+  // read→write→read loop would thrash layout once per slide per frame. One read
+  // batch + one write batch = a single reflow per frame.
+  const paint = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    // ---- READ phase: all layout reads up front ----
+    const tr = track.getBoundingClientRect();
+    const center = tr.left + tr.width / 2;
+    const reach = tr.width * CF_REACH || 1;
+    const scrollLeft = track.scrollLeft;
+    const max = track.scrollWidth - track.clientWidth;
+    const mids = reduceMotion
+      ? null
+      : slideRefs.current.map((el) => {
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return r.left + r.width / 2;
+        });
+
+    // ---- WRITE phase: no layout reads here, so the browser reflows once ----
+    if (mids) {
+      const slides = slideRefs.current;
+      for (let i = 0; i < slides.length; i++) {
+        const el = slides[i];
+        const mid = mids[i];
+        if (!el || mid == null) continue;
+        const signed = mid - center;
+        const norm = Math.min(Math.abs(signed) / reach, 1);
+        const eased = 1 - (1 - norm) * (1 - norm); // ease-out: flat at centre
+        const scale = 1 - eased * CF_SCALE_DROP;
+        const rot = -Math.sign(signed) * eased * CF_ROTATE;
+        el.style.transform = `perspective(1200px) scale(${scale.toFixed(4)}) rotateY(${rot.toFixed(2)}deg)`;
+        el.style.opacity = (1 - eased * CF_OPACITY_DROP).toFixed(4);
+      }
+    }
+    if (progressRef.current) {
+      const p = max > 0 ? scrollLeft / max : 0;
+      progressRef.current.style.transform = `scaleX(${Math.max(0.08, p).toFixed(4)})`;
+    }
+
+    // Guarded so the arrow/rail state only flips at the scroll boundaries —
+    // never a per-frame re-render mid-scroll.
+    const sc = max > 8;
+    setScrollable((prev) => (prev !== sc ? sc : prev));
+    setCanLeft((prev) => { const n = scrollLeft > 8; return prev !== n ? n : prev; });
+    setCanRight((prev) => { const n = scrollLeft < max - 8; return prev !== n ? n : prev; });
+  }, [reduceMotion]);
+
+  // rAF-coalesced scheduler — at most one paint() per frame no matter how many
+  // scroll/resize events fire. Shared by both so resize can't fire a burst of
+  // synchronous paints either.
+  const schedulePaint = useCallback(() => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      paint();
+    });
+  }, [paint]);
+
+  // Apply once after layout (entrance keeps cards invisible until then, so no
+  // full-size flash) and whenever the result set changes.
+  useLayoutEffect(() => {
+    paint();
+  }, [paint, courses.length, withCreateTile]);
+
+  useEffect(() => {
+    window.addEventListener('resize', schedulePaint);
+    return () => {
+      window.removeEventListener('resize', schedulePaint);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [schedulePaint]);
+
+  const scrollByCards = (dir: 1 | -1) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.72, 520), behavior: reduceMotion ? 'auto' : 'smooth' });
+  };
+
+  const enter = (i: number) =>
+    reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 12 },
+          animate: { opacity: 1, y: 0 },
+          // Snappy reveal: a quick glide, minimal stagger (capped) so the row
+          // lights up almost at once instead of crawling card-by-card.
+          transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] as const, delay: Math.min(i, 4) * 0.03 },
+        };
+
+  const count = courses.length + (withCreateTile ? 1 : 0);
   slideRefs.current = []; // repopulated by the ref callbacks below this render
 
   return (
-    <div className="relative flex flex-1 flex-col justify-center">
+    <div className="relative">
       <CarouselArrow side="left" show={canLeft} onClick={() => scrollByCards(-1)} />
       <CarouselArrow side="right" show={canRight} onClick={() => scrollByCards(1)} />
 
       <div
         ref={trackRef}
-        onScroll={onScroll}
+        onScroll={schedulePaint}
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region MUST be focusable for keyboard scrolling; Safari (unlike Chrome) does not add this implicitly (WCAG 2.1.1, ACT 0ssw9k)
         tabIndex={0}
         role="region"
         aria-roledescription="carousel"
-        aria-label="Course library"
+        aria-label={regionLabel}
         className={cn(
           'flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto overscroll-x-contain scroll-smooth',
           'px-[6vw] py-3 sm:px-[16%]',
@@ -460,7 +598,7 @@ function CoursesStage({
           'motion-reduce:scroll-auto',
         )}
       >
-        {filtered.map((course, i) => (
+        {courses.map((course, i) => (
           <m.div
             key={course.id}
             {...enter(i)}
@@ -478,27 +616,29 @@ function CoursesStage({
           </m.div>
         ))}
 
-        {/* Final slide — add a new course. */}
-        <m.div
-          key="__create"
-          {...enter(filtered.length)}
-          role="group"
-          aria-roledescription="slide"
-          aria-label={`Add a course, ${count} of ${count}`}
-          className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
-        >
-          <div
-            ref={(el) => { slideRefs.current[filtered.length] = el; }}
-            className="origin-center will-change-transform [transform-style:preserve-3d]"
+        {/* Final slide — add a new course (library carousel only). */}
+        {withCreateTile && onCreate && (
+          <m.div
+            key="__create"
+            {...enter(courses.length)}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`Add a course, ${count} of ${count}`}
+            className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
           >
-            <CreateCourseTile onClick={onCreate} />
-          </div>
-        </m.div>
+            <div
+              ref={(el) => { slideRefs.current[courses.length] = el; }}
+              className="origin-center will-change-transform [transform-style:preserve-3d]"
+            >
+              <CreateCourseTile onClick={onCreate} />
+            </div>
+          </m.div>
+        )}
       </div>
 
-      {/* Scroll affordance: a slim progress rail + count. */}
-      <div className="mt-3 flex flex-col items-center gap-2">
-        {scrollable && (
+      {/* Scroll affordance: a slim progress rail (only when there's overflow). */}
+      {scrollable && (
+        <div className="mt-3 flex justify-center">
           <div className="h-1 w-24 overflow-hidden rounded-full bg-border-subtle">
             <div
               ref={progressRef}
@@ -507,11 +647,8 @@ function CoursesStage({
               style={{ transform: 'scaleX(0.08)' }}
             />
           </div>
-        )}
-        <p className="font-fw-sans text-caption text-text-tertiary">
-          {scrollable ? 'Swipe to browse · ' : ''}{filtered.length} {filtered.length === 1 ? 'course' : 'courses'}
-        </p>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -148,6 +148,74 @@ export async function listCourses(opts: ListCoursesOptions = {}): Promise<GolfCo
   return data.map(mapCourseRow);
 }
 
+/**
+ * Cloud courses the current player has recently played, most-recent first.
+ * Derived from golf_rounds.course_id (populated when a round starts from a
+ * library tee or is grown from a save). Rounds without a cloud course_id
+ * (legacy / per-player quick-pick) simply don't appear. Coaches / no player → [].
+ */
+export async function getRecentlyPlayedCourses(limit = 12): Promise<GolfCourse[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!player) return [];
+
+  const { data: rounds } = await supabase
+    .from('golf_rounds')
+    .select('course_id, tee_id, round_date')
+    .eq('player_id', player.id)
+    .order('round_date', { ascending: false })
+    .limit(200);
+  if (!rounds || rounds.length === 0) return [];
+
+  // Prefer course_id; fall back to the tee's course for any round that carries
+  // only the tee link. (The round RPCs now persist course_id, but this keeps the
+  // feed correct for historical rounds and any edge path.)
+  const teeIds = [...new Set(
+    rounds.filter((r) => !r.course_id && r.tee_id).map((r) => r.tee_id as string),
+  )];
+  const teeToCourse = new Map<string, string>();
+  if (teeIds.length > 0) {
+    const { data: teeRows } = await supabase
+      .from('golf_course_tees')
+      .select('id, course_id')
+      .in('id', teeIds)
+      .is('deleted_at', null);
+    for (const t of teeRows ?? []) teeToCourse.set(t.id as string, t.course_id as string);
+  }
+
+  // Distinct course ids in recency order (first occurrence wins).
+  const orderedIds: string[] = [];
+  const seen = new Set<string>();
+  for (const r of rounds) {
+    const cid = (r.course_id as string | null)
+      ?? (r.tee_id ? teeToCourse.get(r.tee_id as string) ?? null : null);
+    if (cid && !seen.has(cid)) {
+      seen.add(cid);
+      orderedIds.push(cid);
+      if (orderedIds.length >= limit) break;
+    }
+  }
+  if (orderedIds.length === 0) return [];
+
+  // Only surface active courses; preserve recency order.
+  const { data: courseRows } = await supabase
+    .from('golf_courses')
+    .select('*')
+    .in('id', orderedIds)
+    .is('deleted_at', null);
+  if (!courseRows) return [];
+
+  const byId = new Map(courseRows.map((c) => [c.id as string, mapCourseRow(c)]));
+  return orderedIds.map((id) => byId.get(id)).filter((c): c is GolfCourse => !!c);
+}
+
 /** Active tee-set counts per course id (for card "N tees" labels). */
 export async function getCourseTeeCounts(courseIds: string[]): Promise<Record<string, number>> {
   if (courseIds.length === 0) return {};
@@ -291,10 +359,27 @@ export async function getTeamSavedCourses(): Promise<GolfTeamSavedCourseWithCour
   const supabase = await createClient();
   const ctx = await getCoachTeam(supabase);
   if ('error' in ctx) {
-    // Players can still READ the team library (RLS allows team players to select).
-    const actor = await getActor(supabase);
-    if (!actor?.teamId) return [];
-    return loadTeamSaved(supabase, actor.teamId);
+    // Not a coach — resolve the PLAYER's active team so players (the picker's
+    // primary users) see their team's saved library too. getActor() only
+    // resolves a team for coaches, so look the player up via golf_team_members
+    // here (mirrors getPlayerTeamId in golf.ts). RLS still lets a team's players
+    // SELECT its saved courses.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!player) return [];
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', player.id)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (!membership?.team_id) return [];
+    return loadTeamSaved(supabase, membership.team_id as string);
   }
   return loadTeamSaved(supabase, ctx.teamId);
 }
