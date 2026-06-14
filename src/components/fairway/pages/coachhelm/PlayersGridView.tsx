@@ -257,6 +257,13 @@ export function PlayersGridView({
   const [saving, setSaving] = React.useState(false);
   const [completingId, setCompletingId] = React.useState<string | null>(null);
 
+  // Log-progress dialog — a focused Fairway ModalShell that replaces the
+  // off-brand native window.prompt. The write wiring (updateFocusAreaProgress)
+  // is unchanged; only the value-capture UI is re-skinned.
+  const [logTarget, setLogTarget] = React.useState<FocusAreaCardData | null>(null);
+  const [logValue, setLogValue] = React.useState<number | null>(null);
+  const [logSaving, setLogSaving] = React.useState(false);
+
   /* ---- derived ---- */
 
   const rosterRows: RosterRow[] = React.useMemo(
@@ -456,31 +463,36 @@ export function PlayersGridView({
     }
   }
 
-  // Log progress: a lightweight prompt-driven bump (preserves
-  // updateFocusAreaProgress wiring; the full editor lives in the edit modal).
-  async function handleLogProgress(fa: FocusAreaCardData) {
-    const raw = window.prompt(
-      `Log a new value for "${fa.title || 'this focus area'}"${
-        fa.target_metric ? ` (${fa.target_metric})` : ''
-      }:`,
-      fa.current_value != null ? String(fa.current_value) : '',
-    );
-    if (raw == null) return;
-    const next = parseFloat(raw);
-    if (!Number.isFinite(next)) {
+  // Log progress: opens a focused Fairway dialog (the lightweight bump — the
+  // full editor lives in the edit modal). Prefills the current value so the
+  // coach edits from where they are; the write happens in submitLogProgress.
+  function handleLogProgress(fa: FocusAreaCardData) {
+    setLogTarget(fa);
+    setLogValue(fa.current_value ?? null);
+  }
+
+  // PRESERVED: identical updateFocusAreaProgress(id, value) call the native
+  // prompt fired — only the value now comes from the dialog's NumberField.
+  async function submitLogProgress() {
+    if (!logTarget || logSaving) return;
+    if (logValue == null || !Number.isFinite(logValue)) {
       fairwayToast.error('Enter a number to log progress');
       return;
     }
+    setLogSaving(true);
     try {
-      const res = await updateFocusAreaProgress(fa.id, next);
+      const res = await updateFocusAreaProgress(logTarget.id, logValue);
       if (res.success) {
         fairwayToast.success('Progress logged');
+        setLogTarget(null);
         router.refresh();
       } else {
         fairwayToast.error(res.error ?? 'Could not log progress');
       }
     } catch {
       fairwayToast.error('Could not log progress');
+    } finally {
+      setLogSaving(false);
     }
   }
 
@@ -512,7 +524,7 @@ export function PlayersGridView({
                 <p className="font-fw-sans text-eyebrow text-text-tertiary">
                   {p.graduation_year ? `'${String(p.graduation_year).slice(-2)}` : ''}
                   {p.handicap != null
-                    ? `${p.graduation_year ? ' · ' : ''}${p.handicap > 0 ? '+' : ''}${p.handicap} HCP`
+                    ? `${p.graduation_year ? ' · ' : ''}${p.handicap < 0 ? '+' : ''}${Math.abs(p.handicap)} HCP`
                     : ''}
                 </p>
               </div>
@@ -789,6 +801,55 @@ export function PlayersGridView({
         onSave={handleSave}
         saving={saving}
       />
+
+      {/* ---- LOG-PROGRESS DIALOG (replaces native window.prompt) ---- */}
+      <ModalShell
+        open={logTarget != null}
+        onOpenChange={(o) => {
+          if (!o && !logSaving) setLogTarget(null);
+        }}
+        size="sm"
+        title="Log progress"
+        description={logTarget?.title || 'Focus area'}
+      >
+        <ModalShell.Body>
+          <FormField
+            label={logTarget?.target_metric ? `New value (${logTarget.target_metric})` : 'New value'}
+            required
+          >
+            <NumberField value={logValue} onValueChange={(v) => setLogValue(v)} />
+          </FormField>
+          {logTarget?.current_value != null ? (
+            <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
+              Current{' '}
+              <span className="font-fw-mono tabular-nums text-text-secondary">
+                {logTarget.current_value}
+              </span>
+              {logTarget.target_value != null ? (
+                <>
+                  {' · target '}
+                  <span className="font-fw-mono tabular-nums text-text-secondary">
+                    {logTarget.target_value}
+                  </span>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+        </ModalShell.Body>
+        <ModalShell.Footer>
+          <Button variant="ghost" onClick={() => setLogTarget(null)} disabled={logSaving}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            busy={logSaving}
+            disabled={logValue == null}
+            onClick={submitLogProgress}
+          >
+            Save progress
+          </Button>
+        </ModalShell.Footer>
+      </ModalShell>
     </CoachHelmShell>
   );
 }

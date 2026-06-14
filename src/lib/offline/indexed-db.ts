@@ -379,6 +379,66 @@ export async function getPendingRounds(): Promise<OfflineRound[]> {
 }
 
 /**
+ * Get the count of pending rounds in this (v1) database.
+ *
+ * Used by the v2 stats/sync layer so that rounds stranded here by
+ * saveOfflineRound (failed-submit recovery) are still reflected in the
+ * pending badge and drained by the global reconnect sync.
+ */
+export async function getPendingRoundCount(): Promise<number> {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(ROUNDS_STORE, 'readonly');
+    const store = transaction.objectStore(ROUNDS_STORE);
+    const index = store.index('syncStatus');
+    const request = index.count('pending');
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(new Error('Failed to count pending rounds'));
+  });
+}
+
+/**
+ * Mark a round in this (v1) database as synced and remove it from the
+ * sync queue, WITHOUT deleting the round row.
+ *
+ * This is the non-destructive drain primitive used by the global sync
+ * engine: the round record is retained (and later swept by the normal
+ * synced-data cleanup) so a transient failure can never lose data, while
+ * the round immediately stops counting as pending.
+ */
+export async function markOfflineRoundSynced(
+  roundId: string,
+  serverRoundId?: string
+): Promise<void> {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([ROUNDS_STORE, SYNC_QUEUE_STORE], 'readwrite');
+    const roundsStore = transaction.objectStore(ROUNDS_STORE);
+    const syncStore = transaction.objectStore(SYNC_QUEUE_STORE);
+    const getRequest = roundsStore.get(roundId);
+
+    getRequest.onsuccess = () => {
+      const round = getRequest.result as OfflineRound | undefined;
+      // Idempotent: if the round is already gone, there's nothing to do.
+      if (round) {
+        round.syncStatus = 'synced';
+        round.lastSyncAttempt = Date.now();
+        if (serverRoundId) round.serverRoundId = serverRoundId;
+        roundsStore.put(round);
+      }
+      // Remove from the sync queue regardless so it stops draining.
+      syncStore.delete(roundId);
+    };
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(new Error('Failed to mark offline round synced'));
+  });
+}
+
+/**
  * Update round sync status
  */
 export async function updateRoundSyncStatus(
@@ -412,6 +472,56 @@ export async function updateRoundSyncStatus(
 
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(new Error('Failed to update round sync status'));
+  });
+}
+
+/**
+ * Record a FAILED sync attempt on a (v1) round, non-destructively.
+ *
+ * Atomically bumps the attempt counter + timestamp so the sync engine can
+ * apply exponential backoff, and records the error. The round is kept
+ * 'pending' so it is retried on a later cycle — UNLESS the attempt budget is
+ * exhausted, in which case it is marked 'failed' so it stops draining and
+ * surfaces to the user instead of being retried forever. The row and its
+ * draftData are always retained (no data loss).
+ *
+ * Returns the new attempt count + resulting status, or null if the round is
+ * already gone (idempotent).
+ */
+export async function recordOfflineRoundSyncFailure(
+  roundId: string,
+  error: string,
+  maxAttempts: number
+): Promise<{ attempts: number; status: OfflineRound['syncStatus'] } | null> {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(ROUNDS_STORE, 'readwrite');
+    const store = transaction.objectStore(ROUNDS_STORE);
+    const getRequest = store.get(roundId);
+    let outcome: { attempts: number; status: OfflineRound['syncStatus'] } | null = null;
+
+    getRequest.onsuccess = () => {
+      const round = getRequest.result as OfflineRound | undefined;
+      // Idempotent: nothing to do if the round was already drained/removed.
+      if (!round) return;
+
+      const attempts = (round.syncAttempts ?? 0) + 1;
+      // Give up once the budget is spent so we stop hammering the server and
+      // the failure becomes visible; otherwise keep it pending for backoff.
+      const status: OfflineRound['syncStatus'] = attempts >= maxAttempts ? 'failed' : 'pending';
+
+      round.syncAttempts = attempts;
+      round.lastSyncAttempt = Date.now();
+      round.syncStatus = status;
+      round.error = error;
+      store.put(round);
+
+      outcome = { attempts, status };
+    };
+
+    transaction.oncomplete = () => resolve(outcome);
+    transaction.onerror = () => reject(new Error('Failed to record offline round sync failure'));
   });
 }
 

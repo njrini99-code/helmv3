@@ -98,13 +98,13 @@ export function TeamHealthHero({ data, loading }: TeamHealthHeroProps) {
   // Color variables computed but could be used for conditional styling
   // Keeping for future enhancement
   const _eligibilityColor = data.eligibilityPct >= 90 
-    ? 'text-green-400' 
+    ? 'text-primary-400' 
     : data.eligibilityPct >= 75 
       ? 'text-amber-400' 
       : 'text-red-400';
 
   const _gpaColor = (data.teamGpa || 0) >= 3.0 
-    ? 'text-green-400' 
+    ? 'text-primary-400' 
     : (data.teamGpa || 0) >= 2.5 
       ? 'text-amber-400' 
       : 'text-red-400';
@@ -166,7 +166,7 @@ export function TeamHealthHero({ data, loading }: TeamHealthHeroProps) {
           </div>
 
           {data.recentJoins > 0 && (
-            <div className="px-3 py-1.5 rounded-full bg-green-500/20 text-green-400 text-xs font-medium">
+            <div className="px-3 py-1.5 rounded-full bg-primary-500/20 text-primary-400 text-xs font-medium">
               +{data.recentJoins} this week
             </div>
           )}

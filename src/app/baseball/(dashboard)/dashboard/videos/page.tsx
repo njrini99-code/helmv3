@@ -358,7 +358,7 @@ export default function VideosPage() {
         {hasNoVideos && !showUpload ? (
           <Card variant="glass">
             <CardContent className="p-8 sm:p-12 text-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-4 sm:mb-6">
                 <IconVideo size={32} className="sm:hidden text-primary-600" />
                 <IconVideo size={40} className="hidden sm:block text-primary-600" />
               </div>

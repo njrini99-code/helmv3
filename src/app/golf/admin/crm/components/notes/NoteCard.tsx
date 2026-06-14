@@ -43,7 +43,7 @@ const KIND_LABEL: Record<NoteKind, string> = {
 const KIND_TONE: Record<NoteKind, string> = {
   note: 'bg-warm-100 text-warm-700 border-warm-200',
   call_log: 'bg-blue-50 text-blue-700 border-blue-200',
-  meeting_summary: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  meeting_summary: 'bg-primary-50 text-primary-700 border-primary-200',
   internal: 'bg-amber-50 text-amber-700 border-amber-200',
 };
 

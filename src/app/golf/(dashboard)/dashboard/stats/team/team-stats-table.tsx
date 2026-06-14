@@ -436,8 +436,8 @@ export function TeamStatsTable({
                       : 'text-warm-700'
                   )}>
                     {player.handicap !== null
-                      ? player.handicap > 0
-                        ? `+${player.handicap.toFixed(1)}`
+                      ? player.handicap < 0
+                        ? `+${Math.abs(player.handicap).toFixed(1)}`
                         : player.handicap.toFixed(1)
                       : '—'}
                   </span>
@@ -549,7 +549,7 @@ function AiRatingCell({
   const rating = Math.round(value);
   const color =
     rating >= 80
-      ? 'text-emerald-600'
+      ? 'text-primary-600'
       : rating >= 60
         ? 'text-primary-600'
         : rating >= 40

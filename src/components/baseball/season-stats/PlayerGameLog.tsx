@@ -279,7 +279,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                     <td className="px-2 py-2 text-center">
                       {row.result && (
                         <span className={`px-1.5 py-0.5 rounded text-eyebrow font-bold ${
-                          row.result === 'W' ? 'bg-green-100 text-green-700' :
+                          row.result === 'W' ? 'bg-primary-100 text-primary-700' :
                           row.result === 'L' ? 'bg-red-100 text-red-700' :
                           row.result === 'S' ? 'bg-blue-100 text-blue-700' :
                           'bg-warm-100 text-warm-500'

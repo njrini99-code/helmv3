@@ -1,24 +1,26 @@
 /**
- * Regression guard for the production React #310 crash on the new-round screen
- * (PR #290). The picker opens immediately as the New Round landing screen, so a
- * render-time hooks/framer crash takes down the whole page. The original
- * coverflow drove transforms with framer-motion useScroll/useTransform, which
- * require the scroll-container ref to be hydrated at hook-call time and threw
- * ("Container ref is defined but not hydrated") under concurrent React.
+ * Regression guard for the new-round course picker.
  *
- * This test renders the picker OPEN and lets the three feeds (library / recently
- * played / team courses) resolve — the loading -> loaded re-render that crashed
- * prod. It must mount the carousels with the loaded courses and throw nothing.
- * Any unhandled framer error or a hooks violation fails the run. It also locks
- * the sectioned layout (one carousel per feed).
+ * 1) The production React #310 crash (PR #290): the picker opens immediately as
+ *    the New Round landing screen, so a render-time hooks/framer crash takes the
+ *    whole page down. We render it OPEN, let the three feeds resolve (the
+ *    loading -> loaded re-render that crashed prod), and assert the shelves mount
+ *    with no throw.
+ * 2) The sectioned layout (one shelf per feed).
+ * 3) Tapping a course advances to the tee stage (the "it didn't ask me to start
+ *    the round" report) — a clean, reliable tap target.
  */
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('@/components/ui/sonner', () => ({ useToast: () => ({ showToast: vi.fn() }) }));
+// Stub CourseCard as a real tap target wired to onSelect, so the click→tee-stage
+// transition is exercised by the test (that's the user-reported bug).
 vi.mock('@/components/golf/courses/CourseCard', () => ({
-  CourseCard: ({ course }: { course: { name: string } }) => <div data-testid="course-card">{course.name}</div>,
+  CourseCard: ({ course, onSelect }: { course: { id: string; name: string }; onSelect?: (id: string) => void }) => (
+    <button type="button" data-testid="course-card" onClick={() => onSelect?.(course.id)}>{course.name}</button>
+  ),
 }));
 vi.mock('@/app/golf/actions/course-library', () => ({
   listCourses: vi.fn(async () => [
@@ -37,24 +39,20 @@ import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/Fairw
 type Fn = ReturnType<typeof vi.fn>;
 
 describe('FairwayCoursePicker', () => {
-  it('opens and renders the loaded library carousel without a render crash', async () => {
+  it('opens and renders the loaded library shelf without a render crash', async () => {
     render(
       <LazyMotion features={domAnimation}>
         <FairwayCoursePicker open onOpenChange={() => {}} onPick={() => {}} />
       </LazyMotion>,
     );
 
-    // After the feeds resolve the carousel mounts the cards (the exact re-render
-    // that crashed prod). findBy* waits for the async state update.
     expect(await screen.findByText('Pebble Beach')).toBeInTheDocument();
     expect(await screen.findByText('Augusta National')).toBeInTheDocument();
-    // The "Add a course" create tile is always the final slide of the library.
     expect(screen.getByText('Add a course')).toBeInTheDocument();
-    // The library section is always labelled.
     expect(screen.getByText('Course library')).toBeInTheDocument();
   });
 
-  it('renders Recently played and Team courses sections when those feeds have data', async () => {
+  it('renders Recently played and Team courses shelves when those feeds have data', async () => {
     const mod = await import('@/app/golf/actions/course-library');
     (mod.getRecentlyPlayedCourses as unknown as Fn).mockResolvedValueOnce([
       { id: 'r1', name: 'Riverbend', city: 'Asheville', state: 'NC', image_url: null, normalized_name: 'riverbend' },
@@ -74,6 +72,21 @@ describe('FairwayCoursePicker', () => {
     expect(screen.getByText('Course library')).toBeInTheDocument();
     expect(screen.getByText('Riverbend')).toBeInTheDocument();
     expect(screen.getByText('Home Track')).toBeInTheDocument();
+  });
+
+  it('tapping a course advances to the tee stage', async () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <FairwayCoursePicker open onOpenChange={() => {}} onPick={() => {}} />
+      </LazyMotion>,
+    );
+
+    fireEvent.click(await screen.findByText('Pebble Beach'));
+
+    // The tee stage's header copy + its empty state (mocked getCourseDetail
+    // returns no tees) must appear — proof the tap started the flow.
+    expect(await screen.findByText(/Pick the tee set you played/i)).toBeInTheDocument();
+    expect(await screen.findByText(/No tee sets yet/i)).toBeInTheDocument();
   });
 
   it('renders the empty state when every feed is empty', async () => {

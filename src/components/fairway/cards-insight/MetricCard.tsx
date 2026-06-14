@@ -31,10 +31,14 @@ import NumberFlow, { type Format } from '@number-flow/react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/fairway/feedback';
 
 /** Visual weight of the tile. `default` is the everyday KPI; `hero` gets a
  *  touch more air + a slightly larger numeric for the one lead metric. */
 export type MetricCardVariant = 'default' | 'hero';
+
+/** Tile density — `compact` for dense KPI grids (tighter padding, smaller value). */
+export type MetricCardDensity = 'default' | 'compact';
 
 /** Semantic direction of a delta. `auto` derives from the sign of `value`. */
 export type MetricDeltaDirection = 'up' | 'down' | 'neutral' | 'auto';
@@ -88,6 +92,9 @@ export interface MetricCardProps
   icon?: ReactNode;
   /** Visual weight. Default `default`. */
   variant?: MetricCardVariant;
+  /** Tile density. `compact` tightens padding + drops the value one step for
+   *  dense 5/6-up KPI grids. Ignored when `variant='hero'`. Default `default`. */
+  density?: MetricCardDensity;
   /** Adds hover/active affordances (lift + drift). Default false (calm). */
   interactive?: boolean;
   /** Loading → shape-matched skeleton (never a spinner). */
@@ -96,6 +103,11 @@ export interface MetricCardProps
   empty?: boolean;
   /** Message shown in the empty state. Default "Not enough data yet". */
   emptyMessage?: string;
+  /**
+   * Value-face tone. `'accent'` (default) paints the figure in the brand green
+   * so KPI cards read as a cohesive scoreboard; `'neutral'` keeps the dark ink.
+   */
+  tone?: 'accent' | 'neutral';
 }
 
 /* -- delta helpers ---------------------------------------------------------- */
@@ -141,10 +153,12 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       footnote,
       icon,
       variant = 'default',
+      density = 'default',
       interactive = false,
       loading = false,
       empty = false,
       emptyMessage = 'Not enough data yet',
+      tone = 'accent',
       className,
       ...rest
     },
@@ -172,17 +186,23 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
     }, [delta?.decimals, decimals]);
 
     const isHero = variant === 'hero';
+    // Compact: a tighter tile for dense 5/6-up KPI grids where full p-6 reads
+    // cramped. Hero always wins over compact.
+    const isCompact = density === 'compact' && !isHero;
 
     const base = cn(
       'group relative flex flex-col rounded-card bg-surface',
-      'border border-border-subtle',
+      // resting: warm hairline + a whisper shadow with a lit top edge so the KPI
+      // tile reads as a premium physical surface, not a flat outlined box.
+      // --fw-shadow-card is light-cards-only (carries the warm-white top edge).
+      'border border-border-subtle [box-shadow:var(--fw-shadow-card)]',
       'transition-[box-shadow,transform,border-color] ease-soft',
-      isHero ? 'p-8 gap-3' : 'p-6 gap-2',
+      isHero ? 'p-8 gap-3' : isCompact ? 'p-4 gap-1.5' : 'p-6 gap-2',
       interactive && [
-        'cursor-pointer',
-        'duration-fast',
-        'hover:shadow-soft hover:-translate-y-px hover:border-transparent',
-        'active:translate-y-[0.5px] active:shadow-flat',
+        'cursor-pointer will-change-transform',
+        '[transition-duration:240ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
+        'hover:shadow-raise hover:-translate-y-[2px] hover:border-transparent',
+        'active:translate-y-0 active:shadow-soft active:[transition-duration:110ms]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
       ],
       !interactive && 'duration-base',
@@ -200,18 +220,16 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
           {...rest}
         >
           <div className="flex items-center justify-between">
-            <span className="h-3 w-24 animate-pulse rounded-full bg-surface-sunken" />
-            {icon ? (
-              <span className="h-5 w-5 animate-pulse rounded-md bg-surface-sunken" />
-            ) : null}
+            <Skeleton className="h-3 w-24 rounded-full" />
+            {icon ? <Skeleton className="h-5 w-5 rounded-md" /> : null}
           </div>
-          <span
+          <Skeleton
             className={cn(
-              'mt-1 animate-pulse rounded-fw-md bg-surface-sunken',
-              isHero ? 'h-12 w-40' : 'h-9 w-28',
+              'mt-1 rounded-fw-md',
+              isHero ? 'h-12 w-40' : isCompact ? 'h-7 w-20' : 'h-9 w-28',
             )}
           />
-          <span className="h-3 w-20 animate-pulse rounded-full bg-surface-sunken" />
+          <Skeleton className="h-3 w-20 rounded-full" />
         </div>
       );
     }
@@ -224,7 +242,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       <div ref={ref} className={base} {...interactiveProps} {...rest}>
         {/* header: overline label + optional icon */}
         <div className="flex items-start justify-between gap-3">
-          <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+          <span className="min-w-0 truncate font-fw-sans text-eyebrow uppercase text-text-tertiary">
             {label}
           </span>
           {icon ? (
@@ -246,10 +264,18 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
             <div
               className={cn(
                 'font-fw-mono font-medium tabular-nums text-text-primary',
-                // canonical scale: display (40px) for the lead metric, h1 (32px) otherwise
-                isHero ? 'text-display' : 'text-h1',
+                // canonical scale: display (40px) lead, h1 (32px) default, h2 (24px) compact
+                isHero ? 'text-display' : isCompact ? 'text-h2' : 'text-h1',
               )}
-              style={{ fontFeatureSettings: '"tnum" 1, "lnum" 1' }}
+              // The brand-green value face is applied via inline style, NOT a
+              // `text-accent-700` class: tailwind-merge conflates our custom
+              // `text-h1`/`text-display` size utilities with `text-*` color
+              // utilities and would strip the color. Inline style also reliably
+              // reaches NumberFlow's shadow-DOM digits (which inherit `color`).
+              style={{
+                fontFeatureSettings: '"tnum" 1, "lnum" 1',
+                ...(tone === 'accent' ? { color: 'var(--fw-color-accent-700)' } : null),
+              }}
             >
               <NumberFlow
                 value={value}
@@ -329,7 +355,7 @@ function DeltaChip({
         )}
         style={{ fontFeatureSettings: '"tnum" 1, "lnum" 1' }}
       >
-        <Icon aria-hidden className="h-3 w-3" strokeWidth={2.5} />
+        <Icon aria-hidden className="h-3 w-3" strokeWidth={1.5} />
         <NumberFlow
           value={delta.value}
           prefix={delta.prefix}

@@ -509,8 +509,8 @@ export function TracerDataQuality({
       {issues && issues.length === 0 && (
         <section>
           <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
-              <IconCheckCircle2 className="text-green-500" size={24} />
+            <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-3">
+              <IconCheckCircle2 className="text-primary-500" size={24} />
             </div>
             <p className="text-sm font-semibold text-warm-900">All Data Quality Checks Passing</p>
             <p className="text-xs text-warm-400 mt-1">All diagnostic checks passed across all players and rounds</p>
@@ -661,8 +661,8 @@ export function TracerDataQuality({
           {outliers.length === 0 ? (
             /* Empty state */
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mb-3">
-                <IconCheckCircle2 className="text-green-500" size={20} />
+              <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center mb-3">
+                <IconCheckCircle2 className="text-primary-500" size={20} />
               </div>
               <p className="text-sm font-medium text-warm-700">No outliers detected</p>
               <p className="text-xs text-warm-400 mt-1">All recorded values are within expected thresholds</p>

@@ -74,6 +74,15 @@ export interface SheetProps {
   showHandle?: boolean;
   /** Optional snap points for a partial-height bottom sheet, e.g. [0.4, 1]. */
   snapPoints?: (number | string)[];
+  /**
+   * iOS-native half-height detent for `side='bottom'` sheets. When `true` (the
+   * default for bottom sheets), the sheet opens to a 50% detent the user can
+   * drag up to full height — instead of slamming to full height on open.
+   * Ignored when explicit `snapPoints` are passed, when `side !== 'bottom'`,
+   * or when set to `false` (restores the old full-height behavior).
+   * @default true (bottom sheets only)
+   */
+  peek?: boolean;
   /** Whether the sheet is dismissible by drag / scrim. Default true. */
   dismissible?: boolean;
   /** Sheet content. */
@@ -95,6 +104,7 @@ function SheetRoot({
   hideClose = false,
   showHandle,
   snapPoints,
+  peek,
   dismissible = true,
   children,
   className,
@@ -104,13 +114,21 @@ function SheetRoot({
   const handleVisible =
     showHandle ?? (side === 'bottom' || side === 'top');
 
+  // iOS-native detents: bottom sheets open to a half-height peek the user can
+  // drag up. Explicit `snapPoints` always win; `peek={false}` opts out back to
+  // full-height. vaul manages the active snap point uncontrolled, so consumers
+  // need no extra wiring — purely additive.
+  const resolvedSnapPoints =
+    snapPoints ??
+    (side === 'bottom' && peek !== false ? [0.5, 1] : undefined);
+
   return (
     <Drawer.Root
       open={open}
       onOpenChange={onOpenChange}
       defaultOpen={defaultOpen}
       direction={side}
-      snapPoints={snapPoints}
+      snapPoints={resolvedSnapPoints}
       dismissible={dismissible}
       modal
     >
@@ -166,9 +184,17 @@ function SheetRoot({
           {!hideClose ? (
             <Drawer.Close
               aria-label="Close"
-              className={cn(CLOSE_BUTTON_CLASS, 'absolute right-4 top-4')}
+              className={cn(
+                CLOSE_BUTTON_CLASS,
+                // Invisible hit-slop expands the tap target to 44px without
+                // changing the 36px visual (iOS touch floor, §7.4). The button
+                // is already `absolute`, so it establishes the positioning
+                // context for `::before` — no extra `relative` needed.
+                "before:absolute before:-inset-1.5 before:content-['']",
+                'absolute right-4 top-4',
+              )}
             >
-              <X className="h-4 w-4" aria-hidden />
+              <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             </Drawer.Close>
           ) : null}
         </Drawer.Content>
@@ -231,7 +257,9 @@ const SheetBody = React.forwardRef<
     data-slot="sheet-body"
     className={cn(
       'flex-1 overflow-y-auto px-6 py-2 font-fw-sans text-body text-text-secondary',
-      'first:pt-6 last:pb-6',
+      // When the body is the last child it owns the bottom edge → keep its
+      // content clear of the iOS home indicator.
+      'first:pt-6 last:pb-[max(1.5rem,env(safe-area-inset-bottom))]',
       className,
     )}
     {...props}
@@ -247,7 +275,9 @@ const SheetFooter = React.forwardRef<
     ref={ref}
     data-slot="sheet-footer"
     className={cn(
-      'flex flex-col-reverse gap-2 px-6 pb-6 pt-4 sm:flex-row sm:justify-end',
+      'flex flex-col-reverse gap-2 px-6 pt-4 sm:flex-row sm:justify-end',
+      // Footer pins the bottom edge → pad past the iOS home indicator.
+      'pb-[max(1.5rem,env(safe-area-inset-bottom))]',
       'border-t border-border-subtle',
       className,
     )}

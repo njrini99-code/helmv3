@@ -17,6 +17,7 @@ import * as React from "react";
 import { Checkbox as BaseCheckbox } from "@base-ui-components/react/checkbox";
 import { CheckboxGroup as BaseCheckboxGroup } from "@base-ui-components/react/checkbox-group";
 import { cn } from "@/lib/utils";
+import { fwHaptic } from "@/lib/fairway/haptics";
 
 export interface CheckboxProps
   extends Omit<React.ComponentProps<typeof BaseCheckbox.Root>, "render"> {
@@ -47,11 +48,19 @@ const boxBase = cn(
  */
 export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
   function Checkbox(
-    { label, description, className, boxClassName, id, ...props },
+    { label, description, className, boxClassName, id, onCheckedChange, ...props },
     ref,
   ) {
     const generatedId = React.useId();
     const fieldId = id ?? generatedId;
+
+    // Selection tick on check/uncheck (fire-and-forget, no-op on web).
+    const handleCheckedChange: NonNullable<CheckboxProps["onCheckedChange"]> = (
+      ...args
+    ) => {
+      fwHaptic("selection");
+      onCheckedChange?.(...args);
+    };
 
     const box = (
       <BaseCheckbox.Root
@@ -59,12 +68,22 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
         id={fieldId}
         data-slot="checkbox"
         className={cn(boxBase, boxClassName)}
+        onCheckedChange={handleCheckedChange}
         {...props}
       >
         <BaseCheckbox.Indicator
           className="flex items-center justify-center"
           render={(indicatorProps, state) => (
-            <span {...indicatorProps}>
+            <span
+              {...indicatorProps}
+              className={cn(
+                // Tick springs in with a soft overshoot (scale 0 → 1.2 → 1) via
+                // the purpose-built check-bounce easing. Pure transform — layout
+                // unchanged; the motion-safe gate collapses it under reduced motion.
+                "block origin-center motion-safe:animate-check-bounce",
+                indicatorProps?.className,
+              )}
+            >
               {state.indeterminate ? <DashGlyph /> : <CheckGlyph />}
             </span>
           )}

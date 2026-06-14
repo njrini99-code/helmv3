@@ -868,8 +868,8 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   <div className="px-4 py-3 bg-white/60 flex items-center gap-4">
                     {helmResult.sent > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                        <span className="text-sm font-medium text-green-700">{helmResult.sent} sent</span>
+                        <div className="w-2 h-2 rounded-full bg-primary-500" />
+                        <span className="text-sm font-medium text-primary-700">{helmResult.sent} sent</span>
                       </div>
                     )}
                     {helmResult.skipped > 0 && (
@@ -903,7 +903,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                           <div className="flex items-center gap-2">
                             <div className={cn(
                               'w-1.5 h-1.5 rounded-full',
-                              d.status === 'sent' && 'bg-green-500',
+                              d.status === 'sent' && 'bg-primary-500',
                               d.status === 'skipped' && 'bg-amber-500',
                               d.status === 'failed' && 'bg-red-500',
                             )} />
@@ -912,7 +912,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                           </div>
                           <span className={cn(
                             'font-medium',
-                            d.status === 'sent' && 'text-green-600',
+                            d.status === 'sent' && 'text-primary-600',
                             d.status === 'skipped' && 'text-amber-600',
                             d.status === 'failed' && 'text-red-600',
                           )}>

@@ -79,7 +79,7 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
   interested: { label: 'Interested', color: 'text-warm-600', bg: 'bg-warm-100' },
   registered: { label: 'Registered', color: 'text-blue-600', bg: 'bg-blue-100' },
   confirmed: { label: 'Confirmed', color: 'text-primary-600', bg: 'bg-primary-100' },
-  attended: { label: 'Checked In', color: 'text-green-600', bg: 'bg-green-100' },
+  attended: { label: 'Checked In', color: 'text-primary-600', bg: 'bg-primary-100' },
   no_show: { label: 'No Show', color: 'text-amber-600', bg: 'bg-amber-100' },
   cancelled: { label: 'Cancelled', color: 'text-red-600', bg: 'bg-red-100' },
 };
@@ -315,7 +315,7 @@ export default function CampDetailPage() {
           </Card>
           <Card variant="glass" className="p-4">
             <p className="text-sm text-warm-500">Checked In</p>
-            <p className="text-2xl font-semibold text-green-600 tabular-nums">{stats.attended}</p>
+            <p className="text-2xl font-semibold text-primary-600 tabular-nums">{stats.attended}</p>
           </Card>
           <Card variant="glass" className="p-4">
             <p className="text-sm text-warm-500">Pending</p>
@@ -387,7 +387,7 @@ export default function CampDetailPage() {
                       {reg.player?.city && reg.player?.state && ` • ${reg.player.city}, ${reg.player.state}`}
                     </p>
                     {reg.attended_at && (
-                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                      <p className="text-xs text-primary-600 mt-1 flex items-center gap-1">
                         <IconCheck size={12} />
                         Checked in {formatRelativeTime(reg.attended_at)}
                       </p>

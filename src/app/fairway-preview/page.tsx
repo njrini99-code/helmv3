@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import {
   IconHome,
   IconUsers,
@@ -35,6 +36,8 @@ import {
 import {
   // app-shell
   AppShell,
+  PageContainer,
+  Eyebrow,
   type NavSection,
   // view-header
   ViewHeader,
@@ -149,6 +152,70 @@ function Label({ children }: { children: React.ReactNode }) {
     <span className="font-fw-mono text-[11px] uppercase tracking-wide text-text-tertiary">
       {children}
     </span>
+  );
+}
+
+/**
+ * Demonstrates the `useScrollFade` primitive — the premium scroll-edge fade now
+ * wired into Tabs / Toolbar filters / ViewHeader segments / the command list.
+ * The mask fades ONLY the edge(s) with hidden content (recomputed on scroll +
+ * resize), using a true alpha mask so it works on any surface.
+ */
+function ScrollFadeDemo() {
+  const h = useScrollFade<HTMLDivElement>('x');
+  const v = useScrollFade<HTMLDivElement>('y');
+  const chips = [
+    'Driving', 'Approach', 'Short game', 'Putting', 'Scrambling',
+    'Par 3s', 'Par 4s', 'Par 5s', 'Front 9', 'Back 9', 'Pressure', 'Wind',
+  ];
+  const rows = Array.from({ length: 12 }, (_, i) => ({
+    label: `Round ${i + 1} · Pebble Beach`,
+    score: 68 + (i % 9),
+  }));
+  return (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="rounded-card border border-border-subtle bg-surface p-4 [box-shadow:var(--fw-shadow-card)]">
+        <Label>Horizontal · edge fade</Label>
+        <div
+          ref={h.ref}
+          style={h.fadeStyle}
+          className="mt-3 flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {chips.map((c) => (
+            <span
+              key={c}
+              className="whitespace-nowrap rounded-full border border-border-subtle bg-surface-sunken px-3 py-1.5 font-fw-sans text-body-sm text-text-secondary"
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+        <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
+          Bleeds at whichever edge has more — and not at all when it already fits.
+        </p>
+      </div>
+      <div className="rounded-card border border-border-subtle bg-surface p-4 [box-shadow:var(--fw-shadow-card)]">
+        <Label>Vertical · edge fade</Label>
+        <div
+          ref={v.ref}
+          style={v.fadeStyle}
+          className="mt-3 flex max-h-[132px] flex-col gap-1.5 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {rows.map((r) => (
+            <span
+              key={r.label}
+              className="flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-3 py-2 font-fw-sans text-body-sm text-text-primary"
+            >
+              <span className="truncate">{r.label}</span>
+              <span className="shrink-0 font-fw-mono tabular-nums text-text-secondary">{r.score}</span>
+            </span>
+          ))}
+        </div>
+        <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
+          Long lists dissolve into the surface instead of hard-cutting at a hidden scrollbar.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -410,6 +477,38 @@ export default function FairwayPreviewPage() {
             plinth
           />
 
+          {/* ── Foundations (the systematization primitives) ───────────── */}
+          <Section
+            id="foundations"
+            title="Foundations"
+            blurb="The single-source-of-truth frame + overline. PageContainer gives every route one width + one left edge; Eyebrow is the one overline recipe (token-owned tracking/weight), drawn identically everywhere."
+          >
+            <div className="flex flex-col gap-4">
+              <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]">
+                <PageContainer width="prose" flow={false} className="py-6">
+                  <Eyebrow tone="accent">Page frame</Eyebrow>
+                  <p className="mt-2 font-fw-sans text-body-sm text-text-secondary">
+                    A centered column (here <code>width=&quot;prose&quot;</code>) with gutters aligned to the top bar.
+                  </p>
+                </PageContainer>
+              </div>
+              <div className="flex flex-wrap items-center gap-6">
+                <Eyebrow>Neutral overline</Eyebrow>
+                <Eyebrow tone="secondary">Secondary</Eyebrow>
+                <Eyebrow tone="accent">Signal · accent</Eyebrow>
+              </div>
+            </div>
+          </Section>
+
+          {/* ── Overflow & scroll affordances ──────────────────────────── */}
+          <Section
+            id="overflow"
+            title="Overflow & scroll"
+            blurb="The one premium scroll-edge fade (useScrollFade), wired into Tabs, Toolbar filters, ViewHeader segments, and the command list. The hidden side bleeds to transparent — dynamic on scroll + resize, a true alpha mask so it reads on any surface, and absent entirely when content fits."
+          >
+            <ScrollFadeDemo />
+          </Section>
+
           {/* ── Surfaces ───────────────────────────────────────────────── */}
           <Section
             id="surfaces"
@@ -497,6 +596,15 @@ export default function FairwayPreviewPage() {
                 delta={{ value: -1.2, label: 'best round' }}
                 goodDirection="down"
               />
+            </div>
+            {/* compact density — the dense 6-up grid (truncating overline) */}
+            <div className="mt-5 grid grid-cols-3 gap-3 lg:grid-cols-6">
+              <MetricCard density="compact" label="Fairways" value={61} suffix="%" />
+              <MetricCard density="compact" label="GIR" value={52} suffix="%" />
+              <MetricCard density="compact" label="Scrambling" value={48} suffix="%" />
+              <MetricCard density="compact" label="Putts / round" value={31.2} decimals={1} goodDirection="down" />
+              <MetricCard density="compact" label="Up &amp; down attempts made" value={44} suffix="%" />
+              <MetricCard density="compact" label="3-putt avoidance" value={92} suffix="%" />
             </div>
           </Section>
 

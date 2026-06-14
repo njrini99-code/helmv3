@@ -195,8 +195,8 @@ export function PositionPlanner({
                 'relative'
               )}
             >
-              <div className="p-1.5 rounded-lg bg-emerald-100/60">
-                <IconTarget size={14} className="text-emerald-600" />
+              <div className="p-1.5 rounded-lg bg-primary-100/60">
+                <IconTarget size={14} className="text-primary-600" />
               </div>
               <span className="text-sm font-semibold text-warm-800">
                 {positionsWithPlayers}/{totalPositions}

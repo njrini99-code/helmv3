@@ -10,6 +10,8 @@ import { PuttHeatmap } from '@/components/golf/coachhelm/v3/PuttHeatmap';
 import type { PuttRecord } from '@/components/golf/coachhelm/v3/PuttHeatmap/types';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { feetToDisplay, feetLabel, feetRangeLabel } from '@/lib/golf/distance-units';
 
 interface PuttingStatsProps {
   stats: GolfStats;
@@ -51,6 +53,7 @@ async function fetchAllPages<T>(
 
 export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: PuttingStatsProps) {
   const prefersReducedMotion = useReducedMotion();
+  const { distancePref } = useDistanceUnits();
   const [selectedBreak, setSelectedBreak] = useState<'left_to_right' | 'right_to_left' | 'straight' | 'multiple' | null>(null);
   const supabase = useMemo(() => (playerId ? createClient() : null), [playerId]);
   const [putts, setPutts] = useState<PuttRecord[] | null>(null);
@@ -176,11 +179,11 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
             // W5B: dropped the red→green make-% bg ramp (synthesis §5 — no
             // gradient-coded grids); every distance cell now uses the neutral
             // cream-elevated surface so the number, not the hue, carries the read.
-            { range: '0-3 ft', value: stats.puttMakePct0_3, bg: 'bg-cream-100', color: 'text-warm-900' },
-            { range: '3-5 ft', value: stats.puttMakePct3_5, bg: 'bg-cream-100', color: 'text-warm-900' },
-            { range: '5-10 ft', value: stats.puttMakePct5_10, bg: 'bg-cream-100', color: 'text-warm-900' },
-            { range: '10-15 ft', value: stats.puttMakePct10_15, bg: 'bg-cream-100', color: 'text-warm-900' },
-            { range: '15-20 ft', value: stats.puttMakePct15_20, bg: 'bg-cream-100', color: 'text-warm-900' },
+            { range: feetRangeLabel([0, 3], distancePref), value: stats.puttMakePct0_3, bg: 'bg-cream-100', color: 'text-warm-900' },
+            { range: feetRangeLabel([3, 5], distancePref), value: stats.puttMakePct3_5, bg: 'bg-cream-100', color: 'text-warm-900' },
+            { range: feetRangeLabel([5, 10], distancePref), value: stats.puttMakePct5_10, bg: 'bg-cream-100', color: 'text-warm-900' },
+            { range: feetRangeLabel([10, 15], distancePref), value: stats.puttMakePct10_15, bg: 'bg-cream-100', color: 'text-warm-900' },
+            { range: feetRangeLabel([15, 20], distancePref), value: stats.puttMakePct15_20, bg: 'bg-cream-100', color: 'text-warm-900' },
           ].map((item, idx) => (
             <motion.div
               key={item.range}
@@ -194,31 +197,31 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
             </motion.div>
           ))}
         </div>
-        <StatRow label="20-25 feet" value={formatStat(stats.puttMakePct20_25, '%')} index={0} />
-        <StatRow label="25-30 feet" value={formatStat(stats.puttMakePct25_30, '%')} index={1} />
-        <StatRow label="30-35 feet" value={formatStat(stats.puttMakePct30_35, '%')} index={2} />
-        <StatRow label="35+ feet" value={formatStat(stats.puttMakePct35Plus, '%')} index={3} />
+        <StatRow label={feetRangeLabel([20, 25], distancePref)} value={formatStat(stats.puttMakePct20_25, '%')} index={0} />
+        <StatRow label={feetRangeLabel([25, 30], distancePref)} value={formatStat(stats.puttMakePct25_30, '%')} index={1} />
+        <StatRow label={feetRangeLabel([30, 35], distancePref)} value={formatStat(stats.puttMakePct30_35, '%')} index={2} />
+        <StatRow label={feetRangeLabel([35, null], distancePref)} value={formatStat(stats.puttMakePct35Plus, '%')} index={3} />
       </StatSection>
 
       {/* Putting Proximity */}
-      <StatSection title="First Putt Leave (avg feet remaining)">
-        <StatRow label="From 0-5 feet" value={stats.puttProximity0_5 ? `${stats.puttProximity0_5.toFixed(1)}'` : '-'} />
-        <StatRow label="From 5-10 feet" value={stats.puttProximity5_10 ? `${stats.puttProximity5_10.toFixed(1)}'` : '-'} />
-        <StatRow label="From 10-15 feet" value={stats.puttProximity10_15 ? `${stats.puttProximity10_15.toFixed(1)}'` : '-'} />
-        <StatRow label="From 15-20 feet" value={stats.puttProximity15_20 ? `${stats.puttProximity15_20.toFixed(1)}'` : '-'} />
-        <StatRow label="From 20+ feet" value={stats.puttProximity20Plus ? `${stats.puttProximity20Plus.toFixed(1)}'` : '-'} />
+      <StatSection title={`First Putt Leave (avg ${feetLabel(distancePref)} remaining)`}>
+        <StatRow label={`From ${feetRangeLabel([0, 5], distancePref)}`} value={stats.puttProximity0_5 ? `${feetToDisplay(stats.puttProximity0_5, distancePref, false).toFixed(1)}${feetLabel(distancePref)}` : '-'} />
+        <StatRow label={`From ${feetRangeLabel([5, 10], distancePref)}`} value={stats.puttProximity5_10 ? `${feetToDisplay(stats.puttProximity5_10, distancePref, false).toFixed(1)}${feetLabel(distancePref)}` : '-'} />
+        <StatRow label={`From ${feetRangeLabel([10, 15], distancePref)}`} value={stats.puttProximity10_15 ? `${feetToDisplay(stats.puttProximity10_15, distancePref, false).toFixed(1)}${feetLabel(distancePref)}` : '-'} />
+        <StatRow label={`From ${feetRangeLabel([15, 20], distancePref)}`} value={stats.puttProximity15_20 ? `${feetToDisplay(stats.puttProximity15_20, distancePref, false).toFixed(1)}${feetLabel(distancePref)}` : '-'} />
+        <StatRow label={`From ${feetRangeLabel([20, null], distancePref)}`} value={stats.puttProximity20Plus ? `${feetToDisplay(stats.puttProximity20Plus, distancePref, false).toFixed(1)}${feetLabel(distancePref)}` : '-'} />
       </StatSection>
 
       {/* Putting Efficiency */}
       <StatSection title="Putting Efficiency (avg putts to hole out)">
-        <StatRow label="0-5 feet" value={formatStat(stats.puttEff0_5, '', 2)} />
-        <StatRow label="5-10 feet" value={formatStat(stats.puttEff5_10, '', 2)} />
-        <StatRow label="10-15 feet" value={formatStat(stats.puttEff10_15, '', 2)} />
-        <StatRow label="15-20 feet" value={formatStat(stats.puttEff15_20, '', 2)} />
-        <StatRow label="20-25 feet" value={formatStat(stats.puttEff20_25, '', 2)} />
-        <StatRow label="25-30 feet" value={formatStat(stats.puttEff25_30, '', 2)} />
-        <StatRow label="30-35 feet" value={formatStat(stats.puttEff30_35, '', 2)} />
-        <StatRow label="35+ feet" value={formatStat(stats.puttEff35Plus, '', 2)} />
+        <StatRow label={feetRangeLabel([0, 5], distancePref)} value={formatStat(stats.puttEff0_5, '', 2)} />
+        <StatRow label={feetRangeLabel([5, 10], distancePref)} value={formatStat(stats.puttEff5_10, '', 2)} />
+        <StatRow label={feetRangeLabel([10, 15], distancePref)} value={formatStat(stats.puttEff10_15, '', 2)} />
+        <StatRow label={feetRangeLabel([15, 20], distancePref)} value={formatStat(stats.puttEff15_20, '', 2)} />
+        <StatRow label={feetRangeLabel([20, 25], distancePref)} value={formatStat(stats.puttEff20_25, '', 2)} />
+        <StatRow label={feetRangeLabel([25, 30], distancePref)} value={formatStat(stats.puttEff25_30, '', 2)} />
+        <StatRow label={feetRangeLabel([30, 35], distancePref)} value={formatStat(stats.puttEff30_35, '', 2)} />
+        <StatRow label={feetRangeLabel([35, null], distancePref)} value={formatStat(stats.puttEff35Plus, '', 2)} />
       </StatSection>
 
       {/* Miss Direction */}
@@ -284,38 +287,38 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
                   <div className="text-[17px] font-medium tracking-[-0.005em] text-primary-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct0_3, '%', 0)}
                   </div>
-                  <div className="text-xs text-warm-500">0-3 ft</div>
+                  <div className="text-xs text-warm-500">{feetRangeLabel([0, 3], distancePref)}</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-[17px] font-medium tracking-[-0.005em] text-primary-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct3_5, '%', 0)}
                   </div>
-                  <div className="text-xs text-warm-500">3-5 ft</div>
+                  <div className="text-xs text-warm-500">{feetRangeLabel([3, 5], distancePref)}</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-[17px] font-medium tracking-[-0.005em] text-yellow-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct5_10, '%', 0)}
                   </div>
-                  <div className="text-xs text-warm-500">5-10 ft</div>
+                  <div className="text-xs text-warm-500">{feetRangeLabel([5, 10], distancePref)}</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-[17px] font-medium tracking-[-0.005em] text-orange-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct10_15, '%', 0)}
                   </div>
-                  <div className="text-xs text-warm-500">10-15 ft</div>
+                  <div className="text-xs text-warm-500">{feetRangeLabel([10, 15], distancePref)}</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-[17px] font-medium tracking-[-0.005em] text-red-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct15_20, '%', 0)}
                   </div>
-                  <div className="text-xs text-warm-500">15-20 ft</div>
+                  <div className="text-xs text-warm-500">{feetRangeLabel([15, 20], distancePref)}</div>
                 </div>
               </div>
               <div className="space-y-1 mt-2">
-                <StatRow label="20-25 feet" value={formatStat(stats.puttingByBreak[selectedBreak].makePct20_25, '%')} />
-                <StatRow label="25-30 feet" value={formatStat(stats.puttingByBreak[selectedBreak].makePct25_30, '%')} />
-                <StatRow label="30-35 feet" value={formatStat(stats.puttingByBreak[selectedBreak].makePct30_35, '%')} />
-                <StatRow label="35+ feet" value={formatStat(stats.puttingByBreak[selectedBreak].makePct35Plus, '%')} />
+                <StatRow label={feetRangeLabel([20, 25], distancePref)} value={formatStat(stats.puttingByBreak[selectedBreak].makePct20_25, '%')} />
+                <StatRow label={feetRangeLabel([25, 30], distancePref)} value={formatStat(stats.puttingByBreak[selectedBreak].makePct25_30, '%')} />
+                <StatRow label={feetRangeLabel([30, 35], distancePref)} value={formatStat(stats.puttingByBreak[selectedBreak].makePct30_35, '%')} />
+                <StatRow label={feetRangeLabel([35, null], distancePref)} value={formatStat(stats.puttingByBreak[selectedBreak].makePct35Plus, '%')} />
                 <StatRow label="Overall Make %" value={formatStat(stats.puttingByBreak[selectedBreak].overallMakePct, '%')} />
               </div>
             </div>

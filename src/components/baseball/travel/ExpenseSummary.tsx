@@ -46,7 +46,7 @@ export function ExpenseSummary({ summary }: ExpenseSummaryProps) {
   return (
     <div className="space-y-6">
       {/* Total Summary */}
-      <div className="bg-gradient-to-br from-primary-50 to-emerald-50 rounded-2xl p-6 border border-primary-100">
+      <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-2xl p-6 border border-primary-100">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-sm font-medium text-primary-700 mb-1">Total Expenses</p>

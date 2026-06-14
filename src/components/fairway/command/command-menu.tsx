@@ -53,6 +53,8 @@ import {
   type Variants,
 } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
+import { Skeleton } from '@/components/fairway/feedback';
 import { GlassSurface } from './glass-surface';
 import {
   SearchGlyph,
@@ -250,6 +252,9 @@ export function CommandMenu({
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const listId = useId();
+  // Premium scroll-edge fade: a long results list bleeds top/bottom into the
+  // glass instead of hard-cutting (Raycast/Spotlight feel). No fade when short.
+  const { ref: listFadeRef, fadeStyle: listFadeStyle } = useScrollFade<HTMLDivElement>('y');
 
   // Portal target only exists on the client.
   useEffect(() => setMounted(true), []);
@@ -391,6 +396,8 @@ export function CommandMenu({
 
                 {/* Results */}
                 <Command.List
+                  ref={listFadeRef}
+                  style={listFadeStyle}
                   id={listId}
                   className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2"
                 >
@@ -401,10 +408,10 @@ export function CommandMenu({
                           key={i}
                           className="flex items-center gap-3 rounded-fw-md px-3 py-2.5"
                         >
-                          <span className="h-8 w-8 shrink-0 animate-pulse rounded-fw-sm bg-inset motion-reduce:animate-none" />
+                          <Skeleton className="h-8 w-8 shrink-0 rounded-fw-sm" />
                           <span className="flex flex-1 flex-col gap-1.5">
-                            <span className="h-3 w-1/3 animate-pulse rounded-full bg-inset motion-reduce:animate-none" />
-                            <span className="h-2.5 w-1/2 animate-pulse rounded-full bg-inset motion-reduce:animate-none" />
+                            <Skeleton className="h-3 w-1/3 rounded-full" />
+                            <Skeleton className="h-2.5 w-1/2 rounded-full" />
                           </span>
                         </div>
                       ))}

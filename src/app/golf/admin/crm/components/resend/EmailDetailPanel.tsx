@@ -208,7 +208,7 @@ function StatusBanner({ email }: { email: EmailRow }) {
           : status === 'delayed'
             ? 'bg-amber-50 border-amber-200'
             : status === 'opened' || status === 'clicked' || status === 'delivered'
-              ? 'bg-emerald-50 border-emerald-200'
+              ? 'bg-primary-50 border-primary-200'
               : 'bg-warm-50 border-warm-200'
       )}
     >

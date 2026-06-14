@@ -73,6 +73,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             animate={{ opacity: 1, scale: 1 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
             onClick={onClose}
+            aria-label="Close"
             className={cn(
               'absolute top-4 right-4 z-10',
               'p-2.5 rounded-xl',

@@ -51,13 +51,13 @@ export function LeaderboardWithSlots({ candidates, topNCount }: Props) {
               transition={prefersReducedMotion ? { duration: 0 } : ({ ...enterTransition, delay: stagger(i) })}
               className={`flex items-center gap-4 px-6 py-3 transition-colors ${
                 locked
-                  ? 'bg-gradient-to-r from-emerald-50/40 via-emerald-50/20 to-transparent'
+                  ? 'bg-gradient-to-r from-primary-50/40 via-primary-50/20 to-transparent'
                   : 'hover:bg-warm-50/50'
               }`}
             >
               <span
                 className={`w-8 text-sm tabular-nums ${
-                  locked ? 'text-emerald-700 font-medium' : 'text-warm-500'
+                  locked ? 'text-primary-700 font-medium' : 'text-warm-500'
                 }`}
               >
                 {c.leaderboard_rank ?? '—'}
@@ -73,8 +73,8 @@ export function LeaderboardWithSlots({ candidates, topNCount }: Props) {
               </span>
               <span className="w-32 text-right text-xs">
                 {locked ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-medium">
-                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-100 text-primary-800 font-medium">
+                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary-500 shadow-[0_0_0_3px_rgba(22,163,74,0.18)]" />
                     Locked
                   </span>
                 ) : picked ? (

@@ -133,8 +133,8 @@ export function PlayersNeedingAttention({ data, loading }: PlayersNeedingAttenti
       <div className="p-4">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3">
-              <IconCheck size={24} className="text-green-600" />
+            <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mb-3">
+              <IconCheck size={24} className="text-primary-600" />
             </div>
             <h4 className="text-sm font-medium text-warm-900 mb-1">All clear!</h4>
             <p className="text-xs text-warm-500 max-w-[200px]">

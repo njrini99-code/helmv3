@@ -207,6 +207,7 @@ export function SearchAutocomplete({
         {value && !loading && (
           <button
             onClick={handleClear}
+            aria-label="Clear search"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
           >
             <IconX size={16} />

@@ -85,6 +85,10 @@ export interface FairwayNewRoundEntryProps {
   selectedCourseId: string | null;
   onSavedCourseSelect: (id: string | null) => void;
   selectedCourse: SavedCourse | null | undefined;
+  /** A Cloud Library tee was picked — show a read-only confirmation (driven by
+   *  setupData) instead of the editable form, so editing can't desync the round
+   *  from its selected tee_id/course_id. */
+  cloudPickActive: boolean;
   onClearSelectedCourse: () => void;
 
   setupData: FairwaySetupForm;
@@ -455,7 +459,35 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
               )}
 
               {/* Selected-course summary OR new-course form */}
-              {courseMode === 'saved' && selectedCourse ? (
+              {courseMode === 'saved' && !selectedCourse && props.cloudPickActive ? (
+                /* Cloud Library pick — read-only confirmation (driven by setupData).
+                   No editable fields, so the round can't be desynced from its
+                   selected tee_id/course_id. "Change" reopens the picker. */
+                <Inset padding="md">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h4 className="flex items-center gap-2 font-fw-sans text-body-sm font-medium text-text-primary">
+                      <Check className="h-4 w-4 text-accent-700" />
+                      Course ready
+                    </h4>
+                    <Button variant="ghost" size="sm" type="button" onClick={props.onBrowseCourseLibrary}>
+                      Change
+                    </Button>
+                  </div>
+                  <p className="font-fw-display text-body font-medium text-text-primary">{setupData.courseName}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-caption text-text-tertiary">
+                    {setupData.courseCity && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {setupData.courseCity}
+                        {setupData.courseState ? `, ${setupData.courseState}` : ''}
+                      </span>
+                    )}
+                    {setupData.teesPlayed && <span>{setupData.teesPlayed} tees</span>}
+                    {setupData.courseRating && <span>Rating {setupData.courseRating}</span>}
+                    {setupData.courseSlope && <span>Slope {setupData.courseSlope}</span>}
+                  </div>
+                </Inset>
+              ) : courseMode === 'saved' && selectedCourse ? (
                 <Inset padding="md">
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="flex items-center gap-2 font-fw-sans text-body-sm font-medium text-text-primary">

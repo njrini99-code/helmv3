@@ -267,7 +267,7 @@ export function EmptyState({
   if (variant === 'compact') {
     return (
       <div className={cn('flex flex-col items-center justify-center text-center py-12 px-6', className)}>
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center text-primary-600/80 mb-5">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-primary-600/80 mb-5">
           {finalIcon}
         </div>
         <h3 className="text-base font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
@@ -288,7 +288,7 @@ export function EmptyState({
   if (variant === 'card') {
     const cardContent = (
       <div className="p-10 text-center animate-fade-in">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center text-primary-600/80">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-primary-600/80">
           {finalIcon}
         </div>
         <h3 className="text-[17px] font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
@@ -332,7 +332,7 @@ export function EmptyState({
   return (
     <div className={cn('text-center py-20 px-6 animate-fade-in', className)}>
       <div className="relative w-20 h-20 mx-auto mb-6">
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary-100/60 to-emerald-100/50" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary-100/60 to-primary-200/50" />
         <div className="relative w-full h-full rounded-full flex items-center justify-center text-primary-600/80">
           {finalIcon}
         </div>

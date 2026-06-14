@@ -90,7 +90,10 @@ export function RowActionsMenu({ actions }: RowActionsMenuProps) {
                 "text-[15px] font-medium text-left",
                 "transition-colors duration-100",
                 action.variant === 'danger'
-                  ? "text-[#FF3B30] hover:bg-[#FF3B30]/8 active:bg-[#FF3B30]/12"
+                  // Destructive label on a light menu surface — darkened from the
+                  // #FF3B30 destructive token (fails AA) to #B91C1C (~6.8:1) for WCAG AA;
+                  // hover/active washes keep the brand destructive token.
+                  ? "text-[#B91C1C] hover:bg-destructive/[0.08] active:bg-destructive/[0.12]"
                   : "text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80",
                 action.disabled && "opacity-50 cursor-not-allowed"
               )}
@@ -99,7 +102,8 @@ export function RowActionsMenu({ actions }: RowActionsMenuProps) {
                 <action.icon
                   className={cn(
                     "w-[18px] h-[18px] flex-shrink-0",
-                    action.variant === 'danger' ? "text-[#FF3B30]" : "text-warm-500",
+                    // Match the AA-darkened destructive label (#B91C1C, ~6.8:1).
+                    action.variant === 'danger' ? "text-[#B91C1C]" : "text-warm-500",
                   )}
                 />
               )}

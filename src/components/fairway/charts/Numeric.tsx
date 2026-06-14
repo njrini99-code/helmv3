@@ -43,6 +43,12 @@ export interface NumericProps {
   size?: NumericSize;
   /** Use the mono ledger face instead of tabular sans. */
   mono?: boolean;
+  /**
+   * Value-face tone. `'accent'` (default) paints the figure in the brand green
+   * so KPIs read as a cohesive scoreboard; `'neutral'` keeps the dark ink for
+   * cases where green would carry no meaning.
+   */
+  tone?: 'accent' | 'neutral';
   /** Optional delta chip rendered to the right of the value. */
   delta?: DeltaChipProps;
   className?: string;
@@ -53,7 +59,7 @@ export interface NumericProps {
  * StatTile values, scores, SG totals — anything that changes or must align.
  */
 export const Numeric = React.forwardRef<HTMLDivElement, NumericProps>(function Numeric(
-  { value, format, prefix, suffix, label, size = 'md', mono = false, delta, className },
+  { value, format, prefix, suffix, label, size = 'md', mono = false, tone = 'accent', delta, className },
   ref,
 ) {
   return (
@@ -66,7 +72,11 @@ export const Numeric = React.forwardRef<HTMLDivElement, NumericProps>(function N
           suffix={suffix}
           respectMotionPreference
           willChange
-          style={TABULAR_NUMS}
+          // Brand-green value face via inline style (not a `text-accent-700`
+          // class): tailwind-merge conflates the custom `text-h*` size
+          // utilities with `text-*` colors and strips the color; inline style
+          // also reaches NumberFlow's shadow-DOM digits, which inherit `color`.
+          style={tone === 'accent' ? { ...TABULAR_NUMS, color: 'var(--fw-color-accent-700)' } : TABULAR_NUMS}
           className={cn(
             'font-semibold text-text-primary',
             mono ? 'font-fw-mono' : 'font-fw-sans',

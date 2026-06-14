@@ -336,7 +336,7 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
   if (rows.length === 0) {
     return (
       <div className="glass-standard rounded-2xl p-10 text-center">
-        <div className="p-3 rounded-full bg-emerald-50 text-emerald-600 inline-flex mb-3">
+        <div className="p-3 rounded-full bg-primary-50 text-primary-600 inline-flex mb-3">
           <IconWarning size={20} />
         </div>
         <p className="text-sm font-semibold text-warm-900">

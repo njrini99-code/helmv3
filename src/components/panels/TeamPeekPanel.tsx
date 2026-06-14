@@ -496,7 +496,7 @@ function RosterTab({
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {player.playerType === 'juco' ? (
-                    <span className="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">JUCO</span>
+                    <span className="text-xs text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded font-medium">JUCO</span>
                   ) : (
                     <span className="text-xs text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded font-medium">Active</span>
                   )}

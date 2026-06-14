@@ -252,14 +252,14 @@ const config: Config = {
         // utilities. Mirrors --text-{display,h1,h2,h3,body-lg,body,
         // body-sm,caption,eyebrow}-* in src/styles/tokens.css.
         // ═══════════════════════════════════════════════════════════════
-        'display':   ['40px', { lineHeight: '48px', letterSpacing: '-0.025em', fontWeight: '600' }],
+        'display':   ['40px', { lineHeight: '48px', letterSpacing: '-0.03em', fontWeight: '600' }],
         'h1':        ['32px', { lineHeight: '40px', letterSpacing: '-0.022em', fontWeight: '600' }],
         'h2':        ['24px', { lineHeight: '32px', letterSpacing: '-0.018em', fontWeight: '600' }],
         'h3':        ['18px', { lineHeight: '26px', letterSpacing: '-0.015em', fontWeight: '600' }],
         'body-lg':   ['17px', { lineHeight: '26px', fontWeight: '400' }],
         'body':      ['15px', { lineHeight: '24px', fontWeight: '400' }],
         'body-sm':   ['13px', { lineHeight: '20px', fontWeight: '400' }],
-        'caption':   ['12px', { lineHeight: '18px', fontWeight: '500' }],
+        'caption':   ['12px', { lineHeight: '18px', letterSpacing: '0.006em', fontWeight: '500' }],
         'eyebrow':   ['11px', { lineHeight: '16px', letterSpacing: '0.06em', fontWeight: '600' }],
 
         // ═══════════════════════════════════════════════════════════════
@@ -276,9 +276,9 @@ const config: Config = {
         // old iOS body. (W0 token unification)
         'callout':     ['16px', { lineHeight: '1.3',  letterSpacing: '-0.01em',  fontWeight: '400' }],
         'subhead':     ['15px', { lineHeight: '1.35', letterSpacing: '-0.006em', fontWeight: '400' }],
-        'footnote':    ['13px', { lineHeight: '1.4',  letterSpacing: '0em',      fontWeight: '400' }],
-        'caption-1':   ['12px', { lineHeight: '1.4',  letterSpacing: '0em',      fontWeight: '400' }],
-        'caption-2':   ['11px', { lineHeight: '1.4',  letterSpacing: '0em',      fontWeight: '400' }],
+        'footnote':    ['13px', { lineHeight: '1.4',  letterSpacing: '0.004em',  fontWeight: '400' }],
+        'caption-1':   ['12px', { lineHeight: '1.4',  letterSpacing: '0.006em',  fontWeight: '400' }],
+        'caption-2':   ['11px', { lineHeight: '1.4',  letterSpacing: '0.01em',   fontWeight: '400' }],
 
         'micro': ['10px', { lineHeight: '14px' }],  // Badges, annotations
         'label': ['11px', { lineHeight: '16px' }],   // Form labels, captions
@@ -430,7 +430,7 @@ const config: Config = {
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
         'mesh': 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%2316a34a\' fill-opacity=\'0.03\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
         'glass-gradient': 'linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3))',
-        'shimmer': 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)',
+        'shimmer': 'linear-gradient(90deg, transparent, rgba(255, 248, 233, 0.55), transparent)',
         'aurora': 'linear-gradient(to bottom, #0f172a, #020617)',
         'aurora-gradient': 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(22, 163, 74, 0.15), transparent)',
         'gradient-green': 'linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%)',
@@ -474,7 +474,7 @@ const config: Config = {
         // CONTINUOUS ANIMATIONS - Use for background effects
         // ═══════════════════════════════════════════════════════════════
         'pulse-subtle': 'pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'shimmer': 'shimmer 2s infinite',
+        'shimmer': 'shimmer 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite',
         'spin-slow': 'spin 3s linear infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
         'float': 'float 6s ease-in-out infinite',

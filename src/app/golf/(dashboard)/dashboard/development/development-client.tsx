@@ -221,7 +221,7 @@ function PlayerSnapshotCard({ player, stats, existingAreas }: {
           </p>
           <p className="text-xs text-warm-500">
             {player.graduation_year && `'${String(player.graduation_year).slice(-2)}`}
-            {player.handicap != null && ` | ${player.handicap > 0 ? '+' : ''}${player.handicap} HCP`}
+            {player.handicap != null && ` | ${player.handicap < 0 ? '+' : ''}${Math.abs(player.handicap)} HCP`}
           </p>
         </div>
       </div>
@@ -637,7 +637,7 @@ export function DevelopmentPlansClient({
             {players.map(p => (
               <option key={p.id} value={p.id}>
                 {p.first_name} {p.last_name}
-                {p.handicap != null ? ` (${p.handicap > 0 ? '+' : ''}${p.handicap} HCP)` : ''}
+                {p.handicap != null ? ` (${p.handicap < 0 ? '+' : ''}${Math.abs(p.handicap)} HCP)` : ''}
                 {p.graduation_year ? ` - '${String(p.graduation_year).slice(-2)}` : ''}
               </option>
             ))}
@@ -986,7 +986,7 @@ export function DevelopmentPlansClient({
                     <div className="flex-1">
                       <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">{p.first_name} {p.last_name}</h2>
                       <div className="flex items-center gap-3 text-sm text-warm-500">
-                        {p.handicap != null && <span>{p.handicap > 0 ? '+' : ''}{p.handicap} HCP</span>}
+                        {p.handicap != null && <span>{p.handicap < 0 ? '+' : ''}{Math.abs(p.handicap)} HCP</span>}
                         {stats?.avg_score != null && <span>Avg: {stats.avg_score}</span>}
                         {stats?.rounds_played != null && stats.rounds_played > 0 && <span>{stats.rounds_played} rounds</span>}
                         {stats?.recent_trend && (
@@ -1037,7 +1037,7 @@ export function DevelopmentPlansClient({
                       <h3 className="font-medium text-warm-900">{player.first_name} {player.last_name}</h3>
                       <div className="flex items-center gap-2 text-xs text-warm-500">
                         <span>{areas.length} focus area{areas.length !== 1 ? 's' : ''}</span>
-                        {player.handicap != null && <span>{player.handicap > 0 ? '+' : ''}{player.handicap} HCP</span>}
+                        {player.handicap != null && <span>{player.handicap < 0 ? '+' : ''}{Math.abs(player.handicap)} HCP</span>}
                         {stats?.avg_score != null && <span>Avg: {stats.avg_score}</span>}
                       </div>
                     </div>

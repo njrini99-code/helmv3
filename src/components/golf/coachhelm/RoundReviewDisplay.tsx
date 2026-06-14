@@ -33,6 +33,8 @@ import type {
   OverallGrade,
   StatComparison,
 } from '@/app/golf/actions/round-review-system';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { yardsToDisplay, yardsLabel } from '@/lib/golf/distance-units';
 
 // ============================================================================
 // TYPES
@@ -185,6 +187,7 @@ export function RoundReviewDisplay({
   className,
 }: RoundReviewDisplayProps) {
   const prefersReducedMotion = useReducedMotion();
+  const { distancePref } = useDistanceUnits();
   const sentimentStyle = sentimentConfig[review.sentiment];
   const gradeStyle = gradeConfig[review.overallGrade];
 
@@ -888,13 +891,13 @@ export function RoundReviewDisplay({
                   {review.drivingAnalysis.avgDistance !== null && (
                     <div className="p-2.5 rounded-lg bg-cream-100/68 border border-warm-200/45">
                       <div className="text-xs text-warm-500">Avg Distance</div>
-                      <div className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{review.drivingAnalysis.avgDistance}y</div>
+                      <div className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{yardsToDisplay(review.drivingAnalysis.avgDistance, distancePref)}{yardsLabel(distancePref)}</div>
                     </div>
                   )}
                   {review.drivingAnalysis.longestDrive && (
                     <div className="p-2.5 rounded-lg bg-cream-100/68 border border-warm-200/45">
                       <div className="text-xs text-warm-500">Longest Drive</div>
-                      <div className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{review.drivingAnalysis.longestDrive.distance}y</div>
+                      <div className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{yardsToDisplay(review.drivingAnalysis.longestDrive.distance, distancePref)}{yardsLabel(distancePref)}</div>
                       <div className="text-micro text-warm-400">Hole #{review.drivingAnalysis.longestDrive.hole}</div>
                     </div>
                   )}

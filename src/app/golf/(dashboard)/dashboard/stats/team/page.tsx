@@ -226,15 +226,21 @@ export default async function TeamStatsPage() {
     }
 
     const roundsPlayed = scoredRounds.length;
-    const scoringAverage = totalHolesScored > 0
-      ? (totalStrokes / totalHolesScored) * 18
-      : null;
     const scoringAverage18 = roundsPlayed18 > 0
       ? totalStrokes18 / roundsPlayed18
       : null;
     const scoringAverage9 = roundsPlayed9 > 0
       ? totalStrokes9 / roundsPlayed9
       : null;
+    // Canonical scoring average = strictly 18-hole rounds, matching
+    // golf_player_stats_cache (and therefore the dashboard / CoachHelm / player
+    // surfaces). Previously this card showed an all-rounds 18-normalized figure,
+    // which disagreed with the cache by ~0.2-0.4 strokes for players with a
+    // 9-hole round. Fall back to the normalized figure only when a player has no
+    // full 18-hole rounds, so the card never shows "—".
+    const scoringAverage = scoringAverage18 ?? (totalHolesScored > 0
+      ? (totalStrokes / totalHolesScored) * 18
+      : null);
     const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
     const worstRound = normalizedScores.length > 0 ? Math.max(...normalizedScores) : null;
     const bestRound18 = scores18.length > 0 ? Math.min(...scores18) : null;

@@ -56,7 +56,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
             !isBirdieOrBetter &&
             !label.startsWith('-');
           const scoreColor = isBirdieOrBetter
-            ? 'text-emerald-600'
+            ? 'text-primary-600'
             : isBogeyOrWorse
               ? 'text-rose-600'
               : 'text-warm-700';

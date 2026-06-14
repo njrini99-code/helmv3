@@ -70,8 +70,8 @@ const TYPE_DESCRIPTORS: Record<WhatsNewType, TypeDescriptor> = {
   focus_area_created: {
     label: 'New focus area',
     Icon: Target,
-    iconClass: 'text-emerald-600',
-    bgClass: 'bg-emerald-50',
+    iconClass: 'text-primary-600',
+    bgClass: 'bg-primary-50',
   },
   focus_area_completed: {
     label: 'Focus area completed',

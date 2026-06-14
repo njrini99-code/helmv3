@@ -91,7 +91,7 @@ function simplifyErrorMessage(text: string): string {
 function KindDot({ kind }: { kind: FeedItemKind }) {
   const color =
     kind === 'round'
-      ? 'bg-green-400'
+      ? 'bg-primary-400'
       : kind === 'signup'
         ? 'bg-blue-400'
         : kind === 'insight'
@@ -289,7 +289,7 @@ export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
                     'flex items-start gap-2.5 px-3 py-2 rounded-lg transition-colors',
                     item.kind === 'error' && 'opacity-50',
                     item.kind === 'signup' && 'bg-blue-50/30',
-                    item.kind === 'round' && 'bg-green-50/20',
+                    item.kind === 'round' && 'bg-primary-50/20',
                     item.kind === 'login' && 'opacity-40'
                   )}
                 >
@@ -309,7 +309,7 @@ export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
                             className={cn(
                               'font-bold',
                               item.toPar != null && item.toPar < 0
-                                ? 'text-green-700'
+                                ? 'text-primary-700'
                                 : item.toPar != null && item.toPar > 0
                                   ? 'text-amber-700'
                                   : 'text-warm-900'

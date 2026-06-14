@@ -40,7 +40,7 @@ interface TemplatePickerProps {
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   intro: { bg: 'bg-blue-50', text: 'text-blue-700' },
   follow_up: { bg: 'bg-amber-50', text: 'text-amber-700' },
-  demo_invite: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  demo_invite: { bg: 'bg-primary-50', text: 'text-primary-700' },
   proposal: { bg: 'bg-violet-50', text: 'text-violet-700' },
   check_in: { bg: 'bg-teal-50', text: 'text-teal-700' },
   general: { bg: 'bg-warm-50', text: 'text-warm-700' },

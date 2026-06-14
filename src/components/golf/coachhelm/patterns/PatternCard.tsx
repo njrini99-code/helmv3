@@ -45,34 +45,44 @@ const severityConfig: Record<PatternSeverity, {
   border: string;
   text: string;
   badge: string;
+  bar: string;
   label: string;
 }> = {
+  // Severity ramp routed through the canonical semantic tokens so the same
+  // severity reads as ONE hue across PatternCard / status-dot / review icons:
+  //   low → neutral (warm), medium & high → warning (amber), critical →
+  //   destructive (red). The tokens are flat single colors, so tints use the
+  //   alpha-utility convention (`bg-warning/10`) already used app-wide.
   low: {
     bg: 'bg-warm-50',
     border: 'border-warm-200',
     text: 'text-warm-600',
     badge: 'bg-warm-100 text-warm-700',
+    bar: 'bg-warm-400',
     label: 'Low',
   },
   medium: {
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    text: 'text-amber-700',
-    badge: 'bg-amber-100 text-amber-800',
+    bg: 'bg-warning/10',
+    border: 'border-warning/30',
+    text: 'text-warning',
+    badge: 'bg-warning/15 text-warning',
+    bar: 'bg-warning',
     label: 'Medium',
   },
   high: {
-    bg: 'bg-orange-50',
-    border: 'border-orange-200',
-    text: 'text-orange-700',
-    badge: 'bg-orange-100 text-orange-800',
+    bg: 'bg-warning/15',
+    border: 'border-warning/40',
+    text: 'text-warning',
+    badge: 'bg-warning/20 text-warning',
+    bar: 'bg-warning',
     label: 'High',
   },
   critical: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    text: 'text-red-700',
-    badge: 'bg-red-100 text-red-800',
+    bg: 'bg-destructive/10',
+    border: 'border-destructive/30',
+    text: 'text-destructive',
+    badge: 'bg-destructive/15 text-destructive',
+    bar: 'bg-destructive',
     label: 'Critical',
   },
 };
@@ -95,8 +105,8 @@ export function PatternCard({
 
   const severity = severityConfig[pattern.severity];
   const isNegative = pattern.strokeImpact > 0;
-  const impactColor = isNegative ? 'text-red-600' : 'text-primary-600';
-  const impactBgColor = isNegative ? 'bg-red-500' : 'bg-primary-500';
+  const impactColor = isNegative ? 'text-destructive' : 'text-primary-600';
+  const impactBgColor = isNegative ? 'bg-destructive' : 'bg-primary-500';
 
   // Pattern type icon
   const getPatternIcon = () => {
@@ -120,7 +130,7 @@ export function PatternCard({
   const getTrendIcon = () => {
     if (pattern.trend === 'strengthening') {
       return (
-        <span className="flex items-center gap-1 text-xs text-red-500">
+        <span className="flex items-center gap-1 text-xs text-destructive">
           <IconTrendingUp size={12} />
           Strengthening
         </span>
@@ -191,7 +201,7 @@ export function PatternCard({
         hover={false}
       >
         {/* Severity indicator bar */}
-        <div className={cn('h-1', severity.bg.replace('bg-', 'bg-').replace('-50', '-500'))} />
+        <div className={cn('h-1', severity.bar)} />
 
         {/* Main content */}
         <div className="p-4">
@@ -366,7 +376,7 @@ export function PatternCard({
                     </h4>
                     <span className={cn(
                       'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium',
-                      isNegative ? 'bg-red-100 text-red-700' : 'bg-primary-100 text-primary-700'
+                      isNegative ? 'bg-destructive/10 text-destructive' : 'bg-primary-100 text-primary-700'
                     )}>
                       {isNegative ? (
                         <IconTrendingDown size={14} />

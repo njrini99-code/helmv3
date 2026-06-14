@@ -4,9 +4,12 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import { yardsRangeLabel } from '@/lib/golf/distance-units';
 
 export function ScramblingStats({ stats }: { stats: GolfStats }) {
   const prefersReducedMotion = useReducedMotion();
+  const { distancePref } = useDistanceUnits();
   return (
     <motion.div
       className="space-y-4"
@@ -56,17 +59,17 @@ export function ScramblingStats({ stats }: { stats: GolfStats }) {
 
       {/* Scrambling by Distance */}
       <StatSection title="Scrambling % by Distance" delay={0.15}>
-        <StatRow label="0-10 yards" value={formatStat(stats.scramblingPct0_10, '%')} index={0} />
-        <StatRow label="10-20 yards" value={formatStat(stats.scramblingPct10_20, '%')} index={1} />
-        <StatRow label="20-30 yards" value={formatStat(stats.scramblingPct20_30, '%')} index={2} />
+        <StatRow label={yardsRangeLabel([0, 10], distancePref)} value={formatStat(stats.scramblingPct0_10, '%')} index={0} />
+        <StatRow label={yardsRangeLabel([10, 20], distancePref)} value={formatStat(stats.scramblingPct10_20, '%')} index={1} />
+        <StatRow label={yardsRangeLabel([20, 30], distancePref)} value={formatStat(stats.scramblingPct20_30, '%')} index={2} />
       </StatSection>
 
       {/* Around the Green Efficiency */}
       <StatSection title="Around the Green Efficiency (avg strokes to hole out)" delay={0.2}>
         <StatRow label="Overall Average" value={formatStat(stats.atgEfficiencyAvg, '', 2)} index={0} />
-        <StatRow label="0-10 yards" value={formatStat(stats.atgEfficiency0_10, '', 2)} index={1} />
-        <StatRow label="10-20 yards" value={formatStat(stats.atgEfficiency10_20, '', 2)} index={2} />
-        <StatRow label="20-30 yards" value={formatStat(stats.atgEfficiency20_30, '', 2)} index={3} />
+        <StatRow label={yardsRangeLabel([0, 10], distancePref)} value={formatStat(stats.atgEfficiency0_10, '', 2)} index={1} />
+        <StatRow label={yardsRangeLabel([10, 20], distancePref)} value={formatStat(stats.atgEfficiency10_20, '', 2)} index={2} />
+        <StatRow label={yardsRangeLabel([20, 30], distancePref)} value={formatStat(stats.atgEfficiency20_30, '', 2)} index={3} />
       </StatSection>
 
       {/* ATG Efficiency by Lie */}
@@ -96,11 +99,11 @@ export function ScramblingStats({ stats }: { stats: GolfStats }) {
               </thead>
               <tbody>
                 {[
-                  { label: '0-10 yds', key: '0_10' },
-                  { label: '10-20 yds', key: '10_20' },
+                  { label: yardsRangeLabel([0, 10], distancePref), key: '0_10' },
+                  { label: yardsRangeLabel([10, 20], distancePref), key: '10_20' },
                   // key stays '20_30' (typed field), but the bucket actually
                   // captures 20 yd up to the 50 yd around-green threshold.
-                  { label: '20-50 yds', key: '20_30' },
+                  { label: yardsRangeLabel([20, 50], distancePref), key: '20_30' },
                 ].map((row, idx) => {
                   const data = stats.atgEffByDistanceLie[row.key];
                   if (!data) return null;

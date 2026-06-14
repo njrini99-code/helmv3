@@ -16,6 +16,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/fairway/feedback';
 import { TABULAR_NUMS, chartAriaLabel } from './theme';
 
 export type ChartFrameState = 'ready' | 'loading' | 'empty' | 'insufficient-data' | 'error';
@@ -204,9 +205,9 @@ function ChartSkeleton({ height }: { height: number }) {
       aria-hidden
     >
       {Array.from({ length: 7 }).map((_, i) => (
-        <div
+        <Skeleton
           key={i}
-          className="flex-1 animate-pulse rounded-fw-sm bg-inset motion-reduce:animate-none"
+          className="flex-1 rounded-fw-sm"
           style={{ height: `${30 + ((i * 37) % 60)}%` }}
         />
       ))}

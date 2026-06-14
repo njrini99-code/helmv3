@@ -251,7 +251,7 @@ export function FairwayPlayerDashboard({ data, enhancedData }: FairwayPlayerDash
 
   const newRoundCta = (
     <Button asChild variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
-      <Link href="/golf/dashboard/rounds/new">New Round</Link>
+      <Link href="/golf/dashboard/rounds/new">New round</Link>
     </Button>
   );
 

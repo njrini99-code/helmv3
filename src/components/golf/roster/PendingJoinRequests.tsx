@@ -227,7 +227,7 @@ export function PendingJoinRequests() {
                             )}
                             {request.player?.handicap !== null && request.player?.handicap !== undefined && (
                               <span>
-                                Handicap: {request.player.handicap > 0 ? `+${request.player.handicap}` : request.player.handicap}
+                                Handicap: {request.player.handicap < 0 ? `+${Math.abs(request.player.handicap)}` : request.player.handicap}
                               </span>
                             )}
                             <span className="flex items-center gap-1 text-amber-600">

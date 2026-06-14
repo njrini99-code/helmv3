@@ -23,6 +23,7 @@
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/fairway/feedback';
 import {
   type StandingBarProps,
   type RenderState,
@@ -268,11 +269,11 @@ function StripSkeleton() {
       role="status"
       aria-label="Loading standing"
       data-state="loading"
-      className="animate-pulse rounded-card border border-border-subtle bg-surface p-4 motion-reduce:animate-none"
+      className="rounded-card border border-border-subtle bg-surface p-4"
     >
-      <div className="mb-3 h-3 w-28 rounded bg-inset" />
-      <div className="mb-2 h-2 w-full rounded bg-inset" />
-      <div className="h-2 w-2/3 rounded bg-inset" />
+      <Skeleton className="mb-3 h-3 w-28 rounded" />
+      <Skeleton className="mb-2 h-2 w-full rounded" />
+      <Skeleton className="h-2 w-2/3 rounded" />
     </div>
   );
 }

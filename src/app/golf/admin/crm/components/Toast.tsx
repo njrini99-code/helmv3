@@ -42,8 +42,8 @@ const TOAST_CONFIG: Record<ToastType, {
 }> = {
   success: {
     icon: IconCheckCircle2,
-    containerClass: 'border-emerald-200/50 bg-emerald-50/80',
-    iconClass: 'text-emerald-500',
+    containerClass: 'border-primary-200/50 bg-primary-50/80',
+    iconClass: 'text-primary-500',
   },
   error: {
     icon: IconXCircle,

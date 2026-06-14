@@ -200,7 +200,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
         </div>
         <div className="flex items-center gap-3 text-xs flex-wrap">
           <LegendDot color="bg-warm-400"     label="Sent" />
-          <LegendDot color="bg-emerald-500" label="Delivered" />
+          <LegendDot color="bg-primary-500" label="Delivered" />
           <LegendDot color="bg-blue-500"    label="Opened" />
           <LegendDot color="bg-violet-500"  label="Clicked" />
         </div>
@@ -232,7 +232,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
                   style={{ height: `${sentH}%` }}
                 />
                 <div
-                  className="bg-emerald-400"
+                  className="bg-primary-400"
                   style={{ height: `${delivH}%`, marginTop: `-${delivH}%` }}
                 />
                 <div

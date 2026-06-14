@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconTrash, IconChevronDown, IconChevronUp } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/sonner';
 import {
   deleteExpense,
   type BaseballTravelExpense,
@@ -32,6 +33,7 @@ const PAID_BY_LABELS: Record<string, string> = {
 };
 
 export function ExpenseList({ expenses, onRefresh, isCoach }: ExpenseListProps) {
+  const { showToast } = useToast();
   const prefersReducedMotion = useReducedMotion();
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function ExpenseList({ expenses, onRefresh, isCoach }: ExpenseListProps) 
     if (result.success) {
       onRefresh();
     } else {
-      alert(result.error || 'Failed to delete expense');
+      showToast(result.error || 'Failed to delete expense', 'error');
     }
     setDeleting(null);
   }

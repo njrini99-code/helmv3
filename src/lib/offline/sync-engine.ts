@@ -31,6 +31,7 @@ import {
   getSyncMetadata,
   clearSyncedData,
   shouldRetry,
+  MAX_RETRY_COUNT,
   type OfflineRound,
   type OfflineHole,
   type OfflineShot,
@@ -317,11 +318,20 @@ class SyncEngine {
       const holes = await getPendingHoles();
       const shots = await getPendingShots();
 
+      // Include rounds stranded in the legacy v1 DB by saveOfflineRound
+      // (failed-submit recovery). Graceful fallback keeps a v1 failure from
+      // crashing the count.
+      const legacyRounds = await import('./indexed-db')
+        .then((m) => m.getPendingRoundCount())
+        .catch(() => 0);
+
+      const totalRounds = rounds.length + legacyRounds;
+
       this.state.pendingCount = {
-        rounds: rounds.length,
+        rounds: totalRounds,
         holes: holes.length,
         shots: shots.length,
-        total: rounds.length + holes.length + shots.length,
+        total: totalRounds + holes.length + shots.length,
       };
     } catch (error) {
       console.error('Failed to refresh pending count:', error);
@@ -382,6 +392,13 @@ class SyncEngine {
       result.syncedRounds = roundsResult.synced;
       result.failedItems += roundsResult.failed;
       result.errors.push(...roundsResult.errors);
+
+      // Drain rounds stranded in the legacy v1 DB by saveOfflineRound
+      // (failed-submit recovery). These would otherwise never auto-sync.
+      const legacyRoundsResult = await this.syncV1Rounds();
+      result.syncedRounds += legacyRoundsResult.synced;
+      result.failedItems += legacyRoundsResult.failed;
+      result.errors.push(...legacyRoundsResult.errors);
 
       // Then sync holes
       const holesResult = await this.syncHoles();
@@ -489,6 +506,125 @@ class SyncEngine {
       }
 
       // Small delay between operations
+      await this.delay(100);
+    }
+
+    return { synced, failed, errors };
+  }
+
+  /**
+   * Drain rounds stranded in the legacy v1 IndexedDB (golfhelm_offline).
+   *
+   * saveOfflineRound (failed-submit recovery in new-round-client) writes a
+   * round here, but the rest of the sync pipeline reads the v2 store. This
+   * step enumerates v1 pending rounds and pushes each to the server via the
+   * same saveRoundDraft path used for v2 rounds, then marks them synced
+   * NON-DESTRUCTIVELY (status flip + dequeue only, the row is retained and
+   * later swept by normal cleanup) so a transient failure can never lose data.
+   */
+  private async syncV1Rounds(): Promise<{ synced: number; failed: number; errors: string[] }> {
+    let synced = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    let legacy: typeof import('./indexed-db');
+    try {
+      legacy = await import('./indexed-db');
+    } catch {
+      // v1 DB module unavailable — nothing to drain.
+      return { synced, failed, errors };
+    }
+
+    let pendingRounds: Awaited<ReturnType<typeof legacy.getPendingRounds>>;
+    try {
+      pendingRounds = await legacy.getPendingRounds();
+    } catch {
+      // v1 DB unreadable (e.g. unsupported environment) — skip silently.
+      return { synced, failed, errors };
+    }
+
+    const { saveRoundDraft } = await import('@/app/golf/actions/round-drafts');
+
+    for (const round of pendingRounds) {
+      if (this.syncAbortController?.signal.aborted) {
+        break;
+      }
+      if (!round) continue;
+
+      // Respect exponential backoff between attempts (mirrors the v2 path so a
+      // persistently-failing v1 round can't be re-POSTed every sync cycle).
+      // shouldRetry takes an ISO string; v1 stores lastSyncAttempt as epoch ms.
+      const attempts = round.syncAttempts ?? 0;
+      const lastRetryIso =
+        round.lastSyncAttempt != null ? new Date(round.lastSyncAttempt).toISOString() : undefined;
+      if (attempts > 0 && !shouldRetry(attempts, lastRetryIso)) {
+        // Either we're inside the backoff window, or the budget is exhausted.
+        // If exhausted, surface it as failed (and stop counting it as pending)
+        // rather than leaving it stuck pending forever. Non-destructive.
+        if (attempts >= MAX_RETRY_COUNT && round.syncStatus !== 'failed') {
+          await legacy.updateRoundSyncStatus(
+            round.id,
+            'failed',
+            undefined,
+            round.error ?? 'Max sync attempts reached'
+          );
+          failed++;
+          errors.push(`Round ${round.id}: max sync attempts reached`);
+          this.notifyCallbacks('onItemFailed', 'round', round.id, 'Max sync attempts reached');
+        }
+        continue;
+      }
+
+      try {
+        const draftData = {
+          step: 'tracking' as const,
+          setupData: {
+            courseName: '',
+            courseCity: '',
+            courseState: '',
+            courseRating: '',
+            courseSlope: '',
+            teesPlayed: '',
+            roundType: 'practice' as const,
+            roundDate: new Date().toISOString().split('T')[0] ?? '',
+          },
+          holes: [],
+          completedHoleStats: [],
+          currentHoleIndex: 0,
+          // The recovery payload written by persistFailedSubmission is itself a
+          // draft-shaped object; spread it over the defaults above.
+          ...((round.draftData as Partial<RoundDraftData>) || {}),
+        } as RoundDraftData;
+
+        const result = await saveRoundDraft(draftData, round.serverRoundId);
+
+        if (result.success) {
+          // Non-destructive: flip status + dequeue, keep the row.
+          await legacy.markOfflineRoundSynced(round.id, result.data.roundId);
+          synced++;
+          this.notifyCallbacks('onItemSynced', 'round', round.id, result.data.roundId);
+        } else {
+          // Record the failed attempt non-destructively: bump the counter for
+          // backoff, keep it pending for retry (or mark failed once exhausted).
+          await legacy.recordOfflineRoundSyncFailure(round.id, result.error, MAX_RETRY_COUNT);
+          failed++;
+          errors.push(`Round ${round.id}: ${result.error}`);
+          this.notifyCallbacks('onItemFailed', 'round', round.id, result.error);
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        // Best-effort: record the attempt so backoff still applies. A failure
+        // to record must not abort the rest of the drain.
+        try {
+          await legacy.recordOfflineRoundSyncFailure(round.id, errorMessage, MAX_RETRY_COUNT);
+        } catch {
+          /* swallow — the round stays pending and will be retried next cycle */
+        }
+        failed++;
+        errors.push(`Round ${round.id}: ${errorMessage}`);
+        this.notifyCallbacks('onItemFailed', 'round', round.id, errorMessage);
+      }
+
       await this.delay(100);
     }
 

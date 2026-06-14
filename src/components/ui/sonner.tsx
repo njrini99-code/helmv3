@@ -108,6 +108,27 @@ function normalizeLegacy(data?: LegacyData) {
   return data;
 }
 
+/**
+ * Error toasts default to 10s — twice the global 5s — so a write/save/delete
+ * failure stays on screen long enough to be read and acted on. Callers can
+ * still override `duration` (including `Infinity`) per call; we only set the
+ * default when none was supplied.
+ */
+const ERROR_DURATION_MS = 10_000;
+
+/**
+ * Persist-until-dismissed sentinel for destructive-failure callers, e.g.
+ * `toast.error('Delete failed', { duration: PERSIST })`. Sonner treats
+ * `Infinity` as "never auto-dismiss"; the close button remains the way out.
+ */
+export const PERSIST = Number.POSITIVE_INFINITY;
+
+function withErrorDuration(data?: LegacyData) {
+  const normalized = normalizeLegacy(data);
+  if (normalized && normalized.duration !== undefined) return normalized;
+  return { ...normalized, duration: ERROR_DURATION_MS };
+}
+
 type SonnerData = Parameters<typeof sonnerToast.success>[1];
 
 function fireHaptic(kind: 'success' | 'warning' | 'error') {
@@ -131,7 +152,7 @@ export const toast = Object.assign(
     },
     error: (title: string, data?: LegacyData) => {
       fireHaptic('error');
-      return sonnerToast.error(title, normalizeLegacy(data));
+      return sonnerToast.error(title, withErrorDuration(data));
     },
     warning: (title: string, data?: LegacyData) => {
       fireHaptic('warning');

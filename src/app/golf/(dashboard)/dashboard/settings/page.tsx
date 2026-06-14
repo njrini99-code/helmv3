@@ -49,6 +49,9 @@ import {
 } from '@/lib/golf/sg-benchmarks';
 import { useRedesign, fairwayScope } from '@/lib/redesign/flag';
 import { FairwaySettingsGeneral } from '@/components/fairway/pages/settings';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import type { DistancePreference } from '@/lib/golf/distance-units';
+import { IconRuler } from '@/components/icons';
 
 // ============================================================================
 // TYPES
@@ -352,9 +355,19 @@ function LegacyGolfSettingsPage() {
               description="Display density, date format, animations"
               isExpanded={expanded === 'appearance'}
               onToggle={() => toggle('appearance')}
-              isLast={profile.role !== 'coach'}
             >
               <AppearancePanel />
+            </SettingsExpandableRow>
+
+            <SettingsExpandableRow
+              icon={<IconRuler size={18} />}
+              label="Distance Units"
+              description="Yards or meters for distances"
+              isExpanded={expanded === 'distance-units'}
+              onToggle={() => toggle('distance-units')}
+              isLast={profile.role !== 'coach'}
+            >
+              <DistanceUnitsPanel />
             </SettingsExpandableRow>
 
             {profile.role === 'coach' && (
@@ -1071,6 +1084,57 @@ function AppearancePanel() {
 }
 
 // ============================================================================
+// PANEL: Distance Units
+// ============================================================================
+
+function DistanceUnitsPanel() {
+  const { distancePref, setDistancePref } = useDistanceUnits();
+
+  const options: Array<{
+    value: DistancePreference;
+    label: string;
+    desc: string;
+    example: string;
+  }> = [
+    { value: 'yards', label: 'Yards', desc: 'Standard US/golf measurement', example: '150 yds, 10 ft putts' },
+    { value: 'meters', label: 'Meters', desc: 'International metric system', example: '137 m, 3 m putts' },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 px-3 py-2 bg-primary-50/60 border border-primary-200/40 rounded-xl">
+        <IconRuler size={13} className="text-primary-400 flex-shrink-0" />
+        <p className="text-xs text-primary-700/70">
+          Only affects display. All data is saved in yards and feet.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {options.map(({ value, label, desc, example }) => (
+          <Button
+            key={value}
+            variant="primary"
+            onClick={() => {
+              void triggerHaptic('light');
+              setDistancePref(value);
+            }}
+            className={cn(
+              'p-3 rounded-lg border-2 text-left transition-colors min-h-[72px]',
+              distancePref === value
+                ? 'border-primary-600 bg-primary-50'
+                : 'border-warm-200 hover:border-warm-300',
+            )}
+          >
+            <p className="text-sm font-medium text-warm-900">{label}</p>
+            <p className="text-xs text-warm-500 mt-0.5">{desc}</p>
+            <p className="text-xs text-warm-400 mt-1 font-mono">{example}</p>
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // PANEL: Golf Scoring (Coach Only)
 // ============================================================================
 
@@ -1228,7 +1292,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
               >
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-warm-900">{meta.shortLabel}</p>
-                  <span className="text-xs text-warm-400">~{meta.approximateHandicap > 0 ? '+' : ''}{meta.approximateHandicap} hcp</span>
+                  <span className="text-xs text-warm-400">~{meta.approximateHandicap < 0 ? '+' : ''}{Math.abs(meta.approximateHandicap)} hcp</span>
                 </div>
                 <p className="text-xs text-warm-500 mt-0.5">{meta.description}</p>
               </Button>

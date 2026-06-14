@@ -27,7 +27,7 @@ interface UpcomingSectionProps {
 }
 
 const eventTypeColors: Record<string, string> = {
-  practice: 'bg-green-500',
+  practice: 'bg-primary-500',
   game: 'bg-blue-500',
   scrimmage: 'bg-amber-500',
   team_meeting: 'bg-purple-500',

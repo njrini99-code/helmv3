@@ -157,10 +157,14 @@ export function FairwayTripDetail({
 
             {isCoach ? (
               <div className="flex flex-shrink-0 items-center gap-1.5">
+                {/* aria-labels: below the sm breakpoint the text is hidden and
+                    the icons are aria-hidden, leaving the buttons unnamed for
+                    assistive tech (and untargetable in tests) on phones. */}
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={onEdit}
+                  aria-label="Edit itinerary"
                   leftIcon={<Pencil className="h-4 w-4" />}
                 >
                   <span className="hidden sm:inline">Edit</span>
@@ -170,6 +174,7 @@ export function FairwayTripDetail({
                   size="sm"
                   onClick={handleDeleteClick}
                   onBlur={() => setConfirmingDelete(false)}
+                  aria-label={confirmingDelete ? 'Tap to confirm delete' : 'Delete itinerary'}
                   leftIcon={<Trash2 className="h-4 w-4" />}
                 >
                   {confirmingDelete ? 'Tap to confirm' : <span className="hidden sm:inline">Delete</span>}

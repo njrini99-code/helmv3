@@ -106,7 +106,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
           <p className="font-fw-sans text-caption font-medium uppercase tracking-wide text-text-tertiary">Avg score</p>
           <p
             className={cn(
-              'font-fw-mono text-h1 font-light leading-none tracking-[-0.025em] tabular-nums',
+              'font-fw-mono text-h1 leading-none tracking-[-0.025em] tabular-nums',
               hasScore ? 'text-text-primary' : 'text-text-tertiary',
             )}
           >

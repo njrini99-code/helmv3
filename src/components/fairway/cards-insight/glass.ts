@@ -63,7 +63,9 @@ export const heroGlassClassName = [
   'border', // border-color comes from heroGlassStyle (accent ring)
   // cheap universal top sheen (works in Safari/FF too — no backdrop-filter dep)
   "before:pointer-events-none before:absolute before:inset-0 before:rounded-[inherit] before:content-['']",
-  'before:bg-[linear-gradient(180deg,rgb(255_255_255/0.28)_0%,rgb(255_255_255/0.04)_22%,transparent_60%)]',
+  // WARM cream sheen (not cold pure-white) so the specular matches the warm
+  // glass material the --fw-glass-* tokens commit to.
+  'before:bg-[linear-gradient(180deg,rgb(255_249_235/0.30)_0%,rgb(255_249_235/0.05)_22%,transparent_60%)]',
 ].join(' ');
 
 /**

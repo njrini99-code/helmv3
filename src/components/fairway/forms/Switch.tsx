@@ -16,6 +16,7 @@
 import * as React from "react";
 import { Switch as BaseSwitch } from "@base-ui-components/react/switch";
 import { cn } from "@/lib/utils";
+import { fwHaptic } from "@/lib/fairway/haptics";
 
 export interface SwitchProps
   extends Omit<React.ComponentProps<typeof BaseSwitch.Root>, "render"> {
@@ -61,6 +62,7 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
       trackClassName,
       labelPosition = "end",
       id,
+      onCheckedChange,
       ...props
     },
     ref,
@@ -68,12 +70,21 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
     const generatedId = React.useId();
     const fieldId = id ?? generatedId;
 
+    // Selection tick on toggle (fire-and-forget, no-op on web).
+    const handleCheckedChange: NonNullable<SwitchProps["onCheckedChange"]> = (
+      ...args
+    ) => {
+      fwHaptic("selection");
+      onCheckedChange?.(...args);
+    };
+
     const control = (
       <BaseSwitch.Root
         ref={ref}
         id={fieldId}
         data-slot="switch"
         className={cn(trackBase, trackClassName)}
+        onCheckedChange={handleCheckedChange}
         {...props}
       >
         <BaseSwitch.Thumb data-slot="switch-thumb" className={thumbBase} />

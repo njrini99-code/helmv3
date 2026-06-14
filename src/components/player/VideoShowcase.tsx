@@ -234,7 +234,7 @@ function VideoCard({ video, formatDuration, formatViews, onClick }: VideoCardPro
         {/* Primary Badge */}
         {video.is_primary && (
           <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-warm-200/60 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600" />
             <span className="text-xs font-medium text-warm-700">Primary</span>
           </div>
         )}

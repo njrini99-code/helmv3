@@ -309,7 +309,7 @@ function DrillRow({
 
       <div className="flex items-center justify-end">
         {state.kind === 'saved' ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600">
             <IconCheck size={14} /> Added to Focus Areas
           </span>
         ) : (

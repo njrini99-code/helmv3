@@ -48,7 +48,8 @@ export function isUserOnline(lastSeen: string | null | undefined): boolean {
 export function formatHandicap(handicap: number | null): string {
   if (handicap === null) return '—';
   if (handicap === 0) return 'scratch';
-  if (handicap > 0) return `+${handicap.toFixed(1)}`;
+  // A leading "+" denotes a PLUS handicap (better than scratch, stored negative).
+  if (handicap < 0) return `+${Math.abs(handicap).toFixed(1)}`;
   return handicap.toFixed(1);
 }
 

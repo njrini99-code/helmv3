@@ -23,14 +23,14 @@ const AREA_ICON_CONFIG: Record<
   AreaType,
   { Icon: React.ComponentType<{ size?: number; className?: string }>; className: string }
 > = {
-  three_putt: { Icon: IconAlertCircle, className: 'text-red-500' },
-  double_bogey_plus: { Icon: IconTrendingDown, className: 'text-red-600' },
-  penalty: { Icon: IconAlertCircle, className: 'text-red-500' },
-  missed_short_putt: { Icon: IconTarget, className: 'text-helm-amber-600' },
-  poor_approach: { Icon: IconCrosshair, className: 'text-helm-amber-600' },
-  missed_fairway_trouble: { Icon: IconFlag, className: 'text-helm-amber-600' },
-  poor_course_management: { Icon: IconRoute, className: 'text-helm-amber-600' },
-  failed_up_and_down: { Icon: IconArrowDown, className: 'text-helm-amber-600' },
+  three_putt: { Icon: IconAlertCircle, className: 'text-destructive' },
+  double_bogey_plus: { Icon: IconTrendingDown, className: 'text-destructive' },
+  penalty: { Icon: IconAlertCircle, className: 'text-destructive' },
+  missed_short_putt: { Icon: IconTarget, className: 'text-warning' },
+  poor_approach: { Icon: IconCrosshair, className: 'text-warning' },
+  missed_fairway_trouble: { Icon: IconFlag, className: 'text-warning' },
+  poor_course_management: { Icon: IconRoute, className: 'text-warning' },
+  failed_up_and_down: { Icon: IconArrowDown, className: 'text-warning' },
 };
 
 export function AreasToReviewSection({ areas }: AreasToReviewSectionProps) {
@@ -50,7 +50,7 @@ export function AreasToReviewSection({ areas }: AreasToReviewSectionProps) {
         {areas.map((area, index) => {
           const iconConfig = AREA_ICON_CONFIG[area.type];
           const AreaIcon = iconConfig?.Icon ?? IconAlertCircle;
-          const iconClass = iconConfig?.className ?? 'text-helm-amber-600';
+          const iconClass = iconConfig?.className ?? 'text-warning';
           return (
             <div
               key={area.id}

@@ -73,7 +73,7 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
               <p className="text-xs text-warm-500">Handicap</p>
               <p className="font-medium text-warm-900">
                 {player.handicap !== null && player.handicap !== undefined
-                  ? (player.handicap > 0 ? '+' : '') + player.handicap.toFixed(1)
+                  ? (player.handicap < 0 ? '+' : '') + Math.abs(player.handicap).toFixed(1)
                   : '--'}
               </p>
             </div>

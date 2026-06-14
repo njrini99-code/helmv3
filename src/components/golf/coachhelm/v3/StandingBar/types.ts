@@ -98,3 +98,13 @@ export interface StandingBarProps {
 
 /** Threshold below which the team marker is omitted (Part VII.3 cold-start rule). */
 export const TEAM_MARKER_MIN_N = 5;
+
+/**
+ * Roster size below which percentile-as-percent language ("Top 1% / Bottom 1%
+ * on your team") is statistically meaningless and reads as nonsense — a college
+ * golf roster is ~8-12, so "top 1% of 7" is absurd. Below this floor the extreme
+ * buckets fall back to qualitative phrasing ("Top of your team" / "Bottom of
+ * your team"). 20 ≈ the smallest roster where a single-digit percentile maps to
+ * roughly one real player.
+ */
+export const PCT_LANGUAGE_MIN_N = 20;

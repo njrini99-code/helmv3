@@ -9,18 +9,17 @@
  * list (flag-OFF still falls back to that list — see new-round-client.tsx).
  *
  * TWO STAGES, one full-page surface (the picker IS the page, not an overlay):
- *   • Stage A — a dark warm-black "cockpit" header (the figure) over a cream
- *     canvas (the ground) carrying THREE labelled feeds, ONE image-forward
- *     COVERFLOW carousel each: "Recently played", "Team courses", and the full
- *     "Course library" (which ends in a dashed "Add a course" tile). Searching
- *     collapses to a single results carousel. Each coverflow is a native
- *     scroll-snap track of featured CourseCards where the centred card is
- *     full-size/opacity and its neighbours scale down, dim, and tilt by their
- *     distance from centre. The coverflow transforms are written IMPERATIVELY
- *     (one rAF per scroll frame) to each slide's inner element — deliberately
- *     NOT via framer-motion useScroll/useTransform, which require the scroll
- *     container ref to be hydrated at hook-call time and crash under concurrent
- *     React when the track is conditionally rendered (React #310).
+ *   • Stage A — an airy header over a cream canvas carrying THREE labelled feeds,
+ *     ONE image-forward carousel each: "Recently played", "Team courses", and the
+ *     full "Course library" (which ends in a dashed "Add a course" tile). Searching
+ *     collapses to a single results carousel. Each shelf is a plain native
+ *     scroll-snap track of featured CourseCards (peek the next card), with desktop
+ *     arrows and a staggered entrance — deliberately NO per-frame coverflow
+ *     transforms and NO framer-motion useScroll/useTransform on the track. That
+ *     earlier coverflow crashed under concurrent React when the conditionally
+ *     rendered track ref wasn't hydrated at hook-call time (React #310); pure
+ *     native scroll holds 60fps, keeps the whole card a reliable tap target, and
+ *     can't reintroduce that hook-order hazard. Edge-triggered arrow state only.
  *   • Stage B — choose a tee at the picked course. Reuses TeePickRow/SkeletonRows
  *     from TeePickerDrawer (single source of truth for that row), then returns
  *     the tee's TeeRoundDefaults via onPick so the round form pre-fills pars/
@@ -35,7 +34,7 @@
  * ========================================================================== */
 
 import {
-  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
+  useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -45,6 +44,7 @@ import { useToast } from '@/components/ui/sonner';
 import {
   IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag, IconX,
 } from '@/components/icons';
+import { Skeleton } from '@/components/fairway/feedback';
 import { CourseCard } from '@/components/golf/courses/CourseCard';
 import { CourseFormDrawer } from '@/components/golf/courses/CourseFormDrawer';
 import { TeeFormDrawer } from '@/components/golf/courses/TeeFormDrawer';
@@ -87,6 +87,9 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   const [tees, setTees] = useState<GolfCourseTee[]>([]);
   const [loadingTees, setLoadingTees] = useState(false);
   const [picking, setPicking] = useState(false);
+  // Monotonic token so a fast second course tap can't have its (slower) tee
+  // response overwrite the newer selection's tees.
+  const teeReqRef = useRef(0);
 
   const [createCourseOpen, setCreateCourseOpen] = useState(false);
   const [createTeeOpen, setCreateTeeOpen] = useState(false);
@@ -94,18 +97,23 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   const refreshCourses = useCallback(async (): Promise<GolfCourse[]> => {
     setLoadingCourses(true);
     try {
-      // Three independent feeds, one carousel each. Recent/team are best-effort:
-      // a player with no cloud-linked rounds or no saved team courses just sees
-      // those sections hidden — the library always renders.
+      // Three independent feeds, one carousel each — ALL best-effort so one
+      // failing feed never blanks the others (e.g. a transient library error
+      // shouldn't also hide the recent/team shelves that loaded fine).
       const [lib, rec, tm] = await Promise.all([
-        listCourses({ limit: 200 }),
+        listCourses({ limit: 200 }).catch(() => null),
         getRecentlyPlayedCourses(12).catch(() => [] as GolfCourse[]),
         getTeamSavedCourses().then((rows) => rows.map((r) => r.course)).catch(() => [] as GolfCourse[]),
       ]);
-      setCourses(lib);
+      // Only the library failing (null) is worth surfacing — recent/team degrade silently.
+      if (lib === null && rec.length === 0 && tm.length === 0) {
+        showToastRef.current('Could not load the course library', 'error');
+      }
+      const library = lib ?? [];
+      setCourses(library);
       setRecent(rec);
       setTeam(tm);
-      return lib;
+      return library;
     } catch {
       showToastRef.current('Could not load the course library', 'error');
       return [];
@@ -132,20 +140,24 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
     const raw = q.toLowerCase();
     return courses.filter((c) =>
       `${c.name} ${c.city ?? ''} ${c.state ?? ''}`.toLowerCase().includes(raw) ||
-      (c.normalized_name ?? normalizeName(c.name)).includes(nq),
+      // Guard the empty-normalized case (e.g. "no", "#") — includes('') is true
+      // for every row, which would falsely "match" the whole library.
+      (nq.length > 0 && (c.normalized_name ?? normalizeName(c.name)).includes(nq)),
     );
   }, [courses, query]);
 
   const loadTees = useCallback(async (course: GolfCourse) => {
+    const req = ++teeReqRef.current;
     setLoadingTees(true);
     setTees([]);
     try {
       const detail = await getCourseDetail(course.id);
+      if (teeReqRef.current !== req) return; // superseded by a newer selection
       setTees(detail?.tees ?? []);
     } catch {
-      showToastRef.current('Could not load tees for that course', 'error');
+      if (teeReqRef.current === req) showToastRef.current('Could not load tees for that course', 'error');
     } finally {
-      setLoadingTees(false);
+      if (teeReqRef.current === req) setLoadingTees(false);
     }
   }, []);
 
@@ -184,10 +196,10 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
     await selectCourse(fresh);
   }, [refreshCourses, selectCourse]);
 
-  const heroTitle = stage === 'tees' && selected ? selected.name : 'Choose a course.';
+  const heroTitle = stage === 'tees' && selected ? selected.name : 'Choose a course';
   const heroDesc = stage === 'tees'
     ? 'Pick the tee set you played — it pre-fills your pars and yardages.'
-    : 'Pick from the shared library, or add a new course in seconds.';
+    : 'Pick from your library, or add a new course in seconds.';
 
   const stageMotion = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.12 } }
@@ -232,46 +244,43 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
               it scroll when it doesn't. */}
           <div className="flex h-full w-full flex-col overflow-y-auto px-4 py-6 sm:px-6 sm:py-10">
             <div className="m-auto flex w-full max-w-3xl flex-col">
-            {/* Cinematic dark cockpit header (the figure). */}
-            <header className="on-dark relative overflow-hidden rounded-card bg-nav-bg px-6 py-6 text-nav-text shadow-soft sm:px-7">
-              <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-500/15 blur-[70px]" />
-              <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
-
-              <div className="relative flex items-start gap-3">
+            {/* Airy, premium header — bold title + clean search on the cream canvas. */}
+            <header className="px-1">
+              <div className="flex items-start gap-2.5">
                 {stage === 'tees' && (
-                  // eslint-disable-next-line helm/no-raw-button -- compact icon back-affordance on the dark header
+                  // eslint-disable-next-line helm/no-raw-button -- compact back affordance
                   <button
                     type="button"
                     onClick={backToCourses}
                     aria-label="Back to courses"
-                    className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-nav-text/80 transition-colors hover:bg-white/10 hover:text-nav-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                    className="-ml-1 mt-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                   >
-                    <IconChevronLeft size={18} aria-hidden />
+                    <IconChevronLeft size={20} aria-hidden />
                   </button>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-nav-accent">
-                    New round · Course
+                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-accent-700">
+                    {stage === 'tees' ? 'New round · Tee' : 'New round'}
                   </p>
-                  <h1 className="mt-2 truncate font-fw-display text-h2 font-semibold leading-tight tracking-[-0.01em] text-nav-text">
+                  <h1 className="mt-1.5 truncate font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
                     {heroTitle}
                   </h1>
-                  <p className="mt-2 max-w-lg font-fw-sans text-body-sm text-nav-text-dim">{heroDesc}</p>
+                  <p className="mt-1.5 max-w-md font-fw-sans text-body text-text-secondary">{heroDesc}</p>
                 </div>
               </div>
 
-              {/* Search — Stage A only, sunk into the dark band. */}
+              {/* Search — Stage A only. */}
               {stage === 'courses' && (
                 <div className="relative mt-5">
-                  <IconSearch size={16} aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-nav-text/55" />
-                  {/* eslint-disable-next-line helm/no-raw-input -- native type=search with a leading icon, dark-band styled */}
+                  <IconSearch size={18} aria-hidden className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                  {/* eslint-disable-next-line helm/no-raw-input -- native type=search with a leading icon */}
                   <input
                     type="search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search courses…"
                     aria-label="Search courses"
-                    className="h-11 w-full rounded-full border border-white/10 bg-white/[0.06] pl-10 pr-4 text-body text-nav-text placeholder:text-nav-text/45 focus:border-accent-500/60 focus:outline-none focus:ring-2 focus:ring-accent-500/30"
+                    className="h-12 w-full rounded-full border border-border-subtle bg-surface pl-11 pr-4 font-fw-sans text-body text-text-primary shadow-flat placeholder:text-text-tertiary focus:border-accent-500 focus:outline-none focus:ring-4 focus:ring-accent-500/25"
                   />
                 </div>
               )}
@@ -333,20 +342,13 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   );
 }
 
-// ── Stage A: sectioned cinematic coverflows (imperative, hooks-safe) ─────────
-
-// Premium falloff (centre → neighbour). Eased (centre plateau); flat scale +
-// opacity + a SUBTLE 3D tilt keeps neighbour photos legible.
-const CF_SCALE_DROP = 0.10;   // centre 1.00 → far 0.90 (subtle, premium)
-const CF_OPACITY_DROP = 0.34; // centre 1.00 → far 0.66 (neighbours stay legible, not murky)
-const CF_ROTATE = 9;          // deg tilt at the falloff edge (gentler)
-const CF_REACH = 0.9;         // fraction of track width the falloff spans
+// ── Stage A: sectioned course shelves ───────────────────────────────────────
 
 /**
- * Stage A — the "choose a course" screen. Three independent feeds, ONE coverflow
- * carousel each: Recently played, Team courses, and the full Course library
- * (which carries the "Add a course" tile). Searching collapses to a single
- * results carousel across the whole library.
+ * Stage A — the "choose a course" screen. Three independent feeds, ONE course
+ * shelf each: Recently played, Team courses, and the full Course library (which
+ * carries the "Add a course" tile). Searching collapses to a single results
+ * shelf across the whole library.
  */
 function CoursesStage({
   loading, library, recent, team, filtered, query, reduceMotion, onSelect, onCreate,
@@ -362,13 +364,27 @@ function CoursesStage({
   onCreate: () => void;
 }) {
   if (loading) {
+    // Shape-matched to the real browse layout (labelled shelves of featured
+    // cards) so there is ZERO layout shift when the feeds resolve: the tiles use
+    // the EXACT slideCls footprint (aspect-[3/2], w-[80vw] max-w-[360px] sm:w-[340px])
+    // and the same track padding/gap as CourseCarousel. Shimmer, not animate-pulse.
     return (
-      <div className="flex gap-4 overflow-hidden px-[6vw] py-3 sm:px-[16%]">
-        {[0, 1].map((i) => (
-          <div
-            key={i}
-            className="aspect-[16/10] w-[88vw] flex-shrink-0 animate-pulse rounded-fw-lg bg-surface-sunken sm:aspect-[2/1] sm:w-full"
-          />
+      <div role="status" aria-busy="true" aria-live="polite" className="flex flex-col gap-7">
+        <span className="sr-only">Loading courses…</span>
+        {[0, 1].map((shelf) => (
+          <div key={shelf} className="flex flex-col">
+            <div className="mb-2 px-1">
+              <Skeleton className="h-3 w-28 rounded-full" />
+            </div>
+            <div className="flex gap-4 overflow-hidden px-1 py-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton
+                  key={i}
+                  className="aspect-[3/2] w-[80vw] max-w-[360px] flex-shrink-0 rounded-[1.5rem] sm:w-[340px]"
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -436,11 +452,11 @@ function CoursesStage({
   );
 }
 
-/** Eyebrow label + count above a carousel; aligned to the centred card column. */
+/** Eyebrow label + count above a shelf; aligned to the shelf's left edge. */
 function CourseSection({ label, count, children }: { label: string; count: number; children: React.ReactNode }) {
   return (
     <section className="flex flex-col">
-      <div className="mb-1 flex items-baseline justify-between px-[6vw] sm:px-[16%]">
+      <div className="mb-2 flex items-baseline justify-between px-1">
         <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-secondary">
           {label}
         </h2>
@@ -454,12 +470,10 @@ function CourseSection({ label, count, children }: { label: string; count: numbe
 }
 
 /**
- * One horizontal coverflow carousel: featured cards on a centred scroll-snap
- * track, scaled/dimmed/tilted by distance from centre — written IMPERATIVELY
- * (one rAF per scroll frame), deliberately NOT framer useScroll/useTransform
- * (those need the container ref hydrated at hook-call time and crashed prod with
- * React #310). Every hook runs unconditionally before any early return; the
- * whole thing is reduced-motion gated.
+ * One horizontal course shelf: featured cards on a left-aligned scroll-snap
+ * track (peek the next card), arrows on desktop, a tasteful staggered entrance.
+ * No per-frame transforms — pure native scroll, so it holds 60fps and the whole
+ * card stays a clean, reliable tap target (→ tee stage). Reduced-motion safe.
  */
 function CourseCarousel({
   courses, reduceMotion, onSelect, regionLabel, withCreateTile = false, onCreate,
@@ -472,110 +486,42 @@ function CourseCarousel({
   onCreate?: () => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const progressRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
-
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
-  const [scrollable, setScrollable] = useState(false);
 
-  // Coverflow: scale + dim + tilt each slide by its distance from the track's
-  // centre. To hold 60fps we BATCH every layout READ, then every WRITE — reading
-  // a rect *after* a style write forces a synchronous reflow, so an interleaved
-  // read→write→read loop would thrash layout once per slide per frame. One read
-  // batch + one write batch = a single reflow per frame.
-  const paint = useCallback(() => {
-    const track = trackRef.current;
-    if (!track) return;
+  // Edge-triggered only: flips when you reach/leave an end, so no per-frame
+  // re-render mid-scroll. A plain scrollLeft read — no layout writes, no thrash.
+  const updateArrows = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setCanLeft((p) => { const n = el.scrollLeft > 8; return p !== n ? n : p; });
+    setCanRight((p) => { const n = el.scrollLeft < max - 8; return p !== n ? n : p; });
+  }, []);
 
-    // ---- READ phase: all layout reads up front ----
-    const tr = track.getBoundingClientRect();
-    const center = tr.left + tr.width / 2;
-    const reach = tr.width * CF_REACH || 1;
-    const scrollLeft = track.scrollLeft;
-    const max = track.scrollWidth - track.clientWidth;
-    const mids = reduceMotion
-      ? null
-      : slideRefs.current.map((el) => {
-          if (!el) return null;
-          const r = el.getBoundingClientRect();
-          return r.left + r.width / 2;
-        });
-
-    // ---- WRITE phase: no layout reads here, so the browser reflows once ----
-    if (mids) {
-      const slides = slideRefs.current;
-      for (let i = 0; i < slides.length; i++) {
-        const el = slides[i];
-        const mid = mids[i];
-        if (!el || mid == null) continue;
-        const signed = mid - center;
-        const norm = Math.min(Math.abs(signed) / reach, 1);
-        const eased = 1 - (1 - norm) * (1 - norm); // ease-out: flat at centre
-        const scale = 1 - eased * CF_SCALE_DROP;
-        const rot = -Math.sign(signed) * eased * CF_ROTATE;
-        el.style.transform = `perspective(1200px) scale(${scale.toFixed(4)}) rotateY(${rot.toFixed(2)}deg)`;
-        el.style.opacity = (1 - eased * CF_OPACITY_DROP).toFixed(4);
-      }
-    }
-    if (progressRef.current) {
-      const p = max > 0 ? scrollLeft / max : 0;
-      progressRef.current.style.transform = `scaleX(${Math.max(0.08, p).toFixed(4)})`;
-    }
-
-    // Guarded so the arrow/rail state only flips at the scroll boundaries —
-    // never a per-frame re-render mid-scroll.
-    const sc = max > 8;
-    setScrollable((prev) => (prev !== sc ? sc : prev));
-    setCanLeft((prev) => { const n = scrollLeft > 8; return prev !== n ? n : prev; });
-    setCanRight((prev) => { const n = scrollLeft < max - 8; return prev !== n ? n : prev; });
-  }, [reduceMotion]);
-
-  // rAF-coalesced scheduler — at most one paint() per frame no matter how many
-  // scroll/resize events fire. Shared by both so resize can't fire a burst of
-  // synchronous paints either.
-  const schedulePaint = useCallback(() => {
-    if (rafRef.current != null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      paint();
-    });
-  }, [paint]);
-
-  // Apply once after layout (entrance keeps cards invisible until then, so no
-  // full-size flash) and whenever the result set changes.
-  useLayoutEffect(() => {
-    paint();
-  }, [paint, courses.length, withCreateTile]);
-
+  useEffect(() => { updateArrows(); }, [updateArrows, courses.length, withCreateTile]);
   useEffect(() => {
-    window.addEventListener('resize', schedulePaint);
-    return () => {
-      window.removeEventListener('resize', schedulePaint);
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [schedulePaint]);
+    window.addEventListener('resize', updateArrows);
+    return () => window.removeEventListener('resize', updateArrows);
+  }, [updateArrows]);
 
   const scrollByCards = (dir: 1 | -1) => {
     const el = trackRef.current;
     if (!el) return;
-    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.72, 520), behavior: reduceMotion ? 'auto' : 'smooth' });
+    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.85, 340), behavior: reduceMotion ? 'auto' : 'smooth' });
   };
 
   const enter = (i: number) =>
     reduceMotion
       ? {}
       : {
-          initial: { opacity: 0, y: 12 },
+          initial: { opacity: 0, y: 14 },
           animate: { opacity: 1, y: 0 },
-          // Snappy reveal: a quick glide, minimal stagger (capped) so the row
-          // lights up almost at once instead of crawling card-by-card.
-          transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] as const, delay: Math.min(i, 4) * 0.03 },
+          transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const, delay: Math.min(i, 5) * 0.04 },
         };
 
   const count = courses.length + (withCreateTile ? 1 : 0);
-  slideRefs.current = []; // repopulated by the ref callbacks below this render
+  const slideCls = 'w-[80vw] max-w-[360px] flex-shrink-0 snap-start sm:w-[340px]';
 
   return (
     <div className="relative">
@@ -584,7 +530,7 @@ function CourseCarousel({
 
       <div
         ref={trackRef}
-        onScroll={schedulePaint}
+        onScroll={updateArrows}
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region MUST be focusable for keyboard scrolling; Safari (unlike Chrome) does not add this implicitly (WCAG 2.1.1, ACT 0ssw9k)
         tabIndex={0}
         role="region"
@@ -592,8 +538,8 @@ function CourseCarousel({
         aria-label={regionLabel}
         className={cn(
           'flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto overscroll-x-contain scroll-smooth',
-          'px-[6vw] py-3 sm:px-[16%]',
-          'focus-visible:outline-none',
+          'px-1 py-2',
+          'rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40',
           '[scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden',
           'motion-reduce:scroll-auto',
         )}
@@ -605,18 +551,13 @@ function CourseCarousel({
             role="group"
             aria-roledescription="slide"
             aria-label={`${course.name}, ${i + 1} of ${count}`}
-            className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
+            className={slideCls}
           >
-            <div
-              ref={(el) => { slideRefs.current[i] = el; }}
-              className="origin-center will-change-transform [transform-style:preserve-3d]"
-            >
-              <CourseCard course={course} variant="featured" priority={i === 0} onSelect={onSelect} />
-            </div>
+            <CourseCard course={course} variant="featured" priority={i === 0} onSelect={onSelect} />
           </m.div>
         ))}
 
-        {/* Final slide — add a new course (library carousel only). */}
+        {/* Final slide — add a new course (library shelf only). */}
         {withCreateTile && onCreate && (
           <m.div
             key="__create"
@@ -624,31 +565,12 @@ function CourseCarousel({
             role="group"
             aria-roledescription="slide"
             aria-label={`Add a course, ${count} of ${count}`}
-            className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
+            className={slideCls}
           >
-            <div
-              ref={(el) => { slideRefs.current[courses.length] = el; }}
-              className="origin-center will-change-transform [transform-style:preserve-3d]"
-            >
-              <CreateCourseTile onClick={onCreate} />
-            </div>
+            <CreateCourseTile onClick={onCreate} />
           </m.div>
         )}
       </div>
-
-      {/* Scroll affordance: a slim progress rail (only when there's overflow). */}
-      {scrollable && (
-        <div className="mt-3 flex justify-center">
-          <div className="h-1 w-24 overflow-hidden rounded-full bg-border-subtle">
-            <div
-              ref={progressRef}
-              aria-hidden
-              className="h-full w-full origin-left rounded-full bg-accent-500 motion-reduce:hidden"
-              style={{ transform: 'scaleX(0.08)' }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -682,15 +604,15 @@ function CreateCourseTile({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex aspect-[16/10] w-full flex-col items-center justify-center gap-3 rounded-fw-lg text-center sm:aspect-[2/1]',
+        'group flex aspect-[3/2] w-full flex-col items-center justify-center gap-3 rounded-[1.5rem] text-center',
         'border-2 border-dashed border-border-strong bg-surface-sunken',
         'transition-[transform,border-color,background-color] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
-        'hover:-translate-y-1 hover:border-accent-500 hover:bg-accent-50/60 active:translate-y-0',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+        'hover:-translate-y-1.5 hover:border-accent-500 hover:bg-accent-50/60 active:-translate-y-0.5',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
       )}
     >
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-primary-600 shadow-flat transition-[transform,background-color,color] [transition-duration:var(--fw-dur-base)] group-hover:scale-110 group-hover:bg-accent-500 group-hover:text-white motion-reduce:group-hover:scale-100">
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-accent-700 shadow-flat transition-[transform,background-color,color] [transition-duration:var(--fw-dur-base)] group-hover:scale-110 group-hover:bg-accent-500 group-hover:text-white motion-reduce:group-hover:scale-100">
         <IconPlus size={22} aria-hidden />
       </span>
       <span className="font-fw-display text-title-3 font-semibold text-text-primary">Add a course</span>
