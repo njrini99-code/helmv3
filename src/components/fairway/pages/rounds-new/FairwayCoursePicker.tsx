@@ -13,31 +13,29 @@
  *     canvas (the ground) carrying an image-forward COVERFLOW: a native
  *     scroll-snap track of featured CourseCards where the centered card is
  *     full-size/opacity and its neighbours scale down, dim, and tilt by their
- *     distance from centre. The transforms are bound to scroll position via
- *     framer-motion `useScroll`/`useTransform` — compositor-driven, no
- *     per-frame layout reads, no React re-renders (the imperative
- *     getBoundingClientRect approach thrashed layout). The final slide is a
+ *     distance from centre. The coverflow transforms are written IMPERATIVELY
+ *     (one rAF per scroll frame) to each slide's inner element — deliberately
+ *     NOT via framer-motion useScroll/useTransform, which require the scroll
+ *     container ref to be hydrated at hook-call time and crash under concurrent
+ *     React when the track is conditionally rendered. The final slide is a
  *     dashed "Add a course" tile.
  *   • Stage B — choose a tee at the picked course. Reuses TeePickRow/SkeletonRows
  *     from TeePickerDrawer (single source of truth for that row), then returns
  *     the tee's TeeRoundDefaults via onPick so the round form pre-fills pars/
  *     yards and links golf_rounds.tee_id. The round still snapshots its holes.
  *
- * Motion runs under the dashboard's <LazyMotion features={domAnimation}> (m.*
- * + AnimatePresence). Every motion is gated on useReducedMotion — the coverflow
- * flattens to a plain full-opacity snap list, slides become opacity-only.
+ * Only framer-motion usage is the `m` entrance + AnimatePresence stage swap +
+ * useReducedMotion (all proven safe under the dashboard LazyMotion). Every
+ * motion is reduced-motion gated (coverflow flattens to a plain snap list).
  * Accessibility follows the ARIA APG carousel pattern (region + roledescription,
- * per-slide group + position label, focusable track, polite live region).
+ * per-slide group + position, focusable track, polite live region).
  * Public props are IDENTICAL to TeePickerDrawer so the two are drop-in swappable.
  * ========================================================================== */
 
 import {
-  useCallback, useEffect, useMemo, useRef, useState,
+  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
 } from 'react';
-import {
-  m, AnimatePresence, useReducedMotion, useScroll, useTransform, useMotionValueEvent,
-  type MotionValue,
-} from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/fairway/controls/button';
@@ -65,6 +63,14 @@ type Stage = 'courses' | 'tees';
 
 export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCoursePickerProps) {
   const { showToast } = useToast();
+  // useToast() returns a FRESH object (new showToast identity) every render, so
+  // depending on `showToast` in a useCallback re-creates that callback every
+  // render. The course-load effect below keys off refreshCourses — an unstable
+  // refreshCourses makes the effect re-fire every render, thrashing
+  // loadingCourses and refetching the library in a loop. Keep the latest
+  // showToast in a ref so the data callbacks stay referentially stable.
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
   const reduceMotion = !!useReducedMotion();
 
   const [stage, setStage] = useState<Stage>('courses');
@@ -87,12 +93,12 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
       setCourses(next);
       return next;
     } catch {
-      showToast('Could not load the course library', 'error');
+      showToastRef.current('Could not load the course library', 'error');
       return [];
     } finally {
       setLoadingCourses(false);
     }
-  }, [showToast]);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -123,11 +129,11 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
       const detail = await getCourseDetail(course.id);
       setTees(detail?.tees ?? []);
     } catch {
-      showToast('Could not load tees for that course', 'error');
+      showToastRef.current('Could not load tees for that course', 'error');
     } finally {
       setLoadingTees(false);
     }
-  }, [showToast]);
+  }, []);
 
   const selectCourse = useCallback(async (course: GolfCourse) => {
     setSelected(course);
@@ -145,15 +151,15 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
     setPicking(true);
     try {
       const defaults = await getTeeRoundDefaults(tee.id);
-      if (!defaults) { showToast('Could not load that tee', 'error'); return; }
+      if (!defaults) { showToastRef.current('Could not load that tee', 'error'); return; }
       onPick(defaults);
       onOpenChange(false);
     } catch {
-      showToast('Could not load that tee', 'error');
+      showToastRef.current('Could not load that tee', 'error');
     } finally {
       setPicking(false);
     }
-  }, [onPick, onOpenChange, showToast]);
+  }, [onPick, onOpenChange]);
 
   // A freshly created course has no tees — drop the user straight into its tee
   // stage so adding the tee they're about to play is the obvious next step.
@@ -295,15 +301,14 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   );
 }
 
-// ── Stage A: the cinematic coverflow ────────────────────────────────────────
+// ── Stage A: the cinematic coverflow (imperative, hooks-safe) ────────────────
 
-// Premium falloff (centre → neighbour). Eased via the useTransform ranges; flat
-// scale + opacity + a SUBTLE 3D tilt keeps neighbour photos legible (Material 3
-// doesn't rotate at all; full Apple ±45° would foreshorten the image content).
-const CF_SCALE_EDGE = 0.86;   // neighbour scale (centre = 1)
-const CF_OPACITY_EDGE = 0.55; // neighbour opacity (centre = 1)
-const CF_ROTATE = 12;         // deg tilt at one card away
-const CF_TRANSLATE_Z = -55;   // px push-back at one card away
+// Premium falloff (centre → neighbour). Eased (centre plateau); flat scale +
+// opacity + a SUBTLE 3D tilt keeps neighbour photos legible.
+const CF_SCALE_DROP = 0.12;   // centre 1.00 → far 0.88
+const CF_OPACITY_DROP = 0.45; // centre 1.00 → far 0.55
+const CF_ROTATE = 12;         // deg tilt at the falloff edge
+const CF_REACH = 0.85;        // fraction of track width the falloff spans
 
 function CoursesStage({
   loading, courses, filtered, query, reduceMotion, onSelect, onCreate,
@@ -317,30 +322,77 @@ function CoursesStage({
   onCreate: () => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const { scrollXProgress } = useScroll({ container: trackRef });
+  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const progressRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
 
-  const count = filtered.length + 1; // courses + the "add a course" tile
-  const [active, setActive] = useState(0);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+  const [scrollable, setScrollable] = useState(false);
 
-  useMotionValueEvent(scrollXProgress, 'change', (p) => {
-    const idx = count > 1 ? Math.round(p * (count - 1)) : 0;
-    const clamped = Math.max(0, Math.min(count - 1, idx));
-    setActive((prev) => (prev !== clamped ? clamped : prev));
-  });
-
-  // Reset to the first slide when the result set changes.
-  useEffect(() => { setActive(0); }, [filtered.length]);
-
-  const scrollToIndex = useCallback((i: number) => {
+  // Coverflow: scale + dim + tilt each slide by its distance from the track's
+  // centre. Transforms written straight to the DOM (one rAF per scroll frame).
+  const paint = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
-    const clamped = Math.max(0, Math.min(track.children.length - 1, i));
-    const el = track.children[clamped] as HTMLElement | undefined;
-    el?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
+
+    const tr = track.getBoundingClientRect();
+    const center = tr.left + tr.width / 2;
+    const reach = tr.width * CF_REACH || 1;
+
+    if (!reduceMotion) {
+      for (const el of slideRefs.current) {
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        const signed = (r.left + r.width / 2) - center;
+        const norm = Math.min(Math.abs(signed) / reach, 1);
+        const eased = 1 - (1 - norm) * (1 - norm); // ease-out: flat at centre
+        const scale = 1 - eased * CF_SCALE_DROP;
+        const rot = -Math.sign(signed) * eased * CF_ROTATE;
+        el.style.transform = `perspective(1200px) scale(${scale.toFixed(4)}) rotateY(${rot.toFixed(2)}deg)`;
+        el.style.opacity = (1 - eased * CF_OPACITY_DROP).toFixed(4);
+      }
+    }
+
+    const max = track.scrollWidth - track.clientWidth;
+    const sc = max > 8;
+    setScrollable((p) => (p !== sc ? sc : p));
+    setCanLeft((p) => { const n = track.scrollLeft > 8; return p !== n ? n : p; });
+    setCanRight((p) => { const n = track.scrollLeft < max - 8; return p !== n ? n : p; });
+    if (progressRef.current) {
+      const p = max > 0 ? track.scrollLeft / max : 0;
+      progressRef.current.style.transform = `scaleX(${Math.max(0.08, p).toFixed(4)})`;
+    }
   }, [reduceMotion]);
 
-  // Progress rail (never fully empty so it reads as a track, not a glitch).
-  const railScaleX = useTransform(scrollXProgress, [0, 1], [0.08, 1]);
+  const onScroll = useCallback(() => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      paint();
+    });
+  }, [paint]);
+
+  // Apply once after layout (entrance keeps cards invisible until then, so no
+  // full-size flash) and whenever the result set changes.
+  useLayoutEffect(() => {
+    paint();
+  }, [paint, filtered.length, loading]);
+
+  useEffect(() => {
+    const onResize = () => paint();
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [paint]);
+
+  const scrollByCards = (dir: 1 | -1) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.72, 520), behavior: reduceMotion ? 'auto' : 'smooth' });
+  };
 
   const enter = (i: number) =>
     reduceMotion
@@ -384,15 +436,17 @@ function CoursesStage({
     );
   }
 
-  const activeName = active < filtered.length ? filtered[active]?.name ?? 'Course' : 'Add a course';
+  const count = filtered.length + 1; // + the "add a course" tile
+  slideRefs.current = []; // repopulated by the ref callbacks below this render
 
   return (
     <div className="relative flex flex-1 flex-col justify-center">
-      <CarouselArrow side="left" show={active > 0} onClick={() => scrollToIndex(active - 1)} />
-      <CarouselArrow side="right" show={active < count - 1} onClick={() => scrollToIndex(active + 1)} />
+      <CarouselArrow side="left" show={canLeft} onClick={() => scrollByCards(-1)} />
+      <CarouselArrow side="right" show={canRight} onClick={() => scrollByCards(1)} />
 
       <div
         ref={trackRef}
+        onScroll={onScroll}
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region MUST be focusable for keyboard scrolling; Safari (unlike Chrome) does not add this implicitly (WCAG 2.1.1, ACT 0ssw9k)
         tabIndex={0}
         role="region"
@@ -407,95 +461,57 @@ function CoursesStage({
         )}
       >
         {filtered.map((course, i) => (
-          <CoverflowSlide
+          <m.div
             key={course.id}
-            index={i}
-            count={count}
-            progress={scrollXProgress}
-            reduceMotion={reduceMotion}
-            ariaLabel={`${course.name}, ${i + 1} of ${count}`}
-            enter={enter(i)}
+            {...enter(i)}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${course.name}, ${i + 1} of ${count}`}
+            className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
           >
-            <CourseCard course={course} variant="featured" priority={i === 0} onSelect={onSelect} />
-          </CoverflowSlide>
+            <div
+              ref={(el) => { slideRefs.current[i] = el; }}
+              className="origin-center will-change-transform [transform-style:preserve-3d]"
+            >
+              <CourseCard course={course} variant="featured" priority={i === 0} onSelect={onSelect} />
+            </div>
+          </m.div>
         ))}
 
         {/* Final slide — add a new course. */}
-        <CoverflowSlide
-          index={filtered.length}
-          count={count}
-          progress={scrollXProgress}
-          reduceMotion={reduceMotion}
-          ariaLabel={`Add a course, ${count} of ${count}`}
-          enter={enter(filtered.length)}
-        >
-          <CreateCourseTile onClick={onCreate} />
-        </CoverflowSlide>
-      </div>
-
-      {/* Scroll affordance + screen-reader position. */}
-      <div className="mt-3 flex flex-col items-center gap-2">
-        <div className="h-1 w-24 overflow-hidden rounded-full bg-border-subtle">
-          <m.div
-            aria-hidden
-            className="h-full w-full origin-left rounded-full bg-accent-500 motion-reduce:hidden"
-            style={{ scaleX: railScaleX }}
-          />
-        </div>
-        <p className="font-fw-sans text-caption text-text-tertiary">
-          {active + 1} of {count} · swipe to browse
-        </p>
-        <p className="sr-only" aria-live="polite" aria-atomic="true">
-          {activeName}, {active + 1} of {count}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/**
- * One coverflow slide. The OUTER box is the untransformed scroll-snap item (so
- * snap geometry stays stable); the entrance layer owns the spring fade-in +
- * perspective; the inner layer binds scale/opacity/rotateY/translateZ to scroll
- * position. Splitting entrance (mount) from coverflow (scroll) avoids fighting
- * over the same animated properties.
- */
-function CoverflowSlide({
-  index, count, progress, reduceMotion, ariaLabel, enter, children,
-}: {
-  index: number;
-  count: number;
-  progress: MotionValue<number>;
-  reduceMotion: boolean;
-  ariaLabel: string;
-  enter: Record<string, unknown>;
-  children: React.ReactNode;
-}) {
-  const center = count > 1 ? index / (count - 1) : 0;
-  const step = count > 1 ? 1 / (count - 1) : 1;
-  const input = [center - step, center, center + step];
-
-  // Hooks must run unconditionally; we just don't apply the output under reduced motion.
-  const scale = useTransform(progress, input, [CF_SCALE_EDGE, 1, CF_SCALE_EDGE]);
-  const opacity = useTransform(progress, input, [CF_OPACITY_EDGE, 1, CF_OPACITY_EDGE]);
-  const rotateY = useTransform(progress, input, [CF_ROTATE, 0, -CF_ROTATE]);
-  const z = useTransform(progress, input, [CF_TRANSLATE_Z, 0, CF_TRANSLATE_Z]);
-
-  return (
-    <div
-      role="group"
-      aria-roledescription="slide"
-      aria-label={ariaLabel}
-      className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
-    >
-      <m.div {...enter} className="[perspective:1200px]">
         <m.div
-          className="origin-center [transform-style:preserve-3d]"
-          style={reduceMotion ? undefined : { scale, opacity, rotateY, z }}
+          key="__create"
+          {...enter(filtered.length)}
+          role="group"
+          aria-roledescription="slide"
+          aria-label={`Add a course, ${count} of ${count}`}
+          className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
         >
-          {children}
+          <div
+            ref={(el) => { slideRefs.current[filtered.length] = el; }}
+            className="origin-center will-change-transform [transform-style:preserve-3d]"
+          >
+            <CreateCourseTile onClick={onCreate} />
+          </div>
         </m.div>
-      </m.div>
+      </div>
+
+      {/* Scroll affordance: a slim progress rail + count. */}
+      <div className="mt-3 flex flex-col items-center gap-2">
+        {scrollable && (
+          <div className="h-1 w-24 overflow-hidden rounded-full bg-border-subtle">
+            <div
+              ref={progressRef}
+              aria-hidden
+              className="h-full w-full origin-left rounded-full bg-accent-500 motion-reduce:hidden"
+              style={{ transform: 'scaleX(0.08)' }}
+            />
+          </div>
+        )}
+        <p className="font-fw-sans text-caption text-text-tertiary">
+          {scrollable ? 'Swipe to browse · ' : ''}{filtered.length} {filtered.length === 1 ? 'course' : 'courses'}
+        </p>
+      </div>
     </div>
   );
 }
