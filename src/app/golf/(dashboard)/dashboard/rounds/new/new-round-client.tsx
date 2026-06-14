@@ -1824,9 +1824,11 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               <IconMapPin size={16} aria-hidden /> Browse course library
             </Button>
           )}
-          {redesign
-            ? <FairwayCoursePicker open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
-            : <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />}
+          {/* This legacy setup block is only reached with redesign OFF — the
+              redesign path returns early above (the `redesign && step==='setup'`
+              guard) and renders FairwayCoursePicker there. So this is always the
+              legacy drawer; the old `redesign ? …` ternary here was dead. */}
+          <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
 
           {/* Fallback: courses you've played before (per-player). Hidden when empty. */}
           {recentCourses.length > 0 && !showResumePrompt && (
