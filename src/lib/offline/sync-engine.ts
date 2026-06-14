@@ -31,6 +31,7 @@ import {
   getSyncMetadata,
   clearSyncedData,
   shouldRetry,
+  MAX_RETRY_COUNT,
   type OfflineRound,
   type OfflineHole,
   type OfflineShot,
@@ -550,6 +551,30 @@ class SyncEngine {
       }
       if (!round) continue;
 
+      // Respect exponential backoff between attempts (mirrors the v2 path so a
+      // persistently-failing v1 round can't be re-POSTed every sync cycle).
+      // shouldRetry takes an ISO string; v1 stores lastSyncAttempt as epoch ms.
+      const attempts = round.syncAttempts ?? 0;
+      const lastRetryIso =
+        round.lastSyncAttempt != null ? new Date(round.lastSyncAttempt).toISOString() : undefined;
+      if (attempts > 0 && !shouldRetry(attempts, lastRetryIso)) {
+        // Either we're inside the backoff window, or the budget is exhausted.
+        // If exhausted, surface it as failed (and stop counting it as pending)
+        // rather than leaving it stuck pending forever. Non-destructive.
+        if (attempts >= MAX_RETRY_COUNT && round.syncStatus !== 'failed') {
+          await legacy.updateRoundSyncStatus(
+            round.id,
+            'failed',
+            undefined,
+            round.error ?? 'Max sync attempts reached'
+          );
+          failed++;
+          errors.push(`Round ${round.id}: max sync attempts reached`);
+          this.notifyCallbacks('onItemFailed', 'round', round.id, 'Max sync attempts reached');
+        }
+        continue;
+      }
+
       try {
         const draftData = {
           step: 'tracking' as const,
@@ -579,12 +604,22 @@ class SyncEngine {
           synced++;
           this.notifyCallbacks('onItemSynced', 'round', round.id, result.data.roundId);
         } else {
+          // Record the failed attempt non-destructively: bump the counter for
+          // backoff, keep it pending for retry (or mark failed once exhausted).
+          await legacy.recordOfflineRoundSyncFailure(round.id, result.error, MAX_RETRY_COUNT);
           failed++;
           errors.push(`Round ${round.id}: ${result.error}`);
           this.notifyCallbacks('onItemFailed', 'round', round.id, result.error);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        // Best-effort: record the attempt so backoff still applies. A failure
+        // to record must not abort the rest of the drain.
+        try {
+          await legacy.recordOfflineRoundSyncFailure(round.id, errorMessage, MAX_RETRY_COUNT);
+        } catch {
+          /* swallow — the round stays pending and will be retried next cycle */
+        }
         failed++;
         errors.push(`Round ${round.id}: ${errorMessage}`);
         this.notifyCallbacks('onItemFailed', 'round', round.id, errorMessage);

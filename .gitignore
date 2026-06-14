@@ -131,3 +131,4 @@ statsfixresults.pdf
 
 # Local Playwright screenshot artifacts
 e2e-screenshots/
+.bugtest-screens/

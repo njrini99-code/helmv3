@@ -270,7 +270,7 @@ export function PuttHeatmap({
               {/* Legend */}
               <div className="flex items-center gap-4 mt-3 px-1 text-eyebrow text-warm-500">
                 <span className="inline-flex items-center gap-1.5">
-                  <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-primary-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" />
+                  <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-primary-500 shadow-[0_0_0_3px_rgba(22,163,74,0.18)]" />
                   Made
                 </span>
                 <span className="inline-flex items-center gap-1.5">

@@ -77,6 +77,7 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'], // Enable modern image formats
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // Responsive image sizes
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // Smaller image sizes
+    qualities: [72, 75, 95], // Next 16 requires every <Image quality> value to be listed
     minimumCacheTTL: 60, // Cache images for 60 seconds
   },
 

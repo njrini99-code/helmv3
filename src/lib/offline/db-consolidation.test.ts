@@ -262,4 +262,61 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
     const db = databases.get('golfhelm_offline')!;
     expect(db.stores.get('offline_rounds')!.rows.get('round-drain')).toBeTruthy();
   });
+
+  it('a v1 round whose server push FAILS is recorded non-destructively: kept pending + retriable, attempt counted once', async () => {
+    const saveRoundDraft = vi.fn(async () => ({ success: false as const, error: 'server boom' }));
+    vi.doMock('@/app/golf/actions/round-drafts', () => ({ saveRoundDraft }));
+
+    const v1 = await import('./indexed-db');
+    await v1.saveOfflineRound({
+      id: 'round-fail',
+      playerId: '',
+      draftData: { step: 'tracking', setupData: { courseName: 'Pebble' } },
+    });
+
+    const { getSyncEngine } = await import('./sync-engine');
+    const result = await getSyncEngine().syncAll();
+
+    // Attempted exactly once — no immediate re-hammering within a single cycle.
+    expect(saveRoundDraft).toHaveBeenCalledTimes(1);
+    expect(result.failedItems).toBeGreaterThanOrEqual(1);
+
+    // The round is NOT lost and stays retriable (pending), with the attempt counted.
+    const db = databases.get('golfhelm_offline')!;
+    const row = db.stores.get('offline_rounds')!.rows.get('round-fail') as Row;
+    expect(row).toBeTruthy();
+    expect(row.syncStatus).toBe('pending');
+    expect(row.syncAttempts).toBe(1);
+    expect(row.error).toBe('server boom');
+    expect(await v1.getPendingRoundCount()).toBe(1);
+  });
+
+  it('a v1 round that has exhausted its retry budget is marked failed and NOT re-sent', async () => {
+    const saveRoundDraft = vi.fn(async () => ({
+      success: true as const,
+      data: { roundId: 'srv', lastAutoSave: '2026-06-14T00:00:00.000Z' },
+    }));
+    vi.doMock('@/app/golf/actions/round-drafts', () => ({ saveRoundDraft }));
+
+    const v1 = await import('./indexed-db');
+    await v1.saveOfflineRound({ id: 'round-exhausted', playerId: '', draftData: { step: 'tracking' } });
+
+    // Simulate a round that has already failed the maximum number of times
+    // (MAX_RETRY_COUNT = 10), recently (so it is also inside the backoff window).
+    const db = databases.get('golfhelm_offline')!;
+    const seeded = db.stores.get('offline_rounds')!.rows.get('round-exhausted') as Row;
+    seeded.syncAttempts = 10;
+    seeded.lastSyncAttempt = Date.now();
+
+    const { getSyncEngine } = await import('./sync-engine');
+    await getSyncEngine().syncAll();
+
+    // Budget spent: it must NOT be pushed to the server again...
+    expect(saveRoundDraft).not.toHaveBeenCalled();
+    // ...and it is surfaced as failed (no longer pending), with the row retained.
+    const after = db.stores.get('offline_rounds')!.rows.get('round-exhausted') as Row;
+    expect(after).toBeTruthy();
+    expect(after.syncStatus).toBe('failed');
+    expect(await v1.getPendingRoundCount()).toBe(0);
+  });
 });

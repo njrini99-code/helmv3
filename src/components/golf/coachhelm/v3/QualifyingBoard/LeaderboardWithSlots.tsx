@@ -74,7 +74,7 @@ export function LeaderboardWithSlots({ candidates, topNCount }: Props) {
               <span className="w-32 text-right text-xs">
                 {locked ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-100 text-primary-800 font-medium">
-                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" />
+                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary-500 shadow-[0_0_0_3px_rgba(22,163,74,0.18)]" />
                     Locked
                   </span>
                 ) : picked ? (

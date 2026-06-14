@@ -58,7 +58,7 @@ export function CourseCard({
           'shadow-soft ring-1 ring-black/[0.06]',
           'transition-[transform,box-shadow] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
           'hover:-translate-y-1.5 hover:shadow-pop active:-translate-y-0.5',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
           'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
           className,
         )}
@@ -130,7 +130,7 @@ export function CourseCard({
         'group relative flex w-full flex-col overflow-hidden rounded-fw-card text-left',
         'bg-surface border border-border-subtle shadow-flat',
         'transition-[transform,box-shadow] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
-        'hover:-translate-y-1 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
+        'hover:-translate-y-1 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
         className,
       )}

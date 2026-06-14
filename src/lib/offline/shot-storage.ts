@@ -125,7 +125,7 @@ const SYNC_META_STORE = 'sync_metadata';
 // Retry configuration (exponential backoff)
 const INITIAL_RETRY_DELAY_MS = 1000; // 1 second
 const MAX_RETRY_DELAY_MS = 60000; // 60 seconds
-const MAX_RETRY_COUNT = 10;
+export const MAX_RETRY_COUNT = 10;
 
 // Cleanup
 const DATA_EXPIRY_DAYS = 30;

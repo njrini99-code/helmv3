@@ -476,6 +476,56 @@ export async function updateRoundSyncStatus(
 }
 
 /**
+ * Record a FAILED sync attempt on a (v1) round, non-destructively.
+ *
+ * Atomically bumps the attempt counter + timestamp so the sync engine can
+ * apply exponential backoff, and records the error. The round is kept
+ * 'pending' so it is retried on a later cycle — UNLESS the attempt budget is
+ * exhausted, in which case it is marked 'failed' so it stops draining and
+ * surfaces to the user instead of being retried forever. The row and its
+ * draftData are always retained (no data loss).
+ *
+ * Returns the new attempt count + resulting status, or null if the round is
+ * already gone (idempotent).
+ */
+export async function recordOfflineRoundSyncFailure(
+  roundId: string,
+  error: string,
+  maxAttempts: number
+): Promise<{ attempts: number; status: OfflineRound['syncStatus'] } | null> {
+  const db = await openDatabase();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(ROUNDS_STORE, 'readwrite');
+    const store = transaction.objectStore(ROUNDS_STORE);
+    const getRequest = store.get(roundId);
+    let outcome: { attempts: number; status: OfflineRound['syncStatus'] } | null = null;
+
+    getRequest.onsuccess = () => {
+      const round = getRequest.result as OfflineRound | undefined;
+      // Idempotent: nothing to do if the round was already drained/removed.
+      if (!round) return;
+
+      const attempts = (round.syncAttempts ?? 0) + 1;
+      // Give up once the budget is spent so we stop hammering the server and
+      // the failure becomes visible; otherwise keep it pending for backoff.
+      const status: OfflineRound['syncStatus'] = attempts >= maxAttempts ? 'failed' : 'pending';
+
+      round.syncAttempts = attempts;
+      round.lastSyncAttempt = Date.now();
+      round.syncStatus = status;
+      round.error = error;
+      store.put(round);
+
+      outcome = { attempts, status };
+    };
+
+    transaction.oncomplete = () => resolve(outcome);
+    transaction.onerror = () => reject(new Error('Failed to record offline round sync failure'));
+  });
+}
+
+/**
  * Delete an offline round and its shots
  */
 export async function deleteOfflineRound(roundId: string): Promise<void> {
