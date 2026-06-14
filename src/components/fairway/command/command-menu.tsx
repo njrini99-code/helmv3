@@ -53,6 +53,7 @@ import {
   type Variants,
 } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Skeleton } from '@/components/fairway/feedback';
 import { GlassSurface } from './glass-surface';
 import {
@@ -251,6 +252,9 @@ export function CommandMenu({
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const listId = useId();
+  // Premium scroll-edge fade: a long results list bleeds top/bottom into the
+  // glass instead of hard-cutting (Raycast/Spotlight feel). No fade when short.
+  const { ref: listFadeRef, fadeStyle: listFadeStyle } = useScrollFade<HTMLDivElement>('y');
 
   // Portal target only exists on the client.
   useEffect(() => setMounted(true), []);
@@ -392,6 +396,8 @@ export function CommandMenu({
 
                 {/* Results */}
                 <Command.List
+                  ref={listFadeRef}
+                  style={listFadeStyle}
                   id={listId}
                   className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2"
                 >

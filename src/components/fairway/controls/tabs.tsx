@@ -26,9 +26,11 @@ import {
   useId,
 } from 'react';
 import * as RadixTabs from '@radix-ui/react-tabs';
+import { useComposedRefs } from '@radix-ui/react-compose-refs';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { fwFocusRing, fwTransition } from './_internal';
 
 /** Shares the per-Tabs layoutId so each instance animates its own indicator. */
@@ -70,10 +72,15 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
 export const TabsList = forwardRef<
   HTMLDivElement,
   ComponentPropsWithoutRef<typeof RadixTabs.List>
->(function TabsList({ className, ...props }, ref) {
+>(function TabsList({ className, style, ...props }, ref) {
+  // Premium scroll-edge fade: when the tab row overflows (mobile / many tabs),
+  // the hidden side bleeds to transparent instead of hard-cutting at the
+  // invisible scrollbar. No fade when everything fits.
+  const { ref: fadeRef, fadeStyle } = useScrollFade<HTMLDivElement>('x');
+  const composedRef = useComposedRefs(ref, fadeRef);
   return (
     <RadixTabs.List
-      ref={ref}
+      ref={composedRef}
       data-slot="fw-tabs-list"
       className={cn(
         'relative flex items-center gap-1 border-b border-border-subtle',
@@ -81,6 +88,7 @@ export const TabsList = forwardRef<
         'overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         className,
       )}
+      style={{ ...style, ...fadeStyle }}
       {...props}
     />
   );

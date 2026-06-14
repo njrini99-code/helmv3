@@ -42,6 +42,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 
 import { cn } from "@/lib/utils";
+import { useScrollFade } from "@/lib/fairway/use-scroll-fade";
 
 import {
   ViewHeaderSegments,
@@ -170,6 +171,9 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
     const compact = size === "compact";
     const hasSegments = Array.isArray(segments) && segments.length > 0;
     const showDivider = divider ?? hasSegments;
+    // Premium scroll-edge fade for the (horizontally scrollable) segment row —
+    // a long segment/tab set bleeds off-edge instead of hard-cutting on mobile.
+    const { ref: segmentsFadeRef, fadeStyle: segmentsFadeStyle } = useScrollFade<HTMLDivElement>("x");
 
     const TitleTag = titleAs;
     const PrimarySlot = asPrimaryActionChild ? Slot : "div";
@@ -302,7 +306,12 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
         {hasSegments
           ? motionItem(
               "segments",
-              <div data-slot="view-header-segments" className="overflow-x-auto">
+              <div
+                data-slot="view-header-segments"
+                ref={segmentsFadeRef}
+                style={segmentsFadeStyle}
+                className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
                 <ViewHeaderSegments
                   segments={segments}
                   value={segmentValue}
