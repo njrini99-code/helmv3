@@ -168,18 +168,34 @@ export async function getRecentlyPlayedCourses(limit = 12): Promise<GolfCourse[]
 
   const { data: rounds } = await supabase
     .from('golf_rounds')
-    .select('course_id, round_date')
+    .select('course_id, tee_id, round_date')
     .eq('player_id', player.id)
-    .not('course_id', 'is', null)
     .order('round_date', { ascending: false })
     .limit(200);
   if (!rounds || rounds.length === 0) return [];
+
+  // Prefer course_id; fall back to the tee's course for any round that carries
+  // only the tee link. (The round RPCs now persist course_id, but this keeps the
+  // feed correct for historical rounds and any edge path.)
+  const teeIds = [...new Set(
+    rounds.filter((r) => !r.course_id && r.tee_id).map((r) => r.tee_id as string),
+  )];
+  const teeToCourse = new Map<string, string>();
+  if (teeIds.length > 0) {
+    const { data: teeRows } = await supabase
+      .from('golf_course_tees')
+      .select('id, course_id')
+      .in('id', teeIds)
+      .is('deleted_at', null);
+    for (const t of teeRows ?? []) teeToCourse.set(t.id as string, t.course_id as string);
+  }
 
   // Distinct course ids in recency order (first occurrence wins).
   const orderedIds: string[] = [];
   const seen = new Set<string>();
   for (const r of rounds) {
-    const cid = r.course_id as string | null;
+    const cid = (r.course_id as string | null)
+      ?? (r.tee_id ? teeToCourse.get(r.tee_id as string) ?? null : null);
     if (cid && !seen.has(cid)) {
       seen.add(cid);
       orderedIds.push(cid);
