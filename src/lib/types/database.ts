@@ -9180,6 +9180,66 @@ export type Database = {
           },
         ]
       }
+      golf_recruit_documents: {
+        Row: {
+          category: string
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          recruit_id: string
+          storage_path: string
+          team_id: string
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          recruit_id: string
+          storage_path: string
+          team_id: string
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          recruit_id?: string
+          storage_path?: string
+          team_id?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_recruit_documents_recruit_id_fkey"
+            columns: ["recruit_id"]
+            isOneToOne: false
+            referencedRelation: "golf_recruits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_recruit_documents_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_recruits: {
         Row: {
           created_at: string

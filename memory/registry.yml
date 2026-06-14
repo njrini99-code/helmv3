@@ -713,6 +713,47 @@ features:
         - npm run test:e2e -- e2e/roster.spec.ts
         - npm run build
 
+  recruiting:
+    name: Recruiting HQ
+    status: active
+    owner: product
+    criticality: medium
+    docs:
+      feature: memory/context/golfhelm-features.md
+      flows:
+        - memory/context/golfhelm-features.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - memory/context/golfhelm-database.md
+      incidents: []
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/recruiting/**
+      components:
+        - src/components/golf/recruiting/**
+        - src/components/fairway/pages/recruiting/**
+      api: []
+      actions:
+        - src/app/golf/actions/recruiting.ts
+        - src/app/golf/actions/recruit-documents.ts
+        - src/app/golf/actions/recruit-documents-categories.ts
+      services: []
+      db:
+        - supabase/migrations/*golf_recruits*.sql
+        - supabase/migrations/*recruit_documents*.sql
+      tests: []
+    integrations:
+      - supabase
+      - team_access_control
+    review:
+      required_docs:
+        - memory/context/golfhelm-features.md
+      required_checks:
+        - npm run typecheck
+        - npm run build
+
   auth_onboarding_join:
     name: Auth Onboarding And Join
     status: active
