@@ -48,7 +48,11 @@ const base = cn(
   fwTransition,
   fwFocusRing,
   fwDisabled,
-  'active:translate-y-[0.5px] motion-reduce:active:translate-y-0',
+  // Tactile press: settle 0.5px down AND a hair of scale, spring-timed ONLY on
+  // :active (the soft overshoot reads as a physical key-press; hover keeps the
+  // calm base curve). Collapsed under reduced motion.
+  'active:translate-y-[0.5px] active:scale-[0.98] active:[transition-timing-function:var(--fw-ease-spring)]',
+  'motion-reduce:active:translate-y-0 motion-reduce:active:scale-100',
 );
 
 const variantStyles: Record<FwButtonVariant, string> = {

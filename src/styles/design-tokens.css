@@ -61,9 +61,9 @@
   /* ---- Semantic surfaces (warm, matte, OPAQUE at rest — not translucent) ---- */
   --fw-color-canvas:         oklch(0.953 0.022 83);  /* deeper warm champagne page base — cards now clearly LIFT off it (was 0.978, near-identical to the 0.984 card; the ~0.03 gap is the premium card/page separation the flat-cream look lacked) */
   --fw-color-surface:        oklch(0.984 0.016 86);  /* THE card: warm CREAM, not white. It lifts off the deeper champagne page via its hairline + soft shadow — never by being a cold white sheet (we keep coming back to this: no white cards). */
-  --fw-color-surface-tint:   oklch(0.974 0.019 85);  /* a degree warmer — hero plinths / warm bands */
+  --fw-color-surface-tint:   oklch(0.968 0.026 84);  /* a TOASTED warm band — hero plinths (warmer + a touch deeper than the card so the tier reads, not vanishes) */
   --fw-color-surface-sunken: oklch(0.963 0.021 84);  /* wells, insets, input tracks */
-  --fw-color-elevated:       oklch(0.990 0.012 88);  /* menus / popovers / modal body — brightest warm cream */
+  --fw-color-elevated:       oklch(0.993 0.016 88);  /* menus / popovers / modal body — the brightest, warmest cream so floating panels read genuinely lifted */
 
   /* ---- The sunlit page wash: a WARM CREAM gradient for the canvas, not a flat
           fill. A faint near-white highlight at the top reads as afternoon light;
