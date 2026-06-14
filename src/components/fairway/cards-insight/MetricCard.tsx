@@ -181,14 +181,17 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
 
     const base = cn(
       'group relative flex flex-col rounded-card bg-surface',
-      'border border-border-subtle',
+      // resting: warm hairline + a whisper shadow with a lit top edge so the KPI
+      // tile reads as a premium physical surface, not a flat outlined box.
+      // --fw-shadow-card is light-cards-only (carries the warm-white top edge).
+      'border border-border-subtle [box-shadow:var(--fw-shadow-card)]',
       'transition-[box-shadow,transform,border-color] ease-soft',
       isHero ? 'p-8 gap-3' : 'p-6 gap-2',
       interactive && [
-        'cursor-pointer',
-        'duration-fast',
-        'hover:shadow-soft hover:-translate-y-px hover:border-transparent',
-        'active:translate-y-[0.5px] active:shadow-flat',
+        'cursor-pointer will-change-transform',
+        '[transition-duration:240ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
+        'hover:shadow-raise hover:-translate-y-[2px] hover:border-transparent',
+        'active:translate-y-0 active:shadow-soft active:[transition-duration:110ms]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
       ],
       !interactive && 'duration-base',
