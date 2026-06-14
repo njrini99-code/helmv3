@@ -35,7 +35,7 @@
  * ========================================================================== */
 
 import {
-  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
+  useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -184,10 +184,10 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
     await selectCourse(fresh);
   }, [refreshCourses, selectCourse]);
 
-  const heroTitle = stage === 'tees' && selected ? selected.name : 'Choose a course.';
+  const heroTitle = stage === 'tees' && selected ? selected.name : 'Choose a course';
   const heroDesc = stage === 'tees'
     ? 'Pick the tee set you played — it pre-fills your pars and yardages.'
-    : 'Pick from the shared library, or add a new course in seconds.';
+    : 'Pick from your library, or add a new course in seconds.';
 
   const stageMotion = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.12 } }
@@ -232,46 +232,43 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
               it scroll when it doesn't. */}
           <div className="flex h-full w-full flex-col overflow-y-auto px-4 py-6 sm:px-6 sm:py-10">
             <div className="m-auto flex w-full max-w-3xl flex-col">
-            {/* Cinematic dark cockpit header (the figure). */}
-            <header className="on-dark relative overflow-hidden rounded-card bg-nav-bg px-6 py-6 text-nav-text shadow-soft sm:px-7">
-              <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-500/15 blur-[70px]" />
-              <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
-
-              <div className="relative flex items-start gap-3">
+            {/* Airy, premium header — bold title + clean search on the cream canvas. */}
+            <header className="px-1">
+              <div className="flex items-start gap-2.5">
                 {stage === 'tees' && (
-                  // eslint-disable-next-line helm/no-raw-button -- compact icon back-affordance on the dark header
+                  // eslint-disable-next-line helm/no-raw-button -- compact back affordance
                   <button
                     type="button"
                     onClick={backToCourses}
                     aria-label="Back to courses"
-                    className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-nav-text/80 transition-colors hover:bg-white/10 hover:text-nav-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                    className="-ml-1 mt-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                   >
-                    <IconChevronLeft size={18} aria-hidden />
+                    <IconChevronLeft size={20} aria-hidden />
                   </button>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-nav-accent">
-                    New round · Course
+                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-primary-600">
+                    {stage === 'tees' ? 'New round · Tee' : 'New round'}
                   </p>
-                  <h1 className="mt-2 truncate font-fw-display text-h2 font-semibold leading-tight tracking-[-0.01em] text-nav-text">
+                  <h1 className="mt-1.5 truncate font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
                     {heroTitle}
                   </h1>
-                  <p className="mt-2 max-w-lg font-fw-sans text-body-sm text-nav-text-dim">{heroDesc}</p>
+                  <p className="mt-1.5 max-w-md font-fw-sans text-body text-text-secondary">{heroDesc}</p>
                 </div>
               </div>
 
-              {/* Search — Stage A only, sunk into the dark band. */}
+              {/* Search — Stage A only. */}
               {stage === 'courses' && (
                 <div className="relative mt-5">
-                  <IconSearch size={16} aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-nav-text/55" />
-                  {/* eslint-disable-next-line helm/no-raw-input -- native type=search with a leading icon, dark-band styled */}
+                  <IconSearch size={18} aria-hidden className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                  {/* eslint-disable-next-line helm/no-raw-input -- native type=search with a leading icon */}
                   <input
                     type="search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search courses…"
                     aria-label="Search courses"
-                    className="h-11 w-full rounded-full border border-white/10 bg-white/[0.06] pl-10 pr-4 text-body text-nav-text placeholder:text-nav-text/45 focus:border-accent-500/60 focus:outline-none focus:ring-2 focus:ring-accent-500/30"
+                    className="h-12 w-full rounded-full border border-border-subtle bg-surface pl-11 pr-4 font-fw-sans text-body text-text-primary shadow-flat placeholder:text-text-tertiary focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-500/12"
                   />
                 </div>
               )}
@@ -333,20 +330,13 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   );
 }
 
-// ── Stage A: sectioned cinematic coverflows (imperative, hooks-safe) ─────────
-
-// Premium falloff (centre → neighbour). Eased (centre plateau); flat scale +
-// opacity + a SUBTLE 3D tilt keeps neighbour photos legible.
-const CF_SCALE_DROP = 0.10;   // centre 1.00 → far 0.90 (subtle, premium)
-const CF_OPACITY_DROP = 0.34; // centre 1.00 → far 0.66 (neighbours stay legible, not murky)
-const CF_ROTATE = 9;          // deg tilt at the falloff edge (gentler)
-const CF_REACH = 0.9;         // fraction of track width the falloff spans
+// ── Stage A: sectioned course shelves ───────────────────────────────────────
 
 /**
- * Stage A — the "choose a course" screen. Three independent feeds, ONE coverflow
- * carousel each: Recently played, Team courses, and the full Course library
- * (which carries the "Add a course" tile). Searching collapses to a single
- * results carousel across the whole library.
+ * Stage A — the "choose a course" screen. Three independent feeds, ONE course
+ * shelf each: Recently played, Team courses, and the full Course library (which
+ * carries the "Add a course" tile). Searching collapses to a single results
+ * shelf across the whole library.
  */
 function CoursesStage({
   loading, library, recent, team, filtered, query, reduceMotion, onSelect, onCreate,
@@ -436,11 +426,11 @@ function CoursesStage({
   );
 }
 
-/** Eyebrow label + count above a carousel; aligned to the centred card column. */
+/** Eyebrow label + count above a shelf; aligned to the shelf's left edge. */
 function CourseSection({ label, count, children }: { label: string; count: number; children: React.ReactNode }) {
   return (
     <section className="flex flex-col">
-      <div className="mb-1 flex items-baseline justify-between px-[6vw] sm:px-[16%]">
+      <div className="mb-2 flex items-baseline justify-between px-1">
         <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-secondary">
           {label}
         </h2>
@@ -454,12 +444,10 @@ function CourseSection({ label, count, children }: { label: string; count: numbe
 }
 
 /**
- * One horizontal coverflow carousel: featured cards on a centred scroll-snap
- * track, scaled/dimmed/tilted by distance from centre — written IMPERATIVELY
- * (one rAF per scroll frame), deliberately NOT framer useScroll/useTransform
- * (those need the container ref hydrated at hook-call time and crashed prod with
- * React #310). Every hook runs unconditionally before any early return; the
- * whole thing is reduced-motion gated.
+ * One horizontal course shelf: featured cards on a left-aligned scroll-snap
+ * track (peek the next card), arrows on desktop, a tasteful staggered entrance.
+ * No per-frame transforms — pure native scroll, so it holds 60fps and the whole
+ * card stays a clean, reliable tap target (→ tee stage). Reduced-motion safe.
  */
 function CourseCarousel({
   courses, reduceMotion, onSelect, regionLabel, withCreateTile = false, onCreate,
@@ -472,110 +460,42 @@ function CourseCarousel({
   onCreate?: () => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const progressRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
-
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
-  const [scrollable, setScrollable] = useState(false);
 
-  // Coverflow: scale + dim + tilt each slide by its distance from the track's
-  // centre. To hold 60fps we BATCH every layout READ, then every WRITE — reading
-  // a rect *after* a style write forces a synchronous reflow, so an interleaved
-  // read→write→read loop would thrash layout once per slide per frame. One read
-  // batch + one write batch = a single reflow per frame.
-  const paint = useCallback(() => {
-    const track = trackRef.current;
-    if (!track) return;
+  // Edge-triggered only: flips when you reach/leave an end, so no per-frame
+  // re-render mid-scroll. A plain scrollLeft read — no layout writes, no thrash.
+  const updateArrows = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setCanLeft((p) => { const n = el.scrollLeft > 8; return p !== n ? n : p; });
+    setCanRight((p) => { const n = el.scrollLeft < max - 8; return p !== n ? n : p; });
+  }, []);
 
-    // ---- READ phase: all layout reads up front ----
-    const tr = track.getBoundingClientRect();
-    const center = tr.left + tr.width / 2;
-    const reach = tr.width * CF_REACH || 1;
-    const scrollLeft = track.scrollLeft;
-    const max = track.scrollWidth - track.clientWidth;
-    const mids = reduceMotion
-      ? null
-      : slideRefs.current.map((el) => {
-          if (!el) return null;
-          const r = el.getBoundingClientRect();
-          return r.left + r.width / 2;
-        });
-
-    // ---- WRITE phase: no layout reads here, so the browser reflows once ----
-    if (mids) {
-      const slides = slideRefs.current;
-      for (let i = 0; i < slides.length; i++) {
-        const el = slides[i];
-        const mid = mids[i];
-        if (!el || mid == null) continue;
-        const signed = mid - center;
-        const norm = Math.min(Math.abs(signed) / reach, 1);
-        const eased = 1 - (1 - norm) * (1 - norm); // ease-out: flat at centre
-        const scale = 1 - eased * CF_SCALE_DROP;
-        const rot = -Math.sign(signed) * eased * CF_ROTATE;
-        el.style.transform = `perspective(1200px) scale(${scale.toFixed(4)}) rotateY(${rot.toFixed(2)}deg)`;
-        el.style.opacity = (1 - eased * CF_OPACITY_DROP).toFixed(4);
-      }
-    }
-    if (progressRef.current) {
-      const p = max > 0 ? scrollLeft / max : 0;
-      progressRef.current.style.transform = `scaleX(${Math.max(0.08, p).toFixed(4)})`;
-    }
-
-    // Guarded so the arrow/rail state only flips at the scroll boundaries —
-    // never a per-frame re-render mid-scroll.
-    const sc = max > 8;
-    setScrollable((prev) => (prev !== sc ? sc : prev));
-    setCanLeft((prev) => { const n = scrollLeft > 8; return prev !== n ? n : prev; });
-    setCanRight((prev) => { const n = scrollLeft < max - 8; return prev !== n ? n : prev; });
-  }, [reduceMotion]);
-
-  // rAF-coalesced scheduler — at most one paint() per frame no matter how many
-  // scroll/resize events fire. Shared by both so resize can't fire a burst of
-  // synchronous paints either.
-  const schedulePaint = useCallback(() => {
-    if (rafRef.current != null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      paint();
-    });
-  }, [paint]);
-
-  // Apply once after layout (entrance keeps cards invisible until then, so no
-  // full-size flash) and whenever the result set changes.
-  useLayoutEffect(() => {
-    paint();
-  }, [paint, courses.length, withCreateTile]);
-
+  useEffect(() => { updateArrows(); }, [updateArrows, courses.length, withCreateTile]);
   useEffect(() => {
-    window.addEventListener('resize', schedulePaint);
-    return () => {
-      window.removeEventListener('resize', schedulePaint);
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [schedulePaint]);
+    window.addEventListener('resize', updateArrows);
+    return () => window.removeEventListener('resize', updateArrows);
+  }, [updateArrows]);
 
   const scrollByCards = (dir: 1 | -1) => {
     const el = trackRef.current;
     if (!el) return;
-    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.72, 520), behavior: reduceMotion ? 'auto' : 'smooth' });
+    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.85, 340), behavior: reduceMotion ? 'auto' : 'smooth' });
   };
 
   const enter = (i: number) =>
     reduceMotion
       ? {}
       : {
-          initial: { opacity: 0, y: 12 },
+          initial: { opacity: 0, y: 14 },
           animate: { opacity: 1, y: 0 },
-          // Snappy reveal: a quick glide, minimal stagger (capped) so the row
-          // lights up almost at once instead of crawling card-by-card.
-          transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] as const, delay: Math.min(i, 4) * 0.03 },
+          transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const, delay: Math.min(i, 5) * 0.04 },
         };
 
   const count = courses.length + (withCreateTile ? 1 : 0);
-  slideRefs.current = []; // repopulated by the ref callbacks below this render
+  const slideCls = 'w-[68vw] max-w-[300px] flex-shrink-0 snap-start sm:w-[290px]';
 
   return (
     <div className="relative">
@@ -584,7 +504,7 @@ function CourseCarousel({
 
       <div
         ref={trackRef}
-        onScroll={schedulePaint}
+        onScroll={updateArrows}
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region MUST be focusable for keyboard scrolling; Safari (unlike Chrome) does not add this implicitly (WCAG 2.1.1, ACT 0ssw9k)
         tabIndex={0}
         role="region"
@@ -592,8 +512,8 @@ function CourseCarousel({
         aria-label={regionLabel}
         className={cn(
           'flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto overscroll-x-contain scroll-smooth',
-          'px-[6vw] py-3 sm:px-[16%]',
-          'focus-visible:outline-none',
+          'px-1 py-2',
+          'rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
           '[scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden',
           'motion-reduce:scroll-auto',
         )}
@@ -605,18 +525,13 @@ function CourseCarousel({
             role="group"
             aria-roledescription="slide"
             aria-label={`${course.name}, ${i + 1} of ${count}`}
-            className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
+            className={slideCls}
           >
-            <div
-              ref={(el) => { slideRefs.current[i] = el; }}
-              className="origin-center will-change-transform [transform-style:preserve-3d]"
-            >
-              <CourseCard course={course} variant="featured" priority={i === 0} onSelect={onSelect} />
-            </div>
+            <CourseCard course={course} variant="featured" priority={i === 0} onSelect={onSelect} />
           </m.div>
         ))}
 
-        {/* Final slide — add a new course (library carousel only). */}
+        {/* Final slide — add a new course (library shelf only). */}
         {withCreateTile && onCreate && (
           <m.div
             key="__create"
@@ -624,31 +539,12 @@ function CourseCarousel({
             role="group"
             aria-roledescription="slide"
             aria-label={`Add a course, ${count} of ${count}`}
-            className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
+            className={slideCls}
           >
-            <div
-              ref={(el) => { slideRefs.current[courses.length] = el; }}
-              className="origin-center will-change-transform [transform-style:preserve-3d]"
-            >
-              <CreateCourseTile onClick={onCreate} />
-            </div>
+            <CreateCourseTile onClick={onCreate} />
           </m.div>
         )}
       </div>
-
-      {/* Scroll affordance: a slim progress rail (only when there's overflow). */}
-      {scrollable && (
-        <div className="mt-3 flex justify-center">
-          <div className="h-1 w-24 overflow-hidden rounded-full bg-border-subtle">
-            <div
-              ref={progressRef}
-              aria-hidden
-              className="h-full w-full origin-left rounded-full bg-accent-500 motion-reduce:hidden"
-              style={{ transform: 'scaleX(0.08)' }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -682,10 +578,10 @@ function CreateCourseTile({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex aspect-[16/10] w-full flex-col items-center justify-center gap-3 rounded-fw-lg text-center sm:aspect-[2/1]',
+        'group flex aspect-[4/5] w-full flex-col items-center justify-center gap-3 rounded-[1.5rem] text-center sm:aspect-[5/6]',
         'border-2 border-dashed border-border-strong bg-surface-sunken',
         'transition-[transform,border-color,background-color] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
-        'hover:-translate-y-1 hover:border-accent-500 hover:bg-accent-50/60 active:translate-y-0',
+        'hover:-translate-y-1.5 hover:border-accent-500 hover:bg-accent-50/60 active:-translate-y-0.5',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
       )}
