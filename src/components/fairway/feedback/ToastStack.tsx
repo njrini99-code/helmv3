@@ -33,6 +33,7 @@ import {
   type ExternalToast,
 } from 'sonner';
 import { CheckCircle2, Info, AlertTriangle, AlertOctagon, Loader2 } from 'lucide-react';
+import { fwHaptic } from '@/lib/fairway/haptics';
 
 /* --------------------------------------------------------------------------
  * Viewport hook — flip sonner position between desktop & mobile without a flash
@@ -140,13 +141,13 @@ function base(message: Message, opts?: FairwayToastOptions) {
 }
 
 export const fairwayToast = Object.assign(base, {
-  success: (message: Message, opts?: FairwayToastOptions) => sonnerToast.success(message, opts),
+  success: (message: Message, opts?: FairwayToastOptions) => { fwHaptic('success'); return sonnerToast.success(message, opts); },
   info: (message: Message, opts?: FairwayToastOptions) => sonnerToast.info(message, opts),
-  warning: (message: Message, opts?: FairwayToastOptions) => sonnerToast.warning(message, opts),
+  warning: (message: Message, opts?: FairwayToastOptions) => { fwHaptic('warning'); return sonnerToast.warning(message, opts); },
   /** Canonical error toast (the system says "danger", sonner calls it "error"). */
-  danger: (message: Message, opts?: FairwayToastOptions) => sonnerToast.error(message, opts),
+  danger: (message: Message, opts?: FairwayToastOptions) => { fwHaptic('error'); return sonnerToast.error(message, opts); },
   /** Alias for callers that think in sonner terms. */
-  error: (message: Message, opts?: FairwayToastOptions) => sonnerToast.error(message, opts),
+  error: (message: Message, opts?: FairwayToastOptions) => { fwHaptic('error'); return sonnerToast.error(message, opts); },
   loading: (message: Message, opts?: FairwayToastOptions) => sonnerToast.loading(message, opts),
   message: (message: Message, opts?: FairwayToastOptions) => sonnerToast.message(message, opts),
   /**

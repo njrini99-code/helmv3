@@ -22,6 +22,7 @@ import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from './_internal';
+import { fwHaptic } from '@/lib/fairway/haptics';
 
 export interface SegmentedOption<T extends string = string> {
   value: T;
@@ -73,7 +74,10 @@ export function Segmented<T extends string = string>({
       // Radix passes "" when the active item is toggled off; ignore that to keep
       // this a strict single-select (always one segment selected).
       onValueChange={(next) => {
-        if (next) onValueChange(next as T);
+        if (next) {
+          fwHaptic('selection'); // the iOS segment "tick" (no-op off native)
+          onValueChange(next as T);
+        }
       }}
       aria-label={aria['aria-label']}
       data-slot="fw-segmented"
