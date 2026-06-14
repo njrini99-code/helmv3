@@ -524,7 +524,7 @@ export function PlayersGridView({
                 <p className="font-fw-sans text-eyebrow text-text-tertiary">
                   {p.graduation_year ? `'${String(p.graduation_year).slice(-2)}` : ''}
                   {p.handicap != null
-                    ? `${p.graduation_year ? ' · ' : ''}${p.handicap > 0 ? '+' : ''}${p.handicap} HCP`
+                    ? `${p.graduation_year ? ' · ' : ''}${p.handicap < 0 ? '+' : ''}${Math.abs(p.handicap)} HCP`
                     : ''}
                 </p>
               </div>

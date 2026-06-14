@@ -118,9 +118,22 @@ describe('teamCohortText', () => {
     expect(teamCohortText(100, 4)).toBe('');
   });
 
-  it('still renders the caption once team_n reaches the floor', () => {
-    expect(teamCohortText(18, 5)).toBe('Bottom 18% on your team');
-    expect(teamCohortText(95, 8)).toBe('Top 5% on your team');
+  // Small-roster guard: percentile-as-percent ("Top 1% of 7") is nonsense, so
+  // the extreme buckets fall back to qualitative phrasing below PCT_LANGUAGE_MIN_N.
+  it('uses qualitative extremes on a small roster (team_n < 20)', () => {
+    expect(teamCohortText(95, 8)).toBe('Top of your team');
+    expect(teamCohortText(100, 7)).toBe('Top of your team');
+    expect(teamCohortText(18, 5)).toBe('Bottom of your team');
+    expect(teamCohortText(1, 7)).toBe('Bottom of your team');
+    // Mid buckets are still fine on a small roster.
+    expect(teamCohortText(80, 7)).toBe('Top quartile on your team');
+    expect(teamCohortText(60, 7)).toBe('Above team average');
+    expect(teamCohortText(40, 7)).toBe('Below team average');
+  });
+
+  it('keeps percentage language on a large roster (team_n >= 20)', () => {
+    expect(teamCohortText(95, 30)).toBe('Top 5% on your team');
+    expect(teamCohortText(18, 30)).toBe('Bottom 18% on your team');
   });
 
   it('omitting team_n keeps the legacy permissive behavior', () => {

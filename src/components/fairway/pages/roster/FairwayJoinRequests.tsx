@@ -122,7 +122,7 @@ function initialsFromName(name: string): string {
 }
 
 function formatHandicap(handicap: number): string {
-  return handicap > 0 ? `+${handicap}` : String(handicap);
+  return handicap < 0 ? `+${Math.abs(handicap)}` : String(handicap);
 }
 
 /* ---------------------------------------------------------------------------

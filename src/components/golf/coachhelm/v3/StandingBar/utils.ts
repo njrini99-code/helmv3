@@ -12,7 +12,7 @@ import type {
   StandingBarProps,
   Unit,
 } from './types';
-import { TEAM_MARKER_MIN_N } from './types';
+import { TEAM_MARKER_MIN_N, PCT_LANGUAGE_MIN_N } from './types';
 
 /**
  * Position a value within [scale.min, scale.max] as a 0-100 percentage.
@@ -122,11 +122,16 @@ export function teamCohortText(
     return '';
   }
   const pct = Math.round(team_pct);
-  if (pct >= 90) return `Top ${Math.max(1, 100 - pct)}% on your team`;
+  // On a realistically-small roster, "Top 1% / Bottom 1% on your team" is
+  // statistical nonsense (you can't be the top 1% of 7). Use qualitative
+  // phrasing for the extremes. Quartile/above/below remain fine. When team_n
+  // is omitted (legacy callers / tests) keep the percentage language.
+  const smallRoster = team_n !== undefined && team_n !== null && team_n < PCT_LANGUAGE_MIN_N;
+  if (pct >= 90) return smallRoster ? 'Top of your team' : `Top ${Math.max(1, 100 - pct)}% on your team`;
   if (pct >= 75) return 'Top quartile on your team';
   if (pct >= 50) return 'Above team average';
   if (pct >= 25) return 'Below team average';
-  return `Bottom ${Math.max(1, pct)}% on your team`;
+  return smallRoster ? 'Bottom of your team' : `Bottom ${Math.max(1, pct)}% on your team`;
 }
 
 /**

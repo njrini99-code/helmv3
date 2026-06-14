@@ -975,8 +975,8 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
                       {meta.shortLabel}
                     </p>
                     <span className="font-fw-sans text-caption text-text-tertiary">
-                      ~{meta.approximateHandicap > 0 ? '+' : ''}
-                      {meta.approximateHandicap} hcp
+                      ~{meta.approximateHandicap < 0 ? '+' : ''}
+                      {Math.abs(meta.approximateHandicap)} hcp
                     </span>
                   </div>
                   <p className="font-fw-sans text-caption text-text-tertiary">{meta.description}</p>

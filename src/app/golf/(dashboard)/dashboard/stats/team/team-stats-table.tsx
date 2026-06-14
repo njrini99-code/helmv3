@@ -436,8 +436,8 @@ export function TeamStatsTable({
                       : 'text-warm-700'
                   )}>
                     {player.handicap !== null
-                      ? player.handicap > 0
-                        ? `+${player.handicap.toFixed(1)}`
+                      ? player.handicap < 0
+                        ? `+${Math.abs(player.handicap).toFixed(1)}`
                         : player.handicap.toFixed(1)
                       : '—'}
                   </span>
