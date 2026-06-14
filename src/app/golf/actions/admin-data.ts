@@ -105,7 +105,15 @@ export async function checkAdminAccess(): Promise<{
     .select('role')
     .eq('id', user.id)
     .single();
-  if (userErr || userRow?.role !== 'admin') {
+  if (userErr) {
+    // A transient DB error is not an auth denial — re-throw so the caller
+    // surfaces it as a retriable error rather than a permanent session
+    // expiry. Collapsing it into `forbidden` would trip the client's
+    // /\bForbidden\b/ guard and tear the polling timer down for a real
+    // admin who just hit a Supabase hiccup.
+    throw userErr instanceof Error ? userErr : new Error(String(userErr));
+  }
+  if (userRow?.role !== 'admin') {
     return { allowed: false, reason: 'forbidden' };
   }
   return { allowed: true };
