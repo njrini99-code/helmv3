@@ -39,7 +39,7 @@ function StatCard({
       <p className="text-xs text-warm-500">{label}</p>
       {change !== undefined && change !== 0 && (
         <div className={`flex items-center justify-center gap-0.5 mt-1 text-xs ${
-          change > 0 ? 'text-green-600' : 'text-red-600'
+          change > 0 ? 'text-primary-600' : 'text-red-600'
         }`}>
           {change > 0 ? <IconTrendingUp size={12} /> : <IconTrendingDown size={12} />}
           <span>{change > 0 ? '+' : ''}{change}%</span>

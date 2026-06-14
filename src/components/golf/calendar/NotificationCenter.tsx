@@ -268,7 +268,7 @@ export function NotificationCenter() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
-      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-100/60 to-emerald-100/50 flex items-center justify-center mb-4">
+      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-100/60 to-primary-200/50 flex items-center justify-center mb-4">
         <IconBell size={22} className="text-primary-600/70" />
       </div>
       <p className="text-subhead font-medium text-warm-900">All caught up</p>

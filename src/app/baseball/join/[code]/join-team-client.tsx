@@ -26,9 +26,9 @@ function Confetti({ active }: { active: boolean }) {
 
   const generateConfetti = useCallback(() => {
     const colors = [
-      '#22c55e', // green-500
-      'var(--color-primary-600)', // green-600
-      '#4ade80', // green-400
+      '#22c55e', // primary-500
+      'var(--color-primary-600)', // primary-600
+      '#4ade80', // primary-400
       '#fbbf24', // amber-400
       '#f59e0b', // amber-500
       '#3b82f6', // blue-500
@@ -160,8 +160,8 @@ export function JoinTeamClient({
           <div className="max-w-lg w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 overflow-clip shadow-sm animate-in zoom-in-95 duration-300">
             <div className="p-12 text-center">
               {/* Success animation */}
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in-50 duration-500">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300 delay-200">
+              <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in-50 duration-500">
+                <div className="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300 delay-200">
                   <IconCheck size={32} className="text-white animate-in slide-in-from-bottom-2 duration-300 delay-300" />
                 </div>
               </div>
@@ -221,7 +221,7 @@ export function JoinTeamClient({
               team.teamType === 'college' && "bg-blue-100 text-blue-700",
               team.teamType === 'juco' && "bg-purple-100 text-purple-700",
               team.teamType === 'high_school' && "bg-amber-100 text-amber-700",
-              team.teamType === 'showcase' && "bg-green-100 text-green-700"
+              team.teamType === 'showcase' && "bg-primary-100 text-primary-700"
             )}>
               {team.teamType.replace('_', ' ').toUpperCase()} TEAM
             </span>

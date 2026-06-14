@@ -27,14 +27,14 @@ const HELM_GREEN = 'bg-primary-600';
 
 // Status ring gradients (more visible than dots)
 const statusRingStyles = {
-  online: 'bg-gradient-to-br from-emerald-400 to-emerald-600',
+  online: 'bg-gradient-to-br from-primary-400 to-primary-600',
   away: 'bg-gradient-to-br from-amber-400 to-amber-600',
   busy: 'bg-gradient-to-br from-rose-400 to-rose-600',
   offline: 'bg-warm-200',
 };
 
 const statusDotColors = {
-  online: 'bg-emerald-500',
+  online: 'bg-primary-500',
   away: 'bg-amber-500',
   busy: 'bg-rose-500',
   offline: 'bg-warm-300',

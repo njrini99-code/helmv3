@@ -256,7 +256,7 @@ export function PuttHeatmap({
                       {Math.round(hovered.distance_feet)} ft
                     </span>
                     <span
-                      className={hovered.made ? 'text-emerald-700' : 'text-rose-600'}
+                      className={hovered.made ? 'text-primary-700' : 'text-rose-600'}
                     >
                       {hovered.made ? 'Made' : 'Missed'}
                     </span>
@@ -270,7 +270,7 @@ export function PuttHeatmap({
               {/* Legend */}
               <div className="flex items-center gap-4 mt-3 px-1 text-eyebrow text-warm-500">
                 <span className="inline-flex items-center gap-1.5">
-                  <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" />
+                  <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-primary-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" />
                   Made
                 </span>
                 <span className="inline-flex items-center gap-1.5">
@@ -304,7 +304,7 @@ export function PuttHeatmap({
                         </span>
                         <div className="relative h-2 rounded-full bg-warm-100 overflow-hidden">
                           <m.div
-                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary-500 to-primary-400 rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${barWidth}%` }}
                             transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.7, delay: 0.25 + stagger(i), ease: EASE_CINEMATIC })}

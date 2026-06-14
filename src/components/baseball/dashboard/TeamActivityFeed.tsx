@@ -31,8 +31,8 @@ const activityConfig: Record<TeamActivity['type'], {
   },
   goal_completed: {
     icon: IconCheck,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
+    color: 'text-primary-600',
+    bgColor: 'bg-primary-50',
   },
   stats_uploaded: {
     icon: IconChart,

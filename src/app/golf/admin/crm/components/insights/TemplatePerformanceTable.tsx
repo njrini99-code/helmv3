@@ -24,12 +24,12 @@ function formatRate(rate: number | null): string {
 function rateBarColor(rate: number | null, kind: 'open' | 'click'): string {
   if (rate === null) return 'bg-warm-100';
   if (kind === 'open') {
-    if (rate >= 0.4) return 'bg-emerald-500';
+    if (rate >= 0.4) return 'bg-primary-500';
     if (rate >= 0.2) return 'bg-amber-400';
     return 'bg-red-400';
   }
   // click rates are typically much lower than open rates
-  if (rate >= 0.1) return 'bg-emerald-500';
+  if (rate >= 0.1) return 'bg-primary-500';
   if (rate >= 0.03) return 'bg-amber-400';
   return 'bg-red-400';
 }

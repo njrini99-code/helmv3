@@ -224,7 +224,7 @@ function severityDotColor(severity: string | null): string {
 
 function statusBadgeStyles(status: string): string {
   switch (status) {
-    case 'Improving': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'Improving': return 'bg-primary-50 text-primary-700 border-primary-200';
     case 'Needs Attention': return 'bg-amber-50 text-amber-700 border-amber-200';
     default: return 'bg-warm-50 text-warm-600 border-warm-200';
   }
@@ -233,7 +233,7 @@ function statusBadgeStyles(status: string): string {
 function focusAreaStatusBadge(status: string | null): string {
   switch (status) {
     case 'active': return 'bg-primary-50 text-primary-700 border-primary-200';
-    case 'completed': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    case 'completed': return 'bg-primary-50 text-primary-700 border-primary-200';
     case 'paused': return 'bg-warm-50 text-warm-600 border-warm-200';
     default: return 'bg-warm-50 text-warm-600 border-warm-200';
   }
@@ -566,7 +566,7 @@ export function PlayerInsightClient({
                         staggerIndex={2}
                         className={cn(
                           'text-body-lg font-medium tracking-[-0.005em] tabular-nums',
-                          trendSummary.streakType === 'positive' ? 'text-emerald-600' :
+                          trendSummary.streakType === 'positive' ? 'text-primary-600' :
                           trendSummary.streakType === 'negative' ? 'text-red-500' : 'text-warm-900',
                         )}
                       />
@@ -578,7 +578,7 @@ export function PlayerInsightClient({
                 {trendSummary.trend !== 'stable' && (
                   <div className={cn(
                     'mt-3 flex items-center gap-2 text-sm font-medium',
-                    trendSummary.trend === 'improving' ? 'text-emerald-600' : 'text-amber-600',
+                    trendSummary.trend === 'improving' ? 'text-primary-600' : 'text-amber-600',
                   )}>
                     <IconTrendingUp
                       size={16}
@@ -621,7 +621,7 @@ export function PlayerInsightClient({
                               'text-eyebrow font-medium tabular-nums flex-shrink-0 px-2 py-0.5 rounded-full',
                               pattern.stroke_impact < 0
                                 ? 'bg-rose-50/65 text-rose-700'
-                                : 'bg-emerald-50/65 text-emerald-700',
+                                : 'bg-primary-50/65 text-primary-700',
                             )}>
                               {pattern.stroke_impact > 0 ? '+' : ''}{pattern.stroke_impact.toFixed(1)}/rd
                             </span>
@@ -700,7 +700,7 @@ export function PlayerInsightClient({
                     className={cn(
                       'mb-3 text-xs rounded-lg px-3 py-2 border',
                       refreshNotice.tone === 'success'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        ? 'bg-primary-50 text-primary-700 border-primary-200'
                         : 'bg-red-50 text-red-700 border-red-200',
                     )}
                     role="status"
@@ -913,7 +913,7 @@ export function PlayerInsightClient({
                             {diff !== null && (
                               <p className={cn(
                                 'text-xs font-medium tabular-nums',
-                                diff <= 0 ? 'text-emerald-600' : diff <= 5 ? 'text-warm-500' : 'text-red-500',
+                                diff <= 0 ? 'text-primary-600' : diff <= 5 ? 'text-warm-500' : 'text-red-500',
                               )}>
                                 {diff === 0 ? 'E' : diff > 0 ? `+${diff}` : diff}
                               </p>

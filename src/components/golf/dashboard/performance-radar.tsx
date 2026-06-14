@@ -70,7 +70,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                     </h3>
                 </div>
                 <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mb-4">
                         <IconChartBar size={26} className="text-primary-600/70" />
                     </div>
                     <p className="text-subhead font-medium text-warm-900 mb-1.5">No strokes gained data</p>

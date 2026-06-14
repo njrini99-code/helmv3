@@ -196,7 +196,7 @@ const PlayerCardComponent = function PlayerCard({
               onClick={onWatchlist}
               label={isOnWatchlist ? 'Remove from watchlist' : 'Save to watchlist'}
               active={isOnWatchlist}
-              activeClass="text-emerald-600"
+              activeClass="text-primary-600"
             />
             <ActionButton icon={IconMessage} onClick={onMessage} label="Message player" />
           </div>
@@ -211,7 +211,7 @@ const PlayerCardComponent = function PlayerCard({
 
           <div onClick={handleClick} className="group cursor-pointer">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-lg text-warm-900 group-hover:text-emerald-600 transition-colors">
+              <h3 className="font-semibold text-lg text-warm-900 group-hover:text-primary-600 transition-colors">
                 {player.firstName} {player.lastName}
               </h3>
               {player.verified && <VerifiedBadge />}
@@ -312,7 +312,7 @@ const PlayerCardComponent = function PlayerCard({
           <div className="flex-1 min-w-0">
             <div onClick={handleClick} className="cursor-pointer">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-warm-900 group-hover:text-emerald-600 transition-colors truncate">
+                <h3 className="font-semibold text-warm-900 group-hover:text-primary-600 transition-colors truncate">
                   {player.firstName} {player.lastName}
                 </h3>
                 {player.verified && <VerifiedBadge />}
@@ -368,7 +368,7 @@ const PlayerCardComponent = function PlayerCard({
             onClick={onWatchlist}
             label={isOnWatchlist ? 'Remove from watchlist' : 'Save to watchlist'}
             active={isOnWatchlist}
-            activeClass="text-emerald-600"
+            activeClass="text-primary-600"
             size="sm"
           />
           <ActionButton icon={IconMessage} onClick={onMessage} label="Message player" size="sm" />
@@ -424,7 +424,7 @@ const PlayerAvatar = memo(function PlayerAvatar({
 
 const VerifiedBadge = memo(function VerifiedBadge() {
   return (
-    <div className="w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0" title="Verified Profile">
+    <div className="w-4 h-4 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0" title="Verified Profile">
       <IconCheck size={10} className="text-white" />
     </div>
   );

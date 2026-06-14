@@ -119,7 +119,7 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
           : 'text-nav-text-dim hover:bg-nav-surface/60 hover:text-nav-text',
       )}
     >
-      {/* Active left marker — nav-accent (green-400, reads on black). */}
+      {/* Active left marker — nav-accent (primary-400, reads on black). */}
       {active && (
         <span
           aria-hidden

@@ -244,11 +244,11 @@ export function PlayerProfileClient({
           ) : (
             <>
               {/* Premium gradient fallback */}
-              <div className="absolute inset-0 bg-gradient-to-br from-warm-900 via-primary-900 to-emerald-800" />
+              <div className="absolute inset-0 bg-gradient-to-br from-warm-900 via-primary-900 to-primary-800" />
               <div className="absolute inset-0 bg-[url('/patterns/topography.svg')] opacity-[0.07]" />
               {/* Accent glow effects */}
               <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/15 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-400/15 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </>
           )}
@@ -687,7 +687,7 @@ function OverviewTab({
         )}
 
         {/* Profile Activity */}
-        <div className="bg-gradient-to-br from-primary-500 to-emerald-600 rounded-2xl p-6 shadow-lg text-white">
+        <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-6 shadow-lg text-white">
           <h3 className="text-sm font-semibold uppercase tracking-wide mb-4 opacity-90">
             Profile Activity
           </h3>
@@ -959,7 +959,7 @@ function AchievementsTab({ achievements }: { achievements: PlayerAchievement[] }
 // Helper Components
 function MetricCard({ label, value, highlight }: { label: string; value: string; highlight?: 'green' | 'blue' | 'purple' }) {
   const highlightClasses = {
-    green: 'bg-gradient-to-br from-primary-50 to-emerald-50 border-primary-200',
+    green: 'bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200',
     blue: 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200',
     purple: 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200',
   };

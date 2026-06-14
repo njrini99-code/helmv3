@@ -294,7 +294,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-warm-800">Player Matching Results</h3>
                 {allMatched && (
-                  <span className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                  <span className="flex items-center gap-1.5 text-xs text-primary-600 font-medium">
                     <IconCheck size={14} />
                     All matched — stats saved!
                   </span>
@@ -309,11 +309,11 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
                   </p>
                   <div className="space-y-1.5">
                     {matched.map((m) => (
-                      <div key={m.csvName} className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
+                      <div key={m.csvName} className="flex items-center justify-between bg-primary-50 rounded-lg px-3 py-2">
                         <span className="text-xs text-warm-700 font-mono">{m.csvName}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-green-700 font-medium">{m.playerName}</span>
-                          <span className="text-eyebrow text-green-500 bg-green-100 px-1.5 py-0.5 rounded-full">
+                          <span className="text-xs text-primary-700 font-medium">{m.playerName}</span>
+                          <span className="text-eyebrow text-primary-500 bg-primary-100 px-1.5 py-0.5 rounded-full">
                             {Math.round(m.confidence * 100)}%
                           </span>
                         </div>

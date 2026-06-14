@@ -227,9 +227,9 @@ export function ShotAnalysisCard({
               </div>
             </div>
           ) : (
-            <div className="px-3 py-2 rounded-xl bg-emerald-50/60 border border-emerald-200/60">
-              <p className="text-xs font-medium text-emerald-700 mb-0.5">No dead zones</p>
-              <p className="text-xs text-emerald-600/80">
+            <div className="px-3 py-2 rounded-xl bg-primary-50/60 border border-primary-200/60">
+              <p className="text-xs font-medium text-primary-700 mb-0.5">No dead zones</p>
+              <p className="text-xs text-primary-600/80">
                 Yardage performance is consistent — no distance range is bleeding strokes.
               </p>
             </div>

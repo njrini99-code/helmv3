@@ -141,7 +141,7 @@ export function HoleShotPath({
       : scoreLabel === 'E'
         ? 'text-warm-700'
         : scoreLabel.startsWith('-') || ['Albatross', 'Eagle', 'Birdie'].includes(scoreLabel)
-          ? 'text-emerald-600'
+          ? 'text-primary-600'
           : 'text-rose-600';
 
   return (

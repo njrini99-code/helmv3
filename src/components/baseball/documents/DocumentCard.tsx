@@ -52,7 +52,7 @@ function getFileIcon(fileType: string | null, size = 20) {
   if (fileType === 'application/pdf') return <IconFileText size={size} className="text-red-500" />;
   if (fileType.startsWith('image/')) return <IconImage size={size} className="text-blue-500" />;
   if (fileType.includes('word') || fileType.includes('document')) return <IconFileText size={size} className="text-blue-600" />;
-  if (fileType.includes('sheet') || fileType.includes('excel') || fileType === 'text/csv') return <IconFileSpreadsheet size={size} className="text-emerald-500" />;
+  if (fileType.includes('sheet') || fileType.includes('excel') || fileType === 'text/csv') return <IconFileSpreadsheet size={size} className="text-primary-500" />;
   if (fileType.startsWith('video/')) return <IconVideo size={size} className="text-purple-500" />;
   if (fileType.startsWith('text/')) return <IconFileText size={size} className="text-warm-500" />;
   return <IconFile size={size} className="text-warm-400" />;
@@ -63,7 +63,7 @@ function getFileTypeColor(fileType: string | null): string {
   if (fileType === 'application/pdf') return 'bg-red-50 text-red-600';
   if (fileType.startsWith('image/')) return 'bg-blue-50 text-blue-600';
   if (fileType.includes('word') || fileType.includes('document')) return 'bg-blue-50 text-blue-700';
-  if (fileType.includes('sheet') || fileType.includes('excel')) return 'bg-emerald-50 text-emerald-600';
+  if (fileType.includes('sheet') || fileType.includes('excel')) return 'bg-primary-50 text-primary-600';
   if (fileType.startsWith('video/')) return 'bg-purple-50 text-purple-600';
   return 'bg-warm-50 text-warm-500';
 }
@@ -139,7 +139,7 @@ export function DocumentCard({
             : document.file_type?.includes('word')
             ? 'bg-blue-500'
             : document.file_type?.includes('sheet')
-            ? 'bg-emerald-400'
+            ? 'bg-primary-400'
             : document.file_type?.startsWith('video/')
             ? 'bg-purple-400'
             : 'bg-warm-300'

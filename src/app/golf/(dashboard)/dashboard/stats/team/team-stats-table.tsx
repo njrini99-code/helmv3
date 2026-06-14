@@ -549,7 +549,7 @@ function AiRatingCell({
   const rating = Math.round(value);
   const color =
     rating >= 80
-      ? 'text-emerald-600'
+      ? 'text-primary-600'
       : rating >= 60
         ? 'text-primary-600'
         : rating >= 40

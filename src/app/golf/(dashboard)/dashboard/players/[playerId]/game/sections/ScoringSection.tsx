@@ -55,7 +55,7 @@ function ParTypeBars({ bars }: { bars: Bar[] }) {
           const diff = Number.isFinite(par) ? bar.value - par : 0;
           const tone =
             diff <= 0.15
-              ? 'text-emerald-600 bg-emerald-50'
+              ? 'text-primary-600 bg-primary-50'
               : diff <= 0.4
                 ? 'text-amber-600 bg-amber-50'
                 : 'text-red-600 bg-red-50';

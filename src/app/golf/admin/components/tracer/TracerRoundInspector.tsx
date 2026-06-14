@@ -484,7 +484,7 @@ function RoundRow({
               {round.score_to_par != null && (
                 <span className={cn(
                   'ml-1 text-xs font-semibold',
-                  round.score_to_par > 0 ? 'text-red-500' : round.score_to_par < 0 ? 'text-green-600' : 'text-warm-400'
+                  round.score_to_par > 0 ? 'text-red-500' : round.score_to_par < 0 ? 'text-primary-600' : 'text-warm-400'
                 )}>
                   {round.score_to_par > 0 ? '+' : ''}{round.score_to_par}
                 </span>
@@ -520,7 +520,7 @@ function RoundRow({
               {issueCount}
             </span>
           ) : round.status === 'completed' ? (
-            <span className="inline-flex items-center gap-1 text-eyebrow font-semibold text-green-600">
+            <span className="inline-flex items-center gap-1 text-eyebrow font-semibold text-primary-600">
               <IconCheckCircle2 size={10} />
               Clear
             </span>
@@ -578,7 +578,7 @@ function RoundRow({
                         className={cn(
                           'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-eyebrow font-medium',
                           check.ok
-                            ? 'bg-green-50/70 text-green-700'
+                            ? 'bg-primary-50/70 text-primary-700'
                             : round.status === 'completed'
                               ? 'bg-red-50/70 text-red-600'
                               : 'bg-warm-100/50 text-warm-400'
@@ -603,7 +603,7 @@ function RoundRow({
                   <div className="space-y-1.5 mt-3">
                     <span className={cn(
                       'text-eyebrow font-semibold uppercase tracking-wider',
-                      round.errors.length > 0 ? 'text-red-500' : 'text-green-600'
+                      round.errors.length > 0 ? 'text-red-500' : 'text-primary-600'
                     )}>
                       {round.errors.length > 0 ? `Open tracer incidents (${round.errors.length})` : 'Open tracer incidents'}
                     </span>
@@ -612,7 +612,7 @@ function RoundRow({
                         <InlineError key={err.id} error={err} />
                       ))
                     ) : (
-                      <div className="flex items-center gap-2 rounded-lg bg-green-50/60 px-3 py-2 text-xs text-green-700">
+                      <div className="flex items-center gap-2 rounded-lg bg-primary-50/60 px-3 py-2 text-xs text-primary-700">
                         <IconCheckCircle2 size={12} className="flex-shrink-0" />
                         No open shot-tracking incidents are tied to this round right now.
                       </div>
@@ -651,7 +651,7 @@ function RoundRow({
 function StatusBadge({ status, stuck, currentHole, expectedHoles, updatedAt }: { status: string; stuck: boolean; currentHole?: number | null; expectedHoles?: number; updatedAt?: string | null }) {
   if (status === 'completed') {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-eyebrow font-semibold bg-green-50 text-green-700">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-eyebrow font-semibold bg-primary-50 text-primary-700">
         Submitted
       </span>
     );

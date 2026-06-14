@@ -69,9 +69,9 @@ const TYPE_COLORS: Record<TeamCardData['type'], { bg: string; text: string; bord
     border: 'border-amber-200',
   },
   juco: {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    border: 'border-emerald-200',
+    bg: 'bg-primary-50',
+    text: 'text-primary-700',
+    border: 'border-primary-200',
   },
 };
 

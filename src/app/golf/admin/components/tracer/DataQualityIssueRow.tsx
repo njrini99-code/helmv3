@@ -84,7 +84,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
               'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-eyebrow font-semibold transition-all flex-shrink-0',
               fixing
                 ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
-                : 'bg-green-50 text-green-700 hover:bg-green-100'
+                : 'bg-primary-50 text-primary-700 hover:bg-primary-100'
             )}
           >
             {fixing ? <IconLoader size={10} className="animate-spin" /> : <IconWrench size={10} />}

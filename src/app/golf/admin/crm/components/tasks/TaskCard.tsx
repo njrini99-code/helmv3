@@ -57,7 +57,7 @@ const KIND_LABEL: Record<TaskKind, string> = {
 const KIND_TONE: Record<TaskKind, string> = {
   general: 'bg-warm-100 text-warm-700 border-warm-200',
   follow_up: 'bg-blue-50 text-blue-700 border-blue-200',
-  call: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  call: 'bg-primary-50 text-primary-700 border-primary-200',
   demo: 'bg-purple-50 text-purple-700 border-purple-200',
   email: 'bg-sky-50 text-sky-700 border-sky-200',
   research: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -147,7 +147,7 @@ export function TaskCard({
             className={cn(
               'mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors',
               completed
-                ? 'bg-emerald-500 border-emerald-500 text-white'
+                ? 'bg-primary-500 border-primary-500 text-white'
                 : 'border-warm-300 hover:border-primary-500 hover:bg-primary-50',
             )}
           >
@@ -218,7 +218,7 @@ export function TaskCard({
             )}
 
             {completed && (
-              <span className="inline-flex items-center gap-1 text-eyebrow font-medium px-1.5 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+              <span className="inline-flex items-center gap-1 text-eyebrow font-medium px-1.5 py-0.5 rounded-full border bg-primary-50 text-primary-700 border-primary-200">
                 <IconCheckCheck size={9} /> Completed
               </span>
             )}
