@@ -23,6 +23,7 @@ import {
   type RecruitStatus,
 } from '@/app/golf/actions/recruiting';
 import { RECRUIT_STATUSES } from './RecruitStatusChip';
+import { RecruitDocuments } from './RecruitDocuments';
 import { Button, IconButton } from '@/components/ui/button';
 import {
   Drawer,
@@ -296,6 +297,9 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
               className={cn(INPUT_CLASS, 'resize-none')}
             />
           </FieldShell>
+
+          {/* Per-recruit documents (edit mode only — uploads need a saved recruit id) */}
+          {isEditing && recruit ? <RecruitDocuments recruitId={recruit.id} /> : null}
         </div>
 
         {/* Footer */}

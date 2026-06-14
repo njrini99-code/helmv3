@@ -34,6 +34,7 @@ import {
   type RecruitStatus,
 } from '@/app/golf/actions/recruiting';
 import { RECRUIT_STATUS_META } from './recruit-status';
+import { FairwayRecruitDocuments } from './FairwayRecruitDocuments';
 
 // Aligned to the server bound (recruiting.ts MIN/MAX_HS_CLASS = 2020–2040).
 // The legacy form used a tighter 2024–2032 window; per the redesign plan the
@@ -277,6 +278,13 @@ export function FairwayRecruitFormSheet({
             />
           </FormField>
         </Form>
+
+        {/* Per-recruit documents (edit mode only — uploads need a saved recruit id) */}
+        {isEditing && recruit ? (
+          <div className="mt-5">
+            <FairwayRecruitDocuments recruitId={recruit.id} />
+          </div>
+        ) : null}
       </Sheet.Body>
 
       <Sheet.Footer className="justify-between">
