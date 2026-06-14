@@ -8,17 +8,19 @@
  * full-screen, cinematic course chooser that replaces the plain TeePickerDrawer
  * list (flag-OFF still falls back to that list — see new-round-client.tsx).
  *
- * TWO STAGES, one sheet:
+ * TWO STAGES, one full-page surface (the picker IS the page, not an overlay):
  *   • Stage A — a dark warm-black "cockpit" header (the figure) over a cream
- *     canvas (the ground) carrying an image-forward COVERFLOW: a native
- *     scroll-snap track of featured CourseCards where the centered card is
+ *     canvas (the ground) carrying THREE labelled feeds, ONE image-forward
+ *     COVERFLOW carousel each: "Recently played", "Team courses", and the full
+ *     "Course library" (which ends in a dashed "Add a course" tile). Searching
+ *     collapses to a single results carousel. Each coverflow is a native
+ *     scroll-snap track of featured CourseCards where the centred card is
  *     full-size/opacity and its neighbours scale down, dim, and tilt by their
  *     distance from centre. The coverflow transforms are written IMPERATIVELY
  *     (one rAF per scroll frame) to each slide's inner element — deliberately
  *     NOT via framer-motion useScroll/useTransform, which require the scroll
  *     container ref to be hydrated at hook-call time and crash under concurrent
- *     React when the track is conditionally rendered. The final slide is a
- *     dashed "Add a course" tile.
+ *     React when the track is conditionally rendered (React #310).
  *   • Stage B — choose a tee at the picked course. Reuses TeePickRow/SkeletonRows
  *     from TeePickerDrawer (single source of truth for that row), then returns
  *     the tee's TeeRoundDefaults via onPick so the round form pre-fills pars/
@@ -48,7 +50,8 @@ import { CourseFormDrawer } from '@/components/golf/courses/CourseFormDrawer';
 import { TeeFormDrawer } from '@/components/golf/courses/TeeFormDrawer';
 import { TeePickRow, SkeletonRows } from '@/components/golf/courses/TeePickerDrawer';
 import {
-  listCourses, getCourseDetail, getTeeRoundDefaults, type TeeRoundDefaults,
+  listCourses, getRecentlyPlayedCourses, getTeamSavedCourses,
+  getCourseDetail, getTeeRoundDefaults, type TeeRoundDefaults,
 } from '@/app/golf/actions/course-library';
 import { normalizeName } from '@/lib/golf/course-library';
 import type { GolfCourse, GolfCourseTee } from '@/lib/types/golf-course';
@@ -74,7 +77,9 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   const reduceMotion = !!useReducedMotion();
 
   const [stage, setStage] = useState<Stage>('courses');
-  const [courses, setCourses] = useState<GolfCourse[]>([]);
+  const [courses, setCourses] = useState<GolfCourse[]>([]);     // full shared library
+  const [recent, setRecent] = useState<GolfCourse[]>([]);       // this player's recently played
+  const [team, setTeam] = useState<GolfCourse[]>([]);           // the team's saved courses
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -89,9 +94,18 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   const refreshCourses = useCallback(async (): Promise<GolfCourse[]> => {
     setLoadingCourses(true);
     try {
-      const next = await listCourses({ limit: 200 });
-      setCourses(next);
-      return next;
+      // Three independent feeds, one carousel each. Recent/team are best-effort:
+      // a player with no cloud-linked rounds or no saved team courses just sees
+      // those sections hidden — the library always renders.
+      const [lib, rec, tm] = await Promise.all([
+        listCourses({ limit: 200 }),
+        getRecentlyPlayedCourses(12).catch(() => [] as GolfCourse[]),
+        getTeamSavedCourses().then((rows) => rows.map((r) => r.course)).catch(() => [] as GolfCourse[]),
+      ]);
+      setCourses(lib);
+      setRecent(rec);
+      setTeam(tm);
+      return lib;
     } catch {
       showToastRef.current('Could not load the course library', 'error');
       return [];
@@ -270,12 +284,14 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
                   {stage === 'courses'
                     ? <CoursesStage
                         loading={loadingCourses}
-                        courses={courses}
+                        library={courses}
+                        recent={recent}
+                        team={team}
                         filtered={filtered}
                         query={query}
                         reduceMotion={reduceMotion}
                         onSelect={(id) => {
-                          const c = courses.find((x) => x.id === id);
+                          const c = [...courses, ...recent, ...team].find((x) => x.id === id);
                           if (c) void selectCourse(c);
                         }}
                         onCreate={() => setCreateCourseOpen(true)}
@@ -317,7 +333,7 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
   );
 }
 
-// ── Stage A: the cinematic coverflow (imperative, hooks-safe) ────────────────
+// ── Stage A: sectioned cinematic coverflows (imperative, hooks-safe) ─────────
 
 // Premium falloff (centre → neighbour). Eased (centre plateau); flat scale +
 // opacity + a SUBTLE 3D tilt keeps neighbour photos legible.
@@ -326,16 +342,134 @@ const CF_OPACITY_DROP = 0.34; // centre 1.00 → far 0.66 (neighbours stay legib
 const CF_ROTATE = 9;          // deg tilt at the falloff edge (gentler)
 const CF_REACH = 0.9;         // fraction of track width the falloff spans
 
+/**
+ * Stage A — the "choose a course" screen. Three independent feeds, ONE coverflow
+ * carousel each: Recently played, Team courses, and the full Course library
+ * (which carries the "Add a course" tile). Searching collapses to a single
+ * results carousel across the whole library.
+ */
 function CoursesStage({
-  loading, courses, filtered, query, reduceMotion, onSelect, onCreate,
+  loading, library, recent, team, filtered, query, reduceMotion, onSelect, onCreate,
 }: {
   loading: boolean;
-  courses: GolfCourse[];
+  library: GolfCourse[];
+  recent: GolfCourse[];
+  team: GolfCourse[];
   filtered: GolfCourse[];
   query: string;
   reduceMotion: boolean;
   onSelect: (courseId: string) => void;
   onCreate: () => void;
+}) {
+  if (loading) {
+    return (
+      <div className="flex gap-4 overflow-hidden px-[6vw] py-3 sm:px-[16%]">
+        {[0, 1].map((i) => (
+          <div
+            key={i}
+            className="aspect-[16/10] w-[88vw] flex-shrink-0 animate-pulse rounded-fw-lg bg-surface-sunken sm:aspect-[2/1] sm:w-full"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  const q = query.trim();
+
+  // Search mode — one results carousel across the whole library.
+  if (q) {
+    if (filtered.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+          <p className="font-fw-sans text-body text-text-secondary">
+            No courses match “{q}”.
+          </p>
+          <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
+            Add it to the shared library so it’s there next time.
+          </p>
+          <Button variant="primary" className="mt-5" onClick={onCreate}>
+            <IconPlus size={16} aria-hidden /> Add “{q}”
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <CourseCarousel
+        courses={filtered}
+        reduceMotion={reduceMotion}
+        onSelect={onSelect}
+        regionLabel={`Search results for ${q}`}
+        withCreateTile
+        onCreate={onCreate}
+      />
+    );
+  }
+
+  if (library.length === 0 && recent.length === 0 && team.length === 0) {
+    return <EmptyCourses onCreate={onCreate} />;
+  }
+
+  // Browse mode — a labelled coverflow per feed.
+  return (
+    <div className="flex flex-col gap-7">
+      {recent.length > 0 && (
+        <CourseSection label="Recently played" count={recent.length}>
+          <CourseCarousel courses={recent} reduceMotion={reduceMotion} onSelect={onSelect} regionLabel="Recently played courses" />
+        </CourseSection>
+      )}
+      {team.length > 0 && (
+        <CourseSection label="Team courses" count={team.length}>
+          <CourseCarousel courses={team} reduceMotion={reduceMotion} onSelect={onSelect} regionLabel="Team courses" />
+        </CourseSection>
+      )}
+      <CourseSection label="Course library" count={library.length}>
+        <CourseCarousel
+          courses={library}
+          reduceMotion={reduceMotion}
+          onSelect={onSelect}
+          regionLabel="Course library"
+          withCreateTile
+          onCreate={onCreate}
+        />
+      </CourseSection>
+    </div>
+  );
+}
+
+/** Eyebrow label + count above a carousel; aligned to the centred card column. */
+function CourseSection({ label, count, children }: { label: string; count: number; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col">
+      <div className="mb-1 flex items-baseline justify-between px-[6vw] sm:px-[16%]">
+        <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-secondary">
+          {label}
+        </h2>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          {count} {count === 1 ? 'course' : 'courses'}
+        </span>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * One horizontal coverflow carousel: featured cards on a centred scroll-snap
+ * track, scaled/dimmed/tilted by distance from centre — written IMPERATIVELY
+ * (one rAF per scroll frame), deliberately NOT framer useScroll/useTransform
+ * (those need the container ref hydrated at hook-call time and crashed prod with
+ * React #310). Every hook runs unconditionally before any early return; the
+ * whole thing is reduced-motion gated.
+ */
+function CourseCarousel({
+  courses, reduceMotion, onSelect, regionLabel, withCreateTile = false, onCreate,
+}: {
+  courses: GolfCourse[];
+  reduceMotion: boolean;
+  onSelect: (courseId: string) => void;
+  regionLabel: string;
+  withCreateTile?: boolean;
+  onCreate?: () => void;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<Array<HTMLDivElement | null>>([]);
@@ -393,7 +527,7 @@ function CoursesStage({
   // full-size flash) and whenever the result set changes.
   useLayoutEffect(() => {
     paint();
-  }, [paint, filtered.length, loading]);
+  }, [paint, courses.length, withCreateTile]);
 
   useEffect(() => {
     const onResize = () => paint();
@@ -421,44 +555,11 @@ function CoursesStage({
           transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] as const, delay: Math.min(i, 4) * 0.03 },
         };
 
-  if (loading) {
-    return (
-      <div className="flex gap-4 overflow-hidden px-[6vw] py-3 sm:px-[16%]">
-        {[0, 1].map((i) => (
-          <div
-            key={i}
-            className="aspect-[16/10] w-[88vw] flex-shrink-0 animate-pulse rounded-fw-lg bg-surface-sunken sm:aspect-[2/1] sm:w-full"
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (courses.length === 0) {
-    return <EmptyCourses onCreate={onCreate} />;
-  }
-
-  if (filtered.length === 0) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-        <p className="font-fw-sans text-body text-text-secondary">
-          No courses match “{query.trim()}”.
-        </p>
-        <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
-          Add it to the shared library so it’s there next time.
-        </p>
-        <Button variant="primary" className="mt-5" onClick={onCreate}>
-          <IconPlus size={16} aria-hidden /> Add “{query.trim()}”
-        </Button>
-      </div>
-    );
-  }
-
-  const count = filtered.length + 1; // + the "add a course" tile
+  const count = courses.length + (withCreateTile ? 1 : 0);
   slideRefs.current = []; // repopulated by the ref callbacks below this render
 
   return (
-    <div className="relative flex flex-1 flex-col justify-center">
+    <div className="relative">
       <CarouselArrow side="left" show={canLeft} onClick={() => scrollByCards(-1)} />
       <CarouselArrow side="right" show={canRight} onClick={() => scrollByCards(1)} />
 
@@ -469,7 +570,7 @@ function CoursesStage({
         tabIndex={0}
         role="region"
         aria-roledescription="carousel"
-        aria-label="Course library"
+        aria-label={regionLabel}
         className={cn(
           'flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto overscroll-x-contain scroll-smooth',
           'px-[6vw] py-3 sm:px-[16%]',
@@ -478,7 +579,7 @@ function CoursesStage({
           'motion-reduce:scroll-auto',
         )}
       >
-        {filtered.map((course, i) => (
+        {courses.map((course, i) => (
           <m.div
             key={course.id}
             {...enter(i)}
@@ -496,27 +597,29 @@ function CoursesStage({
           </m.div>
         ))}
 
-        {/* Final slide — add a new course. */}
-        <m.div
-          key="__create"
-          {...enter(filtered.length)}
-          role="group"
-          aria-roledescription="slide"
-          aria-label={`Add a course, ${count} of ${count}`}
-          className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
-        >
-          <div
-            ref={(el) => { slideRefs.current[filtered.length] = el; }}
-            className="origin-center will-change-transform [transform-style:preserve-3d]"
+        {/* Final slide — add a new course (library carousel only). */}
+        {withCreateTile && onCreate && (
+          <m.div
+            key="__create"
+            {...enter(courses.length)}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`Add a course, ${count} of ${count}`}
+            className="snap-always shrink-0 basis-[88vw] snap-center sm:basis-[clamp(420px,68%,560px)]"
           >
-            <CreateCourseTile onClick={onCreate} />
-          </div>
-        </m.div>
+            <div
+              ref={(el) => { slideRefs.current[courses.length] = el; }}
+              className="origin-center will-change-transform [transform-style:preserve-3d]"
+            >
+              <CreateCourseTile onClick={onCreate} />
+            </div>
+          </m.div>
+        )}
       </div>
 
-      {/* Scroll affordance: a slim progress rail + count. */}
-      <div className="mt-3 flex flex-col items-center gap-2">
-        {scrollable && (
+      {/* Scroll affordance: a slim progress rail (only when there's overflow). */}
+      {scrollable && (
+        <div className="mt-3 flex justify-center">
           <div className="h-1 w-24 overflow-hidden rounded-full bg-border-subtle">
             <div
               ref={progressRef}
@@ -525,11 +628,8 @@ function CoursesStage({
               style={{ transform: 'scaleX(0.08)' }}
             />
           </div>
-        )}
-        <p className="font-fw-sans text-caption text-text-tertiary">
-          {scrollable ? 'Swipe to browse · ' : ''}{filtered.length} {filtered.length === 1 ? 'course' : 'courses'}
-        </p>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
