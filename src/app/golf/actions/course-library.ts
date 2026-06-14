@@ -343,10 +343,27 @@ export async function getTeamSavedCourses(): Promise<GolfTeamSavedCourseWithCour
   const supabase = await createClient();
   const ctx = await getCoachTeam(supabase);
   if ('error' in ctx) {
-    // Players can still READ the team library (RLS allows team players to select).
-    const actor = await getActor(supabase);
-    if (!actor?.teamId) return [];
-    return loadTeamSaved(supabase, actor.teamId);
+    // Not a coach — resolve the PLAYER's active team so players (the picker's
+    // primary users) see their team's saved library too. getActor() only
+    // resolves a team for coaches, so look the player up via golf_team_members
+    // here (mirrors getPlayerTeamId in golf.ts). RLS still lets a team's players
+    // SELECT its saved courses.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!player) return [];
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', player.id)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (!membership?.team_id) return [];
+    return loadTeamSaved(supabase, membership.team_id as string);
   }
   return loadTeamSaved(supabase, ctx.teamId);
 }
