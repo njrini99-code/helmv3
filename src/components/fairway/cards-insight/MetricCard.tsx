@@ -96,6 +96,11 @@ export interface MetricCardProps
   empty?: boolean;
   /** Message shown in the empty state. Default "Not enough data yet". */
   emptyMessage?: string;
+  /**
+   * Value-face tone. `'accent'` (default) paints the figure in the brand green
+   * so KPI cards read as a cohesive scoreboard; `'neutral'` keeps the dark ink.
+   */
+  tone?: 'accent' | 'neutral';
 }
 
 /* -- delta helpers ---------------------------------------------------------- */
@@ -145,6 +150,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       loading = false,
       empty = false,
       emptyMessage = 'Not enough data yet',
+      tone = 'accent',
       className,
       ...rest
     },
@@ -249,7 +255,15 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
                 // canonical scale: display (40px) for the lead metric, h1 (32px) otherwise
                 isHero ? 'text-display' : 'text-h1',
               )}
-              style={{ fontFeatureSettings: '"tnum" 1, "lnum" 1' }}
+              // The brand-green value face is applied via inline style, NOT a
+              // `text-accent-700` class: tailwind-merge conflates our custom
+              // `text-h1`/`text-display` size utilities with `text-*` color
+              // utilities and would strip the color. Inline style also reliably
+              // reaches NumberFlow's shadow-DOM digits (which inherit `color`).
+              style={{
+                fontFeatureSettings: '"tnum" 1, "lnum" 1',
+                ...(tone === 'accent' ? { color: 'var(--fw-color-accent-700)' } : null),
+              }}
             >
               <NumberFlow
                 value={value}
