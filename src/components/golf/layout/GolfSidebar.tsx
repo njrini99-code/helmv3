@@ -79,7 +79,6 @@ const playerNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
   { name: 'CoachHelm AI', href: '/golf/dashboard/coachhelm', icon: IconSparkles },
   { name: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
-  { name: 'My Development', href: '/golf/dashboard/my-development', icon: IconTarget },
   { name: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
   { name: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
   { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMessage },
