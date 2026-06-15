@@ -61,7 +61,6 @@ import {
   IconFileText,
   IconClipboardList,
   IconUserPlus,
-  IconTarget,
   IconFlag,
   IconTrophy,
   IconLayoutGrid,

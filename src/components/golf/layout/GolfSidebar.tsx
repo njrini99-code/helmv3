@@ -27,7 +27,6 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconTrophy,
-  IconTarget,
   IconSparkles,
   IconUserPlus,
   IconLayoutGrid,
