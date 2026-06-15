@@ -115,6 +115,8 @@
     "lucide-react": "^0.562.0",
     "mapbox-gl": "^3.24.0",
     "next": "^16.0.10",
+    "posthog-js": "^1.257.0",
+    "posthog-node": "^4.18.0",
     "postcss": "^8.5.15",
     "postgres": "^3.4.9",
     "react": "^19.2.7",

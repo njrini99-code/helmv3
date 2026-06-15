@@ -18,6 +18,7 @@ import { GlobalErrorHandlerSetup } from '@/components/providers/GlobalErrorHandl
 import { CapacitorProvider } from '@/components/providers/CapacitorProvider';
 import { StaleDeploymentRecoveryScript } from '@/components/providers/StaleDeploymentRecoveryScript';
 import { VercelAnalyticsProvider } from '@/components/providers/VercelAnalyticsProvider';
+import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const playfair = Playfair_Display({
@@ -113,6 +114,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </DatadogProvider>
         <Toaster />
         <VercelAnalyticsProvider />
+        <PostHogProvider />
         <AdminErrorHandler />
         <ChunkLoadErrorHandler />
         <GlobalErrorHandlerSetup />
