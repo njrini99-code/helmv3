@@ -59,11 +59,12 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   // calls out: "Today's calls", "Log a round" — keep as static commands
   // because they're contextless jumps, no DB lookup needed).
   const coachQuickActions: CommandItemSpec[] = [
-    { id: 'todays-calls', label: "Today's Calls", description: 'Open the CoachHelm command center', icon: <IconSparkles size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'today', 'priority', 'commandcenter', 'coachhelm'] },
-    { id: 'intelligence', label: 'CoachHelm AI', description: 'Intelligence hub', icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview'] },
-    { id: 'alerts', label: 'Alerts', description: 'Priority coaching alerts', icon: <IconBell size={18} />, href: '/golf/dashboard/alerts', keywords: ['alerts', 'notifications', 'priority', 'attention'] },
-    { id: 'insights', label: 'Insights', description: 'Coach insight feed', icon: <IconSparkles size={18} />, href: '/golf/dashboard/insights', keywords: ['insights', 'feed', 'recommendations', 'coachhelm'] },
-    { id: 'patterns', label: 'Open Patterns', description: 'Cross-round shot patterns', icon: <IconAlertCircle size={18} />, href: '/golf/dashboard/patterns', keywords: ['patterns', 'mining', 'evidence'] },
+    // CoachHelm cluster — ONE palette entry per consolidated sub-nav tab (Brief /
+    // Signals) instead of repeating a single tab's member routes. The member
+    // routes stay searchable via keywords ("today's calls", "patterns",
+    // "insights" all resolve to their tab) so nothing becomes unreachable.
+    { id: 'intelligence', label: 'CoachHelm AI', description: "Brief — today's calls & command center", icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview', 'brief', 'today', "today's calls", 'calls', 'priority', 'commandcenter', 'command center'] },
+    { id: 'signals', label: 'CoachHelm Signals', description: 'Alerts, insights & patterns', icon: <IconBell size={18} />, href: '/golf/dashboard/alerts', keywords: ['signals', 'alerts', 'notifications', 'priority', 'attention', 'insights', 'feed', 'recommendations', 'patterns', 'mining', 'evidence', 'triage', 'coachhelm'] },
     { id: 'coachhelm-analytics', label: 'CoachHelm Analytics', description: 'Insight effectiveness', icon: <IconGauge size={18} />, href: '/golf/dashboard/analytics/coachhelm', keywords: ['analytics', 'effectiveness', 'coachhelm', 'metrics'] },
     { id: 'coachhelm-chat', label: 'CoachHelm Chat', description: 'Chat history', icon: <IconBot size={18} />, href: '/golf/dashboard/coachhelm/chat', keywords: ['chat', 'conversation', 'coachhelm', 'history', 'ask'] },
     { id: 'genome-compare', label: 'Genome Compare', description: 'Compare player genomes', icon: <IconChartRadar size={18} />, href: '/golf/dashboard/coachhelm/genome/compare', keywords: ['genome', 'compare', 'radar', 'persona', 'profile'] },

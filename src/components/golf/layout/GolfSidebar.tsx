@@ -71,7 +71,6 @@ const coachSecondaryNav: NavItem[] = [
   { name: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
   { name: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
   { name: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
-  { name: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
   { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },];
 
 // Player primary nav — 7 daily-use destinations
