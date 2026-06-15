@@ -263,7 +263,10 @@ export function StatsIntelligenceStrip({
               Top insight
             </p>
             <Link
-              href="/golf/dashboard/coachhelm"
+              // Audience-aware: /coachhelm is the PLAYER front door (it shows
+              // coaches a "Player Dashboard Only" dead-end). Coaches go to the
+              // Brief (/intelligence), the coach CoachHelm home.
+              href={audience === 'coach' ? '/golf/dashboard/intelligence' : '/golf/dashboard/coachhelm'}
               className="inline-flex items-center gap-0.5 text-[11px] font-medium text-primary-600 hover:text-primary-700"
             >
               View all in CoachHelm

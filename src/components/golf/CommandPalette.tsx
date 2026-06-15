@@ -59,7 +59,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   // calls out: "Today's calls", "Log a round" — keep as static commands
   // because they're contextless jumps, no DB lookup needed).
   const coachQuickActions: CommandItemSpec[] = [
-    { id: 'todays-calls', label: "Today's Calls", description: 'Open the CoachHelm command center', icon: <IconSparkles size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'today', 'priority', 'commandcenter', 'coachhelm'] },
+    { id: 'todays-calls', label: "Today's Calls", description: 'Open the CoachHelm command center', icon: <IconSparkles size={18} />, href: '/golf/dashboard/intelligence', keywords: ['ai', 'insights', 'today', 'priority', 'commandcenter', 'coachhelm'] },
     { id: 'intelligence', label: 'CoachHelm AI', description: 'Intelligence hub', icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview'] },
     { id: 'alerts', label: 'Alerts', description: 'Priority coaching alerts', icon: <IconBell size={18} />, href: '/golf/dashboard/alerts', keywords: ['alerts', 'notifications', 'priority', 'attention'] },
     { id: 'insights', label: 'Insights', description: 'Coach insight feed', icon: <IconSparkles size={18} />, href: '/golf/dashboard/insights', keywords: ['insights', 'feed', 'recommendations', 'coachhelm'] },

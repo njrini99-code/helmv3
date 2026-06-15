@@ -126,7 +126,6 @@ function buildNavSections(role: Role, messages: number, coachhelm: number): NavS
           { label: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
           { label: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
           { label: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
-          { label: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
           { label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
         ],
       },
