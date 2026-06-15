@@ -250,6 +250,14 @@ function ApproachBody({ stats }: { stats: GolfStats }) {
         <StatRow label="Proximity 175-200 yds" value={fmtFeet(stats.approachProx175_200)} />
       </div>
 
+      {/* Lie-AGNOSTIC — overall GIR across every lie (there is no per-lie GIR by
+          distance in GolfStats), so it sits ABOVE the lie filter. The pills
+          below do not change this board. */}
+      <BreakdownGrid title="GIR by approach distance" rows={girByDistance} columns={4} />
+
+      {/* BY LIE — the pills govern ONLY the cards below (GIR/proximity from the
+          selected lie + efficiency by distance from it); both retitle and
+          re-value on every pill tap. */}
       <div className="flex flex-wrap gap-2 px-1" aria-label="Approach lie filter">
         <ToggleChip active={selectedLie === 'fairway'} value="fairway" label="Fairway" onSelect={setSelectedLie} />
         <ToggleChip active={selectedLie === 'rough'} value="rough" label="Rough" onSelect={setSelectedLie} />
@@ -257,7 +265,6 @@ function ApproachBody({ stats }: { stats: GolfStats }) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <BreakdownGrid title="GIR by approach distance" rows={girByDistance} columns={4} />
         <BreakdownGrid title={`${lieLabel} lie`} rows={lieRows[selectedLie]} />
         <BreakdownGrid
           title={`Efficiency from ${selectedLie}`}
