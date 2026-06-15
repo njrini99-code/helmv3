@@ -22,6 +22,21 @@ fi
 cd "$CI_PRIMARY_REPOSITORY_PATH"
 echo "cwd: $(pwd)"
 
+# --- THE FIX for "a resolved file is required when automatic dependency
+# resolution is disabled" (root cause of every prior Xcode Cloud SPM failure) ---
+# Xcode Cloud turns ON IDEPackageOnlyUseVersionsFromResolvedFile by default, which
+# forbids SwiftPM from resolving ANY dependency that isn't already pinned in the
+# committed Package.resolved. But `cap sync` (phase 5) rewrites
+# CapApp-SPM/Package.swift every build, drifting the resolved file's originHash —
+# so the resolver MUST run to re-pin it. With the lock on, both the regenerate in
+# phase 6 AND Xcode Cloud's own build-step resolution hard-fail. Turn it OFF here
+# (persists in the user domain for the rest of this build, including the Archive
+# step). Ref: swiftlang/swift-package-manager#6914.
+PHASE="enable-spm-resolution"
+echo "=== [1b] Enable automatic SwiftPM resolution (Xcode Cloud disables it) ==="
+defaults write com.apple.dt.Xcode IDEPackageOnlyUseVersionsFromResolvedFile -bool NO || true
+defaults write com.apple.dt.Xcode IDEDisableAutomaticPackageResolution -bool NO || true
+
 PHASE="node-install"
 echo "=== [2/6] Node.js ==="
 export HOMEBREW_NO_AUTO_UPDATE=1
