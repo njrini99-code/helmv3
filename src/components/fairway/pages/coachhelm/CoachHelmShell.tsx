@@ -90,6 +90,7 @@ const DEFAULT_TITLE: Record<CoachHelmTab, string> = {
   brief: 'Team Brief',
   signals: 'Signals',
   players: 'Players',
+  standing: 'Standing',
   effectiveness: 'Effectiveness',
   ask: 'Ask CoachHelm',
 };
