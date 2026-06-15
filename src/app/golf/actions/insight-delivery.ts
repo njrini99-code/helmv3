@@ -733,9 +733,13 @@ async function fetchShotDriversByCategory(
 
     return buildShotDrivers(shots as unknown as ShotDriverInput[]);
   } catch (err) {
+    // Best-effort enrichment — the page renders fine without shot drivers, so a
+    // handled failure here (e.g. statement timeout) is a warning, not a paging
+    // error. Captured as a non-exception message via the 'warning' severity.
     void logServerError(
       `fetchShotDriversByCategory failed (continuing without shot drivers): ${err instanceof Error ? err.message : String(err)}`,
       { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId },
+      'warning',
     ).catch(() => undefined);
     return undefined;
   }
@@ -780,9 +784,12 @@ async function fetchSgTrendsByCategory(
     // Empty map (no category cleared the min-window guard) → pass nothing.
     return Object.keys(trends).length > 0 ? trends : undefined;
   } catch (err) {
+    // Best-effort — themes render without trends, so a handled failure is a
+    // warning, not a paging error.
     void logServerError(
       `fetchSgTrendsByCategory failed (continuing without trends): ${err instanceof Error ? err.message : String(err)}`,
       { action: 'insight-delivery.fetchSgTrendsByCategory', featureArea: 'insights', playerId },
+      'warning',
     ).catch(() => undefined);
     return undefined;
   }
@@ -859,9 +866,12 @@ async function assembleForPlayer(
       short_game: num(sgRow?.sg_around_green_per_round),
     };
   } catch (sgErr) {
+    // Best-effort — themes render without SG, so a handled failure is a
+    // warning, not a paging error.
     void logServerError(
       `assembleForPlayer SG fetch failed (continuing): ${sgErr instanceof Error ? sgErr.message : String(sgErr)}`,
       { action: 'insight-delivery.assembleForPlayer', featureArea: 'insights', playerId },
+      'warning',
     ).catch(() => undefined);
     sgByCategory = {};
   }
