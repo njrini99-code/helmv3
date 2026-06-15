@@ -99,6 +99,7 @@ export function SequenceCard({
       </div>
 
       {/* Actions */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click when interacting with action buttons */}
       <div
         className="flex items-center gap-1 flex-shrink-0"
         onClick={(e) => e.stopPropagation()}

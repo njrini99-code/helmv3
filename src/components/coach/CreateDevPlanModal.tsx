@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button, IconButton } from '@/components/ui/button';
@@ -37,6 +37,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
   const { coach } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const uid = useId();
   const [players, setPlayers] = useState<RosterPlayer[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
@@ -178,9 +179,9 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Player Selection */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <p className="block text-sm font-medium text-warm-700 mb-2">
               Select Player *
-            </label>
+            </p>
             {loadingPlayers ? (
               <div className="text-sm leading-relaxed text-warm-500">Loading roster...</div>
             ) : players.length === 0 ? (
@@ -221,10 +222,11 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
 
           {/* Plan Details */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1">
+            <label htmlFor={`${uid}-title`} className="block text-sm font-medium text-warm-700 mb-1">
               Plan Title *
             </label>
             <input
+              id={`${uid}-title`}
               type="text"
               required
               value={formData.title}
@@ -235,10 +237,11 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1">
+            <label htmlFor={`${uid}-desc`} className="block text-sm font-medium text-warm-700 mb-1">
               Description
             </label>
             <textarea
+              id={`${uid}-desc`}
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
               rows={2}
@@ -249,10 +252,11 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">
+              <label htmlFor={`${uid}-start`} className="block text-sm font-medium text-warm-700 mb-1">
                 Start Date
               </label>
               <input
+                id={`${uid}-start`}
                 type="date"
                 value={formData.start_date}
                 onChange={e => setFormData({ ...formData, start_date: e.target.value })}
@@ -260,10 +264,11 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">
+              <label htmlFor={`${uid}-end`} className="block text-sm font-medium text-warm-700 mb-1">
                 End Date
               </label>
               <input
+                id={`${uid}-end`}
                 type="date"
                 value={formData.end_date}
                 onChange={e => setFormData({ ...formData, end_date: e.target.value })}
@@ -275,9 +280,9 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
           {/* Goals */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-warm-700">
+              <p className="block text-sm font-medium text-warm-700">
                 Goals
-              </label>
+              </p>
               <Button type="button" variant="ghost" size="sm" onClick={addGoal}>
                 <IconPlus size={14} className="mr-1" />
                 Add Goal

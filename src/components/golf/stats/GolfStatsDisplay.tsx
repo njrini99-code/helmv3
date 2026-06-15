@@ -177,8 +177,8 @@ export default function GolfStatsDisplay({
               <motion.button onClick={() => setShowFilters(!showFilters)} className={`p-2.5 rounded-lg border transition-colors ${showFilters ? 'bg-primary-50 border-primary-200 text-primary-600' : 'bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600'}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} title="Filter options"><IconFilter size={18} /></motion.button>
               {onRoundChange && rounds.length > 0 && (
                 <motion.div className="flex-1 min-w-[100px] sm:min-w-[200px] max-w-[200px] sm:max-w-none" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 })}>
-                  <label className="hidden sm:block text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5">View Stats</label>
-                  <select value={selectedRoundId} onChange={(e) => onRoundChange(e.target.value as string | 'overall')} className="w-full px-2 sm:px-3 py-2 rounded-lg border border-warm-200 text-xs sm:text-sm font-medium text-warm-700 bg-white hover:border-primary-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-colors">
+                  <label htmlFor="stats-round-select" className="hidden sm:block text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5">View Stats</label>
+                  <select id="stats-round-select" value={selectedRoundId} onChange={(e) => onRoundChange(e.target.value as string | 'overall')} className="w-full px-2 sm:px-3 py-2 rounded-lg border border-warm-200 text-xs sm:text-sm font-medium text-warm-700 bg-white hover:border-primary-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-colors">
                     <option value="overall">Overall</option>
                     <optgroup label="Individual Rounds">
                       {rounds.map(round => <option key={round.id} value={round.id}>{formatRoundDate(round.round_date)} • {round.course_name} ({round.total_score})</option>)}
@@ -209,7 +209,7 @@ export default function GolfStatsDisplay({
                 </div>
                 {filterOptions && filterOptions.courses.length > 0 && (
                   <div className="relative">
-                    <label className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5 block">Filter by Course</label>
+                    <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5 block">Filter by Course</p>
                     <Button variant="primary" onClick={() => setShowCourseDropdown(!showCourseDropdown)} className={`w-full px-3 py-2 rounded-lg border text-sm font-medium text-left flex items-center justify-between transition-colors ${activeFilter?.courseName ? 'bg-primary-50 border-primary-300 text-primary-700' : 'bg-white border-warm-200 text-warm-600 hover:border-primary-300'}`}>
                       <span>{activeFilter?.courseName || 'All Courses'}</span>
                       <IconChevronDown size={16} className={`transition-transform ${showCourseDropdown ? 'rotate-180' : ''}`} />

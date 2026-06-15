@@ -38,7 +38,7 @@ export function LeaderboardWithSlots({ candidates, topNCount }: Props) {
           Top {topNCount} auto-lock
         </span>
       </header>
-      <ul role="list" className="divide-y divide-warm-200/40">
+      <ul className="divide-y divide-warm-200/40">
         {ranked.map((c, i) => {
           const locked = c.is_top_score_slot;
           const picked = c.selection?.selection_type === 'coach_pick';

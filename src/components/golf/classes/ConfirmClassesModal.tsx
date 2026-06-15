@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ const DAYS = [
 const DEFAULT_CLASS_COLOR = 'var(--color-primary-600)';
 
 export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses }: ConfirmClassesModalProps) {
+  const uid = useId();
   const [classes, setClasses] = useState<ParsedClass[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -202,8 +203,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       {/* Course code + name */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Course Code</label>
+                          <label htmlFor={`${uid}-${index}-course-code`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Course Code</label>
                           <Input
+                            id={`${uid}-${index}-course-code`}
                             value={cls.course_code}
                             onChange={(e) => handleFieldChange(index, 'course_code', e.target.value.toUpperCase())}
                             className="text-sm font-mono"
@@ -211,8 +213,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Course Name</label>
+                          <label htmlFor={`${uid}-${index}-course-name`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Course Name</label>
                           <Input
+                            id={`${uid}-${index}-course-name`}
                             value={cls.course_name}
                             onChange={(e) => handleFieldChange(index, 'course_name', e.target.value)}
                             className="text-sm"
@@ -223,7 +226,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
 
                       {/* Days */}
                       <div>
-                        <label className="block text-xs font-medium text-warm-500 mb-2 uppercase tracking-wider">Meeting Days</label>
+                        <p className="block text-xs font-medium text-warm-500 mb-2 uppercase tracking-wider">Meeting Days</p>
                         <div className="flex gap-2">
                           {DAYS.map(day => (
                             <Button variant="ghost"
@@ -247,8 +250,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       {/* Time + Location + Instructor */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Start</label>
+                          <label htmlFor={`${uid}-${index}-start`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Start</label>
                           <Input
+                            id={`${uid}-${index}-start`}
                             type="time"
                             value={cls.start_time}
                             onChange={(e) => handleFieldChange(index, 'start_time', e.target.value)}
@@ -256,8 +260,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">End</label>
+                          <label htmlFor={`${uid}-${index}-end`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">End</label>
                           <Input
+                            id={`${uid}-${index}-end`}
                             type="time"
                             value={cls.end_time}
                             onChange={(e) => handleFieldChange(index, 'end_time', e.target.value)}
@@ -265,8 +270,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Location</label>
+                          <label htmlFor={`${uid}-${index}-location`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Location</label>
                           <Input
+                            id={`${uid}-${index}-location`}
                             value={cls.location || `${cls.building || ''} ${cls.room || ''}`.trim()}
                             onChange={(e) => handleFieldChange(index, 'location', e.target.value)}
                             placeholder="HAL 101"
@@ -274,8 +280,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Professor</label>
+                          <label htmlFor={`${uid}-${index}-professor`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Professor</label>
                           <Input
+                            id={`${uid}-${index}-professor`}
                             value={cls.instructor}
                             onChange={(e) => handleFieldChange(index, 'instructor', e.target.value)}
                             placeholder="Dr. Smith"
@@ -400,10 +407,11 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
           <div className="px-6 pt-4 pb-3">
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-warm-700 mb-1.5 uppercase tracking-wider">
+                <label htmlFor={`${uid}-semester-start`} className="block text-xs font-medium text-warm-700 mb-1.5 uppercase tracking-wider">
                   Semester Start Date
                 </label>
                 <Input
+                  id={`${uid}-semester-start`}
                   type="date"
                   value={semesterStartDate}
                   onChange={(e) => setSemesterStartDate(e.target.value)}

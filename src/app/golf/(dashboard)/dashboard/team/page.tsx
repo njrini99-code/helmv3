@@ -85,6 +85,7 @@ export default async function TeamSettingsPage() {
       return (
         <div className={fairwayScope('min-h-full bg-canvas')}>
           <FairwayTeam
+            // eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role
             role="coach"
             coach={{
               id: coachData.id,
@@ -203,6 +204,7 @@ export default async function TeamSettingsPage() {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayTeam
+          // eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role
           role="player"
           team={team}
           coach={teamCoach}

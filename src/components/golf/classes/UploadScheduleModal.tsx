@@ -274,6 +274,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
 
           {!pasteMode ? (
             /* Upload Area */
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions,jsx-a11y/click-events-have-key-events
             <div
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}

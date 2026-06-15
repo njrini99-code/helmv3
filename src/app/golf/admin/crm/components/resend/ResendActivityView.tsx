@@ -393,39 +393,41 @@ function FailedEmailsView({ onSelect }: { onSelect: (id: string) => void }) {
             const failedAt = row.complained_at ?? row.bounced_at;
 
             return (
-              <li
-                key={row.resend_message_id}
-                onClick={() => onSelect(row.resend_message_id)}
-                className="px-6 py-3 cursor-pointer hover:bg-white/70 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0',
-                      cfg.bgColor,
-                      cfg.color
-                    )}
-                  >
-                    {cfg.icon}
-                    {cfg.label}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-warm-900 truncate">
-                      {primaryTo}
-                    </p>
-                    <p className="text-xs text-warm-500 truncate">
-                      {row.subject || (
-                        <span className="italic">(no subject)</span>
+              <li key={row.resend_message_id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(row.resend_message_id)}
+                  className="w-full px-6 py-3 cursor-pointer hover:bg-white/70 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0',
+                        cfg.bgColor,
+                        cfg.color
                       )}
-                    </p>
+                    >
+                      {cfg.icon}
+                      {cfg.label}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-warm-900 truncate">
+                        {primaryTo}
+                      </p>
+                      <p className="text-xs text-warm-500 truncate">
+                        {row.subject || (
+                          <span className="italic">(no subject)</span>
+                        )}
+                      </p>
+                    </div>
+                    <span
+                      className="text-xs text-warm-500 tabular-nums shrink-0"
+                      title={failedAt ?? undefined}
+                    >
+                      {formatRelative(failedAt)}
+                    </span>
                   </div>
-                  <span
-                    className="text-xs text-warm-500 tabular-nums shrink-0"
-                    title={failedAt ?? undefined}
-                  >
-                    {formatRelative(failedAt)}
-                  </span>
-                </div>
+                </button>
               </li>
             );
           })}

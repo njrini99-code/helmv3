@@ -64,7 +64,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Game type */}
           <div>
-            <label className="text-sm font-medium text-warm-700 block mb-2">Type</label>
+            <p className="text-sm font-medium text-warm-700 block mb-2">Type</p>
             <div className="flex gap-3">
               {(['game', 'scrimmage'] as BaseballGameType[]).map((t) => (
                 <Button variant="primary"
@@ -87,8 +87,9 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
 
           {/* Date */}
           <div>
-            <label className="text-sm font-medium text-warm-700 block mb-1.5">Date</label>
+            <label htmlFor="new-game-date" className="text-sm font-medium text-warm-700 block mb-1.5">Date</label>
             <input
+              id="new-game-date"
               type="date"
               value={gameDate}
               onChange={(e) => setGameDate(e.target.value)}
@@ -99,11 +100,12 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
 
           {/* Opponent */}
           <div>
-            <label className="text-sm font-medium text-warm-700 block mb-1.5">
+            <label htmlFor="new-game-opponent" className="text-sm font-medium text-warm-700 block mb-1.5">
               Opponent Name
               <span className="ml-1 text-warm-400 font-normal">(optional)</span>
             </label>
             <input
+              id="new-game-opponent"
               type="text"
               value={opponentName}
               onChange={(e) => setOpponentName(e.target.value)}
@@ -114,7 +116,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
 
           {/* Home/Away */}
           <div>
-            <label className="text-sm font-medium text-warm-700 block mb-2">Location</label>
+            <p className="text-sm font-medium text-warm-700 block mb-2">Location</p>
             <div className="flex gap-2">
               {(['home', 'away', 'neutral'] as BaseballHomeAway[]).map((ha) => (
                 <Button variant="ghost"
@@ -135,11 +137,12 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
 
           {/* Venue */}
           <div>
-            <label className="text-sm font-medium text-warm-700 block mb-1.5">
+            <label htmlFor="new-game-venue" className="text-sm font-medium text-warm-700 block mb-1.5">
               Venue / Field
               <span className="ml-1 text-warm-400 font-normal">(optional)</span>
             </label>
             <input
+              id="new-game-venue"
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}

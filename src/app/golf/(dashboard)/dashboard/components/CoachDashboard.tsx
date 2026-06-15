@@ -363,6 +363,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                     <DashboardErrorBoundary name="Schedule">
                         <TodayTimeline
                             events={enhancedData?.todayEvents ?? EMPTY_EVENTS}
+                            // eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role
                             role="coach"
                             timezone={enhancedData?.timezone}
                         />
@@ -455,6 +456,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                         </Card>
                     </div>
                     <div className="flex flex-col gap-5 md:gap-6 min-w-0">
+                        {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role */}
                         <ActionItemsCard items={enhancedData?.actionItems ?? EMPTY_ACTION_ITEMS} role="coach" />
                     </div>
                 </m.div>

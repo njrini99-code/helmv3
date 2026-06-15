@@ -302,6 +302,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                         {enhancedData && enhancedData.todayEvents.length > 0 && (
                             <m.div className="mb-7 md:mb-10" variants={itemVariants}>
                                 <DashboardErrorBoundary name="Schedule">
+                                    {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role */}
                                     <TodayTimeline events={enhancedData.todayEvents} role="player" timezone={enhancedData.timezone} />
                                 </DashboardErrorBoundary>
                             </m.div>
@@ -377,6 +378,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 <DashboardErrorBoundary name="Schedule">
                                     <TodayTimeline
                                         events={enhancedData?.todayEvents ?? EMPTY_EVENTS}
+                                        // eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role
                                         role="player"
                                         timezone={enhancedData?.timezone}
                                     />
@@ -423,6 +425,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                     />
                                 </DashboardErrorBoundary>
                                 <DashboardErrorBoundary name="Tasks">
+                                    {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a custom component prop, not an ARIA role */}
                                     <ActionItemsCard items={enhancedData?.actionItems ?? EMPTY_ACTION_ITEMS} role="player" />
                                 </DashboardErrorBoundary>
                                 <DashboardErrorBoundary name="Focus Areas">

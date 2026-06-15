@@ -63,6 +63,7 @@ const MemoizedCardItem = memo(function CardItem({
   const handleMouseEnter = useCallback((e: React.MouseEvent) => onMouseEnter(player, e), [onMouseEnter, player]);
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className="transition-opacity duration-200"
       onMouseEnter={handleMouseEnter}

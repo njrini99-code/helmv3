@@ -135,7 +135,7 @@ export function ExpenseForm({
 
         {/* Category Selection */}
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-2">Category</label>
+          <p className="text-sm font-medium text-warm-700 block mb-2">Category</p>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {CATEGORIES.map((cat) => (
               <motion.button
@@ -195,7 +195,7 @@ export function ExpenseForm({
 
         {/* Paid By */}
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-2">Paid By</label>
+          <p className="text-sm font-medium text-warm-700 block mb-2">Paid By</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {PAID_BY_OPTIONS.map((option) => (
               <motion.button
@@ -218,8 +218,9 @@ export function ExpenseForm({
 
         {/* Notes */}
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-1">Notes (Optional)</label>
+          <label htmlFor="ef-notes" className="text-sm font-medium text-warm-700 block mb-1">Notes (Optional)</label>
           <textarea
+            id="ef-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional details..."

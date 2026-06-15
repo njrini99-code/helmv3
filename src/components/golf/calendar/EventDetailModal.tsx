@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useId } from 'react';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus, Dumbbell, Trophy, ClipboardList, Plane, MoreHorizontal, Ban, Repeat } from 'lucide-react';
 import Image from 'next/image';
@@ -272,6 +272,7 @@ export function EventDetailModal({
   currentUserId,
   timezone,
 }: EventDetailModalProps) {
+  const uid = useId();
   // Filter out current user from attendee list - you shouldn't be able to add yourself
   const availablePlayers = teamPlayers.filter(p => p.id !== currentUserId);
   const tzAbbrev = useMemo(() => {
@@ -1244,6 +1245,7 @@ export function EventDetailModal({
             <div className="flex items-center justify-between py-2">
               <span className="text-sm font-medium text-warm-700">Require RSVP</span>
               <label className="cursor-pointer">
+                <span className="sr-only">Require RSVP</span>
                 <div className={cn(
                   'relative w-10 h-6 rounded-full transition-colors duration-200',
                   formData.requiresRsvp ? 'bg-primary-500' : 'bg-warm-300'
@@ -1268,8 +1270,9 @@ export function EventDetailModal({
           {canEdit && formData.requiresRsvp && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-warm-500 mb-1">RSVP Deadline</label>
+                <label htmlFor={`${uid}-rsvp-deadline`} className="block text-xs font-medium text-warm-500 mb-1">RSVP Deadline</label>
                 <input
+                  id={`${uid}-rsvp-deadline`}
                   type="datetime-local"
                   value={formData.rsvpDeadline || ''}
                   onChange={(e) => setFormData({ ...formData, rsvpDeadline: e.target.value || null })}
@@ -1279,8 +1282,9 @@ export function EventDetailModal({
                 <p className="text-label text-warm-400 mt-1">Your local time</p>
               </div>
               <div>
-                <label className="block text-xs font-medium text-warm-500 mb-1">Max Attendees</label>
+                <label htmlFor={`${uid}-max-attendees`} className="block text-xs font-medium text-warm-500 mb-1">Max Attendees</label>
                 <input
+                  id={`${uid}-max-attendees`}
                   type="number"
                   min="1"
                   value={formData.maxAttendees || ''}
@@ -1463,13 +1467,16 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
   ];
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="series-scope-title"
       className="fixed inset-0 z-modal flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm"
       onClick={onCancel}
+      onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions,jsx-a11y/click-events-have-key-events */}
       <div
         ref={modalRef}
         className="w-full max-w-md surface-stone rounded-3xl overflow-hidden"
@@ -1492,6 +1499,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
               <Button variant="ghost"
                 type="button"
                 onClick={() => onConfirm(opt.value)}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus={opt.value === 'this'}
                 className={cn(
                   'w-full text-left px-4 py-3 rounded-xl transition-colors',

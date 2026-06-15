@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
@@ -119,6 +119,7 @@ export function InsightFiltersPanel({
   className,
   defaultExpanded = true,
 }: InsightFiltersPanelProps) {
+  const uid = useId();
   const prefersReducedMotion = useReducedMotion();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -235,10 +236,11 @@ export function InsightFiltersPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Player Filter */}
         <div>
-          <label className="block text-xs font-medium text-warm-600 mb-1.5">
+          <label htmlFor={`${uid}-player`} className="block text-xs font-medium text-warm-600 mb-1.5">
             Player
           </label>
           <select
+            id={`${uid}-player`}
             value={filters.playerId || ''}
             onChange={(e) => updateFilter('playerId', e.target.value || undefined)}
             className={cn(
@@ -260,10 +262,11 @@ export function InsightFiltersPanel({
 
         {/* Insight Type Filter */}
         <div>
-          <label className="block text-xs font-medium text-warm-600 mb-1.5">
+          <label htmlFor={`${uid}-insight-type`} className="block text-xs font-medium text-warm-600 mb-1.5">
             Insight Type
           </label>
           <select
+            id={`${uid}-insight-type`}
             value={filters.insightType || ''}
             onChange={(e) => updateFilter('insightType', e.target.value as InsightType || undefined)}
             className={cn(
@@ -288,10 +291,11 @@ export function InsightFiltersPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Priority Filter */}
         <div>
-          <label className="block text-xs font-medium text-warm-600 mb-1.5">
+          <label htmlFor={`${uid}-priority`} className="block text-xs font-medium text-warm-600 mb-1.5">
             Priority
           </label>
           <select
+            id={`${uid}-priority`}
             value={filters.priority || ''}
             onChange={(e) => updateFilter('priority', e.target.value as InsightPriority || undefined)}
             className={cn(
@@ -313,10 +317,11 @@ export function InsightFiltersPanel({
 
         {/* Status Filter */}
         <div>
-          <label className="block text-xs font-medium text-warm-600 mb-1.5">
+          <label htmlFor={`${uid}-status`} className="block text-xs font-medium text-warm-600 mb-1.5">
             Status
           </label>
           <select
+            id={`${uid}-status`}
             value={filters.status || ''}
             onChange={(e) => updateFilter('status', e.target.value as InsightStatus || undefined)}
             className={cn(
@@ -339,11 +344,12 @@ export function InsightFiltersPanel({
 
       {/* Row 3: Date Range */}
       <div>
-        <label className="block text-xs font-medium text-warm-600 mb-1.5">
+        <label htmlFor={`${uid}-date-range`} className="block text-xs font-medium text-warm-600 mb-1.5">
           Date Range
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <select
+            id={`${uid}-date-range`}
             value={filters.dateRange || ''}
             onChange={(e) => {
               const value = e.target.value as InsightFilters['dateRange'] || undefined;

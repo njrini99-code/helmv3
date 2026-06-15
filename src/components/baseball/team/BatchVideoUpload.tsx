@@ -200,8 +200,9 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
               required
             />
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Video Type</label>
+              <label htmlFor="bvu-video-type" className="block text-sm font-medium text-warm-700 mb-1">Video Type</label>
               <select
+                id="bvu-video-type"
                 value={form.video_type}
                 onChange={(event) => setForm((prev) => ({ ...prev, video_type: event.target.value }))}
                 className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 bg-white transition-colors"
@@ -220,8 +221,9 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
               rows={3}
             />
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Video File</label>
+              <label htmlFor="bvu-video-file" className="block text-sm font-medium text-warm-700 mb-1">Video File</label>
               <input
+                id="bvu-video-file"
                 type="file"
                 accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
                 onChange={handleInputChange}

@@ -56,6 +56,7 @@ export function HealthScoreBreakdownModal({ score, breakdown, onClose }: Props) 
         aria-modal="true"
         aria-labelledby="health-breakdown-title"
       >
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper keeps backdrop-close from firing inside the dialog */}
         <div
           className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}

@@ -134,6 +134,7 @@ export function BaseballInviteButton({
 
   const modalContent = (
     <div
+      role="presentation"
       style={{
         position: 'fixed',
         top: 0,
@@ -152,8 +153,15 @@ export function BaseballInviteButton({
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') handleClose();
+      }}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing dialog */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="invite-modal-title"
         style={{
           backgroundColor: 'white',
           borderRadius: '16px',
@@ -164,10 +172,11 @@ export function BaseballInviteButton({
           overflow: 'auto',
         }}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-warm-200">
-          <h2 className="text-lg font-semibold text-warm-900">
+          <h2 id="invite-modal-title" className="text-lg font-semibold text-warm-900">
             Invite Player to {teamName}
           </h2>
         </div>

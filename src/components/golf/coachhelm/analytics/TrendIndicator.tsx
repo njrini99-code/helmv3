@@ -50,6 +50,7 @@ export function TrendIndicator({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={cn('relative inline-flex items-center gap-1', className)}
       onMouseEnter={() => setShowTooltip(true)}

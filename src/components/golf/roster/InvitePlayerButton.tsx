@@ -86,7 +86,8 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
 
   // Modal content
   const modalContent = (
-    <div 
+    <button
+      type="button"
       style={{
         position: 'fixed',
         top: 0,
@@ -101,12 +102,17 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
+        cursor: 'default',
+        border: 'none',
+        width: '100%',
       }}
+      aria-label="Close"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
     >
-      <div 
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions,jsx-a11y/click-events-have-key-events */}
+      <div
         style={{
           backgroundColor: 'white',
           borderRadius: '16px',
@@ -115,6 +121,7 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           maxHeight: 'calc(100dvh - 32px)',
           overflow: 'auto',
+          cursor: 'auto',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -227,7 +234,7 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
           </Button>
         </div>
       </div>
-    </div>
+    </button>
   );
 
   return (

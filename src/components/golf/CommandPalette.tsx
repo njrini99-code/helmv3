@@ -211,6 +211,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
           <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/40">
             <IconSearch size={18} className="text-warm-400" aria-hidden />
             <Command.Input
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               placeholder="Search commands…"
               className="flex-1 bg-transparent outline-none text-body text-warm-900 placeholder:text-warm-500 tracking-[-0.005em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded"

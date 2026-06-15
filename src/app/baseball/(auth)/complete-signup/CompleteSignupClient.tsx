@@ -115,7 +115,7 @@ export default function CompleteSignupClient() {
         <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm space-y-6">
           {/* Role Selection */}
           <div>
-            <label className="text-sm font-medium text-warm-700 mb-3 block">I am a...</label>
+            <p className="text-sm font-medium text-warm-700 mb-3 block">I am a...</p>
             <div className="grid grid-cols-2 gap-3">
               <Button variant="primary"
                 onClick={() => { setRole('coach'); setPlayerType(null); }}

@@ -287,6 +287,7 @@ function NoTeamCard({ playerId }: { playerId?: string }) {
                 placeholder="Enter code (e.g. ABC12345)"
                 maxLength={20}
                 className="text-center tracking-widest font-mono text-lg uppercase"
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in join-team dialog
                 autoFocus
               />
             </div>

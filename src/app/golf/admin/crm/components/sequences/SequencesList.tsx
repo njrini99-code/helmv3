@@ -212,10 +212,10 @@ function CreateSequenceForm({
         >
           Name <span className="text-red-500">*</span>
         </label>
-        <input
+        {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
+        <input autoFocus
           id="seq-name"
           type="text"
-          autoFocus
           required
           maxLength={120}
           value={name}

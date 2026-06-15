@@ -169,7 +169,7 @@ export default function SettingsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <label className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
+              <label aria-label="New Player Alerts" className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
                 <div>
                   <p className="font-medium text-warm-900">New Player Alerts</p>
                   <p className="text-sm leading-relaxed text-warm-500">Get notified when new players match your criteria</p>
@@ -185,7 +185,7 @@ export default function SettingsPage() {
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
+              <label aria-label="Message Notifications" className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
                 <div>
                   <p className="font-medium text-warm-900">Message Notifications</p>
                   <p className="text-sm leading-relaxed text-warm-500">Email me when I receive new messages</p>
@@ -201,7 +201,7 @@ export default function SettingsPage() {
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
+              <label aria-label="Weekly Recruiting Digest" className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
                 <div>
                   <p className="font-medium text-warm-900">Weekly Recruiting Digest</p>
                   <p className="text-sm leading-relaxed text-warm-500">Get a weekly summary of new prospects</p>

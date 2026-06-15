@@ -136,14 +136,14 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Complete batting practice drill"
           required
-          autoFocus
         />
 
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-1">
+          <label htmlFor="ctm-description" className="text-sm font-medium text-warm-700 block mb-1">
             Description (Optional)
           </label>
           <textarea
+            id="ctm-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Add more details about this task..."
@@ -157,10 +157,11 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
         {/* Category & Priority */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-warm-700 block mb-1">
+            <label htmlFor="ctm-category" className="text-sm font-medium text-warm-700 block mb-1">
               Category
             </label>
             <select
+              id="ctm-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-warm-200
@@ -174,9 +175,9 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           </div>
 
           <div>
-            <label className="text-sm font-medium text-warm-700 block mb-1">
+            <p className="text-sm font-medium text-warm-700 block mb-1">
               Priority
-            </label>
+            </p>
             <div className="flex gap-2">
               {PRIORITIES.map((p) => (
                 <Button variant="ghost"
@@ -216,9 +217,9 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
 
         {/* Assignment */}
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-2">
+          <p className="text-sm font-medium text-warm-700 block mb-2">
             Assign To
-          </label>
+          </p>
 
           <div className="space-y-2">
             <motion.button

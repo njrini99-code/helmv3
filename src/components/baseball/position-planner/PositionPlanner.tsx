@@ -269,7 +269,7 @@ export function PositionPlanner({
                 'shadow-glass'
               )}>
                 <div className="flex items-center gap-3">
-                  <label className="text-sm font-medium text-warm-600">Class:</label>
+                  <span className="text-sm font-medium text-warm-600">Class:</span>
                   <Select
                     options={GRAD_YEAR_OPTIONS}
                     value={gradYearFilter}
@@ -279,7 +279,7 @@ export function PositionPlanner({
                 </div>
                 <div className="w-px h-8 bg-warm-200/50" />
                 <div className="flex items-center gap-3">
-                  <label className="text-sm font-medium text-warm-600">Stage:</label>
+                  <span className="text-sm font-medium text-warm-600">Stage:</span>
                   <Select
                     options={STAGE_FILTER_OPTIONS}
                     value={stageFilter}

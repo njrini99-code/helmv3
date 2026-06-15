@@ -2299,9 +2299,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
                   {/* Holes per round toggle */}
                   <div>
-                    <label className="text-sm font-medium text-warm-700 block mb-2">
+                    <p className="text-sm font-medium text-warm-700 block mb-2">
                       Holes
-                    </label>
+                    </p>
                     <GolfTabBar<'9' | '18'>
                       ariaLabel="Holes per round"
                       compact

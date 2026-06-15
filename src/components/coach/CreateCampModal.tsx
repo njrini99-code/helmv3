@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button, IconButton } from '@/components/ui/button';
@@ -31,6 +31,7 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
   const { coach } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const uid = useId();
 
   const isEditing = !!camp;
 
@@ -145,10 +146,11 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1">
+            <label htmlFor={`${uid}-name`} className="block text-sm font-medium text-warm-700 mb-1">
               Camp Name *
             </label>
             <input
+              id={`${uid}-name`}
               type="text"
               required
               value={formData.name}
@@ -159,10 +161,11 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1">
+            <label htmlFor={`${uid}-desc`} className="block text-sm font-medium text-warm-700 mb-1">
               Description
             </label>
             <textarea
+              id={`${uid}-desc`}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
@@ -172,10 +175,11 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-1">
+            <label htmlFor={`${uid}-location`} className="block text-sm font-medium text-warm-700 mb-1">
               Location
             </label>
             <input
+              id={`${uid}-location`}
               type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -186,10 +190,11 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">
+              <label htmlFor={`${uid}-start`} className="block text-sm font-medium text-warm-700 mb-1">
                 Start Date *
               </label>
               <input
+                id={`${uid}-start`}
                 type="date"
                 required
                 value={formData.start_date}
@@ -198,10 +203,11 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">
+              <label htmlFor={`${uid}-end`} className="block text-sm font-medium text-warm-700 mb-1">
                 End Date
               </label>
               <input
+                id={`${uid}-end`}
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
@@ -212,10 +218,11 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">
+              <label htmlFor={`${uid}-capacity`} className="block text-sm font-medium text-warm-700 mb-1">
                 Capacity
               </label>
               <input
+                id={`${uid}-capacity`}
                 type="number"
                 min="1"
                 value={formData.capacity}
@@ -225,10 +232,11 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">
+              <label htmlFor={`${uid}-price`} className="block text-sm font-medium text-warm-700 mb-1">
                 Price ($)
               </label>
               <input
+                id={`${uid}-price`}
                 type="number"
                 min="0"
                 step="0.01"

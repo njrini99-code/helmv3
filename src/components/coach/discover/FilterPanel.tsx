@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SearchAutocomplete } from '@/components/ui/search-autocomplete';
 import { Button, IconButton } from '@/components/ui/button';
@@ -46,6 +46,7 @@ interface FilterPanelProps {
 export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelProps) {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
+  const uid = useId();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState(currentFilters.search || '');
@@ -176,43 +177,49 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
 
       {/* Search */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-warm-700 mb-2">
-          Search
-        </label>
         {mode === 'players' ? (
-          <SearchAutocomplete
-            value={search}
-            onChange={setSearch}
-            onSelect={(player: Player) => {
-              const fullName = `${player.first_name} ${player.last_name}`;
-              setSearch(fullName);
-              updateFilter('search', fullName);
-            }}
-            onSubmit={(value: string) => {
-              updateFilter('search', value || undefined);
-            }}
-            placeholder="Name or school..."
-          />
+          <>
+            <p className="block text-sm font-medium text-warm-700 mb-2">Search</p>
+            <SearchAutocomplete
+              value={search}
+              onChange={setSearch}
+              onSelect={(player: Player) => {
+                const fullName = `${player.first_name} ${player.last_name}`;
+                setSearch(fullName);
+                updateFilter('search', fullName);
+              }}
+              onSubmit={(value: string) => {
+                updateFilter('search', value || undefined);
+              }}
+              placeholder="Name or school..."
+            />
+          </>
         ) : (
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                updateFilter('search', search || undefined);
-              }
-            }}
-            onBlur={() => {
-              if (search !== currentFilters.search) {
-                updateFilter('search', search || undefined);
-              }
-            }}
-            placeholder="Team name or city..."
-            className="w-full px-4 py-2 rounded-lg border border-warm-200
-                       focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                       text-sm text-warm-900 bg-white"
-          />
+          <>
+            <label htmlFor={`${uid}-search`} className="block text-sm font-medium text-warm-700 mb-2">
+              Search
+            </label>
+            <input
+              id={`${uid}-search`}
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  updateFilter('search', search || undefined);
+                }
+              }}
+              onBlur={() => {
+                if (search !== currentFilters.search) {
+                  updateFilter('search', search || undefined);
+                }
+              }}
+              placeholder="Team name or city..."
+              className="w-full px-4 py-2 rounded-lg border border-warm-200
+                         focus:border-primary-500 focus:ring-2 focus:ring-primary-100
+                         text-sm text-warm-900 bg-white"
+            />
+          </>
         )}
       </div>
 
@@ -261,6 +268,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                         className="flex-1 px-3 py-2 rounded-lg border border-warm-200
                                    focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                                    text-sm text-warm-900 bg-white"
+                        // eslint-disable-next-line jsx-a11y/no-autofocus
                         autoFocus
                       />
                       <Button size="sm" onClick={handleSaveSearch} className="min-h-[36px]">
@@ -293,11 +301,12 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
               {savedSearches.length > 0 ? (
                 <div className="space-y-2">
                   {savedSearches.map((savedSearch) => (
-                    <div
+                    <button
                       key={savedSearch.id}
-                      className="group flex items-start justify-between p-3 rounded-xl bg-cream-100/60 
+                      type="button"
+                      className="group flex items-start justify-between p-3 rounded-xl bg-cream-100/60
                                  border border-warm-200/50 hover:border-primary-200 hover:bg-primary-50/30
-                                 transition-all duration-200 cursor-pointer"
+                                 transition-all duration-200 cursor-pointer w-full text-left"
                       onClick={() => handleLoadSearch(savedSearch.filters)}
                     >
                       <div className="flex-1 min-w-0">
@@ -319,7 +328,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                       >
                         <IconTrash size={14} />
                       </IconButton>
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -343,9 +352,9 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
           >
             {/* Grad Year */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-warm-700 mb-2">
+              <p className="block text-sm font-medium text-warm-700 mb-2">
                 Graduation Year
-              </label>
+              </p>
               <div className="flex flex-wrap gap-2">
                 {GRAD_YEARS.map((year) => (
                   <Button variant="primary"
@@ -367,10 +376,11 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
 
             {/* Position */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-warm-700 mb-2">
+              <label htmlFor={`${uid}-position`} className="block text-sm font-medium text-warm-700 mb-2">
                 Position
               </label>
               <select
+                id={`${uid}-position`}
                 value={currentFilters.position || ''}
                 onChange={(e) => updateFilter('position', e.target.value || undefined)}
                 className="w-full px-4 py-2 rounded-lg border border-warm-200
@@ -386,7 +396,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
 
             {/* State - Multi-select */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-warm-700 mb-2">
+              <label htmlFor={`${uid}-state`} className="block text-sm font-medium text-warm-700 mb-2">
                 State {currentFilters.states && currentFilters.states.length > 0 && (
                   <span className="text-primary-600 font-normal">
                     ({currentFilters.states.length} selected)
@@ -394,6 +404,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                 )}
               </label>
               <select
+                id={`${uid}-state`}
                 value=""
                 onChange={(e) => {
                   if (!e.target.value) return;
@@ -446,9 +457,9 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
 
             {/* Pitch Velocity */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-warm-700 mb-2">
+              <p className="block text-sm font-medium text-warm-700 mb-2">
                 Pitch Velocity (mph)
-              </label>
+              </p>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -474,9 +485,9 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
 
             {/* Exit Velocity */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-warm-700 mb-2">
+              <p className="block text-sm font-medium text-warm-700 mb-2">
                 Exit Velocity (mph)
-              </label>
+              </p>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -524,9 +535,9 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
           >
             {/* Team Type */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-warm-700 mb-2">
+              <p className="block text-sm font-medium text-warm-700 mb-2">
                 Team Type
-              </label>
+              </p>
               <div className="flex flex-wrap gap-2">
                 {TEAM_TYPES.map((type) => (
                   <Button variant="primary"
@@ -548,7 +559,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
 
             {/* State - Multi-select for Teams */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-warm-700 mb-2">
+              <label htmlFor={`${uid}-team-state`} className="block text-sm font-medium text-warm-700 mb-2">
                 State {currentFilters.states && currentFilters.states.length > 0 && (
                   <span className="text-primary-600 font-normal">
                     ({currentFilters.states.length} selected)
@@ -556,6 +567,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                 )}
               </label>
               <select
+                id={`${uid}-team-state`}
                 value=""
                 onChange={(e) => {
                   if (!e.target.value) return;

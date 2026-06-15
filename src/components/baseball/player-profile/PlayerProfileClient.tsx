@@ -1042,6 +1042,7 @@ export function PlayerProfileClient({
               {/* Video player */}
               <div className="aspect-video bg-black">
                 {selectedVideo.video_url ? (
+                  // eslint-disable-next-line jsx-a11y/media-has-caption -- user-uploaded video, no captions available
                   <video
                     src={selectedVideo.video_url}
                     controls

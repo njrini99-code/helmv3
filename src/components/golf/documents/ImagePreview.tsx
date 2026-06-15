@@ -189,6 +189,7 @@ export function ImagePreview({
       </div>
 
       {/* Image Content */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         ref={containerRef}
         className={cn(

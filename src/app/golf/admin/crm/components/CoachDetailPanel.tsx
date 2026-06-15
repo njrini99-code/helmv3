@@ -244,6 +244,7 @@ function CoachDetailPanelInner({
   return (
     <>
       {/* Backdrop */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape key is handled by the panel */}
       <div className={cn('fixed inset-0 z-40', isVisible ? 'opacity-100' : 'opacity-0')} onClick={handleClose}>
         <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] transition-opacity duration-200" />
       </div>
@@ -432,6 +433,7 @@ function CoachDetailPanelInner({
                 <div className="flex-1 min-w-0">
                   {editingNotes ? (
                     <div className="space-y-1.5">
+                      {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
                       <textarea value={notesValue} onChange={e => setNotesValue(e.target.value)} autoFocus rows={3}
                         className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" placeholder="Add notes..." />
                       <div className="flex gap-1.5">

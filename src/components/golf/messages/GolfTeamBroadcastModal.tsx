@@ -243,6 +243,7 @@ export function GolfTeamBroadcastModal({
               onChange={setSearchQuery}
               placeholder="Search players..."
               className="flex-1"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
             <Button
@@ -341,6 +342,7 @@ export function GolfTeamBroadcastModal({
             onChange={(e) => setBroadcastTitle(e.target.value)}
             placeholder="e.g., Team Updates, Practice Reminders"
             hint="Choose a name that describes the purpose of this group"
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             enterKeyHint="done"
           />

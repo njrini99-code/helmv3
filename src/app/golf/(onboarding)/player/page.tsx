@@ -255,6 +255,7 @@ export default function GolfPlayerOnboarding() {
                           onChange={(e) => setFirstName(e.target.value)}
                           placeholder="John"
                           required
+                          // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in onboarding wizard step
                           autoFocus
                         />
                         <Input

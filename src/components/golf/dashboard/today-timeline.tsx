@@ -255,8 +255,10 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
             </div>
 
             {/* ── Desktop: horizontal scrolling timeline ── */}
+            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
             <div
                 ref={scrollRef}
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
                 tabIndex={0}
                 role="group"
                 aria-label="Timeline events, use left and right arrow keys to scroll"

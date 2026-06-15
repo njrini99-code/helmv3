@@ -264,8 +264,11 @@ function ItineraryCard({
     <div className="glass-standard rounded-2xl overflow-clip">
       {/* Header Row */}
       <div
+        role="button"
+        tabIndex={0}
         className="p-5 flex items-center gap-4 cursor-pointer hover:bg-cream-100/82 transition-colors"
         onClick={onToggleExpand}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggleExpand(); } }}
       >
         <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
           <IconMapPin size={24} className="text-primary-600" />

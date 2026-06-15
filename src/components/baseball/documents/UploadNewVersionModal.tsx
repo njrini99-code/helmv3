@@ -92,8 +92,10 @@ export function UploadNewVersionModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
+      <button
+        type="button"
+        aria-label="Close modal"
+        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm border-0 p-0 cursor-default"
         onClick={handleClose}
       />
 
@@ -135,6 +137,7 @@ export function UploadNewVersionModal({
           )}
 
           {/* Drop zone */}
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag-and-drop zone, no click interaction */}
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -191,10 +194,11 @@ export function UploadNewVersionModal({
 
           {/* Change notes */}
           <div>
-            <label className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor="unvm-change-notes" className="block text-sm font-medium text-warm-700 mb-2">
               Change Notes (optional)
             </label>
             <textarea
+              id="unvm-change-notes"
               value={changeNotes}
               onChange={(e) => setChangeNotes(e.target.value)}
               placeholder="Describe what changed in this version..."

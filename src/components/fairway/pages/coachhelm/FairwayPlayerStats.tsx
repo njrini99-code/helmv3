@@ -60,6 +60,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
       <div className="mx-auto w-full max-w-[1200px] px-4 py-2 md:px-6">
         <CoachHelmShell
           active="players"
+          // eslint-disable-next-line jsx-a11y/aria-role
           role="player"
           eyebrow="Stats"
           title={title}
