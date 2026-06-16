@@ -94,8 +94,14 @@ ORDER BY weight;
 
 ### C.3 — v3-visibility anti-join (H5 check 4)
 
+Two queries are required. The original `LEFT JOIN` approach silently hides orphaned attribution
+rows — when `insight_id` has no matching `golf_coach_insights` row, all `ci.*` columns are
+`NULL`, causing every `WHERE` condition to evaluate to `NULL`/`FALSE` and exclude the row.
+Part A catches visibility violations on matched rows; Part B catches orphans.
+
 ```sql
--- Any attributed insight_id that is NOT v3-visible? Must return 0 rows.
+-- Part A: visibility violations on matched rows. Must return 0 rows.
+-- INNER JOIN: only rows with a parent insight are checked here; orphans are in Part B.
 SELECT
   attr.insight_id,
   ci.engine_version,
@@ -103,7 +109,7 @@ SELECT
   ci.lifecycle_state,
   ci.status
 FROM golf_insight_outcome_attribution attr
-LEFT JOIN golf_coach_insights ci ON ci.id = attr.insight_id
+INNER JOIN golf_coach_insights ci ON ci.id = attr.insight_id
 WHERE
   -- Fails the v3 engine filter
   NOT (ci.engine_version = 'v3' OR ci.signature LIKE 'v3:%')
@@ -113,9 +119,15 @@ WHERE
   OR
   -- Fails the dismissed filter
   ci.status IS NOT DISTINCT FROM 'dismissed';
+
+-- Part B: orphaned attribution rows (no parent insight). Must return 0 rows.
+SELECT attr.insight_id
+FROM golf_insight_outcome_attribution attr
+LEFT JOIN golf_coach_insights ci ON ci.id = attr.insight_id
+WHERE ci.id IS NULL;
 ```
 
-**Expected (H5 pass)**: Zero rows returned.
+**Expected (H5 pass)**: Both queries return zero rows.
 
 ### C.4 — Mock / v2 source check (H5 check 6, belt-and-suspenders)
 
