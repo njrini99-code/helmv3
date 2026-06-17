@@ -24,6 +24,8 @@ import {
   IconChevronLeft as ChevronLeft,
   IconBuilding as Building2,
   IconBolt,
+  IconMoreHorizontal,
+  IconX,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import {
@@ -108,6 +110,17 @@ const OUTREACH_SUBTABS = [
 
 type OutreachSubTabId = (typeof OUTREACH_SUBTABS)[number]['id'];
 
+// ── Mobile bottom tab bar ──
+// Below `lg` the dark desktop sidebar is hidden and replaced by a fixed,
+// safe-area-aware bottom tab bar. It surfaces the four highest-traffic
+// destinations directly, plus a "More" entry that opens a sheet listing the
+// rest — so every sidebar destination stays reachable on mobile. Ids reference
+// the same stable TabId values, so tapping a bar item calls setActiveTab
+// exactly like the sidebar.
+const MOBILE_BAR_TABS = ['dashboard', 'list', 'outreach', 'sequences'] as const;
+// Destinations that live behind the "More" sheet (everything not on the bar).
+const MOBILE_MORE_TABS = ['pipeline', 'conferences', 'inbox', 'settings'] as const;
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -154,6 +167,8 @@ export default function CRMPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [conferences, setConferences] = useState<string[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Mobile "More" sheet (lists the destinations not on the bottom tab bar).
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
 
   // Modals & Panels
   const [showAddModal, setShowAddModal] = useState(false);
@@ -182,6 +197,13 @@ export default function CRMPage() {
   // ============================================================================
   // TAB NAVIGATION
   // ============================================================================
+  // Stable id→tab lookup so the mobile bar / More sheet can resolve a TabId to
+  // its label + Icon without re-scanning TABS on every render.
+  const tabsById = useMemo(
+    () => new Map(TABS.map((t) => [t.id, t] as const)),
+    [],
+  );
+
   const setActiveTab = useCallback((tab: TabId) => {
     setActiveTabState(tab);
     // Keep URL in sync for bookmarkability WITHOUT triggering a Next.js
@@ -715,32 +737,18 @@ export default function CRMPage() {
   return (
     <div className="min-h-dvh bg-[#FFFEF8] flex">
       {/* ═══════════════════ Mobile Header ═══════════════════ */}
+      {/* Below lg the dark sidebar is hidden; navigation moves to the fixed
+          bottom tab bar (see below). This top header keeps only the back link,
+          the active destination's label, and the Import / Export / Add actions
+          so we don't double up on navigation. */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#1C1917]/95 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center gap-2 px-3 h-12">
-          <a href="/golf/admin" className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-white transition-all duration-200">
+          <a href="/golf/admin" aria-label="Back to admin dashboard" className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-white transition-all duration-200">
             <ArrowLeft size={16} />
           </a>
-          <div className="flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              const TabIcon = tab.Icon;
-              return (
-                <Button variant="ghost"
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0',
-                    isActive
-                      ? 'bg-white/15 text-white'
-                      : 'text-warm-400 hover:text-white'
-                  )}
-                >
-                  <TabIcon size={14} />
-                  {tab.label}
-                </Button>
-              );
-            })}
-          </div>
+          <span className="flex-1 min-w-0 truncate font-semibold text-sm text-white">
+            {tabsById.get(activeTab)?.label}
+          </span>
           {/* Import / Export — surfaced on mobile (desktop has them in the sidebar) */}
           <IconButton variant="default" aria-label="Import coaches"
             onClick={() => setShowImportModal(true)}
@@ -928,8 +936,9 @@ export default function CRMPage() {
           </div>
         </header>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-6 bg-cream-100">
+        {/* Content Area — extra bottom padding below lg so the fixed mobile
+            bottom tab bar (~64px + safe-area inset) never covers content. */}
+        <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-6 bg-cream-100 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-6">
           {/* ── Dashboard Tab ── */}
           {activeTab === 'dashboard' && (
             <CRMDashboard
@@ -1063,6 +1072,118 @@ export default function CRMPage() {
           )}
         </div>
       </main>
+
+      {/* ═══════════════════ Mobile Bottom Tab Bar ═══════════════════ */}
+      {/* Hidden at lg+ (desktop uses the sidebar). Fixed to the bottom, glass,
+          safe-area-inset aware. Surfaces the four core destinations plus a
+          "More" entry that opens a sheet for the rest. Tapping a bar item calls
+          setActiveTab exactly like the sidebar. */}
+      <nav
+        aria-label="Primary"
+        className={cn(
+          'lg:hidden fixed bottom-0 left-0 right-0 z-40',
+          'bg-white/80 backdrop-blur-xl border-t border-white/30 shadow-glass',
+          'pb-[env(safe-area-inset-bottom)]',
+        )}
+      >
+        <div className="flex items-stretch justify-around h-16 px-1">
+          {MOBILE_BAR_TABS.map((id) => {
+            const tab = tabsById.get(id);
+            if (!tab) return null;
+            const isActive = activeTab === id;
+            const TabIcon = tab.Icon;
+            return (
+              <Button
+                variant="ghost"
+                key={id}
+                onClick={() => setActiveTab(id)}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-xl px-1 transition-colors duration-200',
+                  isActive ? 'text-primary-600' : 'text-warm-500 hover:text-warm-900',
+                )}
+              >
+                <TabIcon size={22} className="flex-shrink-0" />
+                <span className="text-[10px] font-medium leading-none">{tab.label}</span>
+              </Button>
+            );
+          })}
+          {/* More — opens the sheet listing the remaining destinations. Active
+              when any "More" destination is the current tab. */}
+          {(() => {
+            const moreActive = (MOBILE_MORE_TABS as readonly string[]).includes(activeTab);
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => setMoreSheetOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={moreSheetOpen}
+                className={cn(
+                  'flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-xl px-1 transition-colors duration-200',
+                  moreActive || moreSheetOpen ? 'text-primary-600' : 'text-warm-500 hover:text-warm-900',
+                )}
+              >
+                <IconMoreHorizontal size={22} className="flex-shrink-0" />
+                <span className="text-[10px] font-medium leading-none">More</span>
+              </Button>
+            );
+          })()}
+        </div>
+      </nav>
+
+      {/* Mobile "More" sheet — lists the destinations not on the bottom bar so
+          every sidebar destination stays reachable on mobile. */}
+      {moreSheetOpen && (
+        <div className="lg:hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="More destinations">
+          <IconButton
+            variant="default"
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMoreSheetOpen(false)}
+            className="absolute inset-0 bg-warm-900/40 backdrop-blur-sm cursor-default"
+          >
+            <span className="sr-only">Close menu</span>
+          </IconButton>
+          <div className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-white/30 rounded-t-2xl shadow-glass pb-[env(safe-area-inset-bottom)] animate-in slide-in-from-bottom-4 duration-200">
+            <div className="flex items-center justify-between px-4 pt-4 pb-2">
+              <h2 className="text-sm font-semibold text-warm-900">More</h2>
+              <IconButton
+                variant="default"
+                aria-label="Close menu"
+                onClick={() => setMoreSheetOpen(false)}
+                className="p-1.5 rounded-xl text-warm-500 hover:text-warm-900 hover:bg-warm-100/60 transition-colors duration-200"
+              >
+                <IconX size={18} />
+              </IconButton>
+            </div>
+            <div className="px-3 pb-4 grid grid-cols-2 gap-2">
+              {MOBILE_MORE_TABS.map((id) => {
+                const tab = tabsById.get(id);
+                if (!tab) return null;
+                const isActive = activeTab === id;
+                const TabIcon = tab.Icon;
+                return (
+                  <Button
+                    variant="ghost"
+                    key={id}
+                    onClick={() => { setActiveTab(id); setMoreSheetOpen(false); }}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'flex items-center gap-3 min-h-[44px] px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-colors duration-200',
+                      isActive
+                        ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200'
+                        : 'text-warm-700 hover:bg-warm-100/60',
+                    )}
+                  >
+                    <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} />
+                    <span className="flex-1 min-w-0 truncate">{tab.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══════════════════ Overlays ═══════════════════ */}
 
