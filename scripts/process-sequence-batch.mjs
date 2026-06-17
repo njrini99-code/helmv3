@@ -61,9 +61,17 @@ const suppressed = new Set((supp ?? []).map(s => (s.email || '').toLowerCase().t
 // All active enrollments, then rank by send-priority (NOT alphabetical):
 // warmest/most customer-like first — see coach-priority.mjs. Sending warm coaches
 // first also lifts sender reputation for the colder tail.
-const { data: active } = await supa.from('crm_sequence_enrollments')
-  .select('id, coach_id, current_step, next_send_at, enrolled_at')
-  .eq('sequence_id', seq.id).eq('status', 'active');
+// Paginate: PostgREST caps a response at 1000 rows, so a plain .select() would
+// rank within only the first 1000 active and could skip the warmest coaches.
+const active = [];
+for (let from = 0; ; from += 1000) {
+  const { data: page } = await supa.from('crm_sequence_enrollments')
+    .select('id, coach_id, current_step, next_send_at, enrolled_at')
+    .eq('sequence_id', seq.id).eq('status', 'active')
+    .order('id', { ascending: true }).range(from, from + 999);
+  active.push(...(page ?? []));
+  if (!page || page.length < 1000) break;
+}
 const nowMs = Date.now();
 const dueEnr = (active ?? []).filter(e => !e.next_send_at || new Date(e.next_send_at).getTime() <= nowMs);
 if (!dueEnr.length) { console.log('Nothing due to send. All caught up.'); process.exit(0); }

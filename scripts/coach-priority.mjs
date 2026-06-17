@@ -44,7 +44,8 @@ export function scoreCoach(coach) {
   else if (div === 'D3') { score += 15; reasons.push('D3 — matches all 5 customers'); }
   else if (div === 'NAIA') { score += 12; reasons.push('NAIA — small-program profile, strong fit'); }
   else if (div === 'D2') { score += 12; reasons.push('D2 — adjacent to customer profile'); }
-  else if (div === 'JUCO') { score += 8; reasons.push('JUCO — small/hands-on'); }
+  else if (div.startsWith('JUCO')) { score += 8; reasons.push('JUCO — small/hands-on'); }
+  else if (div === 'CCCAA') { score += 8; reasons.push('CCCAA — small/hands-on'); }
   else if (div === 'D1') { score += 5; reasons.push('D1 — least like current customers (sent last)'); }
 
   return { score, reasons };
