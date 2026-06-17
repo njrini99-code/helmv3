@@ -24,6 +24,7 @@
 import { useMemo } from 'react';
 import {
   IconMail,
+  IconSend,
   IconUser,
   IconMaximize,
   IconMessageSquare,
@@ -144,6 +145,11 @@ interface TodayQueueProps {
   /** Whether a Gmail template is armed (enables the "Gmail" quick action). */
   manualTemplateArmed: boolean;
   /**
+   * When true, the Gmail button SENDS directly via the Gmail API (a real
+   * <button> that calls onOpenInGmail) instead of opening a compose tab.
+   */
+  gmailDirectSend?: boolean;
+  /**
    * coach_id -> sequence enrollment summary. Any school with an ACTIVE enrollment
    * is being worked by the automated Resend sequence, so it's HIDDEN from this
    * manual Gmail worklist (the two channels are mutually exclusive).
@@ -159,6 +165,7 @@ export function TodayQueue({
   onLogTouch,
   onSetAssignee,
   manualTemplateArmed,
+  gmailDirectSend = false,
   enrollmentMap,
 }: TodayQueueProps) {
   const queue = useMemo(() => {
@@ -288,7 +295,28 @@ export function TodayQueue({
                 {/* Quick actions */}
                 <div className="flex flex-wrap items-center gap-1.5 sm:flex-shrink-0">
                   {(() => {
-                    const href = manualTemplateArmed ? getGmailHref?.(coach) ?? null : null;
+                    const armed = manualTemplateArmed && !!coach.email;
+                    // Direct mode: a real <button> that SENDS via the Gmail API
+                    // (no compose tab). onOpenInGmail is wired to the direct send.
+                    if (gmailDirectSend) {
+                      return (
+                        <Button
+                          variant="ghost"
+                          type="button"
+                          disabled={!armed}
+                          onClick={() => onOpenInGmail(coach)}
+                          aria-label={`Send via Gmail to ${coach.name}`}
+                          title={armed ? 'Send via Gmail' : 'Arm a Gmail template first'}
+                          className={cn(
+                            'inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors',
+                            armed ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-cream-50 text-warm-400',
+                          )}
+                        >
+                          <IconSend size={14} /> Send
+                        </Button>
+                      );
+                    }
+                    const href = armed ? getGmailHref?.(coach) ?? null : null;
                     // Real <a href> (not a programmatic window.open) so the merged
                     // compose URL opens reliably under browser automation too. The
                     // click still logs the touch via onOpenInGmail.
