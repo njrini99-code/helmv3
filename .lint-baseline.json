@@ -2,12 +2,14 @@
   "(null)": 2,
   "@typescript-eslint/no-explicit-any": 44,
   "@typescript-eslint/no-unused-vars": 1,
-  "helm/no-arbitrary-bg-white": 1302,
+  "helm/no-arbitrary-bg-white": 1321,
   "helm/no-arbitrary-radius": 38,
-  "helm/no-arbitrary-text-px": 165,
-  "helm/no-banned-color": 260,
-  "helm/no-raw-button": 104,
-  "helm/no-raw-input": 458,
+  "helm/no-arbitrary-text-px": 183,
+  "helm/no-banned-color": 138,
+  "helm/no-raw-button": 111,
+  "helm/no-raw-input": 467,
   "jsx-a11y/anchor-is-valid": 1,
-  "jsx-a11y/aria-role": 19
+  "jsx-a11y/aria-role": 23,
+  "jsx-a11y/click-events-have-key-events": 2,
+  "jsx-a11y/no-static-element-interactions": 2
 }

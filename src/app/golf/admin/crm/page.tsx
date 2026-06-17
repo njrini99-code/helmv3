@@ -48,6 +48,7 @@ import { ConferenceGroupView } from './components/ConferenceGroupView';
 import { CoachFilters, type Filters } from './components/CoachFilters';
 import { AddCoachModal } from './components/AddCoachModal';
 import { CoachDetailPanel } from './components/CoachDetailPanel';
+import { CrmCommandPalette } from './components/CrmCommandPalette';
 import { ImportModal } from './components/ImportModal';
 import { BulkActionsBar } from './components/BulkActionsBar';
 import { BulkEmailModal } from './components/BulkEmailModal';
@@ -189,6 +190,8 @@ export default function CRMPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   // Mobile "More" sheet (lists the destinations not on the bottom tab bar).
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  // ⌘K / Ctrl+K command palette.
+  const [cmdkOpen, setCmdkOpen] = useState(false);
 
   // Modals & Panels
   const [showAddModal, setShowAddModal] = useState(false);
@@ -276,6 +279,18 @@ export default function CRMPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setActiveTab]);
+
+  // ⌘K / Ctrl+K toggles the command palette globally (works from any field).
+  useEffect(() => {
+    function handleCmdK(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdkOpen((o) => !o);
+      }
+    }
+    window.addEventListener('keydown', handleCmdK);
+    return () => window.removeEventListener('keydown', handleCmdK);
+  }, []);
 
   // If searchParams (deep-link) changes to a different tab — e.g. the user
   // uses back/forward — sync local state to match. This does not trigger
@@ -1405,6 +1420,27 @@ export default function CRMPage() {
       )}
 
       {/* ═══════════════════ Overlays ═══════════════════ */}
+
+      {/* ⌘K / Ctrl+K command palette */}
+      <CrmCommandPalette
+        open={cmdkOpen}
+        onOpenChange={setCmdkOpen}
+        destinations={TABS.map((t) => ({ id: t.id, label: t.label }))}
+        onNavigate={(id) => setActiveTab(id as TabId)}
+        onNewCoach={() => setShowAddModal(true)}
+        onCompose={() => {
+          // Mirror the bulk "email" action: seed the composer with all coaches
+          // (BulkEmailModal only renders when it has recipients), then open it.
+          setBulkEmailCoaches(allCoaches);
+          setShowBulkEmailModal(true);
+        }}
+        onImport={() => setShowImportModal(true)}
+        coaches={allCoaches.map((c) => ({ id: c.id, name: c.name, school: c.school, email: c.email }))}
+        onSelectCoach={(id) => {
+          const c = allCoaches.find((x) => x.id === id);
+          if (c) handleCoachClick(c);
+        }}
+      />
 
       {/* Bulk Actions Bar */}
       {selectedIds.size > 0 && (
