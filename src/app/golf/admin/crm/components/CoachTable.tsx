@@ -1022,16 +1022,26 @@ interface SchoolGroupViewProps {
   onGmailTouch?: (coach: Coach) => void;
 }
 
-// The school's default outreach contact for the group-level Gmail button: the
-// explicit primary contact (with an email), else the head-most coach with an
-// email (groups are already sorted head-first), so one click emails the right
-// person without expanding the group.
-function schoolMainContact(coaches: Coach[]): Coach | null {
-  return (
-    coaches.find((c) => c.is_primary_contact && c.email) ??
-    coaches.find((c) => c.email) ??
-    null
+// A decision-maker target for outreach — never an assistant/volunteer (mirrors
+// the Today-queue rule). Head / director / associate head, or an explicit
+// primary contact, qualify.
+function isDecisionMaker(c: Coach): boolean {
+  const r = (c.role_level ?? '').toLowerCase();
+  if (r === 'assistant_coach' || r === 'volunteer') return false;
+  if (r === 'head_coach' || r === 'director' || r === 'associate_head_coach') return true;
+  return c.is_primary_contact === true;
+}
+
+// The school's target for the group-level Gmail button: the head/primary
+// decision-maker who is still an actionable NEW LEAD with an email (groups are
+// sorted head-first; the explicit primary contact wins). Returns null once that
+// contact has been emailed (status flips off 'new_lead') — so the button
+// disappears after you hit Gmail rather than falling back to an assistant.
+function schoolGmailTarget(coaches: Coach[]): Coach | null {
+  const eligible = coaches.filter(
+    (c) => c.email && c.status === 'new_lead' && isDecisionMaker(c),
   );
+  return eligible.find((c) => c.is_primary_contact) ?? eligible[0] ?? null;
 }
 
 function SchoolGroupView({
@@ -1174,7 +1184,7 @@ function SchoolGroupView({
                   reliably under automation; the click logs the touch. */}
               {(() => {
                 if (!manualTemplateArmed || !getGmailHref) return null;
-                const main = schoolMainContact(group.coaches);
+                const main = schoolGmailTarget(group.coaches);
                 const href = main ? getGmailHref(main) : null;
                 if (!main || !href) return null;
                 const roleLabel = main.is_primary_contact
