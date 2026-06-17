@@ -441,6 +441,26 @@ export async function enrollSegmentInSequence(input: {
   if (def.primaryOnly === true) {
     query = query.eq('is_primary_contact', true);
   }
+  // Mirror the remaining crm_coaches-column filters from CoachFilters/filteredCoaches
+  // so the segment we ENROLL matches the segment the operator SEES. Previously these
+  // were applied only client-side, so enrolling a saved "cold, has-notes" view could
+  // email the entire cold cohort. (queueStatus + temperature depend on joins to the
+  // enrollment state / engagement view and are intentionally not mirrored here — they
+  // are rare in enrollment segments and the dialog's resolved-count surfaces any gap.)
+  if (typeof def.search === 'string' && def.search.trim()) {
+    const s = def.search.trim().replace(/[%,()]/g, ''); // sanitize for the or-filter grammar
+    if (s) query = query.or(`name.ilike.%${s}%,school.ilike.%${s}%,email.ilike.%${s}%,conference.ilike.%${s}%`);
+  }
+  if (def.followUpDue === true) {
+    query = query.not('next_follow_up_at', 'is', null).lte('next_follow_up_at', new Date().toISOString());
+  }
+  if (def.hasNotes === true) {
+    query = query.not('notes', 'is', null).neq('notes', '');
+  }
+  if (def.noContact30Days === true) {
+    const cutoff = new Date(Date.now() - 30 * 86400_000).toISOString();
+    query = query.or(`last_contacted_at.is.null,last_contacted_at.lt.${cutoff}`);
+  }
 
   const { data: coaches, error: coachErr } = await query;
   if (coachErr) {
