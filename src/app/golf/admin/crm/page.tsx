@@ -67,21 +67,46 @@ import { Button, IconButton } from '@/components/ui/button';
 // ============================================================================
 // SIDEBAR TABS
 // ============================================================================
+// Flat list of every NAVIGABLE destination, each with a STABLE id, a fixed
+// keyboard shortcut, and a section it belongs to. Shortcuts are bound to ids
+// (not array position) so regrouping/reordering never silently re-points a
+// key. The four legacy email surfaces (email/resend/insights/inbound) are NOT
+// nav destinations anymore — they live as sub-tabs inside the single
+// "outreach" destination (see OUTREACH_SUBTABS below).
 const TABS = [
-  { id: 'inbox', label: 'Inbox', Icon: IconMail, shortcut: '1', description: 'Replies + tasks due today' },
-  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '2', description: 'Pipeline overview & quick actions' },
-  { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '3', description: 'All coaches in table view' },
-  { id: 'pipeline', label: 'Pipeline', Icon: IconChartBar, shortcut: '4', description: 'Kanban sales pipeline' },
-  { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '5', description: 'Drip campaigns & enrollments' },
-  { id: 'insights', label: 'Insights', Icon: IconChartBar, shortcut: '6', description: 'Deliverability + per-template performance' },
-  { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '7', description: 'Grouped by conference' },
-  { id: 'email', label: 'Email', Icon: IconMail, shortcut: '8', description: 'Email tracking & analytics' },
-  { id: 'resend', label: 'Resend', Icon: IconActivity, shortcut: '9', description: 'Live email deliverability from Resend' },
-  { id: 'inbound', label: 'Inbound', Icon: IconMail, shortcut: '0', description: 'Demo requests & inbound leads' },
-  { id: 'settings', label: 'Settings', Icon: IconBolt, shortcut: 'S', description: 'Automations & suppressions' },
+  // ── WORK ──
+  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '1', description: 'Pipeline overview & quick actions', section: 'work' },
+  { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '2', description: 'All coaches in table view', section: 'work' },
+  { id: 'pipeline', label: 'Pipeline', Icon: IconChartBar, shortcut: '3', description: 'Kanban sales pipeline', section: 'work' },
+  { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '4', description: 'Grouped by conference', section: 'work' },
+  { id: 'outreach', label: 'Outreach', Icon: IconMail, shortcut: '5', description: 'Email tracking, deliverability, analytics & replies', section: 'work' },
+  { id: 'inbox', label: 'Inbox', Icon: IconMail, shortcut: '6', description: 'Replies + tasks due today', section: 'work' },
+  // ── AUTOMATE ──
+  { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '7', description: 'Drip campaigns & enrollments', section: 'automate' },
+  // ── ADMIN ──
+  { id: 'settings', label: 'Settings', Icon: IconBolt, shortcut: 'S', description: 'Automations & suppressions', section: 'admin' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
+
+// Labeled sidebar sections, rendered in this order with an uppercase eyebrow.
+const NAV_SECTIONS = [
+  { id: 'work', label: 'Work' },
+  { id: 'automate', label: 'Automate' },
+  { id: 'admin', label: 'Admin' },
+] as const;
+
+// ── Outreach sub-tabs ──
+// The four legacy email surfaces, merged behind a horizontal sub-tab switcher
+// inside the Outreach panel. Each renders the exact same component as before.
+const OUTREACH_SUBTABS = [
+  { id: 'email', label: 'Tracking', Icon: IconMail },
+  { id: 'resend', label: 'Deliverability', Icon: IconActivity },
+  { id: 'insights', label: 'Analytics', Icon: IconChartBar },
+  { id: 'inbound', label: 'Replies', Icon: IconMail },
+] as const;
+
+type OutreachSubTabId = (typeof OUTREACH_SUBTABS)[number]['id'];
 
 // ============================================================================
 // MAIN COMPONENT
@@ -105,6 +130,11 @@ export default function CRMPage() {
   // searchParams sync effect below runs on mount and promotes the URL tab
   // post-hydration, so deep links still work.
   const [activeTab, setActiveTabState] = useState<TabId>('dashboard');
+
+  // Active sub-tab within the merged Outreach panel. Kept in local state and
+  // mirrored to the URL via ?outreach= (same history.replaceState pattern as
+  // the main tab) so deep links land on the right surface.
+  const [outreachSubTab, setOutreachSubTabState] = useState<OutreachSubTabId>('email');
 
   const [filters, setFilters] = useState<Filters>({
     status: 'all',
@@ -164,17 +194,32 @@ export default function CRMPage() {
     }
   }, []);
 
-  // Register the 1-7 number keyboard shortcut once, using a ref so we
-  // don't churn listeners on every tab change.
+  // Switch the active Outreach sub-tab and mirror it to ?outreach= so deep
+  // links to a specific email surface still work.
+  const setOutreachSubTab = useCallback((sub: OutreachSubTabId) => {
+    setOutreachSubTabState(sub);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('outreach', sub);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, []);
+
+  // Register the keyboard shortcut once, using a ref so we don't churn
+  // listeners on every tab change. Shortcuts bind to STABLE tab ids via a
+  // key→id lookup (not array index) so regrouping never re-points a key.
   const activeTabRef = useRef(activeTab);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
-      const tabIndex = parseInt(e.key) - 1;
-      if (tabIndex >= 0 && tabIndex < TABS.length) {
-        setActiveTab(TABS[tabIndex]!.id);
+      // Match against each tab's declared shortcut (case-insensitive for the
+      // letter shortcut, e.g. "S" for Settings).
+      const match = TABS.find((t) => t.shortcut.toLowerCase() === e.key.toLowerCase());
+      if (match) {
+        setActiveTab(match.id);
       }
     }
     window.addEventListener('keydown', handleKeyDown);
@@ -188,6 +233,11 @@ export default function CRMPage() {
     const urlTab = searchParams.get('tab') as TabId | null;
     if (urlTab && TABS.some((t) => t.id === urlTab) && urlTab !== activeTabRef.current) {
       setActiveTabState(urlTab);
+    }
+    // Promote a deep-linked Outreach sub-tab as well.
+    const urlSub = searchParams.get('outreach') as OutreachSubTabId | null;
+    if (urlSub && OUTREACH_SUBTABS.some((s) => s.id === urlSub)) {
+      setOutreachSubTabState(urlSub);
     }
   }, [searchParams]);
 
@@ -744,39 +794,56 @@ export default function CRMPage() {
         {/* Section Divider */}
         <div className="mx-3 border-t border-white/10" />
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs — grouped into labeled sections (WORK / AUTOMATE /
+            ADMIN). Each section renders an uppercase eyebrow above its items
+            (hidden when the sidebar is collapsed, where icons stand alone). */}
         <nav className="flex-1 overflow-y-auto px-3 py-2">
-          <div className="space-y-1">
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              const TabIcon = tab.Icon;
-              return (
-                <Button variant="ghost"
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'group relative flex items-center gap-3 w-full rounded-md transition-all duration-200',
-                    sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
-                    isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
-                  )}
-                >
-                  {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />}
-                  <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white')} />
-                  {!sidebarCollapsed && <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>}
-                  {!sidebarCollapsed && (
-                    <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', isActive ? 'bg-primary-500/20 text-primary-400' : 'bg-white/5 text-warm-500')}>
-                      {tab.shortcut}
-                    </span>
-                  )}
-                  {sidebarCollapsed && (
-                    <div className="absolute left-full ml-3 px-3 py-1.5 bg-warm-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
-                      {tab.label}
-                    </div>
-                  )}
-                </Button>
-              );
-            })}
-          </div>
+          {NAV_SECTIONS.map((sectionDef, sectionIdx) => {
+            const sectionTabs = TABS.filter((t) => t.section === sectionDef.id);
+            if (sectionTabs.length === 0) return null;
+            return (
+              <div key={sectionDef.id} className={cn(sectionIdx > 0 && 'mt-4')}>
+                {!sidebarCollapsed ? (
+                  <div className="px-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-warm-500">
+                    {sectionDef.label}
+                  </div>
+                ) : (
+                  sectionIdx > 0 && <div className="mx-1 mb-2 border-t border-white/10" />
+                )}
+                <div className="space-y-1">
+                  {sectionTabs.map((tab) => {
+                    const isActive = activeTab === tab.id;
+                    const TabIcon = tab.Icon;
+                    return (
+                      <Button variant="ghost"
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                          'group relative flex items-center gap-3 w-full rounded-md transition-all duration-200',
+                          sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
+                          isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
+                        )}
+                      >
+                        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />}
+                        <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white')} />
+                        {!sidebarCollapsed && <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>}
+                        {!sidebarCollapsed && (
+                          <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', isActive ? 'bg-primary-500/20 text-primary-400' : 'bg-white/5 text-warm-500')}>
+                            {tab.shortcut}
+                          </span>
+                        )}
+                        {sidebarCollapsed && (
+                          <div className="absolute left-full ml-3 px-3 py-1.5 bg-warm-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+                            {tab.label}
+                          </div>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </nav>
 
         {/* Saved segments rail (Stream C) */}
@@ -946,23 +1013,45 @@ export default function CRMPage() {
             </div>
           )}
 
-          {/* ── Email Tab ── */}
-          {activeTab === 'email' && <EmailTrackingView />}
-
-          {/* ── Resend Tab ── */}
-          {activeTab === 'resend' && <ResendActivityView onSendFollowup={handleSendFollowup} />}
-
-          {/* ── Inbound Tab ── */}
-          {activeTab === 'inbound' && <InboundLeadsView />}
+          {/* ── Outreach Tab ── merges the four email surfaces (Tracking /
+              Deliverability / Analytics / Replies) behind a horizontal
+              sub-tab switcher. Each sub-tab renders the exact same component
+              as before, with identical props. */}
+          {activeTab === 'outreach' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-2xl glass-standard p-1.5">
+                {OUTREACH_SUBTABS.map((sub) => {
+                  const isActive = outreachSubTab === sub.id;
+                  const SubIcon = sub.Icon;
+                  return (
+                    <Button variant="ghost"
+                      key={sub.id}
+                      onClick={() => setOutreachSubTab(sub.id)}
+                      className={cn(
+                        'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
+                        isActive
+                          ? 'bg-primary-50 text-primary-700 shadow-glass-sm'
+                          : 'text-warm-500 hover:text-warm-900 hover:bg-white/60'
+                      )}
+                    >
+                      <SubIcon size={16} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} />
+                      {sub.label}
+                    </Button>
+                  );
+                })}
+              </div>
+              {outreachSubTab === 'email' && <EmailTrackingView />}
+              {outreachSubTab === 'resend' && <ResendActivityView onSendFollowup={handleSendFollowup} />}
+              {outreachSubTab === 'insights' && <InsightsDashboard />}
+              {outreachSubTab === 'inbound' && <InboundLeadsView />}
+            </div>
+          )}
 
           {/* ── Inbox Tab (NEW — Phase 3 P3-A) ── */}
           {activeTab === 'inbox' && <InboxView />}
 
           {/* ── Sequences Tab (NEW — Phase 2) ── */}
           {activeTab === 'sequences' && <SequencesTabWrapper />}
-
-          {/* ── Insights Tab (NEW — Phase 3 P3-B) ── */}
-          {activeTab === 'insights' && <InsightsDashboard />}
 
           {/* ── Settings Tab (NEW — Phase 1.5 + Phase 4) ──
               Two-section settings page: automations rules + suppression list. */}
