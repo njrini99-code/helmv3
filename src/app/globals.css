@@ -2036,6 +2036,24 @@
     }
   }
 
+  /*
+   * Coarse-pointer minimum tap target (WCAG 2.2 AA — 2.5.8 Target Size).
+   * OPT-IN via the `.tap-44` class — NOT a blanket `button` rule. A global
+   * `button { min-height: 44px }` would inflate dense desktop toolbars and
+   * inline icon buttons that are perfectly usable with a mouse, so we keep the
+   * floor scoped to elements explicitly tagged for touch ergonomics (and any
+   * actionable child they wrap). Apply `.tap-44` to interactive controls that
+   * are reachable on a touch device (e.g. CRM list rows, merge actions).
+   */
+  @media (pointer: coarse) {
+    .tap-44,
+    .tap-44 button,
+    .tap-44 [role="button"],
+    .tap-44 a.btn {
+      min-height: 44px;
+    }
+  }
+
   /* Inline link touch targets on mobile */
   @media (max-width: 1023px) {
     .prose a, p a, li a, span a {

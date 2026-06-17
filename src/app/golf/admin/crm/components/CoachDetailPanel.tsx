@@ -23,9 +23,11 @@ import {
   IconEye as Monitor,
   IconNote as StickyNote,
   IconPencil as Pencil,
+  IconUser,
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
-import { STATUS_COLORS } from '../crm-config';
+import { STATUS_COLORS, CRM_ASSIGNEES, type CrmAssignee } from '../crm-config';
+import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
 import { ToastProvider, useToast } from './Toast';
 import { CoachTimeline } from './timeline/CoachTimeline';
 import { NotesPanel } from './notes/NotesPanel';
@@ -46,6 +48,10 @@ interface CoachDetailPanelProps {
   // Gmail compose window (the parent owns arming the template + logging the
   // touch). Optional so existing usages compile unchanged.
   onOpenInGmail?: (coach: Coach) => void;
+  // Manual work-division label change. Fired after the assignee dropdown in the
+  // header is changed (and the server action has been dispatched) so the parent
+  // can sync its own list state. Optional so existing usages compile unchanged.
+  onAssigneeChange?: (coachId: string, assignee: string | null) => void;
 }
 
 // ============================================================================
@@ -81,6 +87,7 @@ function CoachDetailPanelInner({
   statusConfig,
   priorityConfig,
   onOpenInGmail,
+  onAssigneeChange,
 }: CoachDetailPanelProps) {
   const { toast } = useToast();
 
@@ -129,6 +136,12 @@ function CoachDetailPanelInner({
   // New: collapsible Quick Info
   const [showInfo, setShowInfo] = useState(false);
 
+  // Assignee (manual work-division label). Optimistic local mirror of
+  // coach.assigned_to so the dropdown reflects the choice immediately while the
+  // server action persists in the background.
+  const [assignee, setAssignee] = useState<string | null>(coach.assigned_to ?? null);
+  const [assigneeSaving, setAssigneeSaving] = useState(false);
+
   const supabase = createClient();
 
   // --------------------------------------------------------------------------
@@ -176,7 +189,8 @@ function CoachDetailPanelInner({
     setFollowUpDate(coach.next_follow_up_at?.split('T')[0] || '');
     setContactForm({ name: coach.name, title: coach.title || '', email: coach.email || '', phone: coach.phone || '', school: coach.school });
     setEditingContact(false);
-  }, [coach.id, coach.name, coach.title, coach.email, coach.phone, coach.school, coach.notes, coach.next_follow_up_at]);
+    setAssignee(coach.assigned_to ?? null);
+  }, [coach.id, coach.name, coach.title, coach.email, coach.phone, coach.school, coach.notes, coach.next_follow_up_at, coach.assigned_to]);
 
   // --------------------------------------------------------------------------
   // Handlers
@@ -238,6 +252,27 @@ function CoachDetailPanelInner({
   const handleStatusChange = (newStatus: CoachStatus) => {
     onUpdate({ status: newStatus });
     toast(`Status updated to ${statusConfig[newStatus]?.label || newStatus}`, 'success');
+  };
+
+  const handleAssigneeChange = async (next: string | null) => {
+    const previous = assignee;
+    setAssignee(next); // optimistic
+    setAssigneeSaving(true);
+    try {
+      const { ok } = await setCoachAssignee({ coach_id: coach.id, assignee: next });
+      if (!ok) {
+        setAssignee(previous); // rollback
+        toast('Failed to update assignee', 'error');
+        return;
+      }
+      onAssigneeChange?.(coach.id, next);
+      toast(next ? `Assigned to ${next}` : 'Unassigned', 'success');
+    } catch {
+      setAssignee(previous); // rollback
+      toast('Failed to update assignee', 'error');
+    } finally {
+      setAssigneeSaving(false);
+    }
   };
 
   const submitContact = async () => {
@@ -424,6 +459,36 @@ function CoachDetailPanelInner({
                         {priorityConfig[coach.priority]?.iconLabel}
                       </span>
                     )}
+                  </div>
+                  {/* Assignee — manual work-division label (one shared login). */}
+                  <div className="flex items-center gap-1.5 mt-2 ml-[26px]">
+                    <IconUser size={12} className="text-warm-400 flex-shrink-0" aria-hidden="true" />
+                    <div className="relative inline-flex items-center">
+                      <select
+                        value={assignee ?? ''}
+                        onChange={e => handleAssigneeChange(e.target.value === '' ? null : (e.target.value as CrmAssignee))}
+                        disabled={assigneeSaving}
+                        aria-label="Assigned to"
+                        className={cn(
+                          'appearance-none cursor-pointer pl-2.5 pr-7 py-1 rounded-full text-xs font-medium border transition-colors',
+                          'focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:opacity-50',
+                          assignee
+                            ? 'bg-primary-50 text-primary-700 border-primary-200'
+                            : 'bg-white/50 text-warm-500 border-warm-200/60',
+                        )}
+                      >
+                        <option value="">Unassigned</option>
+                        {CRM_ASSIGNEES.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                      <svg
+                        className="pointer-events-none absolute right-2 w-3 h-3 text-warm-400"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">

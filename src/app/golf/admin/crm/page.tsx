@@ -26,6 +26,8 @@ import {
   IconBolt,
   IconMoreHorizontal,
   IconX,
+  IconCalendar,
+  IconUser,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import {
@@ -35,8 +37,11 @@ import {
   STATUS_CONFIG,
   PRIORITY_CONFIG,
   AUTO_FOLLOWUP_DAYS,
+  CRM_ASSIGNEES,
+  type CrmAssignee,
 } from './crm-config';
 import { CRMDashboard } from './components/CRMDashboard';
+import { TodayQueue } from './components/TodayQueue';
 import { CoachTable } from './components/CoachTable';
 import { PipelineView } from './components/PipelineView';
 import { ConferenceGroupView } from './components/ConferenceGroupView';
@@ -64,6 +69,7 @@ import type { CRMEvent } from './components/CalendarView';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
 import { getCoachSequenceEnrollmentStatuses, type CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 import { logManualGmailTouch } from '@/app/golf/actions/crm-manual-send';
+import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
 import { mergeTemplate, buildGmailComposeUrl } from '@/lib/crm/gmail-compose';
 import type { CoachEngagement } from './types/foundations';
 import { Button, IconButton } from '@/components/ui/button';
@@ -80,14 +86,15 @@ import { toast } from '@/components/ui/sonner';
 // "outreach" destination (see OUTREACH_SUBTABS below).
 const TABS = [
   // ── WORK ──
-  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '1', description: 'Pipeline overview & quick actions', section: 'work' },
-  { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '2', description: 'All coaches in table view', section: 'work' },
-  { id: 'pipeline', label: 'Pipeline', Icon: IconChartBar, shortcut: '3', description: 'Kanban sales pipeline', section: 'work' },
-  { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '4', description: 'Grouped by conference', section: 'work' },
-  { id: 'outreach', label: 'Outreach', Icon: IconMail, shortcut: '5', description: 'Email tracking, deliverability, analytics & replies', section: 'work' },
-  { id: 'inbox', label: 'Inbox', Icon: IconMail, shortcut: '6', description: 'Replies + tasks due today', section: 'work' },
+  { id: 'today', label: 'Today', Icon: IconCalendar, shortcut: '1', description: "Today's ranked call & email worklist", section: 'work' },
+  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '2', description: 'Pipeline overview & quick actions', section: 'work' },
+  { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '3', description: 'All coaches in table view', section: 'work' },
+  { id: 'pipeline', label: 'Pipeline', Icon: IconChartBar, shortcut: '4', description: 'Kanban sales pipeline', section: 'work' },
+  { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '5', description: 'Grouped by conference', section: 'work' },
+  { id: 'outreach', label: 'Outreach', Icon: IconMail, shortcut: '6', description: 'Email tracking, deliverability, analytics & replies', section: 'work' },
+  { id: 'inbox', label: 'Inbox', Icon: IconMail, shortcut: '7', description: 'Replies + tasks due today', section: 'work' },
   // ── AUTOMATE ──
-  { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '7', description: 'Drip campaigns & enrollments', section: 'automate' },
+  { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '8', description: 'Drip campaigns & enrollments', section: 'automate' },
   // ── ADMIN ──
   { id: 'settings', label: 'Settings', Icon: IconBolt, shortcut: 'S', description: 'Automations & suppressions', section: 'admin' },
 ] as const;
@@ -120,9 +127,9 @@ type OutreachSubTabId = (typeof OUTREACH_SUBTABS)[number]['id'];
 // rest — so every sidebar destination stays reachable on mobile. Ids reference
 // the same stable TabId values, so tapping a bar item calls setActiveTab
 // exactly like the sidebar.
-const MOBILE_BAR_TABS = ['dashboard', 'list', 'outreach', 'sequences'] as const;
+const MOBILE_BAR_TABS = ['today', 'list', 'outreach', 'sequences'] as const;
 // Destinations that live behind the "More" sheet (everything not on the bar).
-const MOBILE_MORE_TABS = ['pipeline', 'conferences', 'inbox', 'settings'] as const;
+const MOBILE_MORE_TABS = ['dashboard', 'pipeline', 'conferences', 'inbox', 'settings'] as const;
 
 // ── "Open in Gmail" manual-send ──
 // The minimal shape we need from a crm_email_templates row to merge + compose.
@@ -151,7 +158,7 @@ export default function CRMPage() {
   // server rendered 'dashboard', client initial render wanted X. The
   // searchParams sync effect below runs on mount and promotes the URL tab
   // post-hydration, so deep links still work.
-  const [activeTab, setActiveTabState] = useState<TabId>('dashboard');
+  const [activeTab, setActiveTabState] = useState<TabId>('today');
 
   // Active sub-tab within the merged Outreach panel. Kept in local state and
   // mirrored to the URL via ?outreach= (same history.replaceState pattern as
@@ -175,6 +182,10 @@ export default function CRMPage() {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [conferences, setConferences] = useState<string[]>([]);
+  // Compact "Assignee" scope for the Coaches toolbar. 'all' = no filter,
+  // 'unassigned' = assigned_to is null, otherwise an exact assignee-label match.
+  // Held in local state only; CoachFilters' contract is unchanged.
+  const [assigneeScope, setAssigneeScope] = useState<'all' | 'unassigned' | CrmAssignee>('all');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   // Mobile "More" sheet (lists the destinations not on the bottom tab bar).
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
@@ -318,6 +329,7 @@ export default function CRMPage() {
     'last_email_event_at',
     'role_level',
     'is_primary_contact',
+    'assigned_to',
     'created_at',
     'updated_at',
   ].join(', ');
@@ -389,6 +401,7 @@ export default function CRMPage() {
         athletics_url: null,
         role_level: c.role_level ?? null,
         is_primary_contact: c.is_primary_contact ?? false,
+        assigned_to: c.assigned_to ?? null,
         _searchBlob: `${c.name ?? ''} ${c.school ?? ''} ${c.email ?? ''} ${c.conference ?? ''}`.toLowerCase(),
       }));
       setAllCoaches(coachData);
@@ -421,6 +434,13 @@ export default function CRMPage() {
 
     const result: Coach[] = [];
     for (const c of allCoaches) {
+      if (assigneeScope !== 'all') {
+        if (assigneeScope === 'unassigned') {
+          if (c.assigned_to != null) continue;
+        } else if (c.assigned_to !== assigneeScope) {
+          continue;
+        }
+      }
       if (hasStatus && c.status !== filters.status) continue;
       if (hasDivision && c.division !== filters.division) continue;
       if (hasConference && c.conference !== filters.conference) continue;
@@ -463,7 +483,7 @@ export default function CRMPage() {
     });
 
     return result;
-  }, [allCoaches, filters, sequenceEnrollmentMap]);
+  }, [allCoaches, filters, sequenceEnrollmentMap, assigneeScope]);
 
   useEffect(() => { fetchAllCoaches(); }, [fetchAllCoaches]);
 
@@ -598,7 +618,13 @@ export default function CRMPage() {
     }
 
     try {
-      const { error: updateError } = await supabase.from('crm_coaches').update(finalUpdates).eq('id', coachId);
+      // `assigned_to` lives on the Coach type (lane A) but isn't in the
+      // generated crm_coaches Update type until its migration regenerates the
+      // DB types; these paths never set it, so strip it for the typed update.
+      const { error: updateError } = await supabase
+        .from('crm_coaches')
+        .update(finalUpdates as Omit<Partial<Coach>, 'assigned_to'>)
+        .eq('id', coachId);
       if (updateError) throw updateError;
       setAllCoaches(prev => prev.map(c => {
         if (c.id !== coachId) return c;
@@ -628,7 +654,10 @@ export default function CRMPage() {
       : updates;
 
     try {
-      const { error: updateError } = await supabase.from('crm_coaches').update(finalUpdates).in('id', ids);
+      const { error: updateError } = await supabase
+        .from('crm_coaches')
+        .update(finalUpdates as Omit<Partial<Coach>, 'assigned_to'>)
+        .in('id', ids);
       if (updateError) throw updateError;
       const idSet = new Set(ids);
       const touchesSearchable =
@@ -722,6 +751,29 @@ export default function CRMPage() {
     }
     toast.success(`Opened Gmail for ${coach.name} — logged as contacted`);
   }, [activeManualTemplate, selectedCoach]);
+
+  // ── Assignee labels ──
+  // Set (or clear) the manual work-division label on a coach. Optimistic local
+  // update; the server action persists assigned_to + the frequency cap still
+  // owns double-touch prevention. On failure we re-fetch to resync truth.
+  const handleSetAssignee = useCallback(
+    async (coachId: string, assignee: CrmAssignee | null) => {
+      setAllCoaches((prev) =>
+        prev.map((c) => (c.id === coachId ? { ...c, assigned_to: assignee } : c)),
+      );
+      // Read the open-panel guard from inside the updater so we don't close over
+      // `selectedCoach` (keeps the handler ref stable, no extra dep needed).
+      setSelectedCoach((prev) =>
+        prev && prev.id === coachId ? { ...prev, assigned_to: assignee } : prev,
+      );
+      const { ok } = await setCoachAssignee({ coach_id: coachId, assignee });
+      if (!ok) {
+        toast.error('Failed to update assignee');
+        fetchAllCoaches();
+      }
+    },
+    [fetchAllCoaches],
+  );
 
   const handleSendFollowup = (
     recipients: Array<{ email: string; name?: string | null; coach_id?: string | null }>,
@@ -1072,6 +1124,25 @@ export default function CRMPage() {
         {/* Content Area — extra bottom padding below lg so the fixed mobile
             bottom tab bar (~64px + safe-area inset) never covers content. */}
         <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-6 bg-cream-100 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-6">
+          {/* ── Today Work Queue (DEFAULT) ── */}
+          {activeTab === 'today' && (
+            <div className="space-y-4">
+              <ManualGmailTemplateBar
+                templates={emailTemplates}
+                active={activeManualTemplate}
+                onChange={setActiveManualTemplate}
+              />
+              <TodayQueue
+                coaches={allCoaches}
+                onCoachClick={handleCoachClick}
+                onOpenInGmail={openInGmail}
+                onLogTouch={handleLogContact}
+                onSetAssignee={handleSetAssignee}
+                manualTemplateArmed={!!activeManualTemplate}
+              />
+            </div>
+          )}
+
           {/* ── Dashboard Tab ── */}
           {activeTab === 'dashboard' && (
             <CRMDashboard
@@ -1089,11 +1160,14 @@ export default function CRMPage() {
           {/* ── Coaches List Tab ── */}
           {activeTab === 'list' && (
             <div className="space-y-4">
-              <ManualGmailTemplateBar
-                templates={emailTemplates}
-                active={activeManualTemplate}
-                onChange={setActiveManualTemplate}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <ManualGmailTemplateBar
+                  templates={emailTemplates}
+                  active={activeManualTemplate}
+                  onChange={setActiveManualTemplate}
+                />
+                <AssigneeScopeBar scope={assigneeScope} onChange={setAssigneeScope} />
+              </div>
               <CoachFilters
                 filters={filters}
                 setFilters={setFilters}
@@ -1508,6 +1582,52 @@ function ManualGmailTemplateBar({
           </Button>
         </>
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// AssigneeScopeBar — compact "Assignee" scope filter for the Coaches toolbar
+// ============================================================================
+// Splits the prospect book by manual work-division label (Nick/Ben/Leah) plus
+// All / Unassigned. Local-state only — applied inside filteredCoaches; nothing
+// new is passed to CoachFilters. 44px-tall select for touch.
+// ============================================================================
+function AssigneeScopeBar({
+  scope,
+  onChange,
+}: {
+  scope: 'all' | 'unassigned' | CrmAssignee;
+  onChange: (next: 'all' | 'unassigned' | CrmAssignee) => void;
+}) {
+  const active = scope !== 'all';
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl glass-standard px-3 py-2">
+      <span className="flex items-center gap-1.5 text-sm font-medium text-warm-700">
+        <IconUser size={15} className="text-primary-500" />
+        Assignee:
+      </span>
+      <div className="relative inline-flex items-center">
+        <select
+          aria-label="Filter coaches by assignee"
+          value={scope}
+          onChange={(e) => onChange(e.target.value as 'all' | 'unassigned' | CrmAssignee)}
+          className={cn(
+            'appearance-none cursor-pointer min-h-[44px] rounded-xl border pl-3 pr-9 py-2 text-sm font-medium transition-colors',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
+            active
+              ? 'bg-primary-50 border-primary-200 text-primary-700'
+              : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-white/80',
+          )}
+        >
+          <option value="all">All</option>
+          {CRM_ASSIGNEES.map((a) => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+          <option value="unassigned">Unassigned</option>
+        </select>
+        <IconChevronRight size={14} className="pointer-events-none absolute right-3 rotate-90 text-warm-400" />
+      </div>
     </div>
   );
 }

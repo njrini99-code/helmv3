@@ -2,9 +2,10 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconPhone, IconUpload, IconUserPlus, IconFlame, IconZap } from '@/components/icons';
-import { STATUS_COLORS } from '../crm-config';
-import type { Coach, CoachStatus } from '../crm-config';
+import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconPhone, IconUpload, IconUserPlus, IconUser, IconUserX, IconCheck, IconFlame, IconZap } from '@/components/icons';
+import { STATUS_COLORS, CRM_ASSIGNEES } from '../crm-config';
+import type { Coach, CoachStatus, CrmAssignee } from '../crm-config';
+import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
 import type { CrmSegment } from '@/app/golf/admin/crm/types/foundations';
 import { EmailStatusBadge, type EmailStatusFields } from './EmailStatusBadge';
 import { SegmentBadge } from './segments/SegmentBadge';
@@ -95,6 +96,106 @@ function RowContactHeader({ coach }: { coach: Coach }) {
   );
 }
 
+// Per-label tint for the assignee chip. Each of the (currently three) work-
+// division labels gets a distinct soft pill so the book split reads at a glance.
+// Unknown labels fall through to a neutral warm tint. Purely presentational.
+const ASSIGNEE_TINT: Record<string, string> = {
+  Nick: 'bg-primary-50 text-primary-700 ring-1 ring-primary-200',
+  Ben: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+  Leah: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+};
+
+// Small tinted badge shown in the row / card when a coach has been assigned to
+// one of the work-division labels (Nick/Ben/Leah). Renders the label uppercased.
+function AssigneeChip({ assignee }: { assignee: string }) {
+  return (
+    <span
+      className={cn(
+        'shrink-0 inline-flex items-center gap-1 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+        ASSIGNEE_TINT[assignee] ?? 'bg-warm-100 text-warm-600 ring-1 ring-warm-200',
+      )}
+      title={`Assigned to ${assignee}`}
+    >
+      <IconUser size={9} className="opacity-70" aria-hidden="true" />
+      {assignee}
+    </span>
+  );
+}
+
+// Renders the "Assign ▾" submenu inside the row/card action menu: lists the
+// CRM_ASSIGNEES labels + "Unassign", calls setCoachAssignee, and reflects the
+// choice optimistically via onAssigneeChange (parent state) when provided. The
+// write is fire-and-forget through the server action (it revalidates the route).
+interface AssigneeSubmenuProps {
+  coach: Coach;
+  isOpen: boolean;
+  onToggle: () => void;
+  onCloseMenu: () => void;
+  onAssigneeChange?: (coachId: string, assignee: string | null) => void;
+  // Card variant flips the flyout to the left so it doesn't clip off-screen.
+  flyoutSide?: 'left' | 'right';
+}
+
+function AssigneeSubmenu({
+  coach,
+  isOpen,
+  onToggle,
+  onCloseMenu,
+  onAssigneeChange,
+  flyoutSide = 'left',
+}: AssigneeSubmenuProps) {
+  const apply = (assignee: CrmAssignee | null) => {
+    onAssigneeChange?.(coach.id, assignee);
+    void setCoachAssignee({ coach_id: coach.id, assignee });
+    onCloseMenu();
+  };
+  return (
+    <div className="relative">
+      <Button variant="ghost"
+        onClick={e => { e.stopPropagation(); onToggle(); }}
+        className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center justify-between"
+      >
+        <span className="flex items-center gap-2">
+          <IconUserPlus size={16} className="text-warm-400" /> Assign
+        </span>
+        <IconChevronRight size={12} className="text-warm-400" />
+      </Button>
+      {isOpen && (
+        <div className={cn(
+          'absolute top-0 z-50 w-36 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl',
+          flyoutSide === 'left' ? 'left-full ml-1' : 'right-full mr-1',
+        )}>
+          {CRM_ASSIGNEES.map(label => (
+            <Button variant="ghost"
+              key={label}
+              onClick={() => apply(label)}
+              className={cn(
+                'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+                coach.assigned_to === label ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+              )}
+            >
+              <IconUser size={14} className={coach.assigned_to === label ? 'text-primary-500' : 'text-warm-400'} />
+              <span className="flex-1">{label}</span>
+              {coach.assigned_to === label && <IconCheck size={13} className="text-primary-600" />}
+            </Button>
+          ))}
+          <div className="my-1 h-px bg-warm-100" />
+          <Button variant="ghost"
+            onClick={() => apply(null)}
+            disabled={!coach.assigned_to}
+            className={cn(
+              'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+              coach.assigned_to ? 'text-warm-700 hover:bg-warm-50 active:bg-warm-100' : 'text-warm-300 cursor-default',
+            )}
+          >
+            <IconUserX size={14} className="text-warm-400" /> Unassign
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // The Coach type from crm-config.tsx predates Stream 1's migration that added
 // `last_email_event_type` and `last_email_event_at` to crm_coaches. Extend it
 // locally as an additive intersection so both fields are available without
@@ -111,6 +212,9 @@ interface CoachTableProps {
   onSelectionChange: (ids: Set<string>) => void;
   onStatusChange: (coachId: string, status: CoachStatus) => void;
   onPriorityChange?: (coachId: string, priority: number) => void;
+  // Optional: parent updates its own coach list when an assignee changes so the
+  // chip reflects instantly. When omitted, the table tracks the override locally.
+  onAssigneeChange?: (coachId: string, assignee: string | null) => void;
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
   onCoachClick: (coach: Coach) => void;
   onLogContact: (coach: Coach) => void;
@@ -171,15 +275,18 @@ interface CoachTableRowProps {
   isStatusOpen: boolean;
   isActionOpen: boolean;
   isPriorityOpen: boolean;
+  isAssigneeOpen: boolean;
   onClick: (coach: Coach) => void;
   onToggleSelect: (id: string) => void;
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
   onStatusChange: (coachId: string, status: CoachStatus) => void;
   onPriorityChange?: (coachId: string, priority: number) => void;
+  onAssigneeChange?: (coachId: string, assignee: string | null) => void;
   onLogContact: (coach: Coach) => void;
   onOpenStatus: (id: string | null) => void;
   onOpenAction: (id: string | null) => void;
   onOpenPriority: (id: string | null) => void;
+  onOpenAssignee: (id: string | null) => void;
   statusConfig: StatusConfig;
   priorityConfig: PriorityConfig;
   engagement?: CoachEngagement;
@@ -200,15 +307,18 @@ const CoachTableRow = React.memo(
     isStatusOpen,
     isActionOpen,
     isPriorityOpen,
+    isAssigneeOpen,
     onClick,
     onToggleSelect,
     onToggleStar,
     onStatusChange,
     onPriorityChange,
+    onAssigneeChange,
     onLogContact,
     onOpenStatus,
     onOpenAction,
     onOpenPriority,
+    onOpenAssignee,
     statusConfig,
     priorityConfig,
     engagement,
@@ -271,6 +381,7 @@ const CoachTableRow = React.memo(
             {coach.is_primary_contact && (
               <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">★</span>
             )}
+            {coach.assigned_to && <AssigneeChip assignee={coach.assigned_to} />}
           </div>
           {secondary && <p className="text-label text-warm-400 truncate">{secondary}</p>}
         </td>
@@ -482,6 +593,16 @@ const CoachTableRow = React.memo(
                     </div>
                   )}
                 </div>
+
+                {/* Assign submenu — work-division labels (Nick/Ben/Leah) */}
+                <AssigneeSubmenu
+                  coach={coach}
+                  isOpen={isAssigneeOpen}
+                  onToggle={() => onOpenAssignee(isAssigneeOpen ? null : coach.id)}
+                  onCloseMenu={() => { onOpenAction(null); onOpenAssignee(null); }}
+                  onAssigneeChange={onAssigneeChange}
+                  flyoutSide="left"
+                />
               </div>
             )}
           </div>
@@ -501,6 +622,7 @@ const CoachTableRow = React.memo(
       prev.isStatusOpen === next.isStatusOpen &&
       prev.isActionOpen === next.isActionOpen &&
       prev.isPriorityOpen === next.isPriorityOpen &&
+      prev.isAssigneeOpen === next.isAssigneeOpen &&
       prev.statusConfig === next.statusConfig &&
       prev.priorityConfig === next.priorityConfig &&
       prev.engagement === next.engagement &&
@@ -513,10 +635,12 @@ const CoachTableRow = React.memo(
       prev.onToggleStar === next.onToggleStar &&
       prev.onStatusChange === next.onStatusChange &&
       prev.onPriorityChange === next.onPriorityChange &&
+      prev.onAssigneeChange === next.onAssigneeChange &&
       prev.onLogContact === next.onLogContact &&
       prev.onOpenStatus === next.onOpenStatus &&
       prev.onOpenAction === next.onOpenAction &&
-      prev.onOpenPriority === next.onOpenPriority
+      prev.onOpenPriority === next.onOpenPriority &&
+      prev.onOpenAssignee === next.onOpenAssignee
     );
   },
 );
@@ -539,15 +663,18 @@ const CoachTableCard = React.memo(
     isStatusOpen,
     isActionOpen,
     isPriorityOpen,
+    isAssigneeOpen,
     onClick,
     onToggleSelect,
     onToggleStar,
     onStatusChange,
     onPriorityChange,
+    onAssigneeChange,
     onLogContact,
     onOpenStatus,
     onOpenAction,
     onOpenPriority,
+    onOpenAssignee,
     statusConfig,
     priorityConfig,
     engagement,
@@ -597,6 +724,7 @@ const CoachTableCard = React.memo(
               {coach.is_primary_contact && (
                 <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">★</span>
               )}
+              {coach.assigned_to && <AssigneeChip assignee={coach.assigned_to} />}
             </div>
             {coachSecondaryLine(coach) && (
               <p className="text-label text-warm-400 truncate">{coachSecondaryLine(coach)}</p>
@@ -714,6 +842,16 @@ const CoachTableCard = React.memo(
                       </div>
                     )}
                   </div>
+
+                  {/* Assign submenu — work-division labels (Nick/Ben/Leah) */}
+                  <AssigneeSubmenu
+                    coach={coach}
+                    isOpen={isAssigneeOpen}
+                    onToggle={() => onOpenAssignee(isAssigneeOpen ? null : coach.id)}
+                    onCloseMenu={() => { onOpenAction(null); onOpenAssignee(null); }}
+                    onAssigneeChange={onAssigneeChange}
+                    flyoutSide="right"
+                  />
                 </div>
               )}
             </div>
@@ -818,6 +956,7 @@ const CoachTableCard = React.memo(
       prev.isStatusOpen === next.isStatusOpen &&
       prev.isActionOpen === next.isActionOpen &&
       prev.isPriorityOpen === next.isPriorityOpen &&
+      prev.isAssigneeOpen === next.isAssigneeOpen &&
       prev.statusConfig === next.statusConfig &&
       prev.priorityConfig === next.priorityConfig &&
       prev.engagement === next.engagement &&
@@ -829,10 +968,12 @@ const CoachTableCard = React.memo(
       prev.onToggleStar === next.onToggleStar &&
       prev.onStatusChange === next.onStatusChange &&
       prev.onPriorityChange === next.onPriorityChange &&
+      prev.onAssigneeChange === next.onAssigneeChange &&
       prev.onLogContact === next.onLogContact &&
       prev.onOpenStatus === next.onOpenStatus &&
       prev.onOpenAction === next.onOpenAction &&
-      prev.onOpenPriority === next.onOpenPriority
+      prev.onOpenPriority === next.onOpenPriority &&
+      prev.onOpenAssignee === next.onOpenAssignee
     );
   },
 );
@@ -1095,6 +1236,7 @@ export function CoachTable({
   onSelectionChange,
   onStatusChange,
   onPriorityChange,
+  onAssigneeChange,
   onToggleStar,
   onCoachClick,
   onLogContact,
@@ -1111,6 +1253,11 @@ export function CoachTable({
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   const [openPrioritySubmenu, setOpenPrioritySubmenu] = useState<string | null>(null);
+  const [openAssigneeSubmenu, setOpenAssigneeSubmenu] = useState<string | null>(null);
+  // Local optimistic assignee overrides — only used when the parent does NOT
+  // pass onAssigneeChange (i.e. it isn't managing the chip itself). Keyed by
+  // coach.id; the value (label or null) wins over coach.assigned_to for display.
+  const [assigneeOverrides, setAssigneeOverrides] = useState<Record<string, string | null>>({});
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(1);
@@ -1129,7 +1276,7 @@ export function CoachTable({
   // Close dropdowns on outside click
   useEffect(() => {
     if (!openStatusDropdown && !openActionMenu) return;
-    const handler = () => { setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); };
+    const handler = () => { setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); setOpenAssigneeSubmenu(null); };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, [openStatusDropdown, openActionMenu]);
@@ -1181,11 +1328,38 @@ export function CoachTable({
     if (id !== null) {
       setOpenStatusDropdown(null);
       setOpenPrioritySubmenu(null);
+      setOpenAssigneeSubmenu(null);
     }
   }, []);
   const handleOpenPriority = useCallback((id: string | null) => {
     setOpenPrioritySubmenu(id);
+    if (id !== null) setOpenAssigneeSubmenu(null);
   }, []);
+  const handleOpenAssignee = useCallback((id: string | null) => {
+    setOpenAssigneeSubmenu(id);
+    if (id !== null) setOpenPrioritySubmenu(null);
+  }, []);
+
+  // Optimistic assignee update. If the parent owns the data it gets the call and
+  // updates its own list; otherwise we record a local override so the chip
+  // reflects the change immediately. The server write happens in AssigneeSubmenu.
+  const handleAssigneeChange = useCallback((coachId: string, assignee: string | null) => {
+    if (onAssigneeChange) {
+      onAssigneeChange(coachId, assignee);
+    } else {
+      setAssigneeOverrides(prev => ({ ...prev, [coachId]: assignee }));
+    }
+  }, [onAssigneeChange]);
+
+  // Apply any local override on top of the incoming coach so the row/card and
+  // its action menu render the optimistic assignee. No-op when the parent owns
+  // the data (no overrides are ever written in that path).
+  const coachWithAssignee = useCallback((coach: Coach): Coach => {
+    if (!(coach.id in assigneeOverrides)) return coach;
+    const override = assigneeOverrides[coach.id] ?? null;
+    if (override === coach.assigned_to) return coach;
+    return { ...coach, assigned_to: override };
+  }, [assigneeOverrides]);
 
   // Keyboard nav
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -1207,7 +1381,7 @@ export function CoachTable({
       case 'x':
         if (focusedIndex !== null && paginatedCoaches[focusedIndex]) { e.preventDefault(); toggleSelection(paginatedCoaches[focusedIndex].id); }
         break;
-      case 'Escape': setFocusedIndex(null); setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); break;
+      case 'Escape': setFocusedIndex(null); setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); setOpenAssigneeSubmenu(null); break;
     }
   }, [paginatedCoaches, focusedIndex, onToggleStar, onCoachClick, toggleSelection]);
 
@@ -1422,21 +1596,24 @@ export function CoachTable({
           {paginatedCoaches.map((coach, index) => (
             <CoachTableRow
               key={coach.id}
-              coach={coach}
+              coach={coachWithAssignee(coach)}
               isSelected={selectedIds.has(coach.id)}
               isFocused={focusedIndex === index}
               isStatusOpen={openStatusDropdown === coach.id}
               isActionOpen={openActionMenu === coach.id}
               isPriorityOpen={openPrioritySubmenu === coach.id}
+              isAssigneeOpen={openAssigneeSubmenu === coach.id}
               onClick={onCoachClick}
               onToggleSelect={toggleSelection}
               onToggleStar={onToggleStar}
               onStatusChange={onStatusChange}
               onPriorityChange={onPriorityChange}
+              onAssigneeChange={handleAssigneeChange}
               onLogContact={onLogContact}
               onOpenStatus={handleOpenStatus}
               onOpenAction={handleOpenAction}
               onOpenPriority={handleOpenPriority}
+              onOpenAssignee={handleOpenAssignee}
               statusConfig={statusConfig}
               priorityConfig={priorityConfig}
               engagement={coachEngagement?.[coach.id]}
@@ -1460,21 +1637,24 @@ export function CoachTable({
         {paginatedCoaches.map((coach, index) => (
           <CoachTableCard
             key={coach.id}
-            coach={coach}
+            coach={coachWithAssignee(coach)}
             isSelected={selectedIds.has(coach.id)}
             isFocused={focusedIndex === index}
             isStatusOpen={openStatusDropdown === coach.id}
             isActionOpen={openActionMenu === coach.id}
             isPriorityOpen={openPrioritySubmenu === coach.id}
+            isAssigneeOpen={openAssigneeSubmenu === coach.id}
             onClick={onCoachClick}
             onToggleSelect={toggleSelection}
             onToggleStar={onToggleStar}
             onStatusChange={onStatusChange}
             onPriorityChange={onPriorityChange}
+            onAssigneeChange={handleAssigneeChange}
             onLogContact={onLogContact}
             onOpenStatus={handleOpenStatus}
             onOpenAction={handleOpenAction}
             onOpenPriority={handleOpenPriority}
+            onOpenAssignee={handleOpenAssignee}
             statusConfig={statusConfig}
             priorityConfig={priorityConfig}
             engagement={coachEngagement?.[coach.id]}
