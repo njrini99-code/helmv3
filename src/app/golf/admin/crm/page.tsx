@@ -622,6 +622,25 @@ export default function CRMPage() {
     return () => { cancelled = true; };
   }, [supabase]);
 
+  // Keep the armed template in sync with the latest DB content. The armed copy is
+  // hydrated from localStorage (and may be stale if the template was edited after
+  // arming, now that templates are editable in the Template Manager). When the
+  // fresh list loads, refresh the armed template's subject/body/name by id so
+  // "Open in Gmail" always composes from the current template. The equality guard
+  // prevents a render loop.
+  useEffect(() => {
+    if (!activeManualTemplate || emailTemplates.length === 0) return;
+    const fresh = emailTemplates.find((t) => t.id === activeManualTemplate.id);
+    if (!fresh) return; // template deleted — keep the last-known copy usable
+    if (
+      fresh.subject !== activeManualTemplate.subject ||
+      fresh.body !== activeManualTemplate.body ||
+      fresh.name !== activeManualTemplate.name
+    ) {
+      setActiveManualTemplate(fresh);
+    }
+  }, [emailTemplates, activeManualTemplate]);
+
   // ============================================================================
   // ACTIONS
   // ============================================================================
