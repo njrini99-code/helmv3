@@ -238,6 +238,11 @@ interface CoachTableProps {
   // callers compile unchanged.
   onOpenInGmail?: (coach: Coach) => void;
   manualTemplateArmed?: boolean;
+  // School-group header "Gmail" action: a real <a href> built from the armed
+  // template (subject + body merged) so it opens reliably under automation.
+  // getGmailHref builds the compose URL for a coach; onGmailTouch logs the touch.
+  getGmailHref?: (coach: Coach) => string | null;
+  onGmailTouch?: (coach: Coach) => void;
 }
 
 const ALL_STATUSES: CoachStatus[] = [
@@ -1012,6 +1017,21 @@ interface SchoolGroupViewProps {
   onSelectionChange: (ids: Set<string>) => void;
   onCoachClick: (coach: Coach) => void;
   statusConfig: StatusConfig;
+  manualTemplateArmed?: boolean;
+  getGmailHref?: (coach: Coach) => string | null;
+  onGmailTouch?: (coach: Coach) => void;
+}
+
+// The school's default outreach contact for the group-level Gmail button: the
+// explicit primary contact (with an email), else the head-most coach with an
+// email (groups are already sorted head-first), so one click emails the right
+// person without expanding the group.
+function schoolMainContact(coaches: Coach[]): Coach | null {
+  return (
+    coaches.find((c) => c.is_primary_contact && c.email) ??
+    coaches.find((c) => c.email) ??
+    null
+  );
 }
 
 function SchoolGroupView({
@@ -1020,6 +1040,9 @@ function SchoolGroupView({
   onSelectionChange,
   onCoachClick,
   statusConfig,
+  manualTemplateArmed,
+  getGmailHref,
+  onGmailTouch,
 }: SchoolGroupViewProps) {
   const [expandedSchools, setExpandedSchools] = useState<Set<string>>(new Set());
 
@@ -1145,6 +1168,34 @@ function SchoolGroupView({
                   </span>
                 </span>
               </Button>
+
+              {/* Group-level Gmail action — emails the school's primary/head
+                  contact directly (no need to expand). Real <a href> so it opens
+                  reliably under automation; the click logs the touch. */}
+              {(() => {
+                if (!manualTemplateArmed || !getGmailHref) return null;
+                const main = schoolMainContact(group.coaches);
+                const href = main ? getGmailHref(main) : null;
+                if (!main || !href) return null;
+                const roleLabel = main.is_primary_contact
+                  ? 'primary contact'
+                  : main.role_level === 'head_coach'
+                    ? 'head coach'
+                    : 'main contact';
+                return (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => { e.stopPropagation(); onGmailTouch?.(main); }}
+                    aria-label={`Open Gmail to ${main.name} (${roleLabel}) at ${group.school}`}
+                    title={`Email ${main.name} — ${roleLabel}`}
+                    className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+                  >
+                    <IconMail size={13} aria-hidden="true" /> Gmail
+                  </a>
+                );
+              })()}
             </div>
 
             {/* Expanded Coach List */}
@@ -1249,6 +1300,8 @@ export function CoachTable({
   coachSegments,
   onOpenInGmail,
   manualTemplateArmed,
+  getGmailHref,
+  onGmailTouch,
 }: CoachTableProps) {
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
@@ -1495,6 +1548,9 @@ export function CoachTable({
           onSelectionChange={onSelectionChange}
           onCoachClick={onCoachClick}
           statusConfig={statusConfig}
+          manualTemplateArmed={manualTemplateArmed}
+          getGmailHref={getGmailHref}
+          onGmailTouch={onGmailTouch}
         />
       </div>
     );

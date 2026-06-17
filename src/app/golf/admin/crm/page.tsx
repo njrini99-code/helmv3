@@ -1267,6 +1267,8 @@ export default function CRMPage() {
                   coachEnrollments={sequenceEnrollmentMap}
                   onOpenInGmail={openInGmail}
                   manualTemplateArmed={!!activeManualTemplate}
+                  getGmailHref={getGmailHref}
+                  onGmailTouch={logGmailTouch}
                 />
               </div>
             </div>
