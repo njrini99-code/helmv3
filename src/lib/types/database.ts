@@ -3518,6 +3518,8 @@ export type Database = {
           phone: string | null
           priority: number | null
           program: Database["public"]["Enums"]["program_type"]
+          role_level: string | null
+          is_primary_contact: boolean
           school: string
           source: string | null
           status: Database["public"]["Enums"]["coach_status"]
@@ -3557,6 +3559,8 @@ export type Database = {
           phone?: string | null
           priority?: number | null
           program?: Database["public"]["Enums"]["program_type"]
+          role_level?: string | null
+          is_primary_contact?: boolean
           school: string
           source?: string | null
           status?: Database["public"]["Enums"]["coach_status"]
@@ -3596,6 +3600,8 @@ export type Database = {
           phone?: string | null
           priority?: number | null
           program?: Database["public"]["Enums"]["program_type"]
+          role_level?: string | null
+          is_primary_contact?: boolean
           school?: string
           source?: string | null
           status?: Database["public"]["Enums"]["coach_status"]

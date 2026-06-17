@@ -14,6 +14,8 @@ import {
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 import { Button, IconButton } from '@/components/ui/button';
+import { SequenceEnrollmentBadge } from './badges/SequenceEnrollmentBadge';
+import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 
 interface ConferenceGroupViewProps {
   coaches: Coach[];
@@ -27,6 +29,8 @@ interface ConferenceGroupViewProps {
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode; order: number }>;
   // Accepted for API parity with other CRM views; reserved for future priority chips.
   priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: React.ReactNode }>;
+  // coach_id -> sequence enrollment summary, for the queue badge
+  coachEnrollments?: Record<string, CoachEnrollmentSummary>;
 }
 
 interface ConferenceGroup {
@@ -60,6 +64,7 @@ export function ConferenceGroupView({
   onToggleStar,
   onLogContact,
   statusConfig,
+  coachEnrollments,
 }: ConferenceGroupViewProps) {
   const [expandedConferences, setExpandedConferences] = useState<Set<string>>(new Set());
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
@@ -357,6 +362,7 @@ export function ConferenceGroupView({
                           <td className="px-4 py-2.5">
                             <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
                             {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
+                            <div className="mt-1"><SequenceEnrollmentBadge summary={coachEnrollments?.[coach.id]} /></div>
                           </td>
                           <td className="px-4 py-2.5">
                             <p className="text-sm text-warm-700 truncate">{coach.school}</p>

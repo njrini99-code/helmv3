@@ -406,6 +406,9 @@ export async function enrollSegmentInSequence(input: {
   if (def.starred === true) {
     query = query.eq('is_starred', true);
   }
+  if (def.primaryOnly === true) {
+    query = query.eq('is_primary_contact', true);
+  }
 
   const { data: coaches, error: coachErr } = await query;
   if (coachErr) {
@@ -449,6 +452,48 @@ export async function listEnrollments(
     throw new Error(`Failed to load enrollments: ${error.message}`);
   }
   return (data ?? []) as CrmSequenceEnrollment[];
+}
+
+// Per-coach enrollment summary for list/badge views (Coaches + Conferences tabs).
+export interface CoachEnrollmentSummary {
+  status: SequenceEnrollmentStatus;
+  current_step: number;
+  next_send_at: string | null;
+}
+
+// Returns coach_id -> most relevant enrollment (active preferred, else most
+// recent). Powers the "Queued / Step N / Done" badge on the coaches list +
+// conference view so teammates working the list by hand don't double-touch.
+export async function getCoachSequenceEnrollmentStatuses(
+  coachIds: string[],
+): Promise<Record<string, CoachEnrollmentSummary>> {
+  if (!coachIds.length) return {};
+  const { supabase } = await getAuthedClient();
+  const client = supabase as AnySupabase;
+  const out: Record<string, CoachEnrollmentSummary> = {};
+  for (let i = 0; i < coachIds.length; i += 500) {
+    const chunk = coachIds.slice(i, i + 500);
+    const { data, error } = await client
+      .from('crm_sequence_enrollments')
+      .select('coach_id, status, current_step, next_send_at, enrolled_at')
+      .in('coach_id', chunk)
+      .order('enrolled_at', { ascending: false });
+    if (error) {
+      throw new Error(`Failed to load coach enrollment statuses: ${error.message}`);
+    }
+    for (const row of (data ?? []) as Array<{
+      coach_id: string; status: SequenceEnrollmentStatus; current_step: number; next_send_at: string | null;
+    }>) {
+      const summary: CoachEnrollmentSummary = {
+        status: row.status, current_step: row.current_step, next_send_at: row.next_send_at,
+      };
+      const existing = out[row.coach_id];
+      // first row per coach is the most recent (ordered desc); prefer an active one
+      if (!existing) out[row.coach_id] = summary;
+      else if (existing.status !== 'active' && summary.status === 'active') out[row.coach_id] = summary;
+    }
+  }
+  return out;
 }
 
 export async function pauseEnrollment(id: string): Promise<CrmSequenceEnrollment> {

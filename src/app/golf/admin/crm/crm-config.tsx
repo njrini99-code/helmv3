@@ -64,6 +64,8 @@ export interface Coach {
   created_at: string;
   updated_at: string;
   athletics_url: string | null;
+  role_level: string | null;
+  is_primary_contact: boolean;
 }
 
 // ============================================================================

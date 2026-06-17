@@ -59,6 +59,7 @@ import { AutomationsList } from './components/automations/AutomationsList';
 import { SuppressionsAdminPanel } from './components/suppressions/SuppressionsAdminPanel';
 import type { CRMEvent } from './components/CalendarView';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
+import { getCoachSequenceEnrollmentStatuses, type CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 import type { CoachEngagement } from './types/foundations';
 import { Button, IconButton } from '@/components/ui/button';
 
@@ -115,6 +116,7 @@ export default function CRMPage() {
     starred: false,
     hasNotes: false,
     noContact30Days: false,
+    primaryOnly: false,
   });
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -141,6 +143,7 @@ export default function CRMPage() {
   // Engagement map (coach_id -> CoachEngagement), populated by a one-shot
   // post-load effect. Surfaced as Hot/Warm/Cold pills in CoachTable. Stream B.
   const [engagementMap, setEngagementMap] = useState<Record<string, CoachEngagement>>({});
+  const [sequenceEnrollmentMap, setSequenceEnrollmentMap] = useState<Record<string, CoachEnrollmentSummary>>({});
 
   const supabase = createClient();
 
@@ -221,6 +224,8 @@ export default function CRMPage() {
     'email_status',
     'last_email_event_type',
     'last_email_event_at',
+    'role_level',
+    'is_primary_contact',
     'created_at',
     'updated_at',
   ].join(', ');
@@ -282,6 +287,8 @@ export default function CRMPage() {
         archived_at: null,
         archived_by: null,
         athletics_url: null,
+        role_level: c.role_level ?? null,
+        is_primary_contact: c.is_primary_contact ?? false,
         _searchBlob: `${c.name ?? ''} ${c.school ?? ''} ${c.email ?? ''} ${c.conference ?? ''}`.toLowerCase(),
       }));
       setAllCoaches(coachData);
@@ -338,6 +345,7 @@ export default function CRMPage() {
       if (filters.starred && !c.is_starred) continue;
       if (filters.hasNotes && !c.notes) continue;
       if (filters.noContact30Days && c.last_contacted_at && c.last_contacted_at >= cutoff) continue;
+      if (filters.primaryOnly && !c.is_primary_contact) continue;
       result.push(c);
     }
 
@@ -371,6 +379,28 @@ export default function CRMPage() {
       .catch((err) => {
         // Non-fatal: badges fall back to "—" placeholder when the map is empty.
         console.warn('[crm] engagement fetch failed:', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [allCoaches]);
+
+  // Per-coach sequence enrollment status -> the "Queued / Step N / Done" badge on
+  // the Coaches + Conferences lists, so teammates working the list by hand don't
+  // double-touch anyone. Mirrors the engagement fetch above.
+  useEffect(() => {
+    if (!allCoaches.length) {
+      setSequenceEnrollmentMap({});
+      return;
+    }
+    let cancelled = false;
+    const ids = allCoaches.map((c) => c.id);
+    getCoachSequenceEnrollmentStatuses(ids)
+      .then((map) => {
+        if (!cancelled) setSequenceEnrollmentMap(map);
+      })
+      .catch((err) => {
+        console.warn('[crm] enrollment fetch failed:', err);
       });
     return () => {
       cancelled = true;
@@ -853,6 +883,7 @@ export default function CRMPage() {
                   statusConfig={STATUS_CONFIG}
                   priorityConfig={PRIORITY_CONFIG}
                   coachEngagement={engagementMap}
+                  coachEnrollments={sequenceEnrollmentMap}
                 />
               </div>
             </div>
@@ -894,6 +925,7 @@ export default function CRMPage() {
                 onLogContact={handleLogContact}
                 statusConfig={STATUS_CONFIG}
                 priorityConfig={PRIORITY_CONFIG}
+                coachEnrollments={sequenceEnrollmentMap}
               />
             </div>
           )}

@@ -67,6 +67,10 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
   const [copied, setCopied] = useState<'bcc' | 'body' | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [showResultDetails, setShowResultDetails] = useState(false);
+  // Primary-only gate: when true (default), only coaches marked is_primary_contact are
+  // included in the recipient list. Skipped entirely when prefilledRecipients are
+  // provided (targeted follow-ups must keep their explicit recipient list).
+  const [primaryOnly, setPrimaryOnly] = useState(true);
 
   // AI Personalization state
   const [personalizing, setPersonalizing] = useState(false);
@@ -144,6 +148,8 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           athletics_url: null,
+          role_level: null,
+          is_primary_contact: false,
         });
       }
     }
@@ -153,7 +159,12 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
     return [...matched, ...adHoc];
   }, [coaches, prefilledRecipients]);
 
-  const coachesWithEmail = effectiveCoaches.filter(c => c.email);
+  // When prefilledRecipients are provided (targeted follow-up path), skip primaryOnly
+  // filtering so explicit recipients are never silently dropped.
+  const isPrefilled = !!prefilledRecipients && prefilledRecipients.length > 0;
+  const coachesWithEmail = effectiveCoaches.filter(c =>
+    c.email && (!primaryOnly || isPrefilled || c.is_primary_contact)
+  );
   const coachesWithoutEmail = effectiveCoaches.filter(c => !c.email);
   const bccList = coachesWithEmail.map(c => c.email!).join(',');
 
@@ -595,6 +606,19 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                     </span>
                   )}
                 </p>
+                {!isPrefilled && (
+                  <label className="mt-1 flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={primaryOnly}
+                      onChange={e => setPrimaryOnly(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+                    />
+                    <span className="text-xs text-warm-600 font-medium">
+                      Primary contacts only <span className="text-warm-400 font-normal">(skip assistants)</span>
+                    </span>
+                  </label>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3">

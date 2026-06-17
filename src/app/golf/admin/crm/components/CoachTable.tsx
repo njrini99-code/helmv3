@@ -2,15 +2,59 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconUpload, IconUserPlus, IconFlame, IconZap } from '@/components/icons';
+import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconPhone, IconUpload, IconUserPlus, IconFlame, IconZap } from '@/components/icons';
 import { STATUS_COLORS } from '../crm-config';
 import type { Coach, CoachStatus } from '../crm-config';
 import type { CrmSegment } from '@/app/golf/admin/crm/types/foundations';
 import { EmailStatusBadge, type EmailStatusFields } from './EmailStatusBadge';
 import { SegmentBadge } from './segments/SegmentBadge';
 import { EngagementBadge } from './badges/EngagementBadge';
+import { SequenceEnrollmentBadge } from './badges/SequenceEnrollmentBadge';
 import type { CoachEngagement } from '../types/foundations';
+import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 import { Button, IconButton } from '@/components/ui/button';
+
+// Short display labels for role_level values
+const ROLE_LABELS: Record<string, string> = {
+  head_coach: 'Head',
+  assistant_coach: 'Asst',
+  associate_head_coach: 'Assoc HC',
+  director: 'Dir',
+  volunteer: 'Vol',
+};
+
+// Short display labels for program values
+const PROGRAM_LABELS: Record<string, string> = {
+  mens: 'M',
+  womens: 'W',
+  both: 'M/W',
+};
+
+// Compact role + program + primary badges rendered under the coach name cell
+function CoachRoleBadges({ coach }: { coach: Coach }) {
+  const roleLabel = coach.role_level ? (ROLE_LABELS[coach.role_level] ?? coach.role_level) : null;
+  const programLabel = PROGRAM_LABELS[coach.program] ?? null;
+  if (!roleLabel && !programLabel && !coach.is_primary_contact) return null;
+  return (
+    <div className="flex items-center flex-wrap gap-1 mt-0.5">
+      {roleLabel && (
+        <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">
+          {roleLabel}
+        </span>
+      )}
+      {programLabel && (
+        <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">
+          {programLabel}
+        </span>
+      )}
+      {coach.is_primary_contact && (
+        <span className="text-micro font-bold px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">
+          ★ Primary
+        </span>
+      )}
+    </div>
+  );
+}
 
 // The Coach type from crm-config.tsx predates Stream 1's migration that added
 // `last_email_event_type` and `last_email_event_at` to crm_coaches. Extend it
@@ -38,6 +82,8 @@ interface CoachTableProps {
   // Engagement map keyed by coach.id; rendered in the leftmost data column
   // as a Hot/Warm/Cold pill. Optional — when omitted, no badge column shows.
   coachEngagement?: Record<string, CoachEngagement>;
+  // coach_id -> sequence enrollment summary, for the queue badge on the list
+  coachEnrollments?: Record<string, CoachEnrollmentSummary>;
   // Segment-membership map keyed by coach.id. Each entry is the list of
   // segments this coach belongs to (computed in the parent — see
   // SavedSegmentsRail integration). Stream C owns this prop & rightmost
@@ -92,6 +138,7 @@ interface CoachTableRowProps {
   statusConfig: StatusConfig;
   priorityConfig: PriorityConfig;
   engagement?: CoachEngagement;
+  enrollment?: CoachEnrollmentSummary | null;
   segments?: CrmSegment[];
 }
 
@@ -115,6 +162,7 @@ const CoachTableRow = React.memo(
     statusConfig,
     priorityConfig,
     engagement,
+    enrollment,
     segments,
   }: CoachTableRowProps) {
     const handleRowClick = () => onClick(coach);
@@ -151,10 +199,25 @@ const CoachTableRow = React.memo(
           </IconButton>
         </td>
 
-        {/* Coach name + title */}
+        {/* Coach name + title + role/program badges + contact (email / phone) */}
         <td className="px-4 py-3">
           <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
           {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
+          <CoachRoleBadges coach={coach} />
+          {coach.email && (
+            <a href={`mailto:${coach.email}`} onClick={e => e.stopPropagation()} title={coach.email}
+              className="mt-0.5 flex items-center gap-1 text-xs text-warm-500 hover:text-primary-600 transition-colors max-w-[240px]">
+              <IconMail size={11} className="shrink-0 opacity-60" />
+              <span className="truncate">{coach.email}</span>
+            </a>
+          )}
+          {coach.phone && (
+            <a href={`tel:${coach.phone}`} onClick={e => e.stopPropagation()} title={coach.phone}
+              className="flex items-center gap-1 text-xs text-warm-500 hover:text-primary-600 transition-colors">
+              <IconPhone size={11} className="shrink-0 opacity-60" />
+              <span className="truncate">{coach.phone}</span>
+            </a>
+          )}
         </td>
 
         {/* School */}
@@ -180,7 +243,10 @@ const CoachTableRow = React.memo(
         {/* Engagement (Hot / Warm / Cold) — leftmost data column, before Status.
             Stream B owns this column; do not move it without coordinating. */}
         <td className="px-4 py-3">
-          <EngagementBadge coachId={coach.id} engagement={engagement} size="sm" />
+          <div className="flex flex-col items-start gap-1">
+            <EngagementBadge coachId={coach.id} engagement={engagement} size="sm" />
+            <SequenceEnrollmentBadge summary={enrollment} />
+          </div>
         </td>
 
         {/* Status dropdown */}
@@ -421,6 +487,7 @@ const CoachTableCard = React.memo(
     statusConfig,
     priorityConfig,
     engagement,
+    enrollment,
     segments,
   }: CoachTableRowProps) {
     const handleCardClick = () => onClick(coach);
@@ -453,7 +520,22 @@ const CoachTableCard = React.memo(
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
             {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
+            <CoachRoleBadges coach={coach} />
             <p className="text-sm text-warm-800 truncate mt-0.5">{coach.school}</p>
+            {coach.email && (
+              <a href={`mailto:${coach.email}`} onClick={e => e.stopPropagation()} title={coach.email}
+                className="mt-1 flex items-center gap-1 text-xs text-warm-500 hover:text-primary-600 transition-colors">
+                <IconMail size={11} className="shrink-0 opacity-60" />
+                <span className="truncate">{coach.email}</span>
+              </a>
+            )}
+            {coach.phone && (
+              <a href={`tel:${coach.phone}`} onClick={e => e.stopPropagation()} title={coach.phone}
+                className="flex items-center gap-1 text-xs text-warm-500 hover:text-primary-600 transition-colors">
+                <IconPhone size={11} className="shrink-0 opacity-60" />
+                <span className="truncate">{coach.phone}</span>
+              </a>
+            )}
           </div>
 
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click when interacting with action buttons */}
@@ -573,6 +655,9 @@ const CoachTableCard = React.memo(
           {/* Engagement */}
           <EngagementBadge coachId={coach.id} engagement={engagement} size="sm" />
 
+          {/* Outreach-queue status */}
+          <SequenceEnrollmentBadge summary={enrollment} />
+
           {/* Status dropdown */}
           <div className="relative">
             <Button variant="ghost"
@@ -674,6 +759,254 @@ const CoachTableCard = React.memo(
 );
 
 // ============================================================================
+// SCHOOL GROUP VIEW
+// ============================================================================
+// Groups coaches by school, ordered within each group: head_coach first, then
+// by program (mens → womens → both), then alphabetically. Mirrors the
+// ConferenceGroupView expand/collapse + group-checkbox UX.
+// ============================================================================
+const HEAD_ROLE_ORDER: Record<string, number> = {
+  head_coach: 0,
+  associate_head_coach: 1,
+  director: 2,
+  assistant_coach: 3,
+  volunteer: 4,
+};
+
+const PROGRAM_ORDER: Record<string, number> = {
+  mens: 0,
+  womens: 1,
+  both: 2,
+};
+
+interface SchoolGroup {
+  school: string;
+  coaches: Coach[];
+  division: string;
+  count: number;
+}
+
+interface SchoolGroupViewProps {
+  coaches: Coach[];
+  selectedIds: Set<string>;
+  onSelectionChange: (ids: Set<string>) => void;
+  onCoachClick: (coach: Coach) => void;
+  statusConfig: StatusConfig;
+}
+
+function SchoolGroupView({
+  coaches,
+  selectedIds,
+  onSelectionChange,
+  onCoachClick,
+  statusConfig,
+}: SchoolGroupViewProps) {
+  const [expandedSchools, setExpandedSchools] = useState<Set<string>>(new Set());
+
+  const schoolGroups = useMemo((): SchoolGroup[] => {
+    const groups: Record<string, Coach[]> = {};
+    coaches.forEach(coach => {
+      if (!groups[coach.school]) groups[coach.school] = [];
+      groups[coach.school]!.push(coach);
+    });
+
+    return Object.entries(groups)
+      .map(([school, groupCoaches]) => ({
+        school,
+        division: groupCoaches[0]?.division ?? 'D3',
+        count: groupCoaches.length,
+        coaches: [...groupCoaches].sort((a, b) => {
+          // head-most role first
+          const aRole = HEAD_ROLE_ORDER[a.role_level ?? ''] ?? 5;
+          const bRole = HEAD_ROLE_ORDER[b.role_level ?? ''] ?? 5;
+          if (aRole !== bRole) return aRole - bRole;
+          // then by program
+          const aProg = PROGRAM_ORDER[a.program] ?? 3;
+          const bProg = PROGRAM_ORDER[b.program] ?? 3;
+          if (aProg !== bProg) return aProg - bProg;
+          return a.name.localeCompare(b.name);
+        }),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [coaches]);
+
+  const toggleSchool = (school: string) => {
+    setExpandedSchools(prev => {
+      const next = new Set(prev);
+      if (next.has(school)) next.delete(school); else next.add(school);
+      return next;
+    });
+  };
+
+  const expandAll = () => setExpandedSchools(new Set(schoolGroups.map(g => g.school)));
+  const collapseAll = () => setExpandedSchools(new Set());
+
+  const allFilteredSelected = coaches.length > 0 && coaches.every(c => selectedIds.has(c.id));
+  const toggleSelectAllFiltered = () => {
+    onSelectionChange(allFilteredSelected ? new Set() : new Set(coaches.map(c => c.id)));
+  };
+
+  const toggleGroupSelection = (group: SchoolGroup) => {
+    const allSelected = group.coaches.every(c => selectedIds.has(c.id));
+    const next = new Set(selectedIds);
+    if (allSelected) {
+      group.coaches.forEach(c => next.delete(c.id));
+    } else {
+      group.coaches.forEach(c => next.add(c.id));
+    }
+    onSelectionChange(next);
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <p className="text-sm text-warm-500">
+          <span className="font-semibold text-warm-700">{schoolGroups.length}</span> schools &middot;{' '}
+          <span className="font-semibold text-warm-700">{coaches.length}</span> coaches
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="ghost" type="button" onClick={toggleSelectAllFiltered}
+            className={cn('px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
+              allFilteredSelected ? 'text-primary-700 bg-primary-50 hover:bg-primary-100' : 'text-primary-700 hover:bg-primary-50'
+            )}>
+            {allFilteredSelected ? 'Clear selection' : `Select all ${coaches.length}`}
+          </Button>
+          <Button variant="ghost" type="button" onClick={expandAll}
+            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors">
+            Expand All
+          </Button>
+          <Button variant="ghost" type="button" onClick={collapseAll}
+            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors">
+            Collapse All
+          </Button>
+        </div>
+      </div>
+
+      {schoolGroups.map((group) => {
+        const isExpanded = expandedSchools.has(group.school);
+        const allSelected = group.coaches.every(c => selectedIds.has(c.id));
+        const someSelected = group.coaches.some(c => selectedIds.has(c.id));
+        const panelId = `school-panel-${group.school.replace(/\s+/g, '-')}`;
+
+        return (
+          <div key={group.school} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
+            {/* School Header */}
+            <div className="flex items-center gap-3 p-4">
+              <input
+                type="checkbox"
+                aria-label={`Select all coaches at ${group.school}`}
+                checked={allSelected}
+                ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                onChange={() => toggleGroupSelection(group)}
+                className="w-4 h-4 rounded-lg border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+              />
+              <Button variant="ghost" type="button"
+                onClick={() => toggleSchool(group.school)}
+                aria-expanded={isExpanded}
+                aria-controls={panelId}
+                className="flex-1 min-w-0 flex items-center gap-3 -m-2 p-2 rounded-lg hover:bg-warm-50/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 transition-colors text-left"
+              >
+                <span className="text-warm-400 flex-shrink-0" aria-hidden="true">
+                  {isExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                </span>
+                <span className="flex-1 min-w-0 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-warm-900 truncate">{group.school}</h3>
+                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-warm-100 text-label font-bold text-warm-600 tabular-nums">
+                    {group.count}
+                  </span>
+                </span>
+                <span className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+                  <span className={cn(
+                    'px-2 py-0.5 rounded-lg text-micro font-bold tabular-nums',
+                    group.division === 'D2' ? 'bg-blue-50 text-blue-700' : 'bg-primary-50 text-primary-700'
+                  )}>
+                    {group.division}
+                  </span>
+                </span>
+              </Button>
+            </div>
+
+            {/* Expanded Coach List */}
+            {isExpanded && (
+              <div id={panelId} role="region" aria-label={`${group.school} coaches`} className="border-t border-warm-100/50">
+                <table className="w-full table-fixed">
+                  <thead>
+                    <tr className="border-b border-warm-100/30">
+                      <th className="w-10 px-4 py-2" />
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">Coach</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider w-28">Role</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.coaches.map(coach => {
+                      const isSelected = selectedIds.has(coach.id);
+                      const roleLabel = coach.role_level ? (ROLE_LABELS[coach.role_level] ?? coach.role_level) : '—';
+                      const programLabel = PROGRAM_LABELS[coach.program] ?? '';
+                      return (
+                        <tr
+                          key={coach.id}
+                          className={cn(
+                            'border-b border-warm-50/50 transition-all duration-150 cursor-pointer group',
+                            isSelected && 'bg-primary-50/50',
+                            !isSelected && 'hover:bg-primary-50/20'
+                          )}
+                          onClick={() => onCoachClick(coach)}
+                        >
+                          <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              aria-label={`Select ${coach.name}`}
+                              checked={isSelected}
+                              onChange={() => {
+                                const next = new Set(selectedIds);
+                                if (next.has(coach.id)) next.delete(coach.id); else next.add(coach.id);
+                                onSelectionChange(next);
+                              }}
+                              className="w-4 h-4 rounded-lg border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
+                            {coach.email && <p className="text-xs text-warm-400 truncate">{coach.email}</p>}
+                            {coach.is_primary_contact && (
+                              <span className="text-micro font-bold px-1 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">★ Primary</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-1">
+                              <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">{roleLabel}</span>
+                              {programLabel && (
+                                <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{programLabel}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <span className={cn(
+                              'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-micro font-medium',
+                              statusConfig[coach.status]?.bgColor,
+                              statusConfig[coach.status]?.color,
+                            )}>
+                              {statusConfig[coach.status]?.icon}
+                              <span>{statusConfig[coach.status]?.label}</span>
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================================
 // MAIN TABLE COMPONENT
 // ============================================================================
 export function CoachTable({
@@ -691,6 +1024,7 @@ export function CoachTable({
   statusConfig,
   priorityConfig,
   coachEngagement,
+  coachEnrollments,
   coachSegments,
 }: CoachTableProps) {
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
@@ -700,6 +1034,7 @@ export function CoachTable({
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+  const [groupBySchool, setGroupBySchool] = useState(false);
   // focusedIndex is only set by keyboard nav (j/k) — NOT on mouse hover.
   // Hover state is now pure CSS (`hover:bg-white/60` on the row) which
   // avoids re-rendering the table on every mouse traversal.
@@ -883,8 +1218,42 @@ export function CoachTable({
     );
   }
 
+  // Group-by-school mode — render SchoolGroupView in place of the table
+  if (groupBySchool) {
+    return (
+      <div className="p-4 space-y-3">
+        {/* Grouping toggle */}
+        <div className="flex justify-end">
+          <Button variant="ghost" type="button"
+            onClick={() => setGroupBySchool(false)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-primary-50 border-primary-200 text-primary-700 hover:bg-primary-100 transition-colors"
+          >
+            ✕ Exit School View
+          </Button>
+        </div>
+        <SchoolGroupView
+          coaches={coaches}
+          selectedIds={selectedIds}
+          onSelectionChange={onSelectionChange}
+          onCoachClick={onCoachClick}
+          statusConfig={statusConfig}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-x-auto">
+      {/* Group-by-school toggle — sits above the select-all banner */}
+      <div className="flex justify-end px-4 pt-3 pb-1">
+        <Button variant="ghost" type="button"
+          onClick={() => setGroupBySchool(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+        >
+          🏫 Group by School
+        </Button>
+      </div>
+
       {/* Select-all-filtered banner — act on every coach matching the current
           filter/search, not just the current page. Feeds the bulk Email action. */}
       {pageAllSelected && sortedCoaches.length > paginatedCoaches.length && (
@@ -954,6 +1323,7 @@ export function CoachTable({
               statusConfig={statusConfig}
               priorityConfig={priorityConfig}
               engagement={coachEngagement?.[coach.id]}
+              enrollment={coachEnrollments?.[coach.id]}
               segments={coachSegments?.[coach.id]}
             />
           ))}
@@ -987,6 +1357,7 @@ export function CoachTable({
             statusConfig={statusConfig}
             priorityConfig={priorityConfig}
             engagement={coachEngagement?.[coach.id]}
+            enrollment={coachEnrollments?.[coach.id]}
             segments={coachSegments?.[coach.id]}
           />
         ))}

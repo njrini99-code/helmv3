@@ -114,6 +114,7 @@ async function tick(): Promise<{
   stopped: number;
   completed: number;
   failed: number;
+  capped?: boolean;
 }> {
   const supabase = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,7 +122,28 @@ async function tick(): Promise<{
 
   const nowIso = new Date().toISOString();
 
-  // 1. Pull due enrollments.
+  // Daily send cap — the "safe" throttle. Count today's sequence sends and stop
+  // once we hit SEQUENCE_DAILY_CAP, regardless of how many enrollments are due.
+  // Protects domain reputation / inbox placement even if many enrollments share
+  // the same next_send_at.
+  const startOfDay = new Date();
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const { count: sentTodayRaw } = await client
+    .from('crm_contact_log')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfDay.toISOString())
+    .not('metadata->>sequence_id', 'is', null);
+  const dailyCap = parseInt(process.env.SEQUENCE_DAILY_CAP ?? '40', 10);
+  const remainingToday = Math.max(0, dailyCap - (sentTodayRaw ?? 0));
+  if (remainingToday === 0) {
+    return { candidates: 0, sent: 0, stopped: 0, completed: 0, failed: 0, capped: true };
+  }
+  // Per-tick cap smooths sends within a day so a batch sharing next_send_at
+  // trickles out (a few per cron run) instead of firing all at once.
+  const perTickCap = parseInt(process.env.SEQUENCE_PER_TICK_CAP ?? '10', 10);
+  const perTickLimit = Math.min(TICK_BATCH_SIZE, remainingToday, perTickCap);
+
+  // 1. Pull due enrollments (capped to the day's remaining allowance).
   const { data: due, error: dueErr } = await client
     .from('crm_sequence_enrollments')
     .select('id, sequence_id, coach_id, status, current_step, next_send_at')
@@ -129,7 +151,7 @@ async function tick(): Promise<{
     .not('next_send_at', 'is', null)
     .lte('next_send_at', nowIso)
     .order('next_send_at', { ascending: true })
-    .limit(TICK_BATCH_SIZE);
+    .limit(perTickLimit);
 
   if (dueErr) {
     throw new Error(`Failed to fetch due enrollments: ${dueErr.message}`);
@@ -249,7 +271,7 @@ async function processEnrollment(
   // ── Resolve subject/body. Override > template > skip ──
   let subject = step.subject_override ?? '';
   let body = step.body_override ?? '';
-  let format: 'plain' | 'html' = 'plain';
+  let format: 'plain' | 'html' | 'text' = 'plain';
 
   if ((!subject || !body) && step.template_id) {
     const { data: tplData, error: tplErr } = await client
@@ -265,6 +287,7 @@ async function processEnrollment(
       if (!subject) subject = tpl.subject;
       if (!body) body = tpl.body;
       if (tpl.format === 'html') format = 'html';
+      else if (tpl.format === 'text') format = 'text';
     }
   }
 
@@ -290,10 +313,17 @@ async function processEnrollment(
   }
 
   const recipientName = coach.name ?? coach.email!;
-  const html =
-    format === 'html'
-      ? personalizedBody
-      : buildEmailHtml(recipientName, personalizedSubject, personalizedBody);
+  // text → true text/plain (no shell → lands in Gmail Primary); html → verbatim;
+  // plain → greeting/signature shell. Mirrors /api/admin/crm/send-email/route.ts.
+  const sendContent =
+    format === 'text'
+      ? { text: personalizedBody }
+      : {
+          html:
+            format === 'html'
+              ? personalizedBody
+              : buildEmailHtml(recipientName, personalizedSubject, personalizedBody),
+        };
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -307,7 +337,7 @@ async function processEnrollment(
         'Helm Sports Labs <admin@helmsportslabs.com>',
       to: [coach.email],
       subject: personalizedSubject,
-      html,
+      ...sendContent,
     }),
   });
 

@@ -18,6 +18,7 @@ export interface Filters {
   starred: boolean;
   hasNotes: boolean;
   noContact30Days: boolean;
+  primaryOnly?: boolean;
 }
 
 interface CoachFiltersProps {
@@ -76,6 +77,7 @@ export function CoachFilters({
     filters.starred,
     filters.hasNotes,
     filters.noContact30Days,
+    filters.primaryOnly,
   ].filter(Boolean).length;
 
   const hasSecondaryFilters = filters.conference !== 'all' || filters.status !== 'all' || filters.followUpDue || filters.starred || filters.hasNotes || filters.noContact30Days || filters.priority !== 'all';
@@ -85,6 +87,7 @@ export function CoachFilters({
     setFilters({
       status: 'all', division: 'all', conference: 'all', program: 'all', priority: 'all',
       search: '', followUpDue: false, starred: false, hasNotes: false, noContact30Days: false,
+      primaryOnly: false,
     });
   };
 
@@ -309,6 +312,18 @@ export function CoachFilters({
             )}
           >
             <IconAlertCircle size={12} /> No Contact 30 Days
+          </Button>
+
+          <Button variant="ghost"
+            onClick={() => setFilters(f => ({ ...f, primaryOnly: !f.primaryOnly }))}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
+              filters.primaryOnly
+                ? 'bg-primary-50 border-primary-200 text-primary-700'
+                : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
+            )}
+          >
+            ★ Primary Contacts Only
           </Button>
         </div>
       )}

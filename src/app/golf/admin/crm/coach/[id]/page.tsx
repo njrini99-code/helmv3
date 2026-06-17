@@ -84,6 +84,8 @@ export default async function CoachDetailPage({ params }: PageProps) {
     created_at: row.created_at ?? '',
     updated_at: row.updated_at ?? '',
     athletics_url: row.athletics_url ?? null,
+    role_level: row.role_level ?? null,
+    is_primary_contact: row.is_primary_contact ?? false,
   };
 
   // Engagement is best-effort: if the materialized view hasn't been
