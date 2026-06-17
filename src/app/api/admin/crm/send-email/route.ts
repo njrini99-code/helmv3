@@ -169,6 +169,19 @@ export async function POST(request: Request) {
       statusMap.set(cs.id, cs.email_status ?? 'valid');
     }
 
+    // ── Also skip any address on the suppression list ──
+    // crm_email_suppressions is the authoritative do-not-contact source. An address
+    // can be suppressed (hard_bounce/complained/unsubscribed) without crm_coaches.
+    // email_status reflecting it — e.g. an unlinked webhook event (coach_id null), an
+    // Audiences unsubscribe, or an email shared across multiple coach rows. Checking
+    // only email_status would re-mail those, the exact harm suppression prevents.
+    const recipientEmailsLower = recipients.map(r => r.email.toLowerCase());
+    const { data: suppRows } = await supabase
+      .from('crm_email_suppressions')
+      .select('email')
+      .in('email', recipientEmailsLower) as { data: Array<{ email: string }> | null };
+    const suppressedEmails = new Set((suppRows ?? []).map(s => (s.email ?? '').toLowerCase()));
+
     let sent = 0;
     let failed = 0;
     let skipped = 0;
@@ -197,11 +210,14 @@ export async function POST(request: Request) {
     const batchEmails: BatchEmail[] = [];
 
     for (const recipient of recipients) {
-      // Skip bounced/complained coaches
+      // Skip bounced/complained coaches AND anyone on the suppression list.
       const emailStatus = statusMap.get(recipient.id) ?? 'valid';
-      if (emailStatus !== 'valid') {
+      const isSuppressed = suppressedEmails.has(recipient.email.toLowerCase());
+      if (emailStatus !== 'valid' || isSuppressed) {
         skipped++;
-        const reason = `email_status: ${emailStatus}`;
+        const reason = emailStatus !== 'valid'
+          ? `email_status: ${emailStatus}`
+          : 'suppressed (do-not-contact list)';
         skippedRecipients.push({
           recipientId: recipient.id,
           recipientEmail: recipient.email,
@@ -287,26 +303,32 @@ export async function POST(request: Request) {
         if (resendId) {
           sent++;
           details.push({ name: recipient.name, email: recipient.email, status: 'sent' });
-          // resend_message_id is the shared daily-cap counter key — the cron and this
-          // route both gate on `crm_contact_log` rows where resend_message_id IS NOT NULL,
-          // so they share one budget view (closes G12). Campaign/template linkage is
-          // folded into `notes` (crm_contact_log has no metadata column).
-          await supabase.from('crm_contact_log').insert({
-            coach_id: recipient.id,
-            contact_type: 'email',
-            subject: personalizedSubject,
-            notes: `Bulk email [campaign:crm_bulk${templateId ? `;template:${templateId}` : ''}]: "${personalizedSubject}"`,
-            resend_message_id: resendId,
-            created_by: user.id,
-          });
-          // Auto-advance new_lead → contacted on first outreach
-          await supabase.from('crm_coaches').update({
-            last_contacted_at: sendNow,
-            updated_at: sendNow,
-          }).eq('id', recipient.id);
-          await supabase.from('crm_coaches').update({
-            status: 'contacted',
-          }).eq('id', recipient.id).eq('status', 'new_lead');
+          // A test send (sendTestTemplate) uses a synthetic `test-<uuid>` recipient id
+          // that is NOT a real coach — never log it, promote a status, or it would
+          // create an orphan/misattributed contact-log row.
+          const isTestSend = recipient.id.startsWith('test-');
+          if (!isTestSend) {
+            // Structured attribution in `metadata` jsonb (added by migration
+            // 20260617180000); the daily-cap counter still keys on resend_message_id.
+            await supabase.from('crm_contact_log').insert({
+              coach_id: recipient.id,
+              contact_type: 'email',
+              subject: personalizedSubject,
+              notes: `Bulk email: "${personalizedSubject}"`,
+              resend_message_id: resendId,
+              created_by: user.id,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              metadata: { campaign: 'crm_bulk', template_id: templateId ?? null } as any,
+            });
+            // Auto-advance new_lead → contacted on first outreach
+            await supabase.from('crm_coaches').update({
+              last_contacted_at: sendNow,
+              updated_at: sendNow,
+            }).eq('id', recipient.id);
+            await supabase.from('crm_coaches').update({
+              status: 'contacted',
+            }).eq('id', recipient.id).eq('status', 'new_lead');
+          }
         } else {
           failed++;
           const message = batchErrorMessage ?? 'Resend batch did not return an id for this recipient';

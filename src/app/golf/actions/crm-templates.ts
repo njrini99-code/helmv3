@@ -79,6 +79,17 @@ async function getAuthedClient() {
   if (!user) {
     throw new Error('Unauthorized');
   }
+  // Explicit admin gate (defense-in-depth beyond RLS) — these actions can trigger
+  // a real send via sendTestTemplate, so don't rely on the table policy alone.
+  // Mirrors requireAdmin in crm-engagement.ts and the send-email route check.
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single<{ role: string }>();
+  if (!profile || profile.role !== 'admin') {
+    throw new Error('Forbidden');
+  }
   return { supabase, user };
 }
 
