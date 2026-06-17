@@ -22,7 +22,7 @@ for (const file of ['../.env.local', '../.env']) {
 // no em-dashes, one bare link (clients auto-link), text-only signature.
 const body = `Hi Coach {last_name},
 
-Wanted to reach out. We just welcomed our 10th coach onto GolfHelm, so we now have programs across every level of the NCAA.
+Wanted to reach out. We just welcomed our 10th coach onto GolfHelm, so we now have programs across every level of the NCAA since launching last week.
 
 The biggest thing coaches keep telling us is how convenient it is having team management, shot tracking, and stats all in one place instead of spread across a few different tools.
 
@@ -35,7 +35,8 @@ Thanks Coach,
 Nick
 
 GolfHelm
-helmsportslabs.com`;
+helmsportslabs.com
+1537 Yarborough Park Dr, Raleigh, NC`;
 
 const template = {
   name: 'Coach First Touch',
