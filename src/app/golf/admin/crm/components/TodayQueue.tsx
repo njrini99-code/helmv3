@@ -134,7 +134,10 @@ const DIVISION_CHIP: Record<string, string> = {
 interface TodayQueueProps {
   coaches: Coach[];
   onCoachClick: (coach: Coach) => void;
+  /** Called when the Gmail link is clicked — logs the touch (the <a href> opens the tab). */
   onOpenInGmail: (coach: Coach) => void;
+  /** Builds the Gmail compose URL for a coach (subject + body merged), or null if not armed. */
+  getGmailHref?: (coach: Coach) => string | null;
   onLogTouch: (coach: Coach) => void;
   /** Set/clear the manual work-division label on a coach. Optional. */
   onSetAssignee?: (coachId: string, assignee: CrmAssignee | null) => void;
@@ -152,6 +155,7 @@ export function TodayQueue({
   coaches,
   onCoachClick,
   onOpenInGmail,
+  getGmailHref,
   onLogTouch,
   onSetAssignee,
   manualTemplateArmed,
@@ -283,22 +287,36 @@ export function TodayQueue({
 
                 {/* Quick actions */}
                 <div className="flex flex-wrap items-center gap-1.5 sm:flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    type="button"
-                    onClick={() => onOpenInGmail(coach)}
-                    disabled={!manualTemplateArmed}
-                    aria-label={`Open Gmail for ${coach.name}`}
-                    title={manualTemplateArmed ? 'Open in Gmail' : 'Arm a Gmail template first'}
-                    className={cn(
-                      'inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors',
-                      manualTemplateArmed
-                        ? 'bg-primary-50 text-primary-700 hover:bg-primary-100'
-                        : 'bg-white/60 text-warm-400',
-                    )}
-                  >
-                    <IconMail size={14} /> Gmail
-                  </Button>
+                  {(() => {
+                    const href = manualTemplateArmed ? getGmailHref?.(coach) ?? null : null;
+                    // Real <a href> (not a programmatic window.open) so the merged
+                    // compose URL opens reliably under browser automation too. The
+                    // click still logs the touch via onOpenInGmail.
+                    return href ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => onOpenInGmail(coach)}
+                        aria-label={`Open Gmail for ${coach.name}`}
+                        title="Open in Gmail"
+                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors bg-primary-50 text-primary-700 hover:bg-primary-100"
+                      >
+                        <IconMail size={14} /> Gmail
+                      </a>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        disabled
+                        aria-label={`Open Gmail for ${coach.name}`}
+                        title="Arm a Gmail template first"
+                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium bg-white/60 text-warm-400"
+                      >
+                        <IconMail size={14} /> Gmail
+                      </Button>
+                    );
+                  })()}
                   <Button
                     variant="ghost"
                     type="button"

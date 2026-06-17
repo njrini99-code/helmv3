@@ -750,20 +750,24 @@ export default function CRMPage() {
   // window, then optimistically log the touch (last_contacted_at = now; promote
   // new_lead → contacted) and fire the server-side log so the contact-log row +
   // 7-day cap stay consistent with the automated batch.
-  const openInGmail = useCallback((coach: Coach) => {
-    if (!activeManualTemplate) {
-      toast('Arm a Gmail template first');
-      return;
-    }
-    if (!coach.email) {
-      toast('No email on file');
-      return;
-    }
+  // Build the Gmail compose URL (subject + body merged from the armed template).
+  // Returned as a real URL so the Gmail action can be a true <a href> — a link
+  // navigates reliably even under browser automation (e.g. Claude for Chrome),
+  // whereas a programmatic window.open() is dropped/blanked by the popup blocker
+  // when the click isn't a trusted user gesture, so the personalized params
+  // never reach the compose tab.
+  const getGmailHref = useCallback((coach: Coach): string | null => {
+    if (!activeManualTemplate || !coach.email) return null;
     const subject = mergeTemplate(activeManualTemplate.subject, coach);
     const body = mergeTemplate(activeManualTemplate.body, coach);
-    window.open(buildGmailComposeUrl({ to: coach.email, subject, body }), '_blank', 'noopener');
+    return buildGmailComposeUrl({ to: coach.email, subject, body });
+  }, [activeManualTemplate]);
 
-    // Fire-and-forget server log; UI updates optimistically regardless.
+  // Log a Gmail touch (contact-log + optimistic status flip + toast). Called on
+  // click; the <a href> itself opens the compose tab. Safe to run under automation.
+  const logGmailTouch = useCallback((coach: Coach) => {
+    if (!activeManualTemplate || !coach.email) return;
+    const subject = mergeTemplate(activeManualTemplate.subject, coach);
     logManualGmailTouch({ coach_id: coach.id, subject }).catch(() => {});
 
     const nowIso = new Date().toISOString();
@@ -793,6 +797,23 @@ export default function CRMPage() {
     }
     toast.success(`Opened Gmail for ${coach.name} — logged as contacted`);
   }, [activeManualTemplate, selectedCoach]);
+
+  // Button fallback for surfaces still using a <button> (CoachTable / detail
+  // panel): programmatic open + log. Manual clicks carry the user gesture so the
+  // popup is allowed there.
+  const openInGmail = useCallback((coach: Coach) => {
+    if (!activeManualTemplate) {
+      toast('Arm a Gmail template first');
+      return;
+    }
+    if (!coach.email) {
+      toast('No email on file');
+      return;
+    }
+    const href = getGmailHref(coach);
+    if (href) window.open(href, '_blank', 'noopener');
+    logGmailTouch(coach);
+  }, [activeManualTemplate, getGmailHref, logGmailTouch]);
 
   // ── Assignee labels ──
   // Set (or clear) the manual work-division label on a coach. Optimistic local
@@ -1189,7 +1210,8 @@ export default function CRMPage() {
               <TodayQueue
                 coaches={allCoaches}
                 onCoachClick={handleCoachClick}
-                onOpenInGmail={openInGmail}
+                onOpenInGmail={logGmailTouch}
+                getGmailHref={getGmailHref}
                 onLogTouch={handleLogContact}
                 onSetAssignee={handleSetAssignee}
                 manualTemplateArmed={!!activeManualTemplate}
