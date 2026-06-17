@@ -21,8 +21,10 @@ import { useMemo } from 'react';
 import {
   IconMail,
   IconUser,
-  IconExternalLink,
+  IconMaximize,
+  IconMessageSquare,
   IconCheckCircle2,
+  IconChevronDown,
   IconCalendar,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -226,10 +228,15 @@ export function TodayQueue({
                     title="Log touch"
                     className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-white/60 px-3 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:bg-warm-100/60 hover:text-warm-900"
                   >
-                    <IconCheckCircle2 size={14} /> Log touch
+                    <IconMessageSquare size={14} /> Log touch
                   </Button>
                   {onSetAssignee && (
                     <div className="relative inline-flex items-center">
+                      <IconUser
+                        size={13}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-2.5 text-warm-400"
+                      />
                       <select
                         aria-label={`Assign ${coach.name}`}
                         value={coach.assigned_to ?? ''}
@@ -239,7 +246,7 @@ export function TodayQueue({
                             e.target.value ? (e.target.value as CrmAssignee) : null,
                           )
                         }
-                        className="min-h-[44px] cursor-pointer appearance-none rounded-xl border border-warm-200/60 bg-white/60 px-2.5 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                        className="min-h-[44px] cursor-pointer appearance-none rounded-xl border border-warm-200/60 bg-white/60 pl-7 pr-7 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
                       >
                         <option value="">Unassigned</option>
                         {CRM_ASSIGNEES.map((a) => (
@@ -248,6 +255,11 @@ export function TodayQueue({
                           </option>
                         ))}
                       </select>
+                      <IconChevronDown
+                        size={13}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute right-2 text-warm-400"
+                      />
                     </div>
                   )}
                   <Button
@@ -256,9 +268,9 @@ export function TodayQueue({
                     onClick={() => onCoachClick(coach)}
                     aria-label={`Open ${coach.name} details`}
                     title="Open details"
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-white/60 px-2.5 py-1.5 text-warm-500 transition-colors hover:bg-warm-100/60 hover:text-warm-900"
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-white/60 px-2.5 py-1.5 text-warm-500 transition-colors hover:bg-warm-100/60 hover:text-warm-900"
                   >
-                    <IconExternalLink size={14} />
+                    <IconMaximize size={14} />
                   </Button>
                 </div>
               </div>

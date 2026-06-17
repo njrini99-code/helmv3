@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader, IconBookmark } from '@/components/icons';
+import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader, IconBookmark, IconFilter, IconUser } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
 import { SaveSegmentDialog } from './segments/SaveSegmentDialog';
 import { Button, IconButton } from '@/components/ui/button';
@@ -261,13 +261,14 @@ export function CoachFilters({
             showMore || activeFilterCount > 0 ? SOFT_SELECTED : SOFT_IDLE,
           )}
         >
-          {showMore ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
+          <IconFilter size={14} />
           Filters
           {activeFilterCount > 0 && (
-            <span className="ml-0.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 bg-primary-600 text-white text-[11px] font-bold rounded-full leading-none">
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 bg-primary-600 text-white text-[11px] font-bold rounded-full leading-none">
               {activeFilterCount}
             </span>
           )}
+          {showMore ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
         </button>
 
         {/* Spacer pushes the action group to the right when present */}
@@ -431,7 +432,7 @@ export function CoachFilters({
                 <IconAlertCircle size={12} /> No Contact 30 Days
               </FacetChip>
               <FacetChip selected={Boolean(filters.primaryOnly)} onClick={() => setFilters(f => ({ ...f, primaryOnly: !f.primaryOnly }))}>
-                <IconStar size={12} /> Primary Contacts Only
+                <IconUser size={12} /> Primary Contacts Only
               </FacetChip>
             </div>
           </fieldset>

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconPhone, IconUpload, IconUserPlus, IconUser, IconUserX, IconCheck, IconFlame, IconZap } from '@/components/icons';
+import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconExternalLink, IconPhone, IconUpload, IconUserPlus, IconUser, IconUsers, IconUserX, IconCheck, IconFlame, IconZap, IconSchool, IconX } from '@/components/icons';
 import { STATUS_COLORS, CRM_ASSIGNEES } from '../crm-config';
 import type { Coach, CoachStatus, CrmAssignee } from '../crm-config';
 import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
@@ -525,7 +525,7 @@ const CoachTableRow = React.memo(
                     onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                   >
-                    <IconMail size={16} className="text-primary-500" /> Gmail
+                    <IconExternalLink size={16} className="text-primary-500" /> Open in Gmail
                   </Button>
                 )}
                 {coach.phone && (
@@ -774,7 +774,7 @@ const CoachTableCard = React.memo(
                       onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
                       className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                     >
-                      <IconMail size={16} className="text-primary-500" /> Gmail
+                      <IconExternalLink size={16} className="text-primary-500" /> Open in Gmail
                     </Button>
                   )}
                   {coach.phone && (
@@ -1450,7 +1450,7 @@ export function CoachTable({
     return (
       <div className="py-16 text-center">
         <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
-          <IconMessageSquare size={24} className="text-warm-300" />
+          <IconUsers size={24} className="text-warm-300" />
         </div>
         <h3 className="text-base font-semibold text-warm-700 mb-1">No coaches found</h3>
         <p className="text-sm text-warm-500 max-w-xs mx-auto mb-6">Try adjusting your filters or import some coaches to get started.</p>
@@ -1486,7 +1486,7 @@ export function CoachTable({
             onClick={() => setGroupBySchool(false)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-primary-50 border-primary-200 text-primary-700 hover:bg-primary-100 transition-colors"
           >
-            ✕ Exit School View
+            <IconX size={13} aria-hidden="true" /> Exit School View
           </Button>
         </div>
         <SchoolGroupView
@@ -1532,7 +1532,7 @@ export function CoachTable({
           onClick={() => setGroupBySchool(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
         >
-          🏫 Group by School
+          <IconSchool size={13} aria-hidden="true" /> Group by School
         </Button>
       </div>
 

@@ -182,7 +182,7 @@ export function CrmCommandPalette({
                 className={itemClass}
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream-200/55 text-warm-700 data-[selected=true]:bg-primary-100">
-                  <IconPlus size={18} />
+                  <IconPlus size={18} aria-hidden />
                 </span>
                 <span className="flex-1 min-w-0 text-sm font-medium tracking-[-0.005em] truncate">
                   New Coach
@@ -197,7 +197,7 @@ export function CrmCommandPalette({
                 className={itemClass}
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream-200/55 text-warm-700 data-[selected=true]:bg-primary-100">
-                  <IconMail size={18} />
+                  <IconMail size={18} aria-hidden />
                 </span>
                 <span className="flex-1 min-w-0 text-sm font-medium tracking-[-0.005em] truncate">
                   Compose
@@ -212,7 +212,7 @@ export function CrmCommandPalette({
                 className={itemClass}
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cream-200/55 text-warm-700 data-[selected=true]:bg-primary-100">
-                  <IconUpload size={18} />
+                  <IconUpload size={18} aria-hidden />
                 </span>
                 <span className="flex-1 min-w-0 text-sm font-medium tracking-[-0.005em] truncate">
                   Import
@@ -237,7 +237,7 @@ export function CrmCommandPalette({
                     className={itemClass}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cream-200/55 text-warm-700 data-[selected=true]:bg-primary-100">
-                      <IconUser size={16} />
+                      <IconUser size={16} aria-hidden />
                     </span>
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm font-medium tracking-[-0.005em] truncate">

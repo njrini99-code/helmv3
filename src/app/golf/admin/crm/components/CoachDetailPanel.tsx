@@ -16,11 +16,13 @@ import {
   IconCheck,
   IconCalendar,
   IconStar,
-  IconRefresh as History,
+  IconChevronDown,
+  IconActivity as Activity,
   IconHash as Tag,
-  IconClipboardList as ListChecks,
+  IconFlag as Flag,
   IconClipboard as ClipboardCheck,
-  IconEye as Monitor,
+  IconVideo,
+  IconLayoutGrid,
   IconNote as StickyNote,
   IconPencil as Pencil,
   IconUser,
@@ -60,7 +62,7 @@ interface CoachDetailPanelProps {
 const CONTACT_TYPES = [
   { value: 'email', label: 'Email', Icon: IconMail, dotColor: 'bg-blue-500' },
   { value: 'call', label: 'Call', Icon: IconPhone, dotColor: 'bg-primary-500' },
-  { value: 'demo', label: 'Demo', Icon: Monitor, dotColor: 'bg-violet-500' },
+  { value: 'demo', label: 'Demo', Icon: IconVideo, dotColor: 'bg-violet-500' },
   { value: 'meeting', label: 'Meeting', Icon: IconUsers, dotColor: 'bg-cyan-500' },
   { value: 'note', label: 'Note', Icon: StickyNote, dotColor: 'bg-warm-400' },
 ] as const;
@@ -440,8 +442,10 @@ function CoachDetailPanelInner({
                   </p>
                   <div className="flex items-center gap-2 mt-2 ml-[26px]">
                     <select value={coach.status} onChange={e => handleStatusChange(e.target.value as CoachStatus)}
+                      aria-label="Coach status"
                       className={cn(
                         'appearance-none cursor-pointer px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
+                        'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
                         STATUS_COLORS[coach.status]?.bg,
                         STATUS_COLORS[coach.status]?.text,
                         STATUS_COLORS[coach.status]?.border,
@@ -449,6 +453,7 @@ function CoachDetailPanelInner({
                       {ALL_STATUSES.map(s => <option key={s} value={s}>{statusConfig[s as CoachStatus]?.label}</option>)}
                     </select>
                     <select value={coach.priority} onChange={e => onUpdate({ priority: parseInt(e.target.value) })}
+                      aria-label="Coach priority"
                       className="appearance-none cursor-pointer px-2.5 py-1 rounded-full text-xs font-medium border border-warm-200/60 bg-white/50 focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all duration-200">
                       <option value={0}>Normal</option>
                       <option value={1}>High</option>
@@ -482,12 +487,11 @@ function CoachDetailPanelInner({
                           <option key={name} value={name}>{name}</option>
                         ))}
                       </select>
-                      <svg
-                        className="pointer-events-none absolute right-2 w-3 h-3 text-warm-400"
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
+                      <IconChevronDown
+                        size={12}
+                        className="pointer-events-none absolute right-2 text-warm-400"
+                        aria-hidden="true"
+                      />
                     </div>
                   </div>
                 </div>
@@ -552,15 +556,14 @@ function CoachDetailPanelInner({
         <div className="flex-shrink-0 border-b border-warm-200/30">
           <Button variant="ghost"
             onClick={() => setShowInfo(!showInfo)}
+            aria-expanded={showInfo}
             className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-medium text-warm-500 hover:text-warm-700 hover:bg-white/30 transition-colors"
           >
             <span className="flex items-center gap-1.5">
               <ClipboardCheck size={12} className="text-warm-400" />
               Quick Info
             </span>
-            <svg className={cn('w-3.5 h-3.5 text-warm-400 transition-transform duration-200', showInfo && 'rotate-180')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
+            <IconChevronDown size={14} aria-hidden="true" className={cn('text-warm-400 transition-transform duration-200', showInfo && 'rotate-180')} />
           </Button>
 
           {showInfo && (
@@ -610,9 +613,9 @@ function CoachDetailPanelInner({
               </div>
 
               {/* One-line info rows */}
-              <QuickInfoRow icon={<ListChecks size={11} />} label="Program" value={coach.program === 'mens' ? "Men's" : coach.program === 'womens' ? "Women's" : coach.program ? 'Both' : null} />
+              <QuickInfoRow icon={<Flag size={11} />} label="Program" value={coach.program === 'mens' ? "Men's" : coach.program === 'womens' ? "Women's" : coach.program ? 'Both' : null} />
               <QuickInfoRow icon={<IconUsers size={11} />} label="Team Size" value={coach.team_size?.toString()} />
-              <QuickInfoRow icon={<Monitor size={11} />} label="Software" value={coach.current_software} />
+              <QuickInfoRow icon={<IconLayoutGrid size={11} />} label="Software" value={coach.current_software} />
               <QuickInfoRow icon={<IconClock size={11} />} label="Timeline" value={coach.decision_timeline} />
 
               {/* Follow-up date */}
@@ -662,7 +665,7 @@ function CoachDetailPanelInner({
         <div className="flex-1 overflow-y-auto">
           <div className="px-5 pt-4 pb-2 flex items-center justify-between">
             <h3 className="text-xs font-medium text-warm-500 uppercase tracking-wider flex items-center gap-1.5">
-              <History size={13} className="text-warm-400" /> Timeline
+              <Activity size={13} className="text-warm-400" /> Timeline
             </h3>
             <Button variant="ghost" onClick={() => setShowContactForm(!showContactForm)}
               className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
@@ -727,7 +730,7 @@ function CoachDetailPanelInner({
               <Button variant="ghost" onClick={() => onOpenInGmail(coach)}
                 title="Open a pre-filled Gmail compose window for this coach"
                 className="flex-1 lg:flex-initial min-h-[44px] bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
-                <IconMail size={14} className="text-primary-500" /> Gmail
+                <IconExternalLink size={14} className="text-primary-500" /> Gmail
               </Button>
             )}
             {coach.phone ? (

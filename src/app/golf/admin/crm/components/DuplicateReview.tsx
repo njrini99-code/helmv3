@@ -8,6 +8,7 @@ import {
   IconWarning,
   IconUsers,
   IconLayers,
+  IconLayers3,
 } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
 import {
@@ -254,8 +255,9 @@ export function DuplicateReview({ onClose, onMerged }: DuplicateReviewProps) {
                         variant="primary"
                         onClick={() => handleMerge(group)}
                         disabled={isMerging || !keepId}
-                        className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
                       >
+                        <IconLayers3 size={14} />
                         {isMerging
                           ? 'Merging…'
                           : `Merge ${group.coaches.length - 1} into selected`}

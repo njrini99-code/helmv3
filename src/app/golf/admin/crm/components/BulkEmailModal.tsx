@@ -14,6 +14,7 @@ import {
   IconCopy,
   IconEye,
   IconChevronDown,
+  IconSparkles,
 } from '@/components/icons';
 import type { Coach } from '../crm-config';
 import { TemplatePicker } from './TemplatePicker';
@@ -712,7 +713,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                     <span className="flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium border border-primary-200/50">
                       <IconCheck size={12} />
                       Template applied
-                      <IconButton variant="default" aria-label="Close"
+                      <IconButton variant="default" aria-label="Remove template"
                         onClick={() => {
                           setSelectedTemplateId(null);
                           setSubject('');
@@ -744,9 +745,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                       </>
                     ) : (
                       <>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                        </svg>
+                        <IconSparkles size={14} />
                         {coachesWithEmail.length === 1 ? 'Personalize with AI' : `Personalize All (${coachesWithEmail.length})`}
                       </>
                     )}
@@ -1112,7 +1111,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               <div className="flex items-center gap-2 px-4 sm:px-6 py-2.5 text-sm font-medium bg-red-50 text-red-700 border-b border-red-200/50">
                 <IconAlertCircle size={16} className="shrink-0" />
                 <span className="flex-1">{error}</span>
-                <IconButton variant="default" aria-label="Close"
+                <IconButton variant="default" aria-label="Dismiss error"
                   type="button"
                   onClick={() => setError(null)}
                   className="shrink-0 p-0.5 rounded hover:bg-red-100 transition-colors"

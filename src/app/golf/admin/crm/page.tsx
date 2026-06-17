@@ -13,20 +13,25 @@ import {
   IconUsers,
   IconTrendingUp,
   IconClock,
+  IconClock3,
   IconFlame,
   IconTarget,
   IconWarning,
   IconMail,
+  IconSend,
+  IconMessage,
+  IconMessageSquare,
+  IconGauge,
   IconActivity,
+  IconLayers,
+  IconSettings,
   IconClipboardList as ClipboardList,
   IconLayoutGrid as LayoutDashboard,
   IconArrowLeft as ArrowLeft,
   IconChevronLeft as ChevronLeft,
   IconBuilding as Building2,
-  IconBolt,
   IconMoreHorizontal,
   IconX,
-  IconCalendar,
   IconUser,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -87,17 +92,17 @@ import { toast } from '@/components/ui/sonner';
 // "outreach" destination (see OUTREACH_SUBTABS below).
 const TABS = [
   // ── WORK ──
-  { id: 'today', label: 'Today', Icon: IconCalendar, shortcut: '1', description: "Today's ranked call & email worklist", section: 'work' },
+  { id: 'today', label: 'Today', Icon: IconClock3, shortcut: '1', description: "Today's ranked call & email worklist", section: 'work' },
   { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '2', description: 'Pipeline overview & quick actions', section: 'work' },
   { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '3', description: 'All coaches in table view', section: 'work' },
-  { id: 'pipeline', label: 'Pipeline', Icon: IconChartBar, shortcut: '4', description: 'Kanban sales pipeline', section: 'work' },
+  { id: 'pipeline', label: 'Pipeline', Icon: IconLayers, shortcut: '4', description: 'Kanban sales pipeline', section: 'work' },
   { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '5', description: 'Grouped by conference', section: 'work' },
   { id: 'outreach', label: 'Outreach', Icon: IconMail, shortcut: '6', description: 'Email tracking, deliverability, analytics & replies', section: 'work' },
-  { id: 'inbox', label: 'Inbox', Icon: IconMail, shortcut: '7', description: 'Replies + tasks due today', section: 'work' },
+  { id: 'inbox', label: 'Inbox', Icon: IconMessageSquare, shortcut: '7', description: 'Replies + tasks due today', section: 'work' },
   // ── AUTOMATE ──
   { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '8', description: 'Drip campaigns & enrollments', section: 'automate' },
   // ── ADMIN ──
-  { id: 'settings', label: 'Settings', Icon: IconBolt, shortcut: 'S', description: 'Automations & suppressions', section: 'admin' },
+  { id: 'settings', label: 'Settings', Icon: IconSettings, shortcut: 'S', description: 'Automations & suppressions', section: 'admin' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -113,10 +118,10 @@ const NAV_SECTIONS = [
 // The four legacy email surfaces, merged behind a horizontal sub-tab switcher
 // inside the Outreach panel. Each renders the exact same component as before.
 const OUTREACH_SUBTABS = [
-  { id: 'email', label: 'Tracking', Icon: IconMail },
-  { id: 'resend', label: 'Deliverability', Icon: IconActivity },
+  { id: 'email', label: 'Tracking', Icon: IconSend },
+  { id: 'resend', label: 'Deliverability', Icon: IconGauge },
   { id: 'insights', label: 'Analytics', Icon: IconChartBar },
-  { id: 'inbound', label: 'Replies', Icon: IconMail },
+  { id: 'inbound', label: 'Replies', Icon: IconMessage },
 ] as const;
 
 type OutreachSubTabId = (typeof OUTREACH_SUBTABS)[number]['id'];
@@ -1026,6 +1031,9 @@ export default function CRMPage() {
                       <Button variant="ghost"
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
+                        aria-label={tab.label}
+                        aria-current={isActive ? 'page' : undefined}
+                        title={sidebarCollapsed ? tab.label : undefined}
                         className={cn(
                           'group relative flex items-center gap-3 w-full rounded-md transition-all duration-200',
                           sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
@@ -1041,7 +1049,7 @@ export default function CRMPage() {
                           </span>
                         )}
                         {sidebarCollapsed && (
-                          <div className="absolute left-full ml-3 px-3 py-1.5 bg-warm-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+                          <div aria-hidden className="absolute left-full ml-3 px-3 py-1.5 bg-warm-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
                             {tab.label}
                           </div>
                         )}
@@ -1065,6 +1073,8 @@ export default function CRMPage() {
         <div className="p-3 border-t border-white/10 space-y-2">
           <Button variant="primary"
             onClick={() => setShowAddModal(true)}
+            aria-label="Add coach"
+            title={sidebarCollapsed ? 'Add coach' : undefined}
             className={cn(
               'w-full flex items-center justify-center gap-2 py-2.5 rounded-md font-medium transition-all duration-200',
               'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700'
@@ -1088,6 +1098,9 @@ export default function CRMPage() {
         {/* Collapse Toggle */}
         <Button variant="ghost"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-expanded={!sidebarCollapsed}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-all duration-200 shadow-lg"
         >
           {sidebarCollapsed ? <IconChevronRight size={14} /> : <ChevronLeft size={14} />}
@@ -1262,22 +1275,28 @@ export default function CRMPage() {
               as before, with identical props. */}
           {activeTab === 'outreach' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-2xl glass-standard p-1.5">
+              <div
+                role="tablist"
+                aria-label="Outreach views"
+                className="flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-2xl glass-standard p-1.5"
+              >
                 {OUTREACH_SUBTABS.map((sub) => {
                   const isActive = outreachSubTab === sub.id;
                   const SubIcon = sub.Icon;
                   return (
                     <Button variant="ghost"
                       key={sub.id}
+                      role="tab"
+                      aria-selected={isActive}
                       onClick={() => setOutreachSubTab(sub.id)}
                       className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
+                        'flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
                         isActive
                           ? 'bg-primary-50 text-primary-700 shadow-glass-sm'
                           : 'text-warm-500 hover:text-warm-900 hover:bg-white/60'
                       )}
                     >
-                      <SubIcon size={16} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} />
+                      <SubIcon size={16} className={cn('flex-shrink-0', isActive ? 'text-primary-600' : 'text-warm-400')} aria-hidden />
                       {sub.label}
                     </Button>
                   );
