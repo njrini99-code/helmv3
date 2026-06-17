@@ -149,6 +149,38 @@ export async function getSequence(id: string): Promise<{
   };
 }
 
+// True enrollment counts by status (exact COUNT, not a row-limited slice) — the
+// Sequences-tab StatCards must use this so totals stay correct past the list's
+// page size (the enrollment LIST is capped at 200 newest; counts are not).
+export interface SequenceEnrollmentCounts {
+  active: number;
+  completed: number;
+  stopped: number;
+  paused: number;
+  total: number;
+}
+
+export async function getSequenceEnrollmentCounts(
+  sequence_id: string,
+): Promise<SequenceEnrollmentCounts> {
+  const { supabase } = await getAuthedClient();
+  const client = supabase as AnySupabase;
+  const countFor = async (status?: SequenceEnrollmentStatus) => {
+    let q = client
+      .from('crm_sequence_enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('sequence_id', sequence_id);
+    if (status) q = q.eq('status', status);
+    const { count, error } = await q;
+    if (error) throw new Error(`Failed to count enrollments: ${error.message}`);
+    return count ?? 0;
+  };
+  const [active, completed, stopped, paused, total] = await Promise.all([
+    countFor('active'), countFor('completed'), countFor('stopped'), countFor('paused'), countFor(),
+  ]);
+  return { active, completed, stopped, paused, total };
+}
+
 export async function createSequence(input: {
   name: string;
   description?: string;

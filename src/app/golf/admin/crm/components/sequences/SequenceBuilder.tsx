@@ -12,9 +12,11 @@ import {
 import {
   getSequence,
   listEnrollments,
+  getSequenceEnrollmentCounts,
   type CrmSequence,
   type CrmSequenceStep,
   type CrmSequenceEnrollment,
+  type SequenceEnrollmentCounts,
 } from '@/app/golf/actions/crm-sequences';
 import { SequenceStepEditor } from './SequenceStepEditor';
 import { EnrollSegmentDialog } from './EnrollSegmentDialog';
@@ -36,6 +38,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
   const [sequence, setSequence] = useState<CrmSequence | null>(null);
   const [steps, setSteps] = useState<CrmSequenceStep[]>([]);
   const [enrollments, setEnrollments] = useState<CrmSequenceEnrollment[]>([]);
+  const [counts, setCounts] = useState<SequenceEnrollmentCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
@@ -47,10 +50,14 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
     setError(null);
     try {
       const { sequence: seq, steps: seqSteps } = await getSequence(sequenceId);
-      const enrolled = await listEnrollments(sequenceId, { limit: 200 });
+      const [enrolled, enrollCounts] = await Promise.all([
+        listEnrollments(sequenceId, { limit: 200 }),
+        getSequenceEnrollmentCounts(sequenceId),
+      ]);
       setSequence(seq);
       setSteps(seqSteps);
       setEnrollments(enrolled);
+      setCounts(enrollCounts);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load sequence');
     } finally {
@@ -149,19 +156,19 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
       <div className="grid grid-cols-3 gap-3">
         <StatCard
           label="Active"
-          value={activeEnrollmentCount}
+          value={counts?.active ?? activeEnrollmentCount}
           tone="primary"
           icon={<IconUsers size={14} />}
         />
         <StatCard
           label="Completed"
-          value={completedEnrollmentCount}
+          value={counts?.completed ?? completedEnrollmentCount}
           tone="neutral"
           icon={<IconClock size={14} />}
         />
         <StatCard
           label="Stopped"
-          value={stoppedEnrollmentCount}
+          value={counts?.stopped ?? stoppedEnrollmentCount}
           tone="neutral"
           icon={<IconClock size={14} />}
         />
