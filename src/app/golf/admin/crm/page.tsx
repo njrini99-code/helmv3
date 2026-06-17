@@ -33,6 +33,7 @@ import {
   IconMoreHorizontal,
   IconX,
   IconUser,
+  IconFileText,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import {
@@ -68,6 +69,7 @@ import { SavedSegmentsRail } from './components/segments/SavedSegmentsRail';
 import { InboxView } from './components/replies/InboxView';
 import { SequencesList } from './components/sequences/SequencesList';
 import { SequenceBuilder } from './components/sequences/SequenceBuilder';
+import { TemplateManager } from './components/TemplateManager';
 import { InsightsDashboard } from './components/insights/InsightsDashboard';
 import { AutomationsList } from './components/automations/AutomationsList';
 import { SuppressionsAdminPanel } from './components/suppressions/SuppressionsAdminPanel';
@@ -101,6 +103,7 @@ const TABS = [
   { id: 'inbox', label: 'Inbox', Icon: IconMessageSquare, shortcut: '7', description: 'Replies + tasks due today', section: 'work' },
   // ── AUTOMATE ──
   { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '8', description: 'Drip campaigns & enrollments', section: 'automate' },
+  { id: 'templates', label: 'Templates', Icon: IconFileText, shortcut: '9', description: 'Author, preview & test reusable emails', section: 'automate' },
   // ── ADMIN ──
   { id: 'settings', label: 'Settings', Icon: IconSettings, shortcut: 'S', description: 'Automations & suppressions', section: 'admin' },
 ] as const;
@@ -1314,6 +1317,9 @@ export default function CRMPage() {
 
           {/* ── Sequences Tab (NEW — Phase 2) ── */}
           {activeTab === 'sequences' && <SequencesTabWrapper />}
+
+          {/* ── Templates Tab — in-app email template lifecycle ── */}
+          {activeTab === 'templates' && <TemplateManager />}
 
           {/* ── Settings Tab (NEW — Phase 1.5 + Phase 4) ──
               Two-section settings page: automations rules + suppression list. */}

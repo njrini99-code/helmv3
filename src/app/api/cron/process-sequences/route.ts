@@ -1,8 +1,12 @@
 /**
- * Vercel Cron handler that processes due email-sequence enrollments.
+ * Cron handler that processes due email-sequence enrollments.
  *
- * Schedule: every 10 minutes — see vercel.json `crons` entry (added by the
- *           orchestrator).
+ * Schedule: NOT registered in vercel.json by design — automated sequence sends
+ *           are kept OFF so outreach stays human-triggered (the operator runs
+ *           `scripts/process-sequence-batch.mjs` to send the next batch). The
+ *           route is fully wired (deliverability headers, suppression gating,
+ *           daily cap) so enabling automation is a one-line vercel.json add of a
+ *           crons entry for this path. Gated by SEQUENCE_DAILY_CAP (default 40).
  * Auth: requires `Authorization: Bearer ${CRON_SECRET}`. Vercel Cron sends
  *       this header automatically; do not trust `x-vercel-cron` alone since
  *       it is not stripped from inbound external traffic.
@@ -27,6 +31,8 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { mergeTags } from '@/lib/crm/merge-tags';
+import { buildOutreachExtras } from '@/lib/crm/outreach-headers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -298,8 +304,27 @@ async function processEnrollment(
   }
 
   // ── Personalize merge tags ──
-  const personalizedSubject = applyMergeTags(subject, coach);
-  const personalizedBody = applyMergeTags(body, coach);
+  // Shared canonical merge (closes G2 on this cron + G10): the same 11-token
+  // block used by the send-email route and the human-triggered batch sender,
+  // so a template renders byte-identically regardless of who sends it. (The
+  // old local applyMergeTags was missing {email}.) coach.email is guaranteed
+  // non-null here — the no-email branch above already stopped the enrollment.
+  const recipient = {
+    id: coach.id,
+    email: coach.email!,
+    name: coach.name ?? '',
+    first_name: coach.first_name,
+    last_name: coach.last_name,
+    title: coach.title,
+    school: coach.school,
+    conference: coach.conference,
+    division: coach.division,
+    program: coach.program,
+    team_size: coach.team_size,
+    current_software: coach.current_software,
+  };
+  const personalizedSubject = mergeTags(subject, recipient);
+  const personalizedBody = mergeTags(body, recipient);
 
   // ── Send via Resend ──
   const apiKey = process.env.RESEND_API_KEY;
@@ -325,19 +350,35 @@ async function processEnrollment(
               : buildEmailHtml(recipientName, personalizedSubject, personalizedBody),
         };
 
+  // Deliverability parity with scripts/process-sequence-batch.mjs (closes G2 on
+  // this cron): reply_to + RFC 8058 one-click List-Unsubscribe headers (the #1
+  // free Gmail/Yahoo Primary-placement signal) + sanitized per-cohort tags.
+  const extras = buildOutreachExtras({
+    coachId: coach.id,
+    format,
+    campaign: 'crm_sequence',
+    division: coach.division,
+  });
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
+      // Provider-side exactly-once: survives a crash between POST-success and the
+      // DB write so a re-tick can't double-send the same step to the same coach.
+      'Idempotency-Key': `seq-${coach.id}-s${step.step_order}`,
     },
     body: JSON.stringify({
       from:
         process.env.HELM_FROM_EMAIL ??
         'Helm Sports Labs <admin@helmsportslabs.com>',
       to: [coach.email],
+      reply_to: extras.reply_to,
       subject: personalizedSubject,
       ...sendContent,
+      headers: extras.headers,
+      tags: extras.tags,
     }),
   });
 
@@ -431,23 +472,6 @@ async function stopEnrollment(
       next_send_at: null,
     })
     .eq('id', enrollmentId);
-}
-
-function applyMergeTags(input: string, coach: CoachRow): string {
-  const name = coach.name ?? '';
-  const firstName = coach.first_name ?? name.split(' ')[0] ?? '';
-  const lastName = coach.last_name ?? name.split(' ').slice(1).join(' ') ?? '';
-  return input
-    .replace(/\{name\}/g, name)
-    .replace(/\{first_name\}/g, firstName)
-    .replace(/\{last_name\}/g, lastName)
-    .replace(/\{title\}/g, coach.title ?? '')
-    .replace(/\{school\}/g, coach.school ?? '')
-    .replace(/\{conference\}/g, coach.conference ?? '')
-    .replace(/\{division\}/g, coach.division ?? '')
-    .replace(/\{program\}/g, coach.program ?? '')
-    .replace(/\{team_size\}/g, String(coach.team_size ?? ''))
-    .replace(/\{current_software\}/g, coach.current_software ?? '');
 }
 
 // ----------------------------------------------------------------------------

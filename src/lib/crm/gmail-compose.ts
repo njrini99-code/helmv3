@@ -14,7 +14,12 @@
 // renders identically to one merged by the automated batch:
 //   {name} {first_name} {last_name} {email} {school} {title}
 //   {conference} {division} {program} {team_size} {current_software}
+//
+// `mergeTemplate` now delegates to the single source of truth, mergeTags()
+// in src/lib/crm/merge-tags.ts (closes G10). The exported signature is kept
+// unchanged so page.tsx / crm-manual-send keep working.
 // ============================================================================
+import { mergeTags } from './merge-tags';
 
 /** The coach-shaped fields a template can interpolate. All optional/nullable. */
 export interface MergeableCoach {
@@ -40,23 +45,28 @@ export interface MergeableCoach {
  * Mirrors `sub()` in scripts/process-sequence-batch.mjs exactly.
  */
 export function mergeTemplate(text: string, coach: MergeableCoach): string {
+  // Derive first/last the same trimmed, whitespace-collapsing way this module
+  // always has (matches scripts/process-sequence-batch.mjs `sub()`), then hand
+  // off to the canonical mergeTags() so every token renders from one place.
   const name = (coach.name ?? '').trim();
   const parts = name ? name.split(/\s+/) : [];
   const firstName = parts[0] ?? '';
   const lastName = parts.slice(1).join(' ') || firstName;
 
-  return (text || '')
-    .replace(/\{name\}/g, coach.name ?? '')
-    .replace(/\{first_name\}/g, firstName)
-    .replace(/\{last_name\}/g, lastName)
-    .replace(/\{email\}/g, coach.email ?? '')
-    .replace(/\{school\}/g, coach.school ?? '')
-    .replace(/\{title\}/g, coach.title ?? '')
-    .replace(/\{conference\}/g, coach.conference ?? '')
-    .replace(/\{division\}/g, coach.division ?? '')
-    .replace(/\{program\}/g, coach.program ?? '')
-    .replace(/\{team_size\}/g, coach.team_size != null ? String(coach.team_size) : '')
-    .replace(/\{current_software\}/g, coach.current_software ?? '');
+  return mergeTags(text, {
+    id: '',
+    name: coach.name ?? '',
+    email: coach.email ?? '',
+    first_name: firstName,
+    last_name: lastName,
+    title: coach.title ?? null,
+    school: coach.school ?? null,
+    conference: coach.conference ?? null,
+    division: coach.division ?? null,
+    program: coach.program ?? null,
+    team_size: coach.team_size ?? null,
+    current_software: coach.current_software ?? null,
+  });
 }
 
 /**

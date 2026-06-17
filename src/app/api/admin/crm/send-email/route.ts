@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
+import { mergeTags } from '@/lib/crm/merge-tags';
+import { buildOutreachExtras } from '@/lib/crm/outreach-headers';
 
 interface Recipient {
   id: string;
@@ -167,117 +169,176 @@ export async function POST(request: Request) {
       statusMap.set(cs.id, cs.email_status ?? 'valid');
     }
 
+    // ── Also skip any address on the suppression list ──
+    // crm_email_suppressions is the authoritative do-not-contact source. An address
+    // can be suppressed (hard_bounce/complained/unsubscribed) without crm_coaches.
+    // email_status reflecting it — e.g. an unlinked webhook event (coach_id null), an
+    // Audiences unsubscribe, or an email shared across multiple coach rows. Checking
+    // only email_status would re-mail those, the exact harm suppression prevents.
+    const recipientEmailsLower = recipients.map(r => r.email.toLowerCase());
+    const { data: suppRows } = await supabase
+      .from('crm_email_suppressions')
+      .select('email')
+      .in('email', recipientEmailsLower) as { data: Array<{ email: string }> | null };
+    const suppressedEmails = new Set((suppRows ?? []).map(s => (s.email ?? '').toLowerCase()));
+
     let sent = 0;
     let failed = 0;
     let skipped = 0;
     const failedRecipients: Array<{ recipientId: string; recipientEmail: string; message: string }> = [];
     const skippedRecipients: Array<{ recipientId: string; recipientEmail: string; reason: string }> = [];
+    // Flat detail rows the BulkEmailModal "Show details" panel reads off data.details.
+    const details: Array<{ name: string; email: string; status: 'sent' | 'skipped' | 'failed'; reason?: string }> = [];
 
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i]!;
+    const fromAddress = process.env.HELM_FROM_EMAIL ?? 'Helm Sports Labs <admin@helmsportslabs.com>';
 
-      // Skip bounced/complained coaches
+    // ── Build the batch: one email object per NON-skipped recipient ──
+    // `included[i]` (the recipient) stays index-aligned with `batchEmails[i]`
+    // (the payload) and with the batch response `data[i].id`, so we can map a
+    // Resend message id back to the right coach for the contact-log + status promotion.
+    type BatchEmail = {
+      from: string;
+      to: string[];
+      subject: string;
+      reply_to?: string;
+      headers: Record<string, string>;
+      tags: { name: string; value: string }[];
+      text?: string;
+      html?: string;
+    };
+    const included: Array<{ recipient: Recipient; subject: string }> = [];
+    const batchEmails: BatchEmail[] = [];
+
+    for (const recipient of recipients) {
+      // Skip bounced/complained coaches AND anyone on the suppression list.
       const emailStatus = statusMap.get(recipient.id) ?? 'valid';
-      if (emailStatus !== 'valid') {
+      const isSuppressed = suppressedEmails.has(recipient.email.toLowerCase());
+      if (emailStatus !== 'valid' || isSuppressed) {
         skipped++;
+        const reason = emailStatus !== 'valid'
+          ? `email_status: ${emailStatus}`
+          : 'suppressed (do-not-contact list)';
         skippedRecipients.push({
           recipientId: recipient.id,
           recipientEmail: recipient.email,
-          reason: `email_status: ${emailStatus}`,
+          reason,
         });
+        details.push({ name: recipient.name, email: recipient.email, status: 'skipped', reason });
         continue;
       }
 
+      // Replace merge tags with recipient-specific data (shared single source — closes G10)
+      const personalizedSubject = mergeTags(subject, recipient);
+      const personalizedBody = mergeTags(body, recipient);
+
+      const extras = buildOutreachExtras({
+        coachId: recipient.id,
+        format: format ?? 'plain',
+        campaign: 'crm_bulk',
+        division: recipient.division,
+      });
+
+      const email: BatchEmail = {
+        from: fromAddress,
+        to: [recipient.email],
+        subject: personalizedSubject,
+        reply_to: extras.reply_to,
+        headers: extras.headers,
+        tags: extras.tags,
+        // text → true text/plain (no shell); html → verbatim; plain → branded shell.
+        ...(isTextBody
+          ? { text: personalizedBody }
+          : {
+              html: isHtmlBody
+                ? personalizedBody
+                : buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
+            }),
+      };
+
+      included.push({ recipient, subject: personalizedSubject });
+      batchEmails.push(email);
+    }
+
+    // ── Single Resend BATCH call for every included recipient (max 100) ──
+    // Records the per-recipient outcome: a successful batch maps data[i].id back
+    // to included[i]; a non-200 batch / network error records every included
+    // recipient as failed (closes G2, G13).
+    if (included.length > 0) {
+      let batchData: Array<{ id?: string }> | null = null;
+      let batchErrorMessage: string | null = null;
+
       try {
-        // Replace merge tags with recipient-specific data
-        const personalizedSubject = subject
-          .replace(/\{name\}/g, recipient.name)
-          .replace(/\{first_name\}/g, recipient.first_name ?? recipient.name.split(' ')[0] ?? '')
-          .replace(/\{last_name\}/g, recipient.last_name ?? recipient.name.split(' ').slice(1).join(' ') ?? '')
-          .replace(/\{email\}/g, recipient.email)
-          .replace(/\{title\}/g, recipient.title ?? '')
-          .replace(/\{school\}/g, recipient.school ?? '')
-          .replace(/\{conference\}/g, recipient.conference ?? '')
-          .replace(/\{division\}/g, recipient.division ?? '')
-          .replace(/\{program\}/g, recipient.program ?? '')
-          .replace(/\{team_size\}/g, String(recipient.team_size ?? ''))
-          .replace(/\{current_software\}/g, recipient.current_software ?? '');
-
-        const personalizedBody = body
-          .replace(/\{name\}/g, recipient.name)
-          .replace(/\{first_name\}/g, recipient.first_name ?? recipient.name.split(' ')[0] ?? '')
-          .replace(/\{last_name\}/g, recipient.last_name ?? recipient.name.split(' ').slice(1).join(' ') ?? '')
-          .replace(/\{email\}/g, recipient.email)
-          .replace(/\{title\}/g, recipient.title ?? '')
-          .replace(/\{school\}/g, recipient.school ?? '')
-          .replace(/\{conference\}/g, recipient.conference ?? '')
-          .replace(/\{division\}/g, recipient.division ?? '')
-          .replace(/\{program\}/g, recipient.program ?? '')
-          .replace(/\{team_size\}/g, String(recipient.team_size ?? ''))
-          .replace(/\{current_software\}/g, recipient.current_software ?? '');
-
-        const res = await fetch('https://api.resend.com/emails', {
+        const res = await fetch('https://api.resend.com/emails/batch', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${apiKey}`,
+            // Provider-side exactly-once for the whole batch: survives a crash/retry
+            // between POST-success and the DB writes below. Keyed on the chunk's first
+            // recipient + size so two same-day 100-recipient chunks don't collide.
+            'Idempotency-Key': `crm-bulk-${user.id}-${today.getTime()}-${included[0]!.recipient.id}-${included.length}`,
           },
-          body: JSON.stringify({
-            from: process.env.HELM_FROM_EMAIL ?? 'Helm Sports Labs <admin@helmsportslabs.com>',
-            to: [recipient.email],
-            subject: personalizedSubject,
-            // text → true text/plain (no shell); html → verbatim; plain → shell.
-            ...(isTextBody
-              ? { text: personalizedBody }
-              : {
-                  html: isHtmlBody
-                    ? personalizedBody
-                    : buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
-                }),
-          }),
+          body: JSON.stringify(batchEmails),
         });
 
         if (res.ok) {
-          const resendData = await res.json() as { id: string };
+          const json = (await res.json().catch(() => null)) as { data?: Array<{ id?: string }> } | null;
+          batchData = Array.isArray(json?.data) ? json!.data : null;
+          if (!batchData) {
+            batchErrorMessage = 'Resend batch returned an unexpected response shape';
+          }
+        } else {
+          batchErrorMessage = (await res.text().catch(() => '')).slice(0, 500) || `Resend batch returned ${res.status}`;
+        }
+      } catch (error) {
+        batchErrorMessage = error instanceof Error ? error.message : String(error);
+      }
+
+      const sendNow = new Date().toISOString();
+
+      for (let i = 0; i < included.length; i++) {
+        const { recipient, subject: personalizedSubject } = included[i]!;
+        const resendId = batchData ? batchData[i]?.id : undefined;
+
+        if (resendId) {
           sent++;
-          await supabase.from('crm_contact_log').insert({
-            coach_id: recipient.id,
-            contact_type: 'email',
-            subject: personalizedSubject,
-            notes: `Bulk email: "${personalizedSubject}"`,
-            resend_message_id: resendData.id,
-            created_by: user.id,
-          });
-          const sendNow = new Date().toISOString();
-          // Auto-advance new_lead → contacted on first outreach
-          await supabase.from('crm_coaches').update({
-            last_contacted_at: sendNow,
-            updated_at: sendNow,
-          }).eq('id', recipient.id);
-          await supabase.from('crm_coaches').update({
-            status: 'contacted',
-          }).eq('id', recipient.id).eq('status', 'new_lead');
+          details.push({ name: recipient.name, email: recipient.email, status: 'sent' });
+          // A test send (sendTestTemplate) uses a synthetic `test-<uuid>` recipient id
+          // that is NOT a real coach — never log it, promote a status, or it would
+          // create an orphan/misattributed contact-log row.
+          const isTestSend = recipient.id.startsWith('test-');
+          if (!isTestSend) {
+            // Structured attribution in `metadata` jsonb (added by migration
+            // 20260617180000); the daily-cap counter still keys on resend_message_id.
+            await supabase.from('crm_contact_log').insert({
+              coach_id: recipient.id,
+              contact_type: 'email',
+              subject: personalizedSubject,
+              notes: `Bulk email: "${personalizedSubject}"`,
+              resend_message_id: resendId,
+              created_by: user.id,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              metadata: { campaign: 'crm_bulk', template_id: templateId ?? null } as any,
+            });
+            // Auto-advance new_lead → contacted on first outreach
+            await supabase.from('crm_coaches').update({
+              last_contacted_at: sendNow,
+              updated_at: sendNow,
+            }).eq('id', recipient.id);
+            await supabase.from('crm_coaches').update({
+              status: 'contacted',
+            }).eq('id', recipient.id).eq('status', 'new_lead');
+          }
         } else {
           failed++;
-          const failureBody = (await res.text().catch(() => '')).slice(0, 500);
+          const message = batchErrorMessage ?? 'Resend batch did not return an id for this recipient';
           failedRecipients.push({
             recipientId: recipient.id,
             recipientEmail: recipient.email,
-            message: failureBody || `Resend returned ${res.status}`,
+            message,
           });
+          details.push({ name: recipient.name, email: recipient.email, status: 'failed', reason: message });
         }
-      } catch (error) {
-        failed++;
-        failedRecipients.push({
-          recipientId: recipient.id,
-          recipientEmail: recipient.email,
-          message: error instanceof Error ? error.message : String(error),
-        });
-      }
-
-      // 200ms delay between sends to avoid Resend rate limits
-      if (i < recipients.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
 
@@ -319,7 +380,10 @@ export async function POST(request: Request) {
       }, failed === recipients.length ? 'critical' : 'warning');
     }
 
-    return NextResponse.json({ sent, failed, skipped, total: recipients.length });
+    // `details` is the flat, per-recipient outcome array the BulkEmailModal "Show
+    // details" panel reads off data.details — returning it makes that panel go live
+    // (closes G11). The {sent,failed,skipped,total} aggregate counts are preserved.
+    return NextResponse.json({ sent, failed, skipped, total: recipients.length, details });
   } catch (error) {
     await logServerError(`CRM send-email route failed: ${error instanceof Error ? error.message : String(error)}`, {
       action: 'crmSendEmailApi',

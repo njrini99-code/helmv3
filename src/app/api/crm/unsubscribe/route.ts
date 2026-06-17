@@ -12,26 +12,11 @@
  * so a stranger can't suppress arbitrary coaches by guessing ids.
  */
 import { NextResponse } from 'next/server';
-import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { verifyUnsubToken } from '@/lib/crm/unsubscribe-token';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-// Must match scripts/process-sequence-batch.mjs. Shared default works out-of-the-box; set
-// CRM_UNSUB_SECRET in BOTH the local .env AND Vercel to harden (coach ids are already UUIDs).
-const SECRET = process.env.CRM_UNSUB_SECRET || 'helm-sports-unsub-v1';
-
-function tokenFor(id: string): string {
-  return createHmac('sha256', SECRET).update(id).digest('hex').slice(0, 16);
-}
-
-function validToken(id: string | null, t: string | null): id is string {
-  if (!id || !t) return false;
-  const a = Buffer.from(t);
-  const b = Buffer.from(tokenFor(id));
-  return a.length === b.length && timingSafeEqual(a, b);
-}
 
 async function suppress(coachId: string): Promise<boolean> {
   const supa = createAdminClient();
@@ -73,7 +58,7 @@ export async function POST(request: Request) {
   const { searchParams } = new URL(request.url);
   const c = searchParams.get('c');
   const t = searchParams.get('t');
-  if (!validToken(c, t)) return NextResponse.json({ error: 'invalid' }, { status: 400 });
+  if (!verifyUnsubToken(c, t)) return NextResponse.json({ error: 'invalid' }, { status: 400 });
   await suppress(c);
   return NextResponse.json({ ok: true });
 }
@@ -83,7 +68,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const c = searchParams.get('c');
   const t = searchParams.get('t');
-  if (!validToken(c, t)) {
+  if (!verifyUnsubToken(c, t)) {
     return new NextResponse(page('This unsubscribe link is invalid or expired.'), {
       status: 400,
       headers: { 'Content-Type': 'text/html' },

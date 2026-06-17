@@ -119,6 +119,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
+  // Gate on the inbound event type BEFORE treating the payload as a reply (G15).
+  // Resend's Inbound Email Receiving product fires `email.received`; the same
+  // webhook URL could also receive other Svix-signed event types if the operator
+  // points an outbound subscription here by mistake. Only `email.received`
+  // carries a genuine reply — letting any other type through would insert a bogus
+  // crm_replies row and spuriously trip trg_stop_sequences_on_reply, killing
+  // live cadences. Accept (200) so Resend doesn't retry, but skip processing.
+  if (event.type && event.type !== 'email.received') {
+    return NextResponse.json({ received: true, skipped: true, reason: 'not_inbound_event' });
+  }
+
   const data = event.data ?? {};
   const messageId = pickMessageId(data);
 
