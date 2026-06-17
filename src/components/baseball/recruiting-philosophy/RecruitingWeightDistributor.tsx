@@ -144,6 +144,7 @@ export function RecruitingWeightDistributor({
       {/* Sliders */}
       <div className="space-y-5">
         {METRICS.map((metric) => (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- mouse-hover-only tooltip, no interactive behavior
           <div
             key={metric.key}
             className="group"

@@ -477,8 +477,9 @@ export default function RosterPage() {
                     <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-warm-200">
                       {/* Position Filter */}
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-warm-500">Position</label>
+                        <label htmlFor="roster-position-filter" className="text-xs font-medium text-warm-500">Position</label>
                         <select
+                          id="roster-position-filter"
                           value={positionFilter}
                           onChange={(e) => setPositionFilter(e.target.value)}
                           className="px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -494,8 +495,9 @@ export default function RosterPage() {
 
                       {/* Grad Year Filter */}
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-warm-500">Grad Year</label>
+                        <label htmlFor="roster-gradyear-filter" className="text-xs font-medium text-warm-500">Grad Year</label>
                         <select
+                          id="roster-gradyear-filter"
                           value={gradYearFilter}
                           onChange={(e) => setGradYearFilter(e.target.value)}
                           className="px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -511,8 +513,9 @@ export default function RosterPage() {
 
                       {/* Status Filter */}
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-warm-500">Status</label>
+                        <label htmlFor="roster-status-filter" className="text-xs font-medium text-warm-500">Status</label>
                         <select
+                          id="roster-status-filter"
                           value={statusFilter}
                           onChange={(e) => setStatusFilter(e.target.value)}
                           className="px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"

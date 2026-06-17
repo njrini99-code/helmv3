@@ -336,9 +336,9 @@ export function PatternDashboard({
               <div className="flex flex-wrap gap-6">
                 {/* Lifecycle filter */}
                 <div>
-                  <label className="block text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
+                  <p className="block text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
                     Status
-                  </label>
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {(['all', 'detected', 'confirmed', 'addressed', 'resolved', 'dismissed'] as const).map(state => (
                       <Button variant="primary"
@@ -359,9 +359,9 @@ export function PatternDashboard({
 
                 {/* Severity filter */}
                 <div>
-                  <label className="block text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
+                  <p className="block text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
                     Severity
-                  </label>
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {(['all', 'critical', 'high', 'medium', 'low'] as const).map(sev => (
                       <Button variant="danger"

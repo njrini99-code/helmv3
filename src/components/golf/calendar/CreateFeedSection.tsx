@@ -143,9 +143,9 @@ export function CreateFeedSection({
 
       {/* Feed type selection */}
       <div>
-        <label className="block text-sm font-medium text-warm-700 mb-3">
+        <p className="block text-sm font-medium text-warm-700 mb-3">
           Feed Type
-        </label>
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {availableOptions.map((option) => {
             const Icon = option.icon;

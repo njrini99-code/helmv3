@@ -512,7 +512,7 @@ export default function PipelinePage() {
 
           {/* Grad Year Filter (shared) */}
           <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-warm-700 whitespace-nowrap">Grad Year:</label>
+            <span className="text-sm font-medium text-warm-700 whitespace-nowrap">Grad Year:</span>
             <Select
               options={gradYearOptions}
               value={gradYearFilter}
@@ -623,7 +623,7 @@ export default function PipelinePage() {
             {/* Additional Filters */}
             <div className="flex items-center gap-4 mb-6">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-warm-700">Position:</label>
+                <span className="text-sm font-medium text-warm-700">Position:</span>
                 <Select
                   options={[
                     { value: 'all', label: 'All Positions' },
@@ -702,8 +702,9 @@ export default function PipelinePage() {
                           onChange={() => togglePlayerSelection(item.id)}
                           className="mt-1 rounded border-warm-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
                         />
-                        <div
-                          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                        <button
+                          type="button"
+                          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer text-left appearance-none bg-transparent border-0 p-0"
                           onClick={() => setPeekPlayerId(item.player?.id || null)}
                         >
                           <Avatar
@@ -719,7 +720,7 @@ export default function PipelinePage() {
                               {item.player?.primary_position || 'N/A'} {item.player?.grad_year ? `\u2022 ${item.player.grad_year}` : ''}
                             </p>
                           </div>
-                        </div>
+                        </button>
                         <Badge
                           variant={
                             item.pipeline_stage === 'committed' ? 'success'
@@ -861,8 +862,9 @@ export default function PipelinePage() {
                               />
                             </td>
                             <td className="px-6 py-4">
-                              <div
-                                className="flex items-center gap-3 cursor-pointer group"
+                              <button
+                                type="button"
+                                className="flex items-center gap-3 cursor-pointer group text-left appearance-none bg-transparent border-0 p-0 w-full"
                                 onClick={() => setPeekPlayerId(item.player?.id || null)}
                               >
                                 <Avatar
@@ -878,7 +880,7 @@ export default function PipelinePage() {
                                     {item.player?.high_school_name || 'No school'}
                                   </p>
                                 </div>
-                              </div>
+                              </button>
                             </td>
                             <td className="px-6 py-4 text-sm text-warm-600">
                               {item.player?.primary_position}

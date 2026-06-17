@@ -71,9 +71,12 @@ export function ConfirmDialog({
   if (variant === 'danger' && isNativeApp()) {
     return (
       <div
+        role="presentation"
         className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
         onClick={onCancel}
+        onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
       >
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing dialog */}
         <div
           ref={modalRef}
           role="dialog"
@@ -81,6 +84,7 @@ export function ConfirmDialog({
           aria-label={title}
           className="w-full max-w-md px-3 pb-[max(12px,env(safe-area-inset-bottom))] space-y-2 animate-slide-up"
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
         >
           {/* Sheet body: title + message + destructive action */}
           <div className="overflow-hidden rounded-2xl bg-cream-50/95 backdrop-blur-xl shadow-xl">
@@ -115,9 +119,12 @@ export function ConfirmDialog({
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onCancel}
+      onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
     >
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- stopPropagation prevents backdrop click from closing dialog */}
       <div
         ref={modalRef}
         role="dialog"
@@ -125,6 +132,7 @@ export function ConfirmDialog({
         aria-label={title}
         className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-fade-in"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">

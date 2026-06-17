@@ -162,6 +162,11 @@ export const RATE_LIMITS = {
     maxAttempts: 20,
     windowMs: 60 * 1000,
   },
+  DEMO_GATE: {
+    maxAttempts: 5,
+    windowMs: 5 * 60 * 1000,
+    blockDurationMs: 15 * 60 * 1000,
+  },
 } as const;
 
 /**

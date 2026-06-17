@@ -158,6 +158,7 @@ export default function SignupPage() {
                     value={code}
                     onChange={(e) => { setCode(e.target.value.toUpperCase()); setCodeError(false); }}
                     placeholder="Enter access code"
+                    // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on signup access-code gate
                     autoFocus
                     className={`w-full h-12 px-4 rounded-xl border bg-cream-100/82 text-warm-900 placeholder:text-warm-400 text-center text-lg tracking-widest font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all ${
                       codeError ? 'border-red-300 ring-2 ring-red-500/20' : 'border-warm-200'

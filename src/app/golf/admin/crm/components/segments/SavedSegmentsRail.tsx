@@ -223,6 +223,7 @@ export function SavedSegmentsRail({
         const segment = segments.find((s) => s.id === contextMenu.id);
         if (!segment) return null;
         return (
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents context menu from closing when clicking menu items
           <div
             ref={contextRef}
             className="fixed z-modal min-w-[180px] py-1 rounded-xl bg-white shadow-2xl border border-warm-200/60"

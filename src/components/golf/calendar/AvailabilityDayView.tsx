@@ -182,6 +182,7 @@ export function AvailabilityDayView({
           const showFreeAffordance = totalBusy === 0;
 
           return (
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions
             <div
               key={hour}
               className="relative flex items-stretch group"

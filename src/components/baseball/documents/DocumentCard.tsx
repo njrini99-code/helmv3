@@ -125,8 +125,11 @@ export function DocumentCard({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       className="group relative glass-standard rounded-2xl overflow-clip hover:shadow-md hover:bg-cream-100/82 transition-all duration-200 cursor-pointer active:scale-[0.98]"
       onClick={handlePreview}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePreview(); } }}
     >
       {/* Color accent bar */}
       <div
@@ -181,8 +184,10 @@ export function DocumentCard({
 
                 {activeDropdown === document.id && (
                   <>
-                    <div
-                      className="fixed inset-0 z-30"
+                    <button
+                      type="button"
+                      aria-label="Close menu"
+                      className="fixed inset-0 z-30 cursor-default bg-transparent border-0 p-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         setActiveDropdown(null);

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import {
+  checkAdminAccess,
   getAdminDashboardData,
   getAdminDashboardRollup,
 } from '@/app/golf/actions/admin-data';
@@ -266,6 +267,16 @@ function AdminDashboardContent() {
     if (!silent) setLoading(true);
     else setIsRefreshing(true);
     try {
+      // Non-throwing access probe first. The SSR layout guards a hard
+      // navigation, but a tab kept open through a role/session change can
+      // still reach this code path — and the data actions 500 on auth
+      // failure, flooding runtime logs (576+ entries/day). Stop here on
+      // any non-allowed result and let the catch block freeze polling.
+      const access = await checkAdminAccess();
+      if (!access.allowed) {
+        throw new Error(access.reason === 'unauthenticated' ? 'Unauthorized' : 'Forbidden');
+      }
+
       // Fetch main data, rollup, and CRM data in parallel.
       // The rollup is 1 RPC round-trip, cached + tag-invalidated; the full
       // legacy fetch is ~95 queries and stays until every tab is migrated.
@@ -308,8 +319,11 @@ function AdminDashboardContent() {
 
       // If the error is auth-related, stop polling and show session expired UI.
       // Flipping sessionExpired=true passes null to useVisibilityAwareInterval
-      // below, which tears the timer down.
-      if (message === 'Unauthorized' || message === 'Forbidden') {
+      // below, which tears the timer down. Match wrapped messages too — the
+      // inner rollup helpers re-throw with a `rollupA failed: Forbidden`
+      // prefix, which the prior exact-equality check missed and let polling
+      // run forever after a real-admin RLS denial.
+      if (/\b(Unauthorized|Forbidden)\b/.test(message)) {
         setSessionExpired(true);
         if (!silent) {
           setError(message);
@@ -437,7 +451,9 @@ function AdminDashboardContent() {
     <div className="min-h-dvh bg-[#FFFEF8] flex overflow-x-hidden">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div
+        <button
+          type="button"
+          aria-label="Close menu"
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />

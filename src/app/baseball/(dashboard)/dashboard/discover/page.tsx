@@ -443,8 +443,10 @@ function DiscoverContent() {
         {/* Mobile filter drawer with slide-in animation */}
         {mobileFiltersOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            <div
-              className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm animate-fade-in"
+            <button
+              type="button"
+              aria-label="Close filters"
+              className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm animate-fade-in w-full h-full border-0 cursor-default"
               onClick={() => setMobileFiltersOpen(false)}
             />
             <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl overflow-y-auto animate-slide-in-left">

@@ -326,6 +326,7 @@ export function FairwayBrief({
   return (
     <CoachHelmShell
       active="brief"
+      // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={signalCount}
       title={shell?.title ?? 'Team Brief'}

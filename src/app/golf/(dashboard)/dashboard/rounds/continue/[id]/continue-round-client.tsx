@@ -7,6 +7,7 @@ import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound, type PartialRoundData } from '@/app/golf/actions/golf';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
+import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import {
   emergencySave,
   loadEmergencySave,
@@ -308,7 +309,10 @@ export default function ContinueRoundClient({
           yardage: hole.yardage,
         })),
       };
-      void savePartialRound(saveData, roundId);
+      // Unload-safe delivery — see new-round-client: a plain server-action fetch
+      // is killed on page freeze, so sendBeacon guarantees the in-progress round
+      // reaches the server and stays resumable.
+      beaconPartialSave(saveData, roundId);
     };
 
     const handleVisibilityChange = () => {

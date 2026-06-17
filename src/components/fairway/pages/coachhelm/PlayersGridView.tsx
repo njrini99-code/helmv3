@@ -658,6 +658,7 @@ export function PlayersGridView({
   return (
     <CoachHelmShell
       active="players"
+      // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={signalCount}
       title="Players"
@@ -747,6 +748,7 @@ export function PlayersGridView({
                    state ("No goals assigned yet") is owned by GoalsSection. ---- */}
             {selectedPlayerId ? (
               <GoalsSection
+                // eslint-disable-next-line jsx-a11y/aria-role
                 role="coach"
                 canCreate={false}
                 activeGoals={goalsByPlayer[selectedPlayerId] ?? []}
@@ -936,6 +938,7 @@ function FocusAreaBoard({
             <FocusAreaCard
               key={fa.id}
               focusArea={fa}
+              // eslint-disable-next-line jsx-a11y/aria-role
               role="coach"
               index={i}
               playerName={showPlayerName ? playerName(byId.get(fa.player_id)) : undefined}
@@ -959,6 +962,7 @@ function FocusAreaBoard({
               <FocusAreaCard
                 key={fa.id}
                 focusArea={fa}
+                // eslint-disable-next-line jsx-a11y/aria-role
                 role="coach"
                 index={i}
                 playerName={showPlayerName ? playerName(byId.get(fa.player_id)) : undefined}

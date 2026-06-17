@@ -87,8 +87,10 @@ export const RosterToolbar = memo(function RosterToolbar({
 
           {showSortMenu && (
             <>
-              <div
-                className="fixed inset-0 z-30"
+              <button
+                type="button"
+                aria-label="Close sort menu"
+                className="fixed inset-0 z-30 cursor-default bg-transparent border-0 p-0"
                 onClick={() => setShowSortMenu(false)}
               />
               <div

@@ -498,6 +498,7 @@ export function StatsUploadClient({
 
         {/* Step: Upload */}
         {step === 'upload' && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag-and-drop zone, no click interaction
           <div
             className={`bg-cream-100/75 backdrop-blur-xl border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
               isDragging
@@ -1048,9 +1049,9 @@ export function StatsUploadClient({
               <div className="space-y-4">
                 {/* Stat Type */}
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-2">
+                  <p className="block text-sm font-medium text-warm-700 mb-2">
                     Session Type
-                  </label>
+                  </p>
                   <div className="flex gap-2">
                     {(['practice', 'game', 'other'] as const).map((type) => (
                       <Button variant="primary"
@@ -1073,10 +1074,11 @@ export function StatsUploadClient({
 
                 {/* Date */}
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-2">
+                  <label htmlFor="suc-session-date" className="block text-sm font-medium text-warm-700 mb-2">
                     Session Date
                   </label>
                   <input
+                    id="suc-session-date"
                     type="date"
                     value={sessionDate}
                     onChange={(e) => setSessionDate(e.target.value)}
@@ -1088,10 +1090,11 @@ export function StatsUploadClient({
 
                 {/* Session Name */}
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-2">
+                  <label htmlFor="suc-session-name" className="block text-sm font-medium text-warm-700 mb-2">
                     Session Name (Optional)
                   </label>
                   <input
+                    id="suc-session-name"
                     type="text"
                     value={sessionName}
                     onChange={(e) => setSessionName(e.target.value)}

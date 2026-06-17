@@ -574,6 +574,7 @@ function AnnouncementDialog({
                         autoCorrect="on"
                         enterKeyHint="next"
                         className="w-full text-sm font-medium text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
+                        // eslint-disable-next-line jsx-a11y/no-autofocus
                         autoFocus={task.title === ''}
                       />
                       <div className="flex items-center gap-2">

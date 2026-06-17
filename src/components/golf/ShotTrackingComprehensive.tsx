@@ -1556,6 +1556,7 @@ export default function ShotTrackingComprehensive({
 
       {/* Unsaved Input Warning Modal (Issue #18) */}
       {pendingNavHoleIndex !== null && (
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <div
           className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
           onClick={() => setPendingNavHoleIndex(null)}
@@ -1564,6 +1565,7 @@ export default function ShotTrackingComprehensive({
           aria-modal="true"
           aria-label="Unsaved shot data"
         >
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
           <div className="glass-prominent rounded-2xl max-w-sm w-full p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
@@ -1596,6 +1598,7 @@ export default function ShotTrackingComprehensive({
 
       {/* Penalty Modal */}
       {showPenaltyModal && (
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <div
           className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => dispatch({ type: 'CLOSE_PENALTY_MODAL' })}
@@ -1604,6 +1607,7 @@ export default function ShotTrackingComprehensive({
           aria-modal="true"
           aria-label="Add penalty stroke"
         >
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
           <div className="glass-prominent rounded-2xl max-w-sm w-full p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-6">Add Penalty Stroke</h2>
             <div className="space-y-2 mb-6">
@@ -1636,6 +1640,7 @@ export default function ShotTrackingComprehensive({
 
       {/* Edit Shot Modal */}
       {showEditModal && editingShot && editFormData && (
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <div
           className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={handleCloseEditModal}
@@ -1644,6 +1649,7 @@ export default function ShotTrackingComprehensive({
           aria-modal="true"
           aria-label={`Edit shot ${editingShot.shotNumber}`}
         >
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
           <div
             className="glass-prominent rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto overscroll-contain touch-pan-y shadow-2xl"
             style={{ WebkitOverflowScrolling: 'touch' }}

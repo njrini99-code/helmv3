@@ -89,7 +89,6 @@ export function RecentCoursesQuickPick({
 
       {/* Tile grid */}
       <ul
-        role="list"
         className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4"
       >
         {visible.map((course) => {

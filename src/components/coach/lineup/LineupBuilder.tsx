@@ -161,6 +161,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
           <h3 className="font-medium text-warm-700">Batting Order</h3>
           <div className="space-y-2">
             {lineup.map((slot, index) => (
+              // eslint-disable-next-line jsx-a11y/no-static-element-interactions
               <div
                 key={slot.order}
                 className="bg-white rounded-2xl border border-warm-200 p-4 transition-all hover:border-primary-200"
@@ -176,6 +177,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
                   {/* Player or Empty Slot */}
                   {slot.player ? (
                     <>
+                      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
                       <div
                         className="flex items-center gap-3 flex-1 cursor-move"
                         draggable
@@ -226,6 +228,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
                 </div>
               ) : (
                 availablePlayers.map((player) => (
+                  // eslint-disable-next-line jsx-a11y/no-static-element-interactions
                   <div
                     key={player.id}
                     className="p-3 bg-white rounded-lg border border-warm-200 cursor-move hover:border-primary-200 hover:shadow-sm transition-all"

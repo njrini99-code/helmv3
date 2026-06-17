@@ -74,6 +74,7 @@ import {
 // REUSED UNCHANGED loaders — the legacy detailed stats + trend analysis.
 import { getDetailedStats, getTrendAnalysis, getSprayChartData } from '@/app/golf/actions/stats-data';
 import type { TrendAnalysisResponse, SprayChartResponse } from '@/app/golf/actions/stats-data-types';
+import { FairwayDrivingSpray } from './FairwayDrivingSpray';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 // Batch-0 shared reads (gated by verifyPlayerAccess inside each export).
@@ -568,7 +569,10 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
           </TabsContent>
 
           <TabsContent value="driving" className="px-4 py-5 sm:px-5">
-            <DrivingSection detailedStats={detailedStats} />
+            <div className="flex flex-col gap-6">
+              <DrivingSection detailedStats={detailedStats} />
+              <FairwayDrivingSpray group={sprayData?.driving ?? null} />
+            </div>
           </TabsContent>
 
           <TabsContent value="approach" className="px-4 py-5 sm:px-5">
@@ -1517,7 +1521,13 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
     { label: '225+ yds', value: fmtNum(s.approachEff225Plus[selectedLie], 2) },
   ];
 
-  const hasAny = hasGirBands || !allDash(girByPar) || !allDash(lieRows[selectedLie]);
+  // The lie pills govern ONLY the by-lie block below. There is no per-lie GIR
+  // by distance in GolfStats (girPct{band} is overall; only approachEff{band} is
+  // keyed by lie), so the GIR-by-distance + GIR-by-hole-type boards are overall
+  // across every lie and must NOT sit under the lie filter.
+  const lieLabel = `${selectedLie.charAt(0).toUpperCase()}${selectedLie.slice(1)}`;
+  const lieHasData = !allDash(lieRows[selectedLie]) || !allDash(approachEfficiencyRows);
+  const hasAny = hasGirBands || !allDash(girByPar) || lieHasData;
   if (!hasAny) return null;
 
   return (
@@ -1525,16 +1535,12 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
       <div className="flex flex-col gap-0.5 px-1">
         <SectionHeading as="div">Approach breakdowns</SectionHeading>
         <span className="font-fw-sans text-caption text-text-tertiary">
-          Greens hit, proximity, and efficiency by distance and hole type — filtered by the lie you played from.
+          Greens hit, proximity, and efficiency by distance, hole type, and the lie you played from.
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-2 px-1" aria-label="Approach lie filter">
-        <ToggleChip active={selectedLie === 'fairway'} value="fairway" label="Fairway" onSelect={setSelectedLie} />
-        <ToggleChip active={selectedLie === 'rough'} value="rough" label="Rough" onSelect={setSelectedLie} />
-        <ToggleChip active={selectedLie === 'sand'} value="sand" label="Sand" onSelect={setSelectedLie} />
-      </div>
-
+      {/* Lie-AGNOSTIC boards — overall across every lie, so they sit ABOVE the
+          lie filter. The lie pills below do not change these. */}
       {hasGirBands ? (
         <GirByDistanceBoard
           bands={girBands}
@@ -1542,21 +1548,49 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
         />
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {!allDash(girByPar) ? (
-          <DetailGrid title="GIR by hole type" rows={girByPar} columns={3} />
-        ) : null}
-        {!allDash(lieRows[selectedLie]) ? (
-          <DetailGrid title={`${selectedLie.charAt(0).toUpperCase()}${selectedLie.slice(1)} lie`} rows={lieRows[selectedLie]} />
-        ) : null}
-        {!allDash(approachEfficiencyRows) ? (
-          <DetailGrid
-            title={`Efficiency from ${selectedLie}`}
-            hint="Average strokes to hole out"
-            rows={approachEfficiencyRows}
-            columns={4}
-          />
-        ) : null}
+      {!allDash(girByPar) ? (
+        <DetailGrid title="GIR by hole type" rows={girByPar} columns={3} />
+      ) : null}
+
+      {/* BY LIE — the lie pills govern ONLY this block (GIR + proximity from the
+          selected lie, and efficiency by distance from it). Always renders a
+          response to the pill: the data, or an honest empty state — so the
+          filter is never a dead control even when a lie has no shots yet. */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-0.5 px-1">
+          <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">By lie</h4>
+          <span className="font-fw-sans text-caption text-text-tertiary">
+            Greens hit, proximity, and efficiency from the lie you played from.
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2 px-1" aria-label="Approach lie filter">
+          <ToggleChip active={selectedLie === 'fairway'} value="fairway" label="Fairway" onSelect={setSelectedLie} />
+          <ToggleChip active={selectedLie === 'rough'} value="rough" label="Rough" onSelect={setSelectedLie} />
+          <ToggleChip active={selectedLie === 'sand'} value="sand" label="Sand" onSelect={setSelectedLie} />
+        </div>
+
+        {lieHasData ? (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {!allDash(lieRows[selectedLie]) ? (
+              <DetailGrid title={`${lieLabel} lie`} rows={lieRows[selectedLie]} />
+            ) : null}
+            {!allDash(approachEfficiencyRows) ? (
+              <DetailGrid
+                title={`Efficiency from ${selectedLie}`}
+                hint="Average strokes to hole out"
+                rows={approachEfficiencyRows}
+                columns={4}
+              />
+            ) : null}
+          </div>
+        ) : (
+          <Surface elevation="border" padding="md">
+            <p className="font-fw-sans text-caption text-text-tertiary">
+              No approach data from the {selectedLie} yet.
+            </p>
+          </Surface>
+        )}
       </div>
     </section>
   );
@@ -2023,9 +2057,10 @@ function ComprehensiveDetail({
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
- * 6c · SHOT PATTERNS — the premium visual board: a driving spray chart, an
- * approach miss map (both ShotDispersion), and the putting make-rate heatmap by
- * break type. ADDITIVE, reuses the Fairway chart primitives verbatim. Honest:
+ * 6c · SHOT PATTERNS — the premium visual board: an approach miss map
+ * (ShotDispersion) and the putting make-rate heatmap by break type. (Driving
+ * spray moved to the Driving tab as the premium FairwayDrivingSpray glass
+ * chart.) ADDITIVE, reuses the Fairway chart primitives verbatim. Honest:
  * a chart with no points renders state="insufficient-data" with empty data; the
  * heatmap omits any (band × break) cell whose make-% is null/non-finite; the
  * whole section is skipped when there is literally no spray data AND no putting
@@ -2090,13 +2125,11 @@ function ShotPatterns({
   spray: SprayChartResponse | null;
   putting: GolfStats['puttingByBreak'] | null;
 }) {
-  const drivingPoints: ShotPoint[] = (spray?.driving.points ?? []).map((p) => ({ x: p.x, y: p.y }));
+  // Driving spray now lives in the Driving tab (FairwayDrivingSpray, the premium
+  // glass chart); this board keeps the approach miss map + the putting heatmap.
   const approachPoints: ShotPoint[] = (spray?.approach.points ?? []).map((p) => ({ x: p.x, y: p.y }));
 
-  const drivingSector = spray?.driving.dominantSector ?? null;
   const approachSector = spray?.approach.dominantSector ?? null;
-  const drivingTakeaway =
-    drivingPoints.length > 0 && drivingSector ? SPRAY_SECTOR_TAKEAWAY[drivingSector] : undefined;
   const approachTakeaway =
     approachPoints.length > 0 && approachSector ? SPRAY_SECTOR_TAKEAWAY[approachSector] : undefined;
 
@@ -2130,32 +2163,20 @@ function ShotPatterns({
   // Skip the whole section when there is literally nothing to show — no spray
   // points in either family AND no putting cell to paint.
   const hasAnyShotData =
-    drivingPoints.length > 0 ||
-    approachPoints.length > 0 ||
-    (anyBreakHasPutts && heatCells.length > 0);
+    approachPoints.length > 0 || (anyBreakHasPutts && heatCells.length > 0);
   if (!hasAnyShotData) return null;
 
   return (
     <section className="flex flex-col gap-3">
       <SectionHeading>Shot patterns</SectionHeading>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ShotDispersion
-          overline="Off the tee"
-          title="Driving dispersion"
-          subtitle="Lateral miss vs carry · season to date"
-          takeaway={drivingTakeaway}
-          data={drivingPoints}
-          state={drivingPoints.length > 0 ? undefined : 'insufficient-data'}
-        />
-        <ShotDispersion
-          overline="Approach"
-          title="Approach miss map"
-          subtitle="Proximity & direction vs target"
-          takeaway={approachTakeaway}
-          data={approachPoints}
-          state={approachPoints.length > 0 ? undefined : 'insufficient-data'}
-        />
-      </div>
+      <ShotDispersion
+        overline="Approach"
+        title="Approach miss map"
+        subtitle="Proximity & direction vs target"
+        takeaway={approachTakeaway}
+        data={approachPoints}
+        state={approachPoints.length > 0 ? undefined : 'insufficient-data'}
+      />
       <PuttingHeatmap
         overline="Putting"
         title="Make rate by break & distance"

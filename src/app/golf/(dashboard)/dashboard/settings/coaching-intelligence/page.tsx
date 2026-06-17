@@ -386,7 +386,7 @@ function LegacyCoachingIntelligenceSettingsPage() {
                                         </p>
                                     ) : null}
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                <label aria-label="Enable CoachHelm" className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                                     <input
                                         type="checkbox"
                                         className="sr-only peer"
@@ -442,9 +442,9 @@ function LegacyCoachingIntelligenceSettingsPage() {
                         ))}
 
                         <div className="pt-4 border-t border-warm-100">
-                            <label className="block text-sm font-medium text-warm-700 mb-2">
+                            <p className="block text-sm font-medium text-warm-700 mb-2">
                                 Insight Detail Level
-                            </label>
+                            </p>
                             <div className="flex gap-2">
                                 {(['brief', 'detailed'] as const).map((option) => (
                                     <Button variant="primary"

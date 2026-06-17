@@ -55,10 +55,11 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
   const [mode, setMode] = useState<SendMode>('helm');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  // Body format: 'plain' (default — wrapped in greeting/signature shell) or
-  // 'html' (full HTML document, replaces the entire email). Set by template
-  // selection; defaults back to 'plain' on Clear.
-  const [bodyFormat, setBodyFormat] = useState<'plain' | 'html'>('plain');
+  // Body format: 'plain' (wrapped in greeting/signature shell), 'html' (full
+  // HTML document, replaces the entire email), or 'text' (true text/plain — no
+  // shell, no logo; body is self-contained). Set by template selection; defaults
+  // back to 'plain' on Clear.
+  const [bodyFormat, setBodyFormat] = useState<'plain' | 'html' | 'text'>('plain');
   const [sending, setSending] = useState(false);
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
   const [helmResult, setHelmResult] = useState<HelmSendResult | null>(null);
@@ -533,7 +534,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
   };
 
   // ── Handle template selection ──
-  const handleTemplateSelect = (template: { subject: string; body: string; id: string; format: 'plain' | 'html' }) => {
+  const handleTemplateSelect = (template: { subject: string; body: string; id: string; format: 'plain' | 'html' | 'text' }) => {
     setSubject(template.subject);
     setBody(template.body);
     setSelectedTemplateId(template.id);
@@ -568,10 +569,12 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
   return (
     <>
       {/* Backdrop */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events -- modal backdrop dismisses on click; Escape is handled by the dialog */}
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={sending ? undefined : onClose} />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing while interacting with modal content */}
         <div
           className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 max-w-[1024px] w-full max-h-[90vh] overflow-hidden flex flex-col"
           onClick={e => e.stopPropagation()}
@@ -741,22 +744,22 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   Subject {mode === 'helm' && <span className="text-red-400">*</span>}
                   {mode === 'gmail' && <span className="text-warm-400 normal-case font-normal">(optional)</span>}
                 </label>
-                <input
+                {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
+                <input autoFocus
                   type="text"
                   value={subject}
                   onChange={e => setSubject(e.target.value)}
                   placeholder={mode === 'gmail' ? 'Pre-fill subject line...' : 'Email subject line...'}
                   className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-all"
-                  autoFocus
                 />
               </div>
 
               {/* Merge Tag Toolbar */}
               {mode === 'helm' && (
                 <div>
-                  <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block">
+                  <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block">
                     Insert Merge Tag
-                  </label>
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
                     {MERGE_TAGS.map(tag => (
                       <Button variant="ghost"

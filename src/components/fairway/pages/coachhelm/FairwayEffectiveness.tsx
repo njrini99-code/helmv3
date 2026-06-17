@@ -254,6 +254,7 @@ export function FairwayEffectiveness({
   return (
     <CoachHelmShell
       active="effectiveness"
+      // eslint-disable-next-line jsx-a11y/aria-role
       role="coach"
       signalCount={signalCount}
       title="Is CoachHelm helping?"

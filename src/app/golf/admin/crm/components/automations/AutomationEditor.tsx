@@ -185,6 +185,7 @@ export function AutomationEditor({
   return (
     <>
       {/* Backdrop */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog */}
       <div
         className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
@@ -227,10 +228,10 @@ export function AutomationEditor({
                   <label htmlFor="automation-name" className="block text-xs font-medium text-warm-700 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
+                  <input autoFocus
                     id="automation-name"
                     type="text"
-                    autoFocus
                     required
                     maxLength={120}
                     value={name}

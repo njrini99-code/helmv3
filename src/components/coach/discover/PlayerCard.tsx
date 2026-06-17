@@ -88,10 +88,11 @@ const PlayerCardComponent = function PlayerCard({
 
   if (variant === 'compact') {
     return (
-      <div
+      <button
+        type="button"
         onClick={handleClick}
         className={cn(
-          "flex items-center gap-3 p-3 rounded-[16px] cursor-pointer relative",
+          "flex items-center gap-3 p-3 rounded-[16px] cursor-pointer relative text-left",
           "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
           "transition-[transform,box-shadow,border-color] duration-200",
           "hover:-translate-y-0.5 hover:shadow-md hover:border-warm-200/55",
@@ -133,7 +134,7 @@ const PlayerCardComponent = function PlayerCard({
         {player.status && (
           <StatusDot variant={getStatusVariant(player.status)} />
         )}
-      </div>
+      </button>
     );
   }
 
@@ -209,14 +210,14 @@ const PlayerCardComponent = function PlayerCard({
             <PlayerAvatar player={player} size="lg" border />
           </div>
 
-          <div onClick={handleClick} className="group cursor-pointer">
+          <button type="button" onClick={handleClick} className="group cursor-pointer w-full text-left">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-semibold text-lg text-warm-900 group-hover:text-primary-600 transition-colors">
                 {player.firstName} {player.lastName}
               </h3>
               {player.verified && <VerifiedBadge />}
             </div>
-          </div>
+          </button>
 
           <div className="flex items-center gap-3 text-sm text-warm-500 mb-4">
             <span className="font-medium text-warm-700">{player.position}</span>
@@ -310,7 +311,7 @@ const PlayerCardComponent = function PlayerCard({
           <PlayerAvatar player={player} size="md" />
 
           <div className="flex-1 min-w-0">
-            <div onClick={handleClick} className="cursor-pointer">
+            <button type="button" onClick={handleClick} className="cursor-pointer w-full text-left">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold text-warm-900 group-hover:text-primary-600 transition-colors truncate">
                   {player.firstName} {player.lastName}
@@ -322,7 +323,7 @@ const PlayerCardComponent = function PlayerCard({
                   </span>
                 )}
               </div>
-            </div>
+            </button>
 
             <div className="text-sm leading-relaxed text-warm-500 mb-2">
               {player.position} • Class of {player.graduationYear}

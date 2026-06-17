@@ -61,7 +61,6 @@ import {
   IconFileText,
   IconClipboardList,
   IconUserPlus,
-  IconTarget,
   IconFlag,
   IconTrophy,
   IconLayoutGrid,
@@ -126,7 +125,6 @@ function buildNavSections(role: Role, messages: number, coachhelm: number): NavS
           { label: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
           { label: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
           { label: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
-          { label: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
           { label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
         ],
       },
@@ -139,7 +137,6 @@ function buildNavSections(role: Role, messages: number, coachhelm: number): NavS
         { label: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
         { label: 'CoachHelm AI', href: '/golf/dashboard/coachhelm', icon: IconSparkles },
         { label: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
-        { label: 'My Development', href: '/golf/dashboard/my-development', icon: IconTarget },
         { label: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
         { label: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
         {

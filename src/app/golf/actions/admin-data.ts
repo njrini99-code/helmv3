@@ -82,6 +82,43 @@ export interface AdminDashboardRollup {
   signup_trend_30d: { date: string; count: number }[];
 }
 
+/**
+ * Non-throwing admin access probe.
+ *
+ * Returns the caller's authority to load admin data WITHOUT 500ing on the
+ * unauth path. The page polls every 5 min while open; if the layout's SSR
+ * guard ever lets a non-admin tab through (stale role row, session
+ * downgraded mid-tab, etc.) the throw-based actions flood prod runtime
+ * logs at ~576 errors/day. The dashboard gates on this check first and
+ * stops polling cleanly when access drops — no 500.
+ */
+export async function checkAdminAccess(): Promise<{
+  allowed: boolean;
+  reason?: 'unauthenticated' | 'forbidden';
+}> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { allowed: false, reason: 'unauthenticated' };
+
+  const { data: userRow, error: userErr } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (userErr) {
+    // A transient DB error is not an auth denial — re-throw so the caller
+    // surfaces it as a retriable error rather than a permanent session
+    // expiry. Collapsing it into `forbidden` would trip the client's
+    // /\bForbidden\b/ guard and tear the polling timer down for a real
+    // admin who just hit a Supabase hiccup.
+    throw userErr instanceof Error ? userErr : new Error(String(userErr));
+  }
+  if (userRow?.role !== 'admin') {
+    return { allowed: false, reason: 'forbidden' };
+  }
+  return { allowed: true };
+}
+
 /** Server-side entrypoint: admin check, then one RPC round-trip via the
  *  user-scoped client so the SECURITY DEFINER `auth.uid()` gate inside
  *  `get_admin_dashboard_rollup` resolves to the invoking admin (and not

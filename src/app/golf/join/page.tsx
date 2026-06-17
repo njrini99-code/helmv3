@@ -104,6 +104,7 @@ export default function JoinTeamPage() {
                     aria-describedby={error ? 'invite-code-error' : 'invite-code-hint'}
                     aria-invalid={error ? true : undefined}
                     error={error || undefined}
+                    // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus on the single-field join form
                     autoFocus
                     className="text-center text-lg font-mono tracking-widest"
                   />

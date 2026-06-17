@@ -30,6 +30,7 @@ import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { saveOfflineRound } from '@/lib/offline/indexed-db';
+import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import { OfflineWarningBanner } from '@/components/golf';
 import { IconBookmark, IconCheck, IconChartBar, IconFlag, IconMapPin, IconPlus, IconSearch, IconTrophy, IconWarning } from '@/components/icons';
 import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -249,6 +250,11 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // Emergency save recovery state
   const [showNewRoundRecovery, setShowNewRoundRecovery] = useState(false);
   const [newRoundRecoveryData, setNewRoundRecoveryData] = useState<EmergencySaveData | null>(null);
+  // Set synchronously by the mount recovery effect (which is defined BEFORE the
+  // auto-open-picker effect, so it runs first in the same commit). Lets the
+  // picker effect bail when a `_new` save is pending recovery, so the "Recover
+  // Unsaved Progress?" dialog isn't buried under an auto-opened course picker.
+  const pendingRecoveryRef = useRef(false);
 
   // Throttle auto-save warning to at most once per 60s to avoid toast spam
   const showAutoSaveWarning = useCallback(() => {
@@ -319,6 +325,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     const hasData = emergencyData.completedHoleStats?.some(h => h != null) ||
       Object.keys(emergencyData.inProgressShotsByHole || {}).length > 0;
     if (hasData) {
+      pendingRecoveryRef.current = true;
       setShowNewRoundRecovery(true);
       setNewRoundRecoveryData(emergencyData);
     }
@@ -424,7 +431,12 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           yardage: hole.yardage,
         })),
       };
-      void savePartialRound(saveData, savedRoundIdRef.current ?? undefined);
+      // Unload-safe: a plain `void savePartialRound(...)` server-action fetch is
+      // killed when the page freezes (phone lock / app switch), so the round
+      // never reaches the server and can't be resumed. sendBeacon is guaranteed
+      // to deliver during unload. The synchronous emergencySave above is the
+      // hard fallback if even the beacon can't be queued.
+      beaconPartialSave(saveData, savedRoundIdRef.current ?? undefined);
     };
 
     const handleVisibilityChange = () => {
@@ -784,6 +796,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   useEffect(() => {
     if (!redesign || showResumePrompt || step !== 'setup') return;
     if (autoOpenedPickerRef.current) return;
+    // A `_new` emergency save is pending recovery — let the "Recover Unsaved
+    // Progress?" dialog surface instead of burying it under the course picker.
+    if (pendingRecoveryRef.current) return;
     // Don't auto-open the cloud picker offline — listCourses needs the network and
     // would greet the user with an error toast + empty library. The offline-friendly
     // saved-course / manual path on the setup screen still works; "Browse course
@@ -2299,9 +2314,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
                   {/* Holes per round toggle */}
                   <div>
-                    <label className="text-sm font-medium text-warm-700 block mb-2">
+                    <p className="text-sm font-medium text-warm-700 block mb-2">
                       Holes
-                    </label>
+                    </p>
                     <GolfTabBar<'9' | '18'>
                       ariaLabel="Holes per round"
                       compact

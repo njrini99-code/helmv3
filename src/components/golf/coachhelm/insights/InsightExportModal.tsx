@@ -155,9 +155,9 @@ export function InsightExportModal({
         >
         {/* Format Selection */}
         <div>
-          <label className="block text-sm font-medium text-warm-700 mb-3">
+          <p className="block text-sm font-medium text-warm-700 mb-3">
             Choose format
-          </label>
+          </p>
           <div className="grid grid-cols-2 gap-3">
             {FORMAT_OPTIONS.map((option) => (
               <Button variant="primary"

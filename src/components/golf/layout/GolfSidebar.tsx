@@ -27,7 +27,6 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconTrophy,
-  IconTarget,
   IconSparkles,
   IconUserPlus,
   IconLayoutGrid,
@@ -71,7 +70,6 @@ const coachSecondaryNav: NavItem[] = [
   { name: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
   { name: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
   { name: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
-  { name: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
   { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },];
 
 // Player primary nav — 7 daily-use destinations
@@ -79,7 +77,6 @@ const playerNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
   { name: 'CoachHelm AI', href: '/golf/dashboard/coachhelm', icon: IconSparkles },
   { name: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
-  { name: 'My Development', href: '/golf/dashboard/my-development', icon: IconTarget },
   { name: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
   { name: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
   { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMessage },

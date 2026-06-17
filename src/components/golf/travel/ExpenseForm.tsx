@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Drawer,
@@ -66,6 +66,7 @@ export function ExpenseForm({
   itineraryId,
   expense,
 }: ExpenseFormProps) {
+  const uid = useId();
   const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,7 +237,7 @@ export function ExpenseForm({
 
         {/* Category Selection */}
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-2">Category</label>
+          <p className="text-sm font-medium text-warm-700 block mb-2">Category</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {CATEGORIES.map((cat) => {
               const CatIcon = cat.icon;
@@ -305,7 +306,7 @@ export function ExpenseForm({
 
         {/* Paid By */}
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-2">Paid By</label>
+          <p className="text-sm font-medium text-warm-700 block mb-2">Paid By</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {PAID_BY_OPTIONS.map((option) => (
               <motion.button
@@ -328,7 +329,7 @@ export function ExpenseForm({
 
         {/* Receipt Upload */}
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-2">Receipt (Optional)</label>
+          <p className="text-sm font-medium text-warm-700 block mb-2">Receipt (Optional)</p>
           <AnimatePresence mode="wait">
             {receiptFile || receiptUrl ? (
               <motion.div
@@ -380,8 +381,9 @@ export function ExpenseForm({
 
         {/* Notes */}
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-1">Notes (Optional)</label>
+          <label htmlFor={`${uid}-notes`} className="text-sm font-medium text-warm-700 block mb-1">Notes (Optional)</label>
           <textarea
+            id={`${uid}-notes`}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional details about this expense..."

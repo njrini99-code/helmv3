@@ -109,7 +109,7 @@ export function IntentDrawer({
             <p className="text-xs text-warm-500 mb-5">Invisible to the player.</p>
 
             {/* Narrative goal — segmented control */}
-            <label className="block text-xs font-medium text-warm-700 mb-2">Narrative goal</label>
+            <p className="block text-xs font-medium text-warm-700 mb-2">Narrative goal</p>
             <div className="flex flex-wrap gap-2 mb-5">
               {NARRATIVE_OPTIONS.map((g) => {
                 const cfg = NARRATIVE_GOAL_PRESENTATION[g];
@@ -135,9 +135,10 @@ export function IntentDrawer({
             </div>
 
             {/* Alert posture */}
-            <label className="block text-xs font-medium text-warm-700 mb-2">Alert posture</label>
+            <p className="block text-xs font-medium text-warm-700 mb-2">Alert posture</p>
             <div className="space-y-1.5 mb-5">
               {POSTURE_OPTIONS.map((p) => (
+                // eslint-disable-next-line jsx-a11y/label-has-associated-control
                 <label
                   key={p.value}
                   className={`flex items-center justify-between gap-3 p-2.5 rounded-xl border cursor-pointer transition-colors ${

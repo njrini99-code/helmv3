@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { cn } from '@/lib/utils';
@@ -47,6 +47,7 @@ const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py
 const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
 
 export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalProps) {
+  const uid = useId();
   const [logs, setLogs] = useState<ContactLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -245,8 +246,9 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelClass}>Next Action</label>
+                  <label htmlFor={`${uid}-next-action`} className={labelClass}>Next Action</label>
                   <input
+                    id={`${uid}-next-action`}
                     type="text"
                     placeholder="Follow up with demo offer..."
                     value={newLog.next_action}
@@ -255,8 +257,9 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Follow-up Date</label>
+                  <label htmlFor={`${uid}-followup-date`} className={labelClass}>Follow-up Date</label>
                   <input
+                    id={`${uid}-followup-date`}
                     type="date"
                     value={newLog.next_action_date}
                     onChange={(e) => setNewLog({ ...newLog, next_action_date: e.target.value })}
@@ -266,8 +269,9 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
               </div>
 
               <div>
-                <label className={labelClass}>Update Status (optional)</label>
+                <label htmlFor={`${uid}-update-status`} className={labelClass}>Update Status (optional)</label>
                 <select
+                  id={`${uid}-update-status`}
                   value={newLog.update_status}
                   onChange={(e) => setNewLog({ ...newLog, update_status: e.target.value as CoachStatus | '' })}
                   className={`${inputClass} bg-white/60`}

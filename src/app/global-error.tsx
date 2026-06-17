@@ -22,7 +22,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
+    <html lang="en">
       <body>
         <div className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center p-4">
           <div className="text-center max-w-md">

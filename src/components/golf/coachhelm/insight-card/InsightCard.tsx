@@ -424,12 +424,13 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h4
-                  className="font-medium text-warm-900 text-[14.5px] tracking-[-0.005em] cursor-pointer hover:text-primary-700 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]"
+                <button
+                  type="button"
+                  className="font-medium text-warm-900 text-[14.5px] tracking-[-0.005em] cursor-pointer hover:text-primary-700 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] text-left"
                   onClick={() => onClick?.(insight.id)}
                 >
                   {title}
-                </h4>
+                </button>
                 <WhyPopover insight={insight} />
               </div>
 

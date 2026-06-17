@@ -25,8 +25,11 @@ interface SendEmailRequest {
   logOnly?: boolean;
   templateId?: string;
   /** plain (default) wraps body in greeting/signature shell.
-   *  html sends the body verbatim as the full email document. */
-  format?: 'plain' | 'html';
+   *  html  sends the body verbatim as the full email document.
+   *  text  sends a true text/plain email — no HTML shell, no logo. Best for
+   *        personal cold outreach that should land in Gmail Primary. The body
+   *        must be self-contained (its own greeting + sign-off). */
+  format?: 'plain' | 'html' | 'text';
 }
 
 export async function POST(request: Request) {
@@ -56,6 +59,7 @@ export async function POST(request: Request) {
 
     const { recipients, subject, body, logOnly, templateId, format } = (await request.json()) as SendEmailRequest;
     const isHtmlBody = format === 'html';
+    const isTextBody = format === 'text';
 
     if (!recipients?.length || !subject?.trim()) {
       return NextResponse.json({ error: 'Missing required fields: recipients, subject' }, { status: 400 });
@@ -222,9 +226,14 @@ export async function POST(request: Request) {
             from: process.env.HELM_FROM_EMAIL ?? 'Helm Sports Labs <admin@helmsportslabs.com>',
             to: [recipient.email],
             subject: personalizedSubject,
-            html: isHtmlBody
-              ? personalizedBody
-              : buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
+            // text → true text/plain (no shell); html → verbatim; plain → shell.
+            ...(isTextBody
+              ? { text: personalizedBody }
+              : {
+                  html: isHtmlBody
+                    ? personalizedBody
+                    : buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
+                }),
           }),
         });
 
@@ -275,15 +284,14 @@ export async function POST(request: Request) {
     // ── Increment template usage count ──
     if (templateId && sent > 0) {
       try {
-        const { data: tpl } = await supabase
-          .from('crm_email_templates' as 'crm_contact_log')
+        const { data: tpl } = (await fromUntyped(supabase, 'crm_email_templates')
           .select('usage_count')
           .eq('id', templateId)
-          .single() as { data: { usage_count: number } | null };
+          .single()) as { data: { usage_count: number | null } | null };
 
         if (tpl) {
           await fromUntyped(supabase, 'crm_email_templates')
-            .update({ usage_count: (tpl.usage_count ?? 0) + 1 } as Record<string, unknown>)
+            .update({ usage_count: (tpl.usage_count ?? 0) + 1 })
             .eq('id', templateId);
         }
       } catch {

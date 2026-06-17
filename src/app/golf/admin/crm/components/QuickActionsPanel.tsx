@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -71,6 +71,7 @@ export function QuickActionsPanel({
   onRefreshEvents,
   statusConfig,
 }: QuickActionsPanelProps) {
+  const uid = useId();
   const [view, setView] = useState<ActionView>('main');
   const [submitting, setSubmitting] = useState(false);
 
@@ -187,10 +188,12 @@ export function QuickActionsPanel({
   // RENDER
   // ============================================================================
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
         className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-lg mx-4 overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -287,9 +290,9 @@ export function QuickActionsPanel({
 
               {/* Change Status */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2 block">
+                <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2 block">
                   Status
-                </label>
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(statusConfig) as CoachStatus[]).map((status) => {
                     const config = statusConfig[status];
@@ -314,9 +317,9 @@ export function QuickActionsPanel({
 
               {/* Change Priority */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2 block">
+                <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2 block">
                   Priority
-                </label>
+                </p>
                 <div className="flex gap-2">
                   <Button variant="ghost"
                     onClick={() => handlePriorityChange(0)}
@@ -392,9 +395,9 @@ export function QuickActionsPanel({
 
               {/* Quick Time Select */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2 block">
+                <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-2 block">
                   Quick Select
-                </label>
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {QUICK_TIMES.map((qt) => (
                     <Button variant="ghost"
@@ -414,10 +417,11 @@ export function QuickActionsPanel({
               {/* Date & Time */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                  <label htmlFor={`${uid}-sched-date`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                     Date
                   </label>
                   <input
+                    id={`${uid}-sched-date`}
                     type="date"
                     value={scheduleForm.date}
                     onChange={(e) => setScheduleForm(f => ({ ...f, date: e.target.value }))}
@@ -425,10 +429,11 @@ export function QuickActionsPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                  <label htmlFor={`${uid}-sched-time`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                     Time
                   </label>
                   <input
+                    id={`${uid}-sched-time`}
                     type="time"
                     value={scheduleForm.time}
                     onChange={(e) => setScheduleForm(f => ({ ...f, time: e.target.value }))}
@@ -439,9 +444,9 @@ export function QuickActionsPanel({
 
               {/* Duration */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                <p className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                   Duration
-                </label>
+                </p>
                 <div className="flex gap-2">
                   {[15, 30, 45, 60].map((d) => (
                     <Button variant="primary"
@@ -462,10 +467,11 @@ export function QuickActionsPanel({
 
               {/* Title */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                <label htmlFor={`${uid}-sched-title`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                   Title
                 </label>
                 <input
+                  id={`${uid}-sched-title`}
                   type="text"
                   value={scheduleForm.title}
                   onChange={(e) => setScheduleForm(f => ({ ...f, title: e.target.value }))}
@@ -476,10 +482,11 @@ export function QuickActionsPanel({
 
               {/* Meeting URL (optional) */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                <label htmlFor={`${uid}-sched-url`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                   Meeting Link <span className="text-warm-400 font-normal">(optional)</span>
                 </label>
                 <input
+                  id={`${uid}-sched-url`}
                   type="url"
                   value={scheduleForm.meetingUrl}
                   onChange={(e) => setScheduleForm(f => ({ ...f, meetingUrl: e.target.value }))}
@@ -537,10 +544,11 @@ export function QuickActionsPanel({
 
               {/* Notes */}
               <div>
-                <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                <label htmlFor={`${uid}-log-notes`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                   Notes
                 </label>
                 <textarea
+                  id={`${uid}-log-notes`}
                   value={logForm.notes}
                   onChange={(e) => setLogForm(f => ({ ...f, notes: e.target.value }))}
                   className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 resize-none"
@@ -552,10 +560,11 @@ export function QuickActionsPanel({
               {/* Next Action */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                  <label htmlFor={`${uid}-log-next-action`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                     Next Action
                   </label>
                   <input
+                    id={`${uid}-log-next-action`}
                     type="text"
                     value={logForm.nextAction}
                     onChange={(e) => setLogForm(f => ({ ...f, nextAction: e.target.value }))}
@@ -564,10 +573,11 @@ export function QuickActionsPanel({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
+                  <label htmlFor={`${uid}-log-followup`} className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1 block">
                     Follow-up Date
                   </label>
                   <input
+                    id={`${uid}-log-followup`}
                     type="date"
                     value={logForm.nextActionDate}
                     onChange={(e) => setLogForm(f => ({ ...f, nextActionDate: e.target.value }))}
@@ -601,13 +611,13 @@ export function QuickActionsPanel({
                 <IconFileText size={20} className="text-warm-600" /> Notes
               </h3>
 
-              <textarea
+              {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus in dialog */}
+              <textarea autoFocus
                 value={noteForm}
                 onChange={(e) => setNoteForm(e.target.value)}
                 className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 resize-none"
                 rows={6}
                 placeholder="Add notes about this coach..."
-                autoFocus
               />
 
               <Button variant="ghost"

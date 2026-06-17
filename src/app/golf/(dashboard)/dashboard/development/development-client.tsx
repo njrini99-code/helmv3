@@ -624,8 +624,9 @@ export function DevelopmentPlansClient({
       {/* Player selection (create only) */}
       {!isEdit && (
         <div>
-          <label className="block text-sm font-medium text-warm-700 mb-1.5">Player</label>
+          <label htmlFor="dev-player-select" className="block text-sm font-medium text-warm-700 mb-1.5">Player</label>
           <select
+            id="dev-player-select"
             value={formData.player_id}
             onChange={e => {
               const pid = e.target.value;
@@ -658,7 +659,7 @@ export function DevelopmentPlansClient({
 
       {/* Area type selector */}
       <div>
-        <label className="block text-sm font-medium text-warm-700 mb-1.5">Focus Area</label>
+        <p className="block text-sm font-medium text-warm-700 mb-1.5">Focus Area</p>
         <div className="grid grid-cols-4 gap-2">
           {AREA_TYPES.map(type => {
             const Icon = type.icon;
@@ -687,8 +688,9 @@ export function DevelopmentPlansClient({
 
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-warm-700 mb-1.5">Title</label>
+        <label htmlFor="dev-title-input" className="block text-sm font-medium text-warm-700 mb-1.5">Title</label>
         <input
+          id="dev-title-input"
           type="text"
           value={formData.title}
           onChange={e => setFormData({ ...formData, title: e.target.value })}
@@ -699,11 +701,12 @@ export function DevelopmentPlansClient({
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-warm-700 mb-1.5">
+        <label htmlFor="dev-notes-textarea" className="block text-sm font-medium text-warm-700 mb-1.5">
           Notes for player
           <span className="text-warm-400 font-normal ml-1">(optional)</span>
         </label>
         <textarea
+          id="dev-notes-textarea"
           value={formData.description}
           onChange={e => setFormData({ ...formData, description: e.target.value })}
           rows={3}
@@ -714,10 +717,10 @@ export function DevelopmentPlansClient({
 
       {/* Metric tracking */}
       <div>
-        <label className="block text-sm font-medium text-warm-700 mb-1.5">
+        <p className="block text-sm font-medium text-warm-700 mb-1.5">
           Metric tracking
           <span className="text-warm-400 font-normal ml-1">(optional)</span>
-        </label>
+        </p>
         <div className="space-y-3">
           {/* Metric name with suggestions */}
           <div>
@@ -748,8 +751,9 @@ export function DevelopmentPlansClient({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-warm-500 mb-1">Current value</label>
+              <label htmlFor="dev-current-value" className="block text-xs font-medium text-warm-500 mb-1">Current value</label>
               <input
+                id="dev-current-value"
                 type="number"
                 step="0.1"
                 value={formData.current_value}
@@ -759,8 +763,9 @@ export function DevelopmentPlansClient({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-warm-500 mb-1">Target value</label>
+              <label htmlFor="dev-target-value" className="block text-xs font-medium text-warm-500 mb-1">Target value</label>
               <input
+                id="dev-target-value"
                 type="number"
                 step="0.1"
                 value={formData.target_value}

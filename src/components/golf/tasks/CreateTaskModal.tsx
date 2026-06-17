@@ -150,6 +150,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Complete shot tracking drill"
           required
+          // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
           enterKeyHint="next"
         />
@@ -180,9 +181,9 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
         </div>
 
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-2">
+          <p className="text-sm font-medium text-warm-700 block mb-2">
             Assign To
-          </label>
+          </p>
 
           <div className="space-y-2">
             <motion.button

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { format, addDays, addHours, parseISO } from 'date-fns';
@@ -70,6 +70,7 @@ export function ScheduleEventModal({
   onClose,
   onSuccess,
 }: ScheduleEventModalProps) {
+  const uid = useId();
   const isEditing = !!event;
 
   const getInitialForm = (): FormState => {
@@ -227,10 +228,12 @@ export function ScheduleEventModal({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape is handled by the dialog
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents backdrop click from closing modal */}
       <div
         className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
@@ -268,11 +271,12 @@ export function ScheduleEventModal({
           {/* Coach Selection (if not pre-selected) */}
           {!selectedCoach && !isEditing && (
             <div>
-              <label className={labelClass}>
+              <label htmlFor={`${uid}-coach-search`} className={labelClass}>
                 Coach <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
               </label>
               <div className="relative">
                 <input
+                  id={`${uid}-coach-search`}
                   type="text"
                   value={coachSearchQuery}
                   onChange={(e) => setCoachSearchQuery(e.target.value)}
@@ -339,7 +343,7 @@ export function ScheduleEventModal({
 
           {/* Event Type */}
           <div>
-            <label className={labelClass}>Event Type</label>
+            <p className={labelClass}>Event Type</p>
             <div className="grid grid-cols-3 gap-2">
               {EVENT_TYPES.map((type) => {
                 const TypeIcon = type.icon;
@@ -364,8 +368,9 @@ export function ScheduleEventModal({
 
           {/* Title */}
           <div>
-            <label className={labelClass}>Title</label>
+            <label htmlFor={`${uid}-title`} className={labelClass}>Title</label>
             <input
+              id={`${uid}-title`}
               type="text"
               value={form.title}
               onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
@@ -377,7 +382,7 @@ export function ScheduleEventModal({
           {/* Quick Time Select */}
           {!isEditing && (
             <div>
-              <label className={labelClass}>Quick Select</label>
+              <p className={labelClass}>Quick Select</p>
               <div className="flex flex-wrap gap-2">
                 {QUICK_TIMES.map((qt) => (
                   <Button variant="ghost"
@@ -398,8 +403,9 @@ export function ScheduleEventModal({
           {/* Date & Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Date</label>
+              <label htmlFor={`${uid}-date`} className={labelClass}>Date</label>
               <input
+                id={`${uid}-date`}
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))}
@@ -407,8 +413,9 @@ export function ScheduleEventModal({
               />
             </div>
             <div>
-              <label className={labelClass}>Time</label>
+              <label htmlFor={`${uid}-time`} className={labelClass}>Time</label>
               <input
+                id={`${uid}-time`}
                 type="time"
                 value={form.time}
                 onChange={(e) => setForm(f => ({ ...f, time: e.target.value }))}
@@ -419,7 +426,7 @@ export function ScheduleEventModal({
 
           {/* Duration */}
           <div>
-            <label className={labelClass}>Duration</label>
+            <p className={labelClass}>Duration</p>
             <div className="flex flex-wrap gap-2">
               {DURATIONS.map((d) => (
                 <Button variant="primary"
@@ -440,10 +447,11 @@ export function ScheduleEventModal({
 
           {/* Location */}
           <div>
-            <label className={labelClass}>
+            <label htmlFor={`${uid}-location`} className={labelClass}>
               Location <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <input
+              id={`${uid}-location`}
               type="text"
               value={form.location}
               onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))}
@@ -454,10 +462,11 @@ export function ScheduleEventModal({
 
           {/* Meeting URL */}
           <div>
-            <label className={labelClass}>
+            <label htmlFor={`${uid}-meeting-url`} className={labelClass}>
               Meeting Link <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <input
+              id={`${uid}-meeting-url`}
               type="url"
               value={form.meetingUrl}
               onChange={(e) => setForm(f => ({ ...f, meetingUrl: e.target.value }))}
@@ -468,10 +477,11 @@ export function ScheduleEventModal({
 
           {/* Description */}
           <div>
-            <label className={labelClass}>
+            <label htmlFor={`${uid}-description`} className={labelClass}>
               Notes <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <textarea
+              id={`${uid}-description`}
               value={form.description}
               onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Add any notes for this event..."

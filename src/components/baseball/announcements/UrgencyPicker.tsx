@@ -59,9 +59,9 @@ export function UrgencyPicker({ value, onChange }: UrgencyPickerProps) {
   const prefersReducedMotion = useReducedMotion();
   return (
     <div>
-      <label className="text-sm font-medium text-warm-700 block mb-2">
+      <p className="text-sm font-medium text-warm-700 block mb-2">
         Urgency Level
-      </label>
+      </p>
       <div className="grid grid-cols-4 gap-2">
         {urgencyOptions.map((opt) => {
           const isActive = value === opt.value;

@@ -140,9 +140,9 @@ export function CreateFromTemplateModal({
 
         {/* Assignment */}
         <div>
-          <label className="text-sm font-medium text-warm-700 block mb-2">
+          <p className="text-sm font-medium text-warm-700 block mb-2">
             Assign To
-          </label>
+          </p>
 
           <div className="space-y-2">
             <motion.button

@@ -44,8 +44,8 @@ import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_intern
  * Tab vocabulary
  * ------------------------------------------------------------------------- */
 
-/** The five canonical CoachHelm shell tabs (the union the shell shares). */
-export type CoachHelmTab = 'brief' | 'signals' | 'players' | 'effectiveness' | 'ask';
+/** The canonical CoachHelm shell tabs (the union the shell shares). */
+export type CoachHelmTab = 'brief' | 'signals' | 'players' | 'standing' | 'effectiveness' | 'ask';
 
 /** Which role's tab set is shown. */
 export type CoachHelmRole = 'coach' | 'player';
@@ -109,7 +109,12 @@ const TABS: readonly TabDef[] = [
   },
 ] as const;
 
-/** The player tab set (Brief + Players only). Brief points at the player front door. */
+/**
+ * The player tab set — the single CoachHelm home: Overview · Development ·
+ * Standing. Brief ("Overview") points at the player front door; Development and
+ * Standing fold the former standalone /my-development and /my-standing routes
+ * into the same shell so a player has ONE AI surface instead of scattered routes.
+ */
 const PLAYER_TABS: readonly TabDef[] = [
   {
     tab: 'brief',
@@ -121,9 +126,15 @@ const PLAYER_TABS: readonly TabDef[] = [
   },
   {
     tab: 'players',
-    label: 'My Development',
+    label: 'Development',
     href: '/golf/dashboard/my-development',
     matchPrefixes: ['/golf/dashboard/my-development'],
+  },
+  {
+    tab: 'standing',
+    label: 'Standing',
+    href: '/golf/dashboard/my-standing',
+    matchPrefixes: ['/golf/dashboard/my-standing'],
   },
 ] as const;
 

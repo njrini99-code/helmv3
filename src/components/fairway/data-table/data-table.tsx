@@ -325,11 +325,13 @@ export function DataTable<TData>({
         </div>
       ) : null}
 
+      {/* tabIndex on the scroll region is intentional — allows keyboard users to scroll the table */}
       <div
         className={cn('w-full overflow-x-auto overflow-y-auto', containerClassName)}
         // Roving focus for keyboard users scrolling a long grid.
         role="region"
         aria-label={ariaLabel ?? 'Data table'}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
         tabIndex={0}
       >
         <table

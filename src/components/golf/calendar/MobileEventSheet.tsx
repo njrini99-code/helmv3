@@ -298,8 +298,10 @@ export function MobileEventSheet({
   return (
     <>
       {/* Backdrop — no backdrop-blur to avoid Safari stacking context bugs with fixed children */}
-      <div
-        className="fixed inset-0 bg-black/50 z-50"
+      <button
+        type="button"
+        className="fixed inset-0 bg-black/50 z-50 cursor-default border-none"
+        aria-label="Close"
         onClick={handleClose}
       />
 

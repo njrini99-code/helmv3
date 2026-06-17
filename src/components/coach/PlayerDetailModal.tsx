@@ -60,7 +60,14 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
   };
 
   return (
-    <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      role="button"
+      tabIndex={0}
+      aria-label="Close"
+      onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
+    >
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-warm-200 p-6 flex items-center justify-between z-10">
           <h2 className="text-xl font-semibold text-warm-900">Player Profile</h2>

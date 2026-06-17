@@ -591,8 +591,9 @@ export function WatchlistClient() {
                           onChange={() => toggleSelection(item.id)}
                           className="mt-1 rounded border-warm-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
                         />
-                        <div
-                          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                        <button
+                          type="button"
+                          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer text-left appearance-none bg-transparent border-0 p-0"
                           onClick={() => setPeekPlayerId(item.player?.id || null)}
                         >
                           <Avatar
@@ -608,7 +609,7 @@ export function WatchlistClient() {
                               {item.player?.primary_position} • {item.player?.grad_year}
                             </p>
                           </div>
-                        </div>
+                        </button>
                         <Badge
                           variant={
                             item.pipeline_stage === 'committed' ? 'success'
@@ -733,8 +734,9 @@ export function WatchlistClient() {
                               />
                             </td>
                             <td className="px-6 py-4">
-                              <div
-                                className="flex items-center gap-3 cursor-pointer group"
+                              <button
+                                type="button"
+                                className="flex items-center gap-3 cursor-pointer group text-left appearance-none bg-transparent border-0 p-0 w-full"
                                 onClick={() => setPeekPlayerId(item.player?.id || null)}
                               >
                                 <Avatar
@@ -750,7 +752,7 @@ export function WatchlistClient() {
                                     {item.player?.high_school_name || 'No school'}
                                   </p>
                                 </div>
-                              </div>
+                              </button>
                             </td>
                             <td className="px-6 py-4 text-sm text-warm-600">
                               {item.player?.primary_position || '—'}
@@ -841,6 +843,7 @@ export function WatchlistClient() {
               }}
               placeholder="Search by name or school..."
               className="pl-9"
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary search input in add-to-watchlist dialog
               autoFocus
             />
           </div>

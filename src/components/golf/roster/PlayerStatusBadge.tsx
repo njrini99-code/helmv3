@@ -138,8 +138,10 @@ export function PlayerStatusBadge({
 
       {isOpen && (
         <>
-          <div
-            className="fixed inset-0 z-40"
+          <button
+            type="button"
+            className="fixed inset-0 z-40 cursor-default border-none bg-transparent"
+            aria-label="Close"
             onClick={() => setIsOpen(false)}
           />
           <div className={cn(

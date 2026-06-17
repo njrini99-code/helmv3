@@ -256,6 +256,7 @@ export function ExpenseSummary({
                             onChange={(e) => setBudgetValue(e.target.value)}
                             className="w-20 px-2 py-1 text-sm border border-warm-200 rounded"
                             placeholder="Budget"
+                            // eslint-disable-next-line jsx-a11y/no-autofocus
                             autoFocus
                           />
                           <Button variant="primary"

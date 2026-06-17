@@ -120,6 +120,7 @@ export function PositionPriorityRanker({
             const isDragTarget = dragOverIndex === index;
 
             return (
+              // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- draggable list item, keyboard reordering not yet implemented
               <div
                 key={position}
                 draggable

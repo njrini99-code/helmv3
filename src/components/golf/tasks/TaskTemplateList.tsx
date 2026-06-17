@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconClipboardList } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
@@ -34,6 +34,7 @@ const categoryColors: Record<string, string> = {
 };
 
 export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListProps) {
+  const uid = useId();
   const prefersReducedMotion = useReducedMotion();
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -257,10 +258,11 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-warm-500 block mb-1">
+                <label htmlFor={`${uid}-category`} className="text-xs font-medium text-warm-500 block mb-1">
                   Category
                 </label>
                 <input
+                  id={`${uid}-category`}
                   type="text"
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value)}
@@ -284,10 +286,11 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               </div>
 
               <div>
-                <label className="text-xs font-medium text-warm-500 block mb-1">
+                <label htmlFor={`${uid}-due-days`} className="text-xs font-medium text-warm-500 block mb-1">
                   Default Due (days)
                 </label>
                 <input
+                  id={`${uid}-due-days`}
                   type="number"
                   value={formDueDays}
                   onChange={(e) => setFormDueDays(e.target.value ? Number(e.target.value) : '')}
@@ -304,10 +307,11 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-warm-500 block mb-1">
+                <label htmlFor={`${uid}-priority`} className="text-xs font-medium text-warm-500 block mb-1">
                   Priority
                 </label>
                 <select
+                  id={`${uid}-priority`}
                   value={formPriority}
                   onChange={(e) => setFormPriority(e.target.value)}
                   aria-label="Priority"
@@ -322,10 +326,11 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               </div>
 
               <div>
-                <label className="text-xs font-medium text-warm-500 block mb-1">
+                <label htmlFor={`${uid}-assignee-type`} className="text-xs font-medium text-warm-500 block mb-1">
                   Assign To
                 </label>
                 <select
+                  id={`${uid}-assignee-type`}
                   value={formAssigneeType}
                   onChange={(e) => setFormAssigneeType(e.target.value)}
                   aria-label="Assign to"
