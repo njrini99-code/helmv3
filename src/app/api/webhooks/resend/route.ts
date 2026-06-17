@@ -18,7 +18,12 @@ const TRACKED_EVENTS = new Set([
   'email.clicked',
   'email.bounced',
   'email.complained',
+  // Resend emits TWO distinct unsubscribe shapes: the legacy `email.unsubscribed`
+  // on a per-email event, and `contact.unsubscribed` from the Audiences product
+  // (the real event fired when a recipient uses a managed unsubscribe link).
+  // Track both so neither slips through to suppression. (G16)
   'email.unsubscribed',
+  'contact.unsubscribed',
 ]);
 
 interface ResendWebhookPayload {
@@ -31,6 +36,45 @@ interface ResendWebhookPayload {
     subject: string;
     [key: string]: unknown;
   };
+}
+
+// crm_email_suppressions.reason / .source allowed values (see DB enum). The
+// enum carries 'hard_bounce' / 'complained' / 'unsubscribed' values that were
+// previously dead because no webhook code wrote them. (G7)
+type SuppressionReason = 'hard_bounce' | 'complained' | 'unsubscribed' | 'manual' | 'invalid';
+
+// Idempotently add an address to crm_email_suppressions so future sends skip
+// it. Mirrors the check-then-insert dedupe in
+// src/app/api/crm/unsubscribe/route.ts (the table has no app-relied-on unique
+// constraint). Best-effort: failures are logged but never block the webhook.
+async function suppressEmail(
+  adminClient: ReturnType<typeof createAdminClient>,
+  email: string | null,
+  reason: SuppressionReason,
+  coachId: string | null,
+): Promise<void> {
+  const normalized = email?.toLowerCase().trim();
+  if (!normalized) return;
+  try {
+    const { data: existing } = await adminClient
+      .from('crm_email_suppressions')
+      .select('id')
+      .eq('email', normalized)
+      .maybeSingle();
+    if (!existing) {
+      await adminClient.from('crm_email_suppressions').insert({
+        email: normalized,
+        reason,
+        source: 'resend_webhook',
+        metadata: coachId ? { coach_id: coachId } : null,
+      });
+    }
+  } catch (err) {
+    await logServerError(
+      `[Resend Webhook] Failed to suppress ${reason} for ${normalized}: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'route.POST', metadata: { reason, coachId } },
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -72,7 +116,11 @@ export async function POST(request: Request) {
   try {
     // Use admin client (service role) since webhooks have no user session
     const adminClient = createAdminClient();
-    const recipientEmail = event.data.to?.[0] || null;
+    // `email.*` events carry the recipient in data.to[]; the Audiences
+    // `contact.unsubscribed` event carries it in data.email instead. Fall
+    // back across both so suppression always has an address to key on.
+    const recipientEmail =
+      event.data.to?.[0] || (event.data.email as string | undefined) || null;
 
     // Look up the contact_log entry by resend_message_id
     const { data: contactLog } = await adminClient
@@ -113,9 +161,23 @@ export async function POST(request: Request) {
     // future sends — too risky to defer to a configurable rule). Everything
     // else (open/click → engaged, etc.) flows through crm_automations so the
     // operator can edit/disable rules in Settings → Automations without a
-    // deploy. The unsubscribed event is also handled by the database trigger
-    // on email_events that writes to crm_email_suppressions.
-    const coachId = contactLog?.coach_id;
+    // deploy.
+    const coachId = contactLog?.coach_id ?? null;
+
+    // Hardwired suppression-list writes (G7). bounce/complaint/unsubscribe each
+    // permanently disqualify the address — write a crm_email_suppressions row
+    // keyed on the recipient email so the send-time guard skips it forever.
+    // These run independently of coachId because an Audiences
+    // `contact.unsubscribed` event won't resolve a contact_log row, and even an
+    // un-linked bounce should still be suppressed.
+    if (event.type === 'email.bounced') {
+      await suppressEmail(adminClient, recipientEmail, 'hard_bounce', coachId);
+    } else if (event.type === 'email.complained') {
+      await suppressEmail(adminClient, recipientEmail, 'complained', coachId);
+    } else if (event.type === 'email.unsubscribed' || event.type === 'contact.unsubscribed') {
+      // G16: the real Audiences unsubscribe event is `contact.unsubscribed`.
+      await suppressEmail(adminClient, recipientEmail, 'unsubscribed', coachId);
+    }
 
     if (coachId) {
       // Hardwired: bounce/complaint marks the coach email as bad so future
@@ -131,6 +193,12 @@ export async function POST(request: Request) {
         await adminClient
           .from('crm_coaches')
           .update({ email_status: 'complained', updated_at: new Date().toISOString() })
+          .eq('id', coachId);
+      }
+      if (event.type === 'email.unsubscribed' || event.type === 'contact.unsubscribed') {
+        await adminClient
+          .from('crm_coaches')
+          .update({ email_status: 'unsubscribed', updated_at: new Date().toISOString() })
           .eq('id', coachId);
       }
 

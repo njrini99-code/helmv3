@@ -3639,6 +3639,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           id: string
+          metadata: Json | null
           next_action: string | null
           next_action_date: string | null
           notes: string | null
@@ -3652,6 +3653,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          metadata?: Json | null
           next_action?: string | null
           next_action_date?: string | null
           notes?: string | null
@@ -3665,6 +3667,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          metadata?: Json | null
           next_action?: string | null
           next_action_date?: string | null
           notes?: string | null

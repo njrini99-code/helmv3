@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
+import { createTemplate } from '@/app/golf/actions/crm-templates';
+import { MERGE_TOKENS } from '@/lib/crm/merge-tags';
 import {
   IconFileText,
   IconSearch,
@@ -103,12 +105,23 @@ function TemplateSkeleton() {
   );
 }
 
+// ── Format options (mirror the TemplateFormat union) ──
+const FORMAT_OPTIONS: { key: TemplateFormat; label: string; help: string }[] = [
+  { key: 'text', label: 'Plain text', help: 'True text/plain — no shell. Best for Gmail-Primary cold outreach (include your own greeting + sign-off).' },
+  { key: 'plain', label: 'Branded shell', help: 'Wrapped in the standard greeting + signature shell.' },
+  { key: 'html', label: 'Full HTML', help: 'Sent verbatim as the entire email document.' },
+];
+
 // ── New Template Form ──
+// Now routes through the admin-gated `createTemplate` server action (supports
+// `format`, closing G1) instead of a raw client-side .insert.
 function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<TemplateCategory>('general');
+  const [category, setCategory] = useState<TemplateCategory>('cold_outreach');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  // New cold templates default to 'text' for Gmail-Primary deliverability.
+  const [format, setFormat] = useState<TemplateFormat>('text');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -120,14 +133,21 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
     setSaving(true);
     setError('');
     try {
-      const supabase = createClient();
-      const { error: insertError } = await supabase
-        .from('crm_email_templates')
-        .insert({ name: name.trim(), category, subject: subject.trim(), body: body.trim() });
-      if (insertError) throw insertError;
+      // Auto-detect merge tokens present in subject/body so the new template
+      // carries its own chip set (G14).
+      const haystack = `${subject} ${body}`;
+      const detected = MERGE_TOKENS.filter(t => haystack.includes(`{${t}}`));
+      await createTemplate({
+        name: name.trim(),
+        category,
+        subject: subject.trim(),
+        body: body.trim(),
+        format,
+        merge_tags: detected,
+      });
       onSave();
-    } catch {
-      setError('Failed to save template');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save template');
     } finally {
       setSaving(false);
     }
@@ -160,6 +180,34 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
             <option key={c.key} value={c.key}>{c.label}</option>
           ))}
         </select>
+
+        {/* Format selector — closes G1 (UI templates can be text/html/plain) */}
+        <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Email format">
+          {FORMAT_OPTIONS.map(f => {
+            const active = format === f.key;
+            return (
+              <Button
+                key={f.key}
+                type="button"
+                variant="ghost"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setFormat(f.key)}
+                className={cn(
+                  'px-2 py-1.5 rounded-xl border text-xs font-semibold min-h-0 transition-all',
+                  active
+                    ? 'bg-primary-50 border-primary-300 text-primary-800 ring-1 ring-primary-200'
+                    : 'bg-white/60 border-warm-200 text-warm-600 hover:bg-white/80',
+                )}
+              >
+                {f.label}
+              </Button>
+            );
+          })}
+        </div>
+        <p className="text-eyebrow text-warm-400 leading-relaxed">
+          {FORMAT_OPTIONS.find(f => f.key === format)?.help}
+        </p>
 
         <input
           type="text"
@@ -260,6 +308,22 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
     setShowNewForm(false);
     fetchTemplates();
   };
+
+  // The selected template (if any) drives the composer's merge-tag chip set.
+  const selectedTemplate = selectedId
+    ? templates.find(t => t.id === selectedId) ?? null
+    : null;
+
+  // Chips reflect the selected template's persisted merge_tags, falling back to
+  // tokens actually present in its subject/body — never a hardcoded list (G14).
+  const selectedMergeTags: string[] = selectedTemplate
+    ? selectedTemplate.merge_tags && selectedTemplate.merge_tags.length > 0
+      ? selectedTemplate.merge_tags
+      : MERGE_TOKENS.filter(
+          tok =>
+            `${selectedTemplate.subject} ${selectedTemplate.body}`.includes(`{${tok}}`),
+        )
+    : [];
 
   return (
     <div className="space-y-4">
@@ -379,6 +443,29 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
               <span className="text-sm font-medium text-warm-500">Create Template</span>
             </Button>
           )}
+        </div>
+      )}
+
+      {/* Selected template's merge-tag chip set — reflects what THIS template
+          substitutes, sourced from its persisted merge_tags (not a fixed list). */}
+      {selectedTemplate && selectedMergeTags.length > 0 && (
+        <div className="rounded-xl border border-primary-200/60 bg-primary-50/40 p-3">
+          <p className="text-eyebrow uppercase tracking-wider text-warm-500 mb-2">
+            Merge tags in “{selectedTemplate.name}”
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {selectedMergeTags.map(tag => (
+              <span
+                key={tag}
+                className="px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-white/70 border border-primary-200 text-primary-700"
+              >
+                {`{${tag}}`}
+              </span>
+            ))}
+          </div>
+          <p className="text-eyebrow text-warm-400 mt-2">
+            Auto-filled per recipient on send.
+          </p>
         </div>
       )}
 
