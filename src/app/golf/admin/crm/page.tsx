@@ -77,6 +77,14 @@ import type { CRMEvent } from './components/CalendarView';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
 import { getCoachSequenceEnrollmentStatuses, type CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 import { logManualGmailTouch } from '@/app/golf/actions/crm-manual-send';
+import {
+  getGmailSendStatus,
+  getDomainAuthStatus,
+  sendCoachViaGmail,
+  sendNextBatchViaGmail,
+} from '@/app/golf/actions/crm-gmail-send';
+import { scoreColdEmail } from '@/lib/crm/spam-score';
+import type { DomainAuthResult } from '@/lib/crm/domain-auth-check';
 import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
 import { mergeTemplate, buildGmailComposeUrl } from '@/lib/crm/gmail-compose';
 import type { CoachEngagement } from './types/foundations';
@@ -231,6 +239,18 @@ export default function CRMPage() {
   const [activeManualTemplate, setActiveManualTemplate] = useState<ManualGmailTemplate | null>(null);
   const [emailTemplates, setEmailTemplates] = useState<ManualGmailTemplate[]>([]);
   const manualTemplateHydrated = useRef(false);
+
+  // ── Direct Gmail-API send ──
+  // When the Workspace service-account env is configured on the server
+  // (isGmailSendConfigured), the "Gmail" button SENDS the email straight through
+  // the real mailbox (Gmail API) instead of opening a compose tab. Detected once
+  // on mount; until it's true the whole flow stays on the compose-link path, so
+  // nothing changes for an unconfigured deploy. See crm-gmail-send.ts.
+  const [gmailDirectEnabled, setGmailDirectEnabled] = useState(false);
+  const [gmailBatchSending, setGmailBatchSending] = useState(false);
+  // SPF/DKIM/DMARC self-check for the sending domain (fetched once when direct
+  // send is configured) — surfaced as an "email auth" indicator in the bar.
+  const [domainAuth, setDomainAuth] = useState<DomainAuthResult | null>(null);
 
   const supabase = createClient();
 
@@ -641,6 +661,26 @@ export default function CRMPage() {
     }
   }, [emailTemplates, activeManualTemplate]);
 
+  // Detect once whether direct Gmail-API send is configured on the server. When
+  // false (default), the "Gmail" surfaces keep the compose-link behavior. When
+  // configured, also run the SPF/DKIM/DMARC self-check so the bar can warn if
+  // the sending domain isn't authenticated (the #1 deliverability miss).
+  useEffect(() => {
+    let cancelled = false;
+    getGmailSendStatus()
+      .then((r) => {
+        if (cancelled) return;
+        setGmailDirectEnabled(r.configured);
+        if (r.configured) {
+          getDomainAuthStatus()
+            .then((d) => { if (!cancelled && d.checked && d.result) setDomainAuth(d.result); })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   // ============================================================================
   // ACTIONS
   // ============================================================================
@@ -763,57 +803,68 @@ export default function CRMPage() {
     return buildGmailComposeUrl({ to: coach.email, subject, body });
   }, [activeManualTemplate]);
 
-  // Log a Gmail touch (contact-log + optimistic status flip + toast). Called on
-  // click; the <a href> itself opens the compose tab. Safe to run under automation.
+  // Optimistically mark a coach contacted locally (last_contacted_at = now;
+  // promote new_lead → contacted) in both the list and the open detail panel.
+  // Shared by the compose-log path and the direct-send path so the UI updates
+  // identically whichever channel fired.
+  const markCoachContactedLocally = useCallback((coachId: string) => {
+    const nowIso = new Date().toISOString();
+    const apply = (c: Coach): Coach => ({
+      ...c,
+      last_contacted_at: nowIso,
+      updated_at: nowIso,
+      status: c.status === 'new_lead' ? ('contacted' as Coach['status']) : c.status,
+    });
+    setAllCoaches((prev) => prev.map((c) => (c.id === coachId ? apply(c) : c)));
+    setSelectedCoach((prev) => (prev && prev.id === coachId ? apply(prev) : prev));
+  }, []);
+
+  // Direct send: push the merged email straight through the Workspace mailbox
+  // (Gmail API) — no compose tab. Optimistic flip on success; toast either way.
+  // Only reachable when gmailDirectEnabled (server has the service-account env).
+  const sendViaGmail = useCallback(async (coach: Coach) => {
+    if (!activeManualTemplate) { toast('Arm a Gmail template first'); return; }
+    if (!coach.email) { toast('No email on file'); return; }
+    const subject = mergeTemplate(activeManualTemplate.subject, coach);
+    const body = mergeTemplate(activeManualTemplate.body, coach);
+    const tid = toast.loading(`Sending to ${coach.name}…`);
+    try {
+      const res = await sendCoachViaGmail({ coach_id: coach.id, subject, body });
+      toast.dismiss(tid);
+      if (res.ok) {
+        markCoachContactedLocally(coach.id);
+        toast.success(`Sent to ${coach.name} — marked contacted`);
+      } else {
+        toast.error(res.error ?? 'Gmail send failed');
+      }
+    } catch (err) {
+      toast.dismiss(tid);
+      toast.error(err instanceof Error ? err.message : 'Gmail send failed');
+    }
+  }, [activeManualTemplate, markCoachContactedLocally]);
+
+  // Log a Gmail touch (contact-log + optimistic status flip + toast). In
+  // compose mode the <a href> opens the compose tab and this just logs; in
+  // direct mode the surfaces render buttons and this SENDS via the Gmail API.
   const logGmailTouch = useCallback((coach: Coach) => {
     if (!activeManualTemplate || !coach.email) return;
+    if (gmailDirectEnabled) { void sendViaGmail(coach); return; }
     const subject = mergeTemplate(activeManualTemplate.subject, coach);
     logManualGmailTouch({ coach_id: coach.id, subject }).catch(() => {});
-
-    const nowIso = new Date().toISOString();
-    setAllCoaches((prev) =>
-      prev.map((c) =>
-        c.id === coach.id
-          ? {
-              ...c,
-              last_contacted_at: nowIso,
-              updated_at: nowIso,
-              status: c.status === 'new_lead' ? ('contacted' as Coach['status']) : c.status,
-            }
-          : c,
-      ),
-    );
-    if (selectedCoach?.id === coach.id) {
-      setSelectedCoach((prev) =>
-        prev
-          ? {
-              ...prev,
-              last_contacted_at: nowIso,
-              updated_at: nowIso,
-              status: prev.status === 'new_lead' ? ('contacted' as Coach['status']) : prev.status,
-            }
-          : prev,
-      );
-    }
+    markCoachContactedLocally(coach.id);
     toast.success(`Opened Gmail for ${coach.name} — logged as contacted`);
-  }, [activeManualTemplate, selectedCoach]);
+  }, [activeManualTemplate, gmailDirectEnabled, sendViaGmail, markCoachContactedLocally]);
 
-  // Button fallback for surfaces still using a <button> (CoachTable / detail
-  // panel): programmatic open + log. Manual clicks carry the user gesture so the
-  // popup is allowed there.
+  // Button fallback for surfaces still using a <button> (CoachTable menu /
+  // detail panel). Direct mode → send; compose mode → window.open + log.
   const openInGmail = useCallback((coach: Coach) => {
-    if (!activeManualTemplate) {
-      toast('Arm a Gmail template first');
-      return;
-    }
-    if (!coach.email) {
-      toast('No email on file');
-      return;
-    }
+    if (!activeManualTemplate) { toast('Arm a Gmail template first'); return; }
+    if (!coach.email) { toast('No email on file'); return; }
+    if (gmailDirectEnabled) { void sendViaGmail(coach); return; }
     const href = getGmailHref(coach);
     if (href) window.open(href, '_blank', 'noopener');
     logGmailTouch(coach);
-  }, [activeManualTemplate, getGmailHref, logGmailTouch]);
+  }, [activeManualTemplate, gmailDirectEnabled, sendViaGmail, getGmailHref, logGmailTouch]);
 
   // ── Assignee labels ──
   // Set (or clear) the manual work-division label on a coach. Optimistic local
@@ -912,6 +963,40 @@ export default function CRMPage() {
   };
 
   const refreshData = () => { fetchAllCoaches(); };
+
+  // Paced batch send via Gmail (head/primary decision-maker, one-per-school,
+  // capped server-side). Confirmed first because it sends several real cold
+  // emails at once. Defined after refreshData so it can resync on success.
+  const sendBatchViaGmail = useCallback(async () => {
+    if (!activeManualTemplate) { toast('Arm a Gmail template first'); return; }
+    if (gmailBatchSending) return;
+    const n = 10;
+    if (typeof window !== 'undefined' &&
+        !window.confirm(`Send the next ${n} cold emails via Gmail (one per school, head/primary contact)? This sends real emails immediately.`)) {
+      return;
+    }
+    setGmailBatchSending(true);
+    const tid = toast.loading(`Sending up to ${n} via Gmail…`);
+    try {
+      const res = await sendNextBatchViaGmail({ limit: n, templateId: activeManualTemplate.id });
+      toast.dismiss(tid);
+      if (!res.ok) {
+        toast.error(res.error ?? 'Batch send failed');
+      } else if (res.capped && res.sent === 0) {
+        toast('Daily Gmail send cap reached — try again tomorrow');
+      } else {
+        toast.success(
+          `Sent ${res.sent}${res.skipped ? `, skipped ${res.skipped}` : ''}${res.failed ? `, ${res.failed} failed` : ''}`,
+        );
+        fetchAllCoaches(); // resync truth after server-side sends
+      }
+    } catch (err) {
+      toast.dismiss(tid);
+      toast.error(err instanceof Error ? err.message : 'Batch send failed');
+    } finally {
+      setGmailBatchSending(false);
+    }
+  }, [activeManualTemplate, gmailBatchSending, fetchAllCoaches]);
 
   // ============================================================================
   // COMPUTED
@@ -1206,6 +1291,10 @@ export default function CRMPage() {
                 templates={emailTemplates}
                 active={activeManualTemplate}
                 onChange={setActiveManualTemplate}
+                directEnabled={gmailDirectEnabled}
+                onSendBatch={sendBatchViaGmail}
+                batchSending={gmailBatchSending}
+                domainAuth={domainAuth}
               />
               <TodayQueue
                 coaches={allCoaches}
@@ -1215,6 +1304,7 @@ export default function CRMPage() {
                 onLogTouch={handleLogContact}
                 onSetAssignee={handleSetAssignee}
                 manualTemplateArmed={!!activeManualTemplate}
+                gmailDirectSend={gmailDirectEnabled}
                 enrollmentMap={sequenceEnrollmentMap}
               />
             </div>
@@ -1242,6 +1332,10 @@ export default function CRMPage() {
                   templates={emailTemplates}
                   active={activeManualTemplate}
                   onChange={setActiveManualTemplate}
+                  directEnabled={gmailDirectEnabled}
+                  onSendBatch={sendBatchViaGmail}
+                  batchSending={gmailBatchSending}
+                  domainAuth={domainAuth}
                 />
                 <AssigneeScopeBar scope={assigneeScope} onChange={setAssigneeScope} />
               </div>
@@ -1269,6 +1363,7 @@ export default function CRMPage() {
                   manualTemplateArmed={!!activeManualTemplate}
                   getGmailHref={getGmailHref}
                   onGmailTouch={logGmailTouch}
+                  gmailDirectSend={gmailDirectEnabled}
                 />
               </div>
             </div>
@@ -1297,6 +1392,10 @@ export default function CRMPage() {
                 templates={emailTemplates}
                 active={activeManualTemplate}
                 onChange={setActiveManualTemplate}
+                directEnabled={gmailDirectEnabled}
+                onSendBatch={sendBatchViaGmail}
+                batchSending={gmailBatchSending}
+                domainAuth={domainAuth}
               />
               <CoachFilters
                 filters={filters}
@@ -1534,6 +1633,7 @@ export default function CRMPage() {
           statusConfig={STATUS_CONFIG}
           priorityConfig={PRIORITY_CONFIG}
           onOpenInGmail={openInGmail}
+          gmailDirectSend={gmailDirectEnabled}
         />
       )}
 
@@ -1635,16 +1735,30 @@ function ManualGmailTemplateBar({
   templates,
   active,
   onChange,
+  directEnabled = false,
+  onSendBatch,
+  batchSending = false,
+  domainAuth = null,
 }: {
   templates: ManualGmailTemplate[];
   active: ManualGmailTemplate | null;
   onChange: (tpl: ManualGmailTemplate | null) => void;
+  // When true, the Gmail buttons SEND directly via the Gmail API (no compose
+  // tab). Surfaces a "Send next 10" batch button + a "Direct send" badge.
+  directEnabled?: boolean;
+  onSendBatch?: () => void;
+  batchSending?: boolean;
+  // SPF/DKIM/DMARC self-check result for the sending domain (direct send only).
+  domainAuth?: DomainAuthResult | null;
 }) {
   const handleSelect = (id: string) => {
     if (!id) { onChange(null); return; }
     const found = templates.find((t) => t.id === id);
     onChange(found ?? null);
   };
+
+  // Spam score of the armed template (authoring guidance, never blocks).
+  const spam = active ? scoreColdEmail({ subject: active.subject, body: active.body }) : null;
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-2xl glass-standard px-3 py-2">
@@ -1680,6 +1794,21 @@ function ManualGmailTemplateBar({
           <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary-50 border border-primary-200/60 px-2.5 py-1 text-xs font-semibold text-primary-700">
             Armed: <span className="max-w-[160px] truncate">{active.name}</span>
           </span>
+          {spam && (
+            <span
+              title={spam.issues.length ? `Spam-risk signals:\n• ${spam.issues.join('\n• ')}` : 'No spam-risk signals — reads like a normal note.'}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold cursor-help',
+                spam.level === 'good' && 'bg-primary-50 border-primary-200/60 text-primary-700',
+                spam.level === 'warn' && 'bg-amber-50 border-amber-200/60 text-amber-700',
+                spam.level === 'risk' && 'bg-red-50 border-red-200/60 text-red-700',
+              )}
+            >
+              {spam.level === 'good'
+                ? 'Inbox-safe'
+                : <><IconWarning size={12} /> {spam.level === 'risk' ? 'Spammy' : 'Tidy copy'} ({spam.score})</>}
+            </span>
+          )}
           <Button
             variant="ghost"
             type="button"
@@ -1689,6 +1818,41 @@ function ManualGmailTemplateBar({
           >
             <IconX size={14} /> Clear
           </Button>
+        </>
+      )}
+      {directEnabled && (
+        <>
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-primary-50 border border-primary-200/60 px-2.5 py-1 text-xs font-semibold text-primary-700"
+            title="Gmail is configured to send directly through your Workspace mailbox (no compose tab)."
+          >
+            <IconSend size={12} /> Direct send
+          </span>
+          {domainAuth && (
+            <span
+              title={`Sending-domain authentication (${domainAuth.domain}):\nSPF: ${domainAuth.spf.detail}\nDKIM: ${domainAuth.dkim.detail}\nDMARC: ${domainAuth.dmarc.detail}`}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold cursor-help',
+                domainAuth.ok
+                  ? 'bg-primary-50 border-primary-200/60 text-primary-700'
+                  : 'bg-amber-50 border-amber-200/60 text-amber-700',
+              )}
+            >
+              {domainAuth.ok ? 'Email auth ✓' : <><IconWarning size={12} /> Check SPF/DKIM/DMARC</>}
+            </span>
+          )}
+          {active && onSendBatch && (
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={onSendBatch}
+              disabled={batchSending}
+              aria-label="Send the next 10 cold emails via Gmail"
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            >
+              <IconSend size={14} /> {batchSending ? 'Sending…' : 'Send next 10'}
+            </Button>
+          )}
         </>
       )}
     </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconExternalLink, IconPhone, IconUpload, IconUserPlus, IconUser, IconUsers, IconUserX, IconCheck, IconFlame, IconZap, IconSchool, IconX } from '@/components/icons';
+import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconSend, IconExternalLink, IconPhone, IconUpload, IconUserPlus, IconUser, IconUsers, IconUserX, IconCheck, IconFlame, IconZap, IconSchool, IconX } from '@/components/icons';
 import { STATUS_COLORS, CRM_ASSIGNEES } from '../crm-config';
 import type { Coach, CoachStatus, CrmAssignee } from '../crm-config';
 import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
@@ -243,6 +243,10 @@ interface CoachTableProps {
   // getGmailHref builds the compose URL for a coach; onGmailTouch logs the touch.
   getGmailHref?: (coach: Coach) => string | null;
   onGmailTouch?: (coach: Coach) => void;
+  // When true, the Gmail actions SEND directly via the Gmail API (a <button>,
+  // no compose tab). Changes the menu-item label to "Send via Gmail" and turns
+  // the school-group header into a direct-send button.
+  gmailDirectSend?: boolean;
 }
 
 const ALL_STATUSES: CoachStatus[] = [
@@ -302,6 +306,8 @@ interface CoachTableRowProps {
   // an email (the parent CoachTable gates on both before passing the handler).
   onOpenInGmail?: (coach: Coach) => void;
   manualTemplateArmed?: boolean;
+  // Direct Gmail-API send mode — relabels the menu item "Send via Gmail".
+  gmailDirectSend?: boolean;
 }
 
 const CoachTableRow = React.memo(
@@ -332,6 +338,7 @@ const CoachTableRow = React.memo(
     density,
     onOpenInGmail,
     manualTemplateArmed,
+    gmailDirectSend,
   }: CoachTableRowProps) {
     const handleRowClick = () => onClick(coach);
     const handleCheckbox = () => onToggleSelect(coach.id);
@@ -464,8 +471,9 @@ const CoachTableRow = React.memo(
           <p className="text-xs text-warm-500 truncate">{coach.conference}</p>
         </td>
 
-        {/* Last Contact — visible at lg+; right-aligned recency with tabular-nums */}
-        <td className={cn('hidden lg:table-cell text-right', cellPad)}>
+        {/* Last Contact — visible whenever the table shows (md+); right-aligned
+            recency with tabular-nums. "Never" is red so un-touched coaches pop. */}
+        <td className={cn('hidden md:table-cell text-right', cellPad)}>
           <span className={cn(
             'text-xs tabular-nums',
             !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500',
@@ -530,7 +538,9 @@ const CoachTableRow = React.memo(
                     onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                   >
-                    <IconExternalLink size={16} className="text-primary-500" /> Open in Gmail
+                    {gmailDirectSend
+                      ? <><IconMail size={16} className="text-primary-500" /> Send via Gmail</>
+                      : <><IconExternalLink size={16} className="text-primary-500" /> Open in Gmail</>}
                   </Button>
                 )}
                 {coach.phone && (
@@ -634,6 +644,7 @@ const CoachTableRow = React.memo(
       prev.segments === next.segments &&
       prev.density === next.density &&
       prev.manualTemplateArmed === next.manualTemplateArmed &&
+      prev.gmailDirectSend === next.gmailDirectSend &&
       prev.onOpenInGmail === next.onOpenInGmail &&
       prev.onClick === next.onClick &&
       prev.onToggleSelect === next.onToggleSelect &&
@@ -687,6 +698,7 @@ const CoachTableCard = React.memo(
     segments,
     onOpenInGmail,
     manualTemplateArmed,
+    gmailDirectSend,
   }: CoachTableRowProps) {
     const handleCardClick = () => onClick(coach);
     const handleCheckbox = () => onToggleSelect(coach.id);
@@ -779,7 +791,9 @@ const CoachTableCard = React.memo(
                       onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
                       className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                     >
-                      <IconExternalLink size={16} className="text-primary-500" /> Open in Gmail
+                      {gmailDirectSend
+                        ? <><IconMail size={16} className="text-primary-500" /> Send via Gmail</>
+                        : <><IconExternalLink size={16} className="text-primary-500" /> Open in Gmail</>}
                     </Button>
                   )}
                   {coach.phone && (
@@ -967,6 +981,7 @@ const CoachTableCard = React.memo(
       prev.engagement === next.engagement &&
       prev.segments === next.segments &&
       prev.manualTemplateArmed === next.manualTemplateArmed &&
+      prev.gmailDirectSend === next.gmailDirectSend &&
       prev.onOpenInGmail === next.onOpenInGmail &&
       prev.onClick === next.onClick &&
       prev.onToggleSelect === next.onToggleSelect &&
@@ -1020,6 +1035,9 @@ interface SchoolGroupViewProps {
   manualTemplateArmed?: boolean;
   getGmailHref?: (coach: Coach) => string | null;
   onGmailTouch?: (coach: Coach) => void;
+  // Direct Gmail-API send — the school header button SENDS instead of opening
+  // a compose tab (a <button> calling onGmailTouch, no href).
+  gmailDirectSend?: boolean;
 }
 
 // A decision-maker target for outreach — never an assistant/volunteer (mirrors
@@ -1053,6 +1071,7 @@ function SchoolGroupView({
   manualTemplateArmed,
   getGmailHref,
   onGmailTouch,
+  gmailDirectSend = false,
 }: SchoolGroupViewProps) {
   const [expandedSchools, setExpandedSchools] = useState<Set<string>>(new Set());
 
@@ -1180,18 +1199,34 @@ function SchoolGroupView({
               </Button>
 
               {/* Group-level Gmail action — emails the school's primary/head
-                  contact directly (no need to expand). Real <a href> so it opens
-                  reliably under automation; the click logs the touch. */}
+                  contact. Compose mode: a real <a href> (opens reliably under
+                  automation; the click logs the touch). Direct mode: a <button>
+                  that SENDS straight through the Gmail API. */}
               {(() => {
                 if (!manualTemplateArmed || !getGmailHref) return null;
                 const main = schoolGmailTarget(group.coaches);
-                const href = main ? getGmailHref(main) : null;
-                if (!main || !href) return null;
+                if (!main) return null;
                 const roleLabel = main.is_primary_contact
                   ? 'primary contact'
                   : main.role_level === 'head_coach'
                     ? 'head coach'
                     : 'main contact';
+                if (gmailDirectSend) {
+                  return (
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onGmailTouch?.(main); }}
+                      aria-label={`Send Gmail to ${main.name} (${roleLabel}) at ${group.school}`}
+                      title={`Send to ${main.name} — ${roleLabel}`}
+                      className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-primary-600 text-white hover:bg-primary-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+                    >
+                      <IconSend size={13} aria-hidden="true" /> Send
+                    </Button>
+                  );
+                }
+                const href = getGmailHref(main);
+                if (!href) return null;
                 return (
                   <a
                     href={href}
@@ -1251,6 +1286,12 @@ function SchoolGroupView({
                           <td className="px-4 py-2.5">
                             <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
                             {coach.email && <p className="text-xs text-warm-400 truncate">{coach.email}</p>}
+                            <p className={cn(
+                              'text-micro tabular-nums',
+                              !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-400',
+                            )}>
+                              Last contacted: {formatRelativeDate(coach.last_contacted_at)}
+                            </p>
                             {coach.is_primary_contact && (
                               <span className="text-micro font-bold px-1 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">★ Primary</span>
                             )}
@@ -1312,6 +1353,7 @@ export function CoachTable({
   manualTemplateArmed,
   getGmailHref,
   onGmailTouch,
+  gmailDirectSend = false,
 }: CoachTableProps) {
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
@@ -1561,6 +1603,7 @@ export function CoachTable({
           manualTemplateArmed={manualTemplateArmed}
           getGmailHref={getGmailHref}
           onGmailTouch={onGmailTouch}
+          gmailDirectSend={gmailDirectSend}
         />
       </div>
     );
@@ -1650,8 +1693,8 @@ export function CoachTable({
             <TH field="priority" label="Priority" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden xl:table-cell w-20"><SortArrow field="priority" /></TH>
             {/* Conference — xl+ */}
             <TH field="conference" label="Conference" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden xl:table-cell"><SortArrow field="conference" /></TH>
-            {/* Last Contact — lg+, right-aligned numeric */}
-            <TH field="last_contacted_at" label="Last Contact" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden lg:table-cell !text-right"><SortArrow field="last_contacted_at" /></TH>
+            {/* Last Contact — md+ (matches the cell), right-aligned numeric */}
+            <TH field="last_contacted_at" label="Last Contact" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden md:table-cell !text-right"><SortArrow field="last_contacted_at" /></TH>
             {/* Segments — xl+. Stream C owns. */}
             <th className={cn('hidden xl:table-cell text-left text-xs font-medium text-warm-500 uppercase tracking-wide w-[180px]', DENSITY_CELL_PADDING[density])}>Segments</th>
             {/* Actions — always */}
@@ -1688,6 +1731,7 @@ export function CoachTable({
               density={density}
               onOpenInGmail={onOpenInGmail}
               manualTemplateArmed={manualTemplateArmed}
+              gmailDirectSend={gmailDirectSend}
             />
           ))}
         </tbody>
@@ -1729,6 +1773,7 @@ export function CoachTable({
             density={density}
             onOpenInGmail={onOpenInGmail}
             manualTemplateArmed={manualTemplateArmed}
+            gmailDirectSend={gmailDirectSend}
           />
         ))}
       </div>

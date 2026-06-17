@@ -9,6 +9,7 @@ import {
   IconMail,
   IconPhone,
   IconExternalLink,
+  IconSend,
   IconPlus,
   IconClock,
   IconFileText,
@@ -50,6 +51,9 @@ interface CoachDetailPanelProps {
   // Gmail compose window (the parent owns arming the template + logging the
   // touch). Optional so existing usages compile unchanged.
   onOpenInGmail?: (coach: Coach) => void;
+  // When true, that button SENDS directly via the Gmail API (no compose tab) —
+  // relabels it "Send" and updates the tooltip so the action is unambiguous.
+  gmailDirectSend?: boolean;
   // Manual work-division label change. Fired after the assignee dropdown in the
   // header is changed (and the server action has been dispatched) so the parent
   // can sync its own list state. Optional so existing usages compile unchanged.
@@ -89,6 +93,7 @@ function CoachDetailPanelInner({
   statusConfig,
   priorityConfig,
   onOpenInGmail,
+  gmailDirectSend,
   onAssigneeChange,
 }: CoachDetailPanelProps) {
   const { toast } = useToast();
@@ -728,9 +733,13 @@ function CoachDetailPanelInner({
             )}
             {onOpenInGmail && coach.email && (
               <Button variant="ghost" onClick={() => onOpenInGmail(coach)}
-                title="Open a pre-filled Gmail compose window for this coach"
+                title={gmailDirectSend
+                  ? 'Send this email directly through your Workspace mailbox (Gmail API)'
+                  : 'Open a pre-filled Gmail compose window for this coach'}
                 className="flex-1 lg:flex-initial min-h-[44px] bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
-                <IconExternalLink size={14} className="text-primary-500" /> Gmail
+                {gmailDirectSend
+                  ? <><IconSend size={14} className="text-primary-500" /> Send</>
+                  : <><IconExternalLink size={14} className="text-primary-500" /> Gmail</>}
               </Button>
             )}
             {coach.phone ? (
