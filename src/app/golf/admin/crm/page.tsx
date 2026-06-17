@@ -1112,7 +1112,11 @@ export default function CRMPage() {
 
       {/* ═══════════════════ Main Content ═══════════════════ */}
       <main className={cn(
-        'flex-1 flex flex-col min-h-dvh transition-all duration-300',
+        // min-w-0 is REQUIRED: as a flex child, <main> defaults to min-width:auto
+        // and won't shrink below its content's intrinsic width, so a wide
+        // descendant (tables, charts, long subjects) pushed the whole panel past
+        // the mobile viewport — the right-edge clipping seen on phones.
+        'flex-1 min-w-0 flex flex-col min-h-dvh transition-all duration-300',
         'pt-12 lg:pt-0',
         sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
       )}>
