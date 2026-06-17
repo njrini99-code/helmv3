@@ -6407,6 +6407,42 @@ export type Database = {
           },
         ]
       }
+      golf_demo_sessions: {
+        Row: {
+          email: string
+          entered_at: string
+          id: string
+          ip: string | null
+          metadata: Json
+          name: string
+          referrer: string | null
+          school: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          email: string
+          entered_at?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          name: string
+          referrer?: string | null
+          school?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          email?: string
+          entered_at?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          name?: string
+          referrer?: string | null
+          school?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       golf_document_versions: {
         Row: {
           change_notes: string | null

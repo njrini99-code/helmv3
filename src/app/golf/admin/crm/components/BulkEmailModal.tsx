@@ -55,10 +55,11 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
   const [mode, setMode] = useState<SendMode>('helm');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  // Body format: 'plain' (default — wrapped in greeting/signature shell) or
-  // 'html' (full HTML document, replaces the entire email). Set by template
-  // selection; defaults back to 'plain' on Clear.
-  const [bodyFormat, setBodyFormat] = useState<'plain' | 'html'>('plain');
+  // Body format: 'plain' (wrapped in greeting/signature shell), 'html' (full
+  // HTML document, replaces the entire email), or 'text' (true text/plain — no
+  // shell, no logo; body is self-contained). Set by template selection; defaults
+  // back to 'plain' on Clear.
+  const [bodyFormat, setBodyFormat] = useState<'plain' | 'html' | 'text'>('plain');
   const [sending, setSending] = useState(false);
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
   const [helmResult, setHelmResult] = useState<HelmSendResult | null>(null);
@@ -533,7 +534,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
   };
 
   // ── Handle template selection ──
-  const handleTemplateSelect = (template: { subject: string; body: string; id: string; format: 'plain' | 'html' }) => {
+  const handleTemplateSelect = (template: { subject: string; body: string; id: string; format: 'plain' | 'html' | 'text' }) => {
     setSubject(template.subject);
     setBody(template.body);
     setSelectedTemplateId(template.id);

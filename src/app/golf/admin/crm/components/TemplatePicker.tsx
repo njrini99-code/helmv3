@@ -29,7 +29,7 @@ type TemplateCategory = 'intro' | 'follow_up' | 'demo_invite' | 'proposal' | 'ch
 
 /** plain = legacy paragraph text, wrapped in our greeting/signature shell.
  *  html  = full HTML document — replaces the entire email shell on send + preview. */
-type TemplateFormat = 'plain' | 'html';
+type TemplateFormat = 'plain' | 'html' | 'text';
 
 interface TemplatePickerProps {
   onSelect: (template: { subject: string; body: string; id: string; format: TemplateFormat }) => void;
@@ -242,7 +242,8 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
     setSelectedId(template.id);
     // Default to 'plain' if the column hasn't been backfilled yet — keeps
     // the picker tolerant of older rows in the wild.
-    const format: TemplateFormat = template.format === 'html' ? 'html' : 'plain';
+    const format: TemplateFormat =
+      template.format === 'html' ? 'html' : template.format === 'text' ? 'text' : 'plain';
     // Pass the RAW template (merge tokens intact). Per-recipient substitution
     // happens server-side in /api/admin/crm/send-email so every coach gets their
     // own {email}/{first_name} — critical for the demo CTA's ?ref= click tracking.
