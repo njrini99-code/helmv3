@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -204,24 +205,35 @@ export function EmailTrackingView() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch Helm-sent emails (with Resend tracking events)
-      const emailsRes = await supabase
-        .from('crm_contact_log')
-        .select('*, crm_coaches!coach_id(id, name, school, email, email_status), crm_email_events(event_type, occurred_at)')
-        .not('resend_message_id', 'is', null)
-        .order('contact_date', { ascending: false });
+      // Fetch Helm-sent emails (with Resend tracking events). PAGINATED past the
+      // 1000-row PostgREST cap — an unpaginated fetch silently truncated at 1000,
+      // which capped "Total Outreach" at exactly 1,000 and corrupted the derived
+      // counts. Stable order (contact_date desc, then id) keeps page boundaries firm.
+      const emailsRes = await fetchAllRowsResult<EmailRecord>((from, to) =>
+        supabase
+          .from('crm_contact_log')
+          .select('*, crm_coaches!coach_id(id, name, school, email, email_status), crm_email_events(event_type, occurred_at)')
+          .not('resend_message_id', 'is', null)
+          .order('contact_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to) as unknown as PromiseLike<{ data: EmailRecord[] | null; error: { message: string } | null }>
+      );
 
-      const helmEmails = (emailsRes.data as unknown as EmailRecord[]) ?? [];
+      const helmEmails = emailsRes.data ?? [];
       setEmails(helmEmails);
 
-      // Also fetch ALL email contacts (including Gmail BCC / manual log entries)
-      const allEmailsRes = await supabase
-        .from('crm_contact_log')
-        .select('*, crm_coaches!coach_id(id, name, school, email, email_status)')
-        .eq('contact_type', 'email')
-        .order('contact_date', { ascending: false });
+      // Also fetch ALL email contacts (including Gmail BCC / manual log entries) — paginated.
+      const allEmailsRes = await fetchAllRowsResult<EmailRecord>((from, to) =>
+        supabase
+          .from('crm_contact_log')
+          .select('*, crm_coaches!coach_id(id, name, school, email, email_status)')
+          .eq('contact_type', 'email')
+          .order('contact_date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to) as unknown as PromiseLike<{ data: EmailRecord[] | null; error: { message: string } | null }>
+      );
 
-      setAllOutreach((allEmailsRes.data as unknown as EmailRecord[]) ?? []);
+      setAllOutreach(allEmailsRes.data ?? []);
 
       // Fetch stats via RPC — may not exist, so fall back to client-side compute
       try {
@@ -392,8 +404,12 @@ export function EmailTrackingView() {
     );
   }
 
-  const deliveryRate = stats.total_sent > 0 ? Math.round((stats.delivered / stats.total_sent) * 100) : 0;
-  const openRate = stats.total_sent > 0 ? Math.round((stats.opened / stats.total_sent) * 100) : 0;
+  // Rates use the RPC's CRM-scoped counts for BOTH numerator and denominator and
+  // are clamped to 100% — delivered can't exceed sent (the RPC was fixed to scope
+  // delivered/opened to CRM contact-log emails; the clamp is a belt-and-suspenders
+  // guard so a transient over-count never renders an impossible "110%").
+  const deliveryRate = stats.total_sent > 0 ? Math.min(100, Math.round((stats.delivered / stats.total_sent) * 100)) : 0;
+  const openRate = stats.total_sent > 0 ? Math.min(100, Math.round((stats.opened / stats.total_sent) * 100)) : 0;
 
   // Compute outreach summary from ALL contacts (Gmail + Helm)
   const totalOutreach = allOutreach.length;
@@ -470,16 +486,16 @@ export function EmailTrackingView() {
           iconBg="bg-violet-100"
           iconColor="text-violet-600"
           label="Open Rate"
-          value={helmOutreach > 0 ? `${openRate}%` : '\u2014'}
-          subtitle={helmOutreach > 0 ? `${stats.opened} of ${helmOutreach} Helm emails` : 'Helm emails only'}
+          value={stats.total_sent > 0 ? `${openRate}%` : '\u2014'}
+          subtitle={stats.total_sent > 0 ? `${stats.opened} of ${stats.total_sent} Helm emails` : 'Helm emails only'}
         />
         <StatCard
           icon={<IconCheckCircle2 size={20} />}
           iconBg="bg-primary-100"
           iconColor="text-primary-600"
           label="Delivery Rate"
-          value={helmOutreach > 0 ? `${deliveryRate}%` : '\u2014'}
-          subtitle={helmOutreach > 0 ? `${stats.delivered} of ${helmOutreach} Helm emails` : 'Helm emails only'}
+          value={stats.total_sent > 0 ? `${deliveryRate}%` : '\u2014'}
+          subtitle={stats.total_sent > 0 ? `${stats.delivered} of ${stats.total_sent} Helm emails` : 'Helm emails only'}
         />
       </div>
 
