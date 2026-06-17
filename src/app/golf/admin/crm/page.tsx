@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   IconChartBar,
   IconChevronRight,
@@ -233,18 +234,26 @@ export default function CRMPage() {
 
   const fetchAllCoaches = useCallback(async () => {
     try {
-      const { data } = await supabase
-        .from('crm_coaches')
-        .select(CRM_COACHES_LIST_COLUMNS)
-        // Hide archived rows from the main list. NULL-safe: legacy rows with
-        // is_archived = NULL must still appear, so we match NULL OR false
-        // explicitly. (Do NOT use .neq('is_archived', true) — Postgres
-        // three-valued logic evaluates NULL <> true as UNKNOWN and would
-        // wrongly drop the NULL rows.)
-        .or('is_archived.is.null,is_archived.eq.false')
-        .order('is_starred', { ascending: false })
-        .order('priority', { ascending: false })
-        .order('updated_at', { ascending: false });
+      // Paginate: PostgREST caps a single response at 1000 rows, so the old
+      // unbounded .select() silently returned only the first 1000 of ~2,300
+      // coaches (and the lowest-priority cold leads at that), making every
+      // count/funnel/list wrong. fetchAllRowsResult pages through all rows.
+      // A final .order('id') tiebreaker keeps pagination deterministic.
+      const { data } = await fetchAllRowsResult((from, to) =>
+        supabase
+          .from('crm_coaches')
+          .select(CRM_COACHES_LIST_COLUMNS)
+          // Hide archived rows from the main list. NULL-safe: legacy rows with
+          // is_archived = NULL must still appear, so we match NULL OR false
+          // explicitly. (Do NOT use .neq('is_archived', true) — Postgres
+          // three-valued logic evaluates NULL <> true as UNKNOWN and would
+          // wrongly drop the NULL rows.)
+          .or('is_archived.is.null,is_archived.eq.false')
+          .order('is_starred', { ascending: false })
+          .order('priority', { ascending: false })
+          .order('updated_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to));
       // Precompute a lowercased search blob once at fetch time so we don't
       // call toLowerCase() 4x per row per keystroke in filteredCoaches.
       // The dropped columns (internal_comments, highlight_color, etc.) are
