@@ -29,6 +29,12 @@ export type CoachStatus =
 export type Division = 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO';
 export type ProgramType = 'mens' | 'womens' | 'both';
 
+// Manual work-division labels (one shared CRM login — these are tags, NOT auth users).
+// Lets the team split the book (Nick/Ben/Leah) without separate accounts; the server-side
+// frequency cap is what actually prevents double-touch.
+export const CRM_ASSIGNEES = ['Nick', 'Ben', 'Leah'] as const;
+export type CrmAssignee = (typeof CRM_ASSIGNEES)[number];
+
 export interface Coach {
   id: string;
   name: string;
@@ -66,6 +72,9 @@ export interface Coach {
   athletics_url: string | null;
   role_level: string | null;
   is_primary_contact: boolean;
+  // Optional: present on list rows (fetched), absent on the partial Coach literals
+  // some modals build for preview. Reads treat absent as null.
+  assigned_to?: string | null;
 }
 
 // ============================================================================

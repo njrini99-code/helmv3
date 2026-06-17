@@ -3491,11 +3491,12 @@ export type Database = {
         Row: {
           archived_at: string | null
           archived_by: string | null
+          assigned_to: string | null
           athletics_url: string | null
           best_contact_method: string | null
           best_contact_time: string | null
           budget_range: string | null
-          conference: string
+          conference: string | null
           created_at: string | null
           created_by: string | null
           current_software: string | null
@@ -3507,6 +3508,7 @@ export type Database = {
           id: string
           internal_comments: string | null
           is_archived: boolean | null
+          is_primary_contact: boolean
           is_starred: boolean | null
           last_contacted_at: string | null
           last_email_event_at: string | null
@@ -3519,7 +3521,6 @@ export type Database = {
           priority: number | null
           program: Database["public"]["Enums"]["program_type"]
           role_level: string | null
-          is_primary_contact: boolean
           school: string
           source: string | null
           status: Database["public"]["Enums"]["coach_status"]
@@ -3532,11 +3533,12 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           archived_by?: string | null
+          assigned_to?: string | null
           athletics_url?: string | null
           best_contact_method?: string | null
           best_contact_time?: string | null
           budget_range?: string | null
-          conference: string
+          conference?: string | null
           created_at?: string | null
           created_by?: string | null
           current_software?: string | null
@@ -3548,6 +3550,7 @@ export type Database = {
           id?: string
           internal_comments?: string | null
           is_archived?: boolean | null
+          is_primary_contact?: boolean
           is_starred?: boolean | null
           last_contacted_at?: string | null
           last_email_event_at?: string | null
@@ -3560,7 +3563,6 @@ export type Database = {
           priority?: number | null
           program?: Database["public"]["Enums"]["program_type"]
           role_level?: string | null
-          is_primary_contact?: boolean
           school: string
           source?: string | null
           status?: Database["public"]["Enums"]["coach_status"]
@@ -3573,11 +3575,12 @@ export type Database = {
         Update: {
           archived_at?: string | null
           archived_by?: string | null
+          assigned_to?: string | null
           athletics_url?: string | null
           best_contact_method?: string | null
           best_contact_time?: string | null
           budget_range?: string | null
-          conference?: string
+          conference?: string | null
           created_at?: string | null
           created_by?: string | null
           current_software?: string | null
@@ -3589,6 +3592,7 @@ export type Database = {
           id?: string
           internal_comments?: string | null
           is_archived?: boolean | null
+          is_primary_contact?: boolean
           is_starred?: boolean | null
           last_contacted_at?: string | null
           last_email_event_at?: string | null
@@ -3601,7 +3605,6 @@ export type Database = {
           priority?: number | null
           program?: Database["public"]["Enums"]["program_type"]
           role_level?: string | null
-          is_primary_contact?: boolean
           school?: string
           source?: string | null
           status?: Database["public"]["Enums"]["coach_status"]
@@ -3681,6 +3684,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contact_log_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
           {
@@ -3876,6 +3886,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "crm_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "crm_events_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -3993,6 +4010,13 @@ export type Database = {
             referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "crm_notes_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
+            referencedColumns: ["id"]
+          },
         ]
       }
       crm_replies: {
@@ -4057,6 +4081,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_replies_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
           {
@@ -4160,6 +4191,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_sequence_enrollments_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
           {
@@ -4326,6 +4364,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "v_crm_coaches_by_school"
             referencedColumns: ["id"]
           },
         ]
@@ -11158,6 +11203,7 @@ export type Database = {
           coach_id: string | null
           last_event_at: string | null
           opens_90d: number | null
+          replied_90d: number | null
           score: number | null
           temperature: string | null
         }
@@ -11203,6 +11249,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_crm_coaches_by_school: {
+        Row: {
+          coaches_at_school: number | null
+          conference: string | null
+          division: Database["public"]["Enums"]["ncaa_division"] | null
+          email: string | null
+          email_status: Database["public"]["Enums"]["email_status"] | null
+          id: string | null
+          is_primary_contact: boolean | null
+          is_starred: boolean | null
+          name: string | null
+          phone: string | null
+          priority: number | null
+          program: Database["public"]["Enums"]["program_type"] | null
+          role_level: string | null
+          school: string | null
+          status: Database["public"]["Enums"]["coach_status"] | null
+          title: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -11786,7 +11853,16 @@ export type Database = {
         | "player"
         | "pending_reimbursement"
         | "split"
-      ncaa_division: "D2" | "D3" | "D1" | "NAIA" | "JUCO"
+      ncaa_division:
+        | "D2"
+        | "D3"
+        | "D1"
+        | "NAIA"
+        | "JUCO"
+        | "JUCO_D1"
+        | "JUCO_D2"
+        | "JUCO_D3"
+        | "CCCAA"
       notification_type:
         | "profile_view"
         | "watchlist_add"
@@ -11980,7 +12056,17 @@ export const Constants = {
         "pending_reimbursement",
         "split",
       ],
-      ncaa_division: ["D2", "D3", "D1", "NAIA", "JUCO"],
+      ncaa_division: [
+        "D2",
+        "D3",
+        "D1",
+        "NAIA",
+        "JUCO",
+        "JUCO_D1",
+        "JUCO_D2",
+        "JUCO_D3",
+        "CCCAA",
+      ],
       notification_type: [
         "profile_view",
         "watchlist_add",

@@ -13,10 +13,13 @@ import {
   getSequence,
   listEnrollments,
   getSequenceEnrollmentCounts,
+  getSequencePerformance,
   type CrmSequence,
   type CrmSequenceStep,
   type CrmSequenceEnrollment,
   type SequenceEnrollmentCounts,
+  type SequencePerformance,
+  type SequencePerformanceStep,
 } from '@/app/golf/actions/crm-sequences';
 import { SequenceStepEditor } from './SequenceStepEditor';
 import { EnrollSegmentDialog } from './EnrollSegmentDialog';
@@ -39,6 +42,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
   const [steps, setSteps] = useState<CrmSequenceStep[]>([]);
   const [enrollments, setEnrollments] = useState<CrmSequenceEnrollment[]>([]);
   const [counts, setCounts] = useState<SequenceEnrollmentCounts | null>(null);
+  const [performance, setPerformance] = useState<SequencePerformance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
@@ -50,14 +54,18 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
     setError(null);
     try {
       const { sequence: seq, steps: seqSteps } = await getSequence(sequenceId);
-      const [enrolled, enrollCounts] = await Promise.all([
+      const [enrolled, enrollCounts, perf] = await Promise.all([
         listEnrollments(sequenceId, { limit: 200 }),
         getSequenceEnrollmentCounts(sequenceId),
+        // Reply metrics are best-effort: never blank the builder over a stats
+        // hiccup. On failure we simply hide the performance row.
+        getSequencePerformance(sequenceId).catch(() => null),
       ]);
       setSequence(seq);
       setSteps(seqSteps);
       setEnrollments(enrolled);
       setCounts(enrollCounts);
+      setPerformance(perf);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load sequence');
     } finally {
@@ -97,6 +105,11 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
     steps.length === 0
       ? 1
       : Math.max(...steps.map((s) => s.step_order)) + 1;
+
+  // step_order -> reply-focused metrics, for the per-step performance line.
+  const perfByStepOrder = new Map<number, SequencePerformanceStep>(
+    (performance?.steps ?? []).map((s) => [s.step_order, s]),
+  );
 
   const activeEnrollmentCount = enrollments.filter(
     (e) => e.status === 'active',
@@ -174,6 +187,10 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
         />
       </div>
 
+      {/* Reply-focused performance — the north-star is REPLY rate. Open/click
+          are intentionally omitted: on .edu they are security-gateway bot noise. */}
+      {performance && <PerformanceSummary totals={performance.totals} />}
+
       {/* Steps */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -245,6 +262,11 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
                         Wait {step.delay_hours}h before sending
                         {step.template_id ? ' • template attached' : ''}
                       </p>
+                      {performance && (
+                        <StepPerformanceLine
+                          metrics={perfByStepOrder.get(step.step_order)}
+                        />
+                      )}
                     </div>
                     <span className="text-xs text-warm-400 group-hover:text-warm-600 transition-colors">
                       Edit
@@ -329,5 +351,91 @@ function StatCard({
         {value}
       </p>
     </div>
+  );
+}
+
+// ============================================================================
+// Reply-rate color thresholds — shared by the summary + per-step line.
+//   >= 5%  → primary/green (working)
+//   2–5%   → amber (watch)
+//   < 2%   → warm-500 (cold)
+// ============================================================================
+function replyRateClass(rate: number): string {
+  if (rate >= 5) return 'text-primary-600';
+  if (rate >= 2) return 'text-amber-600';
+  return 'text-warm-500';
+}
+
+// ============================================================================
+// PerformanceSummary — top-line reply metrics for the whole sequence.
+// Deliberately NO open/click (security-gateway bot noise on .edu). Flags a
+// bounce rate above 4% in red — the deliverability / AUP danger line.
+// ============================================================================
+function PerformanceSummary({
+  totals,
+}: {
+  totals: SequencePerformance['totals'];
+}) {
+  const bounceRate =
+    totals.sent > 0 ? Math.round((totals.bounced / totals.sent) * 1000) / 10 : 0;
+  const bounceHot = bounceRate > 4;
+
+  if (totals.sent === 0) {
+    return (
+      <div className="rounded-xl px-4 py-3 bg-warm-50/60 border border-warm-100">
+        <p className="text-sm text-warm-500">
+          No sends yet — reply metrics appear once this drip starts sending.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl px-4 py-3 bg-warm-50/60 border border-warm-100 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+      <span className="text-xs font-medium uppercase tracking-wider text-warm-500">
+        TRUE reply
+      </span>
+      <span className={cn('font-bold tabular-nums', replyRateClass(totals.reply_rate))}>
+        {totals.reply_rate}%
+      </span>
+      <span className="text-warm-400">·</span>
+      <span className="text-warm-600">
+        delivered <span className="font-semibold tabular-nums text-warm-900">{totals.delivered}</span>
+      </span>
+      <span className="text-warm-400">·</span>
+      <span className={cn(bounceHot ? 'text-red-600 font-semibold' : 'text-warm-600')}>
+        {bounceHot && '⚠ '}bounced{' '}
+        <span className={cn('tabular-nums', bounceHot ? 'font-bold' : 'font-semibold text-warm-900')}>
+          {totals.bounced}
+        </span>
+        {bounceHot && <span className="ml-1 text-xs">({bounceRate}% — over 4% AUP line)</span>}
+      </span>
+    </div>
+  );
+}
+
+// ============================================================================
+// StepPerformanceLine — per-step reply metrics appended under a step card.
+// Honest empty state when the step has no sends.
+// ============================================================================
+function StepPerformanceLine({
+  metrics,
+}: {
+  metrics: SequencePerformanceStep | undefined;
+}) {
+  if (!metrics || metrics.sent === 0) {
+    return <p className="text-xs text-warm-400 mt-0.5">No sends yet</p>;
+  }
+  return (
+    <p className="text-xs text-warm-500 mt-0.5 tabular-nums">
+      <span className="tabular-nums">{metrics.sent}</span> sent ·{' '}
+      <span className="tabular-nums">{metrics.delivered}</span> delivered ·{' '}
+      <span className={cn('font-semibold', replyRateClass(metrics.reply_rate))}>
+        {metrics.reply_rate}% reply
+      </span>
+      {metrics.bounced > 0 && (
+        <span className="text-red-600"> · ⚠ bounce {metrics.bounced}</span>
+      )}
+    </p>
   );
 }

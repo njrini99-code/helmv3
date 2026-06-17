@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import {
   IconX,
   IconMail,
@@ -15,16 +16,20 @@ import {
   IconCheck,
   IconCalendar,
   IconStar,
-  IconRefresh as History,
+  IconChevronDown,
+  IconActivity as Activity,
   IconHash as Tag,
-  IconClipboardList as ListChecks,
+  IconFlag as Flag,
   IconClipboard as ClipboardCheck,
-  IconEye as Monitor,
+  IconVideo,
+  IconLayoutGrid,
   IconNote as StickyNote,
   IconPencil as Pencil,
+  IconUser,
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
-import { STATUS_COLORS } from '../crm-config';
+import { STATUS_COLORS, CRM_ASSIGNEES, type CrmAssignee } from '../crm-config';
+import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
 import { ToastProvider, useToast } from './Toast';
 import { CoachTimeline } from './timeline/CoachTimeline';
 import { NotesPanel } from './notes/NotesPanel';
@@ -40,6 +45,15 @@ interface CoachDetailPanelProps {
   onUpdate: (updates: Partial<Coach>) => void;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; iconLabel: React.ReactNode; icon: React.ReactNode }>;
   priorityConfig: Record<number, { label: string; color: string; bgColor: string; iconLabel: React.ReactNode }>;
+  // "Open in Gmail" manual-send. When provided AND the coach has an email, the
+  // sticky footer surfaces a secondary "Gmail" button that opens a pre-filled
+  // Gmail compose window (the parent owns arming the template + logging the
+  // touch). Optional so existing usages compile unchanged.
+  onOpenInGmail?: (coach: Coach) => void;
+  // Manual work-division label change. Fired after the assignee dropdown in the
+  // header is changed (and the server action has been dispatched) so the parent
+  // can sync its own list state. Optional so existing usages compile unchanged.
+  onAssigneeChange?: (coachId: string, assignee: string | null) => void;
 }
 
 // ============================================================================
@@ -48,7 +62,7 @@ interface CoachDetailPanelProps {
 const CONTACT_TYPES = [
   { value: 'email', label: 'Email', Icon: IconMail, dotColor: 'bg-blue-500' },
   { value: 'call', label: 'Call', Icon: IconPhone, dotColor: 'bg-primary-500' },
-  { value: 'demo', label: 'Demo', Icon: Monitor, dotColor: 'bg-violet-500' },
+  { value: 'demo', label: 'Demo', Icon: IconVideo, dotColor: 'bg-violet-500' },
   { value: 'meeting', label: 'Meeting', Icon: IconUsers, dotColor: 'bg-cyan-500' },
   { value: 'note', label: 'Note', Icon: StickyNote, dotColor: 'bg-warm-400' },
 ] as const;
@@ -74,6 +88,8 @@ function CoachDetailPanelInner({
   onUpdate,
   statusConfig,
   priorityConfig,
+  onOpenInGmail,
+  onAssigneeChange,
 }: CoachDetailPanelProps) {
   const { toast } = useToast();
 
@@ -122,7 +138,28 @@ function CoachDetailPanelInner({
   // New: collapsible Quick Info
   const [showInfo, setShowInfo] = useState(false);
 
+  // Assignee (manual work-division label). Optimistic local mirror of
+  // coach.assigned_to so the dropdown reflects the choice immediately while the
+  // server action persists in the background.
+  const [assignee, setAssignee] = useState<string | null>(coach.assigned_to ?? null);
+  const [assigneeSaving, setAssigneeSaving] = useState(false);
+
   const supabase = createClient();
+
+  // --------------------------------------------------------------------------
+  // Dialog accessibility — focus trap, Escape-to-close, scroll-lock, and
+  // focus restoration to the trigger element on close. The panel is mounted
+  // by the parent only while open, so the trap is always active here; routing
+  // its close through `handleClose` preserves the exit animation.
+  // --------------------------------------------------------------------------
+  const titleId = useId();
+
+  // Downward swipe-to-close for the mobile bottom sheet. We track the touch
+  // start Y and the live drag offset; on release a sufficient downward drag
+  // (or flick) dismisses, otherwise we spring back to 0.
+  const [dragOffset, setDragOffset] = useState(0);
+  const touchStartY = useRef<number | null>(null);
+  const touchStartTime = useRef(0);
 
   // --------------------------------------------------------------------------
   // Hydrate full coach row on open (list view fetches a narrow column set).
@@ -154,12 +191,42 @@ function CoachDetailPanelInner({
     setFollowUpDate(coach.next_follow_up_at?.split('T')[0] || '');
     setContactForm({ name: coach.name, title: coach.title || '', email: coach.email || '', phone: coach.phone || '', school: coach.school });
     setEditingContact(false);
-  }, [coach.id, coach.name, coach.title, coach.email, coach.phone, coach.school, coach.notes, coach.next_follow_up_at]);
+    setAssignee(coach.assigned_to ?? null);
+  }, [coach.id, coach.name, coach.title, coach.email, coach.phone, coach.school, coach.notes, coach.next_follow_up_at, coach.assigned_to]);
 
   // --------------------------------------------------------------------------
   // Handlers
   // --------------------------------------------------------------------------
   const handleClose = () => { setIsVisible(false); setTimeout(onClose, 200); };
+
+  // Focus trap + Escape + scroll-lock + focus-restore. Mounted == open, so we
+  // pass `true`; closing animates out via handleClose before the parent unmounts.
+  const { modalRef } = useFocusTrap(true, handleClose);
+
+  // ---- Mobile bottom-sheet swipe-to-dismiss --------------------------------
+  const SWIPE_CLOSE_PX = 96;       // drag far enough to dismiss
+  const FLICK_VELOCITY = 0.5;      // or flick fast enough (px/ms)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Only initiate a sheet drag from the grab-handle / header region; ignore
+    // touches that begin inside the scrollable body so list scrolling works.
+    touchStartY.current = e.touches[0]?.clientY ?? null;
+    touchStartTime.current = Date.now();
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const delta = (e.touches[0]?.clientY ?? 0) - touchStartY.current;
+    setDragOffset(Math.max(0, delta)); // downward only
+  };
+  const handleTouchEnd = () => {
+    if (touchStartY.current === null) return;
+    const elapsed = Math.max(1, Date.now() - touchStartTime.current);
+    const velocity = dragOffset / elapsed;
+    if (dragOffset > SWIPE_CLOSE_PX || velocity > FLICK_VELOCITY) {
+      handleClose();
+    }
+    setDragOffset(0);
+    touchStartY.current = null;
+  };
 
   const saveNotes = () => {
     onUpdate({ notes: notesValue || null });
@@ -187,6 +254,27 @@ function CoachDetailPanelInner({
   const handleStatusChange = (newStatus: CoachStatus) => {
     onUpdate({ status: newStatus });
     toast(`Status updated to ${statusConfig[newStatus]?.label || newStatus}`, 'success');
+  };
+
+  const handleAssigneeChange = async (next: string | null) => {
+    const previous = assignee;
+    setAssignee(next); // optimistic
+    setAssigneeSaving(true);
+    try {
+      const { ok } = await setCoachAssignee({ coach_id: coach.id, assignee: next });
+      if (!ok) {
+        setAssignee(previous); // rollback
+        toast('Failed to update assignee', 'error');
+        return;
+      }
+      onAssigneeChange?.(coach.id, next);
+      toast(next ? `Assigned to ${next}` : 'Unassigned', 'success');
+    } catch {
+      setAssignee(previous); // rollback
+      toast('Failed to update assignee', 'error');
+    } finally {
+      setAssigneeSaving(false);
+    }
   };
 
   const submitContact = async () => {
@@ -243,20 +331,44 @@ function CoachDetailPanelInner({
   // --------------------------------------------------------------------------
   return (
     <>
-      {/* Backdrop */}
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape key is handled by the panel */}
-      <div className={cn('fixed inset-0 z-40', isVisible ? 'opacity-100' : 'opacity-0')} onClick={handleClose}>
-        <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] transition-opacity duration-200" />
+      {/* Backdrop / overlay — dismisses on click; Escape handled by useFocusTrap */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismisses on click; Escape key is handled by the focus trap */}
+      <div className={cn('fixed inset-0 z-40 transition-opacity duration-200', isVisible ? 'opacity-100' : 'opacity-0')} onClick={handleClose}>
+        <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px]" />
       </div>
 
-      {/* Panel */}
-      <aside className={cn(
-        'fixed right-0 top-0 bottom-0 z-50 w-full max-w-lg',
-        'bg-[#FFFEF8] border-l border-warm-200/60 shadow-2xl',
-        'transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]',
-        isVisible ? 'translate-x-0' : 'translate-x-full',
-        'flex flex-col'
-      )}>
+      {/* Panel — desktop (>=lg): right-side slide-over. Mobile (<lg): full-height
+          bottom sheet with a drag-handle, rounded top, and swipe-to-dismiss. */}
+      <aside
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        style={dragOffset > 0 ? { transform: `translateY(${dragOffset}px)`, transition: 'none' } : undefined}
+        className={cn(
+          'fixed z-50 bg-[#FFFEF8] shadow-2xl flex flex-col',
+          // Mobile bottom sheet
+          'inset-x-0 bottom-0 top-12 w-full rounded-t-3xl border-t border-warm-200/60',
+          'transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]',
+          isVisible ? 'translate-y-0' : 'translate-y-full',
+          // Desktop right slide-over (overrides the mobile sheet positioning)
+          'lg:inset-y-0 lg:right-0 lg:left-auto lg:top-0 lg:bottom-0 lg:max-w-lg',
+          'lg:rounded-none lg:border-t-0 lg:border-l lg:border-warm-200/60',
+          isVisible ? 'lg:translate-x-0 lg:translate-y-0' : 'lg:translate-x-full lg:translate-y-0',
+        )}
+      >
+        {/* Drag-handle affordance + grab zone — mobile bottom-sheet only.
+            Touch handlers live here (not the whole sheet) so swipe-to-dismiss
+            never competes with scrolling inside the timeline body. */}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="lg:hidden flex-shrink-0 flex justify-center items-center min-h-[28px] pt-2.5 pb-1 cursor-grab active:cursor-grabbing touch-none"
+        >
+          <span className="h-1.5 w-10 rounded-full bg-warm-300" aria-hidden="true" />
+        </div>
+
         {/* Primary accent bar */}
         <div className="h-1 bg-gradient-to-r from-primary-500 to-primary-600 flex-shrink-0" />
 
@@ -268,8 +380,8 @@ function CoachDetailPanelInner({
             <div className="space-y-2">
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-2">
-                  <input type="text" value={contactForm.name} onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
-                    placeholder="Name *" className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm font-bold text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
+                  <input id={titleId} type="text" value={contactForm.name} onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+                    aria-label="Coach name" placeholder="Name *" className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm font-bold text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                   <input type="text" value={contactForm.title} onChange={e => setContactForm({ ...contactForm, title: e.target.value })}
                     placeholder="Title (e.g. Head Coach)" className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                   <input type="text" value={contactForm.school} onChange={e => setContactForm({ ...contactForm, school: e.target.value })}
@@ -292,7 +404,7 @@ function CoachDetailPanelInner({
                     <Button variant="ghost" onClick={cancelEditContact} className="px-3 py-1.5 text-xs text-warm-600 hover:text-warm-800">Cancel</Button>
                   </div>
                 </div>
-                <IconButton variant="default" onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900 ml-2">
+                <IconButton variant="default" onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900 ml-2 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center">
                   <IconX size={14} aria-hidden="true" />
                 </IconButton>
               </div>
@@ -313,7 +425,7 @@ function CoachDetailPanelInner({
                         coach.is_starred ? 'fill-amber-400 text-amber-400 drop-shadow-sm' : 'text-warm-300 hover:text-amber-300'
                       )} />
                     </IconButton>
-                    <h2 className="text-lg font-semibold text-warm-900 truncate">{coach.name}</h2>
+                    <h2 id={titleId} className="text-lg font-semibold text-warm-900 truncate">{coach.name}</h2>
                   </div>
                   <p className="text-sm text-warm-500 ml-[26px]">
                     {coach.school}
@@ -330,8 +442,10 @@ function CoachDetailPanelInner({
                   </p>
                   <div className="flex items-center gap-2 mt-2 ml-[26px]">
                     <select value={coach.status} onChange={e => handleStatusChange(e.target.value as CoachStatus)}
+                      aria-label="Coach status"
                       className={cn(
                         'appearance-none cursor-pointer px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
+                        'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
                         STATUS_COLORS[coach.status]?.bg,
                         STATUS_COLORS[coach.status]?.text,
                         STATUS_COLORS[coach.status]?.border,
@@ -339,6 +453,7 @@ function CoachDetailPanelInner({
                       {ALL_STATUSES.map(s => <option key={s} value={s}>{statusConfig[s as CoachStatus]?.label}</option>)}
                     </select>
                     <select value={coach.priority} onChange={e => onUpdate({ priority: parseInt(e.target.value) })}
+                      aria-label="Coach priority"
                       className="appearance-none cursor-pointer px-2.5 py-1 rounded-full text-xs font-medium border border-warm-200/60 bg-white/50 focus:outline-none focus:ring-2 focus:ring-primary-500/30 transition-all duration-200">
                       <option value={0}>Normal</option>
                       <option value={1}>High</option>
@@ -350,15 +465,44 @@ function CoachDetailPanelInner({
                       </span>
                     )}
                   </div>
+                  {/* Assignee — manual work-division label (one shared login). */}
+                  <div className="flex items-center gap-1.5 mt-2 ml-[26px]">
+                    <IconUser size={12} className="text-warm-400 flex-shrink-0" aria-hidden="true" />
+                    <div className="relative inline-flex items-center">
+                      <select
+                        value={assignee ?? ''}
+                        onChange={e => handleAssigneeChange(e.target.value === '' ? null : (e.target.value as CrmAssignee))}
+                        disabled={assigneeSaving}
+                        aria-label="Assigned to"
+                        className={cn(
+                          'appearance-none cursor-pointer pl-2.5 pr-7 py-1 rounded-full text-xs font-medium border transition-colors',
+                          'focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:opacity-50',
+                          assignee
+                            ? 'bg-primary-50 text-primary-700 border-primary-200'
+                            : 'bg-white/50 text-warm-500 border-warm-200/60',
+                        )}
+                      >
+                        <option value="">Unassigned</option>
+                        {CRM_ASSIGNEES.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                      <IconChevronDown
+                        size={12}
+                        className="pointer-events-none absolute right-2 text-warm-400"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <IconButton variant="default" onClick={() => setEditingContact(true)}
                     aria-label="Edit contact info"
-                    className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900"
+                    className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center"
                     title="Edit contact info">
                     <Pencil size={14} aria-hidden="true" />
                   </IconButton>
-                  <IconButton variant="default" onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900">
+                  <IconButton variant="default" onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 flex items-center justify-center">
                     <IconX size={14} aria-hidden="true" />
                   </IconButton>
                 </div>
@@ -412,15 +556,14 @@ function CoachDetailPanelInner({
         <div className="flex-shrink-0 border-b border-warm-200/30">
           <Button variant="ghost"
             onClick={() => setShowInfo(!showInfo)}
+            aria-expanded={showInfo}
             className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-medium text-warm-500 hover:text-warm-700 hover:bg-white/30 transition-colors"
           >
             <span className="flex items-center gap-1.5">
               <ClipboardCheck size={12} className="text-warm-400" />
               Quick Info
             </span>
-            <svg className={cn('w-3.5 h-3.5 text-warm-400 transition-transform duration-200', showInfo && 'rotate-180')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
+            <IconChevronDown size={14} aria-hidden="true" className={cn('text-warm-400 transition-transform duration-200', showInfo && 'rotate-180')} />
           </Button>
 
           {showInfo && (
@@ -470,9 +613,9 @@ function CoachDetailPanelInner({
               </div>
 
               {/* One-line info rows */}
-              <QuickInfoRow icon={<ListChecks size={11} />} label="Program" value={coach.program === 'mens' ? "Men's" : coach.program === 'womens' ? "Women's" : coach.program ? 'Both' : null} />
+              <QuickInfoRow icon={<Flag size={11} />} label="Program" value={coach.program === 'mens' ? "Men's" : coach.program === 'womens' ? "Women's" : coach.program ? 'Both' : null} />
               <QuickInfoRow icon={<IconUsers size={11} />} label="Team Size" value={coach.team_size?.toString()} />
-              <QuickInfoRow icon={<Monitor size={11} />} label="Software" value={coach.current_software} />
+              <QuickInfoRow icon={<IconLayoutGrid size={11} />} label="Software" value={coach.current_software} />
               <QuickInfoRow icon={<IconClock size={11} />} label="Timeline" value={coach.decision_timeline} />
 
               {/* Follow-up date */}
@@ -522,7 +665,7 @@ function CoachDetailPanelInner({
         <div className="flex-1 overflow-y-auto">
           <div className="px-5 pt-4 pb-2 flex items-center justify-between">
             <h3 className="text-xs font-medium text-warm-500 uppercase tracking-wider flex items-center gap-1.5">
-              <History size={13} className="text-warm-400" /> Timeline
+              <Activity size={13} className="text-warm-400" /> Timeline
             </h3>
             <Button variant="ghost" onClick={() => setShowContactForm(!showContactForm)}
               className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
@@ -568,36 +711,45 @@ function CoachDetailPanelInner({
         {/* ================================================================
             6. QUICK ACTIONS BAR (sticky bottom)
             ================================================================ */}
-        <div className="bg-white/80 backdrop-blur-xl border-t border-white/20 p-4 flex-shrink-0">
+        <div className="bg-white/80 backdrop-blur-xl border-t border-white/20 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex-shrink-0">
+          {/* On phones the actions stretch to fill the bar for one-handed reach;
+              every action is >=44px tall. On desktop they revert to auto width. */}
           <div className="flex items-center gap-2">
             {coach.email ? (
               <a href={`mailto:${coach.email}`}
-                className="bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
+                className="flex-1 lg:flex-initial min-h-[44px] bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
                 <IconMail size={14} /> Email
               </a>
             ) : (
               <Button variant="primary" onClick={() => setEditingContact(true)}
-                className="bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
+                className="flex-1 lg:flex-initial min-h-[44px] bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
                 <IconMail size={14} /> Email
+              </Button>
+            )}
+            {onOpenInGmail && coach.email && (
+              <Button variant="ghost" onClick={() => onOpenInGmail(coach)}
+                title="Open a pre-filled Gmail compose window for this coach"
+                className="flex-1 lg:flex-initial min-h-[44px] bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
+                <IconExternalLink size={14} className="text-primary-500" /> Gmail
               </Button>
             )}
             {coach.phone ? (
               <a href={`tel:${coach.phone}`}
-                className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
+                className="flex-1 lg:flex-initial min-h-[44px] bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
                 <IconPhone size={14} /> Call
               </a>
             ) : (
               <Button variant="ghost" onClick={() => setEditingContact(true)}
-                className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
+                className="flex-1 lg:flex-initial min-h-[44px] bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
                 <IconPhone size={14} /> Call
               </Button>
             )}
             <Button variant="ghost" onClick={() => setEditingFollowUp(true)}
-              className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
+              className="flex-1 lg:flex-initial min-h-[44px] bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
               <IconCalendar size={14} /> Schedule
             </Button>
             <Button variant="ghost" onClick={() => { setShowContactForm(true); setNewContact({ ...newContact, type: 'note' }); }}
-              className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
+              className="flex-1 lg:flex-initial min-h-[44px] bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
               <IconFileText size={14} /> Note
             </Button>
           </div>

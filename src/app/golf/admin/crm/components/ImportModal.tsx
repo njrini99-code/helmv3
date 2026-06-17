@@ -4,8 +4,9 @@ import { useState, useId } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Division, ProgramType } from '../crm-config';
-import { IconX, IconCheck, IconWarning, IconUpload } from '@/components/icons';
+import { IconX, IconCheck, IconWarning, IconUpload, IconLayers } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
+import { DuplicateReview } from './DuplicateReview';
 
 interface ImportModalProps {
   onClose: () => void;
@@ -35,6 +36,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0, errors: 0 });
   const [errors, setErrors] = useState<string[]>([]);
   const [duplicateCount, setDuplicateCount] = useState(0);
+  const [showDuplicateReview, setShowDuplicateReview] = useState(false);
 
   const supabase = createClient();
 
@@ -328,20 +330,29 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 <p className="mt-1">Program values: Men&apos;s, Women&apos;s, Both</p>
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <Button variant="ghost"
-                  onClick={onClose}
-                  className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                  onClick={() => setShowDuplicateReview(true)}
+                  className="inline-flex items-center gap-1.5 bg-white border border-warm-200 text-warm-700 rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
-                  Cancel
+                  <IconLayers size={16} />
+                  Find duplicates
                 </Button>
-                <Button variant="primary"
-                  onClick={parseCSV}
-                  disabled={!csvText.trim()}
-                  className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
-                >
-                  Parse & Preview
-                </Button>
+                <div className="flex justify-end gap-3">
+                  <Button variant="ghost"
+                    onClick={onClose}
+                    className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
+                  >
+                    Cancel
+                  </Button>
+                  <Button variant="primary"
+                    onClick={parseCSV}
+                    disabled={!csvText.trim()}
+                    className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    Parse & Preview
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -503,6 +514,13 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
           )}
         </div>
       </div>
+
+      {showDuplicateReview && (
+        <DuplicateReview
+          onClose={() => setShowDuplicateReview(false)}
+          onMerged={onSuccess}
+        />
+      )}
     </div>
   );
 }

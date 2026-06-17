@@ -2,9 +2,10 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconPhone, IconUpload, IconUserPlus, IconFlame, IconZap } from '@/components/icons';
-import { STATUS_COLORS } from '../crm-config';
-import type { Coach, CoachStatus } from '../crm-config';
+import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconExternalLink, IconPhone, IconUpload, IconUserPlus, IconUser, IconUsers, IconUserX, IconCheck, IconFlame, IconZap, IconSchool, IconX } from '@/components/icons';
+import { STATUS_COLORS, CRM_ASSIGNEES } from '../crm-config';
+import type { Coach, CoachStatus, CrmAssignee } from '../crm-config';
+import { setCoachAssignee } from '@/app/golf/actions/crm-assignee';
 import type { CrmSegment } from '@/app/golf/admin/crm/types/foundations';
 import { EmailStatusBadge, type EmailStatusFields } from './EmailStatusBadge';
 import { SegmentBadge } from './segments/SegmentBadge';
@@ -13,6 +14,24 @@ import { SequenceEnrollmentBadge } from './badges/SequenceEnrollmentBadge';
 import type { CoachEngagement } from '../types/foundations';
 import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
 import { Button, IconButton } from '@/components/ui/button';
+
+// Row-density modes. Comfortable keeps the original generous vertical rhythm;
+// Compact tightens cell padding + line height so ~2x as many rows fit a
+// viewport. Purely presentational — does not change any data or behavior.
+type Density = 'comfortable' | 'compact';
+
+// Fixed per-density cell padding for the desktop <td>/<th> cells. Keeping these
+// as constants (not inline) lets the row + header + card share identical
+// spacing so columns line up exactly.
+const DENSITY_CELL_PADDING: Record<Density, string> = {
+  comfortable: 'px-4 py-3',
+  compact: 'px-4 py-1.5',
+};
+// Tighter padding for the narrow leading checkbox / star / action columns.
+const DENSITY_EDGE_PADDING: Record<Density, string> = {
+  comfortable: 'py-3',
+  compact: 'py-1.5',
+};
 
 // Short display labels for role_level values
 const ROLE_LABELS: Record<string, string> = {
@@ -30,27 +49,148 @@ const PROGRAM_LABELS: Record<string, string> = {
   both: 'M/W',
 };
 
-// Compact role + program + primary badges rendered under the coach name cell
-function CoachRoleBadges({ coach }: { coach: Coach }) {
+// Builds the single muted secondary line under the coach name: "School · Title".
+// Either part may be missing; we join only the present parts with a middot.
+function coachSecondaryLine(coach: Coach): string {
+  return [coach.school, coach.title].filter(Boolean).join(' · ');
+}
+
+// Compact contact header rendered at the top of a row's hover action menu.
+// Surfaces the email / phone / role / program that were moved out of the
+// over-stacked name cell, so the data is one tap away without crowding the row.
+function RowContactHeader({ coach }: { coach: Coach }) {
   const roleLabel = coach.role_level ? (ROLE_LABELS[coach.role_level] ?? coach.role_level) : null;
   const programLabel = PROGRAM_LABELS[coach.program] ?? null;
-  if (!roleLabel && !programLabel && !coach.is_primary_contact) return null;
+  const hasMeta = coach.email || coach.phone || roleLabel || programLabel;
+  if (!hasMeta) return null;
   return (
-    <div className="flex items-center flex-wrap gap-1 mt-0.5">
-      {roleLabel && (
-        <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">
-          {roleLabel}
-        </span>
+    <div className="px-3 pt-2 pb-2 mb-1 border-b border-warm-100/70">
+      <p className="text-sm font-semibold text-warm-900 truncate">{coach.name}</p>
+      {coach.email && (
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-warm-500 min-w-0" title={coach.email}>
+          <IconMail size={11} className="shrink-0 opacity-60" />
+          <span className="truncate">{coach.email}</span>
+        </p>
       )}
-      {programLabel && (
-        <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">
-          {programLabel}
-        </span>
+      {coach.phone && (
+        <p className="flex items-center gap-1 text-xs text-warm-500 min-w-0" title={coach.phone}>
+          <IconPhone size={11} className="shrink-0 opacity-60" />
+          <span className="truncate">{coach.phone}</span>
+        </p>
       )}
-      {coach.is_primary_contact && (
-        <span className="text-micro font-bold px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">
-          ★ Primary
+      {(roleLabel || programLabel) && (
+        <div className="mt-1 flex items-center flex-wrap gap-1">
+          {roleLabel && (
+            <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">
+              {roleLabel}
+            </span>
+          )}
+          {programLabel && (
+            <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">
+              {programLabel}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Per-label tint for the assignee chip. Each of the (currently three) work-
+// division labels gets a distinct soft pill so the book split reads at a glance.
+// Unknown labels fall through to a neutral warm tint. Purely presentational.
+const ASSIGNEE_TINT: Record<string, string> = {
+  Nick: 'bg-primary-50 text-primary-700 ring-1 ring-primary-200',
+  Ben: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+  Leah: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+};
+
+// Small tinted badge shown in the row / card when a coach has been assigned to
+// one of the work-division labels (Nick/Ben/Leah). Renders the label uppercased.
+function AssigneeChip({ assignee }: { assignee: string }) {
+  return (
+    <span
+      className={cn(
+        'shrink-0 inline-flex items-center gap-1 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+        ASSIGNEE_TINT[assignee] ?? 'bg-warm-100 text-warm-600 ring-1 ring-warm-200',
+      )}
+      title={`Assigned to ${assignee}`}
+    >
+      <IconUser size={9} className="opacity-70" aria-hidden="true" />
+      {assignee}
+    </span>
+  );
+}
+
+// Renders the "Assign ▾" submenu inside the row/card action menu: lists the
+// CRM_ASSIGNEES labels + "Unassign", calls setCoachAssignee, and reflects the
+// choice optimistically via onAssigneeChange (parent state) when provided. The
+// write is fire-and-forget through the server action (it revalidates the route).
+interface AssigneeSubmenuProps {
+  coach: Coach;
+  isOpen: boolean;
+  onToggle: () => void;
+  onCloseMenu: () => void;
+  onAssigneeChange?: (coachId: string, assignee: string | null) => void;
+  // Card variant flips the flyout to the left so it doesn't clip off-screen.
+  flyoutSide?: 'left' | 'right';
+}
+
+function AssigneeSubmenu({
+  coach,
+  isOpen,
+  onToggle,
+  onCloseMenu,
+  onAssigneeChange,
+  flyoutSide = 'left',
+}: AssigneeSubmenuProps) {
+  const apply = (assignee: CrmAssignee | null) => {
+    onAssigneeChange?.(coach.id, assignee);
+    void setCoachAssignee({ coach_id: coach.id, assignee });
+    onCloseMenu();
+  };
+  return (
+    <div className="relative">
+      <Button variant="ghost"
+        onClick={e => { e.stopPropagation(); onToggle(); }}
+        className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center justify-between"
+      >
+        <span className="flex items-center gap-2">
+          <IconUserPlus size={16} className="text-warm-400" /> Assign
         </span>
+        <IconChevronRight size={12} className="text-warm-400" />
+      </Button>
+      {isOpen && (
+        <div className={cn(
+          'absolute top-0 z-50 w-36 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl',
+          flyoutSide === 'left' ? 'left-full ml-1' : 'right-full mr-1',
+        )}>
+          {CRM_ASSIGNEES.map(label => (
+            <Button variant="ghost"
+              key={label}
+              onClick={() => apply(label)}
+              className={cn(
+                'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+                coach.assigned_to === label ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+              )}
+            >
+              <IconUser size={14} className={coach.assigned_to === label ? 'text-primary-500' : 'text-warm-400'} />
+              <span className="flex-1">{label}</span>
+              {coach.assigned_to === label && <IconCheck size={13} className="text-primary-600" />}
+            </Button>
+          ))}
+          <div className="my-1 h-px bg-warm-100" />
+          <Button variant="ghost"
+            onClick={() => apply(null)}
+            disabled={!coach.assigned_to}
+            className={cn(
+              'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+              coach.assigned_to ? 'text-warm-700 hover:bg-warm-50 active:bg-warm-100' : 'text-warm-300 cursor-default',
+            )}
+          >
+            <IconUserX size={14} className="text-warm-400" /> Unassign
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -72,6 +212,9 @@ interface CoachTableProps {
   onSelectionChange: (ids: Set<string>) => void;
   onStatusChange: (coachId: string, status: CoachStatus) => void;
   onPriorityChange?: (coachId: string, priority: number) => void;
+  // Optional: parent updates its own coach list when an assignee changes so the
+  // chip reflects instantly. When omitted, the table tracks the override locally.
+  onAssigneeChange?: (coachId: string, assignee: string | null) => void;
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
   onCoachClick: (coach: Coach) => void;
   onLogContact: (coach: Coach) => void;
@@ -89,6 +232,12 @@ interface CoachTableProps {
   // SavedSegmentsRail integration). Stream C owns this prop & rightmost
   // column; do NOT touch the left side of the table.
   coachSegments?: Record<string, CrmSegment[]>;
+  // "Open in Gmail" manual-send. When both are set (a template is armed) and a
+  // coach has an email, the row/card action menus surface a "Gmail" item that
+  // opens a pre-filled Gmail compose window for that coach. Optional so other
+  // callers compile unchanged.
+  onOpenInGmail?: (coach: Coach) => void;
+  manualTemplateArmed?: boolean;
 }
 
 const ALL_STATUSES: CoachStatus[] = [
@@ -126,20 +275,28 @@ interface CoachTableRowProps {
   isStatusOpen: boolean;
   isActionOpen: boolean;
   isPriorityOpen: boolean;
+  isAssigneeOpen: boolean;
   onClick: (coach: Coach) => void;
   onToggleSelect: (id: string) => void;
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
   onStatusChange: (coachId: string, status: CoachStatus) => void;
   onPriorityChange?: (coachId: string, priority: number) => void;
+  onAssigneeChange?: (coachId: string, assignee: string | null) => void;
   onLogContact: (coach: Coach) => void;
   onOpenStatus: (id: string | null) => void;
   onOpenAction: (id: string | null) => void;
   onOpenPriority: (id: string | null) => void;
+  onOpenAssignee: (id: string | null) => void;
   statusConfig: StatusConfig;
   priorityConfig: PriorityConfig;
   engagement?: CoachEngagement;
   enrollment?: CoachEnrollmentSummary | null;
   segments?: CrmSegment[];
+  density: Density;
+  // "Open in Gmail" — only rendered when a template is armed AND the coach has
+  // an email (the parent CoachTable gates on both before passing the handler).
+  onOpenInGmail?: (coach: Coach) => void;
+  manualTemplateArmed?: boolean;
 }
 
 const CoachTableRow = React.memo(
@@ -150,24 +307,33 @@ const CoachTableRow = React.memo(
     isStatusOpen,
     isActionOpen,
     isPriorityOpen,
+    isAssigneeOpen,
     onClick,
     onToggleSelect,
     onToggleStar,
     onStatusChange,
     onPriorityChange,
+    onAssigneeChange,
     onLogContact,
     onOpenStatus,
     onOpenAction,
     onOpenPriority,
+    onOpenAssignee,
     statusConfig,
     priorityConfig,
     engagement,
     enrollment,
     segments,
+    density,
+    onOpenInGmail,
+    manualTemplateArmed,
   }: CoachTableRowProps) {
     const handleRowClick = () => onClick(coach);
     const handleCheckbox = () => onToggleSelect(coach.id);
     const handleStar = () => onToggleStar(coach.id, coach.is_starred);
+    const cellPad = DENSITY_CELL_PADDING[density];
+    const edgePad = DENSITY_EDGE_PADDING[density];
+    const secondary = coachSecondaryLine(coach);
 
     return (
       <tr
@@ -179,8 +345,8 @@ const CoachTableRow = React.memo(
         )}
         onClick={handleRowClick}
       >
-        {/* Checkbox */}
-        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+        {/* Checkbox — always shown */}
+        <td className={cn('px-4', edgePad)} onClick={e => e.stopPropagation()}>
           <input
             type="checkbox"
             checked={isSelected}
@@ -189,8 +355,8 @@ const CoachTableRow = React.memo(
           />
         </td>
 
-        {/* Star */}
-        <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
+        {/* Star — always shown */}
+        <td className={cn('px-2', edgePad)} onClick={e => e.stopPropagation()}>
           <IconButton variant="default" aria-label="Favorite"
             onClick={handleStar}
             className={cn('transition-all duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}
@@ -199,58 +365,38 @@ const CoachTableRow = React.memo(
           </IconButton>
         </td>
 
-        {/* Coach name + title + role/program badges + contact (email / phone) */}
-        <td className="px-4 py-3">
-          <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
-          {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
-          <CoachRoleBadges coach={coach} />
-          {coach.email && (
-            <a href={`mailto:${coach.email}`} onClick={e => e.stopPropagation()} title={coach.email}
-              className="mt-0.5 flex items-center gap-1 text-xs text-warm-500 hover:text-primary-600 transition-colors max-w-[240px]">
-              <IconMail size={11} className="shrink-0 opacity-60" />
-              <span className="truncate">{coach.email}</span>
-            </a>
-          )}
-          {coach.phone && (
-            <a href={`tel:${coach.phone}`} onClick={e => e.stopPropagation()} title={coach.phone}
-              className="flex items-center gap-1 text-xs text-warm-500 hover:text-primary-600 transition-colors">
-              <IconPhone size={11} className="shrink-0 opacity-60" />
-              <span className="truncate">{coach.phone}</span>
-            </a>
-          )}
+        {/* Coach name + ONE muted secondary line (school · title) + a small
+            division chip. The over-stacked email/phone/role/program have moved
+            into the row's hover action menu (and remain in the detail panel) so
+            rows stay one clean line per field. Always shown. */}
+        <td className={cellPad}>
+          <div className="flex items-center gap-2 min-w-0">
+            <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
+            <span className={cn(
+              'shrink-0 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+              coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700',
+            )}>
+              {coach.division}
+            </span>
+            {coach.is_primary_contact && (
+              <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">★</span>
+            )}
+            {coach.assigned_to && <AssigneeChip assignee={coach.assigned_to} />}
+          </div>
+          {secondary && <p className="text-label text-warm-400 truncate">{secondary}</p>}
         </td>
 
-        {/* School */}
-        <td className="px-4 py-3">
-          <p className="text-sm text-warm-800 truncate">{coach.school}</p>
-        </td>
-
-        {/* Division */}
-        <td className="px-4 py-3">
-          <span className={cn(
-            'text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-            coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700',
-          )}>
-            {coach.division}
-          </span>
-        </td>
-
-        {/* Conference — hidden below xl */}
-        <td className="hidden xl:table-cell px-4 py-3">
-          <p className="text-xs text-warm-500 truncate">{coach.conference}</p>
-        </td>
-
-        {/* Engagement (Hot / Warm / Cold) — leftmost data column, before Status.
+        {/* Engagement (Hot / Warm / Cold) — visible at lg+.
             Stream B owns this column; do not move it without coordinating. */}
-        <td className="px-4 py-3">
+        <td className={cn('hidden lg:table-cell', cellPad)}>
           <div className="flex flex-col items-start gap-1">
             <EngagementBadge coachId={coach.id} engagement={engagement} size="sm" />
             <SequenceEnrollmentBadge summary={enrollment} />
           </div>
         </td>
 
-        {/* Status dropdown */}
-        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+        {/* Status dropdown — always shown */}
+        <td className={cellPad} onClick={e => e.stopPropagation()}>
           <div className="relative">
             <Button variant="ghost"
               onClick={e => { e.stopPropagation(); onOpenStatus(isStatusOpen ? null : coach.id); }}
@@ -285,8 +431,8 @@ const CoachTableRow = React.memo(
           </div>
         </td>
 
-        {/* Email status — hidden below md */}
-        <td className="hidden md:table-cell px-4 py-3">
+        {/* Email status — visible at xl+ */}
+        <td className={cn('hidden xl:table-cell', cellPad)}>
           <EmailStatusBadge
             email_status={(coach as CoachRow).email_status}
             last_email_event_type={(coach as CoachRow).last_email_event_type}
@@ -295,8 +441,8 @@ const CoachTableRow = React.memo(
           />
         </td>
 
-        {/* Priority — hidden below lg */}
-        <td className="hidden lg:table-cell px-4 py-3">
+        {/* Priority — visible at xl+ */}
+        <td className={cn('hidden xl:table-cell', cellPad)}>
           {coach.priority > 0 ? (
             <span className={cn('inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
               <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-500')} />
@@ -308,8 +454,13 @@ const CoachTableRow = React.memo(
           )}
         </td>
 
-        {/* Last Contact — hidden below lg */}
-        <td className="hidden lg:table-cell px-4 py-3">
+        {/* Conference — visible at xl+ */}
+        <td className={cn('hidden xl:table-cell', cellPad)}>
+          <p className="text-xs text-warm-500 truncate">{coach.conference}</p>
+        </td>
+
+        {/* Last Contact — visible at lg+; right-aligned recency with tabular-nums */}
+        <td className={cn('hidden lg:table-cell text-right', cellPad)}>
           <span className={cn(
             'text-xs tabular-nums',
             !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500',
@@ -318,9 +469,9 @@ const CoachTableRow = React.memo(
           </span>
         </td>
 
-        {/* Segments — rightmost data column. Stream C owns this. Renders one
+        {/* Segments — visible at xl+. Stream C owns this. Renders one
             mini chip per saved-segment this coach belongs to. */}
-        <td className="hidden xl:table-cell px-4 py-3">
+        <td className={cn('hidden xl:table-cell', cellPad)}>
           {segments && segments.length > 0 ? (
             <div className="flex flex-wrap gap-1 max-w-[180px]">
               {segments.slice(0, 3).map((seg) => (
@@ -335,8 +486,8 @@ const CoachTableRow = React.memo(
           )}
         </td>
 
-        {/* Three-dot action menu */}
-        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+        {/* Three-dot action menu — always shown */}
+        <td className={cn('px-4', edgePad)} onClick={e => e.stopPropagation()}>
           <div className="relative">
             <IconButton variant="default" aria-label="More options"
               onClick={e => { e.stopPropagation(); onOpenAction(isActionOpen ? null : coach.id); }}
@@ -349,7 +500,11 @@ const CoachTableRow = React.memo(
             </IconButton>
             {isActionOpen && (
               // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents row click from closing action menu
-              <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+                {/* Contact detail header — the email / phone / role / program that
+                    used to over-stack the name cell now live here (still in the
+                    detail panel too). */}
+                <RowContactHeader coach={coach} />
                 <Button variant="ghost"
                   onClick={() => { onLogContact(coach); onOpenAction(null); }}
                   className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2"
@@ -363,6 +518,23 @@ const CoachTableRow = React.memo(
                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                   >
                     <IconMail size={16} className="text-warm-400" /> Send Email
+                  </a>
+                )}
+                {manualTemplateArmed && onOpenInGmail && coach.email && (
+                  <Button variant="ghost"
+                    onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
+                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                  >
+                    <IconExternalLink size={16} className="text-primary-500" /> Open in Gmail
+                  </Button>
+                )}
+                {coach.phone && (
+                  <a
+                    href={`tel:${coach.phone}`}
+                    onClick={() => onOpenAction(null)}
+                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                  >
+                    <IconPhone size={16} className="text-warm-400" /> Call
                   </a>
                 )}
                 <Button variant="ghost"
@@ -421,6 +593,16 @@ const CoachTableRow = React.memo(
                     </div>
                   )}
                 </div>
+
+                {/* Assign submenu — work-division labels (Nick/Ben/Leah) */}
+                <AssigneeSubmenu
+                  coach={coach}
+                  isOpen={isAssigneeOpen}
+                  onToggle={() => onOpenAssignee(isAssigneeOpen ? null : coach.id)}
+                  onCloseMenu={() => { onOpenAction(null); onOpenAssignee(null); }}
+                  onAssigneeChange={onAssigneeChange}
+                  flyoutSide="left"
+                />
               </div>
             )}
           </div>
@@ -440,19 +622,25 @@ const CoachTableRow = React.memo(
       prev.isStatusOpen === next.isStatusOpen &&
       prev.isActionOpen === next.isActionOpen &&
       prev.isPriorityOpen === next.isPriorityOpen &&
+      prev.isAssigneeOpen === next.isAssigneeOpen &&
       prev.statusConfig === next.statusConfig &&
       prev.priorityConfig === next.priorityConfig &&
       prev.engagement === next.engagement &&
       prev.segments === next.segments &&
+      prev.density === next.density &&
+      prev.manualTemplateArmed === next.manualTemplateArmed &&
+      prev.onOpenInGmail === next.onOpenInGmail &&
       prev.onClick === next.onClick &&
       prev.onToggleSelect === next.onToggleSelect &&
       prev.onToggleStar === next.onToggleStar &&
       prev.onStatusChange === next.onStatusChange &&
       prev.onPriorityChange === next.onPriorityChange &&
+      prev.onAssigneeChange === next.onAssigneeChange &&
       prev.onLogContact === next.onLogContact &&
       prev.onOpenStatus === next.onOpenStatus &&
       prev.onOpenAction === next.onOpenAction &&
-      prev.onOpenPriority === next.onOpenPriority
+      prev.onOpenPriority === next.onOpenPriority &&
+      prev.onOpenAssignee === next.onOpenAssignee
     );
   },
 );
@@ -475,20 +663,25 @@ const CoachTableCard = React.memo(
     isStatusOpen,
     isActionOpen,
     isPriorityOpen,
+    isAssigneeOpen,
     onClick,
     onToggleSelect,
     onToggleStar,
     onStatusChange,
     onPriorityChange,
+    onAssigneeChange,
     onLogContact,
     onOpenStatus,
     onOpenAction,
     onOpenPriority,
+    onOpenAssignee,
     statusConfig,
     priorityConfig,
     engagement,
     enrollment,
     segments,
+    onOpenInGmail,
+    manualTemplateArmed,
   }: CoachTableRowProps) {
     const handleCardClick = () => onClick(coach);
     const handleCheckbox = () => onToggleSelect(coach.id);
@@ -518,23 +711,23 @@ const CoachTableCard = React.memo(
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
-            {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
-            <CoachRoleBadges coach={coach} />
-            <p className="text-sm text-warm-800 truncate mt-0.5">{coach.school}</p>
-            {coach.email && (
-              <a href={`mailto:${coach.email}`} onClick={e => e.stopPropagation()} title={coach.email}
-                className="mt-1 flex items-center gap-1 text-xs text-warm-500 hover:text-primary-600 transition-colors">
-                <IconMail size={11} className="shrink-0 opacity-60" />
-                <span className="truncate">{coach.email}</span>
-              </a>
-            )}
-            {coach.phone && (
-              <a href={`tel:${coach.phone}`} onClick={e => e.stopPropagation()} title={coach.phone}
-                className="flex items-center gap-1 text-xs text-warm-500 hover:text-primary-600 transition-colors">
-                <IconPhone size={11} className="shrink-0 opacity-60" />
-                <span className="truncate">{coach.phone}</span>
-              </a>
+            {/* Name + division chip (+ primary marker). The over-stacked
+                email/phone/role moved into this card's action menu + detail panel. */}
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
+              <span className={cn(
+                'shrink-0 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+                coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700',
+              )}>
+                {coach.division}
+              </span>
+              {coach.is_primary_contact && (
+                <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-primary-50 text-primary-700 border border-primary-200/60">★</span>
+              )}
+              {coach.assigned_to && <AssigneeChip assignee={coach.assigned_to} />}
+            </div>
+            {coachSecondaryLine(coach) && (
+              <p className="text-label text-warm-400 truncate">{coachSecondaryLine(coach)}</p>
             )}
           </div>
 
@@ -558,7 +751,9 @@ const CoachTableCard = React.memo(
               </IconButton>
               {isActionOpen && (
                 // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click from closing action menu
-                <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+                <div className="absolute right-0 top-full mt-1 z-50 w-56 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+                  {/* Contact detail header — email / phone / role / program. */}
+                  <RowContactHeader coach={coach} />
                   <Button variant="ghost"
                     onClick={() => { onLogContact(coach); onOpenAction(null); }}
                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2"
@@ -572,6 +767,23 @@ const CoachTableCard = React.memo(
                       className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                     >
                       <IconMail size={16} className="text-warm-400" /> Send Email
+                    </a>
+                  )}
+                  {manualTemplateArmed && onOpenInGmail && coach.email && (
+                    <Button variant="ghost"
+                      onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
+                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                    >
+                      <IconExternalLink size={16} className="text-primary-500" /> Open in Gmail
+                    </Button>
+                  )}
+                  {coach.phone && (
+                    <a
+                      href={`tel:${coach.phone}`}
+                      onClick={() => onOpenAction(null)}
+                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                    >
+                      <IconPhone size={16} className="text-warm-400" /> Call
                     </a>
                   )}
                   <Button variant="ghost"
@@ -630,34 +842,31 @@ const CoachTableCard = React.memo(
                       </div>
                     )}
                   </div>
+
+                  {/* Assign submenu — work-division labels (Nick/Ben/Leah) */}
+                  <AssigneeSubmenu
+                    coach={coach}
+                    isOpen={isAssigneeOpen}
+                    onToggle={() => onOpenAssignee(isAssigneeOpen ? null : coach.id)}
+                    onCloseMenu={() => { onOpenAction(null); onOpenAssignee(null); }}
+                    onAssigneeChange={onAssigneeChange}
+                    flyoutSide="right"
+                  />
                 </div>
               )}
             </div>
+
+            {/* Chevron — affordance that tapping the card opens the detail panel */}
+            <IconChevronRight size={16} className="text-warm-300 shrink-0" aria-hidden="true" />
           </div>
         </div>
 
-        {/* Meta chips: division + conference + engagement + status dropdown + email + priority */}
+        {/* Meta row: interactive status chip + the primary engagement signal,
+            then the outreach-queue / email-status / priority badges. Wraps
+            gracefully on narrow phones; conference + contact details live in the
+            action menu / detail panel to keep the card uncluttered. */}
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents card click while interacting with meta chips/dropdowns */}
         <div className="mt-3 flex flex-wrap items-center gap-2 pl-7" onClick={e => e.stopPropagation()}>
-          {/* Division */}
-          <span className={cn(
-            'text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-            coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700',
-          )}>
-            {coach.division}
-          </span>
-
-          {/* Conference */}
-          {coach.conference && (
-            <span className="text-xs text-warm-500 truncate max-w-[140px]">{coach.conference}</span>
-          )}
-
-          {/* Engagement */}
-          <EngagementBadge coachId={coach.id} engagement={engagement} size="sm" />
-
-          {/* Outreach-queue status */}
-          <SequenceEnrollmentBadge summary={enrollment} />
-
           {/* Status dropdown */}
           <div className="relative">
             <Button variant="ghost"
@@ -691,6 +900,12 @@ const CoachTableCard = React.memo(
               </div>
             )}
           </div>
+
+          {/* The ONE primary signal on the card */}
+          <EngagementBadge coachId={coach.id} engagement={engagement} size="sm" />
+
+          {/* Outreach-queue status */}
+          <SequenceEnrollmentBadge summary={enrollment} />
 
           {/* Email status */}
           <EmailStatusBadge
@@ -741,19 +956,24 @@ const CoachTableCard = React.memo(
       prev.isStatusOpen === next.isStatusOpen &&
       prev.isActionOpen === next.isActionOpen &&
       prev.isPriorityOpen === next.isPriorityOpen &&
+      prev.isAssigneeOpen === next.isAssigneeOpen &&
       prev.statusConfig === next.statusConfig &&
       prev.priorityConfig === next.priorityConfig &&
       prev.engagement === next.engagement &&
       prev.segments === next.segments &&
+      prev.manualTemplateArmed === next.manualTemplateArmed &&
+      prev.onOpenInGmail === next.onOpenInGmail &&
       prev.onClick === next.onClick &&
       prev.onToggleSelect === next.onToggleSelect &&
       prev.onToggleStar === next.onToggleStar &&
       prev.onStatusChange === next.onStatusChange &&
       prev.onPriorityChange === next.onPriorityChange &&
+      prev.onAssigneeChange === next.onAssigneeChange &&
       prev.onLogContact === next.onLogContact &&
       prev.onOpenStatus === next.onOpenStatus &&
       prev.onOpenAction === next.onOpenAction &&
-      prev.onOpenPriority === next.onOpenPriority
+      prev.onOpenPriority === next.onOpenPriority &&
+      prev.onOpenAssignee === next.onOpenAssignee
     );
   },
 );
@@ -1016,6 +1236,7 @@ export function CoachTable({
   onSelectionChange,
   onStatusChange,
   onPriorityChange,
+  onAssigneeChange,
   onToggleStar,
   onCoachClick,
   onLogContact,
@@ -1026,15 +1247,25 @@ export function CoachTable({
   coachEngagement,
   coachEnrollments,
   coachSegments,
+  onOpenInGmail,
+  manualTemplateArmed,
 }: CoachTableProps) {
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   const [openPrioritySubmenu, setOpenPrioritySubmenu] = useState<string | null>(null);
+  const [openAssigneeSubmenu, setOpenAssigneeSubmenu] = useState<string | null>(null);
+  // Local optimistic assignee overrides — only used when the parent does NOT
+  // pass onAssigneeChange (i.e. it isn't managing the chip itself). Keyed by
+  // coach.id; the value (label or null) wins over coach.assigned_to for display.
+  const [assigneeOverrides, setAssigneeOverrides] = useState<Record<string, string | null>>({});
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [groupBySchool, setGroupBySchool] = useState(false);
+  // Row density: Comfortable (default) vs Compact (~2x rows per screen). Local
+  // presentational state only — does not alter data, selection, or callbacks.
+  const [density, setDensity] = useState<Density>('comfortable');
   // focusedIndex is only set by keyboard nav (j/k) — NOT on mouse hover.
   // Hover state is now pure CSS (`hover:bg-white/60` on the row) which
   // avoids re-rendering the table on every mouse traversal.
@@ -1045,7 +1276,7 @@ export function CoachTable({
   // Close dropdowns on outside click
   useEffect(() => {
     if (!openStatusDropdown && !openActionMenu) return;
-    const handler = () => { setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); };
+    const handler = () => { setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); setOpenAssigneeSubmenu(null); };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, [openStatusDropdown, openActionMenu]);
@@ -1097,11 +1328,38 @@ export function CoachTable({
     if (id !== null) {
       setOpenStatusDropdown(null);
       setOpenPrioritySubmenu(null);
+      setOpenAssigneeSubmenu(null);
     }
   }, []);
   const handleOpenPriority = useCallback((id: string | null) => {
     setOpenPrioritySubmenu(id);
+    if (id !== null) setOpenAssigneeSubmenu(null);
   }, []);
+  const handleOpenAssignee = useCallback((id: string | null) => {
+    setOpenAssigneeSubmenu(id);
+    if (id !== null) setOpenPrioritySubmenu(null);
+  }, []);
+
+  // Optimistic assignee update. If the parent owns the data it gets the call and
+  // updates its own list; otherwise we record a local override so the chip
+  // reflects the change immediately. The server write happens in AssigneeSubmenu.
+  const handleAssigneeChange = useCallback((coachId: string, assignee: string | null) => {
+    if (onAssigneeChange) {
+      onAssigneeChange(coachId, assignee);
+    } else {
+      setAssigneeOverrides(prev => ({ ...prev, [coachId]: assignee }));
+    }
+  }, [onAssigneeChange]);
+
+  // Apply any local override on top of the incoming coach so the row/card and
+  // its action menu render the optimistic assignee. No-op when the parent owns
+  // the data (no overrides are ever written in that path).
+  const coachWithAssignee = useCallback((coach: Coach): Coach => {
+    if (!(coach.id in assigneeOverrides)) return coach;
+    const override = assigneeOverrides[coach.id] ?? null;
+    if (override === coach.assigned_to) return coach;
+    return { ...coach, assigned_to: override };
+  }, [assigneeOverrides]);
 
   // Keyboard nav
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -1123,7 +1381,7 @@ export function CoachTable({
       case 'x':
         if (focusedIndex !== null && paginatedCoaches[focusedIndex]) { e.preventDefault(); toggleSelection(paginatedCoaches[focusedIndex].id); }
         break;
-      case 'Escape': setFocusedIndex(null); setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); break;
+      case 'Escape': setFocusedIndex(null); setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); setOpenAssigneeSubmenu(null); break;
     }
   }, [paginatedCoaches, focusedIndex, onToggleStar, onCoachClick, toggleSelection]);
 
@@ -1192,7 +1450,7 @@ export function CoachTable({
     return (
       <div className="py-16 text-center">
         <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
-          <IconMessageSquare size={24} className="text-warm-300" />
+          <IconUsers size={24} className="text-warm-300" />
         </div>
         <h3 className="text-base font-semibold text-warm-700 mb-1">No coaches found</h3>
         <p className="text-sm text-warm-500 max-w-xs mx-auto mb-6">Try adjusting your filters or import some coaches to get started.</p>
@@ -1228,7 +1486,7 @@ export function CoachTable({
             onClick={() => setGroupBySchool(false)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-primary-50 border-primary-200 text-primary-700 hover:bg-primary-100 transition-colors"
           >
-            ✕ Exit School View
+            <IconX size={13} aria-hidden="true" /> Exit School View
           </Button>
         </div>
         <SchoolGroupView
@@ -1244,13 +1502,37 @@ export function CoachTable({
 
   return (
     <div className="overflow-x-auto">
-      {/* Group-by-school toggle — sits above the select-all banner */}
-      <div className="flex justify-end px-4 pt-3 pb-1">
+      {/* Toolbar — density toggle + group-by-school, above the select-all banner */}
+      <div className="flex items-center justify-end gap-2 px-4 pt-3 pb-1">
+        {/* Density toggle (Comfortable / Compact) — desktop table only; the
+            mobile card layout is fixed. */}
+        <div className="hidden md:inline-flex items-center rounded-full border border-warm-200/60 bg-white/60 p-0.5" role="group" aria-label="Row density">
+          <Button variant="ghost" type="button"
+            onClick={() => setDensity('comfortable')}
+            aria-pressed={density === 'comfortable'}
+            className={cn(
+              'px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
+              density === 'comfortable' ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200' : 'text-warm-500 hover:text-warm-700',
+            )}
+          >
+            Comfortable
+          </Button>
+          <Button variant="ghost" type="button"
+            onClick={() => setDensity('compact')}
+            aria-pressed={density === 'compact'}
+            className={cn(
+              'px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
+              density === 'compact' ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200' : 'text-warm-500 hover:text-warm-700',
+            )}
+          >
+            Compact
+          </Button>
+        </div>
         <Button variant="ghost" type="button"
           onClick={() => setGroupBySchool(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
         >
-          🏫 Group by School
+          <IconSchool size={13} aria-hidden="true" /> Group by School
         </Button>
       </div>
 
@@ -1276,89 +1558,111 @@ export function CoachTable({
         </div>
       )}
 
-      {/* Desktop table — hidden on <md, horizontally scrollable from md up */}
-      <table className="hidden md:table w-full table-fixed min-w-[600px]">
+      {/* Desktop table — hidden on <md. Tiered columns keep it within the
+          viewport (no horizontal scroll at 1440px): table-fixed + w-full means
+          columns compress + truncate rather than overflowing. Heavy columns are
+          gated to lg/xl so the laptop view stays uncramped. */}
+      <table className="hidden md:table w-full table-fixed">
         <thead>
           <tr className="border-b border-warm-100 bg-warm-50/50">
-            <th className="w-10 px-4 py-3">
+            {/* Checkbox — always */}
+            <th className={cn('w-10 px-4', DENSITY_EDGE_PADDING[density])}>
               <input type="checkbox" checked={paginatedCoaches.length > 0 && paginatedCoaches.every(c => selectedIds.has(c.id))} onChange={toggleAll}
                 className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer" />
             </th>
-            <th className="w-10 px-2 py-3" />
-            <TH field="name" label="Coach" onSort={handleSort}><SortArrow field="name" /></TH>
-            <TH field="school" label="School" onSort={handleSort}><SortArrow field="school" /></TH>
-            <TH field="division" label="Div" onSort={handleSort} className="w-16"><SortArrow field="division" /></TH>
-            <TH field="conference" label="Conference" onSort={handleSort} className="hidden xl:table-cell"><SortArrow field="conference" /></TH>
-            {/* Engagement column header — leftmost of the new data columns,
-                aligned with the badge cell rendered inside CoachTableRow. */}
-            <th className="text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wide w-24">Engagement</th>
-            <TH field="status" label="Status" onSort={handleSort}><SortArrow field="status" /></TH>
-            <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wide w-24">Email</th>
-            <TH field="priority" label="Priority" onSort={handleSort} className="hidden lg:table-cell w-20"><SortArrow field="priority" /></TH>
-            <TH field="last_contacted_at" label="Last Contact" onSort={handleSort} className="hidden lg:table-cell"><SortArrow field="last_contacted_at" /></TH>
-            {/* Segments column header — Stream C owns. Hidden below xl. */}
-            <th className="hidden xl:table-cell text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wide w-[180px]">Segments</th>
-            <th className="w-12 px-4 py-3" />
+            {/* Star — always */}
+            <th className={cn('w-10 px-2', DENSITY_EDGE_PADDING[density])} />
+            {/* Coach (name + school·title + division chip) — always */}
+            <TH field="name" label="Coach" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]}><SortArrow field="name" /></TH>
+            {/* Engagement — lg+ */}
+            <th className={cn('hidden lg:table-cell text-left text-xs font-medium text-warm-500 uppercase tracking-wide w-24', DENSITY_CELL_PADDING[density])}>Engagement</th>
+            {/* Status — always */}
+            <TH field="status" label="Status" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]}><SortArrow field="status" /></TH>
+            {/* Email — xl+ */}
+            <th className={cn('hidden xl:table-cell text-left text-xs font-medium text-warm-500 uppercase tracking-wide w-24', DENSITY_CELL_PADDING[density])}>Email</th>
+            {/* Priority — xl+ */}
+            <TH field="priority" label="Priority" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden xl:table-cell w-20"><SortArrow field="priority" /></TH>
+            {/* Conference — xl+ */}
+            <TH field="conference" label="Conference" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden xl:table-cell"><SortArrow field="conference" /></TH>
+            {/* Last Contact — lg+, right-aligned numeric */}
+            <TH field="last_contacted_at" label="Last Contact" onSort={handleSort} padding={DENSITY_CELL_PADDING[density]} className="hidden lg:table-cell !text-right"><SortArrow field="last_contacted_at" /></TH>
+            {/* Segments — xl+. Stream C owns. */}
+            <th className={cn('hidden xl:table-cell text-left text-xs font-medium text-warm-500 uppercase tracking-wide w-[180px]', DENSITY_CELL_PADDING[density])}>Segments</th>
+            {/* Actions — always */}
+            <th className={cn('w-12 px-4', DENSITY_EDGE_PADDING[density])} />
           </tr>
         </thead>
         <tbody>
           {paginatedCoaches.map((coach, index) => (
             <CoachTableRow
               key={coach.id}
-              coach={coach}
+              coach={coachWithAssignee(coach)}
               isSelected={selectedIds.has(coach.id)}
               isFocused={focusedIndex === index}
               isStatusOpen={openStatusDropdown === coach.id}
               isActionOpen={openActionMenu === coach.id}
               isPriorityOpen={openPrioritySubmenu === coach.id}
+              isAssigneeOpen={openAssigneeSubmenu === coach.id}
               onClick={onCoachClick}
               onToggleSelect={toggleSelection}
               onToggleStar={onToggleStar}
               onStatusChange={onStatusChange}
               onPriorityChange={onPriorityChange}
+              onAssigneeChange={handleAssigneeChange}
               onLogContact={onLogContact}
               onOpenStatus={handleOpenStatus}
               onOpenAction={handleOpenAction}
               onOpenPriority={handleOpenPriority}
+              onOpenAssignee={handleOpenAssignee}
               statusConfig={statusConfig}
               priorityConfig={priorityConfig}
               engagement={coachEngagement?.[coach.id]}
               enrollment={coachEnrollments?.[coach.id]}
               segments={coachSegments?.[coach.id]}
+              density={density}
+              onOpenInGmail={onOpenInGmail}
+              manualTemplateArmed={manualTemplateArmed}
             />
           ))}
         </tbody>
       </table>
 
-      {/* Mobile card list — shown only on <md. One card per coach carrying the
-          SAME columns / values / actions as a desktop row (nothing dropped):
-          selection checkbox, star toggle, name + title, school, division,
-          conference, engagement, status dropdown, email status, priority,
-          last contact, segments, and the three-dot action menu. */}
+      {/* Mobile card list — shown only on <md. One card per coach: name +
+          division chip, the muted school·title line, an interactive status chip,
+          the primary engagement signal, and a chevron affordance. Selection
+          checkbox, star toggle, and the full action menu (which surfaces
+          email / phone / role / priority + last-contact + segments) are all
+          preserved — tapping the card opens the detail panel. */}
       <div className="md:hidden divide-y divide-warm-50">
         {paginatedCoaches.map((coach, index) => (
           <CoachTableCard
             key={coach.id}
-            coach={coach}
+            coach={coachWithAssignee(coach)}
             isSelected={selectedIds.has(coach.id)}
             isFocused={focusedIndex === index}
             isStatusOpen={openStatusDropdown === coach.id}
             isActionOpen={openActionMenu === coach.id}
             isPriorityOpen={openPrioritySubmenu === coach.id}
+            isAssigneeOpen={openAssigneeSubmenu === coach.id}
             onClick={onCoachClick}
             onToggleSelect={toggleSelection}
             onToggleStar={onToggleStar}
             onStatusChange={onStatusChange}
             onPriorityChange={onPriorityChange}
+            onAssigneeChange={handleAssigneeChange}
             onLogContact={onLogContact}
             onOpenStatus={handleOpenStatus}
             onOpenAction={handleOpenAction}
             onOpenPriority={handleOpenPriority}
+            onOpenAssignee={handleOpenAssignee}
             statusConfig={statusConfig}
             priorityConfig={priorityConfig}
             engagement={coachEngagement?.[coach.id]}
             enrollment={coachEnrollments?.[coach.id]}
             segments={coachSegments?.[coach.id]}
+            density={density}
+            onOpenInGmail={onOpenInGmail}
+            manualTemplateArmed={manualTemplateArmed}
           />
         ))}
       </div>
@@ -1398,12 +1702,12 @@ export function CoachTable({
 // ============================================================================
 // HELPER COMPONENTS
 // ============================================================================
-function TH({ field, label, onSort, children, className }: {
-  field: SortField; label: string; onSort: (f: SortField) => void; children: React.ReactNode; className?: string;
+function TH({ field, label, onSort, children, className, padding = 'px-4 py-3' }: {
+  field: SortField; label: string; onSort: (f: SortField) => void; children: React.ReactNode; className?: string; padding?: string;
 }) {
   return (
     <th
-      className={cn('text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700 transition-colors', className)}
+      className={cn('text-left text-xs font-medium text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700 transition-colors', padding, className)}
       onClick={() => onSort(field)}
     >
       {label}{children}
