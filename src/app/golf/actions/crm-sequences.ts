@@ -20,6 +20,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 
 // ============================================================================
 // Types — exported for consumers (UI components, cron route)
@@ -591,4 +592,250 @@ export async function stopEnrollment(
 
   revalidatePath(CRM_SEQUENCES_REVALIDATE_PATH);
   return data as CrmSequenceEnrollment;
+}
+
+// ============================================================================
+// PERFORMANCE — reply-focused drip metrics
+// ============================================================================
+//
+// Reply rate is the north-star. We deliberately do NOT surface open or click
+// rate: on .edu domains those are dominated by security-gateway link/pixel
+// pre-fetching (bots), so an "open" is noise, not intent. We report DELIVERED,
+// BOUNCED, and REPLIED only.
+//
+// Attribution (matches the live cold-sender contract):
+//   crm_contact_log.notes looks like  Sequence "<name>" step <N> (...)
+//   so the sequence is matched by  notes ILIKE %<sequence name>%  and the step
+//   number is parsed from the notes via /step\s+(\d+)/i. (crm_contact_log has
+//   no metadata column — attribution can only go through notes + the FK joins.)
+//
+//   delivered / bounced come from email_events joined on contact_log_id; we
+//   count DISTINCT contact_log_ids per outcome so a message that emits several
+//   delivery webhooks is still one delivered send. replied = a crm_replies row
+//   whose contact_log_id points at the step's send (the precise signal), with
+//   a fallback to coach_id when a reply lacks a resolved contact_log_id.
+//
+export interface SequencePerformanceStep {
+  step_order: number;
+  sent: number;
+  delivered: number;
+  bounced: number;
+  replied: number;
+  /** replied / delivered, as a 0–100 percentage. 0 when delivered = 0. */
+  reply_rate: number;
+}
+
+export interface SequencePerformance {
+  steps: SequencePerformanceStep[];
+  totals: {
+    sent: number;
+    delivered: number;
+    bounced: number;
+    replied: number;
+    reply_rate: number;
+  };
+}
+
+// PostgREST `.in(...)` gets unwieldy past a few hundred ids (URL length); chunk
+// the id lists conservatively so delivery/reply lookups stay within limits.
+const PERF_IN_CHUNK = 300;
+
+function parseStepOrder(notes: string | null): number | null {
+  if (!notes) return null;
+  const match = /step\s+(\d+)/i.exec(notes);
+  const digits = match?.[1];
+  if (!digits) return null;
+  const n = Number.parseInt(digits, 10);
+  return Number.isNaN(n) ? null : n;
+}
+
+function replyRate(replied: number, delivered: number): number {
+  if (delivered <= 0) return 0;
+  return Math.round((replied / delivered) * 1000) / 10; // one decimal place
+}
+
+export async function getSequencePerformance(
+  sequence_id: string,
+): Promise<SequencePerformance> {
+  const { supabase } = await getAuthedClient();
+  const client = supabase as AnySupabase;
+
+  // 1) Sequence name (for notes matching) + its declared steps (so a step with
+  //    zero sends still renders an honest "No sends yet" row).
+  const { data: seq, error: seqErr } = await client
+    .from('crm_sequences')
+    .select('name')
+    .eq('id', sequence_id)
+    .single();
+  if (seqErr) {
+    throw new Error(`Failed to load sequence: ${seqErr.message}`);
+  }
+  const sequenceName: string = (seq as { name: string }).name;
+
+  const { data: stepRows, error: stepErr } = await client
+    .from('crm_sequence_steps')
+    .select('step_order')
+    .eq('sequence_id', sequence_id)
+    .order('step_order', { ascending: true });
+  if (stepErr) {
+    throw new Error(`Failed to load sequence steps: ${stepErr.message}`);
+  }
+  const declaredOrders = ((stepRows ?? []) as Array<{ step_order: number }>).map(
+    (s) => s.step_order,
+  );
+
+  // 2) Every send logged for this sequence. Match notes by the sequence name
+  //    substring; sanitize the ILIKE pattern so %/_ in a sequence name are
+  //    treated literally. Paginate past the 1000-row cap.
+  const ilikePattern = `%${sequenceName.replace(/[\\%_]/g, '\\$&')}%`;
+  const sends = await fetchAllRows<{ id: string; coach_id: string; notes: string | null }>(
+    (from, to) =>
+      client
+        .from('crm_contact_log')
+        .select('id, coach_id, notes')
+        .eq('contact_type', 'email')
+        .ilike('notes', ilikePattern)
+        .order('id', { ascending: true })
+        .range(from, to),
+  );
+
+  // Bucket sends by parsed step order. logId -> step_order powers per-step
+  // attribution of delivery/reply events back to the originating step.
+  const stepByLogId = new Map<string, number>();
+  const coachIdsByStep = new Map<number, Set<string>>();
+  const sentByStep = new Map<number, number>();
+  const allLogIds: string[] = [];
+  for (const row of sends) {
+    const order = parseStepOrder(row.notes);
+    if (order == null) continue;
+    allLogIds.push(row.id);
+    stepByLogId.set(row.id, order);
+    sentByStep.set(order, (sentByStep.get(order) ?? 0) + 1);
+    if (row.coach_id) {
+      const set = coachIdsByStep.get(order) ?? new Set<string>();
+      set.add(row.coach_id);
+      coachIdsByStep.set(order, set);
+    }
+  }
+
+  // 3) Delivery / bounce events for those sends. Count DISTINCT contact_log_ids
+  //    per outcome (a single message can emit several webhooks).
+  const deliveredByStep = new Map<number, Set<string>>();
+  const bouncedByStep = new Map<number, Set<string>>();
+  for (let i = 0; i < allLogIds.length; i += PERF_IN_CHUNK) {
+    const chunk = allLogIds.slice(i, i + PERF_IN_CHUNK);
+    const events = await fetchAllRows<{ contact_log_id: string | null; event_type: string }>(
+      (from, to) =>
+        client
+          .from('email_events')
+          .select('contact_log_id, event_type')
+          .in('contact_log_id', chunk)
+          .order('id', { ascending: true })
+          .range(from, to),
+    );
+    for (const ev of events) {
+      const logId = ev.contact_log_id;
+      if (!logId) continue;
+      const order = stepByLogId.get(logId);
+      if (order == null) continue;
+      if (ev.event_type === 'email.delivered') {
+        const set = deliveredByStep.get(order) ?? new Set<string>();
+        set.add(logId);
+        deliveredByStep.set(order, set);
+      } else if (ev.event_type === 'email.bounced') {
+        const set = bouncedByStep.get(order) ?? new Set<string>();
+        set.add(logId);
+        bouncedByStep.set(order, set);
+      }
+    }
+  }
+
+  // 4) Human replies. Prefer the precise contact_log_id link; fall back to
+  //    coach_id for replies that arrived before the inbound parser resolved the
+  //    originating send. Track which replies are already counted by log id so
+  //    the coach-id fallback can't double-count the same reply row.
+  const repliedByStep = new Map<number, number>();
+  const countedReplyIds = new Set<string>();
+  for (let i = 0; i < allLogIds.length; i += PERF_IN_CHUNK) {
+    const chunk = allLogIds.slice(i, i + PERF_IN_CHUNK);
+    const replies = await fetchAllRows<{ id: string; contact_log_id: string | null }>(
+      (from, to) =>
+        client
+          .from('crm_replies')
+          .select('id, contact_log_id')
+          .in('contact_log_id', chunk)
+          .order('id', { ascending: true })
+          .range(from, to),
+    );
+    for (const r of replies) {
+      const logId = r.contact_log_id;
+      if (!logId) continue;
+      const order = stepByLogId.get(logId);
+      if (order == null || countedReplyIds.has(r.id)) continue;
+      countedReplyIds.add(r.id);
+      repliedByStep.set(order, (repliedByStep.get(order) ?? 0) + 1);
+    }
+  }
+  // Fallback: replies attributable only by enrolled coach (no resolved log id).
+  for (const [order, coachSet] of coachIdsByStep) {
+    const coachIds = [...coachSet];
+    for (let i = 0; i < coachIds.length; i += PERF_IN_CHUNK) {
+      const chunk = coachIds.slice(i, i + PERF_IN_CHUNK);
+      const replies = await fetchAllRows<{ id: string; contact_log_id: string | null }>(
+        (from, to) =>
+          client
+            .from('crm_replies')
+            .select('id, contact_log_id')
+            .is('contact_log_id', null)
+            .in('coach_id', chunk)
+            .order('id', { ascending: true })
+            .range(from, to),
+      );
+      for (const r of replies) {
+        if (countedReplyIds.has(r.id)) continue;
+        countedReplyIds.add(r.id);
+        repliedByStep.set(order, (repliedByStep.get(order) ?? 0) + 1);
+      }
+    }
+  }
+
+  // 5) Assemble per-step rows. Union of declared steps + any step order that
+  //    actually appears in the sends (defends against renamed/deleted steps).
+  const orders = new Set<number>(declaredOrders);
+  for (const order of sentByStep.keys()) orders.add(order);
+
+  const steps: SequencePerformanceStep[] = [...orders]
+    .sort((a, b) => a - b)
+    .map((order) => {
+      const sent = sentByStep.get(order) ?? 0;
+      const delivered = deliveredByStep.get(order)?.size ?? 0;
+      const bounced = bouncedByStep.get(order)?.size ?? 0;
+      const replied = repliedByStep.get(order) ?? 0;
+      return {
+        step_order: order,
+        sent,
+        delivered,
+        bounced,
+        replied,
+        reply_rate: replyRate(replied, delivered),
+      };
+    });
+
+  const totals = steps.reduce(
+    (acc, s) => ({
+      sent: acc.sent + s.sent,
+      delivered: acc.delivered + s.delivered,
+      bounced: acc.bounced + s.bounced,
+      replied: acc.replied + s.replied,
+    }),
+    { sent: 0, delivered: 0, bounced: 0, replied: 0 },
+  );
+
+  return {
+    steps,
+    totals: {
+      ...totals,
+      reply_rate: replyRate(totals.replied, totals.delivered),
+    },
+  };
 }
