@@ -24,6 +24,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
+import { createHmac } from 'node:crypto';
 import { scoreCoach, tierOf, byPriority } from './coach-priority.mjs';
 
 const env = {};
@@ -42,8 +43,18 @@ const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.
 
 const SEQUENCE_NAME = 'Coach First Touch (Cold Outreach)';
 const FROM = env.HELM_FROM_EMAIL ?? 'Helm Sports Labs <admin@helmsportslabs.com>';
+const REPLY_TO = env.HELM_REPLY_TO ?? 'admin@helmsportslabs.com';
 const N = Math.max(1, parseInt(process.argv[2] || '40', 10));
 const nowIso = () => new Date().toISOString();
+
+// One-click unsubscribe (RFC 8058) — the #1 free Gmail-Primary signal. Invisible header
+// (Gmail renders its own native button), so no salesy opt-out line in the body. The token
+// must match src/app/api/crm/unsubscribe/route.ts (same CRM_UNSUB_SECRET).
+const APP_URL = (env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com').replace(/\/+$/, '');
+const UNSUB_SECRET = env.CRM_UNSUB_SECRET || 'helm-sports-unsub-v1'; // must match src/app/api/crm/unsubscribe/route.ts
+const UNSUB_MAILTO = env.HELM_UNSUB_EMAIL ?? 'admin@helmsportslabs.com';
+const unsubUrl = (id) => `${APP_URL}/api/crm/unsubscribe?c=${id}&t=${createHmac('sha256', UNSUB_SECRET).update(String(id)).digest('hex').slice(0, 16)}`;
+const tagVal = (v) => (String(v ?? '').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 60) || 'na'); // Resend tags: [A-Za-z0-9_-] only
 
 const { data: seq } = await supa.from('crm_sequences').select('id, is_active').eq('name', SEQUENCE_NAME).maybeSingle();
 if (!seq) { console.error(`Sequence "${SEQUENCE_NAME}" not found — run setup-coach-sequence.mjs first.`); process.exit(1); }
@@ -174,8 +185,29 @@ for (const item of ranked) {
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ from: FROM, to: [c.email], subject, ...(isText ? { text: body } : { html: body }) }),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        // provider-side exactly-once: survives a crash between POST-success and the DB write
+        'Idempotency-Key': `cft-${c.id}-s${step.step_order}`,
+      },
+      body: JSON.stringify({
+        from: FROM,
+        to: [c.email],
+        reply_to: REPLY_TO,
+        subject,
+        ...(isText ? { text: body } : { html: body }),
+        // RFC 8058 one-click unsubscribe — Gmail/Yahoo Primary-placement signal
+        headers: {
+          'List-Unsubscribe': `<${unsubUrl(c.id)}>, <mailto:${UNSUB_MAILTO}?subject=unsubscribe>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+        // per-cohort bounce/complaint segmentation so a toxic slice can be pulled early
+        tags: [
+          { name: 'campaign', value: 'coach_first_touch' },
+          { name: 'division', value: tagVal(c.division) },
+        ],
+      }),
     });
     const data = await res.json();
     if (!res.ok) { failures.push({ c, err: JSON.stringify(data) }); console.log(`  ✗ ${c.name} <${c.email}> — ${res.status}`); continue; }
