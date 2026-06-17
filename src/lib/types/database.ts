@@ -11786,7 +11786,7 @@ export type Database = {
         | "player"
         | "pending_reimbursement"
         | "split"
-      ncaa_division: "D2" | "D3"
+      ncaa_division: "D2" | "D3" | "D1" | "NAIA" | "JUCO"
       notification_type:
         | "profile_view"
         | "watchlist_add"
@@ -11980,7 +11980,7 @@ export const Constants = {
         "pending_reimbursement",
         "split",
       ],
-      ncaa_division: ["D2", "D3"],
+      ncaa_division: ["D2", "D3", "D1", "NAIA", "JUCO"],
       notification_type: [
         "profile_view",
         "watchlist_add",

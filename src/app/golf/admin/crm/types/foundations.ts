@@ -97,7 +97,8 @@ export interface CrmTask {
 // If CoachFilters.tsx Filters changes, this MUST change in lockstep.
 export interface SegmentDefinition {
   status: CoachStatus | 'all';
-  division: 'all' | 'D2' | 'D3';
+  division: 'all' | 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO';
+  queueStatus?: 'all' | 'queued' | 'sent' | 'done';
   conference: string;
   program: 'all' | 'mens' | 'womens' | 'both';
   priority: string;

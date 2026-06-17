@@ -9,7 +9,7 @@ import { Button, IconButton } from '@/components/ui/button';
 
 export interface Filters {
   status: CoachStatus | 'all';
-  division: 'all' | 'D2' | 'D3';
+  division: 'all' | 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO';
   conference: string;
   program: 'all' | 'mens' | 'womens' | 'both';
   priority: string;
@@ -19,6 +19,9 @@ export interface Filters {
   hasNotes: boolean;
   noContact30Days: boolean;
   primaryOnly?: boolean;
+  // Outreach-queue state (from sequence enrollment): queued = not emailed yet,
+  // sent = in sequence, done = sequence complete.
+  queueStatus?: 'all' | 'queued' | 'sent' | 'done';
 }
 
 interface CoachFiltersProps {
@@ -78,16 +81,17 @@ export function CoachFilters({
     filters.hasNotes,
     filters.noContact30Days,
     filters.primaryOnly,
+    filters.queueStatus !== undefined && filters.queueStatus !== 'all',
   ].filter(Boolean).length;
 
-  const hasSecondaryFilters = filters.conference !== 'all' || filters.status !== 'all' || filters.followUpDue || filters.starred || filters.hasNotes || filters.noContact30Days || filters.priority !== 'all';
+  const hasSecondaryFilters = filters.conference !== 'all' || filters.status !== 'all' || filters.followUpDue || filters.starred || filters.hasNotes || filters.noContact30Days || filters.priority !== 'all' || (filters.queueStatus !== undefined && filters.queueStatus !== 'all');
 
   const clearFilters = () => {
     setLocalSearch('');
     setFilters({
       status: 'all', division: 'all', conference: 'all', program: 'all', priority: 'all',
       search: '', followUpDue: false, starred: false, hasNotes: false, noContact30Days: false,
-      primaryOnly: false,
+      primaryOnly: false, queueStatus: 'all',
     });
   };
 
@@ -122,14 +126,14 @@ export function CoachFilters({
           )}
         </div>
 
-        {/* Division segment control */}
+        {/* Division segment control — all NCAA levels + NAIA/JUCO */}
         <div className="inline-flex items-center gap-0.5 p-0.5 bg-white/60 border border-warm-200/60 rounded-full">
-          {(['all', 'D2', 'D3'] as const).map(div => (
+          {(['all', 'D1', 'D2', 'D3', 'NAIA', 'JUCO'] as const).map(div => (
             <Button variant="primary"
               key={div}
-              onClick={() => setFilters(f => ({ ...f, division: div === 'all' ? 'all' : div }))}
+              onClick={() => setFilters(f => ({ ...f, division: div }))}
               className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap',
+                'px-2.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap',
                 filters.division === div
                   ? 'bg-primary-500 text-white shadow-sm'
                   : 'text-warm-500 hover:text-warm-700'
@@ -263,6 +267,24 @@ export function CoachFilters({
             <option value="0">Normal</option>
             <option value="1">High</option>
             <option value="2">Hot</option>
+          </select>
+
+          {/* Queue status — Queued (not emailed) / In sequence / Done */}
+          <select
+            value={filters.queueStatus ?? 'all'}
+            onChange={(e) => setFilters(f => ({ ...f, queueStatus: e.target.value as Filters['queueStatus'] }))}
+            className={cn(
+              'px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200',
+              'bg-white/60 border border-warm-200/60 text-warm-600',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400',
+              'cursor-pointer',
+              (filters.queueStatus && filters.queueStatus !== 'all') && 'border-primary-300 bg-primary-50 text-primary-700'
+            )}
+          >
+            <option value="all">Any queue status</option>
+            <option value="queued">Queued (not emailed)</option>
+            <option value="sent">In sequence (sent)</option>
+            <option value="done">Done</option>
           </select>
 
           {/* Quick filter pills */}

@@ -117,6 +117,7 @@ export default function CRMPage() {
     hasNotes: false,
     noContact30Days: false,
     primaryOnly: false,
+    queueStatus: 'all',
   });
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -346,6 +347,12 @@ export default function CRMPage() {
       if (filters.hasNotes && !c.notes) continue;
       if (filters.noContact30Days && c.last_contacted_at && c.last_contacted_at >= cutoff) continue;
       if (filters.primaryOnly && !c.is_primary_contact) continue;
+      if (filters.queueStatus && filters.queueStatus !== 'all') {
+        const enr = sequenceEnrollmentMap[c.id];
+        if (filters.queueStatus === 'queued' && !(enr && enr.status === 'active' && (enr.current_step ?? 0) === 0)) continue;
+        if (filters.queueStatus === 'sent' && !(enr && enr.status === 'active' && (enr.current_step ?? 0) >= 1)) continue;
+        if (filters.queueStatus === 'done' && !(enr && enr.status === 'completed')) continue;
+      }
       result.push(c);
     }
 
@@ -357,7 +364,7 @@ export default function CRMPage() {
     });
 
     return result;
-  }, [allCoaches, filters]);
+  }, [allCoaches, filters, sequenceEnrollmentMap]);
 
   useEffect(() => { fetchAllCoaches(); }, [fetchAllCoaches]);
 

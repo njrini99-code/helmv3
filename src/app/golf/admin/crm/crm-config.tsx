@@ -26,7 +26,7 @@ export type CoachStatus =
   | 'lost'
   | 'nurture';
 
-export type Division = 'D2' | 'D3';
+export type Division = 'D1' | 'D2' | 'D3' | 'NAIA' | 'JUCO';
 export type ProgramType = 'mens' | 'womens' | 'both';
 
 export interface Coach {
