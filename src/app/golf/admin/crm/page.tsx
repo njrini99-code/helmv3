@@ -1174,6 +1174,7 @@ export default function CRMPage() {
                 onLogTouch={handleLogContact}
                 onSetAssignee={handleSetAssignee}
                 manualTemplateArmed={!!activeManualTemplate}
+                enrollmentMap={sequenceEnrollmentMap}
               />
             </div>
           )}

@@ -3,18 +3,22 @@
 // ============================================================================
 // TodayQueue — the operator's daily "who do I work right now" worklist
 // ============================================================================
-// A ranked, client-side-computed shortlist (top ~40) of the freshest, most
-// customer-like NEW LEADS that are due a touch today. It mirrors the intent of
+// A ranked, client-side-computed shortlist (top ~40) of SCHOOLS due a manual
+// touch today, ONE main contact per school. It mirrors the intent of
 // scripts/coach-priority.mjs (customer-like first) without a server round-trip:
-//   • include only status === 'new_lead'
-//   • require a valid email (we can actually act on it)
+//   • include only status === 'new_lead' with a valid email
 //   • exclude anyone contacted in the last 7 days (frequency cap mirror)
-//   • rank by a simple, explainable fit score:
+//   • GROUP BY SCHOOL → show only the highest-level "main contact" per school
+//       (primary contact, then head_coach > director > associate > assistant >
+//        volunteer > unknown), so a school never lines up multiple coaches
+//   • HIDE any school already being worked by an ACTIVE Resend sequence
+//       enrollment — a coach in the Resend queue must NOT also appear in this
+//       manual Gmail queue (the two channels are mutually exclusive)
+//   • rank the per-school mains by an explainable fit score:
 //       ODAC / Old Dominion (4 customers) > NCAC / North Coast (Denison)
 //       > D3 (all 5 customers) > NAIA > D2 > JUCO/CCCAA > D1
 // Each row exposes quick actions: Open in Gmail (when a template is armed),
-// open the detail panel, log a touch, and an assignee picker. Everything is
-// derived from the already-fetched `coaches` array — no new server action.
+// open the detail panel, log a touch, and an assignee picker.
 // ============================================================================
 
 import { useMemo } from 'react';
@@ -76,6 +80,36 @@ function fitReason(coach: Coach): string {
   return 'New lead';
 }
 
+// Normalize a school name for grouping (trim + lowercase).
+function normSchool(s: string | null | undefined): string {
+  return (s ?? '').trim().toLowerCase();
+}
+
+// Role seniority ranking — higher = more senior = preferred as the school's
+// "main contact". Mirrors the crm_coaches.role_level values.
+const ROLE_RANK: Record<string, number> = {
+  head_coach: 5,
+  director: 4,
+  associate_head_coach: 3,
+  assistant_coach: 2,
+  volunteer: 1,
+  unknown: 0,
+};
+function roleRank(c: Coach): number {
+  return ROLE_RANK[(c.role_level ?? '').toLowerCase()] ?? 0;
+}
+
+// Is `cand` a better "main contact" for a school than the current pick?
+// primary-contact flag wins, then role seniority, then fit, then name (stable).
+function isBetterContact(cand: Coach, cur: Coach): boolean {
+  if (cand.is_primary_contact !== cur.is_primary_contact) return cand.is_primary_contact;
+  const rr = roleRank(cand) - roleRank(cur);
+  if (rr !== 0) return rr > 0;
+  const fs = fitScore(cand) - fitScore(cur);
+  if (fs !== 0) return fs > 0;
+  return (cand.name || '').localeCompare(cur.name || '') < 0;
+}
+
 // Division chip palette (kept local; soft tints, brand-green for the strongest fit).
 const DIVISION_CHIP: Record<string, string> = {
   D1: 'bg-warm-100 text-warm-600 ring-warm-200',
@@ -94,6 +128,12 @@ interface TodayQueueProps {
   onSetAssignee?: (coachId: string, assignee: CrmAssignee | null) => void;
   /** Whether a Gmail template is armed (enables the "Gmail" quick action). */
   manualTemplateArmed: boolean;
+  /**
+   * coach_id -> sequence enrollment summary. Any school with an ACTIVE enrollment
+   * is being worked by the automated Resend sequence, so it's HIDDEN from this
+   * manual Gmail worklist (the two channels are mutually exclusive).
+   */
+  enrollmentMap?: Record<string, { status: string }>;
 }
 
 export function TodayQueue({
@@ -103,10 +143,25 @@ export function TodayQueue({
   onLogTouch,
   onSetAssignee,
   manualTemplateArmed,
+  enrollmentMap,
 }: TodayQueueProps) {
   const queue = useMemo(() => {
     const cutoff = Date.now() - SEVEN_DAYS_MS;
-    const eligible: Array<{ coach: Coach; score: number }> = [];
+
+    // Schools already being worked by an ACTIVE Resend sequence enrollment — the
+    // whole school is hidden from the manual queue so it isn't double-touched.
+    const enrolledSchools = new Set<string>();
+    if (enrollmentMap) {
+      for (const c of coaches) {
+        if (enrollmentMap[c.id]?.status === 'active') {
+          const s = normSchool(c.school);
+          if (s) enrolledSchools.add(s);
+        }
+      }
+    }
+
+    // Collapse to ONE main contact per school (highest level).
+    const bySchool = new Map<string, Coach>();
     for (const c of coaches) {
       if (c.status !== 'new_lead') continue;
       if (!hasValidEmail(c.email)) continue;
@@ -115,17 +170,23 @@ export function TodayQueue({
         const t = Date.parse(c.last_contacted_at);
         if (!Number.isNaN(t) && t >= cutoff) continue;
       }
-      eligible.push({ coach: c, score: fitScore(c) });
+      const school = normSchool(c.school);
+      if (!school) continue;
+      if (enrolledSchools.has(school)) continue; // worked by Resend → not manual
+      const cur = bySchool.get(school);
+      if (!cur || isBetterContact(c, cur)) bySchool.set(school, c);
     }
+
     // Warmest fit first; cluster league-mates by conference; then name for stability.
-    eligible.sort(
+    const mains = Array.from(bySchool.values());
+    mains.sort(
       (a, b) =>
-        b.score - a.score ||
-        (a.coach.conference || '').localeCompare(b.coach.conference || '') ||
-        (a.coach.name || '').localeCompare(b.coach.name || ''),
+        fitScore(b) - fitScore(a) ||
+        (a.conference || '').localeCompare(b.conference || '') ||
+        (a.name || '').localeCompare(b.name || ''),
     );
-    return eligible.slice(0, MAX_ROWS).map((e) => e.coach);
-  }, [coaches]);
+    return mains.slice(0, MAX_ROWS);
+  }, [coaches, enrollmentMap]);
 
   if (queue.length === 0) {
     return (
@@ -147,7 +208,7 @@ export function TodayQueue({
           <IconCalendar size={16} className="text-primary-500" />
           <h3 className="text-sm font-bold text-warm-900">Today&rsquo;s worklist</h3>
           <span className="text-xs text-warm-500">
-            top {queue.length} fresh lead{queue.length === 1 ? '' : 's'}, ranked by fit
+            {queue.length} school{queue.length === 1 ? '' : 's'} · one main contact each · Resend-enrolled hidden
           </span>
         </div>
       </div>
