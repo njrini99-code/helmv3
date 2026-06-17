@@ -132,10 +132,13 @@ const coachById = new Map(coaches.map(c => [c.id, c]));
 const suppRows = await fetchAll('crm_email_suppressions', 'id, email');
 const suppressed = new Set(suppRows.map(s => (s.email || '').toLowerCase().trim()));
 
+// Cold outreach targets FRESH leads only: status must be 'new_lead'. The instant a
+// coach is emailed they flip to 'contacted' (see process-sequence-batch.mjs) and drop
+// out of the sendable universe, so re-running this never re-enrolls anyone we've touched.
 const isSendable = (c) => {
   const s = (c.school || '').trim();
   return s && !CUSTOMER_SCHOOLS.has(s.toLowerCase()) && !/piedmont/i.test(s) && !c.is_archived
-    && !['won', 'lost'].includes((c.status || ''))
+    && (c.status || '') === 'new_lead'
     && EMAIL_RE.test((c.email || '').trim()) && (c.email_status || 'valid') !== 'bounced'
     && !suppressed.has((c.email || '').toLowerCase().trim()) && (c.name || '').trim().includes(' ');
 };
@@ -203,10 +206,24 @@ for (let i = 0; i < toInsert.length; i += 200) {
 // --- reconcile: demote ACTIVE enrollments whose coach is no longer a target ---
 // (assistants enrolled before this rule, or coaches since marked won/lost/suppressed/bounced).
 // Non-destructive: status -> 'stopped', stop_reason 'manual'. Completed/stopped rows untouched.
-const demoteIds = existing.filter(e => e.status === 'active' && !targetIds.has(e.coach_id)).map(e => e.id);
-let demoted = 0;
-for (let i = 0; i < demoteIds.length; i += 200) {
-  const chunk = demoteIds.slice(i, i + 200);
+const demoteRows = existing.filter(e => e.status === 'active' && !targetIds.has(e.coach_id));
+const completeIds = [], stopIds = [];
+for (const e of demoteRows) {
+  const cs = coachById.get(e.coach_id)?.status || 'new_lead';
+  // coach has progressed past new_lead (emailed -> contacted, or worked) => completed;
+  // still a fresh new_lead but not the top-of-program contact (assistant/ops) => stopped.
+  if (cs !== 'new_lead') completeIds.push(e.id); else stopIds.push(e.id);
+}
+let completedDemote = 0, demoted = 0;
+for (let i = 0; i < completeIds.length; i += 200) {
+  const chunk = completeIds.slice(i, i + 200);
+  const { error } = await supa.from('crm_sequence_enrollments')
+    .update({ status: 'completed', completed_at: now, stop_reason: 'sequence_completed' }).in('id', chunk);
+  if (error) { console.error('demote->completed failed:', error.message); process.exit(1); }
+  completedDemote += chunk.length;
+}
+for (let i = 0; i < stopIds.length; i += 200) {
+  const chunk = stopIds.slice(i, i + 200);
   const { error } = await supa.from('crm_sequence_enrollments')
     .update({ status: 'stopped', stopped_at: now, stop_reason: 'manual' }).in('id', chunk);
   if (error) { console.error('demotion update failed:', error.message); process.exit(1); }
@@ -228,7 +245,8 @@ const newCompleted = toInsert.filter(r => r.status === 'completed').length;
 const newActive = toInsert.filter(r => r.status === 'active').length;
 console.log(`\n✓ enrollments: +${inserted} new (${newActive} active, ${newCompleted} completed)` +
   (promoteCompleted ? `, ${promoteCompleted} promoted active→completed` : '') +
-  (demoted ? `, ${demoted} demoted active→stopped (not top-of-program)` : ''));
+  (completedDemote ? `, ${completedDemote} active→completed (already contacted)` : '') +
+  (demoted ? `, ${demoted} active→stopped (not top-of-program)` : ''));
 console.log(`  target (men's-head + women's-head per school): ${targets.length}  |  schools: ${bySchool.size}  |  enrolled before run: ${enrolledBy.size}`);
 
 // final tally + send-order preview straight from the DB
