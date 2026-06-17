@@ -63,8 +63,11 @@ import { SuppressionsAdminPanel } from './components/suppressions/SuppressionsAd
 import type { CRMEvent } from './components/CalendarView';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
 import { getCoachSequenceEnrollmentStatuses, type CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
+import { logManualGmailTouch } from '@/app/golf/actions/crm-manual-send';
+import { mergeTemplate, buildGmailComposeUrl } from '@/lib/crm/gmail-compose';
 import type { CoachEngagement } from './types/foundations';
 import { Button, IconButton } from '@/components/ui/button';
+import { toast } from '@/components/ui/sonner';
 
 // ============================================================================
 // SIDEBAR TABS
@@ -120,6 +123,12 @@ type OutreachSubTabId = (typeof OUTREACH_SUBTABS)[number]['id'];
 const MOBILE_BAR_TABS = ['dashboard', 'list', 'outreach', 'sequences'] as const;
 // Destinations that live behind the "More" sheet (everything not on the bar).
 const MOBILE_MORE_TABS = ['pipeline', 'conferences', 'inbox', 'settings'] as const;
+
+// ── "Open in Gmail" manual-send ──
+// The minimal shape we need from a crm_email_templates row to merge + compose.
+type ManualGmailTemplate = { id: string; name: string; subject: string; body: string };
+// localStorage key for the currently-armed Gmail template (survives reloads).
+const MANUAL_GMAIL_TEMPLATE_KEY = 'crm_manual_gmail_template';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -191,6 +200,15 @@ export default function CRMPage() {
   // post-load effect. Surfaced as Hot/Warm/Cold pills in CoachTable. Stream B.
   const [engagementMap, setEngagementMap] = useState<Record<string, CoachEngagement>>({});
   const [sequenceEnrollmentMap, setSequenceEnrollmentMap] = useState<Record<string, CoachEnrollmentSummary>>({});
+
+  // ── "Open in Gmail" manual-send ──
+  // The operator arms ONE email template; it's then merged per-coach and opened
+  // in a Gmail compose window when they click "Gmail" on a row / in the detail
+  // panel. The armed template persists across reloads via localStorage (read in
+  // an effect, NOT the initializer, to avoid SSR/CSR hydration drift).
+  const [activeManualTemplate, setActiveManualTemplate] = useState<ManualGmailTemplate | null>(null);
+  const [emailTemplates, setEmailTemplates] = useState<ManualGmailTemplate[]>([]);
+  const manualTemplateHydrated = useRef(false);
 
   const supabase = createClient();
 
@@ -495,6 +513,72 @@ export default function CRMPage() {
     };
   }, [allCoaches]);
 
+  // ── "Open in Gmail": hydrate the armed template from localStorage on mount ──
+  // Read in an effect (not the useState initializer) so server + first client
+  // render agree; the ref guards the persist effect below from clobbering
+  // localStorage with `null` before this hydration runs.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(MANUAL_GMAIL_TEMPLATE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<ManualGmailTemplate>;
+        if (parsed && parsed.id && typeof parsed.subject === 'string' && typeof parsed.body === 'string') {
+          setActiveManualTemplate({
+            id: parsed.id,
+            name: parsed.name ?? 'Template',
+            subject: parsed.subject,
+            body: parsed.body,
+          });
+        }
+      }
+    } catch {
+      /* corrupt / unavailable storage — start unarmed */
+    }
+    manualTemplateHydrated.current = true;
+  }, []);
+
+  // Persist the armed template whenever it changes (after hydration).
+  useEffect(() => {
+    if (!manualTemplateHydrated.current) return;
+    try {
+      if (activeManualTemplate) {
+        window.localStorage.setItem(MANUAL_GMAIL_TEMPLATE_KEY, JSON.stringify(activeManualTemplate));
+      } else {
+        window.localStorage.removeItem(MANUAL_GMAIL_TEMPLATE_KEY);
+      }
+    } catch {
+      /* storage unavailable — non-fatal, template just won't persist */
+    }
+  }, [activeManualTemplate]);
+
+  // Fetch the email templates once (id/name/subject/body) for the Gmail-template
+  // selector. Reuses the page's supabase client. text + html formats both work
+  // for a Gmail compose body (the body is plain text either way).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error: tplError } = await supabase
+        .from('crm_email_templates')
+        .select('id, name, subject, body, format')
+        .order('name', { ascending: true });
+      if (cancelled) return;
+      if (tplError) {
+        console.warn('[crm] email template fetch failed:', tplError.message);
+        return;
+      }
+      const rows = (data ?? []) as Array<{ id: string; name: string | null; subject: string | null; body: string | null }>;
+      setEmailTemplates(
+        rows.map((t) => ({
+          id: t.id,
+          name: t.name ?? 'Untitled template',
+          subject: t.subject ?? '',
+          body: t.body ?? '',
+        })),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [supabase]);
+
   // ============================================================================
   // ACTIONS
   // ============================================================================
@@ -589,6 +673,55 @@ export default function CRMPage() {
   const handleLogContact = useCallback((coach: Coach) => {
     setQuickActionsCoach(coach);
   }, []);
+
+  // ── "Open in Gmail" ──
+  // Merge the armed template for this coach, open a pre-filled Gmail compose
+  // window, then optimistically log the touch (last_contacted_at = now; promote
+  // new_lead → contacted) and fire the server-side log so the contact-log row +
+  // 7-day cap stay consistent with the automated batch.
+  const openInGmail = useCallback((coach: Coach) => {
+    if (!activeManualTemplate) {
+      toast('Arm a Gmail template first');
+      return;
+    }
+    if (!coach.email) {
+      toast('No email on file');
+      return;
+    }
+    const subject = mergeTemplate(activeManualTemplate.subject, coach);
+    const body = mergeTemplate(activeManualTemplate.body, coach);
+    window.open(buildGmailComposeUrl({ to: coach.email, subject, body }), '_blank', 'noopener');
+
+    // Fire-and-forget server log; UI updates optimistically regardless.
+    logManualGmailTouch({ coach_id: coach.id, subject }).catch(() => {});
+
+    const nowIso = new Date().toISOString();
+    setAllCoaches((prev) =>
+      prev.map((c) =>
+        c.id === coach.id
+          ? {
+              ...c,
+              last_contacted_at: nowIso,
+              updated_at: nowIso,
+              status: c.status === 'new_lead' ? ('contacted' as Coach['status']) : c.status,
+            }
+          : c,
+      ),
+    );
+    if (selectedCoach?.id === coach.id) {
+      setSelectedCoach((prev) =>
+        prev
+          ? {
+              ...prev,
+              last_contacted_at: nowIso,
+              updated_at: nowIso,
+              status: prev.status === 'new_lead' ? ('contacted' as Coach['status']) : prev.status,
+            }
+          : prev,
+      );
+    }
+    toast.success(`Opened Gmail for ${coach.name} — logged as contacted`);
+  }, [activeManualTemplate, selectedCoach]);
 
   const handleSendFollowup = (
     recipients: Array<{ email: string; name?: string | null; coach_id?: string | null }>,
@@ -956,6 +1089,11 @@ export default function CRMPage() {
           {/* ── Coaches List Tab ── */}
           {activeTab === 'list' && (
             <div className="space-y-4">
+              <ManualGmailTemplateBar
+                templates={emailTemplates}
+                active={activeManualTemplate}
+                onChange={setActiveManualTemplate}
+              />
               <CoachFilters
                 filters={filters}
                 setFilters={setFilters}
@@ -976,6 +1114,8 @@ export default function CRMPage() {
                   priorityConfig={PRIORITY_CONFIG}
                   coachEngagement={engagementMap}
                   coachEnrollments={sequenceEnrollmentMap}
+                  onOpenInGmail={openInGmail}
+                  manualTemplateArmed={!!activeManualTemplate}
                 />
               </div>
             </div>
@@ -1000,6 +1140,11 @@ export default function CRMPage() {
           {/* ── Conferences Tab ── */}
           {activeTab === 'conferences' && (
             <div className="space-y-4">
+              <ManualGmailTemplateBar
+                templates={emailTemplates}
+                active={activeManualTemplate}
+                onChange={setActiveManualTemplate}
+              />
               <CoachFilters
                 filters={filters}
                 setFilters={setFilters}
@@ -1205,6 +1350,7 @@ export default function CRMPage() {
           onUpdate={(updates) => updateCoach(selectedCoach.id, updates)}
           statusConfig={STATUS_CONFIG}
           priorityConfig={PRIORITY_CONFIG}
+          onOpenInGmail={openInGmail}
         />
       )}
 
@@ -1289,6 +1435,78 @@ function SequencesTabWrapper() {
           sequenceId={selectedId}
           onChange={() => setRefreshKey((k) => k + 1)}
         />
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// ManualGmailTemplateBar — arm ONE template for the "Open in Gmail" flow
+// ============================================================================
+// Compact glass toolbar shown above the Coaches / Conferences lists. Picking a
+// template arms it (merged per-coach on "Gmail" click in the row / detail
+// panel); the active name is shown with a clear (×) affordance. Selecting and
+// clearing both 44px-tall for touch. Persistence is handled by the parent.
+// ============================================================================
+function ManualGmailTemplateBar({
+  templates,
+  active,
+  onChange,
+}: {
+  templates: ManualGmailTemplate[];
+  active: ManualGmailTemplate | null;
+  onChange: (tpl: ManualGmailTemplate | null) => void;
+}) {
+  const handleSelect = (id: string) => {
+    if (!id) { onChange(null); return; }
+    const found = templates.find((t) => t.id === id);
+    onChange(found ?? null);
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl glass-standard px-3 py-2">
+      <span className="flex items-center gap-1.5 text-sm font-medium text-warm-700">
+        <IconMail size={15} className="text-primary-500" />
+        Gmail template:
+      </span>
+      <div className="relative inline-flex items-center">
+        <select
+          aria-label="Armed Gmail template"
+          value={active?.id ?? ''}
+          onChange={(e) => handleSelect(e.target.value)}
+          disabled={templates.length === 0}
+          className={cn(
+            'appearance-none cursor-pointer min-h-[44px] rounded-xl border pl-3 pr-9 py-2 text-sm font-medium transition-colors',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:opacity-50 disabled:cursor-not-allowed',
+            active
+              ? 'bg-primary-50 border-primary-200 text-primary-700'
+              : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-white/80',
+          )}
+        >
+          <option value="">
+            {templates.length === 0 ? 'No templates' : 'Select a template…'}
+          </option>
+          {templates.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+        <IconChevronRight size={14} className="pointer-events-none absolute right-3 rotate-90 text-warm-400" />
+      </div>
+      {active && (
+        <>
+          <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-primary-50 border border-primary-200/60 px-2.5 py-1 text-xs font-semibold text-primary-700">
+            Armed: <span className="max-w-[160px] truncate">{active.name}</span>
+          </span>
+          <Button
+            variant="ghost"
+            type="button"
+            onClick={() => onChange(null)}
+            aria-label="Clear armed Gmail template"
+            className="inline-flex items-center gap-1 min-h-[44px] px-3 py-1.5 rounded-xl text-xs font-medium text-warm-500 hover:text-warm-800 hover:bg-warm-100/60 transition-colors"
+          >
+            <IconX size={14} /> Clear
+          </Button>
+        </>
       )}
     </div>
   );

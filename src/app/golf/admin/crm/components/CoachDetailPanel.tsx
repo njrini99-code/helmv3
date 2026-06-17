@@ -41,6 +41,11 @@ interface CoachDetailPanelProps {
   onUpdate: (updates: Partial<Coach>) => void;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; iconLabel: React.ReactNode; icon: React.ReactNode }>;
   priorityConfig: Record<number, { label: string; color: string; bgColor: string; iconLabel: React.ReactNode }>;
+  // "Open in Gmail" manual-send. When provided AND the coach has an email, the
+  // sticky footer surfaces a secondary "Gmail" button that opens a pre-filled
+  // Gmail compose window (the parent owns arming the template + logging the
+  // touch). Optional so existing usages compile unchanged.
+  onOpenInGmail?: (coach: Coach) => void;
 }
 
 // ============================================================================
@@ -75,6 +80,7 @@ function CoachDetailPanelInner({
   onUpdate,
   statusConfig,
   priorityConfig,
+  onOpenInGmail,
 }: CoachDetailPanelProps) {
   const { toast } = useToast();
 
@@ -650,6 +656,13 @@ function CoachDetailPanelInner({
               <Button variant="primary" onClick={() => setEditingContact(true)}
                 className="flex-1 lg:flex-initial min-h-[44px] bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
                 <IconMail size={14} /> Email
+              </Button>
+            )}
+            {onOpenInGmail && coach.email && (
+              <Button variant="ghost" onClick={() => onOpenInGmail(coach)}
+                title="Open a pre-filled Gmail compose window for this coach"
+                className="flex-1 lg:flex-initial min-h-[44px] bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-1.5 hover:bg-warm-50 transition-colors">
+                <IconMail size={14} className="text-primary-500" /> Gmail
               </Button>
             )}
             {coach.phone ? (

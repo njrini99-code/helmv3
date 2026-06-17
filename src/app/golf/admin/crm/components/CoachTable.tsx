@@ -128,6 +128,12 @@ interface CoachTableProps {
   // SavedSegmentsRail integration). Stream C owns this prop & rightmost
   // column; do NOT touch the left side of the table.
   coachSegments?: Record<string, CrmSegment[]>;
+  // "Open in Gmail" manual-send. When both are set (a template is armed) and a
+  // coach has an email, the row/card action menus surface a "Gmail" item that
+  // opens a pre-filled Gmail compose window for that coach. Optional so other
+  // callers compile unchanged.
+  onOpenInGmail?: (coach: Coach) => void;
+  manualTemplateArmed?: boolean;
 }
 
 const ALL_STATUSES: CoachStatus[] = [
@@ -180,6 +186,10 @@ interface CoachTableRowProps {
   enrollment?: CoachEnrollmentSummary | null;
   segments?: CrmSegment[];
   density: Density;
+  // "Open in Gmail" — only rendered when a template is armed AND the coach has
+  // an email (the parent CoachTable gates on both before passing the handler).
+  onOpenInGmail?: (coach: Coach) => void;
+  manualTemplateArmed?: boolean;
 }
 
 const CoachTableRow = React.memo(
@@ -205,6 +215,8 @@ const CoachTableRow = React.memo(
     enrollment,
     segments,
     density,
+    onOpenInGmail,
+    manualTemplateArmed,
   }: CoachTableRowProps) {
     const handleRowClick = () => onClick(coach);
     const handleCheckbox = () => onToggleSelect(coach.id);
@@ -397,6 +409,14 @@ const CoachTableRow = React.memo(
                     <IconMail size={16} className="text-warm-400" /> Send Email
                   </a>
                 )}
+                {manualTemplateArmed && onOpenInGmail && coach.email && (
+                  <Button variant="ghost"
+                    onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
+                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                  >
+                    <IconMail size={16} className="text-primary-500" /> Gmail
+                  </Button>
+                )}
                 {coach.phone && (
                   <a
                     href={`tel:${coach.phone}`}
@@ -486,6 +506,8 @@ const CoachTableRow = React.memo(
       prev.engagement === next.engagement &&
       prev.segments === next.segments &&
       prev.density === next.density &&
+      prev.manualTemplateArmed === next.manualTemplateArmed &&
+      prev.onOpenInGmail === next.onOpenInGmail &&
       prev.onClick === next.onClick &&
       prev.onToggleSelect === next.onToggleSelect &&
       prev.onToggleStar === next.onToggleStar &&
@@ -531,6 +553,8 @@ const CoachTableCard = React.memo(
     engagement,
     enrollment,
     segments,
+    onOpenInGmail,
+    manualTemplateArmed,
   }: CoachTableRowProps) {
     const handleCardClick = () => onClick(coach);
     const handleCheckbox = () => onToggleSelect(coach.id);
@@ -616,6 +640,14 @@ const CoachTableCard = React.memo(
                     >
                       <IconMail size={16} className="text-warm-400" /> Send Email
                     </a>
+                  )}
+                  {manualTemplateArmed && onOpenInGmail && coach.email && (
+                    <Button variant="ghost"
+                      onClick={e => { e.stopPropagation(); onOpenInGmail(coach); onOpenAction(null); }}
+                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                    >
+                      <IconMail size={16} className="text-primary-500" /> Gmail
+                    </Button>
                   )}
                   {coach.phone && (
                     <a
@@ -790,6 +822,8 @@ const CoachTableCard = React.memo(
       prev.priorityConfig === next.priorityConfig &&
       prev.engagement === next.engagement &&
       prev.segments === next.segments &&
+      prev.manualTemplateArmed === next.manualTemplateArmed &&
+      prev.onOpenInGmail === next.onOpenInGmail &&
       prev.onClick === next.onClick &&
       prev.onToggleSelect === next.onToggleSelect &&
       prev.onToggleStar === next.onToggleStar &&
@@ -1071,6 +1105,8 @@ export function CoachTable({
   coachEngagement,
   coachEnrollments,
   coachSegments,
+  onOpenInGmail,
+  manualTemplateArmed,
 }: CoachTableProps) {
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
@@ -1407,6 +1443,8 @@ export function CoachTable({
               enrollment={coachEnrollments?.[coach.id]}
               segments={coachSegments?.[coach.id]}
               density={density}
+              onOpenInGmail={onOpenInGmail}
+              manualTemplateArmed={manualTemplateArmed}
             />
           ))}
         </tbody>
@@ -1443,6 +1481,8 @@ export function CoachTable({
             enrollment={coachEnrollments?.[coach.id]}
             segments={coachSegments?.[coach.id]}
             density={density}
+            onOpenInGmail={onOpenInGmail}
+            manualTemplateArmed={manualTemplateArmed}
           />
         ))}
       </div>
