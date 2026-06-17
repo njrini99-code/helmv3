@@ -99,6 +99,18 @@ function roleRank(c: Coach): number {
   return ROLE_RANK[(c.role_level ?? '').toLowerCase()] ?? 0;
 }
 
+// Whether a coach is a valid "main contact" target for the manual worklist.
+// Assistant coaches and volunteers are NEVER queued — the queue is for a
+// program's decision-maker (head / director / associate head). `unknown` is
+// allowed only when the row is explicitly flagged the primary contact (many
+// real head coaches have an unparsed title but carry is_primary_contact).
+function isTargetableRole(c: Coach): boolean {
+  const r = (c.role_level ?? '').toLowerCase();
+  if (r === 'assistant_coach' || r === 'volunteer') return false;
+  if (r === 'head_coach' || r === 'director' || r === 'associate_head_coach') return true;
+  return c.is_primary_contact === true;
+}
+
 // Is `cand` a better "main contact" for a school than the current pick?
 // primary-contact flag wins, then role seniority, then fit, then name (stable).
 function isBetterContact(cand: Coach, cur: Coach): boolean {
@@ -165,6 +177,12 @@ export function TodayQueue({
     for (const c of coaches) {
       if (c.status !== 'new_lead') continue;
       if (!hasValidEmail(c.email)) continue;
+      // The manual worklist targets a program's DECISION-MAKER only — never line
+      // up assistant/volunteer coaches. So if a school's head is already worked
+      // (contacted / sequence-enrolled) or has no email, we DON'T fall back to an
+      // assistant — the school simply drops off the list rather than queue an
+      // assistant. (This is why assistants were piling up before.)
+      if (!isTargetableRole(c)) continue;
       // Excluded if contacted within the last 7 days; null = never contacted = eligible.
       if (c.last_contacted_at) {
         const t = Date.parse(c.last_contacted_at);
