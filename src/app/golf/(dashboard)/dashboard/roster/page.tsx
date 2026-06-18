@@ -14,6 +14,7 @@ import { RosterIntentControl } from '@/components/golf/roster/RosterIntentContro
 import { PlayerRosterView } from '@/components/golf/roster/PlayerRosterView';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachRoster } from '@/components/fairway/pages/roster/FairwayCoachRoster';
+import { FairwayPlayerRoster } from '@/components/fairway/pages/roster/FairwayPlayerRoster';
 import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
@@ -110,12 +111,10 @@ export default async function GolfRosterPage() {
       );
     }
 
-    // Redesign: the player roster is folded into the Team Hub (Teammates tab),
-    // so the standalone player roster page redirects there. Flag-off keeps the
-    // legacy PlayerRosterView below, byte-for-byte.
-    if (isRedesignEnabled()) {
-      redirect('/golf/dashboard/team-hub?tab=teammates');
-    }
+    // Player roster is its own page. The redesign renders the Fairway player
+    // roster (FairwayPlayerRoster); flag-off keeps the legacy PlayerRosterView.
+    // (Previously the redesign path redirected into the Team Hub Teammates tab,
+    // which made the "Roster" nav item a dead bounce — fixed 2026-06-18.)
 
     // Fetch team info and teammates for player view
     const { data: playerTeam } = await supabase
@@ -158,6 +157,14 @@ export default async function GolfRosterPage() {
         };
       })
       .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
+
+    if (isRedesignEnabled()) {
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <FairwayPlayerRoster players={teammates} teamName={playerTeam?.name || 'Team'} />
+        </div>
+      );
+    }
 
     return <PlayerRosterView players={teammates} teamName={playerTeam?.name || 'Team'} />;
   }
