@@ -17,7 +17,7 @@ export default function Error({
       component="CoachHelmQualifyingPage"
       title="Failed to load qualifying view"
       message="We couldn't load qualifying data. Please try again."
-      homePath="/golf/dashboard/coachhelm"
+      homePath="/golf/dashboard/qualifiers"
     />
   );
 }

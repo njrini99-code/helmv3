@@ -642,7 +642,6 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
   const [helpfulPending, startHelpful] = useTransition();
   const [ackPending, startAck] = useTransition();
   const [dismissPending, startDismiss] = useTransition();
-  const [focusPending, startFocus] = useTransition();
 
   const fire = (
     action: InsightAction,
@@ -654,9 +653,10 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
   };
 
   // The promote button renders its own bottom-sheet flow and calls
-  // createFocusAreaFromInsight directly — independent of the parent's
-  // onAction handler. We only suppress it for resolved insights (already
-  // graduated to a focus area or done).
+  // createFocusAreaFromInsightV2 directly — independent of the parent's
+  // onAction handler. For the PLAYER audience we still suppress it on resolved
+  // insights (already graduated to a focus area or done). The COACH audience
+  // always shows the unified promote flow (F056), so this gate is player-only.
   const promotable =
     insight.lifecycle_state !== 'resolved' && insight.status !== 'resolved';
 
@@ -741,38 +741,22 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
             <IconCheck size={13} />
             Acknowledge
           </Button>
-          {promotable ? (
-            <PromoteToFocusAreaButton
-              source="insight"
-              sourceId={insight.id}
-              playerId={insight.player_id}
-              suggestedTitle={insight.title}
-              suggestedDescription={insight.content}
-              suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
-              className={emphasis ? 'px-4 py-2 text-sm' : undefined}
-              label="Create focus area"
-            />
-          ) : (
-            <Button variant="primary"
-              type="button"
-              disabled={focusPending}
-              data-testid="action-create-focus-area"
-              onClick={(e) => {
-                e.stopPropagation();
-                fire('create_focus_area', startFocus);
-              }}
-              className={cn(
-                'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-body-sm font-medium tracking-[-0.005em]',
-                'bg-primary-600/95 text-white shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
-                'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
-                focusPending && 'opacity-60 pointer-events-none',
-                emphasis && 'px-6 py-2.5 text-body-sm',
-              )}
-            >
-              Create focus area
-            </Button>
-          )}
+          {/* F056: ONE unified promotion flow for BOTH active and resolved
+              insights. The coach always gets `PromoteToFocusAreaButton` (its
+              editable drawer → createFocusAreaFromInsightV2). The old resolved
+              branch fired `onAction('create_focus_area')`, a divergent path that
+              hit the legacy createFocusAreaFromInsight action and hard-navigated
+              away — unifying removes that second code path entirely. */}
+          <PromoteToFocusAreaButton
+            source="insight"
+            sourceId={insight.id}
+            playerId={insight.player_id}
+            suggestedTitle={insight.title}
+            suggestedDescription={insight.content}
+            suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
+            className={emphasis ? 'px-4 py-2 text-sm' : undefined}
+            label="Create focus area"
+          />
           <Button variant="ghost"
             type="button"
             disabled={dismissPending}

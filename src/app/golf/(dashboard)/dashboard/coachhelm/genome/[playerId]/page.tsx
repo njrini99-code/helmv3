@@ -51,7 +51,7 @@ export default async function CoachGenomePage({ params }: PageProps) {
   const { playerId } = await params;
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
-  if (!session.coach) redirect(`/golf/dashboard/coachhelm/genome/${playerId}/forbidden`);
+  if (!session.coach) redirect('/golf/dashboard');
 
   const sb = await createClient();
   const { data: player } = await sb

@@ -12,6 +12,7 @@ import { RoundLibraryClient, type RoundLibraryRound } from '@/components/golf/ro
 import { Button } from '@/components/ui/button';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   FairwayRoundsLibrary,
   type RoundLibraryRound as FairwayRoundLibraryRound,
@@ -98,7 +99,8 @@ export default async function RoundsPage() {
       const result = await supabase
         .from('golf_team_members')
         .select('player_id')
-        .eq('team_id', teamId);
+        .eq('team_id', teamId)
+        .eq('status', 'active');
       teamMembers = result.data;
     } catch {
       // Network failure
@@ -108,13 +110,16 @@ export default async function RoundsPage() {
 
     if (teamPlayerIds.length > 0) {
       try {
-        const { data: completedData } = await supabase
-          .from('golf_rounds')
-          .select(playerSelectFields)
-          .in('player_id', teamPlayerIds)
-          .eq('status', 'completed')
-          .order('round_date', { ascending: false })
-          .limit(50);
+        const { data: completedData } = await fetchAllRowsResult((from, to) =>
+          supabase
+            .from('golf_rounds')
+            .select(playerSelectFields)
+            .in('player_id', teamPlayerIds)
+            .eq('status', 'completed')
+            .order('round_date', { ascending: false })
+            .order('id', { ascending: false })
+            .range(from, to)
+        );
 
         rounds = (completedData ?? []).map(r => ({
           ...r,
@@ -128,13 +133,16 @@ export default async function RoundsPage() {
     let inProgressData: typeof inProgressRounds = [];
     try {
       const [completedResult, inProgressResult] = await Promise.all([
-        supabase
-          .from('golf_rounds')
-          .select(playerSelectFields)
-          .eq('player_id', player.id)
-          .eq('status', 'completed')
-          .order('round_date', { ascending: false })
-          .limit(50),
+        fetchAllRowsResult((from, to) =>
+          supabase
+            .from('golf_rounds')
+            .select(playerSelectFields)
+            .eq('player_id', player.id)
+            .eq('status', 'completed')
+            .order('round_date', { ascending: false })
+            .order('id', { ascending: false })
+            .range(from, to)
+        ),
         supabase
           .from('golf_rounds')
           .select(inProgressSelectFields)
