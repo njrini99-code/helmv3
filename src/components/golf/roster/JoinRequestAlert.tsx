@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { getTeamJoinRequests } from '@/app/golf/actions/teams';
@@ -31,16 +31,37 @@ export function JoinRequestAlert({ className, onDismiss, dismissible = true }: J
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    async function fetchRequests() {
-      const result = await getTeamJoinRequests();
-      if (result.success && result.data) {
-        setRequests(result.data);
-      }
-      setLoading(false);
+  const fetchRequests = useCallback(async () => {
+    const result = await getTeamJoinRequests();
+    if (result.success && result.data) {
+      setRequests(result.data);
     }
-    fetchRequests();
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchRequests();
+
+    // Lightweight refresh: pick up new requests without a full reload.
+    // getTeamJoinRequests() is auth/team-scoped server-side, so a periodic
+    // re-fetch plus a focus/visibility listener keeps the banner current.
+    const POLL_INTERVAL_MS = 60_000;
+    const interval = setInterval(fetchRequests, POLL_INTERVAL_MS);
+
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') {
+        fetchRequests();
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', fetchRequests);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', fetchRequests);
+    };
+  }, [fetchRequests]);
 
   function handleDismiss() {
     setDismissed(true);

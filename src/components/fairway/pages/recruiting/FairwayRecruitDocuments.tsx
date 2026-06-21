@@ -21,7 +21,7 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 import { Input } from '@/components/fairway/forms/Input';
 import { FormField } from '@/components/fairway/forms/FormField';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
-import { openExternalUrl } from '@/lib/utils/capacitor';
+import { openExternalUrl, isNativeApp } from '@/lib/utils/capacitor';
 import {
   getRecruitDocuments,
   uploadRecruitDocument,
@@ -137,8 +137,20 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
     try {
       const res = await getRecruitDocumentUrl(doc.id);
       if (!res.success || !res.data) throw new Error(res.error);
-      // Capacitor-safe: in-app browser on native iOS, new tab on web.
-      await openExternalUrl(res.data.url);
+      if (isNativeApp()) {
+        // Native iOS: in-app browser (SFSafariViewController) is not subject to
+        // the web popup blocker, so opening after the await is fine.
+        await openExternalUrl(res.data.url);
+      } else {
+        // Web: the signed URL resolves AFTER an await, so window.open('_blank')
+        // is outside the user-gesture window and Safari pop-up-blocks it. An
+        // anchor download is a same-page navigation that survives the await.
+        const link = window.document.createElement('a');
+        link.href = res.data.url;
+        link.download = res.data.fileName ?? doc.title;
+        link.rel = 'noopener';
+        link.click();
+      }
     } catch (err) {
       fairwayToast.error('Could not open', {
         description: err instanceof Error ? err.message : 'Try again in a moment.',

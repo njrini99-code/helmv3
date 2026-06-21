@@ -51,7 +51,10 @@ export function StandingStrip(props: StandingStripProps) {
   const showTeam = shouldShowTeamMarker(props);
   const youPct = toScalePct(props.player_value, props.scale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
-  const pgaPct = toScalePct(props.pga_value, props.scale);
+  // F006: omit the reference tick + value entirely when the anchor is suppressed
+  // (mirror legacy Card.tsx). A women's player on a metric with no credible
+  // women's baseline must NOT be drawn against a misleading men's-Tour value.
+  const pgaPct = props.pga_omitted ? null : toScalePct(props.pga_value, props.scale);
   const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
   // EC-2: a team percentile is meaningless on a tiny roster — PERCENT_RANK()
   // returns 0/100 for the only/worst row, so "Bottom 1% on your team" fires on
@@ -116,7 +119,12 @@ export function StandingStrip(props: StandingStripProps) {
         ) : (
           <Readout label="Team" value="—" tone="muted" align="center" />
         )}
-        <Readout label={refLabel} value={formatValue(props.pga_value, props.unit)} align="end" />
+        {/* F006: suppress the reference value too when omitted — render "—". */}
+        {props.pga_omitted ? (
+          <Readout label={refLabel} value="—" tone="muted" align="end" />
+        ) : (
+          <Readout label={refLabel} value={formatValue(props.pga_value, props.unit)} align="end" />
+        )}
       </div>
 
       {/* Cohort text */}
@@ -149,13 +157,14 @@ function StripTrack({
 }: {
   youPct: number;
   teamPct: number | null;
-  pgaPct: number;
+  /** F006: null → the reference ("P") tick is omitted (suppressed anchor). */
+  pgaPct: number | null;
   youValue: string;
   /** CF-3: the reference-tick label ("PGA" / "FIELD AVG"). */
   refLabel: string;
 }) {
   const you = clampPct(youPct);
-  const pga = clampPct(pgaPct);
+  const pga = pgaPct !== null ? clampPct(pgaPct) : null;
   const team = teamPct !== null ? clampPct(teamPct) : null;
   return (
     <div className="relative px-1 pt-8 pb-7">
@@ -170,8 +179,11 @@ function StripTrack({
       {/* The track — defined ring so it reads against the card */}
       <div className="relative h-2.5 w-full rounded-full bg-inset ring-1 ring-inset ring-border-strong">
         {/* Reference tick — black, high contrast (PGA, or "FIELD AVG" for SG).
-            Label goes BELOW the bar so it never collides with the TEAM label. */}
-        <Tick leftPct={pga} barClass="bg-text-primary" labelClass="text-text-secondary" label={refLabel} labelSide="below" />
+            Label goes BELOW the bar so it never collides with the TEAM label.
+            F006: omitted entirely when the anchor is suppressed (pga === null). */}
+        {pga !== null ? (
+          <Tick leftPct={pga} barClass="bg-text-primary" labelClass="text-text-secondary" label={refLabel} labelSide="below" />
+        ) : null}
         {/* Team tick — mid grey (omitted in cold-start).
             Label goes ABOVE the bar so it can never overwrite the reference label
             even when the two ticks land within a few pixels of each other. */}

@@ -22,6 +22,20 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
     redirect(`/golf/signup?returnTo=/golf/join/${code}`);
   }
 
+  // A coach can't "join" a team as a player. If this user is a coach, do NOT
+  // push them through player onboarding — that path calls ensurePlayerRecord()
+  // and would create a stray golf_players row. Send coaches to their own home
+  // instead (dashboard if onboarded, coach onboarding otherwise).
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, onboarding_completed')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (coach) {
+    redirect(coach.onboarding_completed ? '/golf/dashboard' : '/golf/coach');
+  }
+
   // Get golf player record
   const { data: player } = await supabase
     .from('golf_players')

@@ -83,9 +83,14 @@ const nextConfig = {
 
   // Experimental features
   experimental: {
-    // Enable server actions
+    // Enable server actions.
+    // bodySizeLimit must cover the largest Server Action payload. Recruit
+    // document uploads pass the File as an action arg (see
+    // src/app/golf/actions/recruit-documents.ts, MAX_FILE_BYTES = 25 MB), so a
+    // 2 MB cap would reject 2–25 MB files *before* the action runs — making the
+    // advertised 25 MB limit a lie. Keep this in sync with that cap.
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: '25mb',
     },
     // Optimize package imports
     optimizePackageImports: [

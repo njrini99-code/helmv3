@@ -6,6 +6,32 @@ import { MyQualifiersClient } from './my-qualifiers-client';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayMyQualifiers } from '@/components/fairway/pages/my-qualifiers';
 
+/**
+ * Derive a qualifier's holes-per-round from the player's actual posted rounds
+ * (golf_rounds.holes_played) — the most common value wins. Falls back to 18 only
+ * when the player has no posted rounds for this qualifier, since the qualifier
+ * row no longer stores a holes_per_round column.
+ */
+function deriveHolesPerRound(
+  rounds: Array<{ holes_played: number | null }>,
+): number {
+  const counts = new Map<number, number>();
+  for (const r of rounds) {
+    if (typeof r.holes_played === 'number' && r.holes_played > 0) {
+      counts.set(r.holes_played, (counts.get(r.holes_played) ?? 0) + 1);
+    }
+  }
+  let best = 18;
+  let bestCount = 0;
+  for (const [holes, count] of counts) {
+    if (count > bestCount) {
+      best = holes;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
 export default async function MyQualifiersPage() {
   const session = await getGolfSessionProfile();
   if (!session) return redirect('/golf/login');
@@ -61,19 +87,24 @@ export default async function MyQualifiersPage() {
 
   // Get all qualifier rounds for this player
   const qualifierIds = entries.map(e => e.qualifier_id);
-  const { data: roundsData } = await supabase
+  const { data: roundsData, error: roundsError } = await supabase
     .from('golf_rounds')
-    .select('qualifier_id, qualifier_round_number, total_score, score_to_par')
+    .select('qualifier_id, qualifier_round_number, total_score, score_to_par, holes_played')
     .eq('player_id', player.id)
     .in('qualifier_id', qualifierIds)
     .eq('status', 'completed');
 
-  const rounds = (roundsData as unknown) as Array<{
-    qualifier_id: string | null;
-    qualifier_round_number: number | null;
-    total_score: number | null;
-    score_to_par: number | null;
-  }> | null;
+  // On a rounds-fetch error, fall back to the per-entry aggregate columns
+  // rather than rendering partial/garbled per-round progress.
+  const rounds = roundsError
+    ? null
+    : ((roundsData as unknown) as Array<{
+        qualifier_id: string | null;
+        qualifier_round_number: number | null;
+        total_score: number | null;
+        score_to_par: number | null;
+        holes_played: number | null;
+      }> | null);
 
   // Build result with progress info
   type QualifierEntry = {
@@ -116,10 +147,17 @@ export default async function MyQualifiersPage() {
       const roundsCompleted = qualifierRounds.length > 0
         ? qualifierRounds.length
         : (entry.rounds_completed ?? 0);
-      const inferredNumRounds = q.status === 'completed'
-        ? Math.max(roundsCompleted, 1)
-        : Math.max(roundsCompleted + 1, 1);
-      const numRounds = inferredNumRounds;
+      // golf_qualifiers no longer carries a num_rounds column (removed 2026-05-27),
+      // so the target is INFERRED. For a non-completed qualifier we cannot know the
+      // real total, so numRounds === roundsCompleted (i.e. "no remaining target
+      // asserted") — NOT roundsCompleted + 1, which made the "Complete" badge
+      // unreachable (roundsCompleted >= numRounds was structurally false). For a
+      // completed qualifier the posted rounds ARE the full set.
+      const numRounds = Math.max(roundsCompleted, q.status === 'completed' ? 1 : 0);
+      // holesPerRound is derived from the player's actual posted rounds rather than
+      // a removed schema column or a hardcoded 18: use the most common holes_played
+      // across this qualifier's rounds, defaulting to 18 only when none are posted.
+      const holesPerRound = deriveHolesPerRound(qualifierRounds);
 
       return {
         id: q.id,
@@ -128,7 +166,7 @@ export default async function MyQualifiersPage() {
         courseName: q.course_name,
         location: null,
         numRounds,
-        holesPerRound: 18,
+        holesPerRound,
         startDate: q.start_date,
         endDate: q.end_date,
         status: (q.status || 'upcoming') as 'upcoming' | 'in_progress' | 'completed',

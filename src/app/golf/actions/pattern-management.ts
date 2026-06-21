@@ -146,10 +146,20 @@ interface PatternDbRow {
   is_active: boolean;
   lifecycle_state?: string;
   severity?: string;
-  coach_notes?: string;
-  validated_at?: string;
-  validated_by?: string;
-  addressed_at?: string;
+  // REAL golf_patterns_v2 columns (verified live). The historical
+  // `coach_notes` / `validated_at` / `validated_by` / `addressed_at` columns
+  // never existed — writing them threw Postgres 42703 (undefined_column) and
+  // reading them always yielded undefined. Map to what the table actually has:
+  //   • resolution_notes      ← coach-entered notes (validate/address/resolve)
+  //   • validation_date       ← when the coach confirmed (was validated_at)
+  //   • validator_coach_id    ← who confirmed (was validated_by)
+  //   • validated_by_coach    ← boolean confirmation flag
+  // There is NO `addressed_at` column — "addressed" lives purely in
+  // lifecycle_state.
+  resolution_notes?: string;
+  validation_date?: string;
+  validator_coach_id?: string;
+  validated_by_coach?: boolean;
   resolved_at?: string;
   dismissed_at?: string;
   dismissed_reason?: string;
@@ -205,10 +215,13 @@ function transformPatternRow(
     recommendation: row.metadata?.recommendation,
     lifecycleState: (row.lifecycle_state as PatternLifecycleState) || 'detected',
     severity: (row.severity as PatternSeverity) || calculateSeverity(row.stroke_impact),
-    coachNotes: row.coach_notes,
-    validatedAt: row.validated_at,
-    validatedBy: row.validated_by,
-    addressedAt: row.addressed_at,
+    // Read from the REAL columns. `addressedAt` has no backing column (the
+    // "addressed" state is expressed only via lifecycle_state), so it stays
+    // undefined — the UI derives "in progress" from lifecycleState anyway.
+    coachNotes: row.resolution_notes,
+    validatedAt: row.validation_date,
+    validatedBy: row.validator_coach_id,
+    addressedAt: undefined,
     resolvedAt: row.resolved_at,
     dismissedAt: row.dismissed_at,
     dismissedReason: row.dismissed_reason,
@@ -444,16 +457,21 @@ export async function validatePattern(
 
     const patternsTable = fromUntyped(supabase, 'golf_patterns_v2');
 
+    // Write the REAL golf_patterns_v2 columns. validation_date /
+    // validator_coach_id / validated_by_coach replace the never-existent
+    // validated_at / validated_by; notes go to resolution_notes. Using the old
+    // names threw Postgres 42703 and the validation silently no-op'd.
     const updateData: Record<string, unknown> = {
       lifecycle_state: validation.isAccurate ? 'confirmed' : 'dismissed',
       severity: validation.severity,
-      validated_at: new Date().toISOString(),
-      validated_by: coach.id,
+      validated_by_coach: validation.isAccurate,
+      validation_date: new Date().toISOString(),
+      validator_coach_id: coach.id,
       updated_at: new Date().toISOString(),
     };
 
     if (validation.notes) {
-      updateData.coach_notes = validation.notes;
+      updateData.resolution_notes = validation.notes;
     }
 
     if (!validation.isAccurate) {
@@ -569,14 +587,16 @@ export async function markPatternAddressed(
 
     const patternsTable = fromUntyped(supabase, 'golf_patterns_v2');
 
+    // "Addressed" is tracked purely via lifecycle_state — there is no
+    // addressed_at column (writing it threw Postgres 42703). Notes go to the
+    // real resolution_notes column (was the non-existent coach_notes).
     const updateData: Record<string, unknown> = {
       lifecycle_state: 'addressed',
-      addressed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     if (notes) {
-      updateData.coach_notes = notes;
+      updateData.resolution_notes = notes;
     }
 
     const { error } = await patternsTable
@@ -634,8 +654,10 @@ export async function resolvePattern(
       updated_at: new Date().toISOString(),
     };
 
+    // Notes go to the real resolution_notes column (was the non-existent
+    // coach_notes, which threw Postgres 42703).
     if (notes) {
-      updateData.coach_notes = notes;
+      updateData.resolution_notes = notes;
     }
 
     const { error } = await patternsTable

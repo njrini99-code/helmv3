@@ -67,8 +67,19 @@ function statusConfig(status: string): { tone: FwStatusTone; label: string; puls
   }
 }
 
+/**
+ * Format a bare ISO date ("YYYY-MM-DD") for display. We parse it as **local**
+ * midnight rather than `new Date(dateStr)` (which treats date-only strings as
+ * UTC midnight and reads as the prior calendar day in US timezones).
+ */
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const [y, m, d] = (dateStr.split('T')[0] ?? dateStr).split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 /** Honest to-par: scored only. null → em-dash. */

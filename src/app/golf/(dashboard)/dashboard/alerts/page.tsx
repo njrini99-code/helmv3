@@ -78,7 +78,13 @@ export default async function AlertsPage() {
           teamId={teamId}
           signalSource="insights"
           defaultFilter={{
-            severity: ['urgent', 'high'],
+            // The client filter compares against MAPPED row tones
+            // (insight `urgent` → row `critical`; see patternToInsightVocabulary
+            // INSIGHT_PRIORITY_MAP), so the seeded severity set must use the
+            // mapped tones or the default filter would hide every urgent alert.
+            severity: ['critical', 'high'],
+            // The DB read still selects the raw insight priorities.
+            fetchPriorities: ['urgent', 'high'],
             status: 'active',
             signalTypes: ['insight', 'pattern'],
           }}

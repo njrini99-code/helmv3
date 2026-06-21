@@ -1,43 +1,54 @@
 /**
- * Contract test for create_goal_for_player (chat goal-creation tool).
+ * Contract test for create_goal_for_player (chat goal-PROPOSE tool).
  *
- * Prior shipped version had four production bugs that the test suite
- * missed because nothing exercised the DB path:
- *   1. team_id omitted (RLS goals_coach_create requires it)
- *   2. window_days written (it's a GENERATED ALWAYS column)
- *   3. origin: 'chat' (violates golf_goals_origin_check enum)
- *   4. no membership lookup, so a non-team player would also fail later
+ * SECURITY FIX (F017 / B12-chat-goal-confirm-gate): the chat tool used to
+ * write a `golf_goals` row directly inside the agent's tool loop, gated only
+ * by the LLM system prompt. A model misfire or a prompt-injected "yes" could
+ * therefore create a real goal with no human in the loop.
  *
- * This file pins the exact insert payload shape so any of those four
- * regress as a unit-test failure instead of a silent prod break.
+ * The tool is now PROPOSE-ONLY: it performs NO database write and returns a
+ * structured `GoalProposal` the chat UI renders as a Confirm/Cancel card. The
+ * actual insert happens only when the coach clicks Confirm (the auth-checked,
+ * RLS-gated `createGoal` server action — exercised elsewhere). This file pins
+ * that contract so a regression that re-introduces a write inside the tool
+ * loop fails as a unit test.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { create_goal_for_player } from '@/lib/coachhelm/v3/chat/tools';
+import { isGoalProposal } from '@/lib/coachhelm/v3/chat/types';
 
-const COACH_ID = '22222222-2222-4222-9222-222222222222';
 const PLAYER_ID = '33333333-3333-4333-9333-333333333333';
 const TEAM_ID = '44444444-4444-4444-9444-444444444444';
-const USER_ID = '55555555-5555-4555-9555-555555555555';
 
-type CapturedInsert = Record<string, unknown>;
+const VALID_INPUT = {
+  player_id: PLAYER_ID,
+  metric_id: 'sg_putting',
+  title: 'Improve lag putting',
+  target_value: 0.25,
+  window_days: 30,
+  coach_assignment_mode: 'suggested' as const,
+};
 
 function buildSb(opts: {
+  player?: { id: string; first_name: string | null; last_name: string | null } | null;
+  playerError?: { message: string } | null;
   membership: { team_id: string } | null;
   membershipError?: { message: string } | null;
-  insertResult?: { data: { id: string } | null; error: { message: string } | null };
-  capturedInsertRef?: { value: CapturedInsert | null };
+  /** Set true to fail the test if ANY golf_goals access is attempted. */
+  forbidGoalsTable?: boolean;
 }) {
-  const insertBuilder = {
+  const playerBuilder = {
     select: vi.fn().mockReturnThis(),
-    maybeSingle: vi.fn().mockResolvedValue(
-      opts.insertResult ?? { data: { id: 'new-goal-id' }, error: null },
-    ),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data:
+        opts.player === undefined
+          ? { id: PLAYER_ID, first_name: 'Sam', last_name: 'Rivera' }
+          : opts.player,
+      error: opts.playerError ?? null,
+    }),
   };
-  const insert = vi.fn((payload: CapturedInsert) => {
-    if (opts.capturedInsertRef) opts.capturedInsertRef.value = payload;
-    return insertBuilder;
-  });
 
   const membershipBuilder = {
     select: vi.fn().mockReturnThis(),
@@ -51,87 +62,57 @@ function buildSb(opts: {
 
   return {
     from: vi.fn((table: string) => {
+      if (table === 'golf_players') return playerBuilder;
       if (table === 'golf_team_members') return membershipBuilder;
-      if (table === 'golf_goals') return { insert };
+      if (table === 'golf_goals') {
+        // The propose-only tool must NEVER touch golf_goals — any access is a
+        // regression that re-opens the original vulnerability.
+        throw new Error('REGRESSION: create_goal_for_player must not access golf_goals');
+      }
       throw new Error(`unexpected table: ${table}`);
     }),
   };
 }
 
-describe('create_goal_for_player insert payload contract', () => {
+describe('create_goal_for_player is propose-only (no DB write)', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('includes team_id (resolved from player membership)', async () => {
-    const captured: { value: CapturedInsert | null } = { value: null };
-    const sb = buildSb({ membership: { team_id: TEAM_ID }, capturedInsertRef: captured });
+  it('returns a structured goal proposal, never a goal_id', async () => {
+    const sb = buildSb({ membership: { team_id: TEAM_ID } });
 
-    await create_goal_for_player(
-      sb as never,
-      {
-        player_id: PLAYER_ID,
-        metric_id: 'sg_putting',
-        title: 'Improve lag putting',
-        target_value: 0.25,
-        window_days: 30,
-        coach_assignment_mode: 'suggested',
-      },
-      USER_ID,
-      COACH_ID,
-    );
+    const result = await create_goal_for_player(sb as never, VALID_INPUT);
 
-    expect(captured.value).not.toBeNull();
-    expect(captured.value).toMatchObject({ team_id: TEAM_ID });
+    expect(result).not.toHaveProperty('goal_id');
+    expect(result).toHaveProperty('proposal');
+    const proposal = (result as { proposal: unknown }).proposal;
+    expect(isGoalProposal(proposal)).toBe(true);
   });
 
-  it('does NOT write window_days (it is a GENERATED ALWAYS column)', async () => {
-    const captured: { value: CapturedInsert | null } = { value: null };
-    const sb = buildSb({ membership: { team_id: TEAM_ID }, capturedInsertRef: captured });
+  it('never reads or writes golf_goals (the load-bearing gate)', async () => {
+    const sb = buildSb({ membership: { team_id: TEAM_ID } });
 
-    await create_goal_for_player(
-      sb as never,
-      {
-        player_id: PLAYER_ID,
-        metric_id: 'sg_putting',
-        title: 'Improve lag putting',
-        target_value: 0.25,
-        window_days: 30,
-        coach_assignment_mode: 'suggested',
-      },
-      USER_ID,
-      COACH_ID,
-    );
-
-    expect(captured.value).not.toHaveProperty('window_days');
+    // buildSb throws if golf_goals is accessed; a clean run proves no write.
+    await expect(create_goal_for_player(sb as never, VALID_INPUT)).resolves.toBeDefined();
+    const tablesTouched = (sb.from as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+    expect(tablesTouched).not.toContain('golf_goals');
   });
 
-  it('uses origin from the constraint-allowed enum (manual/engine_suggested/from_insight)', async () => {
-    const captured: { value: CapturedInsert | null } = { value: null };
-    const sb = buildSb({ membership: { team_id: TEAM_ID }, capturedInsertRef: captured });
+  it('carries the resolved team_id forward for the confirm step', async () => {
+    const sb = buildSb({ membership: { team_id: TEAM_ID } });
 
-    await create_goal_for_player(
-      sb as never,
-      {
-        player_id: PLAYER_ID,
-        metric_id: 'sg_putting',
-        title: 'Improve lag putting',
-        target_value: 0.25,
-        window_days: 30,
-        coach_assignment_mode: 'suggested',
-      },
-      USER_ID,
-      COACH_ID,
-    );
+    const result = await create_goal_for_player(sb as never, VALID_INPUT);
 
-    expect(['manual', 'engine_suggested', 'from_insight']).toContain(captured.value?.origin);
+    expect(result).toMatchObject({ proposal: { team_id: TEAM_ID } });
   });
 
-  it('sets coach attribution fields (creator_role, coach_id_if_assigned, created_by_user_id)', async () => {
-    const captured: { value: CapturedInsert | null } = { value: null };
-    const sb = buildSb({ membership: { team_id: TEAM_ID }, capturedInsertRef: captured });
+  it('echoes the proposed parameters (title, metric, target, window, mode)', async () => {
+    const sb = buildSb({ membership: { team_id: TEAM_ID } });
 
-    await create_goal_for_player(
-      sb as never,
-      {
+    const result = await create_goal_for_player(sb as never, VALID_INPUT);
+
+    expect(result).toMatchObject({
+      proposal: {
+        kind: 'create_goal',
         player_id: PLAYER_ID,
         metric_id: 'sg_putting',
         title: 'Improve lag putting',
@@ -139,55 +120,35 @@ describe('create_goal_for_player insert payload contract', () => {
         window_days: 30,
         coach_assignment_mode: 'suggested',
       },
-      USER_ID,
-      COACH_ID,
-    );
-
-    expect(captured.value).toMatchObject({
-      creator_role: 'coach',
-      coach_id_if_assigned: COACH_ID,
-      created_by_user_id: USER_ID,
     });
+  });
+
+  it('includes the player display name for the card', async () => {
+    const sb = buildSb({
+      player: { id: PLAYER_ID, first_name: 'Sam', last_name: 'Rivera' },
+      membership: { team_id: TEAM_ID },
+    });
+
+    const result = await create_goal_for_player(sb as never, VALID_INPUT);
+
+    expect(result).toMatchObject({ proposal: { player_name: 'Sam Rivera' } });
   });
 
   it('returns a clear error if the player has no active team membership', async () => {
     const sb = buildSb({ membership: null });
 
-    const result = await create_goal_for_player(
-      sb as never,
-      {
-        player_id: PLAYER_ID,
-        metric_id: 'sg_putting',
-        title: 'Improve lag putting',
-        target_value: 0.25,
-        window_days: 30,
-        coach_assignment_mode: 'suggested',
-      },
-      USER_ID,
-      COACH_ID,
-    );
+    const result = await create_goal_for_player(sb as never, VALID_INPUT);
 
     expect(result).toHaveProperty('error');
     expect(String((result as { error?: string }).error)).toMatch(/active team/i);
   });
 
-  it('returns the new goal_id on success', async () => {
-    const sb = buildSb({ membership: { team_id: TEAM_ID } });
+  it('returns a clear error if the player does not exist', async () => {
+    const sb = buildSb({ player: null, membership: { team_id: TEAM_ID } });
 
-    const result = await create_goal_for_player(
-      sb as never,
-      {
-        player_id: PLAYER_ID,
-        metric_id: 'sg_putting',
-        title: 'Improve lag putting',
-        target_value: 0.25,
-        window_days: 30,
-        coach_assignment_mode: 'suggested',
-      },
-      USER_ID,
-      COACH_ID,
-    );
+    const result = await create_goal_for_player(sb as never, VALID_INPUT);
 
-    expect(result).toEqual({ goal_id: 'new-goal-id' });
+    expect(result).toHaveProperty('error');
+    expect(String((result as { error?: string }).error)).toMatch(/not found/i);
   });
 });

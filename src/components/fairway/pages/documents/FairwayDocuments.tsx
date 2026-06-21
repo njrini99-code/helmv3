@@ -83,6 +83,7 @@ import {
   updateGolfDocument,
   uploadNewVersion,
   getVersionHistory,
+  getPreviewUrl,
 } from '@/app/golf/actions/documents';
 import type { DocumentVersion, GolfDocument } from '@/lib/types/golf';
 import { DocumentPreview } from '@/components/golf/documents/DocumentPreview';
@@ -563,6 +564,26 @@ export function FairwayDocuments({
     }
   };
 
+  // ── Download — `documents` bucket is private, so the stored file_url is a
+  // dead public URL (→ 403). Fetch a short-lived SIGNED URL on demand via the
+  // same server path the preview uses, then trigger a programmatic download.
+  const handleDownload = useCallback(async (doc: FairwayDocument) => {
+    try {
+      const { data, error } = await getPreviewUrl(doc.id);
+      if (error || !data?.url) {
+        fairwayToast.error(error || 'Could not generate a download link');
+        return;
+      }
+      const link = window.document.createElement('a');
+      link.href = data.url;
+      link.download = doc.title;
+      link.rel = 'noopener';
+      link.click();
+    } catch (err) {
+      fairwayToast.error(err instanceof Error ? err.message : 'Download failed');
+    }
+  }, []);
+
   // ── Preview / version history (preview logic reused from legacy components) ─
   const openPreview = (doc: FairwayDocument) => {
     setPreviewDocument(doc);
@@ -935,6 +956,7 @@ export function FairwayDocuments({
               isCoach={isCoach}
               currentFolder={currentFolder}
               onPreview={() => openPreview(doc)}
+              onDownload={() => void handleDownload(doc)}
               onVersionHistory={() => openVersionHistory(doc)}
               onUploadVersion={() => openUploadVersionModal(doc)}
               onEdit={() => openEditModal(doc)}
@@ -1379,6 +1401,7 @@ interface DocumentCardProps {
   isCoach: boolean;
   currentFolder: string | null;
   onPreview: () => void;
+  onDownload: () => void;
   onVersionHistory: () => void;
   onUploadVersion: () => void;
   onEdit: () => void;
@@ -1391,6 +1414,7 @@ function DocumentCard({
   isCoach,
   currentFolder,
   onPreview,
+  onDownload,
   onVersionHistory,
   onUploadVersion,
   onEdit,
@@ -1553,20 +1577,18 @@ function DocumentCard({
           >
             <IconEye size={15} />
           </IconButton>
-          <a
-            href={doc.file_url}
-            download
-            onClick={(e) => e.stopPropagation()}
+          <IconButton
             aria-label={`Download ${doc.title}`}
-            className={cn(
-              'inline-flex h-9 w-9 items-center justify-center rounded-full text-text-secondary',
-              'transition-colors hover:bg-surface-sunken hover:text-text-primary',
-              'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-            )}
+            variant="ghost"
+            size="sm"
             title="Download"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownload();
+            }}
           >
             <IconDownload size={15} />
-          </a>
+          </IconButton>
         </div>
       </div>
     </Surface>

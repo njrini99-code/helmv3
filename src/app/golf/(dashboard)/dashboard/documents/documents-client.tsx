@@ -28,6 +28,7 @@ import {
   updateGolfDocument,
   uploadNewVersion,
   getVersionHistory,
+  getPreviewUrl,
 } from '@/app/golf/actions/documents';
 import type { DocumentVersion, GolfDocument } from '@/lib/types/golf';
 import { useToast } from '@/components/ui/sonner';
@@ -467,6 +468,26 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       setUpdating(false);
     }
   };
+
+  // Download — the `documents` bucket is private, so the stored file_url is a
+  // dead public URL (→ 403). Fetch a short-lived SIGNED URL on demand via the
+  // same server path the preview uses, then trigger a programmatic download.
+  const handleDownload = useCallback(async (doc: Document) => {
+    try {
+      const { data, error } = await getPreviewUrl(doc.id);
+      if (error || !data?.url) {
+        showToast(error || 'Could not generate a download link', 'error');
+        return;
+      }
+      const link = window.document.createElement('a');
+      link.href = data.url;
+      link.download = doc.title;
+      link.rel = 'noopener';
+      link.click();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Download failed', 'error');
+    }
+  }, [showToast]);
 
   // Preview / Version history handlers
   const openPreview = (doc: Document) => { setPreviewDocument(doc); setShowPreview(true); };
@@ -1012,15 +1033,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                       >
                         <IconEye size={14} />
                       </IconButton>
-                      <a
-                        href={doc.file_url}
-                        download
-                        onClick={(e) => e.stopPropagation()}
+                      <IconButton variant="default" aria-label={`Download ${doc.title}`}
+                        onClick={(e) => { e.stopPropagation(); void handleDownload(doc); }}
                         className="p-1.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-500 transition-colors"
                         title="Download"
                       >
                         <IconDownload size={14} />
-                      </a>
+                      </IconButton>
                     </div>
                   </div>
                 </div>

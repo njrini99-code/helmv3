@@ -13,6 +13,7 @@ import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/patter
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { Button, IconButton } from '@/components/ui/button';
+import { toast } from '@/components/ui/sonner';
 
 // ============================================================================
 // TYPES
@@ -22,12 +23,18 @@ interface PatternValidationModalProps {
   pattern: ExtendedPattern;
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Submit the coach's validation. May be sync or async, and may return the
+   * server action's `{ success, error }` result. When it does, this modal
+   * surfaces a failure (toast + keeps the modal open) instead of letting the
+   * parent silently close — a real failure must never look like a success.
+   */
   onSubmit: (validation: {
     isAccurate: boolean;
     severity: PatternSeverity;
     notes?: string;
     createFocusArea?: boolean;
-  }) => void;
+  }) => void | Promise<void> | Promise<{ success: boolean; error?: string }>;
   isLoading?: boolean;
 }
 
@@ -90,8 +97,31 @@ export function PatternValidationModal({
   const [createFocusArea, setCreateFocusArea] = useState(true);
   const { modalRef } = useFocusTrap(isOpen, onClose);
 
+  // Await the submit and surface failures. If `onSubmit` returns the server
+  // action's `{ success, error }` result and it failed (or it throws), show an
+  // error toast and keep the modal open so the coach can retry — never let a
+  // failed validation read as a silent success.
+  const submit = async (validation: {
+    isAccurate: boolean;
+    severity: PatternSeverity;
+    notes?: string;
+    createFocusArea?: boolean;
+  }) => {
+    try {
+      const result = await onSubmit(validation);
+      if (result && result.success === false) {
+        toast.error(
+          'Could not save validation',
+          result.error || 'Please try again.',
+        );
+      }
+    } catch {
+      toast.error('Could not save validation', 'Please try again.');
+    }
+  };
+
   const handleConfirm = () => {
-    onSubmit({
+    void submit({
       isAccurate: true,
       severity: selectedSeverity,
       notes: notes.trim() || undefined,
@@ -100,7 +130,7 @@ export function PatternValidationModal({
   };
 
   const handleReject = () => {
-    onSubmit({
+    void submit({
       isAccurate: false,
       severity: selectedSeverity,
       notes: notes.trim() || undefined,

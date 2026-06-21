@@ -199,7 +199,11 @@ function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
 }
 
-/** A 0..100 percentile rank as an ordinal string: 82 → "82nd", 100 → "100th". */
+/**
+ * Format a 0..100 PERCENTILE as an ordinal string: 82 → "82nd", 100 → "100th".
+ * Paired with a "team percentile" label so it reads as a percentile (you beat
+ * N% of the team), never as a finishing place.
+ */
 function ordinalRank(n: number): string {
   const v = n % 100;
   const suffix = ['th', 'st', 'nd', 'rd'];
@@ -832,14 +836,16 @@ function EdgeInstrument({
   // fall back to the raw measured value. Rendered as a FLAT big number, not a
   // gauge — the formatted string is computed here so it reads exactly right.
   const teamPctRaw = finite(teamPctOf(insight));
-  // team_pct arrives as a 0..100 percentile RANK (occasionally a 0..1 fraction)
-  // — normalize to a 0..100 rank and render it as a RANK ("100th"), never a
-  // percentage (the old formatPercent turned a rank of 100 into "10000%").
+  // team_pct is a 0..100 PERCENTILE (higher = better; "you beat N% of the team"),
+  // occasionally arriving as a 0..1 fraction — normalize to a 0..100 percentile.
+  // It is NOT a finishing place: rendering it as an ordinal place ("82nd") read
+  // as 82nd-of-8 nonsense, so we render it AS A PERCENTILE ("82nd pct") with a
+  // "team percentile" label (and a "top N%" chip), never a literal rank/place.
   const teamPct =
     teamPctRaw == null ? null : Math.round(teamPctRaw <= 1 ? teamPctRaw * 100 : teamPctRaw);
   const yourValue = finite(ev.your_value);
 
-  // The big read + its small uppercase label. Percentile rank when we have it,
+  // The big read + its small uppercase label. Team percentile when we have it,
   // else the player's own measured value display.
   const hasEdge = teamPct != null || yourValue != null;
   const edgeDisplay =
@@ -848,11 +854,11 @@ function EdgeInstrument({
       : ev.your_value_display || (yourValue != null ? String(Math.round(yourValue)) : '—');
   const edgeLabel =
     teamPct != null
-      ? `${ev.metric_label || 'Your number'} · team rank`
+      ? `${ev.metric_label || 'Your number'} · team percentile`
       : `${ev.metric_label || 'Your number'}${ev.unit ? ` · ${ev.unit}` : ''}`;
-  // "Best on the team" reads as a calm success chip ONLY when the rank is truly
-  // top-of-roster (>= 90th) — never a needle or arc, just an honest cue. Below
-  // that threshold we show no chip rather than overclaiming.
+  // "Top of the team" reads as a calm success chip ONLY when the player is truly
+  // top-of-roster (>= 90th percentile) — never a needle or arc, just an honest
+  // "top N%" cue. Below that threshold we show no chip rather than overclaiming.
   const bestOnTeam = teamPct != null && teamPct >= 90;
 
   // BESPOKE DARK SPOTLIGHT — this page's job is "here's the ONE thing to fix",
@@ -925,10 +931,10 @@ function EdgeInstrument({
               <span className="font-fw-sans text-caption font-semibold uppercase tracking-[0.12em] text-nav-text-dim">
                 {edgeLabel}
               </span>
-              {bestOnTeam ? (
+              {bestOnTeam && teamPct != null ? (
                 <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-accent-500/15 px-2.5 py-1 font-fw-sans text-caption font-semibold text-nav-accent md:self-end">
                   <span aria-hidden>↗</span>
-                  Best on the team
+                  Top {Math.max(1, 100 - teamPct)}% on the team
                 </span>
               ) : null}
             </div>

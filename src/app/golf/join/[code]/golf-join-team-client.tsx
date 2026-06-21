@@ -30,6 +30,18 @@ const fadeIn = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
+/**
+ * Format the player's class for display. A 4-digit graduation year (e.g. "2027")
+ * renders as "Class of 2027" — the label the UI expects. Anything else (legacy
+ * tokens like "freshman"/"sophomore") falls back to the prior token formatting.
+ */
+function formatPlayerYear(value: string): string {
+  if (/^\d{4}$/.test(value)) {
+    return `Class of ${value}`;
+  }
+  return value.replace('_', ' ');
+}
+
 export function GolfJoinTeamClient({
   inviteCode,
   playerId,
@@ -155,7 +167,7 @@ export function GolfJoinTeamClient({
                     <div>
                       <p className="text-sm text-warm-500">Joining as</p>
                       <p className="font-semibold text-warm-900">{playerName}</p>
-                      <p className="text-xs text-warm-500 capitalize">{playerYear.replace('_', ' ')}</p>
+                      <p className="text-xs text-warm-500 first-letter:capitalize">{formatPlayerYear(playerYear)}</p>
                     </div>
                   </div>
                 </div>

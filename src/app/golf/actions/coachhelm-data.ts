@@ -78,12 +78,14 @@ import {
   simulateTournament,
   optimizeLineup,
   simulateWhatIf,
+  rankImprovementOpportunities,
 } from '@/lib/coachhelm/v2/simulation';
 import type {
   PlayerProfile,
   TournamentSimulation,
   LineupOptimization,
   WhatIfScenario,
+  ImprovementProjection,
 } from '@/lib/coachhelm/v2/simulation';
 
 // ============================================================================
@@ -102,11 +104,38 @@ interface ActionError {
 
 type ActionResult<T> = ActionSuccess<T> | ActionError;
 
+/**
+ * A single improvement opportunity in the shape WhatIfPanel consumes directly.
+ * Derived from the player's weakest scoring zones (negative strokes-gained
+ * deltas) via rankImprovementOpportunities; `priority` is the ordinal rank
+ * (1 = highest impact-per-effort).
+ */
+interface ProfileImprovement {
+  metric: string;
+  currentValue: number;
+  projectedScoringImpact: number;
+  difficulty: 'easy' | 'moderate' | 'hard';
+  timeEstimate: string;
+  priority: number;
+}
+
 interface PlayerProfileData {
   composite: number | null;
   categories: CategoryRatings;
   percentiles: PercentileProfile;
   baselines: PlayerBaseline;
+  /**
+   * The player's predicted score-to-par for their next round (the EWMA of
+   * recent scoring, recent-form weighted). Null when there is no usable scoring
+   * baseline yet — WhatIfPanel reads "--" rather than a fabricated 0.
+   */
+  currentPrediction: number | null;
+  /**
+   * Ranked improvement opportunities (weakest scoring zones first). Empty when
+   * the player has no below-average strokes-gained zones to surface — WhatIfPanel
+   * renders its honest empty state in that case.
+   */
+  improvements: ProfileImprovement[];
   playerState: {
     playerId: string;
     roundCount: number;
@@ -444,6 +473,50 @@ export async function getPlayerProfile(
       playerId,
     );
 
+    // ── currentPrediction: the player's predicted score-to-par for the next
+    //    round, taken from the EWMA of recent scoring (recent-form weighted via
+    //    the EWMA itself). Honest-null when the baseline could not be built. ──
+    const scoreBaseline = baseline.metrics['scoreToPar'];
+    const currentPrediction =
+      scoreBaseline && Number.isFinite(scoreBaseline.ewma)
+        ? Math.round(scoreBaseline.ewma * 10) / 10
+        : null;
+
+    // ── improvements: the player's weakest scoring zones. rankImprovementOppor-
+    //    tunities targets every BELOW-average strokes-gained zone (negative SG)
+    //    up to the team/tour average (0) and ranks them by impact-per-effort.
+    //    Derived from the player's own SG breakdown in the stats cache; empty
+    //    when no zone is below average (WhatIfPanel shows its honest empty
+    //    state). Friendly metric keys humanize cleanly via formatMetricLabel. ──
+    let improvements: ProfileImprovement[] = [];
+    if (playerStatsRow) {
+      const sgBreakdown: Record<string, number> = {
+        offTheTee: Number(playerStatsRow.strokes_gained_tee ?? 0),
+        approach: Number(playerStatsRow.strokes_gained_approach ?? 0),
+        aroundGreen: Number(playerStatsRow.strokes_gained_around_green ?? 0),
+        putting: Number(playerStatsRow.strokes_gained_putting ?? 0),
+      };
+      // A minimal PlayerProfile is enough — rankImprovementOpportunities only
+      // reads the SG breakdown (the profile arg is currently unused by it).
+      const profileForRanking: PlayerProfile = {
+        playerId,
+        name: '',
+        scoringMean: scoreBaseline?.mean ?? 0,
+        scoringStdDev: Math.max(scoreBaseline?.stdDev ?? 0, 0.5),
+        recentForm: 0,
+      };
+      improvements = rankImprovementOpportunities(profileForRanking, sgBreakdown).map(
+        (p: ImprovementProjection): ProfileImprovement => ({
+          metric: p.metric,
+          currentValue: p.currentValue,
+          projectedScoringImpact: p.projectedScoringImpact,
+          difficulty: p.difficulty,
+          timeEstimate: p.timeEstimate,
+          priority: p.priorityRank,
+        }),
+      );
+    }
+
     return {
       success: true,
       data: {
@@ -451,6 +524,8 @@ export async function getPlayerProfile(
         categories,
         percentiles,
         baselines: baseline,
+        currentPrediction,
+        improvements,
         playerState: {
           playerId,
           roundCount: roundsData.length,

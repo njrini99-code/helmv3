@@ -36,6 +36,10 @@ import {
 } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
+import {
+  computeCounterfactual,
+  formatCounterfactualLine,
+} from '@/lib/coachhelm/v3/counterfactual/compute';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { StandingStrip, Surface, EmptyState as FairwayEmptyState } from '@/components/fairway';
 import { CoachHelmShell } from '@/components/fairway/pages/coachhelm/CoachHelmShell';
@@ -140,24 +144,49 @@ export default async function MyStandingPage() {
                         <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{group.description}</p>
                       </div>
                       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                        {rows.map(({ id, standing, cfg }) => (
-                          <StandingStrip
-                            key={id}
-                            metric_id={id}
-                            metric_label={cfg.display_label}
-                            player_value={standing.player_value}
-                            team_avg={standing.team_avg}
-                            team_n={standing.team_n}
-                            team_pct={standing.team_pct}
-                            pga_value={standing.pga_value}
-                            pga_omitted={standing.pga_omitted}
-                            is_womens={standing.is_womens}
-                            direction={cfg.direction}
-                            unit={cfg.unit}
-                            scale={cfg.default_scale}
-                            size="card"
-                          />
-                        ))}
+                        {rows.map(({ id, standing, cfg }) => {
+                          // F028: the "strokes you'd save vs Tour" projection the
+                          // legacy fork showed under each bar. Computed server-side
+                          // (compute + format are pure). Suppressed when omitted
+                          // (no credible anchor), below the 0.3-strokes floor, or
+                          // when the player has no 30-day baseline. We mirror the
+                          // legacy fork's input (player_30d_scoring_avg only).
+                          const counterfactualText = standing.pga_omitted
+                            ? ''
+                            : formatCounterfactualLine(
+                                computeCounterfactual({
+                                  metric_id: id,
+                                  direction: cfg.direction,
+                                  player_value: standing.player_value,
+                                  pga_value: standing.pga_value,
+                                  player_30d_scoring_avg: playerBaseline,
+                                }),
+                              );
+                          return (
+                            <div key={id} className="flex flex-col">
+                              <StandingStrip
+                                metric_id={id}
+                                metric_label={cfg.display_label}
+                                player_value={standing.player_value}
+                                team_avg={standing.team_avg}
+                                team_n={standing.team_n}
+                                team_pct={standing.team_pct}
+                                pga_value={standing.pga_value}
+                                pga_omitted={standing.pga_omitted}
+                                is_womens={standing.is_womens}
+                                direction={cfg.direction}
+                                unit={cfg.unit}
+                                scale={cfg.default_scale}
+                                size="card"
+                              />
+                              {counterfactualText ? (
+                                <p className="mt-1.5 px-1 font-fw-sans text-caption italic text-text-tertiary">
+                                  {counterfactualText}
+                                </p>
+                              ) : null}
+                            </div>
+                          );
+                        })}
                       </div>
                     </section>
                   );
