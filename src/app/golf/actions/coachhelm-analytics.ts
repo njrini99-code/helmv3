@@ -12,6 +12,7 @@
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { getInsightEffectivenessSignals, type TrustSignal } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 
@@ -1195,3 +1196,90 @@ function generateMockPredictionPerformance(start: Date, end: Date): PredictionPe
 
 // generateMockPatternImpact was removed — errors now surface as
 // { success: false, error } instead of silently masking as mock data.
+
+// ============================================================================
+// INSIGHT TRUST SIGNALS (P1-12 — effectiveness event ledger rollup)
+// ============================================================================
+
+/**
+ * Roll up trust signals for a set of insight ids for the analytics surface.
+ *
+ * Auth follows the verifyTeamAccess pattern used throughout this file: the
+ * caller must be authenticated, and must have team access to EVERY team that
+ * owns one of the requested insights. We resolve those owning teams from
+ * `golf_coach_insights.team_id` and gate on all of them — an insight whose team
+ * the caller cannot access (or an id that resolves to no insight) makes the
+ * whole request Forbidden, so trust data never leaks across teams.
+ *
+ * On success returns a plain `Record<insightId, TrustSignal>` (server-action
+ * boundaries serialize plain objects, not Maps).
+ */
+export async function getInsightTrustSignals(
+  insightIds: string[],
+): Promise<{ success: true; signals: Record<string, TrustSignal> } | { success: false; error: string }> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  // Dedupe + drop falsy ids before any DB work.
+  const ids = Array.from(new Set((insightIds ?? []).filter((id): id is string => !!id)));
+  if (ids.length === 0) {
+    return { success: true, signals: {} };
+  }
+
+  try {
+    // Resolve the owning team(s) for the requested insights.
+    const { data: rows, error: insightErr } = await supabase
+      .from('golf_coach_insights')
+      .select('id, team_id')
+      .in('id', ids);
+
+    if (insightErr) {
+      await logServerError(`getInsightTrustSignals insight lookup failed: ${insightErr.message}`, {
+        action: 'getInsightTrustSignals',
+        featureArea: 'coachhelm_analytics',
+        extra: { count: ids.length, errorCode: insightErr.code },
+      });
+      return { success: false, error: insightErr.message };
+    }
+
+    // Every requested id must resolve to a real insight with a team_id, and the
+    // caller must have access to each of those teams.
+    const foundIds = new Set((rows ?? []).map((r) => r.id));
+    if (ids.some((id) => !foundIds.has(id))) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    // An insight with no team_id can't be access-scoped → deny rather than leak.
+    if ((rows ?? []).some((r) => !r.team_id)) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const teamIds = Array.from(
+      new Set((rows ?? []).map((r) => r.team_id).filter((t): t is string => !!t)),
+    );
+    for (const teamId of teamIds) {
+      const access = await verifyTeamAccess(teamId, user.id, supabase);
+      if (!access.allowed) {
+        return { success: false, error: 'Forbidden' };
+      }
+    }
+
+    // Counts come ONLY from real ledger rows — this rollup cannot invent
+    // exposure/action/outcome that did not happen.
+    const signalMap = await getInsightEffectivenessSignals(ids);
+    const signals: Record<string, TrustSignal> = {};
+    for (const [id, signal] of signalMap) {
+      signals[id] = signal;
+    }
+    return { success: true, signals };
+  } catch (error) {
+    await logServerError(
+      `getInsightTrustSignals threw: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'getInsightTrustSignals', featureArea: 'coachhelm_analytics' },
+    );
+    return { success: false, error: 'Failed to fetch insight trust signals' };
+  }
+}

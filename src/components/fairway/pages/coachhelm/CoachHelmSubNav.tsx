@@ -92,6 +92,10 @@ const TABS: readonly TabDef[] = [
     matchPrefixes: [
       '/golf/dashboard/development',
       '/golf/dashboard/coachhelm/genome',
+      // The coach player-detail surfaces (AI Insight + its /game fingerprint leaf)
+      // live under /players/[id]; they are the Players-tab leaves, so they must
+      // light the Players tab to read as part of the CoachHelm cluster (P410).
+      '/golf/dashboard/players',
       '/golf/dashboard/my-development',
     ],
   },

@@ -48,6 +48,7 @@ import {
   VISIBLE_LIFECYCLE_STATES,
   applyInsightVisibility,
 } from '@/lib/coachhelm/v3/insight-visibility';
+import { recordInsightExposure } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -284,6 +285,42 @@ function applyPlayerFeedbackOverlay(
 }
 
 // ---------------------------------------------------------------------------
+// Exposure ledger (P1-12)
+// ---------------------------------------------------------------------------
+
+/**
+ * P1-12 — record an EXPOSURE event for every insight a read path is about to
+ * RETURN to a surface (post-rank/dedupe/overlay, pre-return). This is the only
+ * place "shown" is counted, so the trust rollup can never claim an insight was
+ * surfaced when it wasn't: an insight that's filtered out or sliced off the page
+ * before this call is never recorded, and an empty list is a no-op.
+ *
+ * Failure-silent by construction — `recordInsightExposure` swallows + logs its
+ * own errors and never throws, so this can't poison the read path's happy path.
+ * `rank_position` is the 0-based index of the insight in the returned list.
+ */
+function recordExposureForReturned(
+  insights: Array<{ id: string; player_id: string }>,
+  surface: string,
+  coachId?: string | null,
+): void {
+  if (!Array.isArray(insights) || insights.length === 0) return;
+  const rows = insights
+    .filter((ins) => ins && ins.id && ins.player_id)
+    .map((ins, idx) => ({
+      insight_id: ins.id,
+      player_id: ins.player_id,
+      coach_id: coachId ?? null,
+      surface,
+      rank_position: idx,
+    }));
+  // Fire-and-forget — the writer is failure-silent, so we don't await it into
+  // the render path (and a rejected promise can't surface because it never
+  // rejects). `void` documents the deliberate non-await.
+  void recordInsightExposure(rows);
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -351,7 +388,10 @@ export async function getTopInsightForPlayer(
     // dismissed urgent row falls through to the ranked pass (which also filters).
     if (urgentInsight) {
       const overlaid = applyPlayerFeedbackOverlay([urgentInsight], await getFeedback());
-      if (overlaid.length > 0) return overlaid[0] ?? null;
+      if (overlaid.length > 0 && overlaid[0]) {
+        recordExposureForReturned([overlaid[0]], 'hub_signal');
+        return overlaid[0];
+      }
     }
   }
 
@@ -403,7 +443,10 @@ export async function getTopInsightForPlayer(
     dedupeBySubject(collapseParScoring(ranked)),
     await getFeedback(),
   );
-  return overlaid[0] ?? null;
+  const top = overlaid[0] ?? null;
+  // Only the single insight the Hub signal card actually shows is recorded.
+  if (top) recordExposureForReturned([top], 'hub_signal');
+  return top;
 }
 
 /**
@@ -561,7 +604,11 @@ export async function getInsightsForPlayer(
   const feedbackByInsight = await loadPlayerFeedbackByInsight(supabase, playerId).catch(
     () => new Map<string, InsightPlayerFeedback>(),
   );
-  return applyPlayerFeedbackOverlay(deduped, feedbackByInsight).slice(0, limit);
+  const shown = applyPlayerFeedbackOverlay(deduped, feedbackByInsight).slice(0, limit);
+  // Record exposure for the EXACT rows returned (post overlay + slice) — a row
+  // dropped by the limit or by a player dismissal is never counted as shown.
+  recordExposureForReturned(shown, 'player_feed');
+  return shown;
 }
 
 /**
@@ -733,6 +780,9 @@ export async function getInsightsForCoachWithMeta(
   // so a capped page can honestly disclose "showing N of TOTAL" instead of
   // silently truncating at the limit.
   const data_ = ranked.slice(0, limit);
+  // Record exposure for the page the coach actually receives (post rank + dedupe
+  // + slice). Rows beyond the limit are NOT counted — only what's surfaced is.
+  recordExposureForReturned(data_, 'coach_feed', coachId);
   return { ok: true, data: data_, total: ranked.length, capped: ranked.length > data_.length };
 }
 
@@ -858,7 +908,12 @@ export async function getTopInsightsForPlayers(
   }
   for (const [pid, list] of byPlayer) {
     const ranked = dedupeBySubject(collapseParScoring(rankEvidenceInsights(list)));
-    out.set(pid, ranked.slice(0, limit));
+    const sliced = ranked.slice(0, limit);
+    out.set(pid, sliced);
+    // Record exposure for each player's surfaced head insight(s) on the roster
+    // card — rank_position is per-player. coach_id is unknown here (RLS-scoped
+    // sweep, not a resolved coach row) so it's left null.
+    recordExposureForReturned(sliced, 'roster_card');
   }
 
   return out;
@@ -941,7 +996,10 @@ export async function getRoundTakeawayInsight(
     rows.map(mapRowToEvidenceInsight).filter((r): r is EvidenceInsight => r !== null),
   );
 
-  return ranked[0] ?? null;
+  const takeaway = ranked[0] ?? null;
+  // Only the single takeaway insight the round-review card shows is recorded.
+  if (takeaway) recordExposureForReturned([takeaway], 'round_review');
+  return takeaway;
 }
 
 // ---------------------------------------------------------------------------

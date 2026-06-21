@@ -52,6 +52,7 @@ import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/rank
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { checkRateLimit } from '@/lib/auth/supabase-rate-limit';
+import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 // 2026-05-23: All user-callable CoachHelm engine entrypoints rate-limit at
 // 5/min/user — the engine runs are multi-second jobs that load shots, mine
@@ -1168,7 +1169,7 @@ export async function acknowledgeInsight(insightId: string) {
       })
       .eq('id', insightId)
       .eq('team_id', access.teamId)
-      .select('id');
+      .select('id, player_id');
 
     if (error) {
       await logServerError(`acknowledgeInsight failed: ${error.message}`, {
@@ -1181,6 +1182,20 @@ export async function acknowledgeInsight(insightId: string) {
 
     if (!data || data.length === 0) {
       return { success: false, error: 'Insight not found' };
+    }
+
+    // P1-12: record the ACK as a real insight action (failure-silent). Only a
+    // confirmed update of an authorized row reaches here, so "not-acted can't
+    // be acted" holds. player_id comes from the updated row.
+    const ackPlayerId = (data[0] as { player_id?: string | null } | undefined)?.player_id;
+    if (ackPlayerId) {
+      void recordInsightAction({
+        insight_id: insightId,
+        player_id: ackPlayerId,
+        actor_id: user.id,
+        actor_role: 'coach',
+        action_type: 'acknowledged',
+      });
     }
 
     revalidatePath('/golf/dashboard');
@@ -1228,7 +1243,7 @@ export async function dismissInsight(insightId: string) {
       })
       .eq('id', insightId)
       .eq('team_id', access.teamId)
-      .select('id');
+      .select('id, player_id');
 
     if (error) {
       await logServerError(`dismissInsight failed: ${error.message}`, {
@@ -1241,6 +1256,18 @@ export async function dismissInsight(insightId: string) {
 
     if (!data || data.length === 0) {
       return { success: false, error: 'Insight not found' };
+    }
+
+    // P1-12: record the DISMISS as a real insight action (failure-silent).
+    const dismissPlayerId = (data[0] as { player_id?: string | null } | undefined)?.player_id;
+    if (dismissPlayerId) {
+      void recordInsightAction({
+        insight_id: insightId,
+        player_id: dismissPlayerId,
+        actor_id: user.id,
+        actor_role: 'coach',
+        action_type: 'dismissed',
+      });
     }
 
     revalidatePath('/golf/dashboard');
@@ -1361,7 +1388,7 @@ export async function resolveInsight(insightId: string) {
       })
       .eq('id', insightId)
       .eq('team_id', access.teamId)
-      .select('id');
+      .select('id, player_id');
 
     if (error) {
       await logServerError(`resolveInsight failed: ${error.message}`, {
@@ -1374,6 +1401,18 @@ export async function resolveInsight(insightId: string) {
 
     if (!data || data.length === 0) {
       return { success: false, error: 'Insight not found' };
+    }
+
+    // P1-12: record the RESOLVE as a real insight action (failure-silent).
+    const resolvePlayerId = (data[0] as { player_id?: string | null } | undefined)?.player_id;
+    if (resolvePlayerId) {
+      void recordInsightAction({
+        insight_id: insightId,
+        player_id: resolvePlayerId,
+        actor_id: user.id,
+        actor_role: 'coach',
+        action_type: 'resolved',
+      });
     }
 
     revalidatePath('/golf/dashboard');

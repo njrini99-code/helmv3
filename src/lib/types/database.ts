@@ -7278,6 +7278,54 @@ export type Database = {
         }
         Relationships: []
       }
+      golf_insight_action: {
+        Row: {
+          action_type: string
+          actor_id: string | null
+          actor_role: string | null
+          created_at: string
+          id: string
+          insight_id: string
+          metadata: Json | null
+          player_id: string
+        }
+        Insert: {
+          action_type: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          id?: string
+          insight_id: string
+          metadata?: Json | null
+          player_id: string
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string | null
+          actor_role?: string | null
+          created_at?: string
+          id?: string
+          insight_id?: string
+          metadata?: Json | null
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_insight_action_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coach_insights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_insight_action_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_insight_drill_attachments: {
         Row: {
           drill_id: string
@@ -7388,6 +7436,57 @@ export type Database = {
           },
         ]
       }
+      golf_insight_exposure: {
+        Row: {
+          coach_id: string | null
+          created_at: string
+          id: string
+          insight_id: string
+          player_id: string
+          rank_position: number | null
+          rank_score: number | null
+          shown_at: string
+          surface: string | null
+        }
+        Insert: {
+          coach_id?: string | null
+          created_at?: string
+          id?: string
+          insight_id: string
+          player_id: string
+          rank_position?: number | null
+          rank_score?: number | null
+          shown_at?: string
+          surface?: string | null
+        }
+        Update: {
+          coach_id?: string | null
+          created_at?: string
+          id?: string
+          insight_id?: string
+          player_id?: string
+          rank_position?: number | null
+          rank_score?: number | null
+          shown_at?: string
+          surface?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_insight_exposure_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coach_insights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_insight_exposure_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_insight_generation_log: {
         Row: {
           created_at: string | null
@@ -7435,6 +7534,63 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_insight_outcome: {
+        Row: {
+          baseline_value: number | null
+          created_at: string
+          id: string
+          improvement: number | null
+          insight_id: string
+          measured_at: string
+          metric: string | null
+          outcome_value: number | null
+          player_id: string
+          related_round_id: string | null
+          window_days: number | null
+        }
+        Insert: {
+          baseline_value?: number | null
+          created_at?: string
+          id?: string
+          improvement?: number | null
+          insight_id: string
+          measured_at?: string
+          metric?: string | null
+          outcome_value?: number | null
+          player_id: string
+          related_round_id?: string | null
+          window_days?: number | null
+        }
+        Update: {
+          baseline_value?: number | null
+          created_at?: string
+          id?: string
+          improvement?: number | null
+          insight_id?: string
+          measured_at?: string
+          metric?: string | null
+          outcome_value?: number | null
+          player_id?: string
+          related_round_id?: string | null
+          window_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_insight_outcome_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coach_insights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_insight_outcome_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
             referencedColumns: ["id"]
           },
         ]
@@ -8105,6 +8261,7 @@ export type Database = {
           notes: string | null
           player_id: string
           room: string | null
+          semester: string | null
           start_time: string | null
           team_id: string | null
           updated_at: string | null
@@ -8122,6 +8279,7 @@ export type Database = {
           notes?: string | null
           player_id: string
           room?: string | null
+          semester?: string | null
           start_time?: string | null
           team_id?: string | null
           updated_at?: string | null
@@ -8139,6 +8297,7 @@ export type Database = {
           notes?: string | null
           player_id?: string
           room?: string | null
+          semester?: string | null
           start_time?: string | null
           team_id?: string | null
           updated_at?: string | null
@@ -8232,6 +8391,7 @@ export type Database = {
           from_review_id: string | null
           id: string
           notes: string | null
+          outcome_status: string | null
           player_id: string
           priority: number | null
           progress_notes: Json | null
@@ -8255,6 +8415,7 @@ export type Database = {
           from_review_id?: string | null
           id?: string
           notes?: string | null
+          outcome_status?: string | null
           player_id: string
           priority?: number | null
           progress_notes?: Json | null
@@ -8278,6 +8439,7 @@ export type Database = {
           from_review_id?: string | null
           id?: string
           notes?: string | null
+          outcome_status?: string | null
           player_id?: string
           priority?: number | null
           progress_notes?: Json | null
@@ -11641,6 +11803,10 @@ export type Database = {
       golf_normalize_name: { Args: { p: string }; Returns: string }
       heartbeat: { Args: never; Returns: undefined }
       hypopg_reset: { Args: never; Returns: undefined }
+      ingest_external_round_atomic: {
+        Args: { p_holes: Json; p_round: Json; p_shots: Json }
+        Returns: Json
+      }
       is_admin: { Args: never; Returns: boolean }
       is_baseball_primary_coach: {
         Args: { p_team_id: string }

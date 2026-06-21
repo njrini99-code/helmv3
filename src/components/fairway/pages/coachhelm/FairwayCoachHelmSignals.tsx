@@ -107,6 +107,9 @@ import {
   type PatternSeverity,
 } from '@/app/golf/actions/pattern-management';
 import type { InsightPriority } from '@/components/fairway/cards-insight/InsightCard';
+import { InsightTrustChips } from './InsightTrustChips';
+import { getInsightTrustSignals } from '@/app/golf/actions/coachhelm-analytics';
+import type { TrustSignal } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — the discriminated surface contract.
@@ -307,6 +310,14 @@ export function FairwayCoachHelmSignals({
         patterns carry their own `patternCounts`. null until first load. */
   const [eligibleTotal, setEligibleTotal] = useState<number | null>(null);
 
+  /* -- P1-12: per-insight TRUST signals (the effectiveness payoff rendered as
+        inline chips on each card). Keyed by insight id. Populated by ONE
+        batched read in loadInsights for the COACH insights surface only — the
+        patterns tab never fetches these. Failure-silent: a failed/empty read
+        leaves this {} and the cards simply render no chips (never a fake one).
+        Always reflects real ledger rows only. */
+  const [trustSignals, setTrustSignals] = useState<Record<string, TrustSignal>>({});
+
   /* -- P061: a manual refresh in flight (re-pull the feed without a triage
         side-effect). Separate from `loading` so the first paint still uses the
         shape-matched skeleton while a refresh shows a quiet busy state. */
@@ -471,6 +482,28 @@ export function FairwayCoachHelmSignals({
         if (res.ok) {
           setInsights(res.data);
           setEligibleTotal(res.total);
+
+          // P1-12: one batched trust-signal read for the visible insight ids.
+          // FAILURE-SILENT — the effectiveness chips are a non-critical
+          // enhancement, so any error/exception here must never disturb the
+          // insight feed's happy path. On failure we simply leave the chips
+          // off (no fake signals). Coach insights surface only (this is the
+          // insights path; patterns never reach here).
+          const insightIds = res.data
+            .map((i) => i.id)
+            .filter((id): id is string => !!id);
+          if (insightIds.length > 0) {
+            try {
+              const trust = await getInsightTrustSignals(insightIds);
+              if (trust.success) {
+                setTrustSignals(trust.signals);
+              }
+            } catch {
+              // swallow — chips stay off, feed is unaffected
+            }
+          } else {
+            setTrustSignals({});
+          }
         } else {
           setError(res.error);
         }
@@ -518,6 +551,24 @@ export function FairwayCoachHelmSignals({
       else void loadPatterns(false);
     } else if (initialInsights.length === 0) {
       void loadInsights();
+    } else {
+      // P1-12: insights were SSR-pre-seeded so loadInsights won't run on
+      // mount — fetch the trust signals for those seeded ids here so the chips
+      // appear without a wasted full re-load. Failure-silent (chips stay off
+      // on any error). Coach insights surface only.
+      const ids = initialInsights
+        .map((i) => i.id)
+        .filter((id): id is string => !!id);
+      if (ids.length > 0) {
+        void (async () => {
+          try {
+            const trust = await getInsightTrustSignals(ids);
+            if (trust.success) setTrustSignals(trust.signals);
+          } catch {
+            // swallow — chips stay off, feed is unaffected
+          }
+        })();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1226,6 +1277,17 @@ export function FairwayCoachHelmSignals({
       // have no bulk lifecycle, so they stay single-select per-row.
       const selectable = !isPatterns;
 
+      // P1-12: the inline TRUST chips — the effectiveness payoff rendered right
+      // on the card. COACH INSIGHTS SURFACE ONLY (row.source === 'insights');
+      // patterns carry no insight-ledger signal. Not on the compact variant
+      // (its narrative is line-clamped — no room for the row). The chips reflect
+      // ONLY real ledger data; a missing signal renders nothing (no layout
+      // shift beyond the row's own presence, which only appears once data lands).
+      const trustChips =
+        row.source === 'insights' && !opts?.compact ? (
+          <InsightTrustChips signal={trustSignals[row.id]} />
+        ) : null;
+
       return (
         <InsightCard
           key={row.id}
@@ -1250,10 +1312,11 @@ export function FairwayCoachHelmSignals({
           actions={opts?.compact ? undefined : rowActions(row)}
         >
           {row.body}
+          {trustChips}
         </InsightCard>
       );
     },
-    [rowActions, isPatterns, selectedIds, toggleRowSelected],
+    [rowActions, isPatterns, selectedIds, toggleRowSelected, trustSignals],
   );
 
   /* ── the InsightPanel read of the currently-open row ───────────────────── */

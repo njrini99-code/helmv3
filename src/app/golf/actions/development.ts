@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 // ============================================================================
 // TYPES
@@ -635,6 +636,17 @@ export async function createFocusAreaFromInsightV2(
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 
+  // P1-12: creating a focus area FROM an insight is a real coach action on that
+  // insight — record it (failure-silent) so the effectiveness rollup counts it.
+  void recordInsightAction({
+    insight_id: args.insightId,
+    player_id: args.playerId,
+    actor_id: user.id,
+    actor_role: 'coach',
+    action_type: 'create_focus',
+    metadata: { focus_area_id: row.id },
+  });
+
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/insights');
@@ -827,6 +839,18 @@ export async function createFocusAreaFromInsight(
     })
     .eq('id', data.insight_id);
   await (insight?.team_id ? ackQuery.eq('team_id', insight.team_id) : ackQuery);
+
+  // P1-12: record the focus-area creation as a real action on the source
+  // insight (failure-silent). Only a confirmed insert of an authorized row
+  // reaches here, so a non-action can never be counted as one.
+  void recordInsightAction({
+    insight_id: data.insight_id,
+    player_id: data.player_id,
+    actor_id: user.id,
+    actor_role: 'coach',
+    action_type: 'create_focus',
+    metadata: { focus_area_id: focusArea.id },
+  });
 
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/development');

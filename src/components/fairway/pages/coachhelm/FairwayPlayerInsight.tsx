@@ -36,9 +36,10 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Activity, Target, Sparkles } from 'lucide-react';
+import { Activity, Target, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { CoachHelmShell } from './CoachHelmShell';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
@@ -179,6 +180,12 @@ export interface FairwayPlayerInsightProps {
    * section C. Degrades to `[]` (route already null-guards the fetch).
    */
   themes: ThemeNode[];
+  /**
+   * SSR-known urgent/high open-signal count for the CoachHelm shell's Signals-tab
+   * badge (P410 — this surface is now an in-cluster Players leaf). `null`/0 → no
+   * badge (honest, never a fake "0"). Mirrors GenomeDetailView.
+   */
+  signalCount?: number | null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -395,6 +402,7 @@ export function FairwayPlayerInsight({
   focusAreas,
   predictions,
   themes,
+  signalCount,
 }: FairwayPlayerInsightProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
@@ -600,30 +608,38 @@ export function FairwayPlayerInsight({
     .filter(Boolean)
     .join(' · ');
 
-  return (
-    <div className="mx-auto w-full max-w-[860px] px-4 py-6 md:px-6 md:py-8">
-      {/* ── Back + sibling cross-links (P107) ── */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          leftIcon={<ArrowLeft className="h-4 w-4" />}
-          className="-ml-2 text-text-tertiary"
-        >
-          <Link href={`/golf/dashboard/roster/${player.id}`}>Player</Link>
-        </Button>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Button asChild variant="ghost" size="sm" leftIcon={<IconChartRadar size={15} />}>
-            <Link href={`/golf/dashboard/players/${player.id}/game`}>Game fingerprint</Link>
-          </Button>
-          <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
-            <Link href={`/golf/dashboard/coachhelm/genome/${player.id}`}>Genome</Link>
-          </Button>
-        </div>
-      </div>
+  // Sibling cross-links (P107) — Game fingerprint + Genome — now ride in the
+  // CoachHelm shell's header action cluster (mirrors GenomeDetailView), so the
+  // page reads as a Players-tab leaf instead of an orphan with its own back link.
+  // The shell's "Players > {name}" breadcrumb supplies the canonical back path.
+  const headerActions = (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Button asChild variant="ghost" size="sm" leftIcon={<IconChartRadar size={15} />}>
+        <Link href={`/golf/dashboard/players/${player.id}/game`}>Game fingerprint</Link>
+      </Button>
+      <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
+        <Link href={`/golf/dashboard/coachhelm/genome/${player.id}`}>Genome</Link>
+      </Button>
+    </div>
+  );
 
-      <div className="space-y-12">
+  return (
+    <CoachHelmShell
+      active="players"
+      // eslint-disable-next-line jsx-a11y/aria-role
+      role="coach"
+      signalCount={signalCount}
+      title="Player Insight"
+      breadcrumbs={[
+        { label: 'Players', href: '/golf/dashboard/development' },
+        { label: playerName },
+      ]}
+      actions={headerActions}
+    >
+      {/* This page is a narrative coaching STORY read top-to-bottom, so its body
+          keeps the tighter ~860px reading column inside the shell's wider gutter
+          rather than the shell's default 1200px instrument width. */}
+      <div className="mx-auto w-full max-w-[860px] space-y-12">
         {/* ════════ A · WHO + VERDICT ════════ */}
         <Surface elevation="shadow" padding="lg">
           <div className="flex items-start gap-5">
@@ -644,7 +660,10 @@ export function FairwayPlayerInsight({
             </span>
 
             <div className="min-w-0 flex-1">
-              <Eyebrow className="text-accent-700">Player Insight</Eyebrow>
+              {/* Section eyebrow names the BLOCK (the 30-second coaching read);
+                  the surface name "Player Insight" already lives in the shell
+                  masthead above, so we avoid echoing it literally here (P410). */}
+              <Eyebrow className="text-accent-700">Coaching read</Eyebrow>
               <h1 className="mt-1 truncate font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
                 {playerName}
               </h1>
@@ -952,7 +971,7 @@ export function FairwayPlayerInsight({
           </Button>
         </div>
       </div>
-    </div>
+    </CoachHelmShell>
   );
 }
 

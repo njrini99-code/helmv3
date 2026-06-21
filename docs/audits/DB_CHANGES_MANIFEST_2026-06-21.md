@@ -20,8 +20,12 @@ _Scan of all remediation agent transcripts + `supabase/migrations/`. Re-run `scr
 | `20260621041839_focus_areas_player_self_update.sql` | yes | ❌ **NOT APPLIED** | `their` | ✅ |
 | `20260621041844_relock_anon_grants_reviews_patterns.sql` | yes | ❌ **NOT APPLIED** | `?` | ⚠️ |
 | `20260621041849_focus_areas_progress_notes_default.sql` | yes | ❌ **NOT APPLIED** | `golf_player_focus_areas` | ✅ |
-| `20260621120000_chat_client_turn_id.sql` | **UNTRACKED** | ✅ yes | `golf_coachhelm_chat_messages` | ✅ |
-| `20260621130000_ingest_external_round_atomic.sql` | **UNTRACKED** | ❌ **NOT APPLIED** | `golf_rounds` | ✅ |
+| `20260621120000_chat_client_turn_id.sql` | yes | ✅ yes | `golf_coachhelm_chat_messages` | ✅ |
+| `20260621130000_ingest_external_round_atomic.sql` | yes | ❌ **NOT APPLIED** | `golf_rounds` | ✅ |
+| `20260621140000_focus_areas_outcome_status.sql` | **UNTRACKED** | ❌ **NOT APPLIED** | `golf_player_focus_areas` | ✅ |
+| `20260621150000_player_classes_semester.sql` | **UNTRACKED** | ❌ **NOT APPLIED** | `golf_player_classes` | ✅ |
+| `20260621160000_insight_event_ledger.sql` | **UNTRACKED** | ❌ **NOT APPLIED** | `golf_insight_exposure` | ⚠️ |
+| `20260621170000_retire_stranded_predictions.sql` | **UNTRACKED** | ❌ **NOT APPLIED** | `golf_predictions` | ✅ |
 
 ## 3. Every DB directive in the CoachHelm audit — cross-checked to status
 
@@ -37,18 +41,18 @@ _Source of truth = `COACHHELM_MASTER_ENGINE_FEATURE_REMEDIATION_AUDIT_2026-06-21
 | P0-01 | `golf_insight_outcome_attribution` store normalized `improvement_lift` by metric direction | ✅ DONE in code (existing delta/lift columns) |
 | P0-01 | Rebuild `golf_coachhelm_coach_weights` from corrected history | 🔁 BACKFILL needed (see §4) |
 | P0-02 | Retire stranded same-day `golf_predictions`; recompute `golf_prediction_model_performance` | CODE retires NEW rows (error_category='invalid_horizon'); 🔁 **~623 existing stranded rows need a BACKFILL** (see §4) |
-| P1-07 | `golf_goals` snapshot + evaluation columns (baseline, target, cadence, next_eligible_round, last_measured_value, evaluation_state) | ❓ **VERIFY** — no goals migration detected; likely **NEEDS MIGRATION** |
+| P1-07 | `golf_goals` snapshot + evaluation columns | ✅ NO MIGRATION NEEDED — golf_goals already has baseline_value/current_value/target_value/state/outcome_evaluated_at/snapshots; only the evaluator CODE remains |
 | P1-08 | `golf_goal_suggestions` cap to ≤2 active pending/player | CODE (suggestion-writer/loader) — no schema |
 | P1-09 | `golf_insight_player_feedback` read state affects all player surfaces | CODE (insight-visibility/delivery) — no schema |
 | P1-10 | Route every category through `golf_player_notification_state` | CODE (router/dispatch) — table exists; verify delivery wired |
-| P1-12 | Unified event ledger — **3 new tables** `golf_insight_exposure`, `golf_insight_action`, `golf_insight_outcome` | 🚧 **DEFERRED** (demoted) — needs your approval before creating |
+| P1-12 | Unified event ledger — 3 tables `golf_insight_exposure`/`action`/`outcome` | ✅ TABLES APPLIED to prod (RLS enabled, 0 advisor flags) + file 20260621160000; ledger + trust-chips + Effectiveness UI built |
 | P2-21 | `golf_player_genome` — only persist valid dimensions (no all-null vectors) | CODE (Pin) — no schema |
-| P094 | `golf_player_focus_areas.outcome_status` column | 🚧 DEFERRED — needs migration |
-| P231 | `golf_player_classes.semester` column | 🚧 DEFERRED — needs migration |
+| P094 | `golf_player_focus_areas.outcome_status` column | ✅ APPLIED to prod + file 20260621140000 |
+| P231 | `golf_player_classes.semester` column | ✅ APPLIED to prod + file 20260621150000 |
 
 ## 4. Data backfills (one-time, no schema change)
-- **P0-01** — Rebuild `golf_coachhelm_coach_weights` from corrected attribution history (after the direction-fix code deploys).
-- **P0-02** — Retire ~623 stranded same-day predictions → set error_category='invalid_horizon', then recompute `golf_prediction_model_performance` excluding them.
+- **P0-01** — Rebuild `golf_coachhelm_coach_weights` from corrected attribution history. ⏳ POST-DEPLOY — needs the direction-fix code live; run the attribution cron after the merge.
+- **P0-02** — Retire stranded same-day predictions. ✅ DONE — 623 rows stamped error_category='invalid_horizon' + validated_at (file 20260621170000). Rollups self-correct on the next writer run.
 
 ## Apply order (recommended)
 1. Commit untracked migration files so repo == intent.

@@ -7,6 +7,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerInsight } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
+import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { computeCompositeRating } from './composite-rating';
@@ -362,6 +363,13 @@ export default async function PlayerInsightPage({
   // surface. Same loaded data + same server actions (the client widget reuses
   // them verbatim). Legacy below stays byte-for-byte when flag-off.
   if (isRedesignEnabled()) {
+    // P410 — this surface now mounts the CoachHelm shell as a Players-tab leaf,
+    // so it needs the SAME urgent/high open-signal count the rest of the cluster
+    // shows on the Signals badge (ONE source: getAlertCounts().counts.critical).
+    // Degrades to null (no badge) on failure — never a fabricated "0".
+    const countsRes = await getAlertCounts(coach.id);
+    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayPlayerInsight
@@ -376,6 +384,7 @@ export default async function PlayerInsightPage({
           focusAreas={focusAreas}
           predictions={predictions}
           themes={themes}
+          signalCount={signalCount}
         />
       </div>
     );
