@@ -761,6 +761,33 @@ export function PremiumCalendarClient({
     }
   };
 
+  // Restore (un-cancel) a soft-cancelled event. Flips status back to
+  // 'confirmed' via updateGolfEvent (which also clears the cancellation
+  // bookkeeping) — non-destructive, no row delete/re-insert. The modal only
+  // renders the "Restore event" affordance when the event is cancelled.
+  const handleRestoreEvent = async () => {
+    if (!selectedEvent) return;
+    setIsSavingEvent(true);
+    try {
+      const result = await actionHandlers.updateEvent(selectedEvent.id, { status: 'confirmed' });
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to restore event');
+      }
+      setIsEventModalOpen(false);
+      setSelectedEvent(null);
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+        window.location.reload();
+        return;
+      }
+      throw err;
+    } finally {
+      setIsSavingEvent(false);
+    }
+  };
+
   // Drag start handler
   const handleDragStart = (event: DragStartEvent) => {
     setActiveDragId(event.active.id as string);
@@ -788,6 +815,48 @@ export function PremiumCalendarClient({
     const newDate = dropData.date;
     const newHour = dropData.hour;
     const newStartTime = `${String(newHour).padStart(2, '0')}:00`;
+
+    // ── All-day events stay all-day when dragged (audit B34/F041). ──────────
+    // Dropping an all-day event onto a day's time-slot previously forced
+    // allDay:false + a 1-hour timed slot (start_date===end_date → 0h duration
+    // → else branch). Preserve the all-day nature and the day-span; only the
+    // date(s) move. No start/end TIME is sent so the action stores it at
+    // T00:00:00 (all-day convention).
+    if (draggedEvent.all_day) {
+      // Preserve a multi-day all-day span by shifting the end date by the
+      // original number of whole days.
+      let newEndDate = newDate;
+      if (draggedEvent.start_date && draggedEvent.end_date) {
+        const originalStart = new Date(draggedEvent.start_date);
+        const originalEnd = new Date(draggedEvent.end_date);
+        const spanDays = Math.round(
+          (originalEnd.getTime() - originalStart.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        if (spanDays > 0) {
+          const [y, mo, d] = newDate.split('-').map(Number);
+          if (y && mo && d) {
+            const end = new Date(y, mo - 1, d + spanDays);
+            newEndDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+          }
+        }
+      }
+      try {
+        const result = await actionHandlers.updateEvent(eventId, {
+          startDate: newDate,
+          endDate: newEndDate,
+          allDay: true,
+          timezoneOffset: new Date().getTimezoneOffset(),
+        });
+        if (!result.success) {
+          console.error('Failed to reschedule event:', result.error);
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        console.error('Failed to reschedule event:', err);
+      }
+      return;
+    }
 
     // Preserve original event duration
     let newEndTime: string | undefined;
@@ -1120,6 +1189,7 @@ export function PremiumCalendarClient({
         isCoach={isCoach}
         onSave={handleSaveEvent}
         onDelete={selectedEvent ? handleDeleteEvent : undefined}
+        onRestore={selectedEvent ? handleRestoreEvent : undefined}
         isSaving={isSavingEvent}
         teamPlayers={teamMembers}
         currentUserId={currentUserId}

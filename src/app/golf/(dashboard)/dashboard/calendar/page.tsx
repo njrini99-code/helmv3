@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/server';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -93,14 +94,22 @@ export default async function GolfCalendarPage() {
     // series members render as one-offs and the edit/delete scope picker never
     // appears (audit finding #6, which armed the P0 cascade delete).
     const [eventsResult, teamMembersResult, teamSettingsResult] = await Promise.all([
-      supabase
-        .from('golf_events')
-        .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, created_by, requires_rsvp, rsvp_deadline, max_attendees, parent_event_id, recurrence_rule')
-        .eq('team_id', teamId)
-        .gte('start_time', threeMonthsAgo.toISOString())
-        .lte('start_time', threeMonthsAhead.toISOString())
-        .order('start_time', { ascending: true })
-        .limit(500),
+      // Paginate past the PostgREST 1000-row server cap (audit F102): a busy
+      // team's ±3-month window can exceed a single page, and a bare `.limit(500)`
+      // silently dropped the overflow (events vanish from the calendar). A
+      // secondary `.order('id')` gives a STABLE page boundary so rows can't
+      // drift or repeat across pages.
+      fetchAllRowsResult((from, to) =>
+        supabase
+          .from('golf_events')
+          .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, created_by, requires_rsvp, rsvp_deadline, max_attendees, parent_event_id, recurrence_rule')
+          .eq('team_id', teamId)
+          .gte('start_time', threeMonthsAgo.toISOString())
+          .lte('start_time', threeMonthsAhead.toISOString())
+          .order('start_time', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to),
+      ),
       // Get players via golf_team_members junction table
       supabase
         .from('golf_team_members')

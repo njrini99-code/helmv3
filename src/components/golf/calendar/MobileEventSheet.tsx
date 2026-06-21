@@ -570,7 +570,16 @@ export function MobileEventSheet({
             />
           </div>
 
-          {/* Recurrence (coach create only) */}
+          {/* Recurrence (coach create only).
+              SCOPE (audit F101): the mobile sheet intentionally exposes only
+              the simple subset — Daily / Weekly / Monthly with a fixed
+              occurrence COUNT. The richer rules the desktop/Fairway editor
+              supports (every-2-weeks, specific weekday sets, "until a date")
+              are NOT offered here; on mobile, COUNT maps to a minimal
+              `RRULE:FREQ=…;INTERVAL=1;COUNT=…` in the parent onSave. Editing
+              an existing series from this sheet is also unsupported (the form
+              resets recurrence to 'none' when an event is loaded) — use the
+              desktop modal for series-scoped edits. */}
           {isCreating && isCoach && (
             <div className="px-5 pb-4">
               <div className="bg-warm-50 rounded-2xl p-4 space-y-3">

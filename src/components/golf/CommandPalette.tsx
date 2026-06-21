@@ -28,7 +28,7 @@ import {
   IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconSparkles,
   IconTarget, IconTrophy, IconClipboardList, IconBell, IconAlertCircle,
   IconBrain, IconGauge, IconBot, IconChartRadar, IconCrosshair, IconWrench,
-  IconRocket, IconLayoutGrid,
+  IconRocket, IconLayoutGrid, IconMapPin,
 } from '@/components/icons';
 import {
   getCommandPaletteData,
@@ -69,6 +69,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'coachhelm-chat', label: 'CoachHelm Chat', description: 'Chat history', icon: <IconBot size={18} />, href: '/golf/dashboard/coachhelm/chat', keywords: ['chat', 'conversation', 'coachhelm', 'history', 'ask'] },
     { id: 'genome-compare', label: 'Genome Compare', description: 'Compare player genomes', icon: <IconChartRadar size={18} />, href: '/golf/dashboard/coachhelm/genome/compare', keywords: ['genome', 'compare', 'radar', 'persona', 'profile'] },
     { id: 'qualifying-selection', label: 'Selection Workspace', description: 'Qualifier selection', icon: <IconCrosshair size={18} />, href: '/golf/dashboard/qualifiers', keywords: ['qualifying', 'selection', 'workspace', 'lineup', 'tournament', 'pick'] },
+    { id: 'courses', label: 'Course Library', description: 'Browse courses, tees & saved home courses', icon: <IconMapPin size={18} />, href: '/golf/dashboard/courses', keywords: ['course', 'courses', 'library', 'tees', 'tee', 'facility', 'saved'] },
     { id: 'roster', label: 'Go to Roster', description: 'Manage your team players', icon: <IconUsers size={18} />, href: '/golf/dashboard/roster', keywords: ['players', 'team', 'members'] },
     { id: 'stats', label: 'View Team Stats', description: 'Player performance analytics', icon: <IconChartBar size={18} />, href: '/golf/dashboard/stats', keywords: ['analytics', 'performance', 'scores'] },
     { id: 'stats-team', label: 'Team Stats Board', description: 'Roster-wide stat comparison', icon: <IconChartBar size={18} />, href: '/golf/dashboard/stats/team', keywords: ['team', 'stats', 'leaderboard', 'comparison', 'roster'] },
@@ -92,6 +93,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'log-round', label: 'Log a Round', description: 'Start a new round entry', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds/new', keywords: ['log', 'new', 'submit', 'enter', 'round'] },
     { id: 'insights', label: 'CoachHelm AI', description: 'Personalized AI insights', icon: <IconSparkles size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'coachhelm', 'focus'] },
     { id: 'rounds', label: 'My Rounds', description: 'View and submit rounds', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds', keywords: ['scores', 'games'] },
+    { id: 'courses', label: 'Course Library', description: 'Browse courses & tee sets', icon: <IconMapPin size={18} />, href: '/golf/dashboard/courses', keywords: ['course', 'courses', 'library', 'tees', 'tee', 'facility'] },
     { id: 'development', label: 'My Development', description: 'Assigned focus areas', icon: <IconTarget size={18} />, href: '/golf/dashboard/my-development', keywords: ['focus', 'improvement', 'plan'] },
     { id: 'qualifiers', label: 'My Qualifiers', description: 'Progress and leaderboards', icon: <IconTrophy size={18} />, href: '/golf/dashboard/my-qualifiers', keywords: ['leaderboard', 'tournament', 'qualifying'] },
     { id: 'stats', label: 'My Stats', description: 'Performance analytics', icon: <IconChartBar size={18} />, href: '/golf/dashboard/stats', keywords: ['analytics', 'performance'] },

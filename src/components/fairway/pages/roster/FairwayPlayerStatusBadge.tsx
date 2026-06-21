@@ -19,10 +19,14 @@
  *   • STATIC mode (`editable={false}`, player contexts): just the StatusPill,
  *     no trigger, no popover, no write path.
  *
- * Tone map (locked Fairway status families — green=structure/success, amber=
- * warning, rose/red=danger only): active→success, injured→danger,
- * redshirt→warning, inactive→neutral. Color is never the only channel — the
- * text label always carries the meaning too.
+ * Tone map (locked Fairway status families — green=structure/success,
+ * neutral=inactive): active→success, inactive→neutral. Color is never the only
+ * channel — the text label always carries the meaning too.
+ *
+ * B4/F007: the golf_team_members.status enum only allows
+ * pending/active/inactive/removed — 'injured' and 'redshirt' were never valid
+ * values (the write cast them through and the DB CHECK would reject them), so
+ * they are dropped from the picker. Active + Inactive only.
  *
  * Haptics: a quiet `triggerHaptic('light')` on open + on a real status change
  * (fire-and-forget; silent no-op on web).
@@ -41,12 +45,13 @@ import { IconChevronDown } from '@/components/icons';
 import { Check } from 'lucide-react';
 
 /* ---------------------------------------------------------------------------
- * Status vocabulary — the four player statuses + their Fairway tone mapping.
- * Mirrors the legacy CHECK-constraint values (active | injured | redshirt |
- * inactive) so the write contract is unchanged.
+ * Status vocabulary — the two valid roster statuses + their Fairway tone
+ * mapping. Matches the golf_team_members.status CHECK values the UI may set
+ * (active | inactive). pending/removed are lifecycle-only (join flow / removal)
+ * and never offered as a manual pick.
  * ------------------------------------------------------------------------- */
 
-export type PlayerStatus = 'active' | 'injured' | 'redshirt' | 'inactive';
+export type PlayerStatus = 'active' | 'inactive';
 
 interface StatusMeta {
   value: PlayerStatus;
@@ -56,8 +61,6 @@ interface StatusMeta {
 
 const STATUSES: readonly StatusMeta[] = [
   { value: 'active', label: 'Active', tone: 'success' },
-  { value: 'injured', label: 'Injured', tone: 'danger' },
-  { value: 'redshirt', label: 'Redshirt', tone: 'warning' },
   { value: 'inactive', label: 'Inactive', tone: 'neutral' },
 ] as const;
 

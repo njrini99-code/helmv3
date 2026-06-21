@@ -30,12 +30,17 @@ interface Task {
 
 interface TaskCardProps {
   task: Task;
+  /** Viewer role — gates the player "Mark complete" control. */
+  role?: 'coach' | 'player';
+  /** Player-only complete handler (optimistic; reuses the completeTask action). */
+  onComplete?: (taskId: string) => Promise<void> | void;
 }
 
-export function TaskCard({ task }: TaskCardProps) {
+export function TaskCard({ task, role = 'coach', onComplete }: TaskCardProps) {
   const prefersReducedMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
+  const [completing, setCompleting] = useState(false);
 
   // Initialize `now` on the client so overdue + relative date labels match SSR.
   useEffect(() => {
@@ -45,6 +50,21 @@ export function TaskCard({ task }: TaskCardProps) {
   const completedCount = task.assignments.filter(a => a.status === 'completed').length;
   const totalCount = task.assignments.length;
   const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+  // Player can mark a task complete when the handler is provided and the task
+  // isn't already complete. Completion writes to golf_task_assignments (RLS
+  // allows a player to update their own assignment).
+  const playerCanComplete = role === 'player' && !!onComplete && task.status !== 'completed';
+
+  const handleComplete = async () => {
+    if (!onComplete || completing) return;
+    setCompleting(true);
+    try {
+      await onComplete(task.id);
+    } finally {
+      setCompleting(false);
+    }
+  };
 
   const isOverdue =
     !!now && !!task.due_date && new Date(task.due_date) < now && completionRate < 100;
@@ -135,13 +155,27 @@ export function TaskCard({ task }: TaskCardProps) {
             )}
           </div>
 
-          <Button variant="ghost"
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 text-sm font-medium text-warm-600 hover:text-warm-900 active:scale-95 transition-colors"
-          >
-            {expanded ? 'Hide' : 'View'} details
-            {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-          </Button>
+          <div className="flex items-center gap-2">
+            {playerCanComplete && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={completing}
+                onClick={handleComplete}
+                className="flex items-center gap-1.5 text-sm font-medium"
+              >
+                <IconCheck size={15} />
+                {completing ? 'Saving…' : 'Mark complete'}
+              </Button>
+            )}
+            <Button variant="ghost"
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-1 text-sm font-medium text-warm-600 hover:text-warm-900 active:scale-95 transition-colors"
+            >
+              {expanded ? 'Hide' : 'View'} details
+              {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
+            </Button>
+          </div>
         </div>
 
         {/* Expanded Details */}

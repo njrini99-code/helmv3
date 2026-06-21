@@ -26,9 +26,13 @@ interface Task {
 interface TasksListProps {
   tasks: Task[];
   filter: 'all' | 'active' | 'completed';
+  /** Viewer role — forwarded to the card for the player complete control. */
+  role?: 'coach' | 'player';
+  /** Player-only complete handler, forwarded to each card. */
+  onComplete?: (taskId: string) => Promise<void> | void;
 }
 
-export function TasksList({ tasks, filter }: TasksListProps) {
+export function TasksList({ tasks, filter, role = 'coach', onComplete }: TasksListProps) {
   const prefersReducedMotion = useReducedMotion();
   const filteredTasks = tasks.filter(task => {
     if (filter === 'all') return true;
@@ -61,7 +65,7 @@ export function TasksList({ tasks, filter }: TasksListProps) {
       className="space-y-4"
     >
       {filteredTasks.map((task) => (
-        <TaskCard key={task.id} task={task} />
+        <TaskCard key={task.id} task={task} role={role} onComplete={onComplete} />
       ))}
     </motion.div>
   );

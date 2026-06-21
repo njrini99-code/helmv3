@@ -123,6 +123,8 @@ export default async function GolfRosterPage() {
       .eq('id', teamMember.team_id)
       .maybeSingle();
 
+    // F083: a player's teammate list is active members only — pending invites
+    // and removed players must not show up as teammates.
     const { data: tmData } = await supabase
       .from('golf_team_members')
       .select(`
@@ -132,6 +134,7 @@ export default async function GolfRosterPage() {
         )
       `)
       .eq('team_id', teamMember.team_id)
+      .eq('status', 'active')
       .neq('player_id', player.id);
 
     const teammates = (tmData || [])
@@ -209,6 +212,10 @@ export default async function GolfRosterPage() {
 
   // Get players via team_members join - players are connected to teams through golf_team_members
   // Also fetch user's last_seen for online status indicator
+  // F083: the coach roster shows active + inactive members (the status badge is
+  // a coach affordance), but NOT 'pending' (player hasn't accepted the invite
+  // yet — those live in PendingJoinRequests) or 'removed' (off the roster). The
+  // unfiltered query was surfacing both as full roster cards.
   const { data: teamMembersData, error: playersError } = await supabase
     .from('golf_team_members')
     .select(`
@@ -227,7 +234,8 @@ export default async function GolfRosterPage() {
         )
       )
     `)
-    .eq('team_id', teamId);
+    .eq('team_id', teamId)
+    .in('status', ['active', 'inactive']);
 
   // Transform the data to flatten player info with status and last_seen
   const players = (teamMembersData || [])

@@ -83,7 +83,11 @@ export default async function MyDevelopmentPage() {
 
   const supabase = await createClient();
 
-  // Fetch focus areas for this player
+  // Fetch focus areas for this player.
+  // Selects progress_notes (drives the FocusAreaCard Sparkline) and
+  // from_review_id / from_insight_id / review_context (drive the SourceChip
+  // drill-back — from_review_id resolves to the round review via
+  // golf_round_reviews.round_id inside FocusAreaCard).
   const { data: focusAreas, error: focusAreasError } = await supabase
     .from('golf_player_focus_areas')
     .select(`
@@ -100,13 +104,65 @@ export default async function MyDevelopmentPage() {
       created_at,
       from_review_id,
       from_insight_id,
-      review_context
+      review_context,
+      progress_notes
     `)
     .eq('player_id', player.id)
     .order('created_at', { ascending: false });
 
-  const activeAreas = (focusAreas || []).filter(fa => fa.status === 'active' || fa.status === 'in_progress');
-  const completedAreas = (focusAreas || []).filter(fa => fa.status === 'completed');
+  // Map progress_notes ({ entries: [{ at, value, note }] }) → the card's
+  // progressHistory shape (oldest→newest). Honest-empty when absent/malformed.
+  const progressHistoryOf = (
+    raw: unknown,
+  ): { at: string; value: number; note?: string }[] => {
+    const entries = (raw as { entries?: unknown } | null)?.entries;
+    if (!Array.isArray(entries)) return [];
+    return entries
+      .filter(
+        (e): e is { at: string; value: number; note?: string } =>
+          Boolean(e) &&
+          typeof (e as { at?: unknown }).at === 'string' &&
+          typeof (e as { value?: unknown }).value === 'number',
+      )
+      .map(e => ({ at: e.at, value: e.value, note: e.note }));
+  };
+
+  // Resolve from_review_id (golf_round_reviews.id) → round_id so the
+  // FocusAreaCard SourceChip "From a round review" link targets the round-review
+  // route, which is keyed by ROUND id (C6/F074).
+  const reviewIds = Array.from(
+    new Set(
+      (focusAreas || [])
+        .map(fa => fa.from_review_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const roundIdByReviewId: Record<string, string> = {};
+  if (reviewIds.length > 0) {
+    const { data: reviewRows } = await supabase
+      .from('golf_round_reviews')
+      .select('id, round_id')
+      .in('id', reviewIds);
+    for (const row of reviewRows || []) {
+      if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
+    }
+  }
+
+  const focusAreasWithHistory = (focusAreas || []).map(fa => ({
+    ...fa,
+    progressHistory: progressHistoryOf(fa.progress_notes),
+    from_review_round_id: fa.from_review_id
+      ? roundIdByReviewId[fa.from_review_id] ?? null
+      : null,
+  }));
+
+  // Partition into active (active / in_progress / paused) and completed. The
+  // 'paused' bucket was previously dropped (C5/F126) — a paused focus area is
+  // still in flight, so it belongs with the active set, not silently hidden.
+  const activeAreas = focusAreasWithHistory.filter(
+    fa => fa.status === 'active' || fa.status === 'in_progress' || fa.status === 'paused',
+  );
+  const completedAreas = focusAreasWithHistory.filter(fa => fa.status === 'completed');
 
   // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
   // Flag ON → the warm player "My Development" list (player CoachHelmShell

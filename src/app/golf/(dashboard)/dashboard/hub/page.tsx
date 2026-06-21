@@ -36,6 +36,17 @@ interface HubEventRow {
   maybe_count: number;
 }
 
+/**
+ * Whether a task expects the player to submit a file. There is no dedicated
+ * `requires_upload` column on golf_tasks; the honest signal is the free-text
+ * task_type (and, as a fallback, the category) denoting an upload/submission/
+ * video task. Keeps the Hub "Upload" badge truthful instead of always-off.
+ */
+function taskRequiresUpload(taskType: string | null, category: string | null): boolean {
+  const haystack = `${taskType ?? ''} ${category ?? ''}`.toLowerCase();
+  return /upload|submission|submit|video|film|recording|photo/.test(haystack);
+}
+
 export default async function PlayerHubPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
@@ -173,7 +184,7 @@ export default async function PlayerHubPage() {
   if (taskIds.length > 0) {
     const { data: taskDetails } = await supabase
       .from('golf_tasks')
-      .select('id, title, description, due_date, category')
+      .select('id, title, description, due_date, category, task_type')
       .in('id', taskIds)
       .eq('team_id', teamId)
       .order('due_date', { ascending: true, nullsFirst: false });
@@ -189,7 +200,10 @@ export default async function PlayerHubPage() {
         description: t.description,
         due_date: t.due_date,
         category: t.category || null,
-        requires_upload: false,
+        // requires_upload is derived from real task data (not hardcoded false).
+        // There's no dedicated column; the honest signal is the task_type —
+        // upload/submission/video tasks expect a file. (F135/C21)
+        requires_upload: taskRequiresUpload(t.task_type, t.category),
         status: isCompleted ? 'completed' as const : isOverdue ? 'overdue' as const : 'pending' as const,
         completed_at: completedAt,
       };

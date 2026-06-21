@@ -73,6 +73,41 @@ function nameFor(map: Map<string, string>, playerId: string | null | undefined):
   return map.get(playerId) ?? `Player ${playerId.slice(0, 8)}`;
 }
 
+/**
+ * Turn a raw golf_patterns_v2.pattern_type enum (e.g. "putting_miss",
+ * "recurring_weakness") into a human label for the change feed. Known types
+ * map to curated labels; anything else falls back to Title-Cased snake_case so
+ * the coach never sees a raw "putting_miss" string.
+ */
+const PATTERN_TYPE_LABELS: Record<string, string> = {
+  putting: 'Putting',
+  putting_miss: 'Putting',
+  approach: 'Approach',
+  driving: 'Driving',
+  tee: 'Driving',
+  short_game: 'Short game',
+  scoring: 'Scoring',
+  scoring_decline: 'Scoring',
+  contextual: 'Contextual pattern',
+  pattern_detected: 'Active pattern',
+  recurring_weakness: 'Recurring weakness',
+  tournament_pressure: 'Tournament play',
+  stat_regression: 'Stat regression',
+  plateau: 'Plateau',
+  general: 'General',
+};
+
+function humanizePatternType(patternType: string | null | undefined): string {
+  if (!patternType) return 'Pattern validated';
+  const label =
+    PATTERN_TYPE_LABELS[patternType] ??
+    patternType
+      .split('_')
+      .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : w))
+      .join(' ');
+  return `${label} pattern`;
+}
+
 // ============================================================================
 // MAIN ACTION
 // ============================================================================
@@ -311,7 +346,7 @@ export async function getWhatsNewForCoach(): Promise<{
         occurredAt: row.validation_date,
         playerId: row.player_id,
         playerName: nameFor(nameLookup, row.player_id),
-        title: row.pattern_type ?? 'Pattern validated',
+        title: humanizePatternType(row.pattern_type),
         patternId: row.id,
       });
     }

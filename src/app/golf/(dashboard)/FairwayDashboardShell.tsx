@@ -38,6 +38,7 @@ import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-contex
 import { NotificationBadgeProvider, useNotificationBadges } from '@/contexts/notification-badge-context';
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
+import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { TeamSwitcher } from '@/components/golf/TeamSwitcher';
@@ -64,6 +65,7 @@ import {
   IconFlag,
   IconTrophy,
   IconLayoutGrid,
+  IconMapPin,
   IconSettings,
   IconLogout,
 } from '@/components/icons';
@@ -124,6 +126,7 @@ function buildNavSections(role: Role, messages: number, coachhelm: number): NavS
           { label: 'Travel', href: '/golf/dashboard/travel', icon: IconAirplane },
           { label: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
           { label: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
+          { label: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
           { label: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
           { label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
         ],
@@ -137,6 +140,7 @@ function buildNavSections(role: Role, messages: number, coachhelm: number): NavS
         { label: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
         { label: 'CoachHelm AI', href: '/golf/dashboard/coachhelm', icon: IconSparkles },
         { label: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
+        { label: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
         { label: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
         { label: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
         {
@@ -171,6 +175,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   travel: 'Travel',
   documents: 'Documents',
   tasks: 'Tasks',
+  courses: 'Courses',
   recruiting: 'Recruiting HQ',
   development: 'Development',
   qualifiers: 'Qualifiers',
@@ -484,6 +489,10 @@ export function FairwayDashboardShell({
               <LazyMotion features={domAnimation}>
                 <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
                   <LastSeenUpdater />
+                  {/* B36/F012: the demo_coach_entered PostHog event must fire in the
+                      flag-ON shell too — prod demo entries land here, not on the legacy
+                      GolfDashboardShell. Pure side-effect leaf (renders null). */}
+                  <DemoEnterTracker />
                   <FairwayDashboardContent userData={userData}>{children}</FairwayDashboardContent>
                 </OfflineProvider>
               </LazyMotion>

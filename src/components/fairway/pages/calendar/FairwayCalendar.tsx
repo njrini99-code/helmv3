@@ -426,6 +426,32 @@ export function FairwayCalendar({
     [editorEvent, router, visibleWindow],
   );
 
+  // Restore (un-cancel) a soft-cancelled event. Flips status back to
+  // 'confirmed' via the SAME updateGolfEvent action (which also clears the
+  // cancellation bookkeeping) — non-destructive, no row delete/re-insert.
+  // Mirrors handleSaveEvent's stale-deployment recovery + refresh.
+  const handleRestoreEvent = React.useCallback(async () => {
+    if (!editorEvent) return;
+    setIsSavingEvent(true);
+    try {
+      const { updateGolfEvent } = await import('@/app/golf/actions/golf');
+      const result = await updateGolfEvent(editorEvent.id, { status: 'confirmed' } as never);
+      if (!result.success) throw new Error(result.error || 'Failed to restore event');
+      setEditorOpen(false);
+      setEditorEvent(null);
+      router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+        window.location.reload();
+        return;
+      }
+      throw err;
+    } finally {
+      setIsSavingEvent(false);
+    }
+  }, [editorEvent, router]);
+
   const handleDeleteEvent = React.useCallback(
     async (scope?: RecurringEditScope) => {
       if (!editorEvent) return;
@@ -869,6 +895,7 @@ export function FairwayCalendar({
           isCoach={isCoach}
           onSave={handleSaveEvent}
           onDelete={handleDeleteEvent}
+          onRestore={handleRestoreEvent}
           isSaving={isSavingEvent}
           teamPlayers={teamMembers}
           currentUserId={currentUserId}

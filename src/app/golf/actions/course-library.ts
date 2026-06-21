@@ -25,6 +25,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { logServerError } from '@/lib/server-error-logger';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   normalizeName,
   isTeeComplete,
@@ -222,14 +223,21 @@ export async function getCourseTeeCounts(courseIds: string[]): Promise<Record<st
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return {};
-  const { data } = await supabase
-    .from('golf_course_tees')
-    .select('course_id')
-    .is('deleted_at', null)
-    .in('course_id', courseIds);
+  // PostgREST caps a single response at 1000 rows. A library of ~250 courses with
+  // several tee sets each exceeds that, silently undercounting the "N tees" badge
+  // for whichever courses fall past row 1000. Paginate with a stable `id` order.
+  const { data } = await fetchAllRowsResult<{ id: string; course_id: string }>((from, to) =>
+    supabase
+      .from('golf_course_tees')
+      .select('id, course_id')
+      .is('deleted_at', null)
+      .in('course_id', courseIds)
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
   const counts: Record<string, number> = {};
   for (const r of data ?? []) {
-    const cid = r.course_id as string;
+    const cid = r.course_id;
     counts[cid] = (counts[cid] ?? 0) + 1;
   }
   return counts;

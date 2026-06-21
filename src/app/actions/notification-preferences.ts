@@ -21,6 +21,9 @@ const notificationPreferencesSchema = z.object({
   push_events: z.boolean().optional(),
   push_task_reminders: z.boolean().optional(),
   push_coachhelm: z.boolean().optional(),
+  // Quiet mode — when on, only quiet-exempt categories deliver. Honoured by the
+  // delivery gate (gatedDelivery in @/lib/coachhelm/v3/notifications/types).
+  quiet_mode: z.boolean().optional(),
 });
 
 type NotificationPreferencesInput = z.infer<typeof notificationPreferencesSchema>;
@@ -38,11 +41,14 @@ export async function updateNotificationPreferences(
 
     const validatedPrefs = notificationPreferencesSchema.parse(preferences);
 
+    // .maybeSingle() so an orphaned auth.users (no public.users row) returns
+    // {data:null} instead of throwing PGRST116 — the merge below then writes the
+    // first prefs row cleanly. Matches the read in getNotificationPreferences.
     const { data: currentUser } = await supabase
       .from('users')
       .select('notification_preferences')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     const currentPrefs = (currentUser?.notification_preferences as Record<string, unknown>) || {};
     const mergedPrefs = { ...currentPrefs, ...validatedPrefs };
@@ -107,6 +113,7 @@ export async function getNotificationPreferences(): Promise<{
       push_events: false,
       push_task_reminders: true,
       push_coachhelm: true,
+      quiet_mode: false,
     };
 
     const prefs = (data?.notification_preferences as NotificationPreferencesInput) || {};

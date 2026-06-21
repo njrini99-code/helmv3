@@ -122,6 +122,14 @@ export interface FocusAreaCardData {
   completed_at?: string | null;
   /** Origin links — render REAL source chips, not teases. */
   from_review_id?: string | null;
+  /**
+   * The round id behind `from_review_id`, resolved by the route from
+   * golf_round_reviews.round_id. The round-review route (/rounds/[id]/review)
+   * is keyed by ROUND id, not review id — so the SourceChip's "From a round
+   * review" link uses this when present. Falls back to from_review_id only as a
+   * last resort (link may 404 if unresolved).
+   */
+  from_review_round_id?: string | null;
   from_insight_id?: string | null;
   /** Short context line carried from the origin review/insight. */
   review_context?: string | null;
@@ -222,19 +230,24 @@ function statusMeta(status: string | null | undefined): { tone: FwStatusTone; la
 
 function SourceChip({
   reviewId,
+  reviewRoundId,
   insightId,
   context,
 }: {
   reviewId?: string | null;
+  /** Resolved round id behind the review (route is keyed by round, not review). */
+  reviewRoundId?: string | null;
   insightId?: string | null;
   context?: string | null;
 }): ReactNode {
   if (!reviewId && !insightId) return null;
 
-  // from_review_id → the round review; from_insight_id → the player CoachHelm
-  // front door anchored to the insight (player insights live inline there).
+  // from_review_id → the round review (route /rounds/[id]/review is keyed by the
+  // ROUND id, so prefer the resolved reviewRoundId; fall back to reviewId only
+  // when unresolved). from_insight_id → the player CoachHelm front door anchored
+  // to the insight (player insights live inline there).
   const href = reviewId
-    ? `/golf/dashboard/rounds/${reviewId}/review`
+    ? `/golf/dashboard/rounds/${reviewRoundId ?? reviewId}/review`
     : `/golf/dashboard/coachhelm#insight-${insightId}`;
   const label = reviewId ? 'From a round review' : 'From a CoachHelm insight';
   const Icon = reviewId ? IconFileText : IconSparkles;
@@ -591,6 +604,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
           {/* Real source chip */}
           <SourceChip
             reviewId={focusArea.from_review_id}
+            reviewRoundId={focusArea.from_review_round_id}
             insightId={focusArea.from_insight_id}
             context={focusArea.review_context}
           />

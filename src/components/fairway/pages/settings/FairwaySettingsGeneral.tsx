@@ -38,6 +38,17 @@ import { cn } from '@/lib/utils';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
+import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
+import type { DistancePreference } from '@/lib/golf/distance-units';
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+} from '@/app/actions/notification-preferences';
+import {
+  DELIVERY_NOTIFICATION_GROUPS,
+  type DeliveryNotificationKey,
+  type DeliveryNotificationPreferences,
+} from '@/lib/coachhelm/v3/notifications/types';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
@@ -57,6 +68,7 @@ import {
   IconCopy,
   IconCheck,
   IconRefresh,
+  IconRuler,
 } from '@/components/icons';
 
 import {
@@ -164,80 +176,88 @@ function SaveRow({
 export function FairwaySettingsGeneral() {
   const golfUser = useGolfUser();
   const [profile, setProfile] = useState<SettingsProfile | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const loadProfile = useCallback(async () => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const email = user?.email || '';
+    // B16: a failed fetch must NOT leave the page stuck on an infinite skeleton.
+    // Reset the error flag, then surface a retryable error card on throw.
+    setLoadError(false);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      const email = user?.email || '';
 
-    if (golfUser.role === 'coach') {
-      setProfile({
-        userId: golfUser.userId,
-        coachId: golfUser.coachId,
-        name: golfUser.name,
-        email,
-        avatarUrl: golfUser.avatarUrl || null,
-        role: 'coach',
-        teamName: golfUser.teamName,
-        teamId: golfUser.teamId,
-        organizationId: golfUser.organizationId,
-      });
-      return;
-    }
-
-    if (golfUser.playerId) {
-      const [playerResult, teamResult] = await Promise.all([
-        supabase
-          .from('golf_players')
-          .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
-          .eq('id', golfUser.playerId)
-          .maybeSingle(),
-        golfUser.teamId
-          ? supabase
-              .from('golf_teams')
-              .select('id, name, organization:organizations(name)')
-              .eq('id', golfUser.teamId)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-      ]);
-
-      const player = playerResult.data;
-      const team = teamResult.data;
-
-      let currentTeam: SettingsProfile['currentTeam'] = null;
-      if (team) {
-        const org = Array.isArray(team.organization) ? team.organization[0] : team.organization;
-        currentTeam = {
-          id: team.id,
-          name: team.name,
-          organization: org ? { name: org.name } : null,
-        };
+      if (golfUser.role === 'coach') {
+        setProfile({
+          userId: golfUser.userId,
+          coachId: golfUser.coachId,
+          name: golfUser.name,
+          email,
+          avatarUrl: golfUser.avatarUrl || null,
+          role: 'coach',
+          teamName: golfUser.teamName,
+          teamId: golfUser.teamId,
+          organizationId: golfUser.organizationId,
+        });
+        return;
       }
 
-      setProfile({
-        userId: golfUser.userId,
-        name: golfUser.name,
-        email,
-        avatarUrl: player?.avatar_url ?? golfUser.avatarUrl ?? null,
-        role: 'player',
-        teamName: golfUser.teamName,
-        playerId: golfUser.playerId,
-        currentTeam,
-        playerData: player
-          ? {
-              first_name: player.first_name,
-              last_name: player.last_name,
-              handicap: player.handicap,
-              handicap_index: player.handicap_index,
-              graduation_year: player.graduation_year,
-              hometown: player.hometown,
-              state: player.state,
-              phone: player.phone,
-            }
-          : undefined,
-      });
+      if (golfUser.playerId) {
+        const [playerResult, teamResult] = await Promise.all([
+          supabase
+            .from('golf_players')
+            .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
+            .eq('id', golfUser.playerId)
+            .maybeSingle(),
+          golfUser.teamId
+            ? supabase
+                .from('golf_teams')
+                .select('id, name, organization:organizations(name)')
+                .eq('id', golfUser.teamId)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+        ]);
+
+        const player = playerResult.data;
+        const team = teamResult.data;
+
+        let currentTeam: SettingsProfile['currentTeam'] = null;
+        if (team) {
+          const org = Array.isArray(team.organization) ? team.organization[0] : team.organization;
+          currentTeam = {
+            id: team.id,
+            name: team.name,
+            organization: org ? { name: org.name } : null,
+          };
+        }
+
+        setProfile({
+          userId: golfUser.userId,
+          name: golfUser.name,
+          email,
+          avatarUrl: player?.avatar_url ?? golfUser.avatarUrl ?? null,
+          role: 'player',
+          teamName: golfUser.teamName,
+          playerId: golfUser.playerId,
+          currentTeam,
+          playerData: player
+            ? {
+                first_name: player.first_name,
+                last_name: player.last_name,
+                handicap: player.handicap,
+                handicap_index: player.handicap_index,
+                graduation_year: player.graduation_year,
+                hometown: player.hometown,
+                state: player.state,
+                phone: player.phone,
+              }
+            : undefined,
+        });
+      }
+    } catch {
+      setLoadError(true);
     }
   }, [golfUser]);
 
@@ -274,6 +294,28 @@ export function FairwaySettingsGeneral() {
       setDeleteConfirmOpen(false);
     }
   };
+
+  if (loadError && !profile) {
+    return (
+      <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
+        <ViewHeader eyebrow="Settings" title="Settings" />
+        <Surface elevation="border" padding="lg" className="mt-8 flex flex-col items-start gap-3">
+          <h2 className="font-fw-display text-h2 text-text-primary">Couldn&rsquo;t load settings</h2>
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            Something went wrong loading your account. Please try again.
+          </p>
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<IconRefresh size={16} aria-hidden />}
+            onClick={() => void loadProfile()}
+          >
+            Retry
+          </Button>
+        </Surface>
+      </div>
+    );
+  }
 
   if (!profile) {
     return (
@@ -331,25 +373,31 @@ export function FairwaySettingsGeneral() {
 
         {/* Preferences */}
         <AppearancePanel />
-        <Surface elevation="border" padding="none">
-          <Link
-            href="/golf/dashboard/settings/notifications"
-            className="flex items-center gap-3 p-5 outline-none transition-colors hover:bg-surface-sunken focus-visible:bg-surface-sunken"
-          >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-fw-sm bg-surface-sunken text-text-secondary">
-              <IconBell size={18} aria-hidden />
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block font-fw-sans text-body font-medium text-text-primary">
-                Notifications
+        <DistanceUnitsPanel />
+        {/* Notifications — coach + player. Writes users.notification_preferences,
+            the column the email/push delivery gate actually reads. */}
+        <NotificationsPanel />
+        {profile.role === 'player' ? (
+          <Surface elevation="border" padding="none">
+            <Link
+              href="/golf/dashboard/settings/notifications"
+              className="flex items-center gap-3 p-5 outline-none transition-colors hover:bg-surface-sunken focus-visible:bg-surface-sunken"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-fw-sm bg-surface-sunken text-text-secondary">
+                <IconBell size={18} aria-hidden />
               </span>
-              <span className="block font-fw-sans text-body-sm text-text-secondary">
-                Choose how each kind of update reaches you.
+              <span className="flex-1 min-w-0">
+                <span className="block font-fw-sans text-body font-medium text-text-primary">
+                  Per-category notifications
+                </span>
+                <span className="block font-fw-sans text-body-sm text-text-secondary">
+                  Fine-grained AI insight & goal channels.
+                </span>
               </span>
-            </span>
-            <IconChevronRight size={18} className="shrink-0 text-text-tertiary" aria-hidden />
-          </Link>
-        </Surface>
+              <IconChevronRight size={18} className="shrink-0 text-text-tertiary" aria-hidden />
+            </Link>
+          </Surface>
+        ) : null}
         {profile.role === 'coach' ? (
           <Surface elevation="border" padding="none">
             <Link
@@ -816,6 +864,209 @@ function AppearancePanel() {
   );
 }
 
+/* ── Distance units ───────────────────────────────────────────────────────── */
+
+/** Restores the legacy yd/m display preference (localStorage-backed). */
+function DistanceUnitsPanel() {
+  const { distancePref, setDistancePref } = useDistanceUnits();
+
+  const options: Array<{
+    value: DistancePreference;
+    label: string;
+    desc: string;
+    example: string;
+  }> = [
+    { value: 'yards', label: 'Yards', desc: 'Standard US / golf measurement', example: '150 yds · 10 ft putts' },
+    { value: 'meters', label: 'Meters', desc: 'International metric system', example: '137 m · 3 m putts' },
+  ];
+
+  return (
+    <SectionCard
+      icon={<IconRuler size={18} aria-hidden />}
+      title="Distance units"
+      description="Only affects display — all data is stored in yards and feet."
+    >
+      <div className="grid grid-cols-2 gap-2">
+        {options.map(({ value, label, desc, example }) => (
+          <OptionTile
+            key={value}
+            active={distancePref === value}
+            onClick={() => {
+              void triggerHaptic('light');
+              setDistancePref(value);
+            }}
+            title={label}
+            hint={`${desc} · ${example}`}
+          />
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+/* ── Notifications (coach + player) ────────────────────────────────────────── */
+
+/**
+ * Writes users.notification_preferences — the JSONB column the email/push
+ * delivery gate (getUserNotificationPreferences → shouldSendEmail) actually
+ * reads. Each row gates an email and (where the channel exists) a push channel;
+ * quiet mode silences everything except the quiet-exempt rows. Available to
+ * BOTH coaches and players (the live shell previously gave coaches no UI here).
+ */
+function NotificationsPanel() {
+  const [prefs, setPrefs] = useState<DeliveryNotificationPreferences | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoadFailed(false);
+    const res = await getNotificationPreferences();
+    if (res.error || !res.data) {
+      setLoadFailed(true);
+      return;
+    }
+    setPrefs(res.data as DeliveryNotificationPreferences);
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Optimistic single-key toggle: flip locally, persist, roll back on failure.
+  const toggle = useCallback(
+    async (key: DeliveryNotificationKey | 'quiet_mode', next: boolean) => {
+      if (!prefs) return;
+      const previous = prefs;
+      const optimistic = { ...prefs, [key]: next };
+      setPrefs(optimistic);
+      setSaving(true);
+      const res = await updateNotificationPreferences({ [key]: next });
+      setSaving(false);
+      if (!res.success) {
+        setPrefs(previous);
+        void triggerHaptic('error');
+        fairwayToast.error(res.error || 'Failed to save preference');
+      } else {
+        void triggerHaptic('light');
+      }
+    },
+    [prefs],
+  );
+
+  if (loadFailed && !prefs) {
+    return (
+      <SectionCard icon={<IconBell size={18} aria-hidden />} title="Notifications">
+        <div className="flex flex-col items-start gap-3">
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            Couldn&rsquo;t load your notification preferences.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconRefresh size={16} aria-hidden />}
+            onClick={() => void load()}
+          >
+            Retry
+          </Button>
+        </div>
+      </SectionCard>
+    );
+  }
+
+  if (!prefs) {
+    return (
+      <SectionCard icon={<IconBell size={18} aria-hidden />} title="Notifications">
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-10 w-full rounded-fw-sm bg-surface-sunken" />
+          ))}
+        </div>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <SectionCard
+      icon={<IconBell size={18} aria-hidden />}
+      title="Notifications"
+      description="Choose how each kind of update reaches you."
+    >
+      <div className="space-y-1">
+        {/* Quiet mode */}
+        <div className="flex items-center justify-between gap-3 rounded-fw-sm bg-surface-sunken p-3">
+          <div className="min-w-0">
+            <p className="font-fw-sans text-body-sm font-medium text-text-primary">Quiet mode</p>
+            <p className="font-fw-sans text-caption text-text-tertiary">
+              Silences everything except messages.
+            </p>
+          </div>
+          <Switch
+            checked={prefs.quiet_mode}
+            onCheckedChange={(v) => void toggle('quiet_mode', v)}
+            disabled={saving}
+            aria-label="Quiet mode"
+          />
+        </div>
+
+        {/* Column legend */}
+        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 px-1 pt-3 pb-1">
+          <span />
+          <span className="w-14 text-center font-fw-sans text-caption font-medium uppercase tracking-[0.06em] text-text-tertiary">
+            Email
+          </span>
+          <span className="w-14 text-center font-fw-sans text-caption font-medium uppercase tracking-[0.06em] text-text-tertiary">
+            Push
+          </span>
+        </div>
+
+        {/* Per-category rows */}
+        <ul className="divide-y divide-border-subtle">
+          {DELIVERY_NOTIFICATION_GROUPS.map((group) => {
+            const silenced = prefs.quiet_mode && !group.quietExempt;
+            return (
+              <li
+                key={group.id}
+                className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 py-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-fw-sans text-body-sm font-medium text-text-primary">
+                    {group.label}
+                  </p>
+                  <p className="font-fw-sans text-caption text-text-tertiary">
+                    {silenced ? 'Silenced by quiet mode' : group.description}
+                  </p>
+                </div>
+                <div className="flex w-14 justify-center">
+                  <Switch
+                    checked={prefs[group.emailKey]}
+                    onCheckedChange={(v) => void toggle(group.emailKey, v)}
+                    disabled={saving || silenced}
+                    aria-label={`${group.label} email`}
+                  />
+                </div>
+                <div className="flex w-14 justify-center">
+                  {group.pushKey ? (
+                    <Switch
+                      checked={prefs[group.pushKey]}
+                      onCheckedChange={(v) => void toggle(group.pushKey!, v)}
+                      disabled={saving || silenced}
+                      aria-label={`${group.label} push`}
+                    />
+                  ) : (
+                    <span className="font-fw-sans text-caption text-text-tertiary" aria-hidden>
+                      {EM_DASH}
+                    </span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </SectionCard>
+  );
+}
+
 /* ── Golf scoring (coach) ─────────────────────────────────────────────────── */
 
 function GolfScoringPanel({ teamId }: { teamId: string }) {
@@ -1154,12 +1405,10 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
     }
     setSaving(true);
     try {
-      const { error: teamError } = await supabase
-        .from('golf_teams')
-        .update({ name: teamName.trim(), season: season.trim() || undefined, updated_at: new Date().toISOString() })
-        .eq('id', teamId);
-      if (teamError) throw teamError;
-
+      // B16/F150: the org update spans a DIFFERENT table (organizations, shared
+      // across both gendered teams) than the team row. Run the cross-org write
+      // FIRST and bail before touching golf_teams if it fails, so an org failure
+      // can't leave the team renamed against stale org fields (half-applied save).
       if (organizationId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: orgError } = await (supabase as any)
@@ -1175,6 +1424,12 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
           .eq('id', organizationId);
         if (orgError) throw orgError;
       }
+
+      const { error: teamError } = await supabase
+        .from('golf_teams')
+        .update({ name: teamName.trim(), season: season.trim() || undefined, updated_at: new Date().toISOString() })
+        .eq('id', teamId);
+      if (teamError) throw teamError;
 
       fairwayToast.success('Team settings updated');
       onUpdate();

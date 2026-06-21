@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -30,9 +30,22 @@ const STEPS_CONFIG = [
 
 const graduationYears = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() + i);
 
+// ─── Handicap parsing ───────────────────────────────────────────────────────
+// A "plus" handicap (e.g. "+2.4") means the player is better than scratch and is
+// stored as a NEGATIVE index (-2.4). `parseFloat('+2.4')` yields a positive
+// 2.4, so we detect the leading '+' explicitly and invert the sign.
+function parseHandicapInput(raw: string): number | undefined {
+  const trimmed = raw.trim();
+  if (!trimmed) return undefined;
+  const isPlus = trimmed.startsWith('+');
+  const value = parseFloat(trimmed.replace(/^\+/, ''));
+  if (!Number.isFinite(value)) return undefined;
+  return isPlus ? -Math.abs(value) : value;
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function GolfPlayerOnboarding() {
+function GolfPlayerOnboardingContent() {
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -103,7 +116,15 @@ export default function GolfPlayerOnboarding() {
         setGraduationYear(
           player.graduation_year || graduationYears[3] || new Date().getFullYear() + 3
         );
-        setHandicap(player.handicap?.toString() || '');
+        // Stored negative = plus handicap; surface it with the conventional '+'
+        // so re-parse on submit round-trips back to the same negative value.
+        setHandicap(
+          player.handicap != null
+            ? player.handicap < 0
+              ? `+${Math.abs(player.handicap)}`
+              : player.handicap.toString()
+            : ''
+        );
         setHometown(player.hometown || '');
         setState(player.state || '');
         setGpa(player.gpa?.toString() || '');
@@ -146,10 +167,11 @@ export default function GolfPlayerOnboarding() {
         firstName,
         lastName,
         gradYear: graduationYear,
-        handicap: handicap ? parseFloat(handicap) : undefined,
+        handicap: parseHandicapInput(handicap),
         hometown: hometown || undefined,
         state: state || undefined,
         gpa: gpa ? parseFloat(gpa) : undefined,
+        avatarUrl: avatarUrl || undefined,
       }, joinCode);
 
       if (!result.success) {
@@ -505,5 +527,18 @@ export default function GolfPlayerOnboarding() {
         </LazyMotion>
       </div>
     </div>
+  );
+}
+
+// ─── Page Export (Suspense boundary) ─────────────────────────────────────────
+// `useSearchParams()` triggers a client-side bail (and a Next.js prerender
+// error) unless it's read inside a <Suspense> boundary — mirror the sibling
+// auth pages and wrap the reader.
+
+export default function GolfPlayerOnboarding() {
+  return (
+    <Suspense fallback={<PageLoading />}>
+      <GolfPlayerOnboardingContent />
+    </Suspense>
   );
 }

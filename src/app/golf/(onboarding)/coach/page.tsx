@@ -32,6 +32,26 @@ const STEPS_CONFIG = [
 
 const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA', 'NJCAA', 'Club'];
 
+// Draft is kept in sessionStorage (per-tab, cleared on tab close) so an
+// accidental refresh mid-wizard doesn't wipe entered program/profile data —
+// including an uploaded avatar URL. Nothing hits the DB until final submit, and
+// the draft is cleared once onboarding completes.
+const COACH_DRAFT_KEY = 'golf-coach-onboarding-draft';
+
+type CoachOnboardingDraft = {
+  step: Step;
+  orgName: string;
+  division: string;
+  conference: string;
+  city: string;
+  state: string;
+  teamName: string;
+  gender: 'mens' | 'womens';
+  fullName: string;
+  title: string;
+  avatarUrl: string | null;
+};
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function GolfCoachOnboarding() {
@@ -62,6 +82,61 @@ export default function GolfCoachOnboarding() {
   // Completion data
   const [joinCode, setJoinCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Resume support: gates the persistence effect so we don't overwrite a saved
+  // draft with empty initial state before hydration has run.
+  const [draftHydrated, setDraftHydrated] = useState(false);
+
+  // ─── Draft Resume (sessionStorage) ────────────────────────────────────────
+
+  // Hydrate any in-progress draft once on mount.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(COACH_DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw) as Partial<CoachOnboardingDraft>;
+        // Never resume onto the completion screen — that step owns a join code
+        // produced by the server, which a draft can't reconstruct.
+        if (d.step && d.step !== 'complete') setStep(d.step);
+        if (typeof d.orgName === 'string') setOrgName(d.orgName);
+        if (typeof d.division === 'string') setDivision(d.division);
+        if (typeof d.conference === 'string') setConference(d.conference);
+        if (typeof d.city === 'string') setCity(d.city);
+        if (typeof d.state === 'string') setState(d.state);
+        if (typeof d.teamName === 'string') setTeamName(d.teamName);
+        if (d.gender === 'mens' || d.gender === 'womens') setGender(d.gender);
+        if (typeof d.fullName === 'string' && d.fullName) setFullName(d.fullName);
+        if (typeof d.title === 'string') setTitle(d.title);
+        if (typeof d.avatarUrl === 'string') setAvatarUrl(d.avatarUrl);
+      }
+    } catch {
+      // Corrupt/unavailable storage — start fresh, never block onboarding.
+    }
+    setDraftHydrated(true);
+  }, []);
+
+  // Persist the draft on any field change (skipped on the completion screen).
+  useEffect(() => {
+    if (!draftHydrated || step === 'complete') return;
+    try {
+      const draft: CoachOnboardingDraft = {
+        step,
+        orgName,
+        division,
+        conference,
+        city,
+        state,
+        teamName,
+        gender,
+        fullName,
+        title,
+        avatarUrl,
+      };
+      sessionStorage.setItem(COACH_DRAFT_KEY, JSON.stringify(draft));
+    } catch {
+      // Storage full/unavailable — non-fatal; the wizard still works in-memory.
+    }
+  }, [draftHydrated, step, orgName, division, conference, city, state, teamName, gender, fullName, title, avatarUrl]);
 
   // ─── Auth Check ─────────────────────────────────────────────────────────
 
@@ -110,10 +185,11 @@ export default function GolfCoachOnboarding() {
         return;
       }
 
-      // Pre-fill name from auth metadata if available
+      // Pre-fill name from auth metadata if available — but never clobber a
+      // value the user already typed (and which a resumed draft restored).
       const meta = user.user_metadata;
       if (meta?.first_name && meta?.last_name) {
-        setFullName(`${meta.first_name} ${meta.last_name}`);
+        setFullName((prev) => prev || `${meta.first_name} ${meta.last_name}`);
       }
 
       setAuthLoading(false);
@@ -151,12 +227,20 @@ export default function GolfCoachOnboarding() {
         gender,
         fullName,
         title: title || undefined,
+        avatarUrl: avatarUrl || undefined,
       });
 
       if (!result.success) {
         setError(result.error || "Couldn't finish setting up your program. Give it another go.");
         setLoading(false);
         return;
+      }
+
+      // Onboarding succeeded — the program is persisted, so drop the draft.
+      try {
+        sessionStorage.removeItem(COACH_DRAFT_KEY);
+      } catch {
+        // Ignore — clearing the draft is best-effort.
       }
 
       setJoinCode(result.data?.joinCode || null);

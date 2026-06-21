@@ -24,7 +24,10 @@ import {
   IconMessage,
 } from '@/components/icons';
 
-type PlayerStatus = 'active' | 'injured' | 'redshirt' | 'inactive';
+// B4/F007: golf_team_members.status only allows pending/active/inactive/removed
+// — 'injured' and 'redshirt' were never valid write values, so the Change
+// Status modal offers Active + Inactive only.
+type PlayerStatus = 'active' | 'inactive';
 
 const statuses: Array<{
   value: PlayerStatus;
@@ -39,20 +42,6 @@ const statuses: Array<{
     description: 'Player is actively participating in team activities',
     dotColor: 'bg-primary-500',
     badgeStyle: 'bg-primary-500/10 text-primary-700 ring-primary-500/20',
-  },
-  {
-    value: 'injured',
-    label: 'Injured',
-    description: 'Player is recovering from an injury',
-    dotColor: 'bg-rose-500',
-    badgeStyle: 'bg-rose-500/10 text-rose-700 ring-rose-500/20',
-  },
-  {
-    value: 'redshirt',
-    label: 'Redshirt',
-    description: 'Player is redshirting this season',
-    dotColor: 'bg-amber-500',
-    badgeStyle: 'bg-amber-500/10 text-amber-700 ring-amber-500/20',
   },
   {
     value: 'inactive',
@@ -153,6 +142,10 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
           </IconButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
+          {/* F143: this routes to the CoachHelm Player Insight surface
+              (/golf/dashboard/players/[playerId]), not the roster profile —
+              labeled "View Insights" so the destination is honest and matches
+              the Fairway kebab. */}
           <DropdownMenuItem
             onSelect={() => {
               void triggerHaptic('light');
@@ -161,7 +154,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
             className="gap-3"
           >
             <IconChevronRight size={18} className="text-warm-500" />
-            View Profile
+            View Insights
           </DropdownMenuItem>
 
           {/* Moved from the card body in the 2026-05-28 IA trim — the roster

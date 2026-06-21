@@ -768,17 +768,19 @@ export async function getPlayerDashboardData(
                 .order('start_time', { ascending: true })
                 .limit(10)
             : Promise.resolve({ data: [] as Array<{ id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null }> }),
-        // Pending tasks
+        // Pending task ASSIGNMENTS for this player. golf_tasks.assigned_to is
+        // never written — assignment lives in the M:N golf_task_assignments join
+        // (the table create/complete actually write). Keying on the player's own
+        // assignment status here is what makes the Hub/home pending-task list
+        // reflect reality (and clear when the player completes).
         teamId
             ? supabase
-                .from('golf_tasks')
-                .select('id, title, due_date, priority, status')
-                .eq('team_id', teamId)
-                .eq('assigned_to', playerId)
+                .from('golf_task_assignments')
+                .select('task_id, status')
+                .eq('player_id', playerId)
                 .in('status', ['pending', 'in_progress'])
-                .order('due_date', { ascending: true, nullsFirst: false })
-                .limit(15)
-            : Promise.resolve({ data: [] as Array<{ id: string; title: string; due_date: string | null; priority: string | null; status: string | null; created_at?: string }> }),
+                .limit(50)
+            : Promise.resolve({ data: [] as Array<{ task_id: string; status: string | null }> }),
         // Recent announcements
         teamId
             ? supabase
@@ -919,8 +921,22 @@ export async function getPlayerDashboardData(
 
     // Action items
     const actionItems: ActionItem[] = [];
-    if (pendingTasksResult.data) {
-        for (const task of pendingTasksResult.data) {
+    // Resolve the player's pending task ASSIGNMENTS into task details. The
+    // assignment rows (from golf_task_assignments) carry the per-player status;
+    // golf_tasks supplies title/due_date/priority. Status comes from the
+    // assignment (the player's own progress), not golf_tasks.status.
+    const pendingAssignments = (pendingTasksResult.data || []) as Array<{ task_id: string; status: string | null }>;
+    if (pendingAssignments.length > 0) {
+        const statusByTaskId = new Map(pendingAssignments.map(a => [a.task_id, a.status]));
+        const pendingTaskIds = [...statusByTaskId.keys()];
+        const { data: taskDetails } = await supabase
+            .from('golf_tasks')
+            .select('id, title, due_date, priority')
+            .in('id', pendingTaskIds)
+            .order('due_date', { ascending: true, nullsFirst: false })
+            .limit(15);
+
+        for (const task of taskDetails || []) {
             const isOverdue = task.due_date && task.due_date < today;
             actionItems.push({
                 id: task.id,
@@ -928,7 +944,7 @@ export async function getPlayerDashboardData(
                 title: task.title,
                 date: task.due_date || '',
                 priority: task.priority || undefined,
-                status: task.status || undefined,
+                status: statusByTaskId.get(task.id) || undefined,
                 overdue: isOverdue || false,
             });
         }
