@@ -430,23 +430,29 @@ export async function sendGolfMessage(conversationId: string, content: string) {
               )
             );
 
-            // Push notifications
+            // Push notifications — carry the conversation id so the push payload
+            // deep-links straight to the thread that fired it (P260).
             await Promise.allSettled(
               recipientProfiles.map(r =>
                 sendPushNotification('new_message', r.id, {
                   senderName,
                   preview,
+                  conversationId,
                 })
               )
             );
 
             // In-app notifications (golf_calendar_notifications)
+            // P260: deep-link to the conversation that fired the notification via
+            // ?conversation=<id> (NotificationCenter does router.push(action_url),
+            // and FairwayMessages pre-selects from this param). Mirrors the existing
+            // ?event= / ?task= deep-link convention used elsewhere in this codebase.
             const inAppNotifs = recipientProfiles.map(r => ({
               user_id: r.id,
               notification_type: 'message',
               title: `Message from ${senderName}`,
               message: preview,
-              action_url: `/golf/dashboard/messages`,
+              action_url: `/golf/dashboard/messages?conversation=${conversationId}`,
             }));
             // Use admin client to bypass RLS — inserting notifications for other users
             const adminClient = createAdminClient();

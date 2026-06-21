@@ -64,6 +64,7 @@ import {
 } from './signals/patternToInsightVocabulary';
 
 import { InsightCard } from '@/components/fairway/cards-insight/InsightCard';
+import { Checkbox } from '@/components/fairway/forms/Checkbox';
 import { InsightPanel } from '@/components/fairway/cards-insight/InsightPanel';
 import { MetricCard } from '@/components/fairway/cards-insight/MetricCard';
 import { Button } from '@/components/fairway/controls/button';
@@ -100,7 +101,9 @@ import {
   markPatternAddressed,
   resolvePattern,
   type ExtendedPattern,
+  type PatternSeverity,
 } from '@/app/golf/actions/pattern-management';
+import type { InsightPriority } from '@/components/fairway/cards-insight/InsightCard';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — the discriminated surface contract.
@@ -228,6 +231,27 @@ const GROUP_BY_OPTIONS: SegmentedOption<SignalGroupBy>[] = [
  *  signals (priority desc, then recency): never empty, never a firehose. */
 const SMART_DEFAULT_CAP = 8;
 
+/**
+ * Map a row's DERIVED InsightPriority (from the adapter's pattern_type +
+ * |stroke_impact| derivation) onto the DB's PatternSeverity enum, so confirming
+ * a pattern writes the honest severity rather than the all-'medium' column. The
+ * `info` tone has no severity peer → 'low' (the floor), never a fabricated tier.
+ */
+function signalPriorityToPatternSeverity(priority: InsightPriority): PatternSeverity {
+  switch (priority) {
+    case 'critical':
+      return 'critical';
+    case 'high':
+      return 'high';
+    case 'medium':
+      return 'medium';
+    case 'low':
+    case 'info':
+    default:
+      return 'low';
+  }
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Component
  * ─────────────────────────────────────────────────────────────────────────── */
@@ -268,7 +292,22 @@ export function FairwayCoachHelmSignals({
   );
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [, startActionTransition] = useTransition();
+  const [isBulkPending, startActionTransition] = useTransition();
+
+  /* -- per-row in-flight guard: which row ids have a mutation in flight. Drives
+        the busy/disabled affordance on that row's action buttons so a coach
+        can't double-fire (e.g. click 'Resolve' twice before the optimistic
+        removal lands). A Set so independent rows can be acted on concurrently. */
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  const markPending = useCallback((id: string, on: boolean) => {
+    setPendingIds((prev) => {
+      if (on === prev.has(id)) return prev;
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
 
   /* -- filter state (seeded from defaultFilter + any shareable URL params) -- */
   const sp = initialSearchParams ?? {};
@@ -313,6 +352,17 @@ export function FairwayCoachHelmSignals({
 
   /* -- selection (drives the bulk-action bar) -- */
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  /** Toggle one row's selection (the per-card checkbox). */
+  const toggleRowSelected = useCallback((id: string, next: boolean) => {
+    setSelectedIds((prev) => {
+      if (next === prev.has(id)) return prev;
+      const updated = new Set(prev);
+      if (next) updated.add(id);
+      else updated.delete(id);
+      return updated;
+    });
+  }, []);
 
   /* -- expand-in-place panel (the InsightPanel read of one signal) --
         Seed from a `?id=` deep-link (the command palette's "Recent insights"
@@ -540,40 +590,82 @@ export function FairwayCoachHelmSignals({
      narrowing FROM (everything the coach would see with the default cleared). */
   const fullCount = filteredRows.length;
 
+  /* ── select-all-visible (insights/alerts only; patterns have no bulk bar) ──
+     "Visible" = the rows currently rendered (`rows`), so a select-all matches
+     what the coach can actually see, not a hidden firehose. */
+  const selectableVisibleIds = useMemo(
+    () => (isPatterns ? [] : rows.map((r) => r.id)),
+    [isPatterns, rows],
+  );
+  const allVisibleSelected =
+    selectableVisibleIds.length > 0 &&
+    selectableVisibleIds.every((id) => selectedIds.has(id));
+
+  const toggleSelectAllVisible = useCallback(() => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const everySelected =
+        selectableVisibleIds.length > 0 &&
+        selectableVisibleIds.every((id) => next.has(id));
+      if (everySelected) {
+        for (const id of selectableVisibleIds) next.delete(id);
+      } else {
+        for (const id of selectableVisibleIds) next.add(id);
+      }
+      return next;
+    });
+  }, [selectableVisibleIds]);
+
   /* ── per-row triage handlers (PORTED optimistic-removal-with-rollback) ─── */
 
   const removeInsightOptimistic = useCallback(
     (
       insightId: string,
-      action: (id: string) => Promise<{ success: boolean }>,
+      action: (id: string) => Promise<{ success: boolean; error?: string }>,
+      successLabel: string,
     ) => {
+      // Double-submit guard: ignore a second click while this row is in flight.
+      if (pendingIds.has(insightId)) return;
       const prev = insights;
+      markPending(insightId, true);
       startActionTransition(async () => {
         try {
           setInsights((r) => r.filter((x) => x.id !== insightId));
           const res = await action(insightId);
-          if (!res.success) setInsights(prev);
+          if (!res.success) {
+            // Roll back AND tell the coach why — never let a failed row silently
+            // flicker back with no explanation (Nielsen #1/#9).
+            setInsights(prev);
+            setError(res.error ?? `Could not ${successLabel.toLowerCase()} this signal. Try again.`);
+          } else {
+            setNotice(`Signal ${successLabel.toLowerCase()}.`);
+          }
         } catch {
           setInsights(prev);
+          setError(`Could not ${successLabel.toLowerCase()} this signal. Try again.`);
+        } finally {
+          markPending(insightId, false);
         }
       });
     },
-    [insights],
+    [insights, pendingIds, markPending],
   );
 
   const handleAcknowledge = useCallback(
-    (insightId: string) => removeInsightOptimistic(insightId, acknowledgeInsight),
+    (insightId: string) => removeInsightOptimistic(insightId, acknowledgeInsight, 'Acknowledged'),
     [removeInsightOptimistic],
   );
 
   const handleDismissInsight = useCallback(
-    (insightId: string) => removeInsightOptimistic(insightId, dismissInsight),
+    (insightId: string) => removeInsightOptimistic(insightId, dismissInsight, 'Dismissed'),
     [removeInsightOptimistic],
   );
 
   const handleCreateFocusAreaFromInsight = useCallback(
     (row: SignalRow) => {
+      if (pendingIds.has(row.id)) return;
       const insight = row.raw as EvidenceInsight;
+      markPending(row.id, true);
       startActionTransition(async () => {
         try {
           const res = await createFocusAreaFromInsight({
@@ -584,38 +676,63 @@ export function FairwayCoachHelmSignals({
             description: insight.content ?? '',
             insight_type: (insight.category as string | undefined) ?? 'general',
           });
-          if (res.success) router.push('/golf/dashboard/development');
+          if (res.success) {
+            // Confirm before we navigate away — the coach sees their action
+            // succeeded rather than a silent route change (Nielsen #1).
+            setNotice('Focus area created.');
+            router.push('/golf/dashboard/development');
+          } else {
+            setError('Could not create the focus area. Try again.');
+            markPending(row.id, false);
+          }
         } catch {
           setError('Could not create the focus area. Try again.');
+          markPending(row.id, false);
         }
       });
     },
-    [coachId, router],
+    [coachId, router, pendingIds, markPending],
   );
 
   /* ── pattern lifecycle handlers (PORTED optimistic-removal-with-rollback) */
 
   const removePatternOptimistic = useCallback(
-    (patternId: string, action: () => Promise<{ success: boolean }>) => {
+    (
+      patternId: string,
+      action: () => Promise<{ success: boolean; error?: string }>,
+      successLabel: string,
+    ) => {
+      if (pendingIds.has(patternId)) return;
       const prev = patterns;
+      markPending(patternId, true);
       startActionTransition(async () => {
         try {
           setPatterns((r) => r.filter((x) => x.id !== patternId));
           const res = await action();
-          if (!res.success) setPatterns(prev);
+          if (!res.success) {
+            setPatterns(prev);
+            setError(res.error ?? `Could not ${successLabel.toLowerCase()} this pattern. Try again.`);
+          } else {
+            setNotice(`Pattern ${successLabel.toLowerCase()}.`);
+          }
         } catch {
           setPatterns(prev);
+          setError(`Could not ${successLabel.toLowerCase()} this pattern. Try again.`);
+        } finally {
+          markPending(patternId, false);
         }
       });
     },
-    [patterns],
+    [patterns, pendingIds, markPending],
   );
 
   const handleConfirmPattern = useCallback(
     (row: SignalRow) => {
+      if (pendingIds.has(row.id)) return;
       const p = row.raw as ExtendedPattern;
       // Validate (confirm) — does NOT remove the row; flip its lifecycle in place.
       const prev = patterns;
+      markPending(row.id, true);
       startActionTransition(async () => {
         try {
           setPatterns((r) =>
@@ -623,29 +740,44 @@ export function FairwayCoachHelmSignals({
           );
           const res = await validatePattern(p.id, {
             isAccurate: true,
-            severity: p.severity,
+            // Write the DERIVED severity (from pattern_type + |stroke_impact|),
+            // NOT the all-'medium' `golf_patterns_v2.severity` column — confirming
+            // a pattern shouldn't stamp a misleading 'medium' over a genuine
+            // high-impact signal. `row.priority` is the adapter's honest derivation.
+            severity: signalPriorityToPatternSeverity(row.priority),
           });
-          if (!res.success) setPatterns(prev);
+          if (!res.success) {
+            setPatterns(prev);
+            setError(res.error ?? 'Could not confirm this pattern. Try again.');
+          } else {
+            setNotice('Pattern confirmed.');
+          }
         } catch {
           setPatterns(prev);
+          setError('Could not confirm this pattern. Try again.');
+        } finally {
+          markPending(row.id, false);
         }
       });
     },
-    [patterns],
+    [patterns, pendingIds, markPending],
   );
 
   const handleAddressPattern = useCallback(
-    (row: SignalRow) => removePatternOptimistic(row.id, () => markPatternAddressed(row.id)),
+    (row: SignalRow) =>
+      removePatternOptimistic(row.id, () => markPatternAddressed(row.id), 'Addressed'),
     [removePatternOptimistic],
   );
 
   const handleResolvePattern = useCallback(
-    (row: SignalRow) => removePatternOptimistic(row.id, () => resolvePattern(row.id)),
+    (row: SignalRow) =>
+      removePatternOptimistic(row.id, () => resolvePattern(row.id), 'Resolved'),
     [removePatternOptimistic],
   );
 
   const handleDismissPattern = useCallback(
-    (row: SignalRow) => removePatternOptimistic(row.id, () => dismissPattern(row.id)),
+    (row: SignalRow) =>
+      removePatternOptimistic(row.id, () => dismissPattern(row.id), 'Dismissed'),
     [removePatternOptimistic],
   );
 
@@ -861,6 +993,12 @@ export function FairwayCoachHelmSignals({
   /* ── the shared row → action set (ONE vocabulary; per-source actions) ──── */
   const rowActions = useCallback(
     (row: SignalRow) => {
+      // While THIS row has a mutation in flight, lock its whole action cluster:
+      // the triggered (primary) action shows the spinner via `busy`; the others
+      // disable so a coach can't fire a second mutation on a row mid-flight
+      // (the double-submit guard in each handler is the belt; this is the
+      // braces, plus the visible in-flight affordance Layer 3 requires).
+      const rowPending = pendingIds.has(row.id);
       if (row.source === 'patterns') {
         const lifecycle = (row.raw as ExtendedPattern).lifecycleState;
         return (
@@ -869,6 +1007,7 @@ export function FairwayCoachHelmSignals({
               <Button
                 size="sm"
                 variant="primary"
+                busy={rowPending}
                 leftIcon={<Check className="h-4 w-4" strokeWidth={2.25} aria-hidden />}
                 onClick={() => handleConfirmPattern(row)}
               >
@@ -878,17 +1017,24 @@ export function FairwayCoachHelmSignals({
             <Button
               size="sm"
               variant="secondary"
+              disabled={rowPending}
               leftIcon={<Target className="h-4 w-4" strokeWidth={2} aria-hidden />}
               onClick={() => handleAddressPattern(row)}
             >
               Address
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => handleResolvePattern(row)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={rowPending}
+              onClick={() => handleResolvePattern(row)}
+            >
               Resolve
             </Button>
             <Button
               size="sm"
               variant="ghost"
+              disabled={rowPending}
               leftIcon={<X className="h-4 w-4" strokeWidth={2.25} aria-hidden />}
               onClick={() => handleDismissPattern(row)}
             >
@@ -902,6 +1048,7 @@ export function FairwayCoachHelmSignals({
           <Button
             size="sm"
             variant="primary"
+            busy={rowPending}
             leftIcon={<Target className="h-4 w-4" strokeWidth={2} aria-hidden />}
             onClick={() => handleCreateFocusAreaFromInsight(row)}
           >
@@ -911,6 +1058,7 @@ export function FairwayCoachHelmSignals({
           <Button
             size="sm"
             variant="secondary"
+            disabled={rowPending}
             leftIcon={<Check className="h-4 w-4" strokeWidth={2.25} aria-hidden />}
             onClick={() => handleAcknowledge(row.id)}
           >
@@ -919,6 +1067,7 @@ export function FairwayCoachHelmSignals({
           <Button
             size="sm"
             variant="ghost"
+            disabled={rowPending}
             leftIcon={<X className="h-4 w-4" strokeWidth={2.25} aria-hidden />}
             onClick={() => handleDismissInsight(row.id)}
           >
@@ -928,6 +1077,7 @@ export function FairwayCoachHelmSignals({
       );
     },
     [
+      pendingIds,
       handleConfirmPattern,
       handleAddressPattern,
       handleResolvePattern,
@@ -962,6 +1112,11 @@ export function FairwayCoachHelmSignals({
           </dl>
         ) : undefined;
 
+      // Multi-select is wired ONLY on the insights/alerts surface, where the
+      // bulk-action bar (Acknowledge/Resolve/Dismiss/Export) exists. Patterns
+      // have no bulk lifecycle, so they stay single-select per-row.
+      const selectable = !isPatterns;
+
       return (
         <InsightCard
           key={row.id}
@@ -976,14 +1131,20 @@ export function FairwayCoachHelmSignals({
             ) : undefined
           }
           interactive
+          openLabel={`Open details for ${row.title}`}
           onClick={() => setOpenRowId(row.id)}
+          selected={selectable ? selectedIds.has(row.id) : undefined}
+          onSelectToggle={
+            selectable ? (next) => toggleRowSelected(row.id, next) : undefined
+          }
+          selectLabel={`Select ${row.title}`}
           actions={opts?.compact ? undefined : rowActions(row)}
         >
           {row.body}
         </InsightCard>
       );
     },
-    [rowActions],
+    [rowActions, isPatterns, selectedIds, toggleRowSelected],
   );
 
   /* ── the InsightPanel read of the currently-open row ───────────────────── */
@@ -1054,12 +1215,15 @@ export function FairwayCoachHelmSignals({
     handleDismissInsight,
   ]);
 
-  /* ── bulk-action cluster (insights only; patterns lifecycle is per-row) ── */
+  /* ── bulk-action cluster (insights only; patterns lifecycle is per-row).
+        While a bulk mutation/export is in flight, lock the cluster so a coach
+        can't fire a second bulk op (double-submit guard + visible pending). ── */
   const bulkActions = !isPatterns ? (
     <>
       <Button
         size="sm"
         variant="secondary"
+        disabled={isBulkPending}
         onClick={() => runBulk(bulkAcknowledgeInsights, 'acknowledged')}
       >
         Acknowledge
@@ -1067,6 +1231,7 @@ export function FairwayCoachHelmSignals({
       <Button
         size="sm"
         variant="secondary"
+        disabled={isBulkPending}
         onClick={() => runBulk(bulkResolveInsights, 'resolved')}
       >
         Resolve
@@ -1074,11 +1239,12 @@ export function FairwayCoachHelmSignals({
       <Button
         size="sm"
         variant="ghost"
+        disabled={isBulkPending}
         onClick={() => runBulk(bulkDismissInsights, 'dismissed')}
       >
         Dismiss
       </Button>
-      <Button size="sm" variant="ghost" onClick={handleExport}>
+      <Button size="sm" variant="ghost" disabled={isBulkPending} onClick={handleExport}>
         Export
       </Button>
     </>
@@ -1269,26 +1435,47 @@ export function FairwayCoachHelmSignals({
           </div>
         ) : null}
 
-        {/* grouping density control — hidden while the smart-default shortlist
-            is active: that path renders a FLAT curated list (see `grouped`),
-            so the Group control would highlight a selection it cannot honor
-            (a no-op). The duplicate open-urgent Readout was removed — the
-            "Urgent + high" summary tile above is the single source of truth
-            for that count. */}
-        {!loading && rows.length > 0 && !smartDefaultActive ? (
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-3">
-              <span className="font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
-                Group
-              </span>
-              <Segmented<SignalGroupBy>
-                options={GROUP_BY_OPTIONS}
-                value={groupBy}
-                onValueChange={onGroupByChange}
-                size="sm"
-                aria-label="Group signals by"
-              />
-            </div>
+        {/* controls row — select-all (insights/alerts, drives the bulk bar) +
+            the grouping density control. The Group control is hidden while the
+            smart-default shortlist is active: that path renders a FLAT curated
+            list (see `grouped`), so it would highlight a selection it cannot
+            honor. Select-all stays available whenever there are selectable rows
+            so a coach can populate the bulk-action bar in one tap. */}
+        {!loading && rows.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            {selectableVisibleIds.length > 0 ? (
+              <label className="flex cursor-pointer items-center gap-2.5">
+                <Checkbox
+                  checked={allVisibleSelected}
+                  indeterminate={!allVisibleSelected && selectedIds.size > 0}
+                  onCheckedChange={() => toggleSelectAllVisible()}
+                  aria-label={
+                    allVisibleSelected
+                      ? 'Deselect all visible signals'
+                      : 'Select all visible signals'
+                  }
+                />
+                <span className="font-fw-sans text-body-sm text-text-secondary select-none">
+                  {selectedIds.size > 0
+                    ? `${selectedIds.size} selected`
+                    : 'Select all'}
+                </span>
+              </label>
+            ) : null}
+            {!smartDefaultActive ? (
+              <div className="flex items-center gap-3">
+                <span className="font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
+                  Group
+                </span>
+                <Segmented<SignalGroupBy>
+                  options={GROUP_BY_OPTIONS}
+                  value={groupBy}
+                  onValueChange={onGroupByChange}
+                  size="sm"
+                  aria-label="Group signals by"
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
 

@@ -32,7 +32,7 @@
  * ── PRESERVED LOGIC (imported + called UNCHANGED) ───────────────────────────
  * The interaction core hits the SAME four server actions with the SAME shapes:
  *   • handleRefresh — re-fetches all four over the active range
- *   • handleRange   — re-fetches the three range-scoped reads
+ *   • handleRange   — re-fetches all four over the newly-selected range
  * No data fetching, score weighting, or label maps change — those live in
  * coachhelm-analytics.ts and are consumed as-is. This is a PRESENTATION rebuild.
  *
@@ -181,7 +181,7 @@ export function FairwayEffectiveness({
 
       const [overviewResult, effectivenessResult, performanceResult, patternResult] =
         await Promise.all([
-          getCoachHelmOverview(teamId),
+          getCoachHelmOverview(teamId, { start, end }),
           getInsightEffectiveness(teamId, { start, end }),
           getPredictionPerformance(teamId, { start, end }),
           getPatternImpact(teamId, { start, end }),
@@ -202,7 +202,8 @@ export function FairwayEffectiveness({
     });
   }, [selectedRange, teamId]);
 
-  // handleRange re-fetches the three range-scoped reads.
+  // handleRange re-fetches the range-scoped reads (overview included, so the
+  // "Insights surfaced" tertiary readout always matches the active window).
   const handleRange = React.useCallback(
     (range: DateRangeType) => {
       setSelectedRange(range);
@@ -212,17 +213,21 @@ export function FairwayEffectiveness({
         const end = new Date();
         const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
 
-        const [effectivenessResult, performanceResult, patternResult] = await Promise.all([
-          getInsightEffectiveness(teamId, { start, end }),
-          getPredictionPerformance(teamId, { start, end }),
-          getPatternImpact(teamId, { start, end }),
-        ]);
+        const [overviewResult, effectivenessResult, performanceResult, patternResult] =
+          await Promise.all([
+            getCoachHelmOverview(teamId, { start, end }),
+            getInsightEffectiveness(teamId, { start, end }),
+            getPredictionPerformance(teamId, { start, end }),
+            getPatternImpact(teamId, { start, end }),
+          ]);
 
+        if (overviewResult.success) setOverview(overviewResult.data);
         if (effectivenessResult.success) setEffectiveness(effectivenessResult.data);
         if (performanceResult.success) setPerformance(performanceResult.data);
         if (patternResult.success) setPatternImpact(patternResult.data);
 
         const firstError =
+          (!overviewResult.success && overviewResult.error) ||
           (!effectivenessResult.success && effectivenessResult.error) ||
           (!performanceResult.success && performanceResult.error) ||
           (!patternResult.success && patternResult.error) ||

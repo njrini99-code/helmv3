@@ -121,6 +121,18 @@ export function teamMeanFor(
   return n > 0 ? sum / n : null;
 }
 
+/**
+ * Tour reference label for non-SG benchmark copy — "LPGA Tour" for women's
+ * teams, "PGA Tour" otherwise. Mirrors StandingStrip's `pgaReferenceLabel`
+ * gender split (the per-player strips on this same page already read "LPGA" for
+ * women's rows) so the SG hero + leak-map subtitles agree with the data, which
+ * is gender-routed (women's teams anchor to LPGA). Kept as a single helper so
+ * the copy can't drift across the four caption sites.
+ */
+function tourLabel(isWomens: boolean): string {
+  return isWomens ? 'LPGA Tour' : 'PGA Tour';
+}
+
 /** Signed SG formatter ("+1.0" / "−3.0") for takeaway + Readout copy. */
 function fmtSg(value: number): string {
   const rounded = Math.round(value * 10) / 10;
@@ -295,6 +307,24 @@ export function FairwayTeamStats({
     [players],
   );
 
+  // ── Team gender → benchmark label ───────────────────────────────────────────
+  // The benchmark data is gender-routed: a women's team anchors to LPGA (the
+  // standing loader sets `is_womens` on every row of a women's-team player, and
+  // getTeamLeakMaps loads tour='lpga' refs). Derive the team gender from those
+  // SAME standing rows (rather than threading a separate prop) so the SG hero +
+  // leak-map subtitles read "LPGA Tour" when — and only when — the numbers
+  // underneath them came from the LPGA anchor. Any one women's row is decisive;
+  // SG-only metrics still carry the flag, so this is robust even when a roster
+  // has no non-SG standing rows.
+  const isWomens = React.useMemo(() => {
+    for (const map of standingByPlayer.values()) {
+      for (const row of map.values()) {
+        if (row.is_womens) return true;
+      }
+    }
+    return false;
+  }, [standingByPlayer]);
+
   const sgData: SGCategory[] = React.useMemo(() => {
     return SG_CATEGORY_BARS.map(({ metric, label }) => ({
       metric,
@@ -374,7 +404,7 @@ export function FairwayTeamStats({
         <StrokesGainedTornado
           overline="Strokes Gained"
           title="Team Strokes Gained"
-          subtitle="vs PGA Tour baseline · season to date"
+          subtitle={`vs ${tourLabel(isWomens)} baseline · season to date`}
           takeaway={sgTakeaway}
           data={sgData}
           state={hasSg ? undefined : 'insufficient-data'}
@@ -402,8 +432,8 @@ export function FairwayTeamStats({
             />
           )}
           <p className="mt-4 font-fw-sans text-caption text-text-tertiary">
-            The sum of every category vs the PGA Tour baseline. Negative means
-            the team is losing strokes to Tour over a round.
+            The sum of every category vs the {tourLabel(isWomens)} baseline. Negative
+            means the team is losing strokes to Tour over a round.
           </p>
         </InstrumentPanel>
       </section>
@@ -461,7 +491,7 @@ export function FairwayTeamStats({
           <LeakMap
             overline="Putting"
             title="Putts Made by Distance"
-            subtitle="Team make% vs PGA Tour"
+            subtitle={`Team make% vs ${tourLabel(isWomens)}`}
             takeaway={puttTakeaway}
             data={puttBuckets}
             direction="higher_better"
@@ -471,7 +501,7 @@ export function FairwayTeamStats({
           <LeakMap
             overline="Approach"
             title="Approach Proximity by Distance"
-            subtitle="Avg proximity to hole vs PGA Tour"
+            subtitle={`Avg proximity to hole vs ${tourLabel(isWomens)}`}
             takeaway={approachTakeaway}
             data={approachBuckets}
             direction="lower_better"

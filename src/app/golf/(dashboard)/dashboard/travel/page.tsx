@@ -7,6 +7,7 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTravel } from '@/components/fairway/pages/travel';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 export const metadata: Metadata = {
   title: 'Travel | Helm Golf',
@@ -49,13 +50,21 @@ export default async function GolfTravelPage() {
     );
   }
 
-  // Fetch travel itineraries
-  const { data: itinerariesRaw } = await supabase
-    .from('golf_travel_itineraries')
-    .select('*')
-    .eq('team_id', teamId)
-    .order('departure_date', { ascending: true })
-    .limit(100);
+  // Fetch travel itineraries. A program with a full multi-season history can
+  // exceed the previous hard .limit(100) (and PostgREST's 1000-row default cap),
+  // which silently truncated the list and dropped older trips. Paginate past the
+  // cap so every trip is available to the client; the secondary `.order('id')`
+  // is a STABLE tiebreaker that keeps page boundaries deterministic without
+  // changing the primary departure_date-ascending order both forks expect.
+  const { data: itinerariesRaw } = await fetchAllRowsResult((from, to) =>
+    supabase
+      .from('golf_travel_itineraries')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('departure_date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
 
   // Transform database data to match TravelItinerary interface expected by client component
   const itineraries = (itinerariesRaw || []).map(item => ({

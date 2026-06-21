@@ -549,6 +549,14 @@ export function FairwayPlayerInsight({
   const heroInsight = displayInsights[0];
   const secondInsight = displayInsights[1];
 
+  // ── Zero-data honesty guard (P104) ───────────────────────────────────────
+  // The route's computeCompositeRating / computeCategoryBreakdown default to a
+  // synthetic "50" (and Stable) when a player has NEVER recorded a round. Never
+  // render a fabricated rating, all-50 bars, or a confident verdict on no data —
+  // surface an honest "awaiting first round" state instead. Sections C–G below
+  // already null-guard their own inputs (insights/plan/focus areas/predictions).
+  const hasRounds = rounds.length > 0;
+
   const verdict = buildVerdict(playerStatus, compositeRating, categoryBreakdown, heroInsight?.title ?? null);
   const lastRound = rounds[0] ?? null;
   const metaLine = [
@@ -593,37 +601,70 @@ export function FairwayPlayerInsight({
                 {playerName}
               </h1>
               <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">{metaLine}</p>
-              <div className="mt-2.5">
-                <StatusPill tone={statusTone(playerStatus)} size="sm" dot>
-                  {playerStatus}
-                </StatusPill>
-              </div>
+              {hasRounds ? (
+                <div className="mt-2.5">
+                  <StatusPill tone={statusTone(playerStatus)} size="sm" dot>
+                    {playerStatus}
+                  </StatusPill>
+                </div>
+              ) : (
+                <div className="mt-2.5">
+                  <StatusPill tone="neutral" size="sm" dot>
+                    Awaiting first round
+                  </StatusPill>
+                </div>
+              )}
             </div>
 
-            <CompositeRatingCircle rating={compositeRating} />
+            {hasRounds ? <CompositeRatingCircle rating={compositeRating} /> : null}
           </div>
 
-          {/* Synthesized verdict — the 30-second read */}
-          <div
-            className={cn(
-              'mt-5 border-l-2 pl-4',
-              verdict.tone === 'good' ? 'border-accent-500' : 'border-fw-warning',
-            )}
-          >
-            <p className="max-w-prose font-fw-sans text-body text-text-secondary">{verdict.text}</p>
-          </div>
+          {/* Synthesized verdict — the 30-second read. Suppressed on zero data:
+              never emit a confident "Stable across the board" line for a player
+              who has never recorded a round (P104). */}
+          {hasRounds ? (
+            <div
+              className={cn(
+                'mt-5 border-l-2 pl-4',
+                verdict.tone === 'good' ? 'border-accent-500' : 'border-fw-warning',
+              )}
+            >
+              <p className="max-w-prose font-fw-sans text-body text-text-secondary">{verdict.text}</p>
+            </div>
+          ) : (
+            <div className="mt-5 border-l-2 border-border-subtle pl-4">
+              <p className="max-w-prose font-fw-sans text-body text-text-secondary">
+                No rounds recorded yet — there isn&rsquo;t enough data to rate {playerName} or call a
+                trend. Invite the player to log a round, then this profile fills in after the next run.
+              </p>
+            </div>
+          )}
         </Surface>
 
         {/* ════════ B · STANDING ════════ */}
+        {/* Bars are suppressed on zero data — five bars pinned at a synthetic 50
+            would read as a real (mediocre) standing for a player with no rounds
+            (P104). Show an honest awaiting state instead. */}
         <section>
           <Eyebrow>Standing</Eyebrow>
-          <div className="mt-3 flex flex-col gap-3 rounded-card bg-surface-sunken p-6">
-            <CategoryBar label="Tee Game" value={categoryBreakdown.teeGame} />
-            <CategoryBar label="Approach" value={categoryBreakdown.approach} />
-            <CategoryBar label="Short Game" value={categoryBreakdown.shortGame} />
-            <CategoryBar label="Putting" value={categoryBreakdown.putting} />
-            <CategoryBar label="Scoring" value={categoryBreakdown.scoring} />
-          </div>
+          {hasRounds ? (
+            <div className="mt-3 flex flex-col gap-3 rounded-card bg-surface-sunken p-6">
+              <CategoryBar label="Tee Game" value={categoryBreakdown.teeGame} />
+              <CategoryBar label="Approach" value={categoryBreakdown.approach} />
+              <CategoryBar label="Short Game" value={categoryBreakdown.shortGame} />
+              <CategoryBar label="Putting" value={categoryBreakdown.putting} />
+              <CategoryBar label="Scoring" value={categoryBreakdown.scoring} />
+            </div>
+          ) : (
+            <div className="mt-3 rounded-card bg-surface-sunken p-6">
+              <EmptyState
+                icon={Activity}
+                variant="subtle"
+                title="No standing yet"
+                description="Tee game, approach, short game, putting, and scoring fill in once this player logs their first round."
+              />
+            </div>
+          )}
         </section>
 
         {/* ════════ C · WHERE TO FOCUS ════════ */}

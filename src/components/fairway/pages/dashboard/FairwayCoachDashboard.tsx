@@ -85,7 +85,7 @@ import {
   CheckCircle2 as LucideCheckCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { JoinRequestAlert } from '@/components/golf/roster/JoinRequestAlert';
+import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
 import type {
   CoachDashboardPayload,
   DashboardDateRange,
@@ -398,8 +398,10 @@ export function FairwayCoachDashboard({
         />
       </div>
 
-      {/* Roster join-request approvals — preserved logic (roster.ts handlers) */}
-      <JoinRequestAlert />
+      {/* Roster join-request approvals — preserved logic (getTeamJoinRequests / roster.ts),
+          rendered through the Fairway warning InlineNotice so the dashboard stays one
+          calm matte surface (P003). Self-fetches on mount; parent owns the gap-8 rhythm. */}
+      <FairwayJoinRequestAlert />
 
       {/* ── 3 · THE ONE GLASS HERO — CoachHelm signal strip ────────────────── */}
       <InsightCard

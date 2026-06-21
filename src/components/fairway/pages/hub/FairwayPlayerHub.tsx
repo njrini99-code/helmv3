@@ -47,7 +47,7 @@ import { ClipboardList, ArrowRight, LayoutGrid } from 'lucide-react';
 import { completeTask } from '@/app/golf/actions/tasks';
 import { respondToEvent } from '@/app/golf/actions/golf';
 
-import { ViewHeader, Button, InsightCard, Surface } from '@/components/fairway';
+import { ViewHeader, Button, InsightCard, Surface, fairwayToast } from '@/components/fairway';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 import {
@@ -78,6 +78,9 @@ export interface FairwayPlayerHubProps {
   tasks: PlayerTask[];
   events: EventInvite[];
   announcements: GolfAnnouncementMeta[];
+  /** True when the announcements fetch FAILED (vs genuinely none) — surfaces an
+   *  honest "couldn't load — retry" affordance instead of a silent empty (P147). */
+  announcementsLoadError?: boolean;
   /** Full player name (e.g. "Nick Rini"); the masthead uses the first word. */
   playerName: string;
   /** Team name for the masthead eyebrow. */
@@ -96,6 +99,7 @@ export function FairwayPlayerHub({
   tasks,
   events,
   announcements,
+  announcementsLoadError = false,
   playerName,
   teamName,
   onCompleteTask,
@@ -255,8 +259,9 @@ export function FairwayPlayerHub({
           </section>
         ) : null}
 
-        {/* Announcements — compact + self-acknowledging (renders nothing when none). */}
-        <AnnouncementsList announcements={announcements} />
+        {/* Announcements — compact + self-acknowledging (renders nothing when none,
+            an honest error affordance when the fetch failed — never a silent empty). */}
+        <AnnouncementsList announcements={announcements} loadError={announcementsLoadError} />
 
         {/* Next trips — a glance; the full Travel list lives in the Team Hub. */}
         {upcomingTrips.length > 0 ? (
@@ -320,6 +325,7 @@ export interface FairwayPlayerHubWrapperProps {
   tasks: PlayerTask[];
   events: EventInvite[];
   announcements: GolfAnnouncementMeta[];
+  announcementsLoadError?: boolean;
   playerName: string;
   teamName: string;
   signalCard?: ReactNode;
@@ -330,6 +336,7 @@ export function FairwayPlayerHubWrapper({
   tasks: initialTasks,
   events: initialEvents,
   announcements,
+  announcementsLoadError = false,
   playerName,
   teamName,
   signalCard,
@@ -359,6 +366,10 @@ export function FairwayPlayerHubWrapper({
             t.id === taskId ? { ...t, status: 'pending' as const, completed_at: null } : t,
           ),
         );
+        // Nielsen #1/#9: the revert is invisible on its own (the checkbox just
+        // un-checks). Surface the plain-language reason so the player knows what
+        // happened and isn't left guessing why their tap "didn't stick".
+        fairwayToast.error(result.error ?? "Couldn't mark that task complete. Please try again.");
       }
 
       startTransition(() => {
@@ -383,6 +394,12 @@ export function FairwayPlayerHubWrapper({
       if (!result.success) {
         // Revert on failure
         setEvents(initialEvents);
+        // respondToEvent returns rich, typed reasons ("RSVP deadline has passed
+        // for this event.", "This event has been cancelled — RSVPs are closed.",
+        // "Only active members of this event's team can RSVP."). Previously these
+        // were thrown away and the player saw only a button flicker — a Nielsen #1
+        // (system status) + #9 (recover from errors) miss. Surface the real reason.
+        fairwayToast.error(result.error ?? "Couldn't save your RSVP. Please try again.");
       }
 
       startTransition(() => {
@@ -398,6 +415,7 @@ export function FairwayPlayerHubWrapper({
       tasks={tasks}
       events={events}
       announcements={announcements}
+      announcementsLoadError={announcementsLoadError}
       playerName={playerName}
       teamName={teamName}
       onCompleteTask={handleCompleteTask}

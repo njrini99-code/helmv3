@@ -50,24 +50,29 @@ interface RosterRow {
   mark: AttendanceMark | null;
 }
 
-const PENDING_BADGE = { label: 'No reply', className: 'bg-warm-100 text-warm-600 ring-warm-200' };
+// Fairway tokens only — this panel renders inside the live Fairway drawer, so
+// it must read as the same app (no legacy cream/primary/rose/amber/warm/glass).
+const PENDING_BADGE = {
+  label: 'No reply',
+  className: 'bg-surface-sunken text-text-secondary ring-border-subtle',
+};
 
 const RSVP_BADGES: Record<string, { label: string; className: string }> = {
-  accepted: { label: 'Going', className: 'bg-primary-50 text-primary-700 ring-primary-100' },
-  attending: { label: 'Going', className: 'bg-primary-50 text-primary-700 ring-primary-100' },
-  declined: { label: 'Declined', className: 'bg-rose-50 text-rose-700 ring-rose-100' },
-  not_attending: { label: 'Declined', className: 'bg-rose-50 text-rose-700 ring-rose-100' },
-  tentative: { label: 'Maybe', className: 'bg-amber-50 text-amber-700 ring-amber-100' },
-  maybe: { label: 'Maybe', className: 'bg-amber-50 text-amber-700 ring-amber-100' },
-  excused: { label: 'Excused', className: 'bg-warm-100 text-warm-600 ring-warm-200' },
-  unexcused: { label: 'Unexcused', className: 'bg-rose-50 text-rose-700 ring-rose-100' },
+  accepted: { label: 'Going', className: 'bg-fw-success-bg text-accent-700 ring-accent-100' },
+  attending: { label: 'Going', className: 'bg-fw-success-bg text-accent-700 ring-accent-100' },
+  declined: { label: 'Declined', className: 'bg-fw-danger-bg text-fw-danger ring-fw-danger/20' },
+  not_attending: { label: 'Declined', className: 'bg-fw-danger-bg text-fw-danger ring-fw-danger/20' },
+  tentative: { label: 'Maybe', className: 'bg-fw-warning-bg text-warm-800 ring-warm-300' },
+  maybe: { label: 'Maybe', className: 'bg-fw-warning-bg text-warm-800 ring-warm-300' },
+  excused: { label: 'Excused', className: 'bg-surface-sunken text-text-secondary ring-border-subtle' },
+  unexcused: { label: 'Unexcused', className: 'bg-fw-danger-bg text-fw-danger ring-fw-danger/20' },
   pending: PENDING_BADGE,
 };
 
 const MARK_OPTIONS: Array<{ value: AttendanceMark; label: string; activeClassName: string }> = [
-  { value: 'present', label: 'Present', activeClassName: 'bg-primary-600 text-white ring-primary-600' },
-  { value: 'late', label: 'Late', activeClassName: 'bg-amber-500 text-white ring-amber-500' },
-  { value: 'no_show', label: 'No-show', activeClassName: 'bg-rose-600 text-white ring-rose-600' },
+  { value: 'present', label: 'Present', activeClassName: 'bg-accent-600 text-text-on-accent ring-accent-600' },
+  { value: 'late', label: 'Late', activeClassName: 'bg-fw-warning text-warm-900 ring-fw-warning' },
+  { value: 'no_show', label: 'No-show', activeClassName: 'bg-fw-danger text-text-on-accent ring-fw-danger' },
 ];
 
 function rowName(record: AttendanceRecord): string {
@@ -190,12 +195,12 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
   return (
     <section className="space-y-2" aria-label="Attendance" data-team-id={teamId}>
       <div className="flex items-center justify-between gap-2">
-        <h4 className="flex items-center gap-1.5 text-sm font-medium text-warm-900">
-          <ClipboardCheck className="w-4 h-4 text-warm-500" />
+        <h4 className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
+          <ClipboardCheck className="w-4 h-4 text-text-tertiary" />
           Attendance
           {!loading && !loadError && rows.length > 0 && (
             <span
-              className="ml-0.5 px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 ring-1 ring-primary-100 text-eyebrow font-medium tabular-nums"
+              className="ml-0.5 px-2 py-0.5 rounded-full bg-fw-success-bg text-accent-700 ring-1 ring-accent-100 text-eyebrow font-medium tabular-nums"
               data-testid="attendance-tally"
               aria-live="polite"
             >
@@ -210,9 +215,9 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
             disabled={bulkPending}
             className={cn(
               'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
-              'bg-primary-50 hover:bg-primary-100 text-primary-700 ring-1 ring-primary-100',
+              'bg-fw-success-bg hover:bg-accent-100 text-accent-700 ring-1 ring-accent-100',
               'transition-colors disabled:opacity-50',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
             )}
           >
             {bulkPending ? (
@@ -228,18 +233,18 @@ export function AttendancePanel({ eventId, teamId, canManage }: AttendancePanelP
       {loading ? (
         <AttendanceSkeleton />
       ) : loadError ? (
-        <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-cream-100/75 ring-1 ring-warm-200/60">
-          <p className="text-xs text-warm-500">Couldn’t load attendance.</p>
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-surface-sunken ring-1 ring-border-subtle">
+          <p className="text-xs text-text-tertiary">Couldn’t load attendance.</p>
           <button
             type="button"
             onClick={handleRetry}
-            className="text-xs font-medium text-primary-700 hover:text-primary-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded"
+            className="text-xs font-medium text-accent-700 hover:text-accent-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus rounded"
           >
             Try again
           </button>
         </div>
       ) : rows.length === 0 ? (
-        <p className="text-xs text-warm-500">— No players on the list for this event.</p>
+        <p className="text-xs text-text-tertiary">— No players on the list for this event.</p>
       ) : canManage ? (
         <ul className="space-y-1.5">
           {rows.map((row) => (
@@ -276,12 +281,12 @@ function AttendanceRow({ row, pending, onMark }: AttendanceRowProps) {
   const badge = RSVP_BADGES[row.rsvp ?? 'pending'] ?? PENDING_BADGE;
 
   return (
-    <li className="flex items-center gap-2.5 px-3 py-2 rounded-xl glass-standard ring-1 ring-warm-200/60">
+    <li className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-surface border border-border-subtle shadow-flat">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-warm-900 truncate">
+        <p className="text-sm font-medium text-text-primary truncate">
           {row.name}
           {row.jersey !== null && (
-            <span className="ml-1.5 text-eyebrow text-warm-400 tabular-nums">#{row.jersey}</span>
+            <span className="ml-1.5 text-eyebrow text-text-tertiary tabular-nums">#{row.jersey}</span>
           )}
         </p>
         <span
@@ -311,10 +316,10 @@ function AttendanceRow({ row, pending, onMark }: AttendanceRowProps) {
               className={cn(
                 'px-2 py-1 rounded-full text-eyebrow ring-1 transition-colors',
                 'disabled:cursor-not-allowed',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
                 active
                   ? option.activeClassName
-                  : 'bg-cream-50 text-warm-600 ring-warm-200 hover:bg-warm-50',
+                  : 'bg-surface-sunken text-text-secondary ring-border-subtle hover:bg-surface-tint',
               )}
             >
               {option.label}
@@ -341,24 +346,24 @@ function PlayerSelfView({ rows, viewerPlayerId, presentCount }: PlayerSelfViewPr
 
   if (!own) {
     return (
-      <p className="text-xs text-warm-500">— You’re not on the list for this event.</p>
+      <p className="text-xs text-text-tertiary">— You’re not on the list for this event.</p>
     );
   }
 
   const statusDisplay =
     own.mark === 'present' || own.mark === 'late'
-      ? { label: own.mark === 'late' ? 'Checked in (late)' : 'Checked in', className: 'text-primary-700' }
+      ? { label: own.mark === 'late' ? 'Checked in (late)' : 'Checked in', className: 'text-accent-700' }
       : own.mark === 'no_show'
-        ? { label: 'Marked absent', className: 'text-rose-700' }
-        : { label: '— Not recorded yet', className: 'text-warm-500' };
+        ? { label: 'Marked absent', className: 'text-fw-danger' }
+        : { label: '— Not recorded yet', className: 'text-text-tertiary' };
 
   return (
-    <div className="px-3 py-2.5 rounded-xl bg-cream-100/75 ring-1 ring-warm-200/60 space-y-0.5">
-      <p className="text-eyebrow text-warm-500">Your attendance</p>
+    <div className="px-3 py-2.5 rounded-xl bg-surface-sunken ring-1 ring-border-subtle space-y-0.5">
+      <p className="text-eyebrow text-text-tertiary">Your attendance</p>
       <p className={cn('text-sm font-medium', statusDisplay.className)} data-testid="own-attendance-status">
         {statusDisplay.label}
       </p>
-      <p className="text-eyebrow text-warm-400 tabular-nums">
+      <p className="text-eyebrow text-text-tertiary tabular-nums">
         {presentCount}/{rows.length} on the roster checked in
       </p>
     </div>
@@ -375,13 +380,13 @@ function AttendanceSkeleton() {
       {[0, 1, 2].map((i) => (
         <li
           key={i}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-cream-100/75 ring-1 ring-warm-200/60"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface border border-border-subtle shadow-flat"
         >
           <div className="flex-1 space-y-1.5">
-            <div className="h-3 w-28 rounded bg-warm-200/60 animate-pulse" />
-            <div className="h-2.5 w-16 rounded bg-warm-200/50 animate-pulse" />
+            <div className="h-3 w-28 rounded bg-surface-sunken animate-pulse" />
+            <div className="h-2.5 w-16 rounded bg-surface-sunken animate-pulse" />
           </div>
-          <div className="h-6 w-32 rounded-full bg-warm-200/50 animate-pulse" />
+          <div className="h-6 w-32 rounded-full bg-surface-sunken animate-pulse" />
         </li>
       ))}
     </ul>

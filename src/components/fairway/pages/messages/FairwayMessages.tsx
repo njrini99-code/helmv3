@@ -70,6 +70,10 @@ export function FairwayMessages() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const playerIdFromUrl = searchParams.get('player');
+  // P260: notification deep-link target (?conversation=<id>). Notifications set
+  // this so clicking "New message from X" opens the thread that fired, not just
+  // the most-recent one auto-selected below.
+  const conversationIdFromUrl = searchParams.get('conversation');
 
   // Server-resolved user data — role/team via the same context the legacy used.
   const { userId, role: userRole, teamId, teamName } = useGolfUser();
@@ -90,6 +94,8 @@ export function FairwayMessages() {
   const {
     messages,
     loading: messagesLoading,
+    error: messagesError,
+    refetch: refetchMessages,
     sendMessage,
     editMessage,
     removeMessage,
@@ -215,13 +221,37 @@ export function FairwayMessages() {
     handlePlayerParam();
   }, [conversations, conversationsLoading, playerIdFromUrl, handledPlayerParam, router, refetch, showToast, teamId]);
 
-  // ── Auto-select first conversation (only when no player param) (PRESERVED) ───
+  // ── ?conversation= deep-link: pre-select the thread that fired a notification ─
+  // P260. Runs once per param value: select the conversation if the user is a
+  // participant, otherwise fall through to auto-select. The param is stripped so
+  // a later auto-select isn't blocked and the link isn't re-applied on refetch.
+  const [handledConversationParam, setHandledConversationParam] = React.useState(false);
+  React.useEffect(() => {
+    if (handledConversationParam || conversationsLoading || !conversationIdFromUrl) return;
+
+    const target = conversations.find(c => c.id === conversationIdFromUrl);
+    if (target) {
+      setSelectedConversationId(target.id);
+      setMobileShowChat(true);
+    }
+    // Either way, consume the param so the rest of the page behaves normally.
+    setHandledConversationParam(true);
+    router.replace('/golf/dashboard/messages', { scroll: false });
+  }, [conversations, conversationsLoading, conversationIdFromUrl, handledConversationParam, router]);
+
+  // ── Auto-select first conversation (only when no deep-link param) (PRESERVED) ─
   React.useEffect(() => {
     const firstConversation = conversations[0];
-    if (!conversationsLoading && firstConversation && !selectedConversationId && !playerIdFromUrl) {
+    if (
+      !conversationsLoading &&
+      firstConversation &&
+      !selectedConversationId &&
+      !playerIdFromUrl &&
+      !conversationIdFromUrl
+    ) {
       setSelectedConversationId(firstConversation.id);
     }
-  }, [conversations, conversationsLoading, selectedConversationId, playerIdFromUrl]);
+  }, [conversations, conversationsLoading, selectedConversationId, playerIdFromUrl, conversationIdFromUrl]);
 
   const selectedConversation = React.useMemo(() => {
     if (!selectedConversationId) return null;
@@ -422,6 +452,8 @@ export function FairwayMessages() {
               conversation={selectedConversation}
               messages={messages}
               loading={messagesLoading}
+              error={messagesError}
+              onRetry={refetchMessages}
               userId={userId}
               currentUserId={currentUserId}
               isOtherTyping={isOtherTyping}

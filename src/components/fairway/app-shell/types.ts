@@ -27,6 +27,14 @@ export interface NavItem {
   readonly badge?: number;
   /** Force-mark active regardless of pathname matching (rare). */
   readonly active?: boolean;
+  /**
+   * Optional broader active predicate. When provided it OVERRIDES the default
+   * segment-boundary `href` match — use it for rows whose destination is one
+   * route but whose "section" spans a cluster of sibling routes (e.g. the
+   * CoachHelm AI row, whose tab cluster lives at alerts/insights/patterns/…),
+   * so the global rail keeps a current-location indicator across the cluster.
+   */
+  readonly activeMatch?: (pathname: string) => boolean;
 }
 
 /** A labelled group of nav items (e.g. "Team Management", "More"). */

@@ -499,13 +499,19 @@ export async function getTeamOverview(
     sinceDate.setDate(sinceDate.getDate() - 90);
     const sinceDateStr = sinceDate.toISOString().split('T')[0];
 
-    // Fetch round IDs for all team players in period
-    const { data: roundsData } = await supabase
+    // Fetch round IDs for all team players in period.
+    // Paginate past PostgREST's 1000-row default: a program with >1000
+    // completed rounds in 90 days would otherwise silently lose roundIds,
+    // truncating the downstream shot fetch, yardageCurve, deadZones, and the
+    // hero's "toughest band" read. Uses the same helper as the shot batch below.
+    const { data: roundsData } = await fetchAllRowsResult<{ id: string }>((from, to) => supabase
       .from('golf_rounds')
       .select('id')
       .in('player_id', playerIds)
       .eq('status', 'completed')
-      .gte('round_date', sinceDateStr);
+      .gte('round_date', sinceDateStr)
+      .order('id', { ascending: true })
+      .range(from, to));
 
     let yardageCurve: Array<{ rangeStart: number; rangeEnd: number; avgSG: number; shotCount: number }> = [];
     let deadZones: Array<{ rangeStart: number; rangeEnd: number; deficit: number }> = [];

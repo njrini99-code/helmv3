@@ -298,6 +298,11 @@ export default async function DevelopmentPlansPage({
       }
     }
 
+    // Shell Signals badge. getAlertCounts buckets BOTH 'urgent' AND 'high'
+    // priority into `counts.critical` (see alerts.ts) — so this value is the
+    // "urgent or high open signals" count the sub-nav badge's aria-label
+    // promises. The bucket is named `critical` for historic reasons; the number
+    // and its accessible description denote the same set (urgent + high).
     const countsRes = await getAlertCounts(coach.id);
     const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
 

@@ -97,37 +97,34 @@ export function isUnreadForPlayer(ann: GolfAnnouncementMeta, now: number): boole
   return false;
 }
 
-/* ─── Interactive task item (reuses completeAnnouncementTask verbatim) ──────── */
+/* ─── Interactive task item ─────────────────────────────────────────────────
+ * Controlled by the parent card: `completed` reflects the lifted detail state so
+ * the card's "Your tasks N/M" counter + ProgressTrack update in lock-step with
+ * the checkbox (P272). The parent owns the optimistic patch + the
+ * completeAnnouncementTask round-trip (and the revert on failure). */
 function FairwayTaskItem({
-  taskId,
   title,
   description,
   dueDate,
-  initialCompleted,
+  completed,
+  pending,
+  onComplete,
 }: {
-  taskId: string;
   title: string;
   description: string | null;
   dueDate: string | null;
-  initialCompleted: boolean;
+  completed: boolean;
+  pending: boolean;
+  onComplete: () => void;
 }) {
-  const [completed, setCompleted] = useState(initialCompleted);
-  const [loading, setLoading] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => setNow(new Date()), []);
 
   const isOverdue = now && dueDate && !completed && new Date(dueDate) < now;
 
-  async function toggle() {
-    if (completed || loading) return;
-    setCompleted(true); // optimistic
-    setLoading(true);
-    const result = await completeAnnouncementTask(taskId);
-    if (!result.success) {
-      setCompleted(false);
-      fairwayToast.danger(result.error || 'Failed to complete task');
-    }
-    setLoading(false);
+  function toggle() {
+    if (completed || pending) return;
+    onComplete();
   }
 
   return (
@@ -135,7 +132,7 @@ function FairwayTaskItem({
     <button
       type="button"
       onClick={toggle}
-      disabled={completed || loading}
+      disabled={completed || pending}
       aria-pressed={completed}
       className={cn(
         'flex w-full items-start gap-3 rounded-fw-md border p-3 text-left transition-colors duration-fast',
@@ -201,6 +198,7 @@ export function FairwayPlayerAnnouncementCard({
   const [detailError, setDetailError] = useState(false);
   const [hasAcknowledged, setHasAcknowledged] = useState(!!ann.has_player_acknowledged);
   const [acknowledging, setAcknowledging] = useState(false);
+  const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(new Set());
 
   const urg = urgencyFor(ann.urgency);
   const isNew = nowTs > 0 && ann.published_at && nowTs - new Date(ann.published_at).getTime() < 7 * 86400000;
@@ -247,6 +245,47 @@ export function FairwayPlayerAnnouncementCard({
       fairwayToast.danger(result.error || 'Failed to acknowledge');
     }
     setAcknowledging(false);
+  }
+
+  /** Patch this player's assignment for `taskId` to the given status in detail.
+   * Lifting the completion into `detail` keeps the "Your tasks N/M" counter +
+   * ProgressTrack in lock-step with the per-item checkbox (P272). */
+  function patchTaskStatus(taskId: string, status: 'completed' | 'pending') {
+    setDetail((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.task_id === taskId
+            ? {
+                ...t,
+                assignments: t.assignments.map((a) =>
+                  a.player_id === playerId
+                    ? { ...a, status, completed_at: status === 'completed' ? new Date().toISOString() : null }
+                    : a,
+                ),
+              }
+            : t,
+        ),
+      };
+    });
+  }
+
+  async function handleCompleteTask(taskId: string) {
+    if (pendingTaskIds.has(taskId)) return;
+    setPendingTaskIds((prev) => new Set(prev).add(taskId));
+    patchTaskStatus(taskId, 'completed'); // optimistic — counter + bar move now
+
+    const result = await completeAnnouncementTask(taskId);
+    if (!result.success) {
+      patchTaskStatus(taskId, 'pending'); // revert on failure
+      fairwayToast.danger(result.error || 'Failed to complete task');
+    }
+    setPendingTaskIds((prev) => {
+      const next = new Set(prev);
+      next.delete(taskId);
+      return next;
+    });
   }
 
   return (
@@ -444,11 +483,12 @@ export function FairwayPlayerAnnouncementCard({
                       return (
                         <FairwayTaskItem
                           key={t.task_id}
-                          taskId={t.task_id}
                           title={t.task.title}
                           description={t.task.description}
                           dueDate={t.task.due_date}
-                          initialCompleted={mine?.status === 'completed'}
+                          completed={mine?.status === 'completed'}
+                          pending={pendingTaskIds.has(t.task_id)}
+                          onComplete={() => handleCompleteTask(t.task_id)}
                         />
                       );
                     })}

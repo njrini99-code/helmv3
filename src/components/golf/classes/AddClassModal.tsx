@@ -279,14 +279,14 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         aria-labelledby="add-class-title"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-          <DrawerTitle id="add-class-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+          <DrawerTitle id="add-class-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
             {editingClass ? 'Edit Class' : 'Add Class'}
           </DrawerTitle>
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
-            className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
+            className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
           >
             <IconX size={20} />
           </IconButton>
@@ -297,8 +297,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Course Code & Name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-              <label htmlFor={`${uid}-course-code`} className="block text-sm font-medium text-warm-700 mb-1.5">
-                Course ID <span className="text-red-500">*</span>
+              <label htmlFor={`${uid}-course-code`} className="block text-sm font-medium text-text-secondary mb-1.5">
+                Course ID <span className="text-fw-danger">*</span>
               </label>
               <Input
                 id={`${uid}-course-code`}
@@ -309,8 +309,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div className="col-span-2">
-              <label htmlFor={`${uid}-course-name`} className="block text-sm font-medium text-warm-700 mb-1.5">
-                Course Name <span className="text-red-500">*</span>
+              <label htmlFor={`${uid}-course-name`} className="block text-sm font-medium text-text-secondary mb-1.5">
+                Course Name <span className="text-fw-danger">*</span>
               </label>
               <Input
                 id={`${uid}-course-name`}
@@ -324,7 +324,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
 
           {/* Days */}
           <div>
-            <p className="block text-sm font-medium text-warm-700 mb-2">
+            <p className="block text-sm font-medium text-text-secondary mb-2">
               Days
             </p>
             <div className="flex items-center gap-2 mb-2">
@@ -336,8 +336,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'w-10 h-10 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                      ? 'bg-accent-500 text-text-on-accent'
+                      : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
                   )}
                 >
                   {day.label}
@@ -353,8 +353,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'px-3 py-1 text-xs font-medium rounded-full transition-all',
                     JSON.stringify(formData.days) === JSON.stringify(pattern.days)
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
+                      ? 'bg-accent-500/15 text-accent-800'
+                      : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
                   )}
                 >
                   {pattern.label}
@@ -366,7 +366,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor={`${uid}-start-time`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-start-time`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Start Time
               </label>
               <Input
@@ -377,7 +377,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div>
-              <label htmlFor={`${uid}-end-time`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-end-time`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 End Time
               </label>
               <Input
@@ -392,7 +392,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Location */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor={`${uid}-building`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-building`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Building
               </label>
               <Input
@@ -403,7 +403,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div>
-              <label htmlFor={`${uid}-room`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-room`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Room
               </label>
               <Input
@@ -418,7 +418,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Instructor & Credits */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="col-span-2">
-              <label htmlFor={`${uid}-professor`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-professor`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Professor
               </label>
               <Input
@@ -429,7 +429,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div>
-              <label htmlFor={`${uid}-credits`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-credits`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Credits
               </label>
               <Input
@@ -455,7 +455,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Semester & Color */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor={`${uid}-semester`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-semester`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Semester
               </label>
               <select
@@ -463,7 +463,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                 value={formData.semester}
                 onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
                 aria-label="Semester"
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-base lg:text-sm min-h-[44px] bg-white focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
+                className="w-full px-3 py-2 border border-border-subtle rounded-lg text-base lg:text-sm min-h-[44px] bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30"
               >
                 <option value="Spring 2025">Spring 2025</option>
                 <option value="Summer 2025">Summer 2025</option>
@@ -472,7 +472,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               </select>
             </div>
             <div>
-              <label htmlFor={`${uid}-color`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-color`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Color
               </label>
               <div className="flex items-center gap-2">
@@ -481,16 +481,16 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
+                  className="w-10 h-10 rounded-lg border border-border-subtle cursor-pointer"
                 />
-                <span className="text-sm text-warm-500">Calendar color</span>
+                <span className="text-sm text-text-tertiary">Calendar color</span>
               </div>
             </div>
           </div>
 
           {/* Notes */}
           <div>
-            <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-warm-700 mb-1.5">
+            <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-text-secondary mb-1.5">
               Notes
             </label>
             <textarea
@@ -502,7 +502,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               aria-label="Notes"
               autoCapitalize="sentences"
               autoCorrect="on"
-              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-base lg:text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 resize-none"
+              className="w-full px-3 py-2 border border-border-subtle rounded-lg text-base lg:text-sm bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 resize-none"
             />
           </div>
         </form>
@@ -572,7 +572,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-subtle bg-surface-sunken">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

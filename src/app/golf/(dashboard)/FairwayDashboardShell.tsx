@@ -90,11 +90,65 @@ const PushPermissionSoftAsk = dynamic(
 type Role = 'coach' | 'player';
 
 /**
+ * The CoachHelm AI route cluster. The single "CoachHelm AI" sidebar row points
+ * at /intelligence, but the cluster's tabs (Signals/Players/Effectiveness/Ask)
+ * live at sibling routes — so the global rail must stay lit across all of them
+ * (P408) and the top-bar breadcrumb must show the cluster trail (P409). Kept as
+ * a single source of truth so the two location systems agree.
+ */
+const COACHHELM_CLUSTER_PREFIXES = [
+  '/golf/dashboard/intelligence',
+  '/golf/dashboard/alerts',
+  '/golf/dashboard/insights',
+  '/golf/dashboard/patterns',
+  '/golf/dashboard/development',
+  '/golf/dashboard/analytics/coachhelm',
+  // NOTE: only the COACH CoachHelm sub-routes (`/coachhelm/chat`, `/coachhelm/genome`)
+  // belong to this cluster. Bare `/golf/dashboard/coachhelm` is the PLAYER CoachHelm
+  // home (no masthead sub-nav) and must NOT be treated as the coach cluster.
+  '/golf/dashboard/coachhelm/',
+] as const;
+
+/** First dashboard segments that belong to the CoachHelm cluster (breadcrumb). */
+const COACHHELM_CLUSTER_SEGMENTS = new Set([
+  'intelligence',
+  'alerts',
+  'insights',
+  'patterns',
+  'development',
+  'analytics',
+  'coachhelm',
+]);
+
+function isCoachHelmCluster(pathname: string): boolean {
+  return COACHHELM_CLUSTER_PREFIXES.some((p) =>
+    p.endsWith('/') ? pathname.startsWith(p) : pathname === p || pathname.startsWith(p + '/'),
+  );
+}
+
+/** The already-computed notification counts the nav rail can surface. The
+ *  badge context polls all of these every 45s; previously only `messages` and
+ *  `coachhelm` reached the rail and the rest were thrown away (P438). A badge
+ *  only renders when its count is > 0 — a 0 count stays honestly badge-less. */
+interface NavBadgeCounts {
+  messages: number;
+  coachhelm: number;
+  calendarNotifications: number;
+  announcements: number;
+  travel: number;
+}
+
+/** Render a numeric badge only when the count is meaningful (> 0). */
+function navBadge(count: number): number | undefined {
+  return count > 0 ? count : undefined;
+}
+
+/**
  * Role → nav sections. Mirrors GolfSidebar's IA exactly (primary + secondary,
  * same hrefs/icons, same badge surfaces). This shell only renders flag-ON, so
  * the player secondary uses the Fairway "Team Hub" variant (Classes → Team Hub).
  */
-function buildNavSections(role: Role, messages: number, coachhelm: number): NavSection[] {
+function buildNavSections(role: Role, badges: NavBadgeCounts): NavSection[] {
   if (role === 'coach') {
     return [
       {
@@ -105,25 +159,47 @@ function buildNavSections(role: Role, messages: number, coachhelm: number): NavS
             label: 'CoachHelm AI',
             href: '/golf/dashboard/intelligence',
             icon: IconSparkles,
-            badge: coachhelm > 0 ? coachhelm : undefined,
+            badge: navBadge(badges.coachhelm),
+            // P408: keep the rail lit across the whole CoachHelm cluster
+            // (Signals/Players/Effectiveness/Ask), not just /intelligence.
+            activeMatch: isCoachHelmCluster,
           },
           { label: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
           { label: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
-          { label: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
+          {
+            label: 'Calendar',
+            href: '/golf/dashboard/calendar',
+            icon: IconCalendar,
+            // P438: surface the already-polled calendar-notification count.
+            badge: navBadge(badges.calendarNotifications),
+          },
           { label: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
           {
             label: 'Messages',
             href: '/golf/dashboard/messages',
             icon: IconMessage,
-            badge: messages > 0 ? messages : undefined,
+            badge: navBadge(badges.messages),
           },
         ],
       },
       {
         heading: 'Operations',
         items: [
-          { label: 'Announcements', href: '/golf/dashboard/announcements', icon: IconBell },
-          { label: 'Travel', href: '/golf/dashboard/travel', icon: IconAirplane },
+          // P438: thread the polled counts the context already computes. (Coach
+          // announcements/travel currently resolve to 0 in the badge context, so
+          // these stay badge-less until those counts are populated — never a fake 0.)
+          {
+            label: 'Announcements',
+            href: '/golf/dashboard/announcements',
+            icon: IconBell,
+            badge: navBadge(badges.announcements),
+          },
+          {
+            label: 'Travel',
+            href: '/golf/dashboard/travel',
+            icon: IconAirplane,
+            badge: navBadge(badges.travel),
+          },
           { label: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
           { label: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
           { label: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
@@ -141,13 +217,19 @@ function buildNavSections(role: Role, messages: number, coachhelm: number): NavS
         { label: 'CoachHelm AI', href: '/golf/dashboard/coachhelm', icon: IconSparkles },
         { label: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
         { label: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
-        { label: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
+        {
+          label: 'Calendar',
+          href: '/golf/dashboard/calendar',
+          icon: IconCalendar,
+          // P438: surface the polled calendar-notification count for players too.
+          badge: navBadge(badges.calendarNotifications),
+        },
         { label: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
         {
           label: 'Messages',
           href: '/golf/dashboard/messages',
           icon: IconMessage,
-          badge: messages > 0 ? messages : undefined,
+          badge: navBadge(badges.messages),
         },
       ],
     },
@@ -156,6 +238,11 @@ function buildNavSections(role: Role, messages: number, coachhelm: number): NavS
       items: [
         { label: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
         { label: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
+        // P363: the player Team Info surface (coach + roster + announcements +
+        // tasks) was reachable only by direct URL / the command palette — never
+        // from the rail (src/TODO.md self-flagged it as unlinked). Give it a
+        // persistent nav entry so every shipped surface is reachable (gate B2).
+        { label: 'Team Info', href: '/golf/dashboard/team', icon: IconUsers },
         { label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: IconLayoutGrid },
       ],
     },
@@ -190,7 +277,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   players: 'Players',
   classes: 'Classes',
   hub: 'Home',
-  team: 'Team',
+  team: 'Team Info',
   'whats-new': "What's New",
   'my-game-profile': 'My Game',
   'my-standing': 'My Standing',
@@ -200,11 +287,37 @@ function toTitle(seg: string): string {
   return seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** Pathname → a 2-level breadcrumb trail (Dashboard / Section). */
+/** Within the CoachHelm cluster, the leaf-tab label the masthead sub-nav shows
+ *  (so the top-bar breadcrumb agrees with it instead of disagreeing). */
+const COACHHELM_TAB_LABELS: Record<string, string> = {
+  intelligence: 'Brief',
+  alerts: 'Signals',
+  insights: 'Signals',
+  patterns: 'Signals',
+  development: 'Players',
+  analytics: 'Effectiveness', // /analytics/coachhelm
+  coachhelm: 'Ask', // /coachhelm/chat, /coachhelm/genome
+};
+
+/** Pathname → breadcrumb trail. Two levels normally (Dashboard / Section); for
+ *  the CoachHelm cluster, three (Dashboard / CoachHelm AI / Tab) so the top-bar
+ *  breadcrumb agrees with the CoachHelm masthead + sub-nav instead of showing a
+ *  competing trail for the same screen (P409). */
 function buildBreadcrumbs(pathname: string): Breadcrumb[] {
   const rest = pathname.replace(/^\/golf\/dashboard\/?/, '');
   if (!rest) return [{ label: 'Dashboard' }];
   const seg = rest.split('/')[0] ?? '';
+
+  // CoachHelm cluster → reconcile with the masthead's "CoachHelm AI / <Tab>".
+  if (COACHHELM_CLUSTER_SEGMENTS.has(seg) && isCoachHelmCluster(pathname)) {
+    const tabLabel = COACHHELM_TAB_LABELS[seg] ?? SEGMENT_LABELS[seg] ?? toTitle(seg);
+    return [
+      { label: 'Dashboard', href: '/golf/dashboard' },
+      { label: 'CoachHelm AI', href: '/golf/dashboard/intelligence' },
+      { label: tabLabel },
+    ];
+  }
+
   const label = SEGMENT_LABELS[seg] ?? toTitle(seg);
   return [{ label: 'Dashboard', href: '/golf/dashboard' }, { label }];
 }
@@ -364,8 +477,22 @@ function FairwayDashboardContent({
   usePresence();
 
   const sections = useMemo(
-    () => buildNavSections(role, badges.messages, role === 'coach' ? badges.coachhelm : 0),
-    [role, badges.messages, badges.coachhelm],
+    () =>
+      buildNavSections(role, {
+        messages: badges.messages,
+        coachhelm: role === 'coach' ? badges.coachhelm : 0,
+        calendarNotifications: badges.calendarNotifications,
+        announcements: badges.announcements,
+        travel: badges.travel,
+      }),
+    [
+      role,
+      badges.messages,
+      badges.coachhelm,
+      badges.calendarNotifications,
+      badges.announcements,
+      badges.travel,
+    ],
   );
 
   const openCommandPalette = useCallback(() => {

@@ -92,6 +92,7 @@ export default async function CoachGenomePage({ params }: PageProps) {
           genome={genome}
           persona={persona}
           focusAreas={(faRows ?? []) as FocusAreaCardData[]}
+          coachId={session.coach.id}
           signalCount={signalCount}
         />
       </div>

@@ -39,6 +39,7 @@ import {
   Button,
   StatusPill,
   EmptyState,
+  InlineNotice,
   ViewHeader,
   type FwStatusTone,
 } from '@/components/fairway';
@@ -195,6 +196,36 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
     );
   }
 
+  // P326 — no more player dead-end. A player who can't play (not entered, or the
+  // qualifier is completed / entries closed) saw a masthead with NO action and NO
+  // status telling them why. Give that state an explicit notice + a next step.
+  // There is no player self-entry flow (coaches add entrants on create), so the
+  // next action is always "contact your coach".
+  let playerNotice:
+    | { tone: 'info' | 'warning'; title: string; body: string }
+    | null = null;
+  if (isPlayer && !canPlayRound) {
+    if (status === 'completed') {
+      playerNotice = {
+        tone: 'info',
+        title: 'This qualifier is completed',
+        body: 'Entries are closed and no further rounds can be posted. Review the final standings below.',
+      };
+    } else if (entryDeadline && new Date(entryDeadline) < new Date()) {
+      playerNotice = {
+        tone: 'warning',
+        title: 'Entries are closed',
+        body: 'The entry deadline has passed. Ask your coach if you can still be added to this qualifier.',
+      };
+    } else {
+      playerNotice = {
+        tone: 'warning',
+        title: "You're not entered in this qualifier",
+        body: "You can follow the standings below, but you can't post a round. Ask your coach to add you to enter.",
+      };
+    }
+  }
+
   // FIX the all-dash bug: only treat the breakdown as "has rounds" when a real
   // completed round exists (maxRoundNumber > 0 AND a player actually has rounds).
   const hasAnyCompletedRound =
@@ -236,6 +267,14 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
       />
 
       <div className="mt-8 space-y-8">
+        {/* P326 · Player state notice — never a dead-end. Tells a non-entered /
+            closed / completed player WHY there's no "Play" action + the next step. */}
+        {playerNotice ? (
+          <InlineNotice tone={playerNotice.tone} title={playerNotice.title}>
+            {playerNotice.body}
+          </InlineNotice>
+        ) : null}
+
         {/* 2 · Detail surface — real columns only (dates, deadline, course, spots, rules) */}
         <Surface aria-label="Qualifier details">
           <Surface.Body>

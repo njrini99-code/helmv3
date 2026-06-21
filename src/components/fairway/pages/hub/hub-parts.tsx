@@ -24,8 +24,9 @@
  * ADDITIVE + GATED. Renders inside a `.fairway-ds` scope on `bg-canvas`.
  * ========================================================================== */
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Plane,
   MapPin,
@@ -47,6 +48,7 @@ import {
   StatusPill,
   EmptyState,
   Sheet,
+  InlineNotice,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
@@ -628,13 +630,19 @@ function relativeTime(dateStr: string, nowTs: number): string {
 
 export function AnnouncementsList({
   announcements,
+  loadError = false,
 }: {
   announcements: GolfAnnouncementMeta[];
+  /** True when the announcements fetch FAILED — render an honest error affordance
+   *  with a retry instead of a silent empty (B3/B4, P147). */
+  loadError?: boolean;
 }) {
+  const router = useRouter();
   const { showToast } = useToast();
   const badges = useNotificationBadges();
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
+  const [retrying, startRetry] = useTransition();
   const [nowTs, setNowTs] = useState(0);
   useEffect(() => {
     setNowTs(Date.now());
@@ -655,6 +663,33 @@ export function AnnouncementsList({
     },
     [showToast, badges],
   );
+
+  // B3/B4: a failed fetch must never look like "no announcements". When the load
+  // errored AND we have nothing to show, render an explicit error + retry. (P147)
+  if (loadError && announcements.length === 0) {
+    return (
+      <section>
+        <SectionTitle>Announcements</SectionTitle>
+        <InlineNotice
+          tone="danger"
+          title="Couldn't load announcements"
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              busy={retrying}
+              onClick={() => startRetry(() => router.refresh())}
+            >
+              Retry
+            </Button>
+          }
+        >
+          Something went wrong fetching your team&rsquo;s announcements. This is a
+          temporary hiccup — retry to load them again.
+        </InlineNotice>
+      </section>
+    );
+  }
 
   if (announcements.length === 0) return null;
 

@@ -41,12 +41,18 @@ function generatePushPayload(
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
   switch (type) {
-    case 'new_message':
+    case 'new_message': {
+      // P260: deep-link to the originating thread when the caller supplies its id
+      // (?conversation=<id>); fall back to the inbox root otherwise.
+      const messagesUrl = data.conversationId
+        ? `${baseUrl}/golf/dashboard/messages?conversation=${data.conversationId}`
+        : `${baseUrl}/golf/dashboard/messages`;
       return {
         title: `Message from ${data.senderName || 'Someone'}`,
         body: String(data.preview || '').slice(0, 100),
-        data: { url: `${baseUrl}/golf/dashboard/messages`, type },
+        data: { url: messagesUrl, type },
       };
+    }
     case 'team_announcement':
       return {
         title: 'Team Announcement',

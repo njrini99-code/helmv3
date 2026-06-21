@@ -142,8 +142,13 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <IconSparkles size={14} className="text-primary-600" aria-hidden />
-          <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 border-b border-primary-200/40 pb-0.5">
+          {/* C2/§4 token discipline: the Hub signal renders inside the `.fairway-ds`
+              scope directly under the hero, so its chrome (eyebrow + dismiss) uses
+              Fairway tokens — accent / text-tertiary / border-subtle + the one
+              Fairway type scale (text-eyebrow / text-caption) — instead of the
+              legacy warm / primary / arbitrary-px soup that read as a seam. */}
+          <IconSparkles size={14} className="text-accent-600" aria-hidden />
+          <h2 className="text-eyebrow font-medium text-text-tertiary uppercase tracking-[0.12em] border-b border-border-subtle pb-0.5">
             From your CoachHelm
           </h2>
         </div>
@@ -151,7 +156,7 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
           type="button"
           onClick={handleDismissForToday}
           data-testid="hub-insight-dismiss-today"
-          className="text-xs font-medium text-warm-400 hover:text-warm-700 transition-colors"
+          className="text-caption font-medium text-text-tertiary hover:text-text-primary transition-colors"
         >
           Dismiss for today
         </Button>

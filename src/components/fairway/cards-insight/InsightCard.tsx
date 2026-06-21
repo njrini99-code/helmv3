@@ -34,6 +34,7 @@ import {
   useId,
   useInsertionEffect,
   type HTMLAttributes,
+  type MouseEventHandler,
   type ReactNode,
 } from 'react';
 import { motion, useReducedMotion, type HTMLMotionProps } from 'framer-motion';
@@ -47,6 +48,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/fairway/feedback';
+import { Checkbox } from '@/components/fairway/forms/Checkbox';
 import {
   HERO_GLASS_CLASS,
   HERO_GLASS_FALLBACK_CSS,
@@ -99,8 +101,33 @@ export interface InsightCardProps
   actions?: ReactNode;
   /** Right-aligned meta in the header (timestamp, source chip, confidence). */
   meta?: ReactNode;
-  /** Adds hover/active affordances (lift + drift). Default false. */
+  /**
+   * Adds hover/active affordances (lift + drift) AND makes the card's body a
+   * keyboard-operable "open detail" affordance. When set, the card's `onClick`
+   * is routed to a real, focusable overlay `<button>` (NOT `role="button"` on
+   * the `<article>`) so Enter/Space activate it natively — and so the `actions`
+   * row can host real buttons WITHOUT nesting them inside an interactive element
+   * (WCAG 2.1.1 + ARIA 4.1.2 nested-interactive). Action clicks never bubble to
+   * the open handler because actions render above the overlay, not inside it.
+   * Default false.
+   */
   interactive?: boolean;
+  /**
+   * Accessible name for the interactive overlay's open-detail control. Defaults
+   * to "Open details" when `interactive` and an `onClick` are supplied. Pass a
+   * specific label (e.g. the signal title) for a clearer screen-reader name.
+   */
+  openLabel?: string;
+  /**
+   * Multi-select: when `onSelectToggle` is supplied, a lead-column checkbox is
+   * rendered (above the open-detail overlay) so the card participates in bulk
+   * actions without its toggle opening the detail panel. `selected` reflects the
+   * current state. `selectLabel` names the checkbox for screen readers.
+   */
+  selected?: boolean;
+  onSelectToggle?: (next: boolean) => void;
+  /** Accessible name for the selection checkbox (e.g. `Select "<title>"`). */
+  selectLabel?: string;
   /** Loading → shape-matched skeleton (never a spinner). */
   loading?: boolean;
   /** Honest emptiness — renders an `insufficient-data` state, not a hollow shell. */
@@ -178,10 +205,15 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
       actions,
       meta,
       interactive = false,
+      openLabel,
+      selected = false,
+      onSelectToggle,
+      selectLabel,
       loading = false,
       empty = false,
       emptyMessage = 'Not enough data to surface an insight yet.',
       className,
+      onClick,
       ...rest
     },
     ref,
@@ -209,17 +241,48 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
       // density
       isCompact ? 'gap-3 p-4 items-center' : 'gap-4',
       !isCompact && (isHero ? 'p-8' : 'p-6'),
-      // interactivity
+      // interactivity — visual lift only on the container; the focus ring + the
+      // actual keyboard/click affordance live on the overlay <button> (so the
+      // ring follows the focusable element, and the card has-focus-within still
+      // reads as the open-detail control). No role/tabindex on the <article>.
       interactive && [
-        'cursor-pointer duration-fast',
+        'duration-fast',
         !isHero && 'hover:shadow-soft hover:-translate-y-px hover:border-transparent',
         isHero && 'hover:-translate-y-px',
         'active:translate-y-[0.5px]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        'has-[[data-fw-card-open]:focus-visible]:ring-2 has-[[data-fw-card-open]:focus-visible]:ring-border-focus has-[[data-fw-card-open]:focus-visible]:ring-offset-2 has-[[data-fw-card-open]:focus-visible]:ring-offset-canvas',
       ],
       !interactive && 'duration-base',
       className,
     );
+
+    /* -- the keyboard-operable open-detail overlay --
+     * When `interactive` + an `onClick` are supplied, the card's open affordance
+     * is a REAL focusable <button> stretched across the card via `absolute
+     * inset-0`. This is what fixes both:
+     *   • WCAG 2.1.1 — Enter/Space natively activate a <button> (the old
+     *     role="button" <article> had no key handler, so it was mouse-only).
+     *   • ARIA 4.1.2 nested-interactive — the <article> is no longer an
+     *     interactive role, so the `actions` <Button>s are not nested inside one.
+     * Action controls render with `relative z-10` ABOVE this overlay, so a click
+     * on an action never reaches the overlay (no propagation hack needed, and no
+     * double-fire of open-detail). The overlay sits at z-0 (behind content).
+     */
+    const isOverlayInteractive = interactive && typeof onClick === 'function';
+    const overlayButton = isOverlayInteractive ? (
+      // A bare, full-bleed transparent <button> is intentional here — it is an
+      // invisible inset-0 click/keyboard target, NOT a styled CTA, so the Fairway
+      // <Button> (a padded pill) would be wrong. This is the same primitive-level
+      // exemption the IconButton's raw <button> takes.
+      // eslint-disable-next-line helm/no-raw-button
+      <button
+        type="button"
+        data-fw-card-open=""
+        aria-label={openLabel ?? 'Open details'}
+        onClick={onClick as MouseEventHandler<HTMLButtonElement>}
+        className="absolute inset-0 z-0 cursor-pointer rounded-card outline-none"
+      />
+    ) : null;
 
     /* -- reveal motion (drift + opacity; collapses under reduced-motion) --
      * PERF: per-row framer-motion is the dominant scroll/jank cost on the long
@@ -239,10 +302,6 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
             ease: [0.16, 1, 0.3, 1] as const,
           },
         };
-
-    const interactiveProps = interactive
-      ? { tabIndex: 0, role: 'button' as const }
-      : {};
 
     /* -- the left priority tint bar (consistent across variants) -- */
     const tintBar = (
@@ -291,11 +350,27 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
       <>
         {tintBar}
 
+        {/* keyboard-operable open-detail overlay (interactive cards only) —
+            sits BEHIND the content (z-0) so action buttons (z-10) win clicks. */}
+        {overlayButton}
+
+        {/* multi-select checkbox (above the overlay so toggling never opens the
+            detail panel). Only rendered when the consumer wires onSelectToggle. */}
+        {onSelectToggle ? (
+          <span className="relative z-20 flex shrink-0 items-center self-start pointer-events-auto">
+            <Checkbox
+              checked={selected}
+              onCheckedChange={(next) => onSelectToggle(next === true)}
+              aria-label={selectLabel ?? 'Select signal'}
+            />
+          </span>
+        ) : null}
+
         {/* lead icon */}
         {leadIcon ? (
           <span
             className={cn(
-              'flex shrink-0 items-center justify-center rounded-fw-md',
+              'pointer-events-none relative z-10 flex shrink-0 items-center justify-center rounded-fw-md',
               tone.iconWrap,
               isCompact ? 'h-8 w-8 p-1.5' : 'h-10 w-10 p-2',
             )}
@@ -304,8 +379,15 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
           </span>
         ) : null}
 
-        {/* main column */}
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
+        {/* main column — text is click-through to the overlay (pointer-events-none),
+            but the interactive `actions` cluster re-enables pointer events + z-10
+            so it sits ABOVE the overlay and its clicks never open the panel. */}
+        <div
+          className={cn(
+            'relative z-10 flex min-w-0 flex-1 flex-col gap-2',
+            isOverlayInteractive && 'pointer-events-none',
+          )}
+        >
           {/* header row: overline + title (left) · meta (right) */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-1">
@@ -357,18 +439,48 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
             </div>
           ) : null}
 
-          {/* action row (default/hero stack below; compact handled separately) */}
+          {/* action row (default/hero stack below; compact handled separately).
+              `pointer-events-auto` + z above the overlay: real buttons here stay
+              clickable and never trigger the card's open-detail overlay. */}
           {actions && !isCompact ? (
-            <div className="mt-2 flex flex-wrap items-center gap-2">{actions}</div>
+            <div className="relative z-20 mt-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+              {actions}
+            </div>
           ) : null}
         </div>
 
-        {/* compact: trailing action cluster on the right */}
+        {/* compact: trailing action cluster on the right (above the overlay). */}
         {actions && isCompact ? (
-          <div className="flex shrink-0 items-center gap-1.5">{actions}</div>
+          <div className="relative z-20 flex shrink-0 items-center gap-1.5 pointer-events-auto">
+            {actions}
+          </div>
         ) : null}
       </>
     );
+
+    // When the overlay owns the click, the <article> must NOT also carry onClick
+    // (that would re-introduce a non-keyboard mouse-only handler + a duplicate
+    // open path). Otherwise (non-interactive, or interactive with no handler) we
+    // pass the consumer's onClick straight through to the element for back-compat.
+    const articleClickProps = isOverlayInteractive ? {} : { onClick };
+
+    // When the overlay owns interactivity, strip any role/tabIndex/onKeyDown a
+    // consumer may have passed (some callers added a manual `role="button"
+    // tabIndex onKeyDown` workaround for the old missing-keyboard gap). Leaving
+    // them would re-create a nested-interactive <article role="button"> wrapping
+    // the overlay <button> (ARIA 4.1.2) and a duplicate key handler. The overlay
+    // is now the single, native, keyboard-operable affordance.
+    const {
+      role: _consumerRole,
+      tabIndex: _consumerTabIndex,
+      onKeyDown: _consumerOnKeyDown,
+      ...restSansInteractive
+    } = rest as typeof rest & {
+      role?: string;
+      tabIndex?: number;
+      onKeyDown?: unknown;
+    };
+    const articleRest = isOverlayInteractive ? restSansInteractive : rest;
 
     // HERO: the ONE glass card per view keeps the framer-motion entrance + the
     // glass material. This is bounded to a single instance, so its motion
@@ -381,8 +493,8 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
           className={shell}
           style={heroGlassStyle}
           {...reveal}
-          {...interactiveProps}
-          {...rest}
+          {...articleClickProps}
+          {...articleRest}
         >
           {body}
         </motion.article>
@@ -392,15 +504,15 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
     // DEFAULT / COMPACT (the list rows): a plain matte <article> with NO
     // framer-motion runtime — this is what fixes the slow scroll on the long
     // "By player" Signals list. `rest` is typed as HTMLMotionProps; the
-    // non-motion subset is what callers pass here (onClick, data-*, aria-*),
-    // so we cast it onto the native article element.
-    const nativeRest = rest as unknown as HTMLAttributes<HTMLElement>;
+    // non-motion subset is what callers pass here (data-*, aria-*), so we cast
+    // it onto the native article element.
+    const nativeRest = articleRest as unknown as HTMLAttributes<HTMLElement>;
     return (
       <article
         ref={ref as React.Ref<HTMLElement>}
         aria-labelledby={titleId}
         className={shell}
-        {...interactiveProps}
+        {...(articleClickProps as HTMLAttributes<HTMLElement>)}
         {...nativeRest}
       >
         {body}

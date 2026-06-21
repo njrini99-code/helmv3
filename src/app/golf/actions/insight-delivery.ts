@@ -581,6 +581,134 @@ export async function getInsightsForCoach(
 }
 
 /**
+ * Batched top-insight fetcher for a roster (P446). Returns a Map keyed by
+ * player_id → that player's top insight(s) (head-only by default), built from a
+ * SINGLE `golf_coach_insights` query scoped to ALL the supplied players instead
+ * of one round-trip per player.
+ *
+ * Motivation: the coach roster-intelligence view (`getTeamStatsIntelligence`)
+ * previously called `getInsightsForPlayer` once per player, each of which re-ran
+ * `auth.getUser` + `verifyPlayerAccess` (a player query + an RPC) + the data
+ * query — ~3-4N concurrent round-trips for an N-player roster. This collapses
+ * that to O(1) queries regardless of roster size.
+ *
+ * Authorization: one `auth.getUser()` check, then RLS on `golf_coach_insights`
+ * (`is_golf_team_coach`) restricts the read to insights for players on teams the
+ * caller staffs — the same trust boundary `getInsightsForCoach`'s team sweep
+ * relies on. We therefore do NOT run `verifyPlayerAccess` per player here; the
+ * caller is responsible for having scoped `playerIds` to a team it owns (the
+ * roster view derives them from active members of the coach's resolved team).
+ *
+ * Ranking mirrors the team sweep: neutral coach weights and no per-player goals
+ * (those are a per-player concern; the roster card only needs the head insight),
+ * then the SAME `collapseParScoring` → `dedupeBySubject` pipeline every surface
+ * applies. Returns `[]` for any player with no visible rows (Map omits absent
+ * players → callers use `map.get(pid) ?? []`).
+ */
+export async function getTopInsightsForPlayers(
+  playerIds: string[],
+  opts: { limit?: number } = {},
+  supabaseOverride?: SupabaseClient,
+): Promise<Map<string, EvidenceInsight[]>> {
+  const out = new Map<string, EvidenceInsight[]>();
+  const ids = Array.from(
+    new Set((playerIds ?? []).filter((id): id is string => typeof id === 'string' && id.length > 0)),
+  );
+  if (ids.length === 0) return out;
+
+  let supabase: SupabaseClient;
+  try {
+    supabase = supabaseOverride ?? (await createClient());
+  } catch (err) {
+    await logServerError(
+      `getTopInsightsForPlayers client init failed: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.getTopInsightsForPlayers', featureArea: 'insights' },
+    );
+    return out;
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return out;
+
+  const limit = Math.min(Math.max(opts.limit ?? 1, 1), 50);
+
+  // ONE batched query for the whole roster. `.in('player_id', ids)` + RLS scope
+  // the read; paginate past the 1000-row PostgREST cap (a full roster's visible
+  // set can exceed 1000), ordered by `id` for stable paging — we rank in-app.
+  const runQuery = () =>
+    fetchAllRowsResult((from, to) =>
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select(INSIGHT_SELECT)
+          .in('player_id', ids)
+          .not('evidence', 'is', null),
+      )
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+
+  let data: unknown = null;
+  let error: { message: string } | null = null;
+  try {
+    const result = await runQuery();
+    data = result.data;
+    error = result.error;
+  } catch (err) {
+    if (isTransientFetchError(err)) {
+      await delay(500);
+      try {
+        const result = await runQuery();
+        data = result.data;
+        error = result.error;
+      } catch (retryErr) {
+        await logServerError(
+          `getTopInsightsForPlayers fetch failed: ${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+          { action: 'insight-delivery.getTopInsightsForPlayers', featureArea: 'insights' },
+        );
+        return out;
+      }
+    } else {
+      await logServerError(
+        `getTopInsightsForPlayers failed: ${err instanceof Error ? err.message : String(err)}`,
+        { action: 'insight-delivery.getTopInsightsForPlayers', featureArea: 'insights' },
+      );
+      return out;
+    }
+  }
+
+  if (error) {
+    await logServerError(
+      `getTopInsightsForPlayers failed: ${error.message}`,
+      { action: 'insight-delivery.getTopInsightsForPlayers', featureArea: 'insights' },
+    );
+    return out;
+  }
+
+  const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
+  const mapped = rows
+    .map(mapRowToEvidenceInsight)
+    .filter((r): r is EvidenceInsight => r !== null);
+
+  // Group per player, then apply the SAME rank → collapse → dedupe → slice
+  // pipeline `getInsightsForPlayer` applies, with neutral weights/goals (team
+  // sweep convention). This guarantees the roster card's top insight agrees
+  // with the per-player feed's head for the same visible set.
+  const byPlayer = new Map<string, EvidenceInsight[]>();
+  for (const ins of mapped) {
+    const arr = byPlayer.get(ins.player_id) ?? [];
+    arr.push(ins);
+    byPlayer.set(ins.player_id, arr);
+  }
+  for (const [pid, list] of byPlayer) {
+    const ranked = dedupeBySubject(collapseParScoring(rankEvidenceInsights(list)));
+    out.set(pid, ranked.slice(0, limit));
+  }
+
+  return out;
+}
+
+/**
  * Returns the single insight to feature on a round-review takeaway card.
  *
  * Strategy: highest-impact insight created or updated within 24h of this

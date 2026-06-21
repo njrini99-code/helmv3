@@ -60,9 +60,10 @@ import {
 } from '@/components/fairway';
 import {
   recordFocusAreaOutcome,
+  createFocusArea,
   type FocusAreaOutcome,
 } from '@/app/golf/actions/development';
-import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
+import { GENOME_DIMENSIONS, getDimension } from '@/lib/coachhelm/v3/genome/registry';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import type { GenomeVector, DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import type { Persona, PersonaEntry } from '@/lib/coachhelm/v3/genome/persona';
@@ -91,9 +92,37 @@ export interface GenomeDetailViewProps {
   persona: Persona | null;
   /** This player's focus areas (for the spine). */
   focusAreas?: FocusAreaCardData[];
+  /**
+   * The viewing coach's id — required for the watchout "Focus area" CTA to
+   * actually CREATE a focus area for this player (P108). When absent, the CTA
+   * degrades to a scoped deep-link into Development (no dropped params).
+   */
+  coachId?: string | null;
   /** SSR-known urgent/high open-signal count for the shell badge. */
   signalCount?: number | null;
   className?: string;
+}
+
+/* ---------------------------------------------------------------------------
+ * Watchout → focus-area area_type. The 8 genome categories map to the canonical
+ * golf_player_focus_areas.area_type vocabulary so a watchout turns into a
+ * correctly-typed focus area (not an "other" catch-all). Unknown → 'other'.
+ * ------------------------------------------------------------------------- */
+
+const WATCHOUT_AREA_TYPE: Record<string, string> = {
+  miss_tendencies: 'driving',
+  pressure_response: 'mental_game',
+  recovery_patterns: 'short_game',
+  course_type_affinity: 'course_management',
+  weather_sensitivity: 'course_management',
+  stamina: 'fitness',
+  learning_velocity: 'other',
+  strategic_profile: 'course_management',
+};
+
+function areaTypeForDim(dimId: string): string {
+  const category = getDimension(dimId)?.category;
+  return (category && WATCHOUT_AREA_TYPE[category]) || 'other';
 }
 
 /* ---------------------------------------------------------------------------
@@ -152,12 +181,15 @@ export function GenomeDetailView({
   genome,
   persona,
   focusAreas = [],
+  coachId,
   signalCount,
   className,
 }: GenomeDetailViewProps) {
   const router = useRouter();
   const [computing, setComputing] = React.useState(false);
   const [computeError, setComputeError] = React.useState<string | null>(null);
+  // Per-watchout busy id for the "Focus area" CTA (P108).
+  const [creatingFocusDim, setCreatingFocusDim] = React.useState<string | null>(null);
 
   const dimRows = React.useMemo(
     () => (genome ? buildDimRows(genome.vector) : []),
@@ -204,6 +236,40 @@ export function GenomeDetailView({
     const res = await recordFocusAreaOutcome(fa.id, outcome);
     if (res.success) router.refresh();
     return res;
+  }
+
+  // Watchout "Focus area" CTA (P108): turn a flagged watchout into a real,
+  // correctly-typed focus area for this player, then land on Development scoped
+  // to them. Previously this passed a `&focus=` param the Development page never
+  // read — so the CTA silently dropped its promise. Mirrors the FocusAreaCard /
+  // FairwayPlayerInsight create pattern (server action + toast + navigate).
+  async function handleCreateFocusArea(w: PersonaEntry) {
+    if (!coachId) return;
+    setCreatingFocusDim(w.dim_id);
+    try {
+      const res = await createFocusArea({
+        player_id: playerId,
+        coach_id: coachId,
+        area_type: areaTypeForDim(w.dim_id),
+        title: w.label,
+        description: w.qualitative
+          ? `Genome watchout: ${w.qualitative}`
+          : `Genome watchout flagged for ${w.label}`,
+        target_metric: null,
+        current_value: null,
+        target_value: null,
+      });
+      if (res.success) {
+        fairwayToast.success(`Focus area created — ${w.label}`);
+        router.push(`/golf/dashboard/development?player=${playerId}`);
+      } else {
+        fairwayToast.error(res.error ?? 'Could not create focus area');
+      }
+    } catch {
+      fairwayToast.error('Could not create focus area');
+    } finally {
+      setCreatingFocusDim(null);
+    }
   }
 
   const headerActions = genome ? (
@@ -260,6 +326,9 @@ export function GenomeDetailView({
                   persona={persona}
                   playerId={playerId}
                   playerName={playerName}
+                  coachId={coachId}
+                  onCreateFocusArea={handleCreateFocusArea}
+                  creatingFocusDim={creatingFocusDim}
                 />,
               ]}
               tertiary={[
@@ -458,10 +527,16 @@ function PersonaInstrument({
   persona,
   playerId,
   playerName,
+  coachId,
+  onCreateFocusArea,
+  creatingFocusDim,
 }: {
   persona: Persona | null;
   playerId: string;
   playerName: string;
+  coachId?: string | null;
+  onCreateFocusArea: (w: PersonaEntry) => void;
+  creatingFocusDim: string | null;
 }) {
   if (!persona) {
     return (
@@ -562,22 +637,35 @@ function PersonaInstrument({
                     </p>
                   ) : null}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-shrink-0"
-                  rightIcon={<IconArrowRight size={13} />}
-                  asChild
-                >
-                  <Link
-                    href={`/golf/dashboard/development?player=${playerId}&focus=${encodeURIComponent(
-                      w.label,
-                    )}`}
+                {coachId ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-shrink-0"
+                    rightIcon={<IconArrowRight size={13} />}
+                    busy={creatingFocusDim === w.dim_id}
+                    disabled={creatingFocusDim != null && creatingFocusDim !== w.dim_id}
+                    onClick={() => onCreateFocusArea(w)}
                     aria-label={`Turn "${w.label}" into a focus area for ${playerName}`}
                   >
-                    Focus area
-                  </Link>
-                </Button>
+                    {creatingFocusDim === w.dim_id ? 'Creating…' : 'Focus area'}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-shrink-0"
+                    rightIcon={<IconArrowRight size={13} />}
+                    asChild
+                  >
+                    <Link
+                      href={`/golf/dashboard/development?player=${playerId}`}
+                      aria-label={`Open Development for ${playerName} to add a focus area for "${w.label}"`}
+                    >
+                      Focus area
+                    </Link>
+                  </Button>
+                )}
               </li>
             ))}
           </ul>

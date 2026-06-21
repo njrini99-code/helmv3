@@ -273,6 +273,9 @@ function CreateSheet({
         else onOpenChange(true);
       }}
       side="bottom"
+      // Primary multi-field create flow — open to full working height, not the
+      // 50% half-collapsed peek detent the bottom-sheet default applies (P274).
+      peek={false}
       title="New announcement"
       description="Share schedule changes, news, and updates with your team."
       dismissible={!loading}

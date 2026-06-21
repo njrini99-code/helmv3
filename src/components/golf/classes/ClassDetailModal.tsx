@@ -82,20 +82,20 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         <div className="px-6 pt-3 pb-4">
           <div className="flex items-start justify-between">
             <div>
-              <span className="font-mono text-sm font-medium text-primary-600">
+              <span className="font-mono text-sm font-medium text-accent-700">
                 {classData.course_code}
               </span>
-              <DrawerTitle id="class-detail-title" className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mt-1">
+              <DrawerTitle id="class-detail-title" className="text-h3 font-medium text-text-primary tracking-[-0.015em] mt-1">
                 {classData.course_name || 'Untitled Class'}
               </DrawerTitle>
               {classData.semester.trim() && (
-                <p className="text-sm text-warm-500 mt-1">{classData.semester}</p>
+                <p className="text-sm text-text-tertiary mt-1">{classData.semester}</p>
               )}
             </div>
             <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
-              className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
+              className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
             >
               <IconX size={20} />
             </IconButton>
@@ -106,14 +106,14 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         <div className="px-6 pb-6 space-y-4">
           {/* Schedule */}
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
-              <IconClock size={20} className="text-warm-500" />
+            <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">
+              <IconClock size={20} className="text-text-tertiary" />
             </div>
             <div>
-              <p className="font-medium text-warm-900">
+              <p className="font-medium text-text-primary">
                 {classData.days.length > 0 ? formatDaysDisplay(classData.days) : 'No days set'}
               </p>
-              <p className="text-sm text-warm-500">
+              <p className="text-sm text-text-tertiary">
                 {classData.start_time && classData.end_time
                   ? `${formatTimeDisplay(classData.start_time)} - ${formatTimeDisplay(classData.end_time)}`
                   : 'No time set'}
@@ -124,14 +124,14 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           {/* Location */}
           {(classData.location || classData.building || classData.room) && (
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
-                <IconMapPin size={20} className="text-warm-500" />
+              <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">
+                <IconMapPin size={20} className="text-text-tertiary" />
               </div>
               <div>
-                <p className="font-medium text-warm-900">
+                <p className="font-medium text-text-primary">
                   {classData.location || `${classData.building} ${classData.room}`.trim()}
                 </p>
-                <p className="text-sm text-warm-500">Location</p>
+                <p className="text-sm text-text-tertiary">Location</p>
               </div>
             </div>
           )}
@@ -139,12 +139,12 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           {/* Instructor */}
           {classData.instructor && (
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
-                <IconUser size={20} className="text-warm-500" />
+              <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">
+                <IconUser size={20} className="text-text-tertiary" />
               </div>
               <div>
-                <p className="font-medium text-warm-900">{classData.instructor}</p>
-                <p className="text-sm text-warm-500">Instructor</p>
+                <p className="font-medium text-text-primary">{classData.instructor}</p>
+                <p className="text-sm text-text-tertiary">Instructor</p>
               </div>
             </div>
           )}
@@ -152,7 +152,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           {/* Credits */}
           {classData.credits && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="px-2 py-1 bg-warm-100 rounded-md text-warm-600 font-medium">
+              <span className="px-2 py-1 bg-surface-sunken rounded-md text-text-secondary font-medium">
                 {classData.credits} credits
               </span>
             </div>
@@ -160,20 +160,20 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
 
           {/* Notes */}
           {classData.notes && (
-            <div className="p-3 bg-warm-50 rounded-xl">
-              <p className="text-xs font-medium text-warm-500 mb-1">Notes</p>
-              <p className="text-sm text-warm-700">{classData.notes}</p>
+            <div className="p-3 bg-surface-sunken rounded-xl">
+              <p className="text-xs font-medium text-text-tertiary mb-1">Notes</p>
+              <p className="text-sm text-text-secondary">{classData.notes}</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-warm-100 bg-warm-50">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle bg-surface-sunken">
           <Button
             variant="secondary"
             onClick={handleDeleteClick}
             disabled={deleting}
-            className="text-red-600 hover:bg-red-50 transition-colors"
+            className="text-fw-danger hover:bg-fw-danger-bg transition-colors"
           >
             Delete
           </Button>

@@ -14,7 +14,9 @@
  * framer-motion `layoutId`. Reduced-motion disables the slide (pill snaps).
  *
  * States: each segment has hover (text warms) + focus-visible (green ring) +
- * active/selected (sits on the moving pill, text → primary). Sizes sm | md.
+ * active/selected (sits on the moving pill, text → primary). Sizes sm | md | lg.
+ * `lg` exists for primary, high-frequency mobile toggles (e.g. the calendar
+ * view switcher) that must clear the WCAG 2.2 AA (2.5.8) 44px touch target.
  * ========================================================================== */
 
 import { type ReactNode, useId } from 'react';
@@ -36,7 +38,11 @@ export interface SegmentedProps<T extends string = string> {
   options: ReadonlyArray<SegmentedOption<T>>;
   value: T;
   onValueChange: (value: T) => void;
-  size?: 'sm' | 'md';
+  /**
+   * sm | md (default) | lg. Use `lg` for a primary mobile control that must
+   * meet the 44px touch-target minimum (WCAG 2.2 AA 2.5.8).
+   */
+  size?: 'sm' | 'md' | 'lg';
   /** Stretch each segment to share the row equally. */
   fullWidth?: boolean;
   /** Accessible name for the group (maps to aria-label on the toggle group). */
@@ -44,14 +50,17 @@ export interface SegmentedProps<T extends string = string> {
   className?: string;
 }
 
-const sizeTrack: Record<'sm' | 'md', string> = {
+const sizeTrack: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'p-0.5 gap-0.5',
   md: 'p-1 gap-1',
+  lg: 'p-1 gap-1',
 };
 
-const sizeItem: Record<'sm' | 'md', string> = {
+const sizeItem: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'min-h-[30px] px-3 text-[13px] leading-4 gap-1.5',
   md: 'min-h-[36px] px-4 text-[13px] leading-4 gap-1.5',
+  // 44px touch target (WCAG 2.2 AA 2.5.8) — the item itself is the hit area.
+  lg: 'min-h-[44px] px-4 text-[13px] leading-4 gap-1.5',
 };
 
 export function Segmented<T extends string = string>({

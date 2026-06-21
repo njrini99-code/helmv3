@@ -29,7 +29,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users, FileText, Download } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
@@ -55,6 +55,14 @@ export interface MessageThreadPaneProps {
   /** Messages from the unchanged useGolfMessages() hook. */
   messages: MessageWithReadStatus[];
   loading: boolean;
+  /**
+   * True when the thread fetch FAILED (distinct from a truly-empty thread).
+   * Renders a recoverable error state with Retry instead of the honest-empty
+   * "No messages yet" state (P258).
+   */
+  error?: boolean;
+  /** Re-runs the thread fetch (the hook's refetch). Wired to the Retry CTA. */
+  onRetry?: () => void;
   /** Session user id for own-message attribution (msg.sender_id === user). */
   userId: string;
   /** Hook's resolved user id — same own-message check, both roles. */
@@ -232,6 +240,8 @@ export function MessageThreadPane({
   conversation,
   messages,
   loading,
+  error,
+  onRetry,
   userId,
   currentUserId,
   isOtherTyping,
@@ -415,6 +425,31 @@ export function MessageThreadPane({
             <div className="h-4 w-1/2 rounded bg-surface-sunken" />
             <div className="h-4 w-2/3 rounded bg-surface-sunken" />
           </div>
+        ) : error ? (
+          // P258: the fetch FAILED — render a recoverable error state with Retry,
+          // NEVER the success-styled "No messages yet" empty state.
+          <EmptyState
+            variant="subtle"
+            icon={AlertTriangle}
+            title="Couldn’t load this conversation"
+            description="Something went wrong loading these messages. Check your connection and try again."
+            action={
+              onRetry ? (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className={cn(
+                    'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
+                    'bg-accent-500 font-fw-sans text-[13px] font-medium text-text-on-accent shadow-flat',
+                    'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
+                    'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                  )}
+                >
+                  Try again
+                </button>
+              ) : undefined
+            }
+          />
         ) : !messages || messages.length === 0 ? (
           // HONEST-EMPTY (b): selected thread, zero messages.
           <EmptyState

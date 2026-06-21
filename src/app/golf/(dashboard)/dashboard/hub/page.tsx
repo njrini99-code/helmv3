@@ -225,7 +225,12 @@ export default async function PlayerHubPage() {
     maybe_count: e.maybe_count ?? 0,
   }));
 
+  // B3/B4: an error must never masquerade as an empty state. When the
+  // announcements fetch fails, we keep the list empty BUT flag the failure so the
+  // Hub renders an honest "couldn't load — retry" affordance instead of a silent
+  // (cheerful) "no announcements". (P147)
   const announcements = announcementsResult.success ? (announcementsResult.data ?? []) : [];
+  const announcementsLoadError = !announcementsResult.success;
 
   // ── Fairway fork (ADDITIVE): flag ON → the rebuilt Hub inside the `.fairway-ds`
   // scope on bg-canvas. The optimistic write paths (completeTask / respondToEvent)
@@ -249,6 +254,7 @@ export default async function PlayerHubPage() {
           tasks={tasks}
           events={events}
           announcements={announcements}
+          announcementsLoadError={announcementsLoadError}
           playerName={playerName}
           teamName={teamName}
           signalCard={<HubInsightSignalCard insight={topInsight} />}

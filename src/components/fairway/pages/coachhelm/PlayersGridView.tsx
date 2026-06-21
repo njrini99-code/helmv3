@@ -1216,6 +1216,51 @@ function FocusAreaModal({
   const area = getAreaType(form.area_type);
   const canSave = Boolean(form.player_id && form.title.trim());
 
+  /* ---- unsaved-changes guard (Nielsen #5 error prevention / #3 user control)
+     Snapshot the form when the modal opens; a close attempt (Cancel, Esc, scrim,
+     or the top-right close affordance — all route through onOpenChange/Cancel)
+     while the form differs from that baseline shows an in-modal "Discard
+     changes?" confirm instead of silently dropping the coach's input. ---- */
+  const baselineRef = React.useRef<FocusAreaForm>(form);
+  const [confirmingDiscard, setConfirmingDiscard] = React.useState(false);
+  const wasOpen = React.useRef(open);
+  React.useEffect(() => {
+    // On the closed→open transition, re-baseline to the form we opened with and
+    // clear any stale confirm. (Open→closed is owned by the parent's reset.)
+    if (open && !wasOpen.current) {
+      baselineRef.current = form;
+      setConfirmingDiscard(false);
+    }
+    wasOpen.current = open;
+  }, [open, form]);
+
+  const isDirty = React.useMemo(() => {
+    const b = baselineRef.current;
+    return (
+      form.player_id !== b.player_id ||
+      form.area_type !== b.area_type ||
+      form.title !== b.title ||
+      form.description !== b.description ||
+      form.target_metric !== b.target_metric ||
+      form.current_value !== b.current_value ||
+      form.target_value !== b.target_value
+    );
+  }, [form]);
+
+  // Single close gate: dirty → arm the discard confirm; clean → close for real.
+  const requestClose = React.useCallback(() => {
+    if (isDirty) {
+      setConfirmingDiscard(true);
+    } else {
+      onOpenChange(false);
+    }
+  }, [isDirty, onOpenChange]);
+
+  const discardAndClose = React.useCallback(() => {
+    setConfirmingDiscard(false);
+    onOpenChange(false);
+  }, [onOpenChange]);
+
   // Honest preview of progress for the chosen target (no fabricated meter).
   const previewPct =
     form.current_value && form.target_value
@@ -1229,7 +1274,12 @@ function FocusAreaModal({
   return (
     <ModalShell
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(o) => {
+        // Esc / scrim / close-button close requests pass through the guard.
+        // Re-opens (o === true) pass straight through to the parent.
+        if (o) onOpenChange(true);
+        else requestClose();
+      }}
       size="lg"
       title={editing ? 'Edit focus area' : 'New focus area'}
       description={
@@ -1372,14 +1422,39 @@ function FocusAreaModal({
         </div>
       </ModalShell.Body>
 
-      <ModalShell.Footer>
-        <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
-          Cancel
-        </Button>
-        <Button variant="primary" busy={saving} disabled={!canSave} onClick={onSave}>
-          {editing ? 'Save changes' : 'Create focus area'}
-        </Button>
-      </ModalShell.Footer>
+      {confirmingDiscard ? (
+        <ModalShell.Footer>
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p
+              role="alert"
+              className="font-fw-sans text-body-sm font-medium text-text-primary"
+            >
+              Discard your unsaved changes?
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setConfirmingDiscard(false)}
+                disabled={saving}
+              >
+                Keep editing
+              </Button>
+              <Button variant="danger" onClick={discardAndClose} disabled={saving}>
+                Discard changes
+              </Button>
+            </div>
+          </div>
+        </ModalShell.Footer>
+      ) : (
+        <ModalShell.Footer>
+          <Button variant="ghost" onClick={requestClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="primary" busy={saving} disabled={!canSave} onClick={onSave}>
+            {editing ? 'Save changes' : 'Create focus area'}
+          </Button>
+        </ModalShell.Footer>
+      )}
     </ModalShell>
   );
 }

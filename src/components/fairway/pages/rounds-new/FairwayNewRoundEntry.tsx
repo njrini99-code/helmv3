@@ -123,9 +123,14 @@ export interface FairwayNewRoundEntryProps {
   onHolesBack: () => void;
 }
 
-/* — Field styling: recessed sunken-well tracks inside the lifted white cards — */
+/* — Field styling: recessed sunken-well tracks inside the lifted white cards —
+ * Focus uses the canonical Fairway forms recipe (forms/styles.ts): a SOLID
+ * accent-600 ring (>=3:1 over canvas/sunken/surface — clears WCAG 2.2 1.4.11 /
+ * 2.4.7), gated on `focus-visible:` so it only shows for keyboard users (a bare
+ * `focus:` ring fired on mouse-click and the old `/25` alpha ring composited to
+ * ~1.3:1, far below the 3:1 floor). */
 const fieldCls =
-  'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2.5 font-fw-sans text-body text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25';
+  'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2.5 font-fw-sans text-body text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus-visible:border-border-focus focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas';
 const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
 /** Section heading with a green structural spine. */
 const headingCls = 'mb-4 flex items-center gap-2.5 font-fw-display text-body-lg font-semibold text-text-primary';

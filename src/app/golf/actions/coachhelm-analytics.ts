@@ -625,7 +625,8 @@ export async function getPatternImpact(
 // ============================================================================
 
 export async function getCoachHelmOverview(
-  teamId: string
+  teamId: string,
+  dateRange?: DateRange
 ): Promise<{ success: boolean; data?: CoachHelmOverviewData; error?: string }> {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -639,10 +640,19 @@ export async function getCoachHelmOverview(
   }
 
   try {
-    const now = new Date();
+    // The SELECTED window drives the headline counts (totalInsights, action /
+    // improvement rates, strokes-saved) so every cockpit figure matches the
+    // active range — no fixed-30d leak under a "Last 7 days" header. The default
+    // (no dateRange) stays 30 days, so existing callers are unchanged.
+    const end = dateRange?.end ?? new Date();
+    const windowStart = dateRange?.start ?? new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const now = end;
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    // The DB read must cover BOTH the selected window AND the fixed 7d/14d
+    // week-over-week buckets below, so fetch from whichever start is earlier.
+    const fetchStart = windowStart.getTime() < thirtyDaysAgo.getTime() ? windowStart : thirtyDaysAgo;
 
     // Get active team players (skip transferred / inactive members so they
     // do not inflate team analytics).
@@ -654,14 +664,13 @@ export async function getCoachHelmOverview(
 
     const playerIds = (teamMembers || []).map((m) => m.player_id);
 
-    // Single fetch over the broadest 30-day window covering all 6 prior count
-    // queries; bucket in memory to avoid 6 sequential round-trips. The select
-    // bound must be the widest in-memory bin (30 days) so totalInsights —
-    // which advertises a 30-day count — does not silently drop days 15–30.
+    // Single fetch over the broadest in-memory bin (the selected window OR the
+    // fixed 30-day week-over-week span, whichever is wider) covering all the
+    // count queries; bucket in memory to avoid sequential round-trips.
     // Visible-truth alignment (rescore partial #5): analytics counts must
     // match what the product actually surfaced — same shared contract as the
     // badge/feed, no hand-rolled predicate to drift.
-    // Paginate past the PostgREST 1000-row cap — a 30-day team window of
+    // Paginate past the PostgREST 1000-row cap — a wide team window of
     // insights easily exceeds 1000 rows and an unpaginated read would silently
     // under-count totalInsights / action / improvement rates.
     const { data: insightRows } = await fetchAllRowsResult((from, to) =>
@@ -671,12 +680,17 @@ export async function getCoachHelmOverview(
           .select('created_at, action_taken, outcome_status')
           .in('player_id', playerIds),
       )
-        .gte('created_at', thirtyDaysAgo.toISOString())
+        .gte('created_at', fetchStart.toISOString())
+        .lte('created_at', end.toISOString())
         .order('id', { ascending: true })
         .range(from, to),
     );
 
-    const thirtyMs = thirtyDaysAgo.getTime();
+    // Headline counts use the SELECTED window; the week-over-week deltas stay
+    // anchored to fixed 7d/14d-from-now buckets (a "this week" metric, which is
+    // range-independent by design).
+    const windowStartMs = windowStart.getTime();
+    const endMs = end.getTime();
     const sevenMs = sevenDaysAgo.getTime();
     const fourteenMs = fourteenDaysAgo.getTime();
 
@@ -692,7 +706,7 @@ export async function getCoachHelmOverview(
       outcome_status: string | null;
     }>) {
       const ts = row.created_at ? Date.parse(row.created_at) : 0;
-      if (ts >= thirtyMs) {
+      if (ts >= windowStartMs && ts <= endMs) {
         totalInsights++;
         if (row.action_taken) actedInsights++;
         if (row.outcome_status) outcomedInsights++;
@@ -709,14 +723,15 @@ export async function getCoachHelmOverview(
       .in('player_id', playerIds)
       .eq('is_active', true);
 
-    // Query resolved patterns for strokes saved. Live schema uses
-    // `stroke_impact` (singular); the old plural column is empty.
+    // Query resolved patterns for strokes saved over the SELECTED window. Live
+    // schema uses `stroke_impact` (singular); the old plural column is empty.
     const { data: resolvedPatterns } = await supabase
       .from('golf_patterns_v2')
       .select('stroke_impact')
       .in('player_id', playerIds)
       .eq('lifecycle_state', 'resolved')
-      .gte('resolved_at', thirtyDaysAgo.toISOString());
+      .gte('resolved_at', windowStart.toISOString())
+      .lte('resolved_at', end.toISOString());
 
     const strokesSavedEstimate = ((resolvedPatterns ?? []) as Array<{ stroke_impact: number | null }>).reduce(
       (sum, p) => sum + Math.abs(p.stroke_impact ?? 0),

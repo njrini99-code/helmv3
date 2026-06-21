@@ -272,12 +272,18 @@ export function CoachHelmSubNav({
       data-role={role}
       className={cn('w-full border-b border-border-subtle', className)}
     >
-      <ul role="tablist" className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* A real navigation list of route links — NOT a tablist. Each item is a
+          Next <Link> that navigates to a route, with aria-current="page" on the
+          active one; a role="tablist" of non-tab links is an invalid ARIA
+          pattern (WCAG 2.2 4.1.2). The <nav aria-label> landmark supplies the
+          accessible grouping; roving tabindex + arrow keys remain as a keyboard
+          enhancement over the link list. */}
+      <ul className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((t, i) => {
           const isActive = t.tab === resolved;
           const isSignals = t.tab === 'signals';
           return (
-            <li key={t.tab} role="presentation" className="relative">
+            <li key={t.tab} className="relative">
               <Link
                 href={t.href}
                 ref={(node) => {

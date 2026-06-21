@@ -104,6 +104,12 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
   // Form state for creating / editing the team (verbatim seeding from legacy).
   const [teamName, setTeamName] = useState(team?.name || '');
   const [season, setSeason] = useState(() => team?.season || defaultSeason());
+  // Gender for the FIRST team. createTeam defaults to 'mens' when omitted, so a
+  // women's-program head creating their first team here used to silently get a
+  // men's team (wrong gender propagates to theming + the men/women toggle — a B4
+  // data lie). The create form now exposes the same picker the add-second-team
+  // panel has. (P362)
+  const [firstTeamGender, setFirstTeamGender] = useState<'mens' | 'womens'>('mens');
 
   // Add-second-team panel state (only shown to coaches who already have a team)
   const [showAddTeam, setShowAddTeam] = useState(false);
@@ -137,7 +143,7 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
       return;
     }
     startTransition(async () => {
-      const result = await createTeam(teamName, season);
+      const result = await createTeam(teamName, season, firstTeamGender);
       if (result.success) {
         void triggerHaptic('success');
         fairwayToast.success('Team created');
@@ -217,15 +223,35 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
         <Form spacing="roomy" onSubmit={handleCreateTeam} className="mt-8">
           <FormSection
             title="Team details"
-            description="Name your program and set the current season."
+            description="Name your program, choose the program type, and set the current season."
           >
             <div className="flex flex-col gap-5">
+              {/* Gender picker — mirrors the add-second-team panel so the stored
+                  gender is correct on the very first team. (P362) */}
+              <FormField label="Program" required>
+                <div className="flex gap-2">
+                  {(['mens', 'womens'] as const).map((g) => (
+                    <Button
+                      key={g}
+                      type="button"
+                      variant={firstTeamGender === g ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => setFirstTeamGender(g)}
+                      disabled={isPending}
+                      aria-pressed={firstTeamGender === g}
+                      className="flex-1"
+                    >
+                      {g === 'mens' ? "Men's" : "Women's"}
+                    </Button>
+                  ))}
+                </div>
+              </FormField>
               <FormField label="Team name" required>
                 <Input
                   name="name"
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}
-                  placeholder="e.g. University Golf Team"
+                  placeholder={firstTeamGender === 'mens' ? "e.g. Men's Golf" : "e.g. Women's Golf"}
                   disabled={isPending}
                   required
                 />

@@ -3,8 +3,9 @@
 /**
  * Fairway · Recruiting HQ — coach prospect tracker.
  *
- * Orchestrator: header + add CTA → funnel snapshot (filter plates) → toolbar
- * (search + reset + sort) → card grid → honest empties → edit drawer.
+ * Orchestrator: ViewHeader masthead (eyebrow + title + add CTA) → funnel
+ * snapshot (filter plates) → toolbar (search + reset + sort) → card grid →
+ * honest empties → edit drawer.
  *
  * State model is server-truth + router.refresh() after a save/delete (no
  * mutable local array); filter/search/sort are client useMemo over the fetched
@@ -24,6 +25,7 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 import { Input } from '@/components/fairway/forms/Input';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
+import { ViewHeader } from '@/components/fairway/view-header/view-header';
 import type { Recruit, RecruitStatus } from '@/app/golf/actions/recruiting';
 import { FairwayRecruitCard } from './FairwayRecruitCard';
 import { FairwayRecruitFormSheet } from './FairwayRecruitFormSheet';
@@ -118,23 +120,19 @@ export function FairwayRecruitingPage({
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-accent-700">
-            Recruiting HQ
-          </p>
-          <h1 className="mt-1 font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
-            Your prospects.
-          </h1>
-          <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
-            Track prospects from first look to letter of intent.
-          </p>
-        </div>
-        <Button variant="primary" leftIcon={<Plus className="h-4 w-4" />} onClick={openAdd}>
-          Add prospect
-        </Button>
-      </div>
+      {/* Masthead — the one canonical ViewHeader primitive (eyebrow + title +
+          description + primary CTA), pixel-identical to every other feature page. */}
+      <ViewHeader
+        className="mb-6"
+        eyebrow="Recruiting HQ"
+        title="Your prospects."
+        description="Track prospects from first look to letter of intent."
+        primaryAction={
+          <Button variant="primary" leftIcon={<Plus className="h-4 w-4" />} onClick={openAdd}>
+            Add prospect
+          </Button>
+        }
+      />
 
       {loadError ? (
         <InlineNotice tone="danger" title="Couldn’t load your prospect list" className="mb-4">

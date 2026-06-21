@@ -26,6 +26,7 @@
 import { useState } from 'react';
 
 import { Button, Surface, Switch, ViewHeader } from '@/components/fairway';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { toast } from '@/components/ui/sonner';
 import {
   setAllChannels,
@@ -101,6 +102,7 @@ export function FairwaySettingsNotifications({
   const [prefs, setPrefs] = useState<PrefsByCategory>(initialPrefs);
   const [quiet, setQuiet] = useState(initialQuiet);
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   function setPending(key: string, pending: boolean) {
     setPendingKeys((current) => {
@@ -153,6 +155,7 @@ export function FairwaySettingsNotifications({
    */
   async function applyBulkPrefs(
     nextPrefs: PrefsByCategory,
+    successMessage: string,
     failureMessage: string,
   ) {
     if (pendingKeys.has(BULK_KEY)) return;
@@ -165,6 +168,10 @@ export function FairwaySettingsNotifications({
     if (!result.ok) {
       setPrefs(previousPrefs);
       toast.error(result.error || failureMessage);
+    } else {
+      // Visibility of system status: a multi-second bulk write that succeeds
+      // must confirm itself — without it the buttons re-enable with no signal.
+      toast.success(successMessage);
     }
     setPending(BULK_KEY, false);
   }
@@ -174,7 +181,11 @@ export function FairwaySettingsNotifications({
     for (const cat of ALL_CATEGORIES) {
       nextPrefs[cat] = { ...DEFAULT_CHANNELS };
     }
-    await applyBulkPrefs(nextPrefs, 'Failed to reset notification preferences');
+    await applyBulkPrefs(
+      nextPrefs,
+      'Reset to defaults',
+      'Failed to reset notification preferences',
+    );
   }
 
   async function muteChannel(channel: keyof ChannelPref) {
@@ -183,7 +194,12 @@ export function FairwaySettingsNotifications({
       const current = prefs[cat] ?? DEFAULT_CHANNELS;
       nextPrefs[cat] = { ...current, [channel]: false };
     }
-    await applyBulkPrefs(nextPrefs, 'Failed to mute notifications');
+    const channelLabel = channel === 'push' ? 'push' : 'email';
+    await applyBulkPrefs(
+      nextPrefs,
+      `Muted ${channelLabel} for every update`,
+      'Failed to mute notifications',
+    );
   }
 
   return (
@@ -247,7 +263,7 @@ export function FairwaySettingsNotifications({
             <Button
               variant="ghost"
               size="sm"
-              onClick={resetDefaults}
+              onClick={() => setResetConfirmOpen(true)}
               disabled={pendingKeys.has(BULK_KEY)}
             >
               Reset defaults
@@ -332,6 +348,23 @@ export function FairwaySettingsNotifications({
           </div>
         </Surface>
       </section>
+
+      {/* Error prevention: Reset defaults discards every per-update channel
+          choice, so gate it behind an explicit confirm. */}
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        title="Reset notification preferences?"
+        message="This replaces every per-update channel choice with the defaults (in-app on, push and email off). This can't be undone."
+        confirmLabel="Reset to defaults"
+        cancelLabel="Cancel"
+        variant="warning"
+        isLoading={pendingKeys.has(BULK_KEY)}
+        onConfirm={() => {
+          setResetConfirmOpen(false);
+          void resetDefaults();
+        }}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
     </div>
   );
 }

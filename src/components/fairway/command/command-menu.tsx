@@ -32,6 +32,10 @@
  * A11y: role="dialog" aria-modal panel, focus moves to the input on open and is
  * restored to the opener on close, body scroll locked while open, Escape closes,
  * scrim click closes, visible green focus ring on every interactive element.
+ * Because we declare aria-modal, we also TRAP Tab/Shift+Tab inside the panel and
+ * mark the rest of the page `inert` while open (matching ModalShell) — without a
+ * trap, focus would escape to background controls while the UI claims modality
+ * (WCAG 2.4.3 + 4.1.2).
  * ============================================================================
  */
 
@@ -251,6 +255,7 @@ export function CommandMenu({
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   // Premium scroll-edge fade: a long results list bleeds top/bottom into the
   // glass instead of hard-cutting (Raycast/Spotlight feel). No fade when short.
@@ -272,16 +277,34 @@ export function CommandMenu({
     return () => window.removeEventListener('keydown', onKey);
   }, [bindShortcut, open, onOpenChange]);
 
-  // Scroll-lock + focus capture/restore while open.
+  // Scroll-lock + focus capture/restore + background-inert while open.
   useEffect(() => {
     if (!open) return;
     openerRef.current = (document.activeElement as HTMLElement) ?? null;
     const { overflow } = document.body.style;
     document.body.style.overflow = 'hidden';
+    // Isolate the background: mark every top-level body child OTHER than our
+    // portal root `inert` (removes it from tab order + the a11y tree) so a
+    // declared aria-modal surface actually behaves modally. We portal into
+    // <body>, so our root is a direct body child tagged data-fw-command-root.
+    const inerted: HTMLElement[] = [];
+    Array.from(document.body.children).forEach((el) => {
+      if (
+        el instanceof HTMLElement &&
+        !el.hasAttribute('data-fw-command-root') &&
+        !el.inert
+      ) {
+        el.inert = true;
+        inerted.push(el);
+      }
+    });
     // Defer focus to next frame so the panel is in the DOM.
     const raf = requestAnimationFrame(() => inputRef.current?.focus());
     return () => {
       document.body.style.overflow = overflow;
+      inerted.forEach((el) => {
+        el.inert = false;
+      });
       cancelAnimationFrame(raf);
       // Restore focus to whatever opened the menu.
       openerRef.current?.focus?.();
@@ -332,6 +355,7 @@ export function CommandMenu({
       {open ? (
         <motion.div
           key="fw-command-root"
+          data-fw-command-root=""
           className="fixed inset-0 z-[70] flex items-start justify-center"
           // pad from top — palette sits in the upper third (Apple/Raycast feel)
           style={{ paddingTop: 'max(12vh, 4rem)', paddingLeft: '1rem', paddingRight: '1rem' }}
@@ -348,6 +372,7 @@ export function CommandMenu({
 
           {/* Glass panel */}
           <motion.div
+            ref={panelRef}
             className="relative w-full max-w-xl"
             {...motionProps.panel}
             transition={reduceMotion ? { duration: 0.18 } : undefined}
@@ -358,6 +383,31 @@ export function CommandMenu({
               if (e.key === 'Escape') {
                 e.preventDefault();
                 close();
+                return;
+              }
+              // Trap Tab/Shift+Tab within the panel — cmdk's `loop` only loops
+              // ARROW-key item nav, not Tab, so without this focus would leave
+              // the modal for background controls (WCAG 2.4.3 / 4.1.2).
+              if (e.key === 'Tab') {
+                const focusables = panelRef.current?.querySelectorAll<HTMLElement>(
+                  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',
+                );
+                if (!focusables || focusables.length === 0) {
+                  // Nothing else focusable — keep focus on the input.
+                  e.preventDefault();
+                  inputRef.current?.focus();
+                  return;
+                }
+                const first = focusables[0]!;
+                const last = focusables[focusables.length - 1]!;
+                const active = document.activeElement;
+                if (e.shiftKey && active === first) {
+                  e.preventDefault();
+                  last.focus();
+                } else if (!e.shiftKey && active === last) {
+                  e.preventDefault();
+                  first.focus();
+                }
               }
             }}
           >

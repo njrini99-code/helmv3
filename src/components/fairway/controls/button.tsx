@@ -88,7 +88,11 @@ const variantStyles: Record<FwButtonVariant, string> = {
 };
 
 const sizeStyles: Record<FwButtonSize, string> = {
-  sm: 'min-h-[36px] px-3.5 py-1.5 text-[13px] leading-4',
+  // `sm` is dense (36px) on fine pointers (mouse/trackpad), but expands to the
+  // WCAG 2.2 / DoD-required >=44px touch target on coarse pointers (touch). This
+  // keeps the compact triage/toolbar density on desktop while every primary
+  // action stays tappable on mobile without a layout rewrite.
+  sm: 'min-h-[36px] [@media(pointer:coarse)]:min-h-[44px] px-3.5 py-1.5 text-[13px] leading-4',
   md: 'min-h-[44px] px-5 py-2.5 text-[15px] leading-6',
   lg: 'min-h-[48px] px-6 py-3 text-[15px] leading-6',
 };
@@ -224,9 +228,10 @@ const iconVariantStyles: Record<FwIconButtonVariant, string> = {
   ),
 };
 
-// All sizes meet the WCAG 2.2 >=24px (and the spec's preferred 40px+) touch target.
+// All sizes clear the WCAG 2.2 >=24px minimum; on coarse pointers `sm` expands
+// to the DoD-preferred >=44px touch target (md/lg already exceed it).
 const iconSizeStyles: Record<FwIconButtonSize, string> = {
-  sm: 'h-9 w-9 [&_svg]:h-4 [&_svg]:w-4',
+  sm: 'h-9 w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 [&_svg]:h-4 [&_svg]:w-4',
   md: 'h-11 w-11 [&_svg]:h-5 [&_svg]:w-5',
   lg: 'h-12 w-12 [&_svg]:h-5 [&_svg]:w-5',
 };

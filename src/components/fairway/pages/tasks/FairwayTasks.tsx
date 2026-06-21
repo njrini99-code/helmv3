@@ -449,6 +449,17 @@ function formatDueLabel(dateString: string, now: Date | null): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+/* A visible, non-color, non-icon-only reminder label (e.g. "Reminder · Today
+ * 9:00 AM"). Pairs the relative day with the time so the affordance is announced
+ * to screen readers and never relies on the Bell glyph or tone color alone. */
+function formatReminderLabel(dateString: string, now: Date | null): string {
+  const time = new Date(dateString).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  return `Reminder · ${formatDueLabel(dateString, now)} ${time}`;
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * TaskCard — matte Surface row. Honest per-player completion (only when the
  * task actually has assignment rows). Coach sees an expandable per-player
@@ -566,10 +577,10 @@ function FairwayTaskCard({
                     ? 'text-text-secondary'
                     : 'text-warm-800',
               )}
-              title={`Reminder: ${new Date(task.reminder_at).toLocaleString()}`}
               suppressHydrationWarning
             >
               <Bell className="h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+              <span>{formatReminderLabel(task.reminder_at, now)}</span>
             </span>
           )}
           {task.category && (

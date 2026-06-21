@@ -4,8 +4,7 @@ import { useState, useEffect, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { createTeamJoinRequest, getPlayerJoinRequests, cancelJoinRequest } from '@/app/golf/actions/teams';
 import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Surface, Button, Input } from '@/components/fairway';
 import { IconUsers, IconCheck, IconAlertCircle, IconLogout, IconClock, IconX } from '@/components/icons';
 
 interface JoinTeamSectionProps {
@@ -175,44 +174,43 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-200 p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
-          <IconUsers size={20} className="text-primary-600" />
-        </div>
+    <Surface elevation="border" padding="lg">
+      <div className="mb-6 flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-sm bg-surface-sunken text-text-secondary">
+          <IconUsers size={20} aria-hidden />
+        </span>
         <div>
-          <h3 className="font-medium text-warm-900">Team Membership</h3>
-          <p className="text-sm text-warm-500">Request to join your team</p>
+          <h3 className="font-fw-display text-h2 text-text-primary">Team Membership</h3>
+          <p className="font-fw-sans text-body-sm text-text-secondary">Request to join your team</p>
         </div>
       </div>
 
       {/* Current Team Status */}
       {currentTeam ? (
         <div className="mb-6">
-          <div className="flex items-center justify-between p-4 bg-primary-50 border border-primary-200 rounded-xl">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
-                <IconCheck size={20} className="text-white" />
-              </div>
-              <div>
-                <p className="font-medium text-primary-900">{currentTeam.name}</p>
+          <div className="flex items-center justify-between gap-3 rounded-fw-md border border-accent-500/40 bg-accent-50 p-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-sm bg-accent-700 text-text-on-accent">
+                <IconCheck size={20} aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-fw-sans text-body font-medium text-text-primary">{currentTeam.name}</p>
                 {currentTeam.organization?.name && (
-                  <p className="text-sm text-primary-700">{currentTeam.organization.name}</p>
+                  <p className="truncate font-fw-sans text-body-sm text-text-secondary">{currentTeam.organization.name}</p>
                 )}
               </div>
             </div>
             {!showLeaveConfirm ? (
               <Button
-                variant="ghost"
+                variant="danger"
                 size="sm"
                 onClick={() => setShowLeaveConfirm(true)}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 active:scale-95 transition-colors"
+                leftIcon={<IconLogout size={16} aria-hidden />}
               >
-                <IconLogout size={16} className="mr-1" />
                 Leave
               </Button>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
@@ -222,10 +220,10 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                   Cancel
                 </Button>
                 <Button
+                  variant="danger"
                   size="sm"
                   onClick={handleLeaveTeam}
-                  isLoading={loading}
-                  className="bg-red-600 hover:bg-red-700 active:scale-95 transition-colors"
+                  busy={loading}
                 >
                   Confirm Leave
                 </Button>
@@ -238,21 +236,21 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
           {/* Pending Requests */}
           {!loadingRequests && pendingRequests.length > 0 && (
             <div className="mb-6 space-y-3">
-              <p className="block text-sm font-medium text-warm-700">
+              <p className="block font-fw-sans text-body-sm font-medium text-text-secondary">
                 Pending Requests
               </p>
               {pendingRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-xl"
+                  className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken p-4"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <IconClock size={20} className="text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-amber-900">{request.team.name}</p>
-                      <p className="text-sm text-amber-700" suppressHydrationWarning>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-sm bg-fw-warning-bg text-fw-warning">
+                      <IconClock size={20} aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-fw-sans text-body font-medium text-text-primary">{request.team.name}</p>
+                      <p className="truncate font-fw-sans text-body-sm text-text-secondary" suppressHydrationWarning>
                         {request.team.organization?.name && `${request.team.organization.name} · `}
                         Requested {formatDate(request.created_at)}
                       </p>
@@ -262,21 +260,10 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                     variant="ghost"
                     size="sm"
                     onClick={() => handleCancelRequest(request.id)}
-                    disabled={cancellingId === request.id}
-                    className="text-amber-700 hover:text-amber-800 hover:bg-amber-100 active:bg-amber-200 active:scale-95 transition-colors"
+                    busy={cancellingId === request.id}
+                    leftIcon={<IconX size={16} aria-hidden />}
                   >
-                    {cancellingId === request.id ? (
-                      <span className="flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                        <span className="w-1 h-1 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                        <span className="w-1 h-1 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-                      </span>
-                    ) : (
-                      <>
-                        <IconX size={16} className="mr-1" />
-                        Cancel
-                      </>
-                    )}
+                    Cancel
                   </Button>
                 </div>
               ))}
@@ -286,12 +273,12 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
           {/* Not on a team message */}
           {pendingRequests.length === 0 && (
             <div className="mb-6">
-              <div className="flex items-center gap-3 p-4 bg-warm-50 border border-warm-200 rounded-xl">
-                <IconAlertCircle size={20} className="text-warm-500 flex-shrink-0" />
+              <div className="flex items-center gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken p-4">
+                <IconAlertCircle size={20} className="shrink-0 text-text-tertiary" aria-hidden />
                 <div>
-                  <p className="font-medium text-warm-700">Not on a team yet</p>
-                  <p className="text-sm text-warm-500">
-                    Enter your team's invite code below to request to join.
+                  <p className="font-fw-sans text-body font-medium text-text-primary">Not on a team yet</p>
+                  <p className="font-fw-sans text-body-sm text-text-secondary">
+                    Enter your team&rsquo;s invite code below to request to join.
                   </p>
                 </div>
               </div>
@@ -304,7 +291,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
       {!currentTeam && (
         <form onSubmit={handleRequestJoin} className="space-y-4">
           <div>
-            <label htmlFor={`${uid}-invite-code`} className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor={`${uid}-invite-code`} className="mb-2 block font-fw-sans text-body-sm font-medium text-text-secondary">
               Request to Join a Team
             </label>
             <div className="space-y-3">
@@ -326,9 +313,10 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
               />
               <Button
                 type="submit"
+                variant="primary"
+                fullWidth
                 disabled={!inviteCode.trim() || loading}
-                isLoading={loading}
-                className="w-full bg-primary-600 hover:bg-primary-700 active:scale-95 transition-colors"
+                busy={loading}
               >
                 Request to Join
               </Button>
@@ -336,29 +324,29 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <IconAlertCircle size={16} className="text-red-600 flex-shrink-0" />
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="flex items-center gap-2 rounded-fw-sm border border-fw-danger/30 bg-fw-danger-bg p-3">
+              <IconAlertCircle size={16} className="shrink-0 text-fw-danger" aria-hidden />
+              <p className="font-fw-sans text-body-sm text-fw-danger">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="flex items-center gap-2 p-3 bg-primary-50 border border-primary-200 rounded-lg">
-              <IconCheck size={16} className="text-primary-600 flex-shrink-0" />
-              <p className="text-sm text-primary-600">{success}</p>
+            <div className="flex items-center gap-2 rounded-fw-sm border border-accent-500/40 bg-accent-50 p-3">
+              <IconCheck size={16} className="shrink-0 text-accent-700" aria-hidden />
+              <p className="font-fw-sans text-body-sm text-accent-700">{success}</p>
             </div>
           )}
         </form>
       )}
 
       {/* Help text */}
-      <div className="mt-6 pt-4 border-t border-warm-200">
-        <p className="text-xs text-warm-500">
+      <div className="mt-6 border-t border-border-subtle pt-4">
+        <p className="font-fw-sans text-caption text-text-tertiary">
           {currentTeam
             ? 'You can only be on one team at a time. Leave your current team to join a different one.'
             : 'Your coach will review your request and approve you to join the team. You\'ll be notified when your request is approved.'}
         </p>
       </div>
-    </div>
+    </Surface>
   );
 }

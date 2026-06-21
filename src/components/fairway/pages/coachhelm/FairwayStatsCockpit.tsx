@@ -44,7 +44,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Sparkles, ArrowRight, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronDown, Sparkles, ArrowRight, RotateCw, TrendingDown, TrendingUp } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -53,6 +53,7 @@ import {
   Ribbon,
   type RibbonPoint,
   Surface,
+  Button,
   EmptyState,
   InsufficientData,
   Skeleton,
@@ -367,12 +368,22 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
         setSprayData(null);
       }
 
-      if (
-        detailedRes.status === 'rejected' &&
-        trendRes.status === 'rejected' &&
-        standingRes.status === 'rejected' &&
-        leakRes.status === 'rejected'
-      ) {
+      // ── Real-failure detection (distinct from emptiness) ──────────────────
+      // getDetailedStats / getTrendAnalysis swallow every error and RESOLVE with
+      // empty data, so they can't tell "no rounds" from "backend down". The two
+      // PRIMARY strokes-gained fetches DO report failure honestly: they reject,
+      // or resolve `{ success:false }` on a caught error / access denial (an
+      // empty player resolves `{ success:true, data:[] }`). Treat a failure of
+      // BOTH primaries as a genuine backend failure → render the error surface
+      // (explain + retry), never the "More rounds needed" empty.
+      const standingFailed =
+        standingRes.status === 'rejected' ||
+        (standingRes.status === 'fulfilled' && !standingRes.value.success);
+      const leakFailed =
+        leakRes.status === 'rejected' ||
+        (leakRes.status === 'fulfilled' && !leakRes.value.success);
+
+      if (standingFailed && leakFailed) {
         setLoadError('Failed to load stats. Please try again.');
       }
     } catch {
@@ -464,7 +475,11 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
     !!leakMaps &&
     (leakMaps.putting.some((b) => b.sample_n > 0) ||
       leakMaps.approach.some((b) => b.sample_n > 0));
-  const isColdStart = !loading && !hasStanding && roundsAnalyzed === 0 && !hasLeak;
+  // Cold-start only renders when the fetches genuinely SUCCEEDED with zero data —
+  // never when a real backend failure left the (swallowed-to-empty) state bare.
+  // The error surface owns that case (gated by loadError above).
+  const isColdStart =
+    !loading && !loadError && !hasStanding && roundsAnalyzed === 0 && !hasLeak;
 
   // Scoring-trend ribbon points off the REUSED getTrendAnalysis score series.
   const trendPoints = useMemo<RibbonPoint[]>(() => {
@@ -487,7 +502,21 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
   if (loadError) {
     return (
       <Surface padding="lg" className={className}>
-        <InlineNotice tone="danger" title="Couldn’t load stats">
+        <InlineNotice
+          tone="danger"
+          title="Couldn’t load stats"
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              busy={loading}
+              leftIcon={<RotateCw className="h-4 w-4" aria-hidden />}
+              onClick={() => void loadAll(playerId)}
+            >
+              Try again
+            </Button>
+          }
+        >
           {loadError}
         </InlineNotice>
       </Surface>

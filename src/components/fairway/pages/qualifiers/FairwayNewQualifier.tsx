@@ -78,6 +78,19 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
   const picks = Math.min(Math.max(coachPick ?? 0, 0), total);
   const autoQualify = total - picks;
 
+  // Cross-date validation (mirrors the Zod .refine in golfQualifierSchema).
+  // The window must be coherent: end >= start, and players must confirm in
+  // BEFORE play opens, so the entry deadline cannot fall after the start.
+  // Surface each error inline on its own field rather than as one top error.
+  const endDateError =
+    endDate && startDate && endDate < startDate
+      ? 'End date cannot be before the start date.'
+      : null;
+  const entryDeadlineError =
+    entryDeadline && startDate && entryDeadline > startDate
+      ? 'Entry deadline must be on or before the start date.'
+      : null;
+
   const toggle = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
   const selectAll = () => setSelected(players.map((p) => p.id));
@@ -92,6 +105,12 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
     }
     if (!startDate) {
       setError('Pick a start date.');
+      return;
+    }
+    // Block incoherent windows up front — the inline field errors already
+    // explain what's wrong, so keep the top notice quiet here.
+    if (endDateError || entryDeadlineError) {
+      setError('Fix the highlighted dates before creating the qualifier.');
       return;
     }
     setLoading(true);
@@ -176,23 +195,36 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                   required
                 />
               </FormField>
-              <FormField label="End date" showOptional help="For multi-day qualifiers.">
+              <FormField
+                label="End date"
+                showOptional
+                help="For multi-day qualifiers."
+                error={endDateError ?? undefined}
+              >
                 <Input
                   type="date"
                   name="endDate"
                   min={startDate || today}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
+                  aria-invalid={endDateError ? true : undefined}
                 />
               </FormField>
             </div>
-            <FormField label="Entry deadline" showOptional help="When players must confirm in.">
+            <FormField
+              label="Entry deadline"
+              showOptional
+              help="When players must confirm in — on or before the start date."
+              error={entryDeadlineError ?? undefined}
+            >
               <Input
                 type="date"
                 name="entryDeadline"
                 min={today}
+                max={startDate || undefined}
                 value={entryDeadline}
                 onChange={(e) => setEntryDeadline(e.target.value)}
+                aria-invalid={entryDeadlineError ? true : undefined}
               />
             </FormField>
           </div>

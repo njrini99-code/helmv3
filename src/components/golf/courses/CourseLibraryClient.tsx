@@ -39,6 +39,12 @@ export function CourseLibraryClient({
   const trimmed = query.trim();
   const searching = trimmed.length > 0;
 
+  // Saved-course state (pin + default tee) keyed by course id, for the detail drawer.
+  const savedById = useMemo(
+    () => new Map(savedCourses.map((s) => [s.course_id, s])),
+    [savedCourses],
+  );
+
   const filtered = useMemo(() => {
     if (!searching) return courses;
     const nq = normalizeName(trimmed);
@@ -173,6 +179,7 @@ export function CourseLibraryClient({
         onOpenChange={(o) => !o && setSelectedCourseId(null)}
         canManageTeam={canManageTeam}
         savedCourseIds={new Set(savedCourses.map((s) => s.course_id))}
+        savedById={savedById}
         onChanged={refresh}
       />
 

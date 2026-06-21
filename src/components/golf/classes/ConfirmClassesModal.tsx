@@ -119,20 +119,20 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         aria-labelledby="confirm-classes-title"
       >
         {/* Top accent bar */}
-        <div className="h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-teal-500" />
+        <div className="h-1 bg-gradient-to-r from-accent-500 via-accent-400 to-accent-700" />
 
         {/* Header */}
         <div className="px-6 pt-3 pb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-                <IconSparkles size={20} className="text-primary-600" />
+              <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center">
+                <IconSparkles size={20} className="text-accent-700" />
               </div>
               <div>
-                <DrawerTitle id="confirm-classes-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
+                <DrawerTitle id="confirm-classes-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
                   Review Your Schedule
                 </DrawerTitle>
-                <p className="text-sm text-warm-500 mt-0.5">
+                <p className="text-sm text-text-tertiary mt-0.5">
                   We found {classes.length} class{classes.length !== 1 ? 'es' : ''} — review and confirm
                 </p>
               </div>
@@ -140,7 +140,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
             <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
-              className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors -mt-1 -mr-1"
+              className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors -mt-1 -mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
             >
               <IconX size={18} />
             </IconButton>
@@ -149,19 +149,19 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
           {/* Quick Stats */}
           {classes.length > 0 && (
             <div className="flex items-center gap-3 mt-4">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-warm-50 text-sm">
-                <span className="text-warm-400 font-medium">{classes.length}</span>
-                <span className="text-warm-500">classes</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-sunken text-sm">
+                <span className="text-text-secondary font-medium">{classes.length}</span>
+                <span className="text-text-tertiary">classes</span>
               </div>
               {stats.totalCredits > 0 && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-warm-50 text-sm">
-                  <span className="text-warm-400 font-medium">{stats.totalCredits}</span>
-                  <span className="text-warm-500">credits</span>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-sunken text-sm">
+                  <span className="text-text-secondary font-medium">{stats.totalCredits}</span>
+                  <span className="text-text-tertiary">credits</span>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-warm-50 text-sm">
-                <span className="text-warm-400 font-medium">{stats.daysPerWeek}</span>
-                <span className="text-warm-500">days/week</span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-sunken text-sm">
+                <span className="text-text-secondary font-medium">{stats.daysPerWeek}</span>
+                <span className="text-text-tertiary">days/week</span>
               </div>
               {stats.withTime < classes.length && (
                 <Badge variant="warning" size="sm">
@@ -173,17 +173,17 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         </div>
 
         {/* Divider */}
-        <div className="h-px bg-warm-100 mx-6" />
+        <div className="h-px bg-border-subtle mx-6" />
 
         {/* Class List */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {classes.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-3">
-                <IconCalendar size={24} className="text-warm-400" />
+              <div className="w-12 h-12 rounded-2xl bg-surface-sunken flex items-center justify-center mx-auto mb-3">
+                <IconCalendar size={24} className="text-text-tertiary" />
               </div>
-              <p className="text-warm-500 font-medium">No classes found</p>
-              <p className="text-sm text-warm-400 mt-1">Try pasting your schedule text again</p>
+              <p className="text-text-secondary font-medium">No classes found</p>
+              <p className="text-sm text-text-tertiary mt-1">Try pasting your schedule text again</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -193,8 +193,8 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                   className={cn(
                     'rounded-xl border transition-all duration-200',
                     editingIndex === index
-                      ? 'border-primary-400 ring-2 ring-primary-400/20 bg-white shadow-md'
-                      : 'border-warm-150 bg-cream-100/68 hover:bg-white hover:shadow-sm hover:border-warm-200'
+                      ? 'border-accent-500 ring-2 ring-accent-500/20 bg-surface shadow-md'
+                      : 'border-border-subtle bg-surface-sunken hover:bg-surface hover:shadow-sm hover:border-border-strong'
                   )}
                 >
                   {editingIndex === index ? (
@@ -203,7 +203,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       {/* Course code + name */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         <div>
-                          <label htmlFor={`${uid}-${index}-course-code`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Course Code</label>
+                          <label htmlFor={`${uid}-${index}-course-code`} className="block text-xs font-medium text-text-tertiary mb-1.5 uppercase tracking-wider">Course Code</label>
                           <Input
                             id={`${uid}-${index}-course-code`}
                             value={cls.course_code}
@@ -213,7 +213,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div className="col-span-2">
-                          <label htmlFor={`${uid}-${index}-course-name`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Course Name</label>
+                          <label htmlFor={`${uid}-${index}-course-name`} className="block text-xs font-medium text-text-tertiary mb-1.5 uppercase tracking-wider">Course Name</label>
                           <Input
                             id={`${uid}-${index}-course-name`}
                             value={cls.course_name}
@@ -226,7 +226,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
 
                       {/* Days */}
                       <div>
-                        <p className="block text-xs font-medium text-warm-500 mb-2 uppercase tracking-wider">Meeting Days</p>
+                        <p className="block text-xs font-medium text-text-tertiary mb-2 uppercase tracking-wider">Meeting Days</p>
                         <div className="flex gap-2">
                           {DAYS.map(day => (
                             <Button variant="ghost"
@@ -236,8 +236,8 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                               className={cn(
                                 'flex-1 h-10 rounded-lg text-xs font-medium transition-all duration-150',
                                 cls.days.includes(day.abbrev)
-                                  ? 'text-white shadow-sm'
-                                  : 'bg-warm-50 text-warm-400 hover:bg-warm-100 active:bg-warm-200 hover:text-warm-600'
+                                  ? 'text-text-on-accent shadow-sm'
+                                  : 'bg-surface-sunken text-text-tertiary hover:bg-surface-sunken/80 active:bg-surface-sunken hover:text-text-secondary'
                               )}
                               style={cls.days.includes(day.abbrev) ? { backgroundColor: cls.color || DEFAULT_CLASS_COLOR } : undefined}
                             >
@@ -250,7 +250,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       {/* Time + Location + Instructor */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
-                          <label htmlFor={`${uid}-${index}-start`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Start</label>
+                          <label htmlFor={`${uid}-${index}-start`} className="block text-xs font-medium text-text-tertiary mb-1.5 uppercase tracking-wider">Start</label>
                           <Input
                             id={`${uid}-${index}-start`}
                             type="time"
@@ -260,7 +260,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div>
-                          <label htmlFor={`${uid}-${index}-end`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">End</label>
+                          <label htmlFor={`${uid}-${index}-end`} className="block text-xs font-medium text-text-tertiary mb-1.5 uppercase tracking-wider">End</label>
                           <Input
                             id={`${uid}-${index}-end`}
                             type="time"
@@ -270,7 +270,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div>
-                          <label htmlFor={`${uid}-${index}-location`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Location</label>
+                          <label htmlFor={`${uid}-${index}-location`} className="block text-xs font-medium text-text-tertiary mb-1.5 uppercase tracking-wider">Location</label>
                           <Input
                             id={`${uid}-${index}-location`}
                             value={cls.location || `${cls.building || ''} ${cls.room || ''}`.trim()}
@@ -280,7 +280,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                           />
                         </div>
                         <div>
-                          <label htmlFor={`${uid}-${index}-professor`} className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Professor</label>
+                          <label htmlFor={`${uid}-${index}-professor`} className="block text-xs font-medium text-text-tertiary mb-1.5 uppercase tracking-wider">Professor</label>
                           <Input
                             id={`${uid}-${index}-professor`}
                             value={cls.instructor}
@@ -324,38 +324,38 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                               {cls.course_code}
                             </span>
                           )}
-                          <span className="text-warm-900 font-medium text-sm truncate">
+                          <span className="text-text-primary font-medium text-sm truncate">
                             {cls.course_name || 'Untitled Class'}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-3 flex-wrap">
                           {cls.days.length > 0 && (
-                            <span className="flex items-center gap-1 text-xs text-warm-500">
-                              <IconCalendar size={12} className="text-warm-400" />
+                            <span className="flex items-center gap-1 text-xs text-text-tertiary">
+                              <IconCalendar size={12} className="text-text-tertiary" />
                               <span className="font-medium">{formatDaysDisplay(cls.days)}</span>
                             </span>
                           )}
                           {cls.start_time && cls.end_time && (
-                            <span className="flex items-center gap-1 text-xs text-warm-500">
-                              <IconClock size={12} className="text-warm-400" />
+                            <span className="flex items-center gap-1 text-xs text-text-tertiary">
+                              <IconClock size={12} className="text-text-tertiary" />
                               {formatTimeDisplay(cls.start_time)} – {formatTimeDisplay(cls.end_time)}
                             </span>
                           )}
                           {(cls.location || cls.building) && (
-                            <span className="flex items-center gap-1 text-xs text-warm-500">
-                              <IconMapPin size={12} className="text-warm-400" />
+                            <span className="flex items-center gap-1 text-xs text-text-tertiary">
+                              <IconMapPin size={12} className="text-text-tertiary" />
                               {cls.location || `${cls.building} ${cls.room}`.trim()}
                             </span>
                           )}
                           {cls.instructor && (
-                            <span className="flex items-center gap-1 text-xs text-warm-400">
+                            <span className="flex items-center gap-1 text-xs text-text-tertiary">
                               <IconUser size={12} />
                               {cls.instructor}
                             </span>
                           )}
                           {cls.credits && (
-                            <span className="text-xs text-warm-400">{cls.credits} cr</span>
+                            <span className="text-xs text-text-tertiary">{cls.credits} cr</span>
                           )}
                         </div>
 
@@ -363,12 +363,12 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                         {(!cls.start_time || cls.days.length === 0) && (
                           <div className="flex items-center gap-2 mt-1.5">
                             {!cls.start_time && (
-                              <span className="text-micro font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                              <span className="text-micro font-medium text-fw-warning bg-fw-warning-bg px-1.5 py-0.5 rounded">
                                 Missing time
                               </span>
                             )}
                             {cls.days.length === 0 && (
-                              <span className="text-micro font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                              <span className="text-micro font-medium text-fw-warning bg-fw-warning-bg px-1.5 py-0.5 rounded">
                                 Missing days
                               </span>
                             )}
@@ -380,14 +380,14 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         <IconButton variant="primary" aria-label="Edit"
                           onClick={() => handleEdit(index)}
-                          className="p-2 text-warm-300 hover:text-primary-600 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-all duration-150"
+                          className="p-2 text-text-tertiary hover:text-accent-700 hover:bg-accent-500/10 active:bg-accent-500/15 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
                           title="Edit class"
                         >
                           <IconPencil size={16} />
                         </IconButton>
                         <IconButton variant="default" aria-label="Delete"
                           onClick={() => handleDelete(index)}
-                          className="p-2 text-warm-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-150"
+                          className="p-2 text-text-tertiary hover:text-fw-danger hover:bg-fw-danger-bg rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
                           title="Remove class"
                         >
                           <IconTrash size={16} />
@@ -402,12 +402,12 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         </div>
 
         {/* Footer */}
-        <div className="border-t border-warm-100 bg-warm-50/80 backdrop-blur-sm">
+        <div className="border-t border-border-subtle bg-surface-sunken/80 backdrop-blur-sm">
           {/* Semester Start Date */}
           <div className="px-6 pt-4 pb-3">
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                <label htmlFor={`${uid}-semester-start`} className="block text-xs font-medium text-warm-700 mb-1.5 uppercase tracking-wider">
+                <label htmlFor={`${uid}-semester-start`} className="block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wider">
                   Semester Start Date
                 </label>
                 <Input
@@ -415,11 +415,11 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                   type="date"
                   value={semesterStartDate}
                   onChange={(e) => setSemesterStartDate(e.target.value)}
-                  className="max-w-[200px] text-sm h-9 bg-white"
+                  className="max-w-[200px] text-sm h-9 bg-surface"
                   required
                 />
               </div>
-              <p className="text-xs text-warm-400 max-w-[240px]">
+              <p className="text-xs text-text-tertiary max-w-[240px]">
                 Classes will repeat weekly on the calendar from this date through the end of the semester.
               </p>
             </div>
@@ -427,7 +427,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
 
           {/* Action Bar */}
           <div className="px-6 pb-[max(1rem,env(safe-area-inset-bottom,1rem))] sm:pb-4 flex items-center justify-between">
-            <p className="text-xs text-warm-400">
+            <p className="text-xs text-text-tertiary">
               {classes.length} class{classes.length !== 1 ? 'es' : ''} will sync to your calendar
             </p>
             <div className="flex items-center gap-2">

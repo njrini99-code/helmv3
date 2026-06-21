@@ -429,6 +429,7 @@ export function FairwayDocuments({
           team_id: teamId,
           title: pf.title,
           file_url: uploadResult.file_url!,
+          storage_path: uploadResult.storage_path,
           file_type: pf.file.type,
           file_size: pf.file.size,
           category: uploadCategory || undefined,

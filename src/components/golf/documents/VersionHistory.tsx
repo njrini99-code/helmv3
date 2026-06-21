@@ -36,13 +36,17 @@ export function VersionHistory({
   onReverted,
   className,
 }: VersionHistoryProps) {
-  const [revertingTo, setRevertingTo] = useState<number | null>(null);
+  // Hold the full version being reverted to: revertToVersion() matches on the
+  // version's UUID (golf_document_versions.id), while the dialog copy shows the
+  // human-friendly version_number. Tracking only the number broke revert because
+  // String(version_number) was passed where a uuid was required.
+  const [revertingTo, setRevertingTo] = useState<DocumentVersion | null>(null);
   const [isReverting, setIsReverting] = useState(false);
   const [revertError, setRevertError] = useState<string | null>(null);
   const [showRevertDialog, setShowRevertDialog] = useState(false);
 
-  const handleRevertClick = useCallback((versionNumber: number) => {
-    setRevertingTo(versionNumber);
+  const handleRevertClick = useCallback((version: DocumentVersion) => {
+    setRevertingTo(version);
     setShowRevertDialog(true);
     setRevertError(null);
   }, []);
@@ -54,7 +58,7 @@ export function VersionHistory({
     setRevertError(null);
 
     try {
-      const { success, error } = await revertToVersion(document.id, String(revertingTo));
+      const { success, error } = await revertToVersion(document.id, revertingTo.id);
 
       if (error) {
         setRevertError(error);
@@ -72,6 +76,8 @@ export function VersionHistory({
       setIsReverting(false);
     }
   }, [document.id, revertingTo, onReverted]);
+
+  const revertingToNumber = revertingTo?.version_number ?? null;
 
   const sortedVersions = [...versions].sort((a, b) => b.version_number - a.version_number);
   // Use the latest version number as current since golf_documents doesn't have current_version column
@@ -196,7 +202,7 @@ export function VersionHistory({
                               variant="ghost"
                               size="sm"
                               className="px-2"
-                              onClick={() => handleRevertClick(version.version_number)}
+                              onClick={() => handleRevertClick(version)}
                               title="Revert to this version"
                             >
                               <RotateCcwIcon className="h-4 w-4" />
@@ -223,13 +229,13 @@ export function VersionHistory({
         open={showRevertDialog}
         onCancel={() => setShowRevertDialog(false)}
         onConfirm={handleConfirmRevert}
-        title={`Revert to Version ${revertingTo}?`}
+        title={`Revert to Version ${revertingToNumber}?`}
         message={
           revertError
             ? `${revertError}`
-            : `This will create a new version based on version ${revertingTo}. The current version will not be deleted - you can always revert back.`
+            : `This will create a new version based on version ${revertingToNumber}. The current version will not be deleted - you can always revert back.`
         }
-        confirmLabel={`Revert to v${revertingTo}`}
+        confirmLabel={`Revert to v${revertingToNumber}`}
         cancelLabel="Cancel"
         variant="warning"
         isLoading={isReverting}

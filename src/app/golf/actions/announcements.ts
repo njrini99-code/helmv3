@@ -25,6 +25,29 @@ import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types
 import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/**
+ * Hard bound on the announcements feed (P275). PostgREST hard-caps any query at
+ * 1000 rows, so an unbounded `.select()` on a long-lived team would silently
+ * truncate at row 1000 in driver-order — corrupting recentCount / totals. We
+ * cap the feed at the 200 most-recent (newest-first) so the result is bounded
+ * AND deterministic: the rows shown are always the freshest, and "this week"
+ * recency is unaffected (recent rows always sort to the top).
+ */
+const ANNOUNCEMENTS_FEED_LIMIT = 200;
+
+/**
+ * Defensive cap on the per-announcement junction fan-out reads (recipients /
+ * acks / tasks / docs / assignments). With the feed bounded to 200 rows these
+ * `.in()` reads are already small for realistic teams, but an explicit limit
+ * keeps us honestly inside the 1000-row PostgREST cap at 10x data instead of
+ * silently truncating mid-set.
+ */
+const ANNOUNCEMENTS_FANOUT_LIMIT = 1000;
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -350,12 +373,15 @@ export async function getAnnouncementsWithMeta(
       return { success: false, error: 'Not authorized for this team' };
     }
 
-    // Fetch all announcements for this team
+    // Fetch the most-recent announcements for this team. Bounded (P275): an
+    // unbounded select silently truncates at PostgREST's 1000-row cap in
+    // driver-order; the .limit() makes the cut deterministic (freshest first).
     const { data: announcements, error } = await supabase
       .from('golf_announcements')
       .select('*')
       .eq('team_id', teamId)
-      .order('published_at', { ascending: false });
+      .order('published_at', { ascending: false })
+      .limit(ANNOUNCEMENTS_FEED_LIMIT);
 
     if (error) return { success: false, error: 'Failed to load announcements' };
     if (!announcements || announcements.length === 0) {
@@ -364,33 +390,37 @@ export async function getAnnouncementsWithMeta(
 
     const announcementIds = announcements.map(a => a.id);
 
-    // Fetch all recipients for these announcements
+    // Fetch all recipients for these announcements (P275: bounded fan-out)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: allRecipients } = await (supabase as any)
       .from('golf_announcement_recipients')
       .select('announcement_id, player_id')
-      .in('announcement_id', announcementIds) as { data: Array<{ announcement_id: string; player_id: string }> | null };
+      .in('announcement_id', announcementIds)
+      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; player_id: string }> | null };
 
-    // Fetch all acknowledgements
+    // Fetch all acknowledgements (P275: bounded fan-out)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: allAcks } = await (supabase as any)
       .from('golf_announcement_acknowledgements')
       .select('announcement_id, player_id')
-      .in('announcement_id', announcementIds) as { data: Array<{ announcement_id: string; player_id: string }> | null };
+      .in('announcement_id', announcementIds)
+      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; player_id: string }> | null };
 
-    // Fetch task counts via announcement_tasks
+    // Fetch task counts via announcement_tasks (P275: bounded fan-out)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: allAnnTasks } = await (supabase as any)
       .from('golf_announcement_tasks')
       .select('announcement_id, task_id')
-      .in('announcement_id', announcementIds) as { data: Array<{ announcement_id: string; task_id: string }> | null };
+      .in('announcement_id', announcementIds)
+      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; task_id: string }> | null };
 
-    // Fetch document counts
+    // Fetch document counts (P275: bounded fan-out)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: allAnnDocs } = await (supabase as any)
       .from('golf_announcement_documents')
       .select('announcement_id')
-      .in('announcement_id', announcementIds) as { data: Array<{ announcement_id: string }> | null };
+      .in('announcement_id', announcementIds)
+      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string }> | null };
 
     // Fetch task assignment completions if we have linked tasks.
     // F098: scope the read EXPLICITLY by player_id for the player view. A coach
@@ -404,7 +434,8 @@ export async function getAnnouncementsWithMeta(
       let assignmentsQuery = (supabase
         .from('golf_task_assignments' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
         .select('task_id, status')
-        .in('task_id', taskIds));
+        .in('task_id', taskIds)
+        .limit(ANNOUNCEMENTS_FANOUT_LIMIT)); // P275: bounded fan-out
       if (!isCoach && playerId) {
         assignmentsQuery = assignmentsQuery.eq('player_id', playerId);
       }

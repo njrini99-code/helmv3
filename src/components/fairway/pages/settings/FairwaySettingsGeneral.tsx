@@ -1098,29 +1098,43 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   const supabase = createClient();
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // B3/B4: a failed read must surface a retryable error, NOT silently render
+  // the hard-coded defaults below as if they were the team's saved settings.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [scoringFormat, setScoringFormat] = useState('stroke_play');
   const [handicapSystem, setHandicapSystem] = useState('usga');
   const [defaultTees, setDefaultTees] = useState('blue');
   const [timezone, setTimezone] = useState('America/New_York');
   const [sgBenchmark, setSgBenchmark] = useState<BenchmarkLevel>('scratch');
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await fromUntyped(supabase, 'golf_team_settings')
-        .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
-        .eq('team_id', teamId)
-        .maybeSingle();
+  const load = useCallback(async () => {
+    setLoadFailed(false);
+    const { data, error } = await fromUntyped(supabase, 'golf_team_settings')
+      .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
+      .eq('team_id', teamId)
+      .maybeSingle();
 
-      if (data) {
-        setScoringFormat(data.scoring_format || 'stroke_play');
-        setHandicapSystem(data.handicap_system || 'usga');
-        setDefaultTees(data.default_tees || 'blue');
-        setTimezone(data.timezone || 'America/New_York');
-        setSgBenchmark((data.sg_benchmark_level as BenchmarkLevel) || 'scratch');
-      }
+    // A missing row (no error, data === null) is legitimate — defaults stand in
+    // as the first-time setup state. A real query error is NOT — flag it.
+    if (error) {
+      setLoadFailed(true);
       setLoaded(true);
-    })();
+      return;
+    }
+
+    if (data) {
+      setScoringFormat(data.scoring_format || 'stroke_play');
+      setHandicapSystem(data.handicap_system || 'usga');
+      setDefaultTees(data.default_tees || 'blue');
+      setTimezone(data.timezone || 'America/New_York');
+      setSgBenchmark((data.sg_benchmark_level as BenchmarkLevel) || 'scratch');
+    }
+    setLoaded(true);
   }, [teamId, supabase]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -1150,6 +1164,26 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Scoring & format">
         <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+      </SectionCard>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <SectionCard icon={<IconUser size={18} aria-hidden />} title="Scoring & format">
+        <div className="flex flex-col items-start gap-3">
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            Couldn&rsquo;t load your scoring &amp; format settings.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconRefresh size={16} aria-hidden />}
+            onClick={() => void load()}
+          >
+            Retry
+          </Button>
+        </div>
       </SectionCard>
     );
   }
@@ -1366,6 +1400,9 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
   const activeTeamId = golfUser.teamId ?? null;
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // B3/B4: a failed team/org read must surface a retryable error, never empty
+  // inputs that masquerade as a team with no name/season/organization.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
   const [teamName, setTeamName] = useState('');
   const [season, setSeason] = useState('');
@@ -1376,44 +1413,58 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
   const [division, setDivision] = useState('');
   const [conference, setConference] = useState('');
 
-  useEffect(() => {
-    (async () => {
-      if (!activeTeamId) {
-        setLoaded(true);
-        return;
-      }
+  const load = useCallback(async () => {
+    setLoadFailed(false);
+    if (!activeTeamId) {
+      setLoaded(true);
+      return;
+    }
 
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id, name, season, organization_id')
-        .eq('id', activeTeamId)
-        .maybeSingle();
+    const { data: team, error: teamError } = await supabase
+      .from('golf_teams')
+      .select('id, name, season, organization_id')
+      .eq('id', activeTeamId)
+      .maybeSingle();
 
-      if (team) {
-        setTeamId(team.id);
-        setTeamName(team.name || '');
-        setSeason(team.season || '');
-        setOrganizationId(team.organization_id);
+    if (teamError) {
+      setLoadFailed(true);
+      setLoaded(true);
+      return;
+    }
 
-        if (team.organization_id) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: org } = await (supabase as any)
-            .from('organizations')
-            .select('name, location_city, location_state, division, conference')
-            .eq('id', team.organization_id)
-            .maybeSingle();
-          if (org) {
-            setOrgName(org.name || '');
-            setCity(org.location_city || '');
-            setState(org.location_state || '');
-            setDivision(org.division || '');
-            setConference(org.conference || '');
-          }
+    if (team) {
+      setTeamId(team.id);
+      setTeamName(team.name || '');
+      setSeason(team.season || '');
+      setOrganizationId(team.organization_id);
+
+      if (team.organization_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: org, error: orgError } = await (supabase as any)
+          .from('organizations')
+          .select('name, location_city, location_state, division, conference')
+          .eq('id', team.organization_id)
+          .maybeSingle();
+        if (orgError) {
+          setLoadFailed(true);
+          setLoaded(true);
+          return;
+        }
+        if (org) {
+          setOrgName(org.name || '');
+          setCity(org.location_city || '');
+          setState(org.location_state || '');
+          setDivision(org.division || '');
+          setConference(org.conference || '');
         }
       }
-      setLoaded(true);
-    })();
+    }
+    setLoaded(true);
   }, [supabase, activeTeamId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const handleSave = async () => {
     if (!teamId || !teamName.trim()) {
@@ -1461,6 +1512,26 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Team settings">
         <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+      </SectionCard>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <SectionCard icon={<IconUser size={18} aria-hidden />} title="Team settings">
+        <div className="flex flex-col items-start gap-3">
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            Couldn&rsquo;t load your team settings.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconRefresh size={16} aria-hidden />}
+            onClick={() => void load()}
+          >
+            Retry
+          </Button>
+        </div>
       </SectionCard>
     );
   }
@@ -1522,30 +1593,42 @@ export function InviteSettingsPanel() {
   const activeTeamId = golfUser.teamId ?? null;
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // B3/B4: a failed read must surface a retryable error, never an empty
+  // em-dash code that reads as "this team has no invite code".
+  const [loadFailed, setLoadFailed] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [teamId, setTeamId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      if (!activeTeamId) {
-        setLoaded(true);
-        return;
-      }
-
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id, join_code')
-        .eq('id', activeTeamId)
-        .maybeSingle();
-
-      if (team) {
-        setTeamId(team.id);
-        setInviteCode(team.join_code || '');
-      }
+  const load = useCallback(async () => {
+    setLoadFailed(false);
+    if (!activeTeamId) {
       setLoaded(true);
-    })();
+      return;
+    }
+
+    const { data: team, error } = await supabase
+      .from('golf_teams')
+      .select('id, join_code')
+      .eq('id', activeTeamId)
+      .maybeSingle();
+
+    if (error) {
+      setLoadFailed(true);
+      setLoaded(true);
+      return;
+    }
+
+    if (team) {
+      setTeamId(team.id);
+      setInviteCode(team.join_code || '');
+    }
+    setLoaded(true);
   }, [supabase, activeTeamId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const generateNewCode = async () => {
     if (!teamId) return;
@@ -1582,6 +1665,26 @@ export function InviteSettingsPanel() {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Invite settings">
         <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+      </SectionCard>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <SectionCard icon={<IconUser size={18} aria-hidden />} title="Invite settings">
+        <div className="flex flex-col items-start gap-3">
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            Couldn&rsquo;t load your invite settings.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconRefresh size={16} aria-hidden />}
+            onClick={() => void load()}
+          >
+            Retry
+          </Button>
+        </div>
       </SectionCard>
     );
   }

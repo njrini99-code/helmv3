@@ -10,7 +10,13 @@
 //   - Patterns validated by the coach
 //   - Focus areas created / completed
 //
-// Returned in a single chronological feed (occurredAt desc, capped at 50).
+// Returned in a single chronological feed (occurredAt desc). The window is
+// already bounded to 7 days, so the full feed is returned — counts the UI shows
+// are the true total, never a silently-capped number (B4: no data lies). Each
+// per-category query is bounded to PER_QUERY_LIMIT rows; if any branch returns
+// at that ceiling more events may exist beyond the window's loaded set, which we
+// disclose honestly via the `truncated` flag rather than presenting the capped
+// count as definitive.
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
@@ -48,6 +54,11 @@ interface PlayerNameRow {
   first_name: string | null;
   last_name: string | null;
 }
+
+// Per-category row ceiling. Generous relative to a realistic 7-day window so the
+// common case is never truncated; when a single category does hit this ceiling
+// we surface `truncated` rather than under-reporting the count (B4).
+const PER_QUERY_LIMIT = 200;
 
 // ============================================================================
 // HELPERS
@@ -115,6 +126,12 @@ function humanizePatternType(patternType: string | null | undefined): string {
 export async function getWhatsNewForCoach(): Promise<{
   success: boolean;
   items?: WhatsNewItem[];
+  /**
+   * True when at least one per-category query returned at its row ceiling, so
+   * the feed may not include every event in the window. Lets the UI disclose
+   * "showing latest N" instead of presenting the count as the definitive total.
+   */
+  truncated?: boolean;
   error?: string;
 }> {
   const session = await getGolfSessionProfile();
@@ -128,7 +145,7 @@ export async function getWhatsNewForCoach(): Promise<{
   }
 
   if (!coach.organization_id) {
-    return { success: true, items: [] };
+    return { success: true, items: [], truncated: false };
   }
 
   const supabase = await createClient();
@@ -139,7 +156,7 @@ export async function getWhatsNewForCoach(): Promise<{
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (!teamId) {
-      return { success: true, items: [] };
+      return { success: true, items: [], truncated: false };
     }
 
     // Roster — used to scope pattern_validated to team players
@@ -177,7 +194,7 @@ export async function getWhatsNewForCoach(): Promise<{
           .or(`resolved_at.gte.${sinceIso},updated_at.gte.${sinceIso}`),
       )
         .order('updated_at', { ascending: false })
-        .limit(60),
+        .limit(PER_QUERY_LIMIT),
 
       // 2) Insights detected (newly created). Without a visibility filter this
       //    branch had NO lifecycle/engine guard at all, so newly-written
@@ -191,7 +208,7 @@ export async function getWhatsNewForCoach(): Promise<{
           .gte('created_at', sinceIso),
       )
         .order('created_at', { ascending: false })
-        .limit(60),
+        .limit(PER_QUERY_LIMIT),
 
       // 3) Patterns validated within window (scope to team roster)
       teamPlayerIds.length > 0
@@ -202,7 +219,7 @@ export async function getWhatsNewForCoach(): Promise<{
             .gte('validation_date', sinceIso)
             .eq('validated_by_coach', true)
             .order('validation_date', { ascending: false })
-            .limit(60)
+            .limit(PER_QUERY_LIMIT)
         : Promise.resolve({ data: [] as never[], error: null }),
 
       // 4) Focus areas created
@@ -212,7 +229,7 @@ export async function getWhatsNewForCoach(): Promise<{
         .eq('team_id', teamId)
         .gte('created_at', sinceIso)
         .order('created_at', { ascending: false })
-        .limit(60),
+        .limit(PER_QUERY_LIMIT),
 
       // 5) Focus areas completed
       supabase
@@ -221,7 +238,7 @@ export async function getWhatsNewForCoach(): Promise<{
         .eq('team_id', teamId)
         .gte('completed_at', sinceIso)
         .order('completed_at', { ascending: false })
-        .limit(60),
+        .limit(PER_QUERY_LIMIT),
     ]);
 
     // Soft-fail individual branches: log but keep going.
@@ -281,6 +298,16 @@ export async function getWhatsNewForCoach(): Promise<{
     const patternRows = patternsResult.data ?? [];
     const focusCreatedRows = focusCreatedResult.data ?? [];
     const focusCompletedRows = focusCompletedResult.data ?? [];
+
+    // Honesty (B4): if any single category came back at its row ceiling, older
+    // events in the 7-day window may have been dropped — disclose that rather
+    // than letting the UI report the loaded count as the definitive total.
+    const truncated =
+      lifecycleRows.length >= PER_QUERY_LIMIT ||
+      detectedRows.length >= PER_QUERY_LIMIT ||
+      patternRows.length >= PER_QUERY_LIMIT ||
+      focusCreatedRows.length >= PER_QUERY_LIMIT ||
+      focusCompletedRows.length >= PER_QUERY_LIMIT;
 
     // Collect all referenced player ids → one batched name lookup
     const referencedPlayerIds = new Set<string>();
@@ -381,7 +408,10 @@ export async function getWhatsNewForCoach(): Promise<{
 
     items.sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : a.occurredAt > b.occurredAt ? -1 : 0));
 
-    return { success: true, items: items.slice(0, 50) };
+    // No global cap: the 7-day window already bounds the feed, so returning every
+    // assembled item keeps the UI's counts honest (B4). `truncated` carries the
+    // one remaining honesty caveat (a single category hitting PER_QUERY_LIMIT).
+    return { success: true, items, truncated };
   } catch (error) {
     await logServerError(
       `getWhatsNewForCoach failed: ${error instanceof Error ? error.message : String(error)}`,

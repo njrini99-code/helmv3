@@ -37,6 +37,10 @@ export type MessageWithReadStatus = GolfMessage;
 export function useGolfMessages(conversationId: string) {
   const [messages, setMessages] = useState<MessageWithReadStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  // Distinguishes "this thread failed to load" from "this thread is truly empty".
+  // A swallowed query error used to surface as the honest-empty state (P258); the
+  // consumer (MessageThreadPane) reads this to render a recoverable error instead.
+  const [error, setError] = useState<boolean>(false);
   const [otherParticipantLastReadAt, setOtherParticipantLastReadAt] = useState<string | null>(null);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -83,18 +87,31 @@ export function useGolfMessages(conversationId: string) {
   const fetchMessages = useCallback(async () => {
     if (!conversationId) {
       setLoading(false);
+      setError(false);
       return;
     }
 
     setLoading(true);
+    setError(false);
     // Fetch most recent 200 messages (descending for limit), then reverse for display order
-    const { data } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('golf_messages')
       .select('id, conversation_id, sender_id, content, read, created_at, is_deleted, edited_at')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(200);
+
+    // P258: a failed fetch must NOT masquerade as an empty thread. Capture the
+    // error so the thread can render a recoverable error state with Retry; leave
+    // the existing message list untouched so a transient blip doesn't blank a
+    // thread the user was already reading.
+    if (fetchError) {
+      console.error('[useGolfMessages] Failed to load messages:', fetchError);
+      setError(true);
+      setLoading(false);
+      return;
+    }
 
     setMessages(((data || []) as MessageWithReadStatus[]).reverse());
     setLoading(false);
@@ -340,6 +357,7 @@ export function useGolfMessages(conversationId: string) {
   return {
     messages,
     loading,
+    error,
     sendMessage,
     editMessage,
     removeMessage,

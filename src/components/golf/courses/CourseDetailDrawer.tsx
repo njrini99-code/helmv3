@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { cn } from '@/lib/utils';
 import { CourseImage } from './CourseImage';
 import { CourseFormDrawer } from './CourseFormDrawer';
 import { TeeFormDrawer } from './TeeFormDrawer';
@@ -12,10 +13,12 @@ import {
 } from '@/components/icons';
 import {
   getCourseDetail, getTeeWithHoles, saveTeamCourse, unsaveTeamCourse,
-  setCourseImageUrl, removeCourseImage,
+  setCourseImageUrl, removeCourseImage, setTeamCoursePinned, setTeamCourseDefaultTee,
 } from '@/app/golf/actions/course-library';
 import { uploadCourseImage } from '@/lib/golf/upload-course-image';
-import type { GolfCourse, GolfCourseTee, GolfCourseTeeWithHoles } from '@/lib/types/golf-course';
+import type {
+  GolfCourse, GolfCourseTee, GolfCourseTeeWithHoles, GolfTeamSavedCourseWithCourse,
+} from '@/lib/types/golf-course';
 
 export interface CourseDetailDrawerProps {
   courseId: string | null;
@@ -23,6 +26,8 @@ export interface CourseDetailDrawerProps {
   onOpenChange: (open: boolean) => void;
   canManageTeam: boolean;
   savedCourseIds: Set<string>;
+  /** Saved-course rows keyed by course id — supplies pin + default-tee state. */
+  savedById?: Map<string, GolfTeamSavedCourseWithCourse>;
   onChanged?: () => void;
 }
 
@@ -32,7 +37,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 export function CourseDetailDrawer({
-  courseId, open, onOpenChange, canManageTeam, savedCourseIds, onChanged,
+  courseId, open, onOpenChange, canManageTeam, savedCourseIds, savedById, onChanged,
 }: CourseDetailDrawerProps) {
   const { showToast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -44,6 +49,19 @@ export function CourseDetailDrawer({
   const [pending, startTransition] = useTransition();
 
   const isSaved = courseId ? savedCourseIds.has(courseId) : false;
+  const savedRow = courseId ? savedById?.get(courseId) : undefined;
+
+  // Optimistic mirrors of the saved-course state so pin/default-tee feel instant;
+  // they re-sync to the server row whenever the drawer (re)opens on a course.
+  const [pinned, setPinned] = useState(false);
+  const [defaultTeeId, setDefaultTeeId] = useState<string | null>(null);
+  const [pinPending, setPinPending] = useState(false);
+  const [defaultTeePending, setDefaultTeePending] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPinned(savedRow?.pinned ?? false);
+    setDefaultTeeId(savedRow?.default_tee_id ?? null);
+  }, [savedRow]);
 
   const reload = async (id: string) => {
     const d = await getCourseDetail(id);
@@ -96,6 +114,44 @@ export function CourseDetailDrawer({
       if (!res.success) { showToast(res.error, 'error'); return; }
       showToast(isSaved ? 'Removed from team library' : 'Saved to team library', 'success');
       onChanged?.();
+    });
+  };
+
+  const handleTogglePin = () => {
+    if (!courseId) return;
+    const next = !pinned;
+    setPinned(next); // optimistic
+    setPinPending(true);
+    startTransition(async () => {
+      const res = await setTeamCoursePinned(courseId, next);
+      if (!res.success) {
+        setPinned(!next); // roll back
+        showToast(res.error, 'error');
+      } else {
+        showToast(next ? 'Pinned to the top' : 'Unpinned', 'success');
+        onChanged?.();
+      }
+      setPinPending(false);
+    });
+  };
+
+  const handleSetDefaultTee = (teeId: string) => {
+    if (!courseId) return;
+    // Toggle off if it's already the default.
+    const next = defaultTeeId === teeId ? null : teeId;
+    const prev = defaultTeeId;
+    setDefaultTeeId(next); // optimistic
+    setDefaultTeePending(teeId);
+    startTransition(async () => {
+      const res = await setTeamCourseDefaultTee(courseId, next);
+      if (!res.success) {
+        setDefaultTeeId(prev); // roll back
+        showToast(res.error, 'error');
+      } else {
+        showToast(next ? 'Set as team default tee' : 'Cleared default tee', 'success');
+        onChanged?.();
+      }
+      setDefaultTeePending(null);
     });
   };
 
@@ -187,9 +243,25 @@ export function CourseDetailDrawer({
                     variant={isSaved ? 'secondary' : 'primary'}
                     size="sm"
                     onClick={handleToggleSave}
-                    isLoading={pending}
+                    isLoading={pending && !pinPending && defaultTeePending === null}
                   >
                     {isSaved ? <><IconCheck size={14} aria-hidden /> Saved</> : <><IconStar size={14} aria-hidden /> Save to team</>}
+                  </Button>
+                )}
+                {canManageTeam && course && isSaved && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleTogglePin}
+                    isLoading={pinPending}
+                    aria-pressed={pinned}
+                  >
+                    <IconStar
+                      size={14}
+                      aria-hidden
+                      className={pinned ? 'text-primary-600' : undefined}
+                    />
+                    {pinned ? 'Pinned' : 'Pin to top'}
                   </Button>
                 )}
                 {course && (
@@ -243,7 +315,14 @@ export function CourseDetailDrawer({
                   <ul className="space-y-2">
                     {tees.map((tee) => (
                       <li key={tee.id}>
-                        <TeeRow tee={tee} onEdit={() => handleEditTee(tee.id)} />
+                        <TeeRow
+                          tee={tee}
+                          onEdit={() => handleEditTee(tee.id)}
+                          canManageTeam={canManageTeam && isSaved}
+                          isDefault={defaultTeeId === tee.id}
+                          settingDefault={defaultTeePending === tee.id}
+                          onSetDefault={() => handleSetDefaultTee(tee.id)}
+                        />
                       </li>
                     ))}
                   </ul>
@@ -286,7 +365,16 @@ export function CourseDetailDrawer({
   );
 }
 
-function TeeRow({ tee, onEdit }: { tee: GolfCourseTee; onEdit: () => void }) {
+function TeeRow({
+  tee, onEdit, canManageTeam = false, isDefault = false, settingDefault = false, onSetDefault,
+}: {
+  tee: GolfCourseTee;
+  onEdit: () => void;
+  canManageTeam?: boolean;
+  isDefault?: boolean;
+  settingDefault?: boolean;
+  onSetDefault?: () => void;
+}) {
   const cat = tee.category ? CATEGORY_LABEL[tee.category] ?? tee.category : null;
   const facts = [
     typeof tee.total_par === 'number' ? `Par ${tee.total_par}` : null,
@@ -296,7 +384,12 @@ function TeeRow({ tee, onEdit }: { tee: GolfCourseTee; onEdit: () => void }) {
   ].filter(Boolean);
 
   return (
-    <div className="flex items-center gap-3 rounded-fw-md border border-border-subtle bg-surface px-4 py-3">
+    <div
+      className={cn(
+        'flex items-center gap-3 rounded-fw-md border bg-surface px-4 py-3',
+        isDefault ? 'border-primary-300 ring-1 ring-primary-200' : 'border-border-subtle',
+      )}
+    >
       <span
         aria-hidden
         className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600"
@@ -311,6 +404,11 @@ function TeeRow({ tee, onEdit }: { tee: GolfCourseTee; onEdit: () => void }) {
               {cat}
             </span>
           )}
+          {isDefault && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-caption font-medium text-primary-700">
+              <IconCheck size={11} aria-hidden /> Team default
+            </span>
+          )}
           {tee.is_draft && (
             <span className="rounded-full bg-warning/15 px-2 py-0.5 text-caption font-medium text-warning">
               Draft
@@ -321,6 +419,18 @@ function TeeRow({ tee, onEdit }: { tee: GolfCourseTee; onEdit: () => void }) {
           <p className="mt-0.5 truncate text-caption text-text-tertiary">{facts.join(' · ')}</p>
         )}
       </div>
+      {canManageTeam && onSetDefault && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onSetDefault}
+          isLoading={settingDefault}
+          aria-pressed={isDefault}
+          aria-label={isDefault ? `Clear ${tee.tee_name} as team default tee` : `Set ${tee.tee_name} as team default tee`}
+        >
+          {isDefault ? 'Default' : 'Set default'}
+        </Button>
+      )}
       <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit ${tee.tee_name}`}>
         <IconPencil size={14} aria-hidden /> Edit
       </Button>

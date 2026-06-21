@@ -25,6 +25,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { ContainerGrid } from '@/components/ui/containers';
 import { Metadata } from 'next';
 
@@ -285,13 +286,21 @@ export default async function GolfRosterPage() {
   // PERFORMANCE OPTIMIZATION: Fetch all rounds in ONE query instead of N queries
   const playersWithStats: PlayerWithStats[] = players && players.length > 0
     ? await (async () => {
-        // Fetch ALL rounds for ALL players in a single query
+        // Fetch ALL rounds for ALL players. Paginated: PostgREST caps each
+        // response at 1000 rows, and a full roster's accumulated round history
+        // exceeds that — the old unpaginated `.in(...)` silently truncated at
+        // 1000, under-counting rounds_count and skewing avg_score on every
+        // roster card. `.order('id')` gives stable page boundaries (P444).
         const playerIds = players.map(p => p.id);
-        const { data: allRounds } = await supabase
-          .from('golf_rounds')
-          .select('player_id, total_score, holes_played')
-          .in('player_id', playerIds)
-          .not('total_score', 'is', null);
+        const { data: allRounds } = await fetchAllRowsResult((from, to) =>
+          supabase
+            .from('golf_rounds')
+            .select('player_id, total_score, holes_played')
+            .in('player_id', playerIds)
+            .not('total_score', 'is', null)
+            .order('id', { ascending: true })
+            .range(from, to),
+        );
 
         // Group rounds by player_id in memory (fast!)
         const roundsByPlayer = (allRounds || []).reduce((acc, round) => {

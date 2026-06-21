@@ -36,6 +36,8 @@ import {
 } from '@/components/icons';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import {
   generateTeamInsight,
   recordInteraction,
@@ -1365,6 +1367,55 @@ const SurfaceHubGrid = memo(function SurfaceHubGrid({ variant = 'widget' }: { va
 });
 
 // ============================================================================
+// HELPER: Deep-analysis loading skeleton
+// ============================================================================
+
+/**
+ * Shape-matched loading state for the Deep Analysis run. Mirrors the
+ * insights/patterns/predictions card regions so results don't pop in from a
+ * blank "Ready to Analyze" block (and so re-analyze shows a shimmer rather than
+ * a hard snap-replace). Skeleton-not-spinner, per the premium states bar.
+ */
+const DeepAnalysisSkeleton = memo(function DeepAnalysisSkeleton({
+  isPage,
+}: {
+  isPage: boolean;
+}) {
+  const cardCount = isPage ? 4 : 2;
+  return (
+    <div
+      className={cn(isPage ? 'space-y-6' : 'space-y-2.5')}
+      aria-hidden="true"
+    >
+      <div className={cn(
+        'grid grid-cols-1 gap-4',
+        isPage ? 'lg:grid-cols-2' : ''
+      )}>
+        {Array.from({ length: cardCount }).map((_, i) => (
+          <div
+            key={i}
+            className="surface-matte rounded-2xl p-5 space-y-3"
+          >
+            <div className="flex items-start gap-3">
+              <Skeleton variant="circular" width={40} height={40} />
+              <div className="flex-1 space-y-2">
+                <Skeleton variant="text" width="65%" />
+                <Skeleton variant="text" width="40%" />
+              </div>
+            </div>
+            <Skeleton variant="rectangular" height={56} className="rounded-lg" />
+            <div className="flex gap-2">
+              <Skeleton variant="rectangular" width={72} height={24} className="rounded-full" />
+              <Skeleton variant="rectangular" width={72} height={24} className="rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -1519,15 +1570,39 @@ export function IntelligenceCommandCenter({
         </div>
       </div>
 
-      {/* Error */}
+      {/* Error — on-token Fairway InlineNotice with a plain-language message,
+          a tone icon + status bar (non-color channel), and a Retry action that
+          re-invokes the analysis (Nielsen #9). */}
       {error && (
-        <div className="rounded-lg border border-red-200/60 bg-red-50/80 px-3 py-2 text-xs text-red-600">
+        <InlineNotice
+          tone="danger"
+          title="Analysis didn't finish"
+          action={
+            <Button
+              variant="secondary"
+              onClick={handleAnalyze}
+              disabled={isPending}
+              className="flex items-center gap-1.5"
+            >
+              <IconRefresh size={14} className={cn(isPending && 'animate-spin')} />
+              {isPending ? 'Retrying...' : 'Retry'}
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </InlineNotice>
       )}
 
-      {/* Tabs */}
+      {/* Tabs — on re-analyze, keep prior results visible but dimmed under
+          aria-busy rather than snap-replacing them (no jarring swap). */}
       {hasData && (
+        <div
+          aria-busy={isPending}
+          className={cn(
+            'transition-opacity duration-200',
+            isPending && 'pointer-events-none opacity-50'
+          )}
+        >
         <Tabs
           value={activeTab}
           onChange={(v) => setActiveTab(v as TabId)}
@@ -1772,6 +1847,13 @@ export function IntelligenceCommandCenter({
         </div>
       </TabsContent>
         </Tabs>
+        </div>
+      )}
+
+      {/* First-run loading — shape-matched skeleton instead of staring at the
+          marketing block until results pop in (no spinner-on-blank). */}
+      {!hasData && isPending && (
+        <DeepAnalysisSkeleton isPage={isPage} />
       )}
 
       {/* No data state */}

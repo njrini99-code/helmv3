@@ -290,7 +290,15 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
                 <SidebarRow
                   key={item.href + item.label}
                   item={item}
-                  active={item.active ?? matchActive(item.href, pathname)}
+                  active={
+                    item.active ??
+                    // `activeMatch` (when present) broadens the match to a route
+                    // cluster so the global rail stays lit across sibling routes
+                    // (e.g. CoachHelm AI on alerts/insights/patterns/…). Falls
+                    // back to the default segment-boundary href match.
+                    ((item.activeMatch && pathname ? item.activeMatch(pathname) : false) ||
+                      matchActive(item.href, pathname))
+                  }
                   collapsed={isCollapsed}
                   Link={Link}
                   onNavigate={onNavigate}

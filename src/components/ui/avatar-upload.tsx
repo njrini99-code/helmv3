@@ -3,8 +3,8 @@
 import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Avatar } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { Button } from '@/components/fairway';
+import { IconUpload, IconTrash, IconLoader, IconAlertCircle } from '@/components/icons';
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -116,11 +116,12 @@ export function AvatarUpload({
           src={previewUrl}
           name={name}
           size="2xl"
-          className="ring-4 ring-white shadow-sm"
+          className="ring-4 ring-surface shadow-soft"
         />
         {uploading && (
-          <div className="absolute inset-0 bg-black/50 rounded-[10px] flex items-center justify-center">
-            <Loader2 className="w-6 h-6 text-white animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center rounded-[10px] bg-text-primary/50">
+            <IconLoader size={24} className="animate-spin text-text-on-accent" aria-hidden />
+            <span className="sr-only">Uploading…</span>
           </div>
         )}
       </div>
@@ -141,32 +142,33 @@ export function AvatarUpload({
             variant="secondary"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="gap-2"
+            busy={uploading}
+            leftIcon={<IconUpload size={16} aria-hidden />}
           >
-            <Upload size={16} />
             {previewUrl ? 'Change Photo' : 'Upload Photo'}
           </Button>
 
           {previewUrl && onRemove && (
             <Button
-              variant="ghost"
+              variant="danger"
               size="sm"
               onClick={handleRemove}
               disabled={uploading}
-              className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+              leftIcon={<IconTrash size={16} aria-hidden />}
             >
-              <X size={16} />
               Remove
             </Button>
           )}
         </div>
 
         {error && (
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="flex items-center gap-1.5 font-fw-sans text-body-sm text-fw-danger">
+            <IconAlertCircle size={15} className="shrink-0" aria-hidden />
+            {error}
+          </p>
         )}
 
-        <p className="text-xs text-warm-500">
+        <p className="font-fw-sans text-caption text-text-tertiary">
           JPG, PNG or GIF. Max {maxSizeMB}MB.
         </p>
       </div>

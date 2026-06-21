@@ -5,33 +5,33 @@
  * Fairway · Calendar · FairwayCalendar — the flag-on Calendar SHELL orchestrator
  * ----------------------------------------------------------------------------
  * The single re-skinned Calendar surface for /golf/dashboard/calendar behind the
- * isRedesignEnabled() fork. It RE-SKINS THE SHELL and REUSES THE LEGACY ENGINE
- * UNCHANGED — it does NOT rebuild the heavy machinery.
+ * isRedesignEnabled() fork. The SHELL owns ALL calendar chrome (one hero, one
+ * Segmented view toggle, one member rail, one "New event" affordance) and the
+ * body is now fully-native Fairway in every view + role. It REUSES the existing
+ * SERVER ACTIONS unchanged — it does NOT rebuild the data layer.
  *
  * ── WHAT IS REUSED UNCHANGED (cite) ─────────────────────────────────────────
- *   • Week/Month grid, @dnd-kit drag-to-reschedule, the 'calendar-events'
- *     Supabase realtime channel, EventDetailModal (create/edit/delete +
- *     recurring-series scope picker), MobileEventSheet, QuickAddEventFAB and
- *     the CalendarFeedManager ALL live inside PremiumCalendarClient, which we
- *     render via its existing <GolfCalendarWrapper> wrapper UNCHANGED — same
- *     wiring the legacy editorial surface used (EditorialCalendarSurface's
- *     LegacyGridShell). We hand it `initialEvents` / `teamMembers` / `isCoach`
- *     / `teamTimezone` / `initialView` / `initialDate` and key it on
- *     `${view}:${date}` so a view switch remounts it with the right seed.
+ *   • Create/edit/delete/restore call the EXISTING golf event server actions
+ *     (createGolfEvent / updateGolfEvent / deleteGolfEvent + the recurring-event
+ *     actions) verbatim — only the form chrome is native (FairwayEventEditor).
  *   • The player RSVP write path is the EXISTING `respondToEvent` server action
  *     (→ updateRSVP into golf_event_attendance); the coach attendance summary is
  *     the EXISTING `getEventRSVP` (→ getEventRSVPStats). We lazy-import both,
  *     exactly as the legacy editorial drawer did. NO new writes.
+ *   • CalendarFeedManager (ICS feeds) is reused unchanged inside a Fairway Sheet.
  *
  * ── WHAT WE RE-SKIN (our SHELL pass) ────────────────────────────────────────
- *   the hero plinth, the day-strip, the Agenda body, the segmented view toggle,
- *   and the event-detail drawer chrome — all in Fairway tokens.
+ *   the hero plinth, the day-strip, the Agenda body, the native Month grid, the
+ *   segmented view toggle, the member rail, and the event-detail drawer chrome —
+ *   all in Fairway tokens. The legacy PremiumCalendarClient grid (which brought
+ *   its OWN CalendarHeader/avatar sidebar/FAB and so duplicated the shell chrome
+ *   for coaches) is RETIRED on this route (audit P232).
  *
  * ── ROLE BRANCH (isCoach, resolved server-side) ─────────────────────────────
- *   coach  → "New event" primary (→ legacy create flow) + read-only attendance
- *            Readouts + drag-to-reschedule (inside the legacy grid).
+ *   coach  → "New event" primary (→ FairwayEventEditor) + attendance Readouts;
+ *            tap an event → Fairway drawer → Edit (→ FairwayEventEditor).
  *   player → "Respond" primary on the most-imminent un-RSVP'd event + 3-button
- *            RSVP control; read-only events, no FAB, no DnD.
+ *            RSVP control; read-only events, no FAB.
  *
  * ── HONEST-EMPTY (the all-past demo) ─────────────────────────────────────────
  *   21 events ALL PAST → upcomingCount === 0. We DEFAULT TO AGENDA so the real
@@ -61,7 +61,6 @@ import {
 } from 'date-fns';
 import { CalendarPlus, RefreshCw } from 'lucide-react';
 import { Segmented, Sheet, Button as FwButton, Skeleton } from '@/components/fairway';
-import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrapper';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
@@ -709,6 +708,10 @@ export function FairwayCalendar({
             options={VIEW_OPTIONS}
             value={view}
             onValueChange={setView}
+            // `lg` = 44px segments — this is the single most-used calendar
+            // control on mobile; it must clear the WCAG 2.2 AA touch target.
+            size="lg"
+            fullWidth
             aria-label="Calendar view"
           />
         </div>
@@ -750,9 +753,10 @@ export function FairwayCalendar({
       ) : null}
 
       {/* ── Coach member rail (avatar filter → availability overlay) ──────────── */}
-      {/* Shown where the body is native (agenda/day) or while comparing — NOT over
-          the legacy grid (All-mode Week/Month), which keeps its own sidebar. */}
-      {isCoach && (isAgenda || isDay || availabilityMode) ? (
+      {/* The whole body is now native Fairway in every view (the legacy grid +
+          its own avatar sidebar are retired — audit P232), so the ONE member rail
+          is shown for coaches across all lenses. */}
+      {isCoach ? (
         <FairwayCalendarMemberRail
           teamMembers={teamMembers}
           selectedPlayerIds={selectedPlayerIds}
@@ -808,57 +812,45 @@ export function FairwayCalendar({
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
         />
-      ) : !isCoach ? (
-        // ── PLAYER Week / Month → fully-native Fairway (no legacy grid chrome).
-        //    The legacy PremiumCalendarClient brought a member-filter rail, an
-        //    "+ Add Event" button, and a duplicate Day/Week/Month toggle — coach
-        //    tooling a read-only player neither needs nor should see, doubling the
-        //    Fairway hero + segmented. Month → native FairwayMonthGrid; Week →
-        //    a week-scoped agenda (sparse golf calendars read better as a list
-        //    than a time-grid). Both open the same Fairway drawer. ─────────────
-        view === 'month' ? (
-          <FairwayMonthGrid
-            events={events}
-            focusDate={focusDate}
-            nowRef={nowRef}
-            onEventClick={openDrawerForEvent}
-            onSelectDate={(d) => {
-              setFocusDate(d);
-              setView('day');
-            }}
-          />
-        ) : (
-          <FairwayAgendaView
-            events={events}
-            mode="range"
-            focusDate={focusDate}
-            rangeStart={visibleWindow.start}
-            rangeEnd={visibleWindow.end}
-            isCoach={isCoach}
-            userRsvpStatuses={userRsvpStatuses}
-            onEventClick={openDrawerForEvent}
-            nowRef={nowRef}
-          />
-        )
+      ) : view === 'month' ? (
+        // ── Week / Month → fully-native Fairway for BOTH roles (audit P232).
+        //    The Fairway shell ALREADY owns every piece of calendar chrome: ONE
+        //    hero (prev/today/next + "New event"), ONE Segmented view toggle, and
+        //    ONE member rail. The legacy PremiumCalendarClient grid was previously
+        //    mounted here for coaches and brought its OWN CalendarHeader (a second
+        //    Day/Week/Month toggle), its own CalendarAvatarSidebar, and its own
+        //    QuickAddEventFAB — so a coach saw two of everything in two visual
+        //    languages. We retire the legacy grid on this route and render the
+        //    native grid the player branch already proved out. Coaches still get
+        //    full create (hero "New event" → FairwayEventEditor) and edit/delete/
+        //    restore (tap an event → Fairway drawer → Edit → FairwayEventEditor),
+        //    all wired to the SAME server actions the legacy grid called.
+        <FairwayMonthGrid
+          events={events}
+          focusDate={focusDate}
+          nowRef={nowRef}
+          onEventClick={openDrawerForEvent}
+          onSelectDate={(d) => {
+            setFocusDate(d);
+            setView('day');
+          }}
+        />
       ) : (
-        // ── COACH Week / Month → REUSE the legacy PremiumCalendarClient grid
-        //    UNCHANGED via its existing GolfCalendarWrapper. Coaches need its
-        //    create flow (EventDetailModal via FAB / grid "+" / N), drag-to-
-        //    reschedule, recurring-series, and realtime — the engine the shell
-        //    deliberately reuses. NO key: the grid FOLLOWS initialView /
-        //    initialDate prop changes internally, so navigating no longer
-        //    remounts it (which tore down and rejoined its realtime channel on
-        //    every navigation — audit finding #25). ─────────────────────────────
-        <div className="overflow-hidden rounded-card">
-          <GolfCalendarWrapper
-            initialEvents={events}
-            teamMembers={teamMembers}
-            isCoach={isCoach}
-            teamTimezone={teamTimezone}
-            initialView={view as 'week' | 'month'}
-            initialDate={focusDate}
-          />
-        </div>
+        // ── Week → a week-scoped agenda for BOTH roles (sparse golf calendars
+        //    read better as a list than a time-grid). Opens the same Fairway
+        //    drawer; coaches get the "New event" CTA on the empty state. ────────
+        <FairwayAgendaView
+          events={events}
+          mode="range"
+          focusDate={focusDate}
+          rangeStart={visibleWindow.start}
+          rangeEnd={visibleWindow.end}
+          isCoach={isCoach}
+          userRsvpStatuses={userRsvpStatuses}
+          onEventClick={openDrawerForEvent}
+          onCreateEvent={isCoach ? handlePrimaryAction : undefined}
+          nowRef={nowRef}
+        />
       )}
 
       {/* ── DETAIL DRAWER (Agenda taps; the grid uses the legacy modal) ───────── */}
