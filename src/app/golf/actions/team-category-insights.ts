@@ -337,7 +337,14 @@ export async function getTeamOverview(
       .eq('team_id', team.id)
       .eq('status', 'active');
 
-    if (membersError || !members || members.length === 0) {
+    // P017: a DB error must NOT be reported as a healthy-but-empty team (all
+    // categories a fake neutral 50). Surface the failure so the caller can render
+    // an error state; keep the neutral-empty overview only for a genuinely empty
+    // roster.
+    if (membersError) {
+      return { success: false, error: 'Failed to load team members' };
+    }
+    if (!members || members.length === 0) {
       return {
         success: true,
         data: {

@@ -109,57 +109,57 @@ export default async function RoundsPage() {
     const teamPlayerIds = teamMembers?.map(tm => tm.player_id) || [];
 
     if (teamPlayerIds.length > 0) {
-      try {
-        const { data: completedData } = await fetchAllRowsResult((from, to) =>
-          supabase
-            .from('golf_rounds')
-            .select(playerSelectFields)
-            .in('player_id', teamPlayerIds)
-            .eq('status', 'completed')
-            .order('round_date', { ascending: false })
-            .order('id', { ascending: false })
-            .range(from, to)
-        );
-
-        rounds = (completedData ?? []).map(r => ({
-          ...r,
-          player: r.player && !('error' in r.player) ? r.player : null
-        })) as RoundWithPlayer[];
-      } catch {
-        // Network failure — rounds stays empty
-      }
-    }
-  } else if (userRole === 'player' && player) {
-    let inProgressData: typeof inProgressRounds = [];
-    try {
-      const [completedResult, inProgressResult] = await Promise.all([
-        fetchAllRowsResult((from, to) =>
-          supabase
-            .from('golf_rounds')
-            .select(playerSelectFields)
-            .eq('player_id', player.id)
-            .eq('status', 'completed')
-            .order('round_date', { ascending: false })
-            .order('id', { ascending: false })
-            .range(from, to)
-        ),
+      // P425: surface a real fetch failure (route error.tsx offers retry) instead
+      // of silently leaving the list empty — an empty rounds list must mean "no
+      // rounds", never "the query failed".
+      const { data: completedData, error } = await fetchAllRowsResult((from, to) =>
         supabase
           .from('golf_rounds')
-          .select(inProgressSelectFields)
-          .eq('player_id', player.id)
-          .eq('status', 'in_progress')
-          .order('updated_at', { ascending: false })
-      ]);
+          .select(playerSelectFields)
+          .in('player_id', teamPlayerIds)
+          .eq('status', 'completed')
+          .order('round_date', { ascending: false })
+          .order('id', { ascending: false })
+          .range(from, to)
+      );
+      if (error) throw new Error(`Failed to load team rounds: ${error.message}`);
 
-      rounds = (completedResult.data ?? []).map(r => ({
+      rounds = (completedData ?? []).map(r => ({
         ...r,
         player: r.player && !('error' in r.player) ? r.player : null
       })) as RoundWithPlayer[];
-
-      inProgressData = (inProgressResult.data ?? []) as typeof inProgressRounds;
-    } catch {
-      // Network failure — both stay empty
     }
+  } else if (userRole === 'player' && player) {
+    let inProgressData: typeof inProgressRounds = [];
+    // P425: surface real failures (route error.tsx offers retry) — never mask a
+    // fetch error as an empty rounds list.
+    const [completedResult, inProgressResult] = await Promise.all([
+      fetchAllRowsResult((from, to) =>
+        supabase
+          .from('golf_rounds')
+          .select(playerSelectFields)
+          .eq('player_id', player.id)
+          .eq('status', 'completed')
+          .order('round_date', { ascending: false })
+          .order('id', { ascending: false })
+          .range(from, to)
+      ),
+      supabase
+        .from('golf_rounds')
+        .select(inProgressSelectFields)
+        .eq('player_id', player.id)
+        .eq('status', 'in_progress')
+        .order('updated_at', { ascending: false })
+    ]);
+    if (completedResult.error) throw new Error(`Failed to load rounds: ${completedResult.error.message}`);
+    if (inProgressResult.error) throw new Error(`Failed to load in-progress rounds: ${inProgressResult.error.message}`);
+
+    rounds = (completedResult.data ?? []).map(r => ({
+      ...r,
+      player: r.player && !('error' in r.player) ? r.player : null
+    })) as RoundWithPlayer[];
+
+    inProgressData = (inProgressResult.data ?? []) as typeof inProgressRounds;
 
     // Show ALL in-progress rounds (including setup-only drafts without shots)
     inProgressRounds = (inProgressData ?? []).map(r => ({
