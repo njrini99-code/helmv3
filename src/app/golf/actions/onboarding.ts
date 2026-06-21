@@ -29,6 +29,7 @@ const coachOnboardingSchema = z.object({
   title: z.string().max(100).optional(),
   email: z.string().email().max(255).optional().or(z.literal('')),
   phone: z.string().max(30).optional(),
+  avatarUrl: z.string().url().max(2048).optional().or(z.literal('')),
 });
 
 const playerOnboardingSchema = z.object({
@@ -41,6 +42,7 @@ const playerOnboardingSchema = z.object({
   hometown: z.string().max(100).optional(),
   state: z.string().max(2).optional(),
   gpa: z.number().min(0).max(5).optional(),
+  avatarUrl: z.string().url().max(2048).optional().or(z.literal('')),
 });
 
 export type CoachOnboardingInput = z.infer<typeof coachOnboardingSchema>;
@@ -60,6 +62,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
 
   // Track created resources for cleanup
   let createdOrgId: string | null = null;
+  let createdCoachId: string | null = null;
   let createdTeamId: string | null = null;
 
   try {
@@ -150,6 +153,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       title: validatedData.title || null,
       email: validatedData.email || null,
       phone: validatedData.phone || null,
+      avatar_url: validatedData.avatarUrl || null,
       onboarding_completed: true,
       updated_at: new Date().toISOString(),
     };
@@ -166,6 +170,8 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       await supabase.from('organizations').delete().eq('id', org.id);
       return { success: false, error: 'Failed to create coach profile. Please try again.' };
     }
+
+    createdCoachId = coach.id;
 
     // Step 3: Create team (now we have coach.id for created_by)
     const joinCode = generateJoinCode();
@@ -229,11 +235,16 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
     };
 
   } catch (error) {
-    // Cleanup any partially created resources (in reverse order of creation)
+    // Cleanup any partially created resources (in reverse order of creation).
+    // The inner error handlers already roll back when a known step fails; this
+    // outer guard covers a throw between steps (e.g. the staff insert) so we
+    // never leak an orphan team/coach/org on an unexpected mid-flow error.
     if (createdTeamId) {
       await supabase.from('golf_teams').delete().eq('id', createdTeamId);
     }
-    // Coach cleanup happens in individual error handlers above
+    if (createdCoachId) {
+      await supabase.from('golf_coaches').delete().eq('id', createdCoachId);
+    }
     if (createdOrgId) {
       await supabase.from('organizations').delete().eq('id', createdOrgId);
     }
@@ -272,6 +283,20 @@ export async function ensurePlayerRecord() {
     if (existing) {
       // Record exists — return it
       return { success: true, playerId: existing.id, onboardingCompleted: existing.onboarding_completed };
+    }
+
+    // Guard: never mint an empty golf_players row for a coach. This action runs
+    // on /golf/player load for ANY authenticated user; a coach who lands here
+    // (mis-routed link, role-switch) would otherwise get a stray player record
+    // and a player upsert below that clobbers their 'coach' role to 'player'.
+    const { data: coachRecord } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (coachRecord) {
+      return { success: false, error: 'Account is a coach; no player record created.' };
     }
 
     // Ensure users table record exists
@@ -386,6 +411,7 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput, joi
       hometown: validatedData.hometown || null,
       state: validatedData.state || null,
       gpa: validatedData.gpa != null ? validatedData.gpa : null,
+      avatar_url: validatedData.avatarUrl || null,
       onboarding_completed: true,
       updated_at: new Date().toISOString(),
     };

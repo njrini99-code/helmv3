@@ -161,53 +161,67 @@ export async function createEnrichedAnnouncement(input: {
         .insert(docRows);
     }
 
-    // 4. Create inline tasks, link them, and assign to players
-    for (let i = 0; i < validated.inlineTasks.length; i++) {
-      const task = validated.inlineTasks[i]!;
+    // 4. Create inline tasks, link them, and assign to players.
+    // F097: batched. The previous loop did, per task, a serial round-trip set
+    // (insert task → insert link → insert assignments). For T tasks on a P-player
+    // team that was up to T×(2 + …) sequential queries. We now insert ALL tasks
+    // in one call, ALL announcement links in one call, and ALL assignments in
+    // one call — keeping the same data shape and the same sort_order semantics.
+    if (validated.inlineTasks.length > 0) {
+      const taskRows = validated.inlineTasks.map(task => ({
+        team_id: teamId,
+        created_by: coach.id,
+        title: task.title,
+        description: task.description || null,
+        due_date: task.dueDate || null,
+        status: 'active',
+      }));
 
-      // Create the task
-      const taskResult = await (supabase
+      // Bulk insert tasks, returning ids in insertion order so we can map them
+      // back to their sort_order index.
+      const insertedTasksResult = await (supabase
         .from('golf_tasks' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-        .insert({
-          team_id: teamId,
-          created_by: coach.id,
-          title: task.title,
-          description: task.description || null,
-          due_date: task.dueDate || null,
-          status: 'active',
-        })
-        .select()
-        .single()) as unknown as { data: { id: string } | null; error: { message?: string } | null };
+        .insert(taskRows)
+        .select('id')) as unknown as { data: Array<{ id: string }> | null; error: { message?: string } | null };
 
-      if (taskResult.error || !taskResult.data) continue;
+      const insertedTaskIds = (insertedTasksResult.data || []).map(t => t.id);
 
-      const taskId = taskResult.data.id;
-
-      // Link task to announcement
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from('golf_announcement_tasks')
-        .insert({
+      if (insertedTaskIds.length > 0) {
+        // Link every task to the announcement in one insert (index = sort_order).
+        const linkRows = insertedTaskIds.map((taskId, i) => ({
           announcement_id: announcementId,
           task_id: taskId,
           sort_order: i,
-        });
-
-      // Assign task to target players
-      if (targetPlayerIds.length > 0) {
-        const assignments = targetPlayerIds.map(pid => ({
-          task_id: taskId,
-          player_id: pid,
-          status: 'pending',
-          assigned_at: new Date().toISOString(),
         }));
-        await (supabase
-          .from('golf_task_assignments' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-          .insert(assignments)) as unknown as { error: { message?: string } | null };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from('golf_announcement_tasks')
+          .insert(linkRows);
+
+        // Assign every task to every target player in one insert.
+        if (targetPlayerIds.length > 0) {
+          const assignedAt = new Date().toISOString();
+          const assignmentRows = insertedTaskIds.flatMap(taskId =>
+            targetPlayerIds.map(pid => ({
+              task_id: taskId,
+              player_id: pid,
+              status: 'pending',
+              assigned_at: assignedAt,
+            }))
+          );
+          await (supabase
+            .from('golf_task_assignments' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+            .insert(assignmentRows)) as unknown as { error: { message?: string } | null };
+        }
       }
     }
 
-    // 5. Send email notifications to target players (fire-and-forget)
+    // 5. Send email + push notifications to target players (fire-and-forget).
+    // F096: the row is inserted with send_email/send_push = false, but this
+    // block actually DOES dispatch both — so the persisted flags lied about
+    // delivery. Track what really fired and reconcile the flags below.
+    let emailSent = false;
+    let pushSent = false;
     try {
       const { data: coachProfile } = await supabase
         .from('golf_coaches')
@@ -234,27 +248,42 @@ export async function createEnrichedAnnouncement(input: {
             .in('id', userIds);
 
           if (userRows) {
-            // Non-blocking: notify all players in parallel
-            await Promise.allSettled(
+            // Non-blocking: notify all players in parallel. send_email reflects
+            // whether at least one addressable recipient was emailed.
+            const emailResults = await Promise.allSettled(
               userRows.map(u =>
                 u.email
                   ? notifyTeamAnnouncement(u.id, u.email, validated.title, validated.body, coachName, announcementId)
                   : Promise.resolve()
               )
             );
+            emailSent = userRows.some(u => !!u.email) &&
+              emailResults.some(r => r.status === 'fulfilled');
 
             // Send push notifications
             const recipientUserIdsForPush = userRows.map(u => u.id);
-            await sendBulkPushNotification('team_announcement', recipientUserIdsForPush, {
-              title: validated.title,
-              content: validated.body,
-            });
+            if (recipientUserIdsForPush.length > 0) {
+              await sendBulkPushNotification('team_announcement', recipientUserIdsForPush, {
+                title: validated.title,
+                content: validated.body,
+              });
+              pushSent = true;
+            }
           }
         }
       }
     } catch (notifErr) {
       // Never block announcement creation on notification failure
       await logServerError(`[createAnnouncement] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'announcements.createEnrichedAnnouncement' });
+    }
+
+    // Reconcile the persisted delivery flags with what actually dispatched
+    // (F096). Best-effort: a failure here must not fail the create.
+    if (emailSent || pushSent) {
+      await supabase
+        .from('golf_announcements')
+        .update({ send_email: emailSent, send_push: pushSent })
+        .eq('id', announcementId);
     }
 
     revalidatePath('/golf/dashboard/announcements');
@@ -363,15 +392,23 @@ export async function getAnnouncementsWithMeta(
       .select('announcement_id')
       .in('announcement_id', announcementIds) as { data: Array<{ announcement_id: string }> | null };
 
-    // Fetch task assignment completions if we have linked tasks
+    // Fetch task assignment completions if we have linked tasks.
+    // F098: scope the read EXPLICITLY by player_id for the player view. A coach
+    // sees the whole team's progress (task_count / completed_task_count are team
+    // aggregates), but a player must see only THEIR own assignment status —
+    // otherwise their announcement card showed teammates' task counts/completions.
     const taskIds = (allAnnTasks || []).map(at => at.task_id);
     let completedAssignments: Array<{ task_id: string; status: string }> = [];
     let totalAssignments: Array<{ task_id: string }> = [];
     if (taskIds.length > 0) {
-      const { data: assignments } = await (supabase
+      let assignmentsQuery = (supabase
         .from('golf_task_assignments' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
         .select('task_id, status')
-        .in('task_id', taskIds)) as unknown as { data: Array<{ task_id: string; status: string }> | null };
+        .in('task_id', taskIds));
+      if (!isCoach && playerId) {
+        assignmentsQuery = assignmentsQuery.eq('player_id', playerId);
+      }
+      const { data: assignments } = await assignmentsQuery as unknown as { data: Array<{ task_id: string; status: string }> | null };
       totalAssignments = assignments || [];
       completedAssignments = (assignments || []).filter(a => a.status === 'completed');
     }
@@ -723,19 +760,28 @@ export async function deleteAnnouncement(
 
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
     if (!coach) return { success: false, error: 'Coach not found' };
 
-    // Verify ownership
+    // Load the announcement's team so we can authorize by team access.
     const { data: ann } = await supabase
       .from('golf_announcements')
-      .select('id, created_by')
+      .select('id, team_id')
       .eq('id', announcementId)
       .single();
 
-    if (!ann || ann.created_by !== coach.id) {
+    if (!ann) {
+      return { success: false, error: 'Announcement not found' };
+    }
+
+    // F036/F037: authorize ANY coach staffed on the announcement's team, not
+    // only the original author. Co-coaches (e.g. an assistant, or a program
+    // head over both men's & women's) could previously never delete an
+    // announcement a colleague posted, since the check was created_by === coach.id.
+    const authorized = await validateCoachTeamAccess(supabase, coach.id, ann.team_id, coach.organization_id);
+    if (!authorized) {
       return { success: false, error: 'Not authorized to delete this announcement' };
     }
 

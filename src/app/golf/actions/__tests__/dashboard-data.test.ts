@@ -9,7 +9,7 @@ const mockMaybeSingle = vi.fn(() => ({ data: null, error: null }));
 const mockLimit = vi.fn(() => ({ data: [], error: null }));
 const mockOrder = vi.fn(() => ({ limit: mockLimit, data: [], error: null }));
 const mockNot = vi.fn(() => ({ order: mockOrder, limit: mockLimit, data: [], error: null }));
-const mockIn = vi.fn(() => ({ order: mockOrder, not: mockNot, data: [], error: null }));
+const mockIn = vi.fn(() => ({ order: mockOrder, not: mockNot, limit: mockLimit, data: [], error: null }));
 const mockLt = vi.fn(() => ({ order: mockOrder, data: [], error: null }));
 const mockGte = vi.fn(() => ({ lt: mockLt, gte: vi.fn(), order: mockOrder, data: [], error: null, limit: mockLimit }));
 const mockEq = vi.fn(() => ({

@@ -133,20 +133,45 @@ export default async function TeamSettingsPage() {
     redirect('/golf/dashboard');
   }
 
-  // Get team coach via organization_id
-  const { data: teamCoach } = team.organization_id
+  // Get team coach via the team's staff roster (F031). The previous lookup
+  // filtered golf_coaches by organization_id with .maybeSingle(), which returns
+  // NULL whenever an org has more than one coach (PGRST116) — so a player on a
+  // two-coach program saw NO head coach. Resolve through golf_team_coach_staff
+  // by THIS team_id, preferring the primary/head coach (is_primary first), then
+  // take a single row.
+  const { data: staffRows } = await supabase
+    .from('golf_team_coach_staff')
+    .select('coach_id, is_primary, role, created_at')
+    .eq('team_id', teamMember.team_id)
+    .order('is_primary', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: true });
+
+  const headStaff = (staffRows ?? [])[0] ?? null;
+
+  const { data: teamCoach } = headStaff?.coach_id
     ? await supabase
         .from('golf_coaches')
         .select('full_name, avatar_url')
-        .eq('organization_id', team.organization_id)
+        .eq('id', headStaff.coach_id)
         .maybeSingle()
-    : { data: null };
+    : team.organization_id
+      // Legacy fallback for teams with no staff rows yet — pick any org coach.
+      ? await supabase
+          .from('golf_coaches')
+          .select('full_name, avatar_url')
+          .eq('organization_id', team.organization_id)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
 
-  // Get roster (teammates) via golf_team_members
+  // Get roster (teammates) via golf_team_members (F083: active members only —
+  // the player Team Info roster was listing pending/removed members too).
   const { data: teamMembers } = await supabase
     .from('golf_team_members')
     .select('player_id')
-    .eq('team_id', teamMember.team_id);
+    .eq('team_id', teamMember.team_id)
+    .eq('status', 'active');
 
   const rosterPlayerIds = (teamMembers || []).map(tm => tm.player_id);
 

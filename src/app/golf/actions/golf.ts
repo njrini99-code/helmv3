@@ -11,8 +11,6 @@ import { CACHE_TAGS } from '@/lib/cache/tags';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import { z } from 'zod';
 import {
-  requireGolfCoach,
-  verifyGolfTeamOwnership,
   AuthorizationError,
   NotFoundError
 } from '@/lib/auth/ownership';
@@ -524,14 +522,32 @@ async function getPlayerTeamId(
   supabase: SupabaseClient,
   playerId: string
 ): Promise<string | null> {
-  const { data: membership } = await supabase
+  // Prefer the active membership.
+  const { data: active } = await supabase
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', playerId)
     .eq('status', 'active')
     .maybeSingle();
+  if (active?.team_id) return active.team_id;
 
-  return membership?.team_id ?? null;
+  // F147: an injured/redshirt/inactive member still belongs to a team. If we
+  // returned null here, the round would be saved with team_id = NULL and become
+  // invisible to the coach — the golf_rounds coach SELECT RLS is keyed on
+  // `team_id IS NOT NULL AND is_golf_team_coach(team_id)`, and the roster query
+  // asks for the round by player_id expecting to see it. Fall back to the
+  // player's most recent membership so the round stays coach-visible. This does
+  // NOT loosen RLS (no cross-team leak): the round only carries the player's own
+  // real team_id, which only that team's coach can read.
+  const { data: anyMembership } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return anyMembership?.team_id ?? null;
 }
 
 // ============================================================================
@@ -1070,6 +1086,9 @@ type GolfEventUpdateData = {
   requires_rsvp?: boolean;
   rsvp_deadline?: string | null;
   max_attendees?: number | null;
+  status?: string;
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
 }
 
 // ============================================================================
@@ -1752,7 +1771,12 @@ export async function submitGolfRoundComprehensive(
       }
     }
 
-    // If this is a qualifier round, update the qualifier entry stats
+    // If this is a qualifier round, update the qualifier entry stats and
+    // auto-advance the qualifier lifecycle (F029/F138). updateQualifierStatus
+    // had no caller, so a qualifier never left 'upcoming' on its own — the
+    // leaderboard's "Live" pill (status === 'in_progress') never lit up once
+    // play started. The first completed round transitions upcoming→in_progress.
+    // (completed is a deliberate coach action via the selections workspace.)
     if (data.qualifierId) {
       try {
         await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
@@ -1768,6 +1792,20 @@ export async function submitGolfRoundComprehensive(
             qualifierId: data.qualifierId,
             stack: err instanceof Error ? err.stack : undefined,
           },
+        }, 'warning');
+      }
+
+      try {
+        await advanceQualifierOnRoundSubmit(supabase, data.qualifierId);
+      } catch (err) {
+        await logServerError(`Failed to auto-advance qualifier status after round submit: ${err instanceof Error ? err.message : String(err)}`, {
+          action: 'submitGolfRoundComprehensive.qualifierAutoAdvance',
+          featureArea: 'qualifiers',
+          roundId: round.id,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          extra: { qualifierId: data.qualifierId },
         }, 'warning');
       }
     }
@@ -2008,6 +2046,12 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       requires_rsvp: validatedData.requiresRsvp ?? false,
       rsvp_deadline: buildRsvpDeadlineString(validatedData.rsvpDeadline, tz),
       max_attendees: validatedData.maxAttendees ?? null,
+      // F042: stamp the active lifecycle status so one-off events match the
+      // recurring path (recurring-events.ts inserts 'confirmed'). Without it the
+      // row landed with a null status, leaving it outside the 'confirmed'
+      // lifecycle (restore/cancel transitions key off 'confirmed') — the event
+      // was effectively "stuck" in an undefined state on some surfaces.
+      status: 'confirmed',
     };
 
     // Only add created_by if it's not null (coaches only)
@@ -2208,6 +2252,12 @@ const golfEventUpdateSchema = z.object({
   // incomplete client list.
   removeAttendeeIds: z.array(z.string().uuid()).optional(),
   timezoneOffset: z.number().int().optional(),
+  // Restore (un-cancel) a soft-cancelled event. Constrained to 'confirmed' so
+  // this update path can never be used to silently flip an event to other
+  // lifecycle states; cancellation still flows exclusively through
+  // deleteGolfEvent (which also notifies attendees). Setting it clears the
+  // cancellation bookkeeping below.
+  status: z.literal('confirmed').optional(),
 }).superRefine(refineEventEndAfterStart);
 
 export async function updateGolfEvent(
@@ -2297,6 +2347,14 @@ export async function updateGolfEvent(
       updateData.rsvp_deadline = buildRsvpDeadlineString(validatedData.rsvpDeadline, tz);
     }
     if (validatedData.maxAttendees !== undefined) updateData.max_attendees = validatedData.maxAttendees;
+    // Restore (un-cancel): flip back to confirmed and clear the cancellation
+    // bookkeeping set by deleteGolfEvent's soft-cancel path so the event no
+    // longer renders as cancelled.
+    if (validatedData.status === 'confirmed') {
+      updateData.status = 'confirmed';
+      updateData.cancelled_at = null;
+      updateData.cancellation_reason = null;
+    }
 
     let query = supabase
       .from('golf_events')
@@ -3000,32 +3058,64 @@ export async function invitePlayerToTeam(
 
 export async function updatePlayerStatus(
   playerId: string,
+  // The golf_team_members.status column allows active/inactive/removed; the
+  // roster UI now offers active/inactive only (B4/F007). 'injured'/'redshirt'
+  // remain in the param type as a no-op for any stale caller but can no longer
+  // be selected from the UI.
   status: 'active' | 'injured' | 'redshirt' | 'inactive'
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { supabase, coach } = await requireGolfCoach();
+    const supabase = await createClient();
 
-    if (!coach.team_id) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in to update player status' };
+    }
+
+    // F153/F154: resolve the coach's ACTIVE team via the cookie-aware resolver
+    // (mirrors removePlayerFromTeam). The previous requireGolfCoach() path
+    // resolved the team with an org-wide .maybeSingle() that ERRORS on a
+    // two-team org (men's + women's) — the status picker silently failed for any
+    // such program. resolveCoachTeamIdWithCookie never throws on multi-team orgs
+    // and honours the active-team toggle.
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!coach) {
+      return { success: false, error: 'Only coaches can update player status' };
+    }
+
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
+    if (!teamId) {
       return { success: false, error: 'Coach not assigned to a team' };
     }
 
-    // Verify ownership - checks golf_team_members for player-team relationship
-    await verifyGolfTeamOwnership(supabase, playerId, coach.team_id, 'golf_players');
+    // Verify the player is on the coach's resolved team.
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('player_id', playerId)
+      .eq('team_id', teamId)
+      .maybeSingle();
 
-    // Update status on golf_team_members
-    // NOTE: The golf_team_members.status column uses a CHECK constraint allowing:
-    // 'active', 'inactive', 'injured', 'redshirt' (see migration 042_sport_specific_messaging_tables.sql)
-    // The TypeScript types show team_member_status enum which is different, so we cast here.
+    if (!membership) {
+      return { success: false, error: 'Player is not on your team' };
+    }
+
+    // Update status on golf_team_members. The status CHECK allows
+    // active/inactive/removed; the UI only sends active/inactive.
     const { error } = await supabase
       .from('golf_team_members')
       .update({
-        // Cast to unknown first to bypass strict enum typing - the actual DB constraint
-        // supports all four player status values via CHECK constraint
+        // Cast to bypass strict enum typing — the DB CHECK governs the value.
         status: status as unknown as 'active' | 'inactive',
         updated_at: new Date().toISOString()
       })
       .eq('player_id', playerId)
-      .eq('team_id', coach.team_id);
+      .eq('team_id', teamId);
 
     if (error) {
       return { success: false, error: 'Failed to update player status' };
@@ -5228,6 +5318,38 @@ async function updateQualifierEntryStats(
   } catch {
     // Non-critical — continue
   }
+}
+
+/**
+ * Auto-advance a qualifier's lifecycle when a round is submitted (F029/F138).
+ *
+ * The first completed round flips an 'upcoming' qualifier to 'in_progress'.
+ * This is the missing server-side caller that updateQualifierStatus never had:
+ * without it the leaderboard's realtime "Live" pill (status === 'in_progress')
+ * never illuminated once play actually started. A qualifier already
+ * 'in_progress' or 'completed' is left untouched (advancing to 'completed' is a
+ * deliberate coach action through the selections workspace, never automatic).
+ *
+ * Best-effort and non-fatal: a failure here must never block the round submit.
+ */
+async function advanceQualifierOnRoundSubmit(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  qualifierId: string
+): Promise<void> {
+  const { data: qualifier } = await supabase
+    .from('golf_qualifiers')
+    .select('status')
+    .eq('id', qualifierId)
+    .maybeSingle();
+
+  if (!qualifier || qualifier.status !== 'upcoming') return;
+
+  await supabase
+    .from('golf_qualifiers')
+    .update({ status: 'in_progress' })
+    .eq('id', qualifierId)
+    // Guard against a concurrent transition (only advance from 'upcoming').
+    .eq('status', 'upcoming');
 }
 
 // ============================================================================

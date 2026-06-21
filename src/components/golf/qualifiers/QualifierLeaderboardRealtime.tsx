@@ -25,8 +25,11 @@ export function QualifierLeaderboardRealtime({
 }: QualifierLeaderboardRealtimeProps) {
   const { leaderboard: entries, qualifier, loading, error } = useQualifierRealtime(qualifierId);
 
-  // Use qualifier's num_rounds when available, fall back to prop
-  const effectiveNumRounds = qualifier?.num_rounds ?? numRounds;
+  // F029/F138: golf_qualifiers has no num_rounds column, so there is no stored
+  // per-qualifier round count to read — honor the caller-supplied prop (the
+  // honest fallback). The detail page passes 1 today; if a real column is ever
+  // added, source it here.
+  const effectiveNumRounds = numRounds;
 
   // Transform real-time data to leaderboard format with proper scoring
   const leaderboard = useMemo(() => {

@@ -437,11 +437,15 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                 type="number"
                 min="0"
                 max="6"
-                step="0.5"
+                step="1"
                 value={formData.credits || ''}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  credits: e.target.value ? parseFloat(e.target.value) : null
+                  // F015: golf_player_classes.credits is an integer column. The
+                  // old step="0.5" + parseFloat let a user enter 3.5, which the
+                  // DB then silently rounded — so the stored value didn't match
+                  // what was typed. Keep the input integer-only to match storage.
+                  credits: e.target.value ? Math.round(parseFloat(e.target.value)) : null
                 }))}
                 placeholder="3"
               />

@@ -74,7 +74,10 @@ export default function GolfTasksPage() {
     await refetch();
   };
 
-  // Transform real-time tasks to expected format
+  // Transform real-time tasks to expected format. `assignments` comes straight
+  // from the hook's golf_task_assignments rows (the M:N join create/complete
+  // actually write) — NOT the never-written golf_tasks.assigned_to — so the
+  // coach progress read-out (N of M) and player completion both reflect truth.
   const tasks: Task[] = realtimeTasks.map(task => ({
     id: task.id,
     title: task.title,
@@ -84,15 +87,15 @@ export default function GolfTasksPage() {
     created_at: task.created_at || '',
     reminder_at: task.reminder_at,
     category: task.category,
-    assignments: task.assigned_to_name ? [{
-      id: task.id,
-      status: task.status || 'pending',
-      completed_at: task.completed_at,
+    assignments: task.assignments.map(a => ({
+      id: a.id,
+      status: a.status,
+      completed_at: a.completed_at,
       player: {
-        first_name: task.assigned_to_name.split(' ')[0] || '',
-        last_name: task.assigned_to_name.split(' ').slice(1).join(' ') || '',
-      }
-    }] : [],
+        first_name: a.player.first_name,
+        last_name: a.player.last_name,
+      },
+    })),
   }));
 
   useEffect(() => {
@@ -136,6 +139,14 @@ export default function GolfTasksPage() {
   }).length;
   const loading = initialLoading || tasksLoading;
 
+  // Player complete handler — shared by the legacy + Fairway paths. Completes
+  // via golf_task_assignments (the completeTask action), then refetches so the
+  // live list + stats reflect the change.
+  const handleCompleteTask = async (taskId: string) => {
+    await completeTask(taskId);
+    await refetch();
+  };
+
   if (loading) {
     return (
       <div className="min-h-full bg-transparent">
@@ -168,10 +179,6 @@ export default function GolfTasksPage() {
   // SAME refetch, and the unchanged completeTask action for the player path.
   // Legacy return below stays byte-identical when the flag is off.
   if (isRedesignEnabled()) {
-    const handleCompleteTask = async (taskId: string) => {
-      await completeTask(taskId);
-      await refetch();
-    };
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayTasks
@@ -316,7 +323,12 @@ export default function GolfTasksPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Tasks List - Main Column */}
           <div className="lg:col-span-2">
-            <TasksList tasks={tasks} filter={filter} />
+            <TasksList
+              tasks={tasks}
+              filter={filter}
+              role={userRole === 'player' ? 'player' : 'coach'}
+              onComplete={userRole === 'player' ? handleCompleteTask : undefined}
+            />
           </div>
 
           {/* Templates Sidebar - Coach Only */}

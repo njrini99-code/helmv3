@@ -105,14 +105,27 @@ export async function saveRoundDraft(
       return { success: false, error: 'Player profile not found' };
     }
 
-    // Look up team_id from active team membership (same pattern as getPlayerTeamId in golf.ts)
-    const { data: membership } = await supabase
+    // Look up team_id from team membership (same pattern as getPlayerTeamId in golf.ts).
+    // F147: prefer the active membership, but fall back to the player's most recent
+    // membership so an injured/redshirt/inactive player's draft round still carries
+    // a team_id — otherwise it saves team_id=NULL and is invisible to the coach.
+    const { data: activeMembership } = await supabase
       .from('golf_team_members')
       .select('team_id')
       .eq('player_id', player.id)
       .eq('status', 'active')
       .maybeSingle();
-    const teamId = membership?.team_id ?? null;
+    let teamId = activeMembership?.team_id ?? null;
+    if (!teamId) {
+      const { data: anyMembership } = await supabase
+        .from('golf_team_members')
+        .select('team_id')
+        .eq('player_id', player.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      teamId = anyMembership?.team_id ?? null;
+    }
 
     const now = new Date().toISOString();
 

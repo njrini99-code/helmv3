@@ -610,6 +610,13 @@ export interface AnalysisOptions {
   includeLieAnalysis?: boolean;
   depth?: 'quick' | 'standard' | 'deep';
   /**
+   * Coach's persisted Insight Detail Level (golf_coach_philosophy.insight_verbosity).
+   * F061: flows to the NLG `InsightContext.verbosity` so composed insight bodies
+   * honor the saved 'brief' / 'detailed' preference. When omitted, the engine
+   * falls back to its prior balanced default (unchanged behavior).
+   */
+  verbosity?: 'brief' | 'detailed';
+  /**
    * Optional philosophy gate. When provided, every Tier-1 generator that
    * calls `upsertInsight` inherits it via AsyncLocalStorage and skips
    * writes that fall below the coach's confidence threshold or have their

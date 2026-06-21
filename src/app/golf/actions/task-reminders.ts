@@ -18,11 +18,72 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 // VAPID keys are now configured inside v3/foundation/push.ts. See W9-pt3.
 
 /**
- * Extended task type with user relations for notifications
+ * The Supabase client shape these functions operate on. The cron path passes a
+ * service-role admin client (RLS-bypassing) since golf_task_reminders is only
+ * readable by coaches / service_role; in-app/interactive callers pass the
+ * cookie-scoped server client (or omit it and one is created on demand).
  */
-interface TaskWithUsers extends GolfTask {
-  assignee?: { id: string; full_name: string; email: string } | null;
-  creator?: { id: string; full_name: string; email: string } | null;
+type TaskReminderClient = Awaited<ReturnType<typeof createClient>>;
+
+/** A resolved recipient: the auth user id + (optional) email. */
+interface TaskRecipient {
+  userId: string;
+  email: string | null;
+}
+
+/**
+ * Resolve the auth-user recipients of a task reminder via the CORRECT path:
+ *   - assigned players: golf_task_assignments.player_id → golf_players.user_id
+ *   - the assigning coach: golf_tasks.assigned_by (coach id) → golf_coaches.user_id
+ *
+ * golf_tasks.assigned_to/assigned_by are domain (player/coach) ids, NOT auth
+ * user ids — so they can't be used as users-FK targets directly. Emails are
+ * looked up from the users table for each resolved user id.
+ */
+async function resolveTaskRecipients(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  task: GolfTask,
+): Promise<TaskRecipient[]> {
+  const userIds = new Set<string>();
+
+  // Assigned players (M:N join).
+  const { data: assignments } = await supabase
+    .from('golf_task_assignments')
+    .select('player_id')
+    .eq('task_id', task.id);
+  const playerIds = [...new Set((assignments || []).map((a) => a.player_id))];
+  if (playerIds.length > 0) {
+    const { data: players } = await supabase
+      .from('golf_players')
+      .select('user_id')
+      .in('id', playerIds);
+    for (const p of players || []) {
+      if (p.user_id) userIds.add(p.user_id);
+    }
+  }
+
+  // Assigning coach.
+  if (task.assigned_by) {
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('user_id')
+      .eq('id', task.assigned_by)
+      .maybeSingle();
+    if (coach?.user_id) userIds.add(coach.user_id);
+  }
+
+  if (userIds.size === 0) return [];
+
+  const { data: userRows } = await supabase
+    .from('users')
+    .select('id, email')
+    .in('id', [...userIds]);
+  const emailById = new Map((userRows || []).map((u) => [u.id, u.email]));
+
+  return [...userIds].map((userId) => ({
+    userId,
+    email: emailById.get(userId) ?? null,
+  }));
 }
 
 /**
@@ -42,10 +103,12 @@ export async function setTaskReminder(
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Verify the user has access to this task
+    // Verify the user has access to this task. golf_tasks has assigned_by
+    // (the coach id), NOT a created_by column; assigned_to is the legacy
+    // (never-written) player column — assignment lives in golf_task_assignments.
     const { data: task, error: taskError } = await supabase
       .from('golf_tasks')
-      .select('id, team_id, created_by, assigned_to')
+      .select('id, team_id, assigned_by')
       .eq('id', taskId)
       .single();
 
@@ -133,6 +196,28 @@ export async function getUpcomingReminders(
   try {
     const supabase = await createClient();
 
+    // Resolve the user's coach/player domain ids. A user "owns" a task when
+    // they are the assigning coach (golf_tasks.assigned_by === coach.id) and is
+    // "assigned" a task via golf_task_assignments (player_id === player.id).
+    // golf_tasks.assigned_by/assigned_to are NOT user ids, so comparing them to
+    // userId directly (the previous behavior) never matched.
+    const [coachResult, playerResult] = await Promise.all([
+      supabase.from('golf_coaches').select('id').eq('user_id', userId).maybeSingle(),
+      supabase.from('golf_players').select('id').eq('user_id', userId).maybeSingle(),
+    ]);
+    const coachId = coachResult.data?.id ?? null;
+    const playerId = playerResult.data?.id ?? null;
+
+    // Task ids assigned to this player (via the M:N join).
+    let assignedTaskIds: string[] = [];
+    if (playerId) {
+      const { data: assignments } = await supabase
+        .from('golf_task_assignments')
+        .select('task_id')
+        .eq('player_id', playerId);
+      assignedTaskIds = (assignments || []).map((a) => a.task_id);
+    }
+
     // Get reminders for tasks the user created or is assigned to
     const { data: reminders, error } = await supabase
       .from('golf_task_reminders')
@@ -151,9 +236,11 @@ export async function getUpcomingReminders(
     }
 
     // Filter to only include reminders for tasks the user owns or is assigned to
+    const assignedSet = new Set(assignedTaskIds);
     const filteredReminders = (reminders || []).filter((reminder: { task: GolfTask | null }) => {
       const task = reminder.task;
-      return task && (task.assigned_by === userId || task.assigned_to === userId);
+      if (!task) return false;
+      return (coachId !== null && task.assigned_by === coachId) || assignedSet.has(task.id);
     }) as TaskReminderWithTask[];
 
     return { data: filteredReminders };
@@ -168,20 +255,24 @@ export async function getUpcomingReminders(
  * Called by cron/edge function
  */
 export async function getDueReminders(
-  batchSize: number = 100
+  batchSize: number = 100,
+  client?: TaskReminderClient,
 ): Promise<{ data: TaskReminderWithTask[] | null; error?: string }> {
   try {
-    const supabase = await createClient();
+    const supabase = client ?? (await createClient());
 
+    // Plain task join. The previous embedded `assignee:users!assigned_to` /
+    // `creator:users!created_by` joins were invalid: assigned_to FKs
+    // golf_players (not users), assigned_by FKs golf_coaches (not users), and
+    // created_by doesn't exist — so the whole query errored. Recipients are
+    // resolved per-task by the notification senders via the correct path
+    // (golf_task_assignments → golf_players.user_id, assigned_by →
+    // golf_coaches.user_id).
     const { data: reminders, error } = await supabase
       .from('golf_task_reminders')
       .select(`
         *,
-        task:golf_tasks(
-          *,
-          assignee:users!assigned_to(id, full_name, email),
-          creator:users!created_by(id, full_name, email)
-        )
+        task:golf_tasks(*)
       `)
       .eq('sent', false)
       .lte('scheduled_for', new Date().toISOString())
@@ -205,10 +296,11 @@ export async function getDueReminders(
  */
 export async function markReminderSent(
   reminderId: string,
-  error?: string
+  error?: string,
+  client?: TaskReminderClient,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient();
+    const supabase = client ?? (await createClient());
 
     const updateData: { sent: boolean; sent_at: string; error?: string } = {
       sent: true,
@@ -254,7 +346,9 @@ export async function markReminderSent(
  * Process all due reminders
  * Called by cron/edge function
  */
-export async function processReminders(): Promise<{
+export async function processReminders(
+  client?: TaskReminderClient,
+): Promise<{
   sent: number;
   failed: number;
   errors: string[];
@@ -266,7 +360,7 @@ export async function processReminders(): Promise<{
   };
 
   try {
-    const { data: reminders, error } = await getDueReminders();
+    const { data: reminders, error } = await getDueReminders(100, client);
 
     if (error || !reminders) {
       results.errors.push(error || 'Failed to fetch reminders');
@@ -276,19 +370,19 @@ export async function processReminders(): Promise<{
     for (const reminder of reminders) {
       try {
         // Send notification based on reminder type
-        const sendResult = await sendReminderNotification(reminder);
+        const sendResult = await sendReminderNotification(reminder, client);
 
         if (sendResult.success) {
-          await markReminderSent(reminder.id);
+          await markReminderSent(reminder.id, undefined, client);
           results.sent++;
         } else {
-          await markReminderSent(reminder.id, sendResult.error);
+          await markReminderSent(reminder.id, sendResult.error, client);
           results.failed++;
           results.errors.push(`Reminder ${reminder.id}: ${sendResult.error}`);
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        await markReminderSent(reminder.id, errorMessage);
+        await markReminderSent(reminder.id, errorMessage, client);
         results.failed++;
         results.errors.push(`Reminder ${reminder.id}: ${errorMessage}`);
       }
@@ -307,7 +401,8 @@ export async function processReminders(): Promise<{
  * Internal function to handle different notification types
  */
 async function sendReminderNotification(
-  reminder: TaskReminderWithTask
+  reminder: TaskReminderWithTask,
+  client?: TaskReminderClient,
 ): Promise<{ success: boolean; error?: string }> {
   const task = reminder.task;
   if (!task) {
@@ -319,17 +414,17 @@ async function sendReminderNotification(
   try {
     // Send in-app notification
     if (reminderType === 'in_app' || reminderType === 'all') {
-      await sendInAppNotification(task);
+      await sendInAppNotification(task, client);
     }
 
     // Send email notification
     if (reminderType === 'email' || reminderType === 'all') {
-      await sendEmailNotification(task);
+      await sendEmailNotification(task, client);
     }
 
     // Send push notification
     if (reminderType === 'push' || reminderType === 'all') {
-      await sendPushNotification(task);
+      await sendPushNotification(task, client);
     }
 
     return { success: true };
@@ -347,8 +442,8 @@ async function sendReminderNotification(
  * Uses 'event_reminder' type since 'task_reminder' is not in the enum.
  * Task-specific info is stored in the data field.
  */
-async function sendInAppNotification(task: GolfTask): Promise<void> {
-  const supabase = await createClient();
+async function sendInAppNotification(task: GolfTask, client?: TaskReminderClient): Promise<void> {
+  const supabase = client ?? (await createClient());
 
   const notificationData = {
     task_id: task.id,
@@ -356,66 +451,44 @@ async function sendInAppNotification(task: GolfTask): Promise<void> {
     action_url: `/golf/dashboard/tasks?task=${task.id}`,
   };
 
-  // Create notification for the assignee
-  if (task.assigned_to) {
-    await supabase.from('notifications').insert({
-      user_id: task.assigned_to,
-      type: 'event_reminder' as const,
-      title: 'Task Reminder',
-      body: `Reminder: "${task.title}" is due${task.due_date ? ` on ${new Date(task.due_date).toLocaleDateString()}` : ' soon'}`,
-      data: notificationData,
-      read: false,
-    });
-  }
+  // Resolve real auth-user recipients (assigned players + assigning coach).
+  // The previous code wrote notifications.user_id = task.assigned_to /
+  // task.assigned_by, which are player/coach domain ids — not auth user ids —
+  // so the rows pointed at the wrong (or non-existent) users.
+  const recipients = await resolveTaskRecipients(supabase, task);
+  if (recipients.length === 0) return;
 
-  // Also notify the coach who assigned it if different from assignee
-  if (task.assigned_by && task.assigned_by !== task.assigned_to) {
-    await supabase.from('notifications').insert({
-      user_id: task.assigned_by,
+  const body = `Reminder: "${task.title}" is due${task.due_date ? ` on ${new Date(task.due_date).toLocaleDateString()}` : ' soon'}`;
+
+  await supabase.from('notifications').insert(
+    recipients.map((r) => ({
+      user_id: r.userId,
       type: 'event_reminder' as const,
       title: 'Task Reminder',
-      body: `Reminder: "${task.title}" is due${task.due_date ? ` on ${new Date(task.due_date).toLocaleDateString()}` : ' soon'}`,
+      body,
       data: notificationData,
       read: false,
-    });
-  }
+    })),
+  );
 }
 
 /**
  * Send email notification using Resend
  * Sends task reminder emails to assignee and optionally creator
  */
-async function sendEmailNotification(task: GolfTask): Promise<void> {
+async function sendEmailNotification(task: GolfTask, client?: TaskReminderClient): Promise<void> {
   if (!RESEND_API_KEY) {
     console.warn('[TaskReminders] Email skipped: RESEND_API_KEY not configured');
     return;
   }
 
-  // Get full task with user details
-  const supabase = await createClient();
-  const { data: taskWithUsers } = await supabase
-    .from('golf_tasks')
-    .select(`
-      *,
-      assignee:users!assigned_to(id, full_name, email),
-      creator:users!assigned_by(id, full_name, email)
-    `)
-    .eq('id', task.id)
-    .single();
-
-  const fullTask = taskWithUsers as TaskWithUsers | null;
-  if (!fullTask) {
-    return;
-  }
-
-  // Collect email recipients
-  const recipients: string[] = [];
-  if (fullTask.assignee?.email) {
-    recipients.push(fullTask.assignee.email);
-  }
-  if (fullTask.creator?.email && fullTask.creator.email !== fullTask.assignee?.email) {
-    recipients.push(fullTask.creator.email);
-  }
+  // Resolve recipient emails via the correct path (assigned players +
+  // assigning coach). The previous embedded users-FK joins on assigned_to /
+  // assigned_by were invalid (those columns FK golf_players / golf_coaches,
+  // not users) and errored out, so no task email ever sent.
+  const supabase = client ?? (await createClient());
+  const resolved = await resolveTaskRecipients(supabase, task);
+  const recipients = [...new Set(resolved.map((r) => r.email).filter((e): e is string => !!e))];
 
   if (recipients.length === 0) {
     return;
@@ -524,20 +597,19 @@ function escapeHtml(text: string): string {
  *   created_at TIMESTAMPTZ DEFAULT NOW()
  * );
  */
-async function sendPushNotification(task: GolfTask): Promise<void> {
+async function sendPushNotification(task: GolfTask, client?: TaskReminderClient): Promise<void> {
   // Configured VAPID keys are now a precondition of the v3 push wrapper.
   if (!isWebPushAvailable()) {
     return;
   }
 
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
 
-  // Get users who should receive the notification
-  const userIds: string[] = [];
-  if (task.assigned_to) userIds.push(task.assigned_to);
-  if (task.assigned_by && task.assigned_by !== task.assigned_to) {
-    userIds.push(task.assigned_by);
-  }
+  // Resolve real auth-user recipients. task.assigned_to / assigned_by are
+  // player/coach domain ids, not auth user ids, so they can't be used as
+  // push-subscription user ids directly.
+  const recipients = await resolveTaskRecipients(supabase, task);
+  const userIds = recipients.map((r) => r.userId);
 
   if (userIds.length === 0) {
     return;

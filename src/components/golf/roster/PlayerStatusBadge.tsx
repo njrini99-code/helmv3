@@ -15,8 +15,11 @@ interface PlayerStatusBadgeProps {
   editable?: boolean; // Allow non-editable display mode
 }
 
+// B4/F007: golf_team_members.status only allows pending/active/inactive/removed
+// — 'injured' and 'redshirt' were never valid write values, so the picker
+// offers Active + Inactive only.
 const statuses: Array<{
-  value: 'active' | 'injured' | 'redshirt' | 'inactive';
+  value: 'active' | 'inactive';
   label: string;
   dotColor: string;
   tone: BadgeTone;
@@ -29,20 +32,6 @@ const statuses: Array<{
     dotColor: 'bg-primary-500',
     tone: 'primary',
     badgeStyle: 'bg-primary-500/10 text-primary-700 ring-primary-500/20',
-  },
-  {
-    value: 'injured',
-    label: 'Injured',
-    dotColor: 'bg-rose-500',
-    tone: 'rose',
-    badgeStyle: 'bg-rose-500/10 text-rose-700 ring-rose-500/20',
-  },
-  {
-    value: 'redshirt',
-    label: 'Redshirt',
-    dotColor: 'bg-amber-500',
-    tone: 'amber',
-    badgeStyle: 'bg-amber-500/10 text-amber-700 ring-amber-500/20',
   },
   {
     value: 'inactive',
@@ -65,7 +54,7 @@ export function PlayerStatusBadge({
 
   const currentStatusObj = statuses.find(s => s.value === currentStatus) || statuses[0]!;
 
-  const handleStatusChange = async (newStatus: 'active' | 'injured' | 'redshirt' | 'inactive') => {
+  const handleStatusChange = async (newStatus: 'active' | 'inactive') => {
     if (newStatus === currentStatus) {
       setIsOpen(false);
       return;
@@ -155,7 +144,7 @@ export function PlayerStatusBadge({
               {statuses.map(status => (
                 <Button variant="ghost"
                   key={status.value}
-                  onClick={() => handleStatusChange(status.value as 'active' | 'injured' | 'redshirt' | 'inactive')}
+                  onClick={() => handleStatusChange(status.value)}
                   className={cn(
                     'w-full px-3 py-2 text-left text-sm',
                     'flex items-center gap-2',

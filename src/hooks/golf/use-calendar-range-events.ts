@@ -24,6 +24,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 /** Columns fetched for calendar rendering — keep in sync with the page select. */
@@ -214,14 +215,21 @@ export function useCalendarRangeEvents({
     void (async () => {
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
-          .from('golf_events')
-          .select(CALENDAR_EVENT_COLUMNS)
-          .eq('team_id', teamId)
-          .gte('start_time', fetchStart.toISOString())
-          .lte('start_time', fetchEnd.toISOString())
-          .order('start_time', { ascending: true })
-          .limit(500);
+        // Paginate past the PostgREST 1000-row server cap (audit F102): a busy
+        // team's ±1-month buffered window can exceed a single page, and a bare
+        // `.limit(500)` silently dropped the overflow. A secondary `.order('id')`
+        // gives a STABLE page boundary so rows can't drift or repeat across pages.
+        const { data, error } = await fetchAllRowsResult<GolfEventRangeRow>((from, to) =>
+          supabase
+            .from('golf_events')
+            .select(CALENDAR_EVENT_COLUMNS)
+            .eq('team_id', teamId)
+            .gte('start_time', fetchStart.toISOString())
+            .lte('start_time', fetchEnd.toISOString())
+            .order('start_time', { ascending: true })
+            .order('id', { ascending: true })
+            .range(from, to),
+        );
 
         if (cancelled) return;
         if (error) {
@@ -229,7 +237,7 @@ export function useCalendarRangeEvents({
           return;
         }
 
-        const rows = (data ?? []) as GolfEventRangeRow[];
+        const rows = data ?? [];
         setFetchedEvents((prev) => {
           const next = new Map(prev);
           for (const row of rows) {

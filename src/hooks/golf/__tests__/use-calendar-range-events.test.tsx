@@ -30,7 +30,7 @@ let nextResults: Array<{ data: unknown[] | null; error: { message: string } | nu
 function makeChain(record: QueryRecord) {
   const result = nextResults.shift() ?? { data: [], error: null };
   const chain: Record<string, unknown> = {};
-  for (const method of ['select', 'eq', 'neq', 'gte', 'lte', 'order', 'limit']) {
+  for (const method of ['select', 'eq', 'neq', 'gte', 'lte', 'order', 'limit', 'range']) {
     chain[method] = (...args: unknown[]) => {
       record.calls.push({ method, args });
       return chain;

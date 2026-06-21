@@ -842,6 +842,8 @@ export async function generateTeamInsights() {
               includePredictions: true,
               includeShotPatterns: true,
               depth: 'standard',
+              // F061 — honor the coach's saved Insight Detail Level in the NLG.
+              verbosity: philosophy.insightVerbosity,
             });
             return { player, analysis, success: true };
           } catch (err) {
@@ -1042,8 +1044,11 @@ export async function generateTeamInsights() {
       duration_ms: executionTime,
     });
 
-    // 9. Revalidate dashboard
+    // 9. Revalidate dashboard + the insights page itself (C2/F112 — these
+    // newly-generated rows surface on /golf/dashboard/insights, which was never
+    // revalidated, so the coach saw a stale list until a full reload).
     revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/insights');
 
     return {
       success: true,
@@ -1179,6 +1184,9 @@ export async function acknowledgeInsight(insightId: string) {
     }
 
     revalidatePath('/golf/dashboard');
+    // C2/F112 — the insights list page is its own route; revalidate it so the
+    // acknowledged row updates without a hard reload.
+    revalidatePath('/golf/dashboard/insights');
     return { success: true };
   } catch (error) {
     await logServerError(`acknowledgeInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -1236,6 +1244,8 @@ export async function dismissInsight(insightId: string) {
     }
 
     revalidatePath('/golf/dashboard');
+    // C2/F112 — revalidate the insights list route so the dismissed row drops.
+    revalidatePath('/golf/dashboard/insights');
     return { success: true };
   } catch (error) {
     await logServerError(`dismissInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -1292,6 +1302,8 @@ export async function resolveInsight(insightId: string) {
     }
 
     revalidatePath('/golf/dashboard');
+    // C2/F112 — revalidate the insights list route so the resolved row updates.
+    revalidatePath('/golf/dashboard/insights');
     return { success: true };
   } catch (error) {
     await logServerError(`resolveInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -1471,12 +1483,20 @@ export async function analyzePlayer(
       return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
     }
 
+    // F061 — when a coach is viewing, honor their saved Insight Detail Level.
+    // For player self-views there is no single coach philosophy, so the engine
+    // falls back to its balanced default (verbosity stays undefined).
+    const verbosity = access.coachId
+      ? (await getCoachPhilosophy(access.coachId)).insightVerbosity
+      : undefined;
+
     const analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
       includePatterns: options?.includePatterns ?? true,
       includeCausal: options?.includeCausal ?? true,
       includePredictions: options?.includePredictions ?? true,
       includeTrajectory: options?.includeTrajectory ?? false,
       depth: options?.depth ?? 'standard',
+      verbosity,
     });
 
     if (!analysis) {
@@ -1522,11 +1542,17 @@ export async function generatePlayerInsight(playerId: string): Promise<{
       return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
     }
 
+    // F061 — coach-facing on-demand insight; honor the coach's Detail Level.
+    const verbosity = access.coachId
+      ? (await getCoachPhilosophy(access.coachId)).insightVerbosity
+      : undefined;
+
     const analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
       includePatterns: true,
       includeCausal: true,
       includePredictions: true,
       depth: 'standard',
+      verbosity,
     });
 
     if (!analysis) {
@@ -1925,6 +1951,8 @@ export async function generateTeamInsight(): Promise<{
               includeCausal: true,
               includePredictions: true,
               depth: 'standard',
+              // F061 — honor the coach's saved Insight Detail Level in the NLG.
+              verbosity: philosophy.insightVerbosity,
             });
 
             return { player, playerName, analysis, success: true };
@@ -3273,6 +3301,9 @@ export async function triggerPlayerInsightsAfterRound(
         includePredictions: true,
         includeShotPatterns: true,
         depth: 'standard',
+        // F061 — flow the coach's saved Insight Detail Level into the NLG so
+        // composed insight bodies honor 'brief' / 'detailed'.
+        verbosity: philosophy.insightVerbosity,
         philosophyGate,
       });
     } catch {

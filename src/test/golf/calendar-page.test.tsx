@@ -58,7 +58,7 @@ function makeChain(table: string) {
   queryLog.push(record);
   const result = tableResults.get(table) ?? { data: null, error: null };
   const chain: Record<string, unknown> = {};
-  for (const method of ['select', 'eq', 'neq', 'gte', 'lte', 'order', 'limit', 'maybeSingle']) {
+  for (const method of ['select', 'eq', 'neq', 'gte', 'lte', 'order', 'limit', 'range', 'maybeSingle']) {
     chain[method] = (...args: unknown[]) => {
       record.calls.push({ method, args });
       return chain;
@@ -106,10 +106,12 @@ describe('GolfCalendarPage — events fetch contract', () => {
     expect(selectStr).toContain('status');
     // Soft-cancelled events stay in the payload (rendered distinctly).
     expect(eventsQuery!.calls.some((c) => c.method === 'neq')).toBe(false);
-    // Window + cap still applied.
+    // Window + pagination still applied. The 1000-row cap is now enforced
+    // transparently via fetchAllRowsResult's .range() pagination (audit F102),
+    // which replaced the old bare .limit(500) that silently dropped overflow.
     expect(eventsQuery!.calls.some((c) => c.method === 'gte')).toBe(true);
     expect(eventsQuery!.calls.some((c) => c.method === 'lte')).toBe(true);
-    expect(eventsQuery!.calls.some((c) => c.method === 'limit')).toBe(true);
+    expect(eventsQuery!.calls.some((c) => c.method === 'range')).toBe(true);
   });
 
   it('maps series fields + cancelled status through to the client payload', async () => {

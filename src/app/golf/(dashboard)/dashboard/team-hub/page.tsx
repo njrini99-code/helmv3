@@ -96,7 +96,8 @@ export default async function TeamHubPage({
     supabase.from('golf_teams').select('name').eq('id', teamId).maybeSingle(),
 
     // Teammates — the player roster, folded into the hub (SAME query the
-    // standalone player roster route used; excludes the viewer).
+    // standalone player roster route used; excludes the viewer). F083: active
+    // members only, so pending/removed rows don't surface in the Teammates tab.
     supabase
       .from('golf_team_members')
       .select(`
@@ -106,6 +107,7 @@ export default async function TeamHubPage({
         )
       `)
       .eq('team_id', teamId)
+      .eq('status', 'active')
       .neq('player_id', player.id),
   ]);
 

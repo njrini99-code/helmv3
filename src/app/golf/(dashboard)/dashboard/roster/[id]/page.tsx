@@ -98,7 +98,12 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   if (!session) redirect('/golf/login');
 
   const { coach } = session;
-  if (!coach) redirect('/golf/login');
+  // C18/F142: this player-detail page is a coach-only surface. A signed-in
+  // PLAYER who lands here was bounced to /golf/login (a confusing re-auth
+  // loop — they are already authenticated). Send them to their dashboard
+  // instead of a login bounce; an unauthenticated session was already handled
+  // by the !session redirect above.
+  if (!coach) redirect('/golf/dashboard');
 
   const supabase = await createClient();
 

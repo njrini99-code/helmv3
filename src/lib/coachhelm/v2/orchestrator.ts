@@ -133,6 +133,73 @@ const DEFAULT_PRESSURE_GAP_THRESHOLD = 2;
  * the full orchestrator, and call sites below substitute it for the
  * inline numeric literals.
  */
+/**
+ * Per-type alert toggles persisted on `golf_coach_philosophy` (the 11 "Active
+ * Alerts" switches on the coaching-intelligence settings screen). All optional
+ * + defaulting to `true` so a coach who has never saved a philosophy keeps the
+ * prior firehose behavior (the settings screen seeds these on first save).
+ *
+ * F060: prior to this, `generateAlerts` emitted every pattern/prediction alert
+ * regardless of these switches — the toggles persisted but the alert path
+ * never read them. This is the typed shape the toggle-suppression helper reads.
+ */
+export interface AlertTypeToggleFlags {
+  alertScoringDecline?: boolean | null;
+  alertStatRegression?: boolean | null;
+  alertTournamentPressure?: boolean | null;
+  alertPlateau?: boolean | null;
+  alertBubblePlayer?: boolean | null;
+  alertSurgePlayer?: boolean | null;
+  alertStreaks?: boolean | null;
+  alertRecurringWeakness?: boolean | null;
+  alertClosingHoles?: boolean | null;
+  alertPar3Issues?: boolean | null;
+}
+
+/**
+ * Maps a mined pattern to the coach's alert toggle and returns whether that
+ * alert type is enabled. Routing mirrors `determineInsightType` in
+ * `src/app/golf/actions/insights.ts` so suppression here is consistent with how
+ * the same pattern is later classified for persistence:
+ *   - outcome metric `tournament_score` → tournament pressure
+ *   - `temporal` patterns               → scoring decline
+ *   - everything else (high stroke impact) → recurring weakness
+ * Defaults to enabled when a switch is unset (null/undefined) so coaches without
+ * a saved philosophy are unaffected (F060).
+ */
+export function isPatternAlertEnabled(
+  pattern: { patternType?: string; outcome?: { metric?: string } | null; strokeImpact?: number },
+  toggles: AlertTypeToggleFlags,
+): boolean {
+  const on = (v: boolean | null | undefined): boolean => v !== false; // null/undefined => enabled
+
+  if (pattern.outcome?.metric === 'tournament_score') {
+    return on(toggles.alertTournamentPressure);
+  }
+  if (pattern.patternType === 'temporal') {
+    return on(toggles.alertScoringDecline);
+  }
+  // High-impact mined patterns surface as recurring weaknesses.
+  return on(toggles.alertRecurringWeakness);
+}
+
+/**
+ * Maps a prediction-derived alert to the coach's alert toggle. A negative
+ * (declining) forecast routes to `alertScoringDecline`; an improving forecast
+ * routes to `alertSurgePlayer`. Defaults to enabled when unset (F060).
+ */
+export function isPredictionAlertEnabled(
+  prediction: { trend?: string },
+  toggles: AlertTypeToggleFlags,
+): boolean {
+  const on = (v: boolean | null | undefined): boolean => v !== false;
+  if (prediction.trend === 'improving') {
+    return on(toggles.alertSurgePlayer);
+  }
+  // declining / stable negative forecasts are scoring-decline alerts.
+  return on(toggles.alertScoringDecline);
+}
+
 export function applyPhilosophyThresholds(
   signal: { predictedValue?: number; strokeImpact?: number },
   philosophy: { declineThreshold?: number; pressureGapThreshold?: number },
@@ -192,6 +259,7 @@ class CoachHelmIntelligence {
       includeShotPatterns = true,
       includeLieAnalysis = true,
       depth = 'standard',
+      verbosity,
     } = options;
 
     // Drop any stats cached from a prior analyzePlayer run (different player
@@ -429,7 +497,8 @@ class CoachHelmIntelligence {
       stats,
       lieAnalysis,
       shotStateAnalysis ?? undefined,
-      playerBaseline
+      playerBaseline,
+      verbosity
     ));
 
     // === Score and filter insights ===
@@ -628,15 +697,39 @@ class CoachHelmIntelligence {
 
     // LIVE-24: load coach philosophy once per run; prior code hard-coded
     // decline/pressure thresholds and ignored persisted per-coach settings.
+    // F060: also load the per-type alert toggles + insight verbosity so we can
+    // suppress emission of disabled alert types and honor the coach's detail
+    // level. Prior code read ONLY the two thresholds, so the 11 "Active Alerts"
+    // switches and the insight-detail toggle were persisted-but-ignored here.
     const { data: philosophyRow } = await supabase
       .from('golf_coach_philosophy')
-      .select('decline_threshold, pressure_gap_threshold')
+      .select(
+        'decline_threshold, pressure_gap_threshold, insight_verbosity, alert_scoring_decline, alert_stat_regression, alert_tournament_pressure, alert_plateau, alert_bubble_player, alert_surge_player, alert_streaks, alert_recurring_weakness, alert_closing_holes, alert_par_3_issues',
+      )
       .eq('coach_id', coachId)
       .maybeSingle();
     const philosophy = {
       declineThreshold: philosophyRow?.decline_threshold ?? undefined,
       pressureGapThreshold: philosophyRow?.pressure_gap_threshold ?? undefined,
     };
+    // F060 — per-type alert toggles (default-enabled when a switch is unset).
+    const alertToggles: AlertTypeToggleFlags = {
+      alertScoringDecline: philosophyRow?.alert_scoring_decline ?? undefined,
+      alertStatRegression: philosophyRow?.alert_stat_regression ?? undefined,
+      alertTournamentPressure: philosophyRow?.alert_tournament_pressure ?? undefined,
+      alertPlateau: philosophyRow?.alert_plateau ?? undefined,
+      alertBubblePlayer: philosophyRow?.alert_bubble_player ?? undefined,
+      alertSurgePlayer: philosophyRow?.alert_surge_player ?? undefined,
+      alertStreaks: philosophyRow?.alert_streaks ?? undefined,
+      alertRecurringWeakness: philosophyRow?.alert_recurring_weakness ?? undefined,
+      alertClosingHoles: philosophyRow?.alert_closing_holes ?? undefined,
+      alertPar3Issues: philosophyRow?.alert_par_3_issues ?? undefined,
+    };
+    // F061 — alerts are coach-facing; honor the saved Insight Detail Level.
+    // 'detailed' maps straight through; anything else ('brief'/unset) keeps the
+    // prior compact 'brief' alert body.
+    const alertVerbosity: 'brief' | 'detailed' =
+      philosophyRow?.insight_verbosity === 'detailed' ? 'detailed' : 'brief';
 
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
@@ -676,9 +769,12 @@ class CoachHelmIntelligence {
         if (alertLevel === 'none' || alertLevel === 'info') continue;
 
         // High-impact patterns become alerts — gate on the coach's
-        // persisted pressureGapThreshold (LIVE-24).
+        // persisted pressureGapThreshold (LIVE-24) AND the per-type alert
+        // toggle (F060): if the coach turned off the alert type this pattern
+        // maps to, suppress emission entirely.
         for (const pattern of patterns.filter((p) => {
           if (!p.isActive || p.confidence <= 0.65) return false;
+          if (!isPatternAlertEnabled(pattern, alertToggles)) return false;
           const gate = applyPhilosophyThresholds({ strokeImpact: p.strokeImpact }, philosophy);
           return gate.shouldAlert;
         })) {
@@ -701,7 +797,7 @@ class CoachHelmIntelligence {
           const context: InsightContext = {
             playerId,
             isForCoach: true,
-            verbosity: 'brief',
+            verbosity: alertVerbosity,
             playerState: this.inferPlayerState(analysis.features),
             recentPerformance: this.inferRecentPerformance(analysis.features),
           };
@@ -727,15 +823,19 @@ class CoachHelmIntelligence {
           );
         }
 
-        // Negative predictions become alerts — gate on declineThreshold.
+        // Negative predictions become alerts — gate on declineThreshold AND
+        // the per-type alert toggle (F060): a declining forecast is suppressed
+        // when alertScoringDecline is off, an improving one when alertSurgePlayer
+        // is off.
         for (const pred of predictions.filter((p) => {
+          if (!isPredictionAlertEnabled(p, alertToggles)) return false;
           const gate = applyPhilosophyThresholds({ predictedValue: p.predictedValue }, philosophy);
           return gate.shouldAlert;
         })) {
           const context: InsightContext = {
             playerId,
             isForCoach: true,
-            verbosity: 'brief',
+            verbosity: alertVerbosity,
             playerState: this.inferPlayerState(analysis.features),
             recentPerformance: this.inferRecentPerformance(analysis.features),
           };
@@ -893,13 +993,17 @@ class CoachHelmIntelligence {
     lieAnalysis?: LieMissAnalysis,
     shotStateAnalysis?: ShotStateAnalysis,
     playerBaseline?: import('./stats/baselines').PlayerBaseline,
+    verbosity?: 'brief' | 'detailed',
   ): Promise<ComposedInsight[]> {
     const insights: ComposedInsight[] = [];
 
     const context: InsightContext = {
       playerId,
       isForCoach: false,
-      verbosity: 'balanced',
+      // F061: honor the coach's saved Insight Detail Level. 'detailed' and
+      // 'brief' map straight through; when unset, keep the prior 'balanced'
+      // default so existing behavior is unchanged.
+      verbosity: verbosity ?? 'balanced',
       playerState: this.inferPlayerState(features),
       recentPerformance: this.inferRecentPerformance(features),
     };

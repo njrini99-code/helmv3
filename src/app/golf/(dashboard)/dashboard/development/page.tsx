@@ -20,7 +20,11 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-export default async function DevelopmentPlansPage() {
+export default async function DevelopmentPlansPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ player?: string | string[] }>;
+}) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
@@ -56,7 +60,11 @@ export default async function DevelopmentPlansPage() {
 
   const playerIds = (players || []).map(p => p.id);
 
-  // Fetch all focus areas for team players
+  // Fetch all focus areas for team players.
+  // Selects from_review_id / from_insight_id / review_context (drive the shared
+  // FocusAreaCard SourceChip), and progress_notes (drives the per-area
+  // Sparkline). outcome_status is NOT a column on this table — it lives on the
+  // source insight (golf_coach_insights) and is joined in below by from_insight_id.
   const { data: focusAreas } = playerIds.length > 0
     ? await supabase
         .from('golf_player_focus_areas')
@@ -74,7 +82,11 @@ export default async function DevelopmentPlansPage() {
           started_at,
           completed_at,
           created_at,
-          updated_at
+          updated_at,
+          from_review_id,
+          from_insight_id,
+          review_context,
+          progress_notes
         `)
         .in('player_id', playerIds)
         .order('created_at', { ascending: false })
@@ -160,10 +172,81 @@ export default async function DevelopmentPlansPage() {
     };
   }
 
-  // Combine focus areas with player info
+  // ── Outcome-mix join (B13/F019) ─────────────────────────────────────────────
+  // outcome_status is recorded on the SOURCE insight (golf_coach_insights), not on
+  // golf_player_focus_areas. Pull the recorded verdict per source insight so the
+  // RosterHealthHeader "Did the coaching land?" mix advances. RLS already scopes
+  // coach visibility to their own insights; we just key by from_insight_id.
+  const sourceInsightIds = Array.from(
+    new Set(
+      (focusAreas || [])
+        .map(fa => fa.from_insight_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const outcomeByInsightId: Record<string, string> = {};
+  if (sourceInsightIds.length > 0) {
+    const { data: insightOutcomes } = await supabase
+      .from('golf_coach_insights')
+      .select('id, outcome_status')
+      .in('id', sourceInsightIds)
+      .not('outcome_status', 'is', null);
+    for (const row of insightOutcomes || []) {
+      if (row.outcome_status) outcomeByInsightId[row.id] = row.outcome_status;
+    }
+  }
+
+  // Resolve from_review_id (golf_round_reviews.id) → round_id so the shared
+  // FocusAreaCard SourceChip "From a round review" link targets the round-review
+  // route, which is keyed by ROUND id (mirrors the player My Development fix).
+  const reviewIds = Array.from(
+    new Set(
+      (focusAreas || [])
+        .map(fa => fa.from_review_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+  const roundIdByReviewId: Record<string, string> = {};
+  if (reviewIds.length > 0) {
+    const { data: reviewRows } = await supabase
+      .from('golf_round_reviews')
+      .select('id, round_id')
+      .in('id', reviewIds);
+    for (const row of reviewRows || []) {
+      if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
+    }
+  }
+
+  // Per-row progress history for the FocusAreaCard Sparkline. progress_notes is
+  // stored as { entries: [{ at, value, note }] }; map it to the card's
+  // progressHistory shape (oldest→newest). Honest-empty when absent/malformed.
+  const progressHistoryOf = (
+    raw: unknown,
+  ): { at: string; value: number; note?: string }[] => {
+    const entries = (raw as { entries?: unknown } | null)?.entries;
+    if (!Array.isArray(entries)) return [];
+    return entries
+      .filter(
+        (e): e is { at: string; value: number; note?: string } =>
+          Boolean(e) &&
+          typeof (e as { at?: unknown }).at === 'string' &&
+          typeof (e as { value?: unknown }).value === 'number',
+      )
+      .map(e => ({ at: e.at, value: e.value, note: e.note }));
+  };
+
+  // Combine focus areas with player info, the joined source-insight outcome, the
+  // mapped progress history (Sparkline source), and the resolved review round id.
   const focusAreasWithPlayers = (focusAreas || []).map(fa => ({
     ...fa,
     player: (players || []).find(p => p.id === fa.player_id) || null,
+    outcome_status: fa.from_insight_id
+      ? outcomeByInsightId[fa.from_insight_id] ?? null
+      : null,
+    progressHistory: progressHistoryOf(fa.progress_notes),
+    from_review_round_id: fa.from_review_id
+      ? roundIdByReviewId[fa.from_review_id] ?? null
+      : null,
   }));
 
   // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
@@ -239,6 +322,16 @@ export default async function DevelopmentPlansPage() {
     // Dedupe-aware causal "why their scores move" rows, keyed by player_id.
     const causalByPlayer = await getTeamCausalRelationships(teamId);
 
+    // F133: honor the ?player= deep-link from a player's insight/genome card —
+    // open the grid scoped to that player, but only if the id is actually on this
+    // coach's roster (never trust the raw query param).
+    const resolvedParams = (await searchParams) ?? {};
+    const requestedPlayer = Array.isArray(resolvedParams.player)
+      ? resolvedParams.player[0]
+      : resolvedParams.player;
+    const initialSelectedPlayerId =
+      requestedPlayer && playerIds.includes(requestedPlayer) ? requestedPlayer : null;
+
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <PlayersGridView
@@ -250,6 +343,7 @@ export default async function DevelopmentPlansPage() {
           goalsByPlayer={goalsByPlayer}
           playerNameById={playerNameById}
           causalByPlayer={causalByPlayer}
+          initialSelectedPlayerId={initialSelectedPlayerId}
         />
       </div>
     );

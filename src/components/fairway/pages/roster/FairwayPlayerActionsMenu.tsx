@@ -48,12 +48,16 @@ import {
 } from '@/components/icons';
 
 /* ---------------------------------------------------------------------------
- * Status vocabulary — same four values + descriptions as the legacy menu, on
- * the Fairway palette (green=structure/active, amber=warning, rose=danger,
+ * Status vocabulary — the two valid roster statuses (green=active,
  * tertiary=neutral). The dot color is the non-text meaning channel.
+ *
+ * B4/F007: the golf_team_members.status enum only allows
+ * pending/active/inactive/removed — 'injured' and 'redshirt' were never valid
+ * write values, so they are dropped from the Change Status modal. Active +
+ * Inactive only.
  * ------------------------------------------------------------------------- */
 
-export type FairwayPlayerStatus = 'active' | 'injured' | 'redshirt' | 'inactive';
+export type FairwayPlayerStatus = 'active' | 'inactive';
 
 interface StatusOption {
   value: FairwayPlayerStatus;
@@ -71,18 +75,6 @@ const STATUS_OPTIONS: StatusOption[] = [
     dotClass: 'bg-accent-500',
   },
   {
-    value: 'injured',
-    label: 'Injured',
-    description: 'Player is recovering from an injury',
-    dotClass: 'bg-fw-danger',
-  },
-  {
-    value: 'redshirt',
-    label: 'Redshirt',
-    description: 'Player is redshirting this season',
-    dotClass: 'bg-fw-warning',
-  },
-  {
     value: 'inactive',
     label: 'Inactive',
     description: 'Player is not currently participating',
@@ -92,13 +84,11 @@ const STATUS_OPTIONS: StatusOption[] = [
 
 const STATUS_LABEL: Record<FairwayPlayerStatus, string> = {
   active: 'Active',
-  injured: 'Injured',
-  redshirt: 'Redshirt',
   inactive: 'Inactive',
 };
 
 function isPlayerStatus(v: string | null | undefined): v is FairwayPlayerStatus {
-  return v === 'active' || v === 'injured' || v === 'redshirt' || v === 'inactive';
+  return v === 'active' || v === 'inactive';
 }
 
 /**
@@ -154,7 +144,13 @@ export function FairwayPlayerActionsMenu({
   const [selectedStatus, setSelectedStatus] =
     React.useState<FairwayPlayerStatus | null>(null);
 
-  const profileHref = `/golf/dashboard/players/${playerId}`;
+  // F142/F143: `/golf/dashboard/players/[playerId]` is the CoachHelm Player
+  // INSIGHT surface (AI patterns/predictions), NOT the roster profile —
+  // `/golf/dashboard/roster/[id]` is the profile (what the card's "View player"
+  // CTA opens). Labeling this kebab row "View Profile" pointed coaches at a
+  // different page than the card's primary action. The item is now "View
+  // Insights" so the two destinations are distinct + honestly named.
+  const insightHref = `/golf/dashboard/players/${playerId}`;
 
   /* ---- navigation helpers (close the popover first) ---- */
 
@@ -250,11 +246,13 @@ export function FairwayPlayerActionsMenu({
           </IconButton>
         }
       >
-        {/* View Profile — a real <Link>, styled to match the PopoverPanel.Item row
-            (the Item primitive is a raw <button> with no asChild slot). */}
-        <Link href={profileHref} className={MENU_ITEM_CLASS} onClick={() => setMenuOpen(false)}>
+        {/* View Insights — opens the CoachHelm Player Insight surface (distinct
+            from the card's "View player" profile CTA). A real <Link>, styled to
+            match the PopoverPanel.Item row (the Item primitive is a raw <button>
+            with no asChild slot). */}
+        <Link href={insightHref} className={MENU_ITEM_CLASS} onClick={() => setMenuOpen(false)}>
           <IconChevronRight size={18} className="text-text-tertiary" />
-          View Profile
+          View Insights
         </Link>
 
         <PopoverPanel.Item onClick={() => goTo(`/golf/dashboard/stats?player=${playerId}`)}>

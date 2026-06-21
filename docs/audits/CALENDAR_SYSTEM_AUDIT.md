@@ -101,16 +101,24 @@ The following tables are referenced in the code and need to exist in Supabase:
 | `getPlayerAttendanceStats()` | `attendance.ts` | ✅ Implemented |
 | `verifyQRCodeCheckIn()` | `attendance.ts` | ✅ Implemented |
 
-### 2.4 Availability Polling Actions ✅ COMPLETE
+### 2.4 Availability Polling Actions ⚠️ BACKEND-ONLY (not surfaced)
+
+> **Correction (audit F040):** the server actions and the
+> `golf_availability_polls` table exist, but **no UI surfaces them** —
+> there is no create-poll entry point, no poll list, and no response
+> screen wired anywhere in the calendar (legacy, editorial, or Fairway).
+> The actions are dead code from a user's perspective. This is **not a
+> shipped feature**; treat it as a backend stub awaiting a UI, not as
+> "✅ COMPLETE".
 
 | Action | File | Status |
 |--------|------|--------|
-| `createAvailabilityPoll()` | `availability-polling.ts` | ✅ Implemented |
-| `submitPollResponses()` | `availability-polling.ts` | ✅ Implemented |
-| `getPollResults()` | `availability-polling.ts` | ✅ Implemented (calls RPC) |
-| `getSuggestedBestTimes()` | `availability-polling.ts` | ✅ Implemented (calls RPC) |
-| `scheduleEventFromPoll()` | `availability-polling.ts` | ✅ Implemented |
-| `closePoll()` | `availability-polling.ts` | ✅ Implemented |
+| `createAvailabilityPoll()` | `availability-polling.ts` | ⚠️ Implemented, no UI caller |
+| `submitPollResponses()` | `availability-polling.ts` | ⚠️ Implemented, no UI caller |
+| `getPollResults()` | `availability-polling.ts` | ⚠️ Implemented (calls RPC), no UI caller |
+| `getSuggestedBestTimes()` | `availability-polling.ts` | ⚠️ Implemented (calls RPC), no UI caller |
+| `scheduleEventFromPoll()` | `availability-polling.ts` | ⚠️ Implemented, no UI caller |
+| `closePoll()` | `availability-polling.ts` | ⚠️ Implemented, no UI caller |
 
 ### 2.5 Coach Blocked Time Actions ✅ COMPLETE
 
