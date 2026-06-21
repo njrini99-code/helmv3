@@ -5725,32 +5725,38 @@ export type Database = {
       }
       golf_coachhelm_chat_messages: {
         Row: {
+          client_turn_id: string | null
           content: string | null
           conversation_id: string
           cost_usd: number | null
           created_at: string
           id: string
           role: string
+          status: string | null
           tool_calls: Json | null
           tool_results: Json | null
         }
         Insert: {
+          client_turn_id?: string | null
           content?: string | null
           conversation_id: string
           cost_usd?: number | null
           created_at?: string
           id?: string
           role: string
+          status?: string | null
           tool_calls?: Json | null
           tool_results?: Json | null
         }
         Update: {
+          client_turn_id?: string | null
           content?: string | null
           conversation_id?: string
           cost_usd?: number | null
           created_at?: string
           id?: string
           role?: string
+          status?: string | null
           tool_calls?: Json | null
           tool_results?: Json | null
         }

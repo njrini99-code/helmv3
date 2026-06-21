@@ -171,9 +171,11 @@ describe('Fairway settings panels follow the active-team toggle', () => {
       </GolfUserProvider>,
     );
 
-    await waitFor(() => {
-      expect(screen.getByDisplayValue("Women's Golf")).toBeInTheDocument();
-    });
+    const nameInput = await waitFor(() => screen.getByDisplayValue("Women's Golf"));
+
+    // P379: the Save button is dirty-gated — an untouched form has nothing to
+    // write. Make a real edit so the panel is dirty and the save commits.
+    fireEvent.change(nameInput, { target: { value: "Women's Golf Team" } });
 
     calls.length = 0; // isolate the write
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
@@ -181,13 +183,44 @@ describe('Fairway settings panels follow the active-team toggle', () => {
     await waitFor(() => {
       const updates = calls.filter((c) => c.table === 'golf_teams' && c.method === 'update');
       expect(updates).toHaveLength(1);
-      expect(updates[0]!.args[0]).toMatchObject({ name: "Women's Golf" });
+      expect(updates[0]!.args[0]).toMatchObject({ name: "Women's Golf Team" });
     });
 
     // The UPDATE's filter is the active team's id — never the men's row.
     const writeFilters = eqCalls('golf_teams');
     expect(writeFilters.some((c) => c.args[0] === 'id' && c.args[1] === 'team-women')).toBe(true);
     expect(writeFilters.some((c) => c.args[1] === 'team-men')).toBe(false);
+  });
+
+  it('TeamSettingsPanel SAVE is a no-op when nothing changed (P379 dirty-gating)', async () => {
+    maybeSingleResults.set('golf_teams', [
+      { id: 'team-women', name: "Women's Golf", season: '2025-2026', organization_id: 'org-1' },
+    ]);
+    maybeSingleResults.set('organizations', [{ name: 'State U' }]);
+
+    const { TeamSettingsPanel } = await import(
+      '@/components/fairway/pages/settings/FairwaySettingsGeneral'
+    );
+
+    render(
+      <GolfUserProvider userData={womensContext}>
+        <TeamSettingsPanel onUpdate={() => {}} />
+      </GolfUserProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Women's Golf")).toBeInTheDocument();
+    });
+
+    calls.length = 0; // isolate any write
+    // No field edited → pristine. Clicking Save must not issue a write or a
+    // false "updated" toast (P379: honest status, no needless mutation).
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    // Give any (incorrect) async write a chance to land, then assert none did.
+    await Promise.resolve();
+    const updates = calls.filter((c) => c.table === 'golf_teams' && c.method === 'update');
+    expect(updates).toHaveLength(0);
   });
 
   it('InviteSettingsPanel regenerates the join code on the ACTIVE (women’s) team row', async () => {

@@ -14,6 +14,7 @@ import {
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayEffectiveness, InlineNotice } from '@/components/fairway';
+import { EffectivenessRetryButton } from './EffectivenessRetryButton';
 import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
@@ -98,9 +99,13 @@ export default async function CoachHelmAnalyticsPage() {
   if (loaderError) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient p-6 font-fw-sans text-text-primary')}>
-        <InlineNotice tone="danger" title="Couldn’t load effectiveness analytics">
-          {loaderError}. Refresh the page to try again — if this keeps happening, the
-          analytics service may be temporarily unavailable.
+        <InlineNotice
+          tone="danger"
+          title="Couldn’t load effectiveness analytics"
+          action={<EffectivenessRetryButton />}
+        >
+          {loaderError}. Try again — if this keeps happening, the analytics
+          service may be temporarily unavailable.
         </InlineNotice>
       </div>
     );

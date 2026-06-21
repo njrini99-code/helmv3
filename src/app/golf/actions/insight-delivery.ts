@@ -124,6 +124,23 @@ export interface GetInsightsForCoachOptions {
   priorities?: Array<'low' | 'medium' | 'high' | 'urgent'>;
 }
 
+/**
+ * P2-15 / P058 — discriminated read result so a DB failure can NEVER be
+ * mistaken for "all clear", and a capped/sliced read honestly discloses the
+ * true eligible total. The legacy `getInsightsForCoach` (kept verbatim for its
+ * existing callers) collapses both an error AND an empty feed to `[]`; the
+ * Fairway Signals surface uses the meta variant so it can render an error state
+ * on failure and "showing N of TOTAL" on a cap.
+ *
+ *   ok:false  → the read errored; render an error state, not an empty feed.
+ *   ok:true   → `data` is the sliced page; `total` is the full eligible count
+ *               (after rank + dedupe, before the limit slice); `capped` is true
+ *               when `total > data.length`.
+ */
+export type CoachInsightsResult =
+  | { ok: true; data: EvidenceInsight[]; total: number; capped: boolean }
+  | { ok: false; error: string };
+
 // ---------------------------------------------------------------------------
 // Shared constants
 // ---------------------------------------------------------------------------
@@ -186,6 +203,87 @@ const INSIGHT_SELECT = `
 ` as const;
 
 // ---------------------------------------------------------------------------
+// Player feedback overlay (P1-09)
+// ---------------------------------------------------------------------------
+
+/**
+ * P1-09 — load the player's latest feedback per insight from
+ * `golf_insight_player_feedback`, keyed by insight_id. The canonical read paths
+ * write feedback (player-feedback.ts) but historically NEVER read it back, so a
+ * player-dismissed insight reappeared on refresh and useful/not-useful state
+ * never persisted. We apply the latest feedback per (player, insight) — most
+ * recent `created_at` wins, since the upsert keeps one row but a service-role
+ * caller could leave history.
+ *
+ * Returns a Map<insight_id, InsightPlayerFeedback>. Best-effort: a query error
+ * yields an empty map (no overlay) rather than throwing — the feed still
+ * renders, just without feedback state, which is the safe degradation.
+ */
+async function loadPlayerFeedbackByInsight(
+  supabase: SupabaseClient,
+  playerId: string,
+): Promise<Map<string, InsightPlayerFeedback>> {
+  const out = new Map<string, InsightPlayerFeedback>();
+  // The generated Database types don't include this table yet (applied via
+  // execute_sql), so cast the builder, not `supabase`.
+  const feedbackTable = supabase.from('golf_insight_player_feedback') as unknown as {
+    select: (cols: string) => {
+      eq: (col: string, val: string) => {
+        order: (
+          col: string,
+          opts: { ascending: boolean },
+        ) => Promise<{
+          data: Array<{ insight_id: string; rating: string; created_at: string }> | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  };
+
+  const { data, error } = await feedbackTable
+    .select('insight_id, rating, created_at')
+    .eq('player_id', playerId)
+    .order('created_at', { ascending: false });
+
+  if (error || !data) return out;
+
+  for (const row of data) {
+    // Newest-first order means the FIRST row we see per insight is the latest.
+    if (out.has(row.insight_id)) continue;
+    const rating = row.rating as InsightPlayerFeedback['rating'];
+    if (
+      rating === 'helpful' ||
+      rating === 'not_helpful' ||
+      rating === 'dismissed' ||
+      rating === 'acknowledged'
+    ) {
+      out.set(row.insight_id, { rating, created_at: row.created_at });
+    }
+  }
+  return out;
+}
+
+/**
+ * P1-09 — overlay the player's feedback onto a ranked insight list: attach
+ * `player_feedback` for the UI chips and DROP rows the player has dismissed, so
+ * a dismissal actually sticks across refreshes. Coach reads never call this, so
+ * a player-only dismissal never removes the insight from a coach's view.
+ */
+function applyPlayerFeedbackOverlay(
+  insights: EvidenceInsight[],
+  feedbackByInsight: Map<string, InsightPlayerFeedback>,
+): EvidenceInsight[] {
+  if (feedbackByInsight.size === 0) return insights;
+  const out: EvidenceInsight[] = [];
+  for (const insight of insights) {
+    const fb = feedbackByInsight.get(insight.id);
+    if (fb?.rating === 'dismissed') continue; // hide player-dismissed rows
+    out.push(fb ? { ...insight, player_feedback: fb } : insight);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -215,6 +313,20 @@ export async function getTopInsightForPlayer(
   const access = await verifyPlayerAccess(playerId, user.id, supabase);
   if (!access.allowed) return null;
 
+  // P1-09: the player's feedback overlay — used to hide a player-dismissed row
+  // and attach feedback state, so the Hub signal card honors the same dismissal
+  // the feed does (an undismissed urgent row can't be resurrected here). Loaded
+  // lazily AFTER the insight queries below so it doesn't reorder them.
+  let feedbackByInsight: Map<string, InsightPlayerFeedback> | null = null;
+  const getFeedback = async (): Promise<Map<string, InsightPlayerFeedback>> => {
+    if (feedbackByInsight == null) {
+      feedbackByInsight = await loadPlayerFeedbackByInsight(supabase, playerId).catch(
+        () => new Map<string, InsightPlayerFeedback>(),
+      );
+    }
+    return feedbackByInsight;
+  };
+
   // 1. Urgent-priority first pass. We run it as a separate query so the JSON
   //    ordering below never accidentally starves an urgent row.
   const { data: urgent, error: urgentError } = await applyInsightVisibility(
@@ -234,7 +346,13 @@ export async function getTopInsightForPlayer(
       { action: 'insight-delivery.getTopInsightForPlayer', featureArea: 'insights', playerId },
     );
   } else if (urgent && urgent.length > 0) {
-    return mapRowToEvidenceInsight(urgent[0] as unknown as RawInsightRowWithDrills);
+    const urgentInsight = mapRowToEvidenceInsight(urgent[0] as unknown as RawInsightRowWithDrills);
+    // P1-09: only return the urgent row if the player hasn't dismissed it; a
+    // dismissed urgent row falls through to the ranked pass (which also filters).
+    if (urgentInsight) {
+      const overlaid = applyPlayerFeedbackOverlay([urgentInsight], await getFeedback());
+      if (overlaid.length > 0) return overlaid[0] ?? null;
+    }
   }
 
   // 2. Rank the FULL visible set (regrade READ/NEW-P2): the old newest-20
@@ -279,7 +397,13 @@ export async function getTopInsightForPlayer(
     activeGoals,
   );
 
-  return dedupeBySubject(collapseParScoring(ranked))[0] ?? null;
+  // P1-09: apply the feedback overlay (hide dismissed, attach state) so the
+  // single-pick agrees with the feed, which also overlays.
+  const overlaid = applyPlayerFeedbackOverlay(
+    dedupeBySubject(collapseParScoring(ranked)),
+    await getFeedback(),
+  );
+  return overlaid[0] ?? null;
 }
 
 /**
@@ -429,7 +553,15 @@ export async function getInsightsForPlayer(
   // BEFORE dedupe so the merged card is treated as a single unit downstream.
   // Dedupe AFTER ranking so the surviving row is the highest-ranked of a group,
   // then trim to the requested limit.
-  return dedupeBySubject(collapseParScoring(ranked)).slice(0, limit);
+  const deduped = dedupeBySubject(collapseParScoring(ranked));
+
+  // P1-09: overlay the player's own feedback — attach state for UI chips and
+  // DROP rows the player has dismissed (so a dismissal sticks across refreshes).
+  // Apply BEFORE the limit slice so a dismissed row doesn't consume a slot.
+  const feedbackByInsight = await loadPlayerFeedbackByInsight(supabase, playerId).catch(
+    () => new Map<string, InsightPlayerFeedback>(),
+  );
+  return applyPlayerFeedbackOverlay(deduped, feedbackByInsight).slice(0, limit);
 }
 
 /**
@@ -446,18 +578,36 @@ export async function getInsightsForCoach(
   opts: GetInsightsForCoachOptions = {},
   supabaseOverride?: SupabaseClient,
 ): Promise<EvidenceInsight[]> {
-  if (!coachId) return [];
+  // Back-compat shim: existing callers expect the bare array (empty on
+  // error). The meta variant is the source of truth; we drop the discriminant.
+  const result = await getInsightsForCoachWithMeta(coachId, opts, supabaseOverride);
+  return result.ok ? result.data : [];
+}
+
+/**
+ * P2-15 / P058 — the meta-returning team sweep. Identical read/rank/dedupe to
+ * `getInsightsForCoach` but it (a) distinguishes a DB error from an empty feed
+ * (so the UI never shows "all clear" on a failed query) and (b) reports the
+ * true eligible `total` (the full ranked+deduped set before the limit slice) so
+ * a capped page can honestly say "showing N of TOTAL".
+ */
+export async function getInsightsForCoachWithMeta(
+  coachId: string,
+  opts: GetInsightsForCoachOptions = {},
+  supabaseOverride?: SupabaseClient,
+): Promise<CoachInsightsResult> {
+  if (!coachId) return { ok: true, data: [], total: 0, capped: false };
 
   const supabase = supabaseOverride ?? (await createClient());
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return [];
+  if (authError || !user) return { ok: false, error: 'Not authenticated.' };
 
   // Player filter → authorization path. Without a player_id the RLS policies
   // on `golf_coach_insights` restrict reads to teams the coach staffs, which
   // is what we want for the coach dashboard sweep.
   if (opts.player_id) {
     const access = await verifyPlayerAccess(opts.player_id, user.id, supabase);
-    if (!access.allowed) return [];
+    if (!access.allowed) return { ok: false, error: 'Not authorized.' };
   }
 
   const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
@@ -554,7 +704,9 @@ export async function getInsightsForCoach(
       `getInsightsForCoach failed: ${error.message}`,
       { action: 'insight-delivery.getInsightsForCoach', featureArea: 'insights', extra: { coachId } },
     );
-    return [];
+    // P2-15: surface the failure as an error result, NOT an empty feed — an
+    // empty array here would render "all clear" over a real query failure.
+    return { ok: false, error: 'Could not load signals. Try refreshing.' };
   }
 
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
@@ -577,7 +729,11 @@ export async function getInsightsForCoach(
   // BEFORE dedupe — same IDENTICAL-application rule as dedupeBySubject itself.
   const ranked = dedupeBySubject(collapseParScoring(rankEvidenceInsights(mapped, weights, goals)));
 
-  return ranked.slice(0, limit);
+  // P058: `total` is the FULL eligible count (post rank + dedupe, pre-slice),
+  // so a capped page can honestly disclose "showing N of TOTAL" instead of
+  // silently truncating at the limit.
+  const data_ = ranked.slice(0, limit);
+  return { ok: true, data: data_, total: ranked.length, capped: ranked.length > data_.length };
 }
 
 /**

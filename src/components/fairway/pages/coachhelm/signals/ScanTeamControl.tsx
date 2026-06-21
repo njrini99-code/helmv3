@@ -25,6 +25,7 @@ import { useState, useTransition } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Sparkles, Check } from 'lucide-react';
 import { Button } from '@/components/fairway/controls/button';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { generateAlerts } from '@/app/golf/actions/alerts';
 
 export interface ScanTeamControlProps {
@@ -64,6 +65,21 @@ export function ScanTeamControl({
         }
         await onScanned?.();
         setJustScanned(true);
+        // P2-14: report the HONEST count — the visible delta the canonical feed
+        // gained (`res.generated`), never the raw insert count. The action
+        // returns `undefined` when the count read failed, so we only name a
+        // number when we actually have one; otherwise we confirm completion
+        // without claiming a figure the feed can't back up.
+        const delta = res.generated;
+        if (typeof delta === 'number') {
+          fairwayToast.success(
+            delta > 0
+              ? `Scan complete — ${delta} new signal${delta === 1 ? '' : 's'}.`
+              : 'Scan complete — no new signals.',
+          );
+        } else {
+          fairwayToast.success('Scan complete.');
+        }
         // Clear the "scanned" check after a beat so the control resets quietly.
         window.setTimeout(() => setJustScanned(false), 2200);
       } catch {

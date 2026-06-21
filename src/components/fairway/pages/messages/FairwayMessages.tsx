@@ -29,8 +29,11 @@
  *                              live inside it — we never touch the write paths)
  *   • useMessageAttachments() — sendMessageWithAttachments (UNCHANGED hook)
  *   • createGolfConversation / getPlayerUserId (UNCHANGED server actions)
- *   • GolfNewMessageModal / GolfTeamBroadcastModal (UNCHANGED shared modals —
- *     triggered from our state, never forked)
+ *   • FairwayNewMessageSheet (Fairway-tokenized recipient picker — same search
+ *     logic as the legacy GolfNewMessageModal, re-skinned onto fw primitives) /
+ *     FairwayTeamBroadcastSheet (Fairway-tokenized coach broadcast composer —
+ *     same two-step logic + server actions as the legacy GolfTeamBroadcastModal,
+ *     re-skinned onto fw primitives; triggered from our state)
  * Preserved interactions: the ?player= deep-link (find-or-create), auto-select
  * first conversation, mobile master-detail (mobileShowChat), PullToRefresh on the
  * rail, auto-scroll-to-bottom (in the thread pane), and the typing throttle
@@ -52,8 +55,8 @@ import { useGolfUser } from '@/contexts/golf-user-context';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
 import { createGolfConversation, getPlayerUserId } from '@/app/golf/actions/messages';
-import { GolfNewMessageModal } from '@/components/golf/messages/GolfNewMessageModal';
-import { GolfTeamBroadcastModal } from '@/components/golf/messages/GolfTeamBroadcastModal';
+import { FairwayNewMessageSheet } from './FairwayNewMessageSheet';
+import { FairwayTeamBroadcastSheet } from './FairwayTeamBroadcastSheet';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
@@ -79,7 +82,12 @@ export function FairwayMessages() {
   const { userId, role: userRole, teamId, teamName } = useGolfUser();
 
   // ── UNCHANGED hook: conversations + refetch ─────────────────────────────────
-  const { conversations, loading: conversationsLoading, refetch } = useGolfConversations();
+  const {
+    conversations,
+    loading: conversationsLoading,
+    error: conversationsError,
+    refetch,
+  } = useGolfConversations();
 
   const handleConversationsRefresh = async () => {
     await refetch();
@@ -265,6 +273,14 @@ export function FairwayMessages() {
   };
   const handleBack = () => setMobileShowChat(false);
 
+  // ── P259: open a conversation FROM a cross-conversation search hit, then
+  // scroll the thread to the matched message once it loads.
+  const [pendingScrollMessageId, setPendingScrollMessageId] = React.useState<string | null>(null);
+  const handleOpenFromSearch = (conversationId: string, messageId: string) => {
+    setPendingScrollMessageId(messageId);
+    handleSelectConversation(conversationId);
+  };
+
   // ── New conversation (UNCHANGED action) ─────────────────────────────────────
   const handleNewConversation = async (newUserId: string) => {
     try {
@@ -431,7 +447,9 @@ export function FairwayMessages() {
             className={
               mobileShowChat
                 ? 'hidden md:col-span-5 md:flex md:flex-col lg:col-span-4'
-                : 'col-span-12 flex flex-col md:col-span-5 lg:col-span-4'
+                : // P263: w-full so the rail spans the full viewport on mobile
+                  // (flex parent — col-span is a no-op there; w-full governs width).
+                  'col-span-12 flex w-full flex-col md:w-auto md:col-span-5 lg:col-span-4'
             }
           >
             <PullToRefresh onRefresh={handleConversationsRefresh} className="overscroll-contain touch-pan-y">
@@ -441,13 +459,19 @@ export function FairwayMessages() {
                 onSelect={handleSelectConversation}
                 onNewMessage={() => setShowNewMessageModal(true)}
                 loading={conversationsLoading}
+                error={conversationsError}
+                onRetry={refetch}
+                teamId={teamId}
+                onOpenMessage={handleOpenFromSearch}
               />
             </PullToRefresh>
           </aside>
 
           {/* PULSE — the open thread (focal hero) + WHAT'S-NEXT composer track.
               flex flex-col min-h-0 so MessageThreadPane fills the grid cell height. */}
-          <div className={mobileShowChat ? 'flex min-h-0 flex-col md:col-span-7 lg:col-span-8' : 'hidden min-h-0 flex-col md:col-span-7 md:flex lg:col-span-8'}>
+          {/* P263: w-full so the thread spans the full viewport on mobile (flex
+              parent — col-span is a no-op there; w-full governs width). */}
+          <div className={mobileShowChat ? 'flex w-full min-h-0 flex-col md:w-auto md:col-span-7 lg:col-span-8' : 'hidden min-h-0 flex-col md:col-span-7 md:flex lg:col-span-8'}>
             <MessageThreadPane
               conversation={selectedConversation}
               messages={messages}
@@ -473,6 +497,8 @@ export function FairwayMessages() {
               onCancelDelete={handleCancelDelete}
               onSetMobileActions={setMobileActionsId}
               groupParticipants={groupParticipants}
+              scrollToMessageId={pendingScrollMessageId}
+              onScrolledToMessage={() => setPendingScrollMessageId(null)}
               className="flex-1 min-h-0"
             >
               {selectedConversation ? (
@@ -487,8 +513,8 @@ export function FairwayMessages() {
         </div>
       </div>
 
-      {/* ── UNCHANGED shared modals — triggered from our state, never forked ── */}
-      <GolfNewMessageModal
+      {/* ── New-message picker (Fairway-tokenized; same search logic) ──────── */}
+      <FairwayNewMessageSheet
         isOpen={showNewMessageModal}
         onClose={() => setShowNewMessageModal(false)}
         onSelect={handleNewConversation}
@@ -497,7 +523,7 @@ export function FairwayMessages() {
       />
 
       {userRole === 'coach' && teamId && (
-        <GolfTeamBroadcastModal
+        <FairwayTeamBroadcastSheet
           isOpen={showTeamBroadcastModal}
           onClose={() => setShowTeamBroadcastModal(false)}
           onSuccess={handleTeamBroadcastCreated}

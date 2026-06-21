@@ -60,7 +60,7 @@ import {
   addMonths,
 } from 'date-fns';
 import { CalendarPlus, RefreshCw } from 'lucide-react';
-import { Segmented, Sheet, Button as FwButton, Skeleton } from '@/components/fairway';
+import { Segmented, Sheet, Button as FwButton, Skeleton, fairwayToast } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
@@ -232,10 +232,16 @@ export function FairwayCalendar({
       const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
       const s = format(availWindow.start, 'yyyy-MM-dd');
       const e = format(availWindow.end, 'yyyy-MM-dd');
+      // Anchor each player's busy window to the COACH's local day, not the UTC
+      // day. Without this 4th arg getPlayerAvailability buckets by UTC, so in
+      // western timezones an evening event can land on the wrong day in the
+      // "find common free time" overlay (audit P237). Matches how every other
+      // viewer-facing caller passes Date.getTimezoneOffset().
+      const tzOffset = new Date().getTimezoneOffset();
       const results = await Promise.all(
         selectedPlayerIds.map(async (id) => {
           try {
-            const r = await getPlayerAvailability(id, s, e);
+            const r = await getPlayerAvailability(id, s, e, tzOffset);
             return [id, r.success && r.data ? r.data : []] as const;
           } catch {
             return [id, [] as { start: string; end: string; type: 'event' | 'class' | 'blocked'; title?: string }[]] as const;
@@ -393,6 +399,12 @@ export function FairwayCalendar({
           if (!result.success) throw new Error(result.error || 'Failed to update event');
         }
         const wasCreate = !editorEvent;
+        const isSeriesEdit = !wasCreate && data.editScope != null && data.editScope !== 'this';
+        // Visible confirmation of system status (audit P238) — every successful
+        // mutation gives one consistent Fairway toast.
+        fairwayToast.success(
+          wasCreate ? 'Event created' : isSeriesEdit ? 'Series updated' : 'Event updated',
+        );
         setEditorOpen(false);
         setEditorEvent(null);
         // A newly created event must never silently vanish: if its date falls
@@ -436,6 +448,7 @@ export function FairwayCalendar({
       const { updateGolfEvent } = await import('@/app/golf/actions/golf');
       const result = await updateGolfEvent(editorEvent.id, { status: 'confirmed' } as never);
       if (!result.success) throw new Error(result.error || 'Failed to restore event');
+      fairwayToast.success('Event restored');
       setEditorOpen(false);
       setEditorEvent(null);
       router.refresh();
@@ -465,6 +478,9 @@ export function FairwayCalendar({
           const result = await deleteGolfEvent(editorEvent.id);
           if (!result.success) throw new Error(result.error || 'Failed to delete event');
         }
+        fairwayToast.success(
+          scope && scope !== 'this' ? 'Series cancelled' : 'Event cancelled',
+        );
         setEditorOpen(false);
         setEditorEvent(null);
         router.refresh();
@@ -485,8 +501,8 @@ export function FairwayCalendar({
   // ── ICS "Add to phone" sheet — reachable for BOTH roles incl. mobile. ──────
   const [subscribeOpen, setSubscribeOpen] = React.useState(false);
 
-  // ── Drawer + RSVP state (Agenda taps open the Fairway drawer; the Week/Month
-  //    grid keeps opening the legacy EventDetailModal inside the wrapper). ─────
+  // ── Drawer + RSVP state — EVERY view (Agenda / Day / Week / Month) opens the
+  //    SAME Fairway drawer; the legacy EventDetailModal is retired (audit P232).
   const [drawerEvent, setDrawerEvent] = React.useState<CalendarEvent | null>(null);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [userRsvpStatuses, setUserRsvpStatuses] = React.useState<Map<string, RSVPStatus>>(
@@ -531,9 +547,11 @@ export function FairwayCalendar({
     [view],
   );
 
-  // Keyboard: ←/→ + T. Suppressed while our drawer is open or an input is
-  // focused; the legacy PremiumCalendarClient owns its own modal-keyboard
-  // contract when the grid is mounted.
+  // Keyboard: ←/→ + T. The Fairway shell is the SOLE calendar-navigation
+  // keyboard owner — the legacy PremiumCalendarClient grid (which bound its own
+  // nav keys) is retired on this route (audit P232/P244), so there is no second
+  // handler to desync with. Suppressed only while our drawer is open or an input
+  // is focused.
   React.useEffect(() => {
     if (drawerOpen) return;
     const handler = (e: KeyboardEvent) => {
@@ -617,6 +635,17 @@ export function FairwayCalendar({
             next.set(eventId, status);
             return next;
           });
+          // Visible confirmation of the saved response (audit P238) — the drawer
+          // otherwise just soft-closes with no feedback.
+          fairwayToast.success(
+            status === 'accepted'
+              ? "You're going"
+              : status === 'tentative'
+                ? 'Marked maybe'
+                : status === 'declined'
+                  ? 'Marked not going'
+                  : 'Response saved',
+          );
           return { success: true };
         }
         return {
@@ -632,11 +661,11 @@ export function FairwayCalendar({
   );
 
   // ── The ONE primary action ──────────────────────────────────────────────────
-  // Coach: "New event". The legacy create flow (EventDetailModal create) lives
-  // inside PremiumCalendarClient — reachable via its FAB (mobile) and grid "+"
-  // / N-key (desktop). We DON'T edit the engine to lift that handler out, so the
-  // hero CTA routes the coach to the Week grid where the full legacy create
-  // surface is mounted and ready. Honest + non-destructive.
+  // Coach: "New event" → the native FairwayEventEditor (openCreate). This is the
+  // SINGLE create surface on every view (audit P240): the legacy grid create
+  // entry points (QuickAddEventFAB, grid "+", N-key → EventDetailModal) are gone
+  // because the legacy PremiumCalendarClient grid is retired on this route
+  // (audit P232). No competing create UI is reachable.
   const mostImminentUnrsvpd = React.useMemo(() => {
     if (isCoach) return null;
     const nowMs = new Date(serverNow).getTime();
@@ -853,7 +882,7 @@ export function FairwayCalendar({
         />
       )}
 
-      {/* ── DETAIL DRAWER (Agenda taps; the grid uses the legacy modal) ───────── */}
+      {/* ── DETAIL DRAWER — the single event-detail surface for every view ────── */}
       <FairwayEventDetailDrawer
         event={drawerEvent}
         open={drawerOpen}
@@ -1030,6 +1059,14 @@ function FairwaySubscribeSheet({ open, onOpenChange, canManageTeamFeed }: Fairwa
         </p>
         {feedsError ? (
           <p className="font-fw-sans text-caption text-fw-danger">{feedsError}</p>
+        ) : null}
+        {/* Genuinely-empty (loaded, no error, zero feeds): a Fairway-framed hint
+            so the empty Subscribe sheet doesn't lean only on the legacy child's
+            empty state (audit P242). */}
+        {!feedsLoading && !feedsError && feeds.length === 0 ? (
+          <p className="font-fw-sans text-caption text-text-tertiary">
+            You don&apos;t have a feed yet — create one below to sync this calendar to your phone.
+          </p>
         ) : null}
         {feedsLoading ? (
           <div className="space-y-3" aria-busy="true" aria-label="Loading calendar feeds">

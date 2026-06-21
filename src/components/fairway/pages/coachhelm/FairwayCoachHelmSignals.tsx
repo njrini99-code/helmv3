@@ -48,7 +48,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Check, X, Target, ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, X, Target, ChevronDown, ChevronRight, RefreshCw, SlidersHorizontal } from 'lucide-react';
 
 import { CoachHelmShell } from './CoachHelmShell';
 import {
@@ -71,7 +71,8 @@ import { Button } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
-import { SkeletonList } from '@/components/fairway/feedback/Skeleton';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import type { ToolbarFilterOption } from '@/components/fairway/controls/Toolbar';
 import {
   Segmented,
@@ -80,12 +81,13 @@ import {
 
 // ── PRESERVED server actions (imported, never rewritten) ─────────────────────
 import {
-  getInsightsForCoach,
+  getInsightsForCoachWithMeta,
   type EvidenceInsight,
 } from '@/app/golf/actions/insight-delivery';
 import {
   acknowledgeInsight,
   dismissInsight,
+  reactivateInsight,
 } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import {
@@ -100,6 +102,7 @@ import {
   dismissPattern,
   markPatternAddressed,
   resolvePattern,
+  reopenPattern,
   type ExtendedPattern,
   type PatternSeverity,
 } from '@/app/golf/actions/pattern-management';
@@ -213,10 +216,14 @@ const PATTERN_STATUS_OPTIONS: ToolbarFilterOption[] = [
   { value: 'Resolved', label: 'Resolved' },
 ];
 
-/** Map the insight `status` enum onto a severity-tone label. */
+/** The three feed densities. P046: the `table` value renders a flat list of
+ *  COMPACT cards (no <table>, no column headers, no aligned cells), so it is
+ *  labeled "Compact" — calling it "Table" claimed a tabular grid the surface
+ *  does not produce (match-to-real-world honesty). The internal value stays
+ *  `table` so shareable `?view=table` URLs keep working. */
 const VIEW_OPTIONS: SegmentedOption<SignalsView>[] = [
   { value: 'feed', label: 'Feed' },
-  { value: 'table', label: 'Table' },
+  { value: 'table', label: 'Compact' },
   { value: 'grouped', label: 'Grouped' },
 ];
 
@@ -293,6 +300,17 @@ export function FairwayCoachHelmSignals({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isBulkPending, startActionTransition] = useTransition();
+
+  /* -- P058: the TRUE eligible insight total (post rank+dedupe, pre-100-slice)
+        from the meta read, so the "Loaded" tile can honestly disclose
+        "N of TOTAL" rather than silently truncating at the cap. Insights-only;
+        patterns carry their own `patternCounts`. null until first load. */
+  const [eligibleTotal, setEligibleTotal] = useState<number | null>(null);
+
+  /* -- P061: a manual refresh in flight (re-pull the feed without a triage
+        side-effect). Separate from `loading` so the first paint still uses the
+        shape-matched skeleton while a refresh shows a quiet busy state. */
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   /* -- per-row in-flight guard: which row ids have a mutation in flight. Drives
         the busy/disabled affordance on that row's action buttons so a coach
@@ -440,13 +458,22 @@ export function FairwayCoachHelmSignals({
       if (showLoading) setLoading(true);
       setError(null);
       try {
-        const rows = await getInsightsForCoach(coachId, {
+        // P2-15: the meta read returns a DISCRIMINATED result so a DB failure
+        // renders an error state instead of an empty "all clear" feed. P058:
+        // it also carries the true eligible `total` (pre-100-cap) for honest
+        // "N of TOTAL" disclosure.
+        const res = await getInsightsForCoachWithMeta(coachId, {
           limit: 100,
           // The DB read uses the raw insight priorities, NOT the mapped
           // client-tone `severity` set (which holds 'critical', not 'urgent').
           priorities: defaultFilter?.fetchPriorities,
         });
-        setInsights(rows);
+        if (res.ok) {
+          setInsights(res.data);
+          setEligibleTotal(res.total);
+        } else {
+          setError(res.error);
+        }
       } catch {
         setError('Could not load signals. Try refreshing.');
       } finally {
@@ -627,6 +654,10 @@ export function FairwayCoachHelmSignals({
       // Double-submit guard: ignore a second click while this row is in flight.
       if (pendingIds.has(insightId)) return;
       const prev = insights;
+      // Capture the removed row so an Undo can restore its prior lifecycle
+      // server-side (not just flicker it back in the UI).
+      const removedRow = prev.find((x) => x.id === insightId);
+      const priorLifecycle = removedRow?.lifecycle_state;
       markPending(insightId, true);
       startActionTransition(async () => {
         try {
@@ -638,7 +669,33 @@ export function FairwayCoachHelmSignals({
             setInsights(prev);
             setError(res.error ?? `Could not ${successLabel.toLowerCase()} this signal. Try again.`);
           } else {
-            setNotice(`Signal ${successLabel.toLowerCase()}.`);
+            // Visible per-row status feedback (Nielsen #1) + a real Undo
+            // (Nielsen #3): the undo restores the row in the UI AND reverses the
+            // mutation server-side via reactivateInsight, so a refresh agrees.
+            fairwayToast.success(`Signal ${successLabel.toLowerCase()}.`, {
+              action: {
+                label: 'Undo',
+                onClick: () => {
+                  // Optimistically restore the row, then reverse server-side.
+                  setInsights((r) =>
+                    r.some((x) => x.id === insightId) ? r : prev,
+                  );
+                  void reactivateInsight(
+                    insightId,
+                    priorLifecycle === 'tentative' || priorLifecycle === 'archived'
+                      ? undefined
+                      : priorLifecycle,
+                  ).then((undoRes) => {
+                    if (!undoRes.success) {
+                      // The reverse failed — re-remove the row so the UI doesn't
+                      // claim a restore the server didn't honor, and say why.
+                      setInsights((r) => r.filter((x) => x.id !== insightId));
+                      setError(undoRes.error ?? 'Could not undo. Try again.');
+                    }
+                  });
+                },
+              },
+            });
           }
         } catch {
           setInsights(prev);
@@ -679,7 +736,7 @@ export function FairwayCoachHelmSignals({
           if (res.success) {
             // Confirm before we navigate away — the coach sees their action
             // succeeded rather than a silent route change (Nielsen #1).
-            setNotice('Focus area created.');
+            fairwayToast.success('Focus area created.');
             router.push('/golf/dashboard/development');
           } else {
             setError('Could not create the focus area. Try again.');
@@ -704,6 +761,14 @@ export function FairwayCoachHelmSignals({
     ) => {
       if (pendingIds.has(patternId)) return;
       const prev = patterns;
+      // Capture the prior lifecycle so an Undo restores the EXACT pre-triage
+      // state server-side (detected/confirmed/addressed), not a guess.
+      const removedRow = prev.find((x) => x.id === patternId);
+      const priorLifecycle = removedRow?.lifecycleState;
+      const reopenTo: 'detected' | 'confirmed' | 'addressed' =
+        priorLifecycle === 'confirmed' || priorLifecycle === 'addressed'
+          ? priorLifecycle
+          : 'detected';
       markPending(patternId, true);
       startActionTransition(async () => {
         try {
@@ -713,7 +778,23 @@ export function FairwayCoachHelmSignals({
             setPatterns(prev);
             setError(res.error ?? `Could not ${successLabel.toLowerCase()} this pattern. Try again.`);
           } else {
-            setNotice(`Pattern ${successLabel.toLowerCase()}.`);
+            // Visible per-row status feedback (Nielsen #1) + a real Undo
+            // (Nielsen #3): restores the row in the UI AND reverses the
+            // mutation server-side via reopenPattern, so a refresh agrees.
+            fairwayToast.success(`Pattern ${successLabel.toLowerCase()}.`, {
+              action: {
+                label: 'Undo',
+                onClick: () => {
+                  setPatterns((r) => (r.some((x) => x.id === patternId) ? r : prev));
+                  void reopenPattern(patternId, reopenTo).then((undoRes) => {
+                    if (!undoRes.success) {
+                      setPatterns((r) => r.filter((x) => x.id !== patternId));
+                      setError(undoRes.error ?? 'Could not undo. Try again.');
+                    }
+                  });
+                },
+              },
+            });
           }
         } catch {
           setPatterns(prev);
@@ -750,7 +831,7 @@ export function FairwayCoachHelmSignals({
             setPatterns(prev);
             setError(res.error ?? 'Could not confirm this pattern. Try again.');
           } else {
-            setNotice('Pattern confirmed.');
+            fairwayToast.success('Pattern confirmed.');
           }
         } catch {
           setPatterns(prev);
@@ -787,6 +868,16 @@ export function FairwayCoachHelmSignals({
     () => (isPatterns ? loadPatterns(false) : loadInsights(false)),
     [isPatterns, loadPatterns, loadInsights],
   );
+
+  /* P061: manual refresh — re-pull the feed with NO triage side-effect, so a
+     coach can re-read the latest without acting on a row. Uses showLoading=false
+     (the shape-matched skeleton is for first paint); the shell action shows its
+     own busy state via `isRefreshing`. Mirrors the legacy header's Refresh. */
+  const handleRefresh = useCallback(() => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    void Promise.resolve(reload()).finally(() => setIsRefreshing(false));
+  }, [isRefreshing, reload]);
 
   const runBulk = useCallback(
     (
@@ -930,6 +1021,24 @@ export function FairwayCoachHelmSignals({
     ).length;
     return { total: allRows.length, open, urgent };
   }, [allRows]);
+
+  /* P058: honest "of N" footnote on the Loaded tile when the true eligible set
+     exceeds what's loaded. Insights cap at limit:100 (eligibleTotal is the full
+     post-rank/dedupe count); patterns cap at the read limit (patternCounts.capped
+     means more were eligible than returned). Only render the footnote when there
+     IS a known overflow — otherwise the value already IS complete. */
+  const loadedFootnote = useMemo<string | undefined>(() => {
+    if (isPatterns) {
+      if (patternCounts?.capped) {
+        return `showing first ${summary.total}`;
+      }
+      return undefined;
+    }
+    if (eligibleTotal != null && eligibleTotal > allRows.length) {
+      return `of ${eligibleTotal}`;
+    }
+    return undefined;
+  }, [isPatterns, patternCounts, eligibleTotal, allRows.length, summary.total]);
 
   /* ── grouping — drives BOTH the dense default feed and the grouped view ── */
   // While the smart-default shortlist is active, render it FLAT — a curated
@@ -1169,7 +1278,12 @@ export function FairwayCoachHelmSignals({
           key: 'acknowledge',
           label: 'Confirm',
           onClick: () => {
+            // P036: close after Confirm like every sibling action. The in-place
+            // lifecycle flip is reflected in the list row; leaving the sheet
+            // open on a just-changed row read inconsistently next to Address /
+            // Dismiss, which both close.
             handleConfirmPattern(openRow);
+            setOpenRowId(null);
           },
         },
         {
@@ -1186,7 +1300,13 @@ export function FairwayCoachHelmSignals({
       {
         key: 'focus-area',
         label: 'Create focus area',
-        onClick: () => handleCreateFocusAreaFromInsight(openRow),
+        onClick: () => {
+          // P036: close before navigating away, like every sibling action —
+          // otherwise the sheet lingered over the route transition. The handler
+          // pushes to /development on success.
+          handleCreateFocusAreaFromInsight(openRow);
+          setOpenRowId(null);
+        },
       },
       {
         key: 'acknowledge',
@@ -1266,6 +1386,37 @@ export function FairwayCoachHelmSignals({
           ? 'Detected performance patterns across your team — confirm, address, or convert into a plan.'
           : 'The highest-priority CoachHelm signals — triage, acknowledge, or turn into a focus area.'
       }
+      actions={
+        // P061: parity with the legacy header — a manual Refresh (re-pull the
+        // feed with no triage side-effect) and a quiet link into the coaching-
+        // intelligence settings. Generate intentionally stays on the Brief, not
+        // here, so this surface is read/triage, not a generation trigger.
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            busy={isRefreshing}
+            leftIcon={<RefreshCw className="h-4 w-4" strokeWidth={2} aria-hidden />}
+            onClick={handleRefresh}
+            aria-label="Refresh signals"
+          >
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+          <Button
+            asChild
+            size="sm"
+            variant="ghost"
+            aria-label="Coaching intelligence settings"
+          >
+            {/* asChild forwards styling to the Link; leftIcon is bypassed under
+                asChild, so the icon lives inside the Link child. */}
+            <Link href="/golf/dashboard/settings/coaching-intelligence">
+              <SlidersHorizontal className="h-4 w-4" strokeWidth={2} aria-hidden />
+              <span className="hidden sm:inline">AI settings</span>
+            </Link>
+          </Button>
+        </div>
+      }
     >
       <div className="flex flex-col gap-6">
         {/* honest summary tiles — never fabricate a 0%; show counts only.
@@ -1273,12 +1424,20 @@ export function FairwayCoachHelmSignals({
             the fold by three full-width stacked cards (premium-polish pass). */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
           <MetricCard label="Open signals" value={summary.open} />
-          <MetricCard label="Urgent + high" value={summary.urgent} goodDirection="down" />
+          {/* P035: no `goodDirection` here — it only colors a `delta` chip, and
+              there is no delta on this tile, so it was a dead no-op prop. */}
+          <MetricCard label="Urgent + high" value={summary.urgent} />
           {/* "Loaded" (not "Total"): this counts the rows currently in view —
               the read caps at limit:100 and the smart default narrows further —
               so labeling it "Total" over-claims completeness when more are
-              eligible than loaded. */}
-          <MetricCard label="Loaded" value={summary.total} />
+              eligible than loaded. P058: when the eligible total exceeds the
+              loaded set, disclose "of N" honestly rather than silently
+              truncating; the footnote earns the tile its completeness claim. */}
+          <MetricCard
+            label="Loaded"
+            value={summary.total}
+            footnote={loadedFootnote}
+          />
         </div>
 
         {/* ONE toolbar — the single coherent filter system. stickyTop=64 pins
@@ -1325,16 +1484,24 @@ export function FairwayCoachHelmSignals({
               />
             ) : undefined
           }
-          selectedCount={selectedIds.size}
-          bulkActions={bulkActions}
-          onClearSelection={() => setSelectedIds(new Set())}
+          /* P048: the selection / bulk contract is INERT on patterns — pattern
+             cards expose no checkbox (selection is insights-only, where the
+             bulk lifecycle actions exist), so passing selectedCount/bulkActions/
+             onClearSelection here would carry a dead bulk bar the surface can
+             never populate. Omit the whole contract on patterns; the toolbar's
+             defaults (selectedCount=0, no bulkActions) render no bulk chrome.
+             NOTE: a plain block comment (no braces) — a brace-wrapped JSX-child
+             comment is invalid BETWEEN JSX attributes and breaks compilation. */
+          selectedCount={isPatterns ? undefined : selectedIds.size}
+          bulkActions={isPatterns ? undefined : bulkActions}
+          onClearSelection={isPatterns ? undefined : () => setSelectedIds(new Set())}
         />
 
         {/* notices — honest error / bulk confirmation (never a silent empty) */}
         {error ? (
           <InlineNotice
             tone="danger"
-            title="Something went wrong"
+            title={isPatterns ? 'Couldn’t load your patterns' : 'Couldn’t load your signals'}
             dismissible
             onDismiss={() => setError(null)}
             action={
@@ -1462,7 +1629,11 @@ export function FairwayCoachHelmSignals({
                 </span>
               </label>
             ) : null}
-            {!smartDefaultActive ? (
+            {/* P047: the Group control only applies to feed/grouped — in the
+                Compact view `grouped` is always false, so the segmented control
+                would change state with zero visible effect (dead UI). Hide it
+                there (and while the smart-default flat shortlist is active). */}
+            {!smartDefaultActive && view !== 'table' ? (
               <div className="flex items-center gap-3">
                 <span className="font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
                   Group
@@ -1481,7 +1652,21 @@ export function FairwayCoachHelmSignals({
 
         {/* body */}
         {loading ? (
-          <SkeletonList rows={4} />
+          // Shape-matched skeleton: a hero card placeholder + 3 compact card
+          // rows the size of the real InsightCards, so the layout doesn't jump
+          // (CLS) when the live feed lands. NOT the flat avatar/line list.
+          <div
+            role="status"
+            aria-busy="true"
+            aria-live="polite"
+            className="flex flex-col gap-4"
+          >
+            <span className="sr-only">Loading signals…</span>
+            <Skeleton className="h-32 w-full rounded-card" />
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-card" />
+            ))}
+          </div>
         ) : rows.length === 0 ? (
           appliedChips.length > 0 || query.trim() ? (
             <EmptyState
@@ -1514,10 +1699,36 @@ export function FairwayCoachHelmSignals({
               title="No patterns detected yet"
               description="As your players log rounds, the engine surfaces performance patterns here."
             />
-          ) : (
+          ) : showScanTeam ? (
+            // P037: /alerts CAN scan — the copy says "scan the team", so give
+            // the empty state the actual Scan control (reusing ScanTeamControl)
+            // so the suggested next action is one tap from the instruction.
             <EmptyState
               title="All clear — no signals right now"
               description="Your players are on track. Scan the team to check for anything new."
+              action={
+                <ScanTeamControl
+                  coachId={coachId}
+                  teamId={teamId}
+                  size="md"
+                  onScanned={() => loadInsights(false)}
+                  onError={setError}
+                />
+              }
+            />
+          ) : (
+            // P057: /insights renders with showScanTeam=false — there is NO
+            // Scan control on this route, so the copy must NOT instruct one.
+            // Point at an achievable next action that actually lives elsewhere
+            // (the CoachHelm brief), not a phantom Scan or a self-link.
+            <EmptyState
+              title="All clear — no signals right now"
+              description="New insights appear here as your players log rounds and the engine surfaces them."
+              action={
+                <Button asChild variant="secondary">
+                  <Link href="/golf/dashboard/intelligence">Open the CoachHelm brief</Link>
+                </Button>
+              }
             />
           )
         ) : grouped && groups ? (

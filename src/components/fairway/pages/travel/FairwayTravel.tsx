@@ -13,9 +13,11 @@
  *   • Itinerary writes — createGolfTravelItinerary / updateGolfTravelItinerary /
  *                   deleteGolfTravelItinerary (exact import paths, unchanged).
  *   • Expense sub-feature — getExpensesForItinerary / getExpenseSummary /
- *                   getBudgetsForItinerary / exportExpensesToCSV (unchanged) +
- *                   the legacy ExpenseForm / ExpenseList / ExpenseSummary
- *                   components reused as-is (not re-skinned; file-ownership).
+ *                   getBudgetsForItinerary / exportExpensesToCSV (unchanged).
+ *                   The add/edit EDITOR is the Fairway-native FairwayExpenseForm
+ *                   (P317: same ModalShell paradigm as the itinerary editor;
+ *                   write logic preserved verbatim). The legacy ExpenseList /
+ *                   ExpenseSummary display components are reused as-is.
  *
  * ── ROLE FORK (the ONLY thing role changes) ────────────────────────────────
  *   Coaches and players see the SAME trip list + detail. Role ONLY toggles the
@@ -58,18 +60,37 @@ import {
   type ExpenseSummary as ExpenseSummaryType,
   type TravelBudget,
 } from '@/app/golf/actions/travel';
-import { ExpenseForm } from '@/components/golf/travel';
-
 import type { TravelItinerary } from './travel-helpers';
 import { FairwayTripCard } from './FairwayTripCard';
 import { FairwayTripDetail } from './FairwayTripDetail';
 import { FairwayItineraryModal, type ItineraryFormData } from './FairwayItineraryModal';
+import { FairwayExpenseForm } from './FairwayExpenseForm';
 
 export interface FairwayTravelProps {
   itineraries: TravelItinerary[];
   coachId: string;
   teamId: string;
   isCoach: boolean;
+  /**
+   * P314: server-computed "today" as a bare ISO date ("YYYY-MM-DD"). Used to seed
+   * `now` on the FIRST paint so a finished/in-transit trip's status pill is already
+   * correct on the server render instead of every trip flashing "Upcoming" until
+   * the client effect runs. Date-granularity → hydration-safe (server + client
+   * agree on the calendar date; the effect then upgrades to precise client time).
+   */
+  nowISO?: string;
+}
+
+/**
+ * Parse a bare ISO date ("YYYY-MM-DD") to LOCAL midnight, identical to
+ * travel-helpers#parseDateLocal, so the seeded `now` and trip dates compare in
+ * the same local-midnight space. Returns null for a missing/malformed value.
+ */
+function parseSeedDate(iso?: string): Date | null {
+  if (!iso) return null;
+  const [y, m, d] = iso.split('T')[0]!.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
 }
 
 export function FairwayTravel({
@@ -77,6 +98,7 @@ export function FairwayTravel({
   coachId,
   teamId,
   isCoach,
+  nowISO,
 }: FairwayTravelProps) {
   const router = useRouter();
   const badges = useNotificationBadges();
@@ -91,8 +113,11 @@ export function FairwayTravel({
   const [saving, setSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
 
-  // A single mount-time `now` (day granularity → no SSR hydration drift).
-  const [now, setNow] = React.useState<Date | null>(null);
+  // Seed `now` from the server-passed date (P314) so the first paint already
+  // computes the correct lifecycle bucket per trip — no "Upcoming" flash on a
+  // finished/in-transit trip. Date-granularity seed keeps server + client first
+  // render identical (hydration-safe); the effect then upgrades to precise time.
+  const [now, setNow] = React.useState<Date | null>(() => parseSeedDate(nowISO));
   React.useEffect(() => {
     setNow(new Date());
   }, []);
@@ -389,9 +414,10 @@ export function FairwayTravel({
         />
       ) : null}
 
-      {/* ── Expense form (legacy component reused verbatim) ────────────── */}
+      {/* ── Expense form — P317: Fairway-native form in the same ModalShell
+          paradigm as the itinerary editor (writes preserved verbatim). ──── */}
       {selected ? (
-        <ExpenseForm
+        <FairwayExpenseForm
           isOpen={showExpenseForm}
           onClose={() => {
             setShowExpenseForm(false);

@@ -14,9 +14,18 @@ import {
   IconActivity,
 } from '@/components/icons';
 
+// P2-18: focus-area ratings must not mix incompatible units. `strokesGained`
+// stays as the ordering magnitude, but only `unit: 'strokes/round'` rows are
+// LABELLED strokes/round. `value`+`unit` carry each row's native quantity so a
+// distance error (yards) or a causal effect-size (opportunity) is never shown as
+// strokes/round. `unit` is optional so legacy callers default to strokes/round.
+type FocusAreaUnit = 'strokes/round' | 'yd from target' | 'opportunity';
+
 interface FocusArea {
   area: string;
   strokesGained: number;
+  value?: number;
+  unit?: FocusAreaUnit;
   trend: 'improving' | 'stable' | 'declining';
   recommendation: string;
 }
@@ -87,6 +96,54 @@ function getStrokesColor(value: number | string) {
   return 'text-warm-600';
 }
 
+// P2-18: render each focus area in its NATIVE unit. Only stroke-impact rows are
+// labelled strokes/round; distance-error rows show yards; causal effect-size
+// rows show a qualitative opportunity tier (never a fabricated stroke value).
+function resolveDisplay(focusArea: FocusArea): {
+  text: string;
+  unitLabel: string;
+  color: string;
+  /** Only the strokes/round unit gets the bipolar strokes bar. */
+  showStrokesBar: boolean;
+} {
+  const unit: FocusAreaUnit = focusArea.unit ?? 'strokes/round';
+
+  if (unit === 'yd from target') {
+    const yards = Number(focusArea.value ?? Math.abs(focusArea.strokesGained * 10));
+    return {
+      text: Number.isFinite(yards) ? Math.round(yards).toString() : '--',
+      unitLabel: 'yd from target',
+      color: 'text-amber-600',
+      showStrokesBar: false,
+    };
+  }
+
+  if (unit === 'opportunity') {
+    const strength = Number(focusArea.value ?? Math.abs(focusArea.strokesGained));
+    const tier = !Number.isFinite(strength)
+      ? '--'
+      : strength >= 0.75
+        ? 'High'
+        : strength >= 0.5
+          ? 'Medium'
+          : 'Low';
+    return {
+      text: tier,
+      unitLabel: 'opportunity',
+      color: 'text-primary-600',
+      showStrokesBar: false,
+    };
+  }
+
+  // strokes/round — the only unit traceable to a per-round stroke impact.
+  return {
+    text: formatStrokesGained(focusArea.strokesGained),
+    unitLabel: 'strokes/round',
+    color: getStrokesColor(focusArea.strokesGained),
+    showStrokesBar: true,
+  };
+}
+
 function FocusAreaCardContent({
   focusArea,
   index,
@@ -99,7 +156,7 @@ function FocusAreaCardContent({
   const prefersReducedMotion = useReducedMotion();
   const trendConfig = getTrendConfig(focusArea.trend);
   const TrendIcon = trendConfig.icon;
-  const strokesColor = getStrokesColor(focusArea.strokesGained);
+  const display = resolveDisplay(focusArea);
   const isPositive = Number(focusArea.strokesGained ?? 0) > 0;
 
   return (
@@ -135,34 +192,38 @@ function FocusAreaCardContent({
         </div>
       </div>
 
-      {/* Strokes gained display */}
+      {/* Rating display — rendered in the row's NATIVE unit (P2-18). Only the
+          strokes/round unit traces to a real per-round stroke impact. */}
       <div className="flex items-baseline gap-1 mb-3 flex-wrap">
-        <span className={cn('text-h1 font-light tabular-nums tracking-[-0.025em]', strokesColor)}>
-          {formatStrokesGained(focusArea.strokesGained)}
+        <span className={cn('text-h1 font-light tabular-nums tracking-[-0.025em]', display.color)}>
+          {display.text}
         </span>
-        <span className="text-xs text-warm-500 whitespace-nowrap">strokes/round</span>
+        <span className="text-xs text-warm-500 whitespace-nowrap">{display.unitLabel}</span>
       </div>
 
-      {/* Visual bar for strokes */}
-      <div className="relative h-2 bg-warm-100 rounded-full overflow-clip mb-3">
-        <m.div
-          initial={{ width: 0 }}
-          animate={{
-            width: `${Math.min(Math.abs(Number(focusArea.strokesGained ?? 0)) * 20, 100)}%`,
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4, delay: 0.05 + index * 0.03, ease: [0.25, 0.1, 0.25, 1] })}
-          className={cn(
-            'absolute h-full rounded-full',
-            isPositive ? 'bg-primary-400' : 'bg-red-400'
-          )}
-          style={{
-            [isPositive ? 'left' : 'right']: '50%',
-            transformOrigin: isPositive ? 'right' : 'left',
-          }}
-        />
-        {/* Center marker */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-warm-300 -translate-x-1/2" />
-      </div>
+      {/* Visual bar — ONLY for the bipolar strokes/round unit. Distance-error and
+          opportunity rows have no strokes axis, so no (misleading) strokes bar. */}
+      {display.showStrokesBar && (
+        <div className="relative h-2 bg-warm-100 rounded-full overflow-clip mb-3">
+          <m.div
+            initial={{ width: 0 }}
+            animate={{
+              width: `${Math.min(Math.abs(Number(focusArea.strokesGained ?? 0)) * 20, 100)}%`,
+            }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4, delay: 0.05 + index * 0.03, ease: [0.25, 0.1, 0.25, 1] })}
+            className={cn(
+              'absolute h-full rounded-full',
+              isPositive ? 'bg-primary-400' : 'bg-red-400'
+            )}
+            style={{
+              [isPositive ? 'left' : 'right']: '50%',
+              transformOrigin: isPositive ? 'right' : 'left',
+            }}
+          />
+          {/* Center marker */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-warm-300 -translate-x-1/2" />
+        </div>
+      )}
 
       {/* Recommendation snippet */}
       <p className="text-xs text-warm-500 line-clamp-2 mb-2">

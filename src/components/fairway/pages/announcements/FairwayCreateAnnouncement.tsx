@@ -86,6 +86,21 @@ export interface FairwayCreateAnnouncementProps {
 
 type Urgency = 'low' | 'normal' | 'high' | 'urgent';
 
+/* ─── Schema length limits — mirror createAnnouncementSchema (announcements.ts)
+ *     so the field hard-prevents overflow (maxLength) and the counter matches
+ *     the server constraint exactly. The counter only surfaces near the limit. ─ */
+const TITLE_MAX = 200;
+const BODY_MAX = 10000;
+/** Show the remaining-chars hint once the field is ≥90% of its max. */
+const COUNTER_THRESHOLD = 0.9;
+
+/** Subtle "N left" hint that only appears as the field nears its limit. */
+function charsLeftHelp(value: string, max: number): string | undefined {
+  if (value.length < max * COUNTER_THRESHOLD) return undefined;
+  const left = max - value.length;
+  return `${left.toLocaleString()} character${left === 1 ? '' : 's'} left`;
+}
+
 /* ─── Urgency → RadioGroup options + tone (low/normal/high/urgent →
  *     neutral/info/warning/danger). info has no off-green token so it reads
  *     neutral-secondary — matched to the StatusPill `info` tone). ──────────── */
@@ -284,21 +299,23 @@ function CreateSheet({
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
         <Sheet.Body className="flex flex-col gap-6 pb-2">
           {/* ── Title + message ─────────────────────────────────────────────── */}
-          <FormField label="Title" required>
+          <FormField label="Title" required help={charsLeftHelp(title, TITLE_MAX)}>
             <Input
               ref={titleRef}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              maxLength={TITLE_MAX}
               placeholder="Announcement title"
               autoCapitalize="sentences"
               autoCorrect="on"
             />
           </FormField>
 
-          <FormField label="Message" required>
+          <FormField label="Message" required help={charsLeftHelp(body, BODY_MAX)}>
             <TextArea
               value={body}
               onChange={(e) => setBody(e.target.value)}
+              maxLength={BODY_MAX}
               rows={4}
               placeholder="Write your message to the team…"
               autoCapitalize="sentences"

@@ -44,6 +44,8 @@ export interface StrokesGainedTornadoProps {
   domainMax?: number;
   height?: number;
   state?: ChartFrameState;
+  /** Optional copy overriding the default empty/insufficient/error message. */
+  stateMessage?: string;
   actions?: React.ReactNode;
   className?: string;
 }
@@ -64,6 +66,7 @@ export function StrokesGainedTornado({
   domainMax,
   height = 260,
   state,
+  stateMessage,
   actions,
   className,
 }: StrokesGainedTornadoProps) {
@@ -85,6 +88,7 @@ export function StrokesGainedTornado({
       subtitle={subtitle}
       takeaway={takeaway}
       state={resolvedState}
+      stateMessage={stateMessage}
       height={height}
       tableData={tableData}
       actions={actions}

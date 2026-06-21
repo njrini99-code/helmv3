@@ -174,7 +174,7 @@ export function FairwayPlayerStatusBadge({
       type="button"
       disabled={loading}
       aria-label={`Player status: ${current.label}. Change status.`}
-      aria-haspopup="menu"
+      aria-haspopup="dialog"
       aria-expanded={open}
       className={cn(
         'inline-flex items-center rounded-full',
@@ -219,14 +219,19 @@ export function FairwayPlayerStatusBadge({
       ariaLabel="Change player status"
       data-slot="fw-player-status-menu"
     >
-      <PopoverPanel.Header>Set status</PopoverPanel.Header>
-      <div role="menu" className="flex flex-col gap-0.5">
+      {/* radiogroup, not role="menu": this Popover is built on @radix-ui/react-
+          popover, which provides Tab/Shift+Tab + Escape but NOT the arrow-key
+          roving + typeahead a true ARIA menu pattern requires. The items are
+          Tab-navigable radio options, so the ARIA must describe a radiogroup
+          (honest to the keyboard behaviour) — never a menu it can't operate. */}
+      <PopoverPanel.Header id="fw-player-status-label">Set status</PopoverPanel.Header>
+      <div role="radiogroup" aria-labelledby="fw-player-status-label" className="flex flex-col gap-0.5">
         {STATUSES.map((s) => {
           const selected = s.value === status;
           return (
             <PopoverPanel.Item
               key={s.value}
-              role="menuitemradio"
+              role="radio"
               aria-checked={selected}
               onClick={() => handleSelect(s.value)}
               className={cn(selected && 'bg-surface-sunken')}

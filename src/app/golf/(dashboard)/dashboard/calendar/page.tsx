@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { CalendarSkeleton } from '@/components/ui/skeleton';
+import { FairwayCalendarSkeleton } from '@/components/fairway/pages/calendar/FairwayCalendarSkeleton';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
@@ -25,7 +26,9 @@ const EditorialCalendarSurface = dynamic(
 const FairwayCalendar = dynamic(
   () =>
     import('@/components/fairway/pages/calendar/FairwayCalendar').then((m) => m.FairwayCalendar),
-  { loading: () => <CalendarSkeleton /> },
+  // P235: the Fairway chunk's own loading fallback must mirror the agenda-default
+  // Fairway first paint (token-true), not the legacy week-grid CalendarSkeleton.
+  { loading: () => <FairwayCalendarSkeleton /> },
 );
 
 export const metadata: Metadata = {

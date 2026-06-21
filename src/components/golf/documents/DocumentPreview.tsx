@@ -37,22 +37,25 @@ interface DocumentPreviewProps {
 }
 
 function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: string }) {
+  // P306 — Fairway tokens only (no raw text-red/blue/purple-500 leaks). The
+  // --fw-* tokens resolve on :root so these read warm-matte under the live
+  // Fairway page and stay on-system for the legacy/baseball callers too.
   if (mimeType === 'application/pdf') {
-    return <FileTextIcon className={cn('text-red-500', className)} />;
+    return <FileTextIcon className={cn('text-fw-danger', className)} />;
   }
   if (mimeType.startsWith('image/')) {
-    return <FileImageIcon className={cn('text-blue-500', className)} />;
+    return <FileImageIcon className={cn('text-accent-600', className)} />;
   }
   if (mimeType.startsWith('video/')) {
-    return <FileVideoIcon className={cn('text-purple-500', className)} />;
+    return <FileVideoIcon className={cn('text-accent-700', className)} />;
   }
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') {
-    return <FileSpreadsheetIcon className={cn('text-primary-500', className)} />;
+    return <FileSpreadsheetIcon className={cn('text-fw-success', className)} />;
   }
   if (mimeType.startsWith('text/') || mimeType === 'application/json') {
-    return <FileTextIcon className={cn('text-warm-500', className)} />;
+    return <FileTextIcon className={cn('text-text-secondary', className)} />;
   }
-  return <FileIcon className={cn('text-warm-400', className)} />;
+  return <FileIcon className={cn('text-text-tertiary', className)} />;
 }
 
 export function DocumentPreview({
@@ -149,8 +152,8 @@ export function DocumentPreview({
       return (
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
-            <Loader2Icon className="h-12 w-12 animate-spin text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading preview...</p>
+            <Loader2Icon className="h-12 w-12 animate-spin text-text-tertiary mx-auto mb-4" />
+            <p className="text-text-secondary">Loading preview...</p>
           </div>
         </div>
       );
@@ -160,9 +163,9 @@ export function DocumentPreview({
       return (
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center max-w-md">
-            <AlertCircleIcon className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <p className="text-destructive font-medium mb-2">Preview unavailable</p>
-            <p className="text-muted-foreground text-sm mb-4">{error}</p>
+            <AlertCircleIcon className="h-12 w-12 text-fw-danger mx-auto mb-4" />
+            <p className="text-fw-danger font-medium mb-2">Preview unavailable</p>
+            <p className="text-text-tertiary text-sm mb-4">{error}</p>
             <div className="flex gap-2 justify-center">
               <Button variant="secondary" onClick={handleDownload}>
                 <DownloadIcon className="h-4 w-4 mr-2" />
@@ -183,7 +186,7 @@ export function DocumentPreview({
     if (!previewUrl) {
       return (
         <div className="flex items-center justify-center h-[60vh]">
-          <p className="text-muted-foreground">No preview available</p>
+          <p className="text-text-secondary">No preview available</p>
         </div>
       );
     }
@@ -238,7 +241,7 @@ export function DocumentPreview({
         if (mimeType.startsWith('video/')) {
           return (
             <div className="flex flex-col h-[70vh]">
-              <div className="flex-1 flex items-center justify-center bg-black rounded-md overflow-hidden">
+              <div className="flex-1 flex items-center justify-center bg-inset rounded-md overflow-hidden">
                 {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                 <video
                   src={previewUrl}
@@ -293,7 +296,7 @@ export function DocumentPreview({
                   Open External
                 </Button>
               </div>
-              <div className="flex-1 border rounded-md overflow-hidden">
+              <div className="flex-1 border border-border-subtle rounded-md overflow-hidden">
                 <iframe
                   src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl)}&embedded=true`}
                   className="w-full h-full border-0"
@@ -315,10 +318,10 @@ export function DocumentPreview({
       <div className="flex flex-col items-center justify-center h-[40vh]">
         <FileTypeIcon mimeType={mimeType} className="h-16 w-16 mb-4" />
         <p className="text-lg font-medium mb-2">{fileName}</p>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-sm text-text-tertiary mb-4">
           {formatFileSize(fileSize)}
         </p>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-sm text-text-tertiary mb-4">
           Preview not available for this file type
         </p>
         <div className="flex gap-2">
@@ -343,13 +346,13 @@ export function DocumentPreview({
         className="max-w-[100vw] sm:max-w-5xl h-[100dvh] sm:h-[90vh] rounded-none sm:rounded-lg flex flex-col p-0"
       >
         {/* Header */}
-        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
+        <DialogHeader className="px-6 py-4 border-b border-border-subtle flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <FileTypeIcon mimeType={mimeType} className="h-6 w-6" />
               <div>
                 <DialogTitle className="text-lg">{golfDocument.title}</DialogTitle>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                <div className="flex items-center gap-2 text-sm text-text-tertiary mt-1">
                   <span>{formatFileSize(fileSize)}</span>
                   {version && (
                     <>

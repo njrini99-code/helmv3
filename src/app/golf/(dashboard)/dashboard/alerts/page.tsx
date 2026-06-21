@@ -19,6 +19,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import { ContainerReading } from '@/components/ui/containers';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { getInsightsForCoachWithMeta } from '@/app/golf/actions/insight-delivery';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachHelmSignals } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
@@ -69,14 +70,29 @@ export default async function AlertsPage() {
   // CoachHelmShell itself and client-fetches via the SAME preserved actions the
   // legacy CoachAlertCenter used. Flag OFF (default) → CoachAlertCenter verbatim.
   if (isRedesignEnabled()) {
-    const countsRes = await getAlertCounts(coach.id);
+    // SSR-seed the urgent/high insights via the SAME preserved read the surface
+    // client-fetches (getInsightsForCoachWithMeta, limit 100, fetchPriorities),
+    // so the Signals workspace paints data on the first frame instead of
+    // mounting at loading=true → an always-on client fetch + skeleton flash on
+    // every /alerts visit. Mirrors how /patterns already SSR-seeds initialPatterns.
+    const [countsRes, insightsRes] = await Promise.all([
+      getAlertCounts(coach.id),
+      getInsightsForCoachWithMeta(coach.id, {
+        limit: 100,
+        priorities: ['urgent', 'high'],
+      }),
+    ]);
     const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+    // Honest fallback: a DB error leaves initialInsights empty so the surface
+    // falls back to its own client fetch + error handling (never a fake feed).
+    const initialInsights = insightsRes.ok ? insightsRes.data : [];
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <FairwayCoachHelmSignals
           coachId={coach.id}
           teamId={teamId}
           signalSource="insights"
+          initialInsights={initialInsights}
           defaultFilter={{
             // The client filter compares against MAPPED row tones
             // (insight `urgent` → row `critical`; see patternToInsightVocabulary

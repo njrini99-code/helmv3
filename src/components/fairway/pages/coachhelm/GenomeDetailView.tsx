@@ -72,6 +72,8 @@ import {
   IconCheckCircle2,
   IconLock,
   IconArrowRight,
+  IconSparkles,
+  IconChartRadar,
 } from '@/components/icons';
 import { GitCompare as LucideGitCompare, Dna as LucideDna } from 'lucide-react';
 
@@ -148,7 +150,12 @@ function buildDimRows(vector: GenomeVector): DimRow[] {
     const r: DimensionResult | undefined = vector[dim.id];
     const norm = r ? normalizeForRadar(dim.id, r) : null;
     const score = norm == null ? null : Math.round(norm * 100);
-    const locked = !r || r.value === null;
+    // Lock on the presence of a normalized SCORE — not just r.value — so a
+    // dimension that has a raw value but can't be normalized (normalizeForRadar
+    // → null) renders the "needs more rounds" awaiting tile instead of a
+    // fabricated 0. This matches the radar's exclusion logic (liveRows filters
+    // d.score != null), keeping grid and radar consistent (audit P110).
+    const locked = !r || r.value === null || score === null;
     return {
       id: dim.id,
       label: dim.label,
@@ -272,16 +279,29 @@ export function GenomeDetailView({
     }
   }
 
-  const headerActions = genome ? (
-    <Button
-      variant="secondary"
-      size="sm"
-      leftIcon={<LucideGitCompare size={15} />}
-      asChild
-    >
-      <Link href={`/golf/dashboard/coachhelm/genome/compare?p1=${playerId}`}>Compare</Link>
-    </Button>
-  ) : null;
+  const headerActions = (
+    // Sibling cross-links (P107) — Genome ↔ AI Insight ↔ Game Fingerprint ↔
+    // Player profile, so the genome is never a dead-end reachable only from the
+    // grid. Compare stays primary (only meaningful once a genome exists).
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Button variant="ghost" size="sm" leftIcon={<IconSparkles size={15} />} asChild>
+        <Link href={`/golf/dashboard/players/${playerId}`}>AI Insight</Link>
+      </Button>
+      <Button variant="ghost" size="sm" leftIcon={<IconChartRadar size={15} />} asChild>
+        <Link href={`/golf/dashboard/players/${playerId}/game`}>Game fingerprint</Link>
+      </Button>
+      {genome ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<LucideGitCompare size={15} />}
+          asChild
+        >
+          <Link href={`/golf/dashboard/coachhelm/genome/compare?p1=${playerId}`}>Compare</Link>
+        </Button>
+      ) : null}
+    </div>
+  );
 
   const activeAreas = focusAreas.filter((fa) => fa.status !== 'completed');
 

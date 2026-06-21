@@ -1704,7 +1704,13 @@ export async function getTeamComparison(
   seasonStart.setFullYear(seasonStart.getFullYear() - 1);
   const seasonStartDate = seasonStart.toISOString().split('T')[0]!;
 
-  const { data: roundsData } = await supabase
+  // Paginate past the PostgREST 1000-row hard cap. A full roster across
+  // tournament + qualifier + practice rounds over a 12-month window can exceed
+  // 1000 completed rounds; an unpaginated `.in(...)` silently truncates at 1000,
+  // which corrupts the team scoring average, every per-stat ranking, AND caps
+  // teamRoundIds — which would in turn defeat the paginated golf_holes scrambling
+  // query below. `.order('id')` gives stable page boundaries (P445).
+  const { data: roundsData } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_rounds')
     .select(`
       id,
@@ -1721,7 +1727,9 @@ export async function getTeamComparison(
     .in('player_id', playerIds)
     .eq('status', 'completed')
     .not('total_score', 'is', null)
-    .gte('round_date', seasonStartDate);
+    .gte('round_date', seasonStartDate)
+    .order('id', { ascending: true })
+    .range(from, to));
 
   if (!roundsData || roundsData.length === 0 || !playersData) {
     return {

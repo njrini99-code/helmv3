@@ -96,7 +96,7 @@ const gradeConfig: Record<
   B: { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-600' },
   C: { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-600' },
   D: { bg: 'bg-orange-500', text: 'text-white', border: 'border-orange-600' },
-  F: { bg: 'bg-red-500', text: 'text-white', border: 'border-red-600' },
+  F: { bg: 'bg-fw-danger', text: 'text-white', border: 'border-fw-danger' },
 };
 
 const comparisonConfig: Record<
@@ -135,12 +135,12 @@ function ExpandableSection({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="border border-white/20 rounded-xl overflow-clip bg-cream-100/60 backdrop-blur-sm">
+    <div className="border border-border-subtle rounded-xl overflow-clip bg-surface">
       <Button variant="ghost"
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
           'w-full flex items-center justify-between px-4 py-3',
-          'hover:bg-cream-100/68 transition-colors',
+          'hover:bg-surface-sunken transition-colors',
           'text-left'
         )}
       >
@@ -247,7 +247,7 @@ export function RoundReviewDisplay({
 
         {/* Round Info */}
         {(courseName || roundDate || score !== undefined) && (
-          <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/20">
+          <div className="flex items-center gap-4 mb-4 pb-4 border-b border-border-subtle">
             {score !== undefined && (
               <div className="text-center">
                 <div className="text-h1 md:text-display font-light text-warm-900 tracking-[-0.025em]">{score}</div>
@@ -284,7 +284,7 @@ export function RoundReviewDisplay({
         </div>
 
         {/* AI Badge */}
-        <div className="mt-4 pt-4 border-t border-white/20 flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-border-subtle flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-warm-500">
             <IconSparkles size={12} className="text-purple-500" />
             AI-Powered Analysis
@@ -519,7 +519,7 @@ export function RoundReviewDisplay({
                     h.scoreToPar === -1 ? 'bg-primary-500/80 text-white' :
                     h.scoreToPar === 0 ? 'bg-warm-100 text-warm-700' :
                     h.scoreToPar === 1 ? 'bg-orange-400/80 text-white' :
-                    'bg-red-500/80 text-white';
+                    'bg-fw-danger text-white';
                   return (
                     <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
                       <div className="text-micro opacity-70">H{h.hole}</div>
@@ -553,7 +553,7 @@ export function RoundReviewDisplay({
                       h.scoreToPar === -1 ? 'bg-primary-500/80 text-white' :
                       h.scoreToPar === 0 ? 'bg-warm-100 text-warm-700' :
                       h.scoreToPar === 1 ? 'bg-orange-400/80 text-white' :
-                      'bg-red-500/80 text-white';
+                      'bg-fw-danger text-white';
                     return (
                       <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
                         <div className="text-micro opacity-70">H{h.hole}</div>
@@ -583,7 +583,7 @@ export function RoundReviewDisplay({
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-primary-500/80" /> Birdie</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-warm-100" /> Par</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-orange-400/80" /> Bogey</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-500/80" /> Double+</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-fw-danger" /> Double+</span>
             </div>
           </div>
         </ExpandableSection>
@@ -700,7 +700,7 @@ export function RoundReviewDisplay({
             </div>
 
             {/* Summary stats */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/20">
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border-subtle">
               {review.puttingBreakdown.avgFirstPuttDist !== null && (
                 <div className="p-2 rounded-lg bg-cream-100/68 text-center">
                   <div className="text-xs text-warm-500">Avg 1st Putt</div>
@@ -715,7 +715,7 @@ export function RoundReviewDisplay({
 
             {/* Three-putt detail */}
             {review.puttingBreakdown.threePuttHoles.length > 0 && (
-              <div className="pt-2 border-t border-white/20">
+              <div className="pt-2 border-t border-border-subtle">
                 <div className="text-xs font-medium text-amber-700 mb-1">Three-Putts</div>
                 <div className="flex flex-wrap gap-2">
                   {review.puttingBreakdown.threePuttHoles.map(tp => (
@@ -759,8 +759,8 @@ export function RoundReviewDisplay({
               >
                 <div className={cn(
                   'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-eyebrow font-medium',
-                  index === 0 ? 'bg-red-100 text-red-700' :
-                  index === 1 ? 'bg-amber-100 text-amber-700' :
+                  index === 0 ? 'bg-fw-danger-bg text-fw-danger' :
+                  index === 1 ? 'bg-fw-warning-bg text-fw-warning' :
                   'bg-warm-100 text-warm-600'
                 )}>
                   {index + 1}
@@ -770,8 +770,8 @@ export function RoundReviewDisplay({
                     <span className="font-medium text-sm text-warm-900">{item.category}</span>
                     <span className={cn(
                       'text-body-sm font-medium',
-                      item.potentialStrokes >= 2 ? 'text-red-600' :
-                      item.potentialStrokes >= 1 ? 'text-amber-600' :
+                      item.potentialStrokes >= 2 ? 'text-fw-danger' :
+                      item.potentialStrokes >= 1 ? 'text-fw-warning' :
                       'text-warm-600'
                     )}>
                       <AnimatedNumber value={item.potentialStrokes} decimals={1} />
@@ -839,7 +839,7 @@ export function RoundReviewDisplay({
                           >
                             <div className={cn(
                               'w-full h-full rounded-sm',
-                              isOver ? 'bg-red-400/70' : val < 0 ? 'bg-primary-500/70' : 'bg-warm-300'
+                              isOver ? 'bg-fw-danger' : val < 0 ? 'bg-primary-500/70' : 'bg-warm-300'
                             )} />
                           </div>
                         </div>
@@ -859,7 +859,7 @@ export function RoundReviewDisplay({
                   <span className={cn(
                     'font-medium',
                     data[data.length - 1]!.rollingScoreToPar < 0 ? 'text-primary-600' :
-                    data[data.length - 1]!.rollingScoreToPar > 0 ? 'text-red-600' :
+                    data[data.length - 1]!.rollingScoreToPar > 0 ? 'text-fw-danger' :
                     'text-warm-700'
                   )}>
                     {data[data.length - 1]!.rollingScoreToPar === 0 ? 'E' :
@@ -931,16 +931,16 @@ export function RoundReviewDisplay({
 
             {/* Penalty analysis */}
             {review.penaltyAnalysis && review.penaltyAnalysis.total > 0 && (
-              <div className="pt-3 border-t border-white/20">
+              <div className="pt-3 border-t border-border-subtle">
                 <div className="text-xs font-medium text-warm-500 mb-2 uppercase tracking-wider">Penalties</div>
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-lg bg-red-50/50 border border-red-200/50">
-                    <div className="text-xs text-red-600">Strokes Lost</div>
-                    <div className="text-h3 font-medium text-red-700 tracking-[-0.012em]">{review.penaltyAnalysis.strokesLost}</div>
+                  <div className="p-2.5 rounded-lg bg-fw-danger-bg border border-fw-danger/30">
+                    <div className="text-xs text-fw-danger">Strokes Lost</div>
+                    <div className="text-h3 font-medium text-fw-danger tracking-[-0.012em]">{review.penaltyAnalysis.strokesLost}</div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 flex-1">
                     {review.penaltyAnalysis.holes.map(p => (
-                      <span key={p.hole} className="px-2 py-1 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-medium">
+                      <span key={p.hole} className="px-2 py-1 bg-fw-danger-bg border border-fw-danger/30 rounded-lg text-xs text-fw-danger font-medium">
                         #{p.hole} ({p.count})
                       </span>
                     ))}

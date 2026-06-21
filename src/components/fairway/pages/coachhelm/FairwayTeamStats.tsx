@@ -30,7 +30,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Download } from 'lucide-react';
 
 import {
   ViewHeader,
@@ -42,6 +42,9 @@ import {
   InstrumentPanel,
   Readout,
   Button,
+  Segmented,
+  InlineNotice,
+  fairwayToast,
 } from '@/components/fairway';
 
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
@@ -69,8 +72,18 @@ export interface FairwayTeamStatsProps {
   players: TeamPlayerStats[];
   /** Same per-player intelligence map the legacy table receives (keyed by player id). */
   intelligenceByPlayer: Record<string, FairwayTeamStatsPlayerIntelligence>;
+  /** True when the intelligence action FAILED (not merely empty) — surfaced as a retry-able notice rather than a cheerful empty. */
+  intelligenceError?: boolean;
+  /**
+   * Teammates (incl. self) with a stats-cache row that fed the composite
+   * z-score normalization. < 3 makes every composite statistically unstable,
+   * so the per-tile composite is toned down + flagged "provisional" (P139).
+   */
+  intelligenceSampleSize?: number;
   /** Team-level leak maps (from `getTeamLeakMaps`); null when the load failed. */
   leakMaps: TeamLeakMaps | null;
+  /** True when the leak-map action FAILED (not merely empty) — surfaced as a retry-able notice. */
+  leakError?: boolean;
   /** Per-player standing snapshot (from `loadPlayerStandingMap`), keyed by player id. */
   standingByPlayer: Map<string, Map<MetricId, PlayerStanding>>;
 }
@@ -289,6 +302,200 @@ export function teamAvg(
 }
 
 // ============================================================================
+// FORMAT TOGGLE (P131) — 9 / 18 / all, wired to the route's already-fetched
+// per-format columns. `all` returns the player untouched; '18'/'9' swap the
+// three columns that HAVE format variants (rounds, scoring avg, best). Every
+// other metric (FW%/GIR%/putts/handicap/trend) has no per-format split and is
+// left intact — never fabricated for a format. Exported for unit tests.
+// ============================================================================
+
+export type HoleFormat = 'all' | '18' | '9';
+
+export function applyFormat(p: TeamPlayerStats, format: HoleFormat): TeamPlayerStats {
+  if (format === 'all') return p;
+  if (format === '18') {
+    return {
+      ...p,
+      rounds_played: p.rounds_played_18,
+      scoring_average: p.scoring_average_18,
+      best_round: p.best_round_18,
+    };
+  }
+  return {
+    ...p,
+    rounds_played: p.rounds_played_9,
+    scoring_average: p.scoring_average_9,
+    best_round: p.best_round_9,
+  };
+}
+
+/** Team-wide round counts per format → drives the toggle option labels. */
+export function formatCounts(players: TeamPlayerStats[]): {
+  all: number;
+  h18: number;
+  h9: number;
+} {
+  let all = 0;
+  let h18 = 0;
+  let h9 = 0;
+  for (const p of players) {
+    all += p.rounds_played;
+    h18 += p.rounds_played_18;
+    h9 += p.rounds_played_9;
+  }
+  return { all, h18, h9 };
+}
+
+// ============================================================================
+// ROSTER RANKING (P132) — sort the tile grid by any displayed metric, mirroring
+// the legacy TeamStatsTable SortKey set. Exported for unit tests.
+// ============================================================================
+
+export type RankKey =
+  | 'scoring_average'
+  | 'putts_per_round'
+  | 'fairway_pct'
+  | 'gir_pct'
+  | 'composite'
+  | 'scoring_trend'
+  | 'name';
+
+/**
+ * Lower-is-better metrics sort ascending (best first); higher-is-better sort
+ * descending (best first). scoring_trend is recent-minus-prior, so MORE
+ * negative = improving = "best", i.e. ascending. Composite is 0-100 higher
+ * better. Name is an A→Z alpha sort.
+ */
+const RANK_DIRECTION: Record<Exclude<RankKey, 'name'>, 'asc' | 'desc'> = {
+  scoring_average: 'asc',
+  putts_per_round: 'asc',
+  fairway_pct: 'desc',
+  gir_pct: 'desc',
+  composite: 'desc',
+  scoring_trend: 'asc',
+};
+
+export function rankPlayers(
+  players: TeamPlayerStats[],
+  key: RankKey,
+  compositeFor: (playerId: string) => number | null,
+): TeamPlayerStats[] {
+  const sorted = [...players];
+  if (key === 'name') {
+    sorted.sort((a, b) =>
+      `${a.last_name} ${a.first_name}`
+        .toLowerCase()
+        .localeCompare(`${b.last_name} ${b.first_name}`.toLowerCase()),
+    );
+    return sorted;
+  }
+  const pick = (p: TeamPlayerStats): number | null => {
+    switch (key) {
+      case 'scoring_average':
+        return p.scoring_average;
+      case 'putts_per_round':
+        return p.putts_per_round;
+      case 'fairway_pct':
+        return p.fairway_pct;
+      case 'gir_pct':
+        return p.gir_pct;
+      case 'scoring_trend':
+        return p.scoring_trend;
+      case 'composite':
+        return compositeFor(p.id);
+    }
+  };
+  const dir = RANK_DIRECTION[key];
+  sorted.sort((a, b) => {
+    const av = pick(a);
+    const bv = pick(b);
+    // Nulls always sink to the bottom regardless of direction (a player with no
+    // reading for the ranked metric is never "best").
+    if (av === null && bv === null) return 0;
+    if (av === null) return 1;
+    if (bv === null) return -1;
+    return dir === 'asc' ? av - bv : bv - av;
+  });
+  return sorted;
+}
+
+// ============================================================================
+// CSV EXPORT (P141) — players × the displayed metric set + a team-average row.
+// Pure string builder so it can be unit-tested without a DOM. Values are the
+// honest formatted figures (em-dash → empty cell so the CSV never asserts 0).
+// ============================================================================
+
+function csvCell(value: string): string {
+  // Quote any cell that could break CSV parsing; escape embedded quotes.
+  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
+export function buildTeamStatsCsv(
+  players: TeamPlayerStats[],
+  format: HoleFormat,
+  compositeFor: (playerId: string) => number | null,
+): string {
+  const header = [
+    'Player',
+    'Class',
+    'Rounds',
+    'Scoring Avg',
+    'Best',
+    'Handicap',
+    'FW%',
+    'GIR%',
+    'Putts',
+    'Composite',
+    'Trend',
+  ];
+  const blank = (s: string) => (s === '—' ? '' : s);
+  const rows = players.map((raw) => {
+    const p = applyFormat(raw, format);
+    const composite = compositeFor(raw.id);
+    const trend = classifyScoringTrend(raw.scoring_trend);
+    return [
+      `${raw.first_name} ${raw.last_name}`.trim(),
+      raw.graduation_year ? `Class of ${raw.graduation_year}` : '',
+      `${p.rounds_played}`,
+      blank(fmtNumber(p.scoring_average, 1)),
+      blank(fmtScore(p.best_round)),
+      blank(fmtHandicap(raw.handicap)),
+      blank(fmtPct(raw.fairway_pct)),
+      blank(fmtPct(raw.gir_pct)),
+      blank(fmtNumber(raw.putts_per_round, 1)),
+      composite === null ? '' : `${Math.round(composite)}`,
+      trend ? `${trend.label}${trend.magnitude ? ` ${trend.magnitude}` : ''}` : '',
+    ];
+  });
+
+  // Team-average row mirrors the footer (rounds-weighted; handicap equal-weight).
+  const formatted = players.map((p) => applyFormat(p, format));
+  const avgScoring = teamAvg(formatted, (p) => p.scoring_average);
+  const bests = formatted
+    .map((p) => p.best_round)
+    .filter((v): v is number => v !== null && !Number.isNaN(v));
+  const bestOverall = bests.length > 0 ? Math.min(...bests) : null;
+  const avgRow = [
+    'Team average',
+    '',
+    `${formatted.reduce((acc, p) => acc + p.rounds_played, 0)}`,
+    blank(fmtNumber(avgScoring, 1)),
+    blank(fmtScore(bestOverall)),
+    blank(fmtHandicap(teamAvg(players, (p) => p.handicap, () => 1))),
+    blank(fmtPct(teamAvg(players, (p) => p.fairway_pct))),
+    blank(fmtPct(teamAvg(players, (p) => p.gir_pct))),
+    blank(fmtNumber(teamAvg(players, (p) => p.putts_per_round), 1)),
+    '',
+    '',
+  ];
+
+  return [header, ...rows, avgRow]
+    .map((cols) => cols.map(csvCell).join(','))
+    .join('\r\n');
+}
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 
@@ -296,9 +503,51 @@ export function FairwayTeamStats({
   teamName,
   players,
   intelligenceByPlayer,
+  intelligenceError = false,
+  intelligenceSampleSize = 0,
   leakMaps,
+  leakError = false,
   standingByPlayer,
 }: FairwayTeamStatsProps) {
+  // ── Format toggle (P131) + roster ranking (P132) — client-side view state ──
+  const [format, setFormat] = React.useState<HoleFormat>('all');
+  const [rankKey, setRankKey] = React.useState<RankKey>('scoring_average');
+
+  const counts = React.useMemo(() => formatCounts(players), [players]);
+
+  // Composite lookup shared by the ranking comparator + CSV export.
+  const compositeFor = React.useCallback(
+    (playerId: string) => intelligenceByPlayer[playerId]?.composite ?? null,
+    [intelligenceByPlayer],
+  );
+
+  // Apply the selected format, then rank. The tile grid + footer both consume
+  // this single derived list so the toggle + sort stay in lockstep.
+  const viewPlayers = React.useMemo(() => {
+    const formatted = players.map((p) => applyFormat(p, format));
+    return rankPlayers(formatted, rankKey, compositeFor);
+  }, [players, format, rankKey, compositeFor]);
+
+  // ── CSV export (P141) — build from the current view + trigger a download. ──
+  const handleExport = React.useCallback(() => {
+    try {
+      const csv = buildTeamStatsCsv(players, format, compositeFor);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const slug = teamName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'team';
+      a.href = url;
+      a.download = `${slug}-team-stats.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      fairwayToast.success('Team stats exported', { description: `${players.length} player${players.length !== 1 ? 's' : ''} · ${a.download}` });
+    } catch {
+      fairwayToast.danger('Export failed', { description: 'Could not generate the CSV. Please try again.' });
+    }
+  }, [players, format, compositeFor, teamName]);
+
   // ── SG hero data (rounds-weighted team mean per category) ──────────────────
   // Standing rows carry no round count, so the weight lookup comes from the
   // same roster payload the rest of the page renders.
@@ -360,6 +609,15 @@ export function FairwayTeamStats({
   const approachTakeaway = leakMaps
     ? worstLeakTakeaway(leakMaps.approach, 'lower_better', 'feet')
     : undefined;
+  // P138 cold-start: leak maps need shot-level rounds, so a fresh/small team
+  // hits the empty path as the COMMON case. Surface the real sample base
+  // (rounds rolled in) and a specific message + next-step CTA rather than the
+  // generic "not enough data" copy.
+  const leakRoundsIncluded = leakMaps?.roundsIncluded ?? 0;
+  const hasPuttSamples = puttBuckets.some((b) => b.sampleN > 0);
+  const hasApproachSamples = approachBuckets.some((b) => b.sampleN > 0);
+  const leakColdStartMessage =
+    'Leak maps appear once players log rounds with shot-level tracking (putts and approach distances). Have players enter rounds shot by shot to populate this.';
 
   // ── Team-trajectory tally (per-player scoring_trend → improving/steady/declining) ──
   // Counts derived ONLY from the existing classifyScoringTrend helper. Players
@@ -388,16 +646,46 @@ export function FairwayTeamStats({
   return (
     <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
       {/* ── MASTHEAD ──────────────────────────────────────────────────────────── */}
+      {/* P140: the ONE prominent action is now stats-native (export the sheet),
+          with "Open team intelligence" demoted to a quieter secondary link so
+          the squint-test primary serves the page's own job-to-be-done. */}
       <ViewHeader
         eyebrow="Team Stats"
         title="Team Stats"
         description={`${teamName} · ${players.length} player${players.length !== 1 ? 's' : ''}`}
-        primaryAction={
-          <Button asChild variant="primary" size="md">
+        secondaryActions={
+          <Button asChild variant="ghost" size="md">
             <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
           </Button>
         }
+        primaryAction={
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleExport}
+            disabled={players.length === 0}
+            leftIcon={<Download className="h-4 w-4" aria-hidden />}
+          >
+            Export stats
+          </Button>
+        }
       />
+
+      {/* ── HONESTY NOTICES: a FAILED load reads as "couldn't load", never as a
+          cheerful empty (the empty charts/composites below assume success). ─── */}
+      {intelligenceError || leakError ? (
+        <InlineNotice
+          tone="warning"
+          title="Some stats couldn't load"
+          className="mt-6"
+        >
+          {intelligenceError && leakError
+            ? "Team intelligence and leak maps failed to load. The figures below may be incomplete — reload to try again."
+            : intelligenceError
+              ? "Team intelligence (composite ratings) failed to load. Reload to try again."
+              : "Strokes-gained leak maps failed to load. Reload to try again."}
+        </InlineNotice>
+      ) : null}
 
       {/* ── HERO: Team Strokes Gained ─────────────────────────────────────────── */}
       <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -408,6 +696,14 @@ export function FairwayTeamStats({
           takeaway={sgTakeaway}
           data={sgData}
           state={hasSg ? undefined : 'insufficient-data'}
+          stateMessage={
+            hasSg
+              ? undefined
+              : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'
+          }
+          actions={
+            hasSg ? undefined : <ColdStartActions />
+          }
         />
         <InstrumentPanel
           depth="raised"
@@ -447,7 +743,7 @@ export function FairwayTeamStats({
           as="section"
         >
           <div className="mb-3 flex items-baseline justify-between gap-3">
-            <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+            <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-secondary">
               Team trajectory
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary">
@@ -484,9 +780,16 @@ export function FairwayTeamStats({
 
       {/* ── LEAK MAPS: what to work on ─────────────────────────────────────────── */}
       <section className="mt-10">
-        <h2 className="mb-4 font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">
-          Where the strokes leak
-        </h2>
+        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 className="font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">
+            Where the strokes leak
+          </h2>
+          {leakMaps && leakRoundsIncluded > 0 ? (
+            <span className="font-fw-sans text-caption text-text-secondary">
+              {leakRoundsIncluded} round{leakRoundsIncluded !== 1 ? 's' : ''} with shot tracking
+            </span>
+          ) : null}
+        </div>
         <div className="grid gap-6 lg:grid-cols-2">
           <LeakMap
             overline="Putting"
@@ -496,7 +799,9 @@ export function FairwayTeamStats({
             data={puttBuckets}
             direction="higher_better"
             unit="percent"
-            state={leakMaps ? undefined : 'insufficient-data'}
+            state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'}
+            stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage}
+            actions={leakMaps && hasPuttSamples ? undefined : <ColdStartActions />}
           />
           <LeakMap
             overline="Approach"
@@ -506,38 +811,108 @@ export function FairwayTeamStats({
             data={approachBuckets}
             direction="lower_better"
             unit="feet"
-            state={leakMaps ? undefined : 'insufficient-data'}
+            state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'}
+            stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage}
+            actions={leakMaps && hasApproachSamples ? undefined : <ColdStartActions />}
           />
         </div>
       </section>
 
       {/* ── PER-PLAYER TILES: pulse + standing ─────────────────────────────────── */}
       <section className="mt-10">
-        <h2 className="mb-4 font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">
-          Players
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <h2 className="font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">
+            Players
+          </h2>
+          {players.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              {/* P131: format toggle wired to the route's _9 / _18 columns. */}
+              <div className="flex items-center gap-2">
+                <span
+                  id="fw-team-format-label"
+                  className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-secondary"
+                >
+                  Format
+                </span>
+                <Segmented<HoleFormat>
+                  size="sm"
+                  aria-label="Round format"
+                  value={format}
+                  onValueChange={setFormat}
+                  options={[
+                    { value: 'all', label: `All${counts.all > 0 ? ` (${counts.all})` : ''}` },
+                    { value: '18', label: `18${counts.h18 > 0 ? ` (${counts.h18})` : ''}` },
+                    { value: '9', label: `9${counts.h9 > 0 ? ` (${counts.h9})` : ''}` },
+                  ]}
+                />
+              </div>
+              {/* P132: roster ranking — reorder the tile grid by any metric. */}
+              <div className="flex items-center gap-2">
+                <span
+                  id="fw-team-rank-label"
+                  className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-secondary"
+                >
+                  Rank by
+                </span>
+                <Segmented<RankKey>
+                  size="sm"
+                  aria-label="Rank roster by"
+                  value={rankKey}
+                  onValueChange={setRankKey}
+                  options={[
+                    { value: 'scoring_average', label: 'Scoring' },
+                    { value: 'putts_per_round', label: 'Putts' },
+                    { value: 'fairway_pct', label: 'FW%' },
+                    { value: 'gir_pct', label: 'GIR%' },
+                    { value: 'composite', label: 'Composite' },
+                    { value: 'scoring_trend', label: 'Trend' },
+                    { value: 'name', label: 'Name' },
+                  ]}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
         {players.length === 0 ? (
           <InstrumentPanel depth="base">
-            <p className="font-fw-sans text-body-sm text-text-tertiary">
+            <p className="font-fw-sans text-body-sm text-text-secondary">
               No players on your roster yet.
             </p>
           </InstrumentPanel>
         ) : (
           <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {players.map((player) => (
+              {viewPlayers.map((player) => (
                 <PlayerTile
                   key={player.id}
                   player={player}
                   intelligence={intelligenceByPlayer[player.id] ?? null}
                   standing={standingByPlayer.get(player.id)}
+                  sampleSize={intelligenceSampleSize}
                 />
               ))}
             </div>
-            <TeamAverageFooter players={players} />
+            <TeamAverageFooter players={viewPlayers} />
           </>
         )}
       </section>
+    </div>
+  );
+}
+
+// ============================================================================
+// COLD-START ACTIONS (P138) — next-step CTAs for empty SG / leak-map charts.
+// A coach's actionable next step is the roster (add players); the player-side
+// round entry is reachable from each player's hub, so we point at the roster
+// as the single highest-leverage step and keep intelligence as a quiet link.
+// ============================================================================
+
+function ColdStartActions() {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Button asChild variant="secondary" size="sm">
+        <Link href="/golf/dashboard/roster">Add players</Link>
+      </Button>
     </div>
   );
 }
@@ -561,7 +936,7 @@ function MetricCell({ label, value }: { label: string; value: string }) {
       >
         {value}
       </span>
-      <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+      <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-secondary">
         {label}
       </span>
     </div>
@@ -590,7 +965,7 @@ function TrajectoryCell({
         <span aria-hidden>{arrow}</span>
         {count}
       </span>
-      <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+      <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-secondary">
         {label}
       </span>
     </div>
@@ -613,7 +988,7 @@ function TrendCell({ trend }: { trend: number | null }) {
       ) : (
         <span className="font-fw-mono text-body-sm tabular-nums text-text-tertiary">—</span>
       )}
-      <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+      <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-secondary">
         Trend
       </span>
     </div>
@@ -624,15 +999,23 @@ function PlayerTile({
   player,
   intelligence,
   standing,
+  sampleSize,
 }: {
   player: TeamPlayerStats;
   intelligence: FairwayTeamStatsPlayerIntelligence | null;
   standing: Map<MetricId, PlayerStanding> | undefined;
+  /** Normalization population behind the composite; < 3 ⇒ statistically unstable. */
+  sampleSize: number;
 }) {
   const fullName = `${player.first_name} ${player.last_name}`.trim() || 'Player';
   const headlineMetric = pickHeadlineMetric(standing);
   const headlineRow = headlineMetric ? standing?.get(headlineMetric) ?? null : null;
   const renderCfg = headlineMetric ? getMetricRenderConfig(headlineMetric) : null;
+  // P139 — composite honesty: a z-score over < 3 teammates is too unstable to
+  // present with full authority. Tone the figure down + flag it "provisional"
+  // (only when there IS a composite to qualify — a missing one is just a dash).
+  const composite = intelligence?.composite ?? null;
+  const compositeProvisional = composite !== null && sampleSize < 3;
 
   return (
     <InstrumentPanel depth="raised" padding="md" as="article">
@@ -642,7 +1025,7 @@ function PlayerTile({
           <h3 className="truncate font-fw-display text-body-lg font-medium text-text-primary">
             <Link
               href={`/golf/dashboard/stats?player=${player.id}`}
-              className="transition-colors hover:text-accent-600"
+              className="transition-colors hover:text-accent-700"
             >
               {fullName}
             </Link>
@@ -653,19 +1036,31 @@ function PlayerTile({
             </p>
           ) : null}
         </div>
-        <div className="shrink-0 text-right">
-          <p className="font-fw-mono text-body-lg tabular-nums text-text-primary">
-            {fmtComposite(intelligence?.composite ?? null)}
+        <div
+          className="shrink-0 text-right"
+          title={
+            compositeProvisional
+              ? `Provisional — normalized over only ${sampleSize} player${sampleSize !== 1 ? 's' : ''} (needs 3+ for a stable rating).`
+              : undefined
+          }
+        >
+          <p
+            className={`font-fw-mono text-body-lg tabular-nums ${
+              compositeProvisional ? 'text-text-tertiary' : 'text-text-primary'
+            }`}
+          >
+            {fmtComposite(composite)}
           </p>
-          <p className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
-            Composite
+          <p className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-secondary">
+            {compositeProvisional ? 'Composite · provisional' : 'Composite'}
           </p>
         </div>
       </div>
 
       {/* Per-player detail grid — the full legacy column set, honest dashes when
-          a metric has no samples (never a fabricated 0 / 0%). */}
-      <div className="mb-4 grid grid-cols-4 gap-x-3 gap-y-3 rounded-card bg-surface-sunken p-3">
+          a metric has no samples (never a fabricated 0 / 0%). P137: 2-up on the
+          narrowest phones, 4-up from ~380px so the 11px labels never crowd. */}
+      <div className="mb-4 grid grid-cols-2 [@media(min-width:380px)]:grid-cols-4 gap-x-3 gap-y-3 rounded-card bg-surface-sunken p-3">
         <MetricCell label="Rounds" value={`${player.rounds_played}`} />
         <MetricCell label="Avg" value={fmtNumber(player.scoring_average, 1)} />
         <MetricCell label="Best" value={fmtScore(player.best_round)} />
@@ -718,10 +1113,13 @@ function PlayerTile({
         </Link>
       ) : null}
 
-      {/* Always-present drill-in → that player's full stats page. */}
+      {/* Always-present drill-in → that player's full stats page. P136: accent
+          text link sits at accent-700 (5.69:1 on surface) at REST — not the
+          failing accent-600 — and carries an underline so color is not the
+          only contrast cue. */}
       <Link
         href={`/golf/dashboard/stats?player=${player.id}`}
-        className="mt-3 inline-flex items-center gap-1 font-fw-sans text-caption font-medium text-accent-600 transition-colors hover:text-accent-700"
+        className="mt-3 inline-flex items-center gap-1 font-fw-sans text-caption font-medium text-accent-700 underline underline-offset-2 transition-colors hover:text-accent-800"
       >
         View full stats
         <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -754,7 +1152,7 @@ function TeamAverageFooter({ players }: { players: TeamPlayerStats[] }) {
   return (
     <InstrumentPanel depth="base" padding="md" className="mt-4">
       <div className="mb-3 flex items-baseline justify-between gap-3">
-        <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+        <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-secondary">
           Team average
         </span>
         <span className="font-fw-sans text-caption text-text-tertiary">

@@ -84,7 +84,7 @@ export async function loadShortGameShots(
 
   const { data, error } = await fromUntyped(supabase, 'golf_shots')
     .select(
-      'round_id, hole_number, lie_before, distance_to_hole_before, distance_to_hole_after, distance_unit_after',
+      'round_id, hole_number, lie_before, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after',
     )
     .in('round_id', roundIds)
     // Migration 040's CHECK constraint allows only the 5 canonical values
@@ -104,10 +104,20 @@ export async function loadShortGameShots(
     };
   if (error || !data) return [];
 
+  // P2-20: the "within 40 yards of the green" gate is in YARDS, but
+  // golf_shots.distance_to_hole_before is stored in mixed units
+  // (distance_unit_before defaults to 'yards' but greenside leaves are often
+  // 'feet'). Comparing a feet value against a yards threshold let ~120 ft
+  // (= 40 yd) shots through as if they were 120 yd, and conversely is
+  // inconsistent across rows — so normalize to yards before the gate
+  // (CANON: UNITS — never compare mixed units).
+  const toYardsBefore = (s: ShortGameShot): number =>
+    s.distance_unit_before === 'feet' ? s.distance_to_hole_before / 3 : s.distance_to_hole_before;
+
   return data.filter(
     (s) =>
       typeof s.distance_to_hole_before === 'number' &&
-      s.distance_to_hole_before <= 40 &&
+      toYardsBefore(s) <= 40 &&
       typeof s.distance_to_hole_after === 'number' &&
       typeof s.lie_before === 'string',
   );

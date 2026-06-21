@@ -103,7 +103,10 @@ export interface ShortGameShot {
   round_id: string;
   hole_number: number | null;
   lie_before: string;
-  distance_to_hole_before: number; // yards
+  distance_to_hole_before: number; // yards (see distance_unit_before)
+  /** Unit of distance_to_hole_before ('feet'|'yards'); the loader normalizes to
+   *  yards before the "within 40 yd" gate (CANON: UNITS). */
+  distance_unit_before?: string | null;
   distance_to_hole_after: number;
   /** Unit of distance_to_hole_after ('feet'|'yards'); the short-side-scrambling
    *  composite converts yards→feet before the proximity gate (CANON: UNITS). */

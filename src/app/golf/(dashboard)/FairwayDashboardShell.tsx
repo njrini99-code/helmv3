@@ -28,7 +28,8 @@ import { LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
 
 import { AppShell } from '@/components/fairway/app-shell/AppShell';
 import { useSidebarCollapsed } from '@/components/fairway/app-shell/FairwaySidebar';
-import type { Breadcrumb, NavSection, ShellLinkComponent } from '@/components/fairway/app-shell/types';
+import { FairwayBottomNav } from '@/components/fairway/app-shell/FairwayBottomNav';
+import type { Breadcrumb, NavItem, NavSection, ShellLinkComponent } from '@/components/fairway/app-shell/types';
 import { FAIRWAY_SCOPE } from '@/lib/redesign/flag';
 
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
@@ -66,6 +67,7 @@ import {
   IconTrophy,
   IconLayoutGrid,
   IconMapPin,
+  IconRocket,
   IconSettings,
   IconLogout,
 } from '@/components/icons';
@@ -126,6 +128,28 @@ function isCoachHelmCluster(pathname: string): boolean {
   );
 }
 
+/**
+ * The PLAYER CoachHelm cluster. The single "CoachHelm AI" player nav row points
+ * at /coachhelm (the Overview front door), but the cluster's sub-tabs
+ * (Development / Game Profile / Standing) live at SIBLING routes that fold into
+ * the same player CoachHelm shell (CoachHelmSubNav PLAYER_TABS). Without this the
+ * sidebar's segment-boundary match drops the row's highlight the moment a player
+ * opens any sub-tab, so the rail loses its current-location indicator (P164).
+ * Source of truth must agree with CoachHelmSubNav.PLAYER_TABS.
+ */
+const PLAYER_COACHHELM_CLUSTER_PREFIXES = [
+  '/golf/dashboard/coachhelm',
+  '/golf/dashboard/my-development',
+  '/golf/dashboard/my-game-profile',
+  '/golf/dashboard/my-standing',
+] as const;
+
+function isPlayerCoachHelmCluster(pathname: string): boolean {
+  return PLAYER_COACHHELM_CLUSTER_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + '/'),
+  );
+}
+
 /** The already-computed notification counts the nav rail can surface. The
  *  badge context polls all of these every 45s; previously only `messages` and
  *  `coachhelm` reached the rail and the rest were thrown away (P438). A badge
@@ -136,6 +160,7 @@ interface NavBadgeCounts {
   calendarNotifications: number;
   announcements: number;
   travel: number;
+  tasks: number;
 }
 
 /** Render a numeric badge only when the count is meaningful (> 0). */
@@ -159,6 +184,17 @@ function buildNavSections(role: Role, badges: NavBadgeCounts): NavSection[] {
             label: 'CoachHelm AI',
             href: '/golf/dashboard/intelligence',
             icon: IconSparkles,
+            // P414: ONE SOURCE for the "pressing CoachHelm signals" count. This
+            // sidebar cluster badge (badges.coachhelm) and the CoachHelmSubNav
+            // Signals-tab badge (signalCount) MUST stay the same number — both
+            // derive from getAlertCounts().counts.critical (open urgent+high
+            // insights). notification-badge-context seeds badges.coachhelm from
+            // exactly that read (notification-badge-context.tsx:108) and every
+            // CoachHelm page seeds signalCount from the same read, so the two
+            // never contradict on the same screen. The ONLY divergence is by
+            // design: the insights page passes signalCount=null to defer to its
+            // on-page "Urgent + high" tile — the sidebar badge stays as the
+            // out-of-context rail cue. Keep both wired to getAlertCounts.critical.
             badge: navBadge(badges.coachhelm),
             // P408: keep the rail lit across the whole CoachHelm cluster
             // (Signals/Players/Effectiveness/Ask), not just /intelligence.
@@ -201,10 +237,23 @@ function buildNavSections(role: Role, badges: NavBadgeCounts): NavSection[] {
             badge: navBadge(badges.travel),
           },
           { label: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
-          { label: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
+          {
+            label: 'Tasks',
+            href: '/golf/dashboard/tasks',
+            icon: IconClipboardList,
+            // P438: thread the polled tasks count. (Coach tasks currently resolve
+            // to 0 in the badge context, so this stays badge-less until a coach
+            // tasks count is populated — navBadge(0) is honestly undefined.)
+            badge: navBadge(badges.tasks),
+          },
           { label: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
           { label: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
           { label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
+          // P393/P441: What's New (team activity feed) was reachable ONLY via the
+          // ⌘K palette + one ghost link on the coach dashboard hero — a feature
+          // meant to be checked regularly hidden behind recall. Give it a
+          // persistent rail entry so it satisfies recognition-over-recall.
+          { label: "What's New", href: '/golf/dashboard/whats-new', icon: IconRocket },
         ],
       },
     ];
@@ -214,7 +263,21 @@ function buildNavSections(role: Role, badges: NavBadgeCounts): NavSection[] {
       heading: 'My Golf',
       items: [
         { label: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
-        { label: 'CoachHelm AI', href: '/golf/dashboard/coachhelm', icon: IconSparkles },
+        // P411: the Hub (today / action center) was reachable ONLY via in-page
+        // "Open Hub" / "Back to hub" links — orphaned from the rail and palette,
+        // so it read as a competing second "home". Give it a persistent nav
+        // entry (so every shipped surface is reachable) and label it as the
+        // action center it is — the Dashboard remains the analytical home.
+        { label: 'Hub', href: '/golf/dashboard/hub', icon: IconLayoutGrid },
+        {
+          label: 'CoachHelm AI',
+          href: '/golf/dashboard/coachhelm',
+          icon: IconSparkles,
+          // P164: keep the rail lit across the whole player CoachHelm cluster
+          // (Overview/Development/Game Profile/Standing), not just /coachhelm —
+          // those sub-tabs live at sibling routes that fold into the same shell.
+          activeMatch: isPlayerCoachHelmCluster,
+        },
         { label: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
         { label: 'Courses', href: '/golf/dashboard/courses', icon: IconMapPin },
         {
@@ -244,8 +307,61 @@ function buildNavSections(role: Role, badges: NavBadgeCounts): NavSection[] {
         // persistent nav entry so every shipped surface is reachable (gate B2).
         { label: 'Team Info', href: '/golf/dashboard/team', icon: IconUsers },
         { label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: IconLayoutGrid },
+        // P441: What's New is NOT given a player rail entry on purpose — the
+        // route (whats-new/page.tsx) redirects any non-coach back to the
+        // dashboard ("What's New is a coach-only feature"). Linking it for
+        // players would be a dead nav item / redirect trap. The orphan is
+        // resolved for the role that CAN see it (coach Operations entry); the
+        // player palette entry should be dropped separately (out of scope here).
       ],
     },
+  ];
+}
+
+/**
+ * P413: the 4–5 highest-frequency destinations for the persistent MOBILE
+ * bottom-tab bar (the drawer keeps the long tail). Hrefs/icons/active-matches
+ * reuse the sidebar's source of truth so the bar agrees with the rail.
+ *   coach:  Home · CoachHelm · Roster · Calendar · Messages
+ *   player: Home · CoachHelm · My Rounds · My Stats · Team
+ */
+function buildBottomNavItems(role: Role, badges: NavBadgeCounts): NavItem[] {
+  if (role === 'coach') {
+    return [
+      { label: 'Home', href: '/golf/dashboard', icon: IconHome },
+      {
+        label: 'CoachHelm',
+        href: '/golf/dashboard/intelligence',
+        icon: IconSparkles,
+        badge: navBadge(badges.coachhelm),
+        activeMatch: isCoachHelmCluster,
+      },
+      { label: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
+      {
+        label: 'Calendar',
+        href: '/golf/dashboard/calendar',
+        icon: IconCalendar,
+        badge: navBadge(badges.calendarNotifications),
+      },
+      {
+        label: 'Messages',
+        href: '/golf/dashboard/messages',
+        icon: IconMessage,
+        badge: navBadge(badges.messages),
+      },
+    ];
+  }
+  return [
+    { label: 'Home', href: '/golf/dashboard', icon: IconHome },
+    {
+      label: 'CoachHelm',
+      href: '/golf/dashboard/coachhelm',
+      icon: IconSparkles,
+      activeMatch: isPlayerCoachHelmCluster,
+    },
+    { label: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
+    { label: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
+    { label: 'Team', href: '/golf/dashboard/team', icon: IconUsers },
   ];
 }
 
@@ -276,7 +392,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   analytics: 'Analytics',
   players: 'Players',
   classes: 'Classes',
-  hub: 'Home',
+  hub: 'Hub',
   team: 'Team Info',
   'whats-new': "What's New",
   'my-game-profile': 'My Game',
@@ -484,6 +600,7 @@ function FairwayDashboardContent({
         calendarNotifications: badges.calendarNotifications,
         announcements: badges.announcements,
         travel: badges.travel,
+        tasks: badges.tasks,
       }),
     [
       role,
@@ -492,6 +609,29 @@ function FairwayDashboardContent({
       badges.calendarNotifications,
       badges.announcements,
       badges.travel,
+      badges.tasks,
+    ],
+  );
+
+  // P413: mobile bottom-tab destinations (subset of the rail, badge-aware).
+  const bottomNavItems = useMemo(
+    () =>
+      buildBottomNavItems(role, {
+        messages: badges.messages,
+        coachhelm: role === 'coach' ? badges.coachhelm : 0,
+        calendarNotifications: badges.calendarNotifications,
+        announcements: badges.announcements,
+        travel: badges.travel,
+        tasks: badges.tasks,
+      }),
+    [
+      role,
+      badges.messages,
+      badges.coachhelm,
+      badges.calendarNotifications,
+      badges.announcements,
+      badges.travel,
+      badges.tasks,
     ],
   );
 
@@ -579,6 +719,11 @@ function FairwayDashboardContent({
         onMobileOpenChange={setMobileOpen}
         onSearchOpen={openCommandPalette}
         searchPlaceholder="Search players, rounds, pages…"
+        // P413: persistent mobile bottom-tab bar for the core destinations
+        // (md:hidden; drawer keeps the long tail).
+        bottomNav={
+          <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={ShellLink} />
+        }
         className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
       >
         <div id="main-content" tabIndex={-1} className="outline-none">

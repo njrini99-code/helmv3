@@ -21,6 +21,8 @@ function msg(over: Partial<ChatMessage> & { role: ChatMessage['role'] }): ChatMe
     tool_results: over.tool_results ?? null,
     cost_usd: over.cost_usd ?? null,
     created_at: over.created_at ?? '2026-05-26T00:00:00.000Z',
+    client_turn_id: over.client_turn_id ?? null,
+    status: over.status ?? null,
   };
 }
 
@@ -39,6 +41,18 @@ describe('ChatMessageList', () => {
     const long = 'Jordan is in the 22nd percentile on 3-5 ft putts. The lag distance from 25+ is fine.';
     render(<ChatMessageList messages={[msg({ role: 'assistant', content: long })]} pending={false} />);
     expect(screen.getByText(long)).toBeInTheDocument();
+  });
+
+  it('renders a failed assistant turn as a visible alert (P1-11)', () => {
+    const failure = "I couldn't complete that just now — please try again in a moment.";
+    render(
+      <ChatMessageList
+        messages={[msg({ role: 'assistant', content: failure, status: 'failed' })]}
+        pending={false}
+      />,
+    );
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(failure);
   });
 
   it('renders a tool-call bubble with the tool names', () => {

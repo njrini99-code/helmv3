@@ -60,22 +60,32 @@ interface InsightsPageProps {
 
 export default async function InsightsPage({ searchParams }: InsightsPageProps) {
   const rawParams = await searchParams;
-  // Fold a single `?category=` deep-link token into the comma-separated
-  // `categoryChips` filter the page content already parses, deduping if both
-  // are present. Without this, the FairwayBrief deep-link is silently dropped.
-  const { category, ...restParams } = rawParams;
-  const params = category
-    ? {
-        ...restParams,
-        categoryChips: Array.from(
-          new Set(
-            [...(restParams.categoryChips?.split(',') ?? []), category]
-              .map((c) => c.trim())
-              .filter((c) => c.length > 0),
-          ),
-        ).join(','),
-      }
-    : restParams;
+  // Fold a single `?category=` deep-link token (e.g. FairwayBrief's
+  // `/golf/dashboard/insights?category=tee`) into the comma-separated category
+  // filter, deduping if values are already present. The two surfaces read
+  // DIFFERENT keys, so we feed BOTH so whichever fork renders applies it:
+  //   • redesign (live)  → FairwayCoachHelmSignals reads `sp.category`
+  //   • legacy           → InsightsPageContent reads `params.categoryChips`
+  // Without writing to `category`, the deep-link landed only in `categoryChips`
+  // (the legacy key) and the LIVE surface silently dropped it.
+  let params = rawParams;
+  if (rawParams.category) {
+    const mergedCategories = Array.from(
+      new Set(
+        [
+          ...(rawParams.category.split(',') ?? []),
+          ...(rawParams.categoryChips?.split(',') ?? []),
+        ]
+          .map((c) => c.trim())
+          .filter((c) => c.length > 0),
+      ),
+    ).join(',');
+    params = {
+      ...rawParams,
+      category: mergedCategories,
+      categoryChips: mergedCategories,
+    };
+  }
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 

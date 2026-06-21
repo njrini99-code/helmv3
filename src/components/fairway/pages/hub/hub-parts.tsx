@@ -423,16 +423,25 @@ export function TaskRow({
         disabled={isCompleted || completing}
         aria-label={isCompleted ? 'Task completed' : 'Mark task complete'}
         className={cn(
-          'mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-fw-md border',
-          'transition-[background-color,border-color] duration-base',
+          // 44×44px tap target (WCAG 2.2 / premium DoD) — the visual checkbox
+          // stays 28px via the nested <span>; the button is the padded hit zone.
+          // Negative margins keep the 28px glyph aligned with its old mt-0.5 spot.
+          'group -mt-1.5 -ml-1.5 grid h-11 w-11 shrink-0 place-items-center rounded-fw-md',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-          isCompleted
-            ? 'border-transparent bg-accent-500 text-text-on-accent'
-            : 'border-border-strong bg-surface text-transparent hover:border-accent-500 hover:bg-accent-50',
-          completing && 'animate-pulse',
         )}
       >
-        <Check aria-hidden className="h-4 w-4" />
+        <span
+          className={cn(
+            'grid h-7 w-7 place-items-center rounded-fw-md border',
+            'transition-[background-color,border-color] duration-base',
+            isCompleted
+              ? 'border-transparent bg-accent-500 text-text-on-accent'
+              : 'border-border-strong bg-surface text-transparent group-hover:border-accent-500 group-hover:bg-accent-50',
+            completing && 'animate-pulse',
+          )}
+        >
+          <Check aria-hidden className="h-4 w-4" />
+        </span>
       </button>
 
       <div className="min-w-0 flex-1">
@@ -558,10 +567,15 @@ export function RSVPRow({
       </div>
 
       {!isPast ? (
-        <div className="flex items-center gap-2">
+        // 3-up grid (not a flex row) so the three pills get equal width, never
+        // crowd/truncate, and never trigger horizontal scroll at 320px. Each
+        // Button is fullWidth in its cell; size="sm" already expands to a 44px
+        // min-height on coarse (touch) pointers via the Button primitive.
+        <div className="grid grid-cols-3 gap-2">
           <Button
             variant={event.rsvp_status === 'accepted' ? 'primary' : 'secondary'}
             size="sm"
+            fullWidth
             busy={submitting === 'accepted'}
             disabled={submitting !== null}
             onClick={() => handleRSVP('accepted')}
@@ -572,6 +586,7 @@ export function RSVPRow({
           <Button
             variant={event.rsvp_status === 'tentative' ? 'primary' : 'ghost'}
             size="sm"
+            fullWidth
             busy={submitting === 'tentative'}
             disabled={submitting !== null}
             onClick={() => handleRSVP('tentative')}
@@ -581,6 +596,7 @@ export function RSVPRow({
           <Button
             variant={event.rsvp_status === 'declined' ? 'primary' : 'ghost'}
             size="sm"
+            fullWidth
             busy={submitting === 'declined'}
             disabled={submitting !== null}
             onClick={() => handleRSVP('declined')}

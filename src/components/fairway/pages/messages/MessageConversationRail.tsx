@@ -27,12 +27,17 @@
  * mobile master-detail), mirroring the legacy onSelect contract.
  * ========================================================================== */
 
+import * as React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Inbox, Users } from 'lucide-react';
+import { Inbox, Users, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
-import { EmptyState } from '@/components/fairway/feedback';
+import { searchGolfMessages, type MessageSearchResult } from '@/app/golf/actions/messages';
+import { EmptyState, InlineNotice } from '@/components/fairway/feedback';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+import { Input } from '@/components/fairway/forms/Input';
+import { Button } from '@/components/fairway/controls/button';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { Badge } from '@/components/fairway/controls/badge';
 import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
@@ -48,6 +53,25 @@ export interface MessageConversationRailProps {
   onNewMessage: () => void;
   /** First-paint skeleton rail. */
   loading?: boolean;
+  /**
+   * P257: the conversations fetch FAILED (vs. a genuine empty inbox). When true
+   * the rail renders a recoverable error state (explain + Retry) instead of the
+   * cheerful "No conversations yet" empty — a backend failure must never
+   * masquerade as an empty inbox.
+   */
+  error?: boolean;
+  /** Re-run the conversations fetch from the error state's Retry. */
+  onRetry?: () => void;
+  /**
+   * P259: team scope for cross-conversation message search (passed to
+   * searchGolfMessages). When omitted, search still runs participant-scoped.
+   */
+  teamId?: string | null;
+  /**
+   * P259: open a conversation FROM a search hit. Selects the conversation and
+   * (page-side) scrolls to the matched message. Falls back to onSelect when omitted.
+   */
+  onOpenMessage?: (conversationId: string, messageId: string) => void;
   className?: string;
 }
 
@@ -189,15 +213,105 @@ function ConversationRow({
   );
 }
 
+/** A cross-conversation search hit row (P259) — name · matched snippet · convo. */
+function SearchResultRow({
+  result,
+  isSelected,
+  onSelect,
+}: {
+  result: MessageSearchResult;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-current={isSelected ? 'true' : undefined}
+      className={cn(
+        'group block w-full rounded-fw-md px-3 py-2.5 text-left outline-none transition-colors [transition-duration:200ms]',
+        '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
+        'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        isSelected ? 'bg-surface-sunken/90 ring-1 ring-inset ring-accent-200/60' : 'hover:bg-surface-sunken/60',
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <Avatar name={result.senderName || 'User'} src={result.senderAvatar} size="md" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+              {result.senderName || 'Unknown'}
+            </span>
+            <span className="flex-shrink-0 truncate font-fw-sans text-eyebrow text-text-tertiary">
+              {result.conversationName}
+            </span>
+          </div>
+          <p className="mt-1 truncate font-fw-sans text-eyebrow leading-relaxed text-text-tertiary">
+            {decodeMessageContent(result.content)}
+          </p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export function MessageConversationRail({
   conversations,
   selectedId,
   onSelect,
   onNewMessage,
   loading = false,
+  error = false,
+  onRetry,
+  teamId,
+  onOpenMessage,
   className,
 }: MessageConversationRailProps) {
   const reduced = useReducedMotion() ?? false;
+
+  // ── P259: cross-conversation message search ────────────────────────────────
+  // Empty query → the normal triage list. >=2 chars → debounced server search
+  // (searchGolfMessages: participant-scoped, wildcard-escaped, 50-row cap).
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchResults, setSearchResults] = React.useState<MessageSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = React.useState(false);
+  const [searchError, setSearchError] = React.useState(false);
+  const trimmedQuery = searchQuery.trim();
+  const isSearching = trimmedQuery.length >= 2;
+
+  React.useEffect(() => {
+    if (trimmedQuery.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      setSearchError(false);
+      return;
+    }
+    let cancelled = false;
+    setSearchLoading(true);
+    setSearchError(false);
+    const handle = setTimeout(() => {
+      void (async () => {
+        const res = await searchGolfMessages(trimmedQuery, teamId ?? undefined);
+        if (cancelled) return;
+        if ('error' in res) {
+          setSearchError(true);
+          setSearchResults([]);
+        } else {
+          setSearchResults(res.results);
+        }
+        setSearchLoading(false);
+      })();
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [trimmedQuery, teamId]);
+
+  const handleResultSelect = (result: MessageSearchResult) => {
+    if (onOpenMessage) onOpenMessage(result.conversationId, result.messageId);
+    else onSelect(result.conversationId);
+  };
 
   const count = conversations.length;
   const countReadout = (
@@ -240,6 +354,36 @@ export function MessageConversationRail({
     );
   }
 
+  // P257 ERROR STATE: the fetch failed AND we have nothing to fall back to.
+  // Explain + Retry — never the cheerful empty. Checked BEFORE the empty branch
+  // because a failed load also leaves conversations.length === 0. If a transient
+  // blip still left rows on screen (error && length > 0), we keep showing them
+  // rather than blanking a rail the user was already reading.
+  if (error && conversations.length === 0) {
+    return (
+      <InstrumentPanel
+        depth="base"
+        padding="md"
+        header="Conversations"
+        className={cn('flex flex-col', className)}
+      >
+        <InlineNotice
+          tone="danger"
+          title="Couldn’t load conversations"
+          action={
+            onRetry ? (
+              <Button variant="secondary" size="sm" onClick={() => onRetry()}>
+                Retry
+              </Button>
+            ) : undefined
+          }
+        >
+          Something went wrong loading your inbox. Check your connection and try again.
+        </InlineNotice>
+      </InstrumentPanel>
+    );
+  }
+
   // HONEST-EMPTY (a): no conversations → Inbox EmptyState + New message CTA.
   if (conversations.length === 0) {
     return (
@@ -261,7 +405,7 @@ export function MessageConversationRail({
               onClick={onNewMessage}
               className={cn(
                 'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
-                'bg-accent-500 font-fw-sans text-[13px] font-medium text-text-on-accent shadow-flat',
+                'bg-accent-500 font-fw-sans text-body-sm font-medium text-text-on-accent shadow-flat',
                 'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
                 'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               )}
@@ -290,6 +434,57 @@ export function MessageConversationRail({
       aria-label="Conversations"
       className={cn('flex flex-col', className)}
     >
+      {/* P259: cross-conversation message search. */}
+      <div className="mb-3">
+        <Input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search messages…"
+          leading={<Search aria-hidden />}
+          aria-label="Search messages"
+        />
+      </div>
+
+      {isSearching ? (
+        // ── Search results view (replaces the triage list while searching) ──
+        searchLoading ? (
+          <div className="flex flex-col gap-2" role="status" aria-busy="true" aria-live="polite">
+            <span className="sr-only">Searching…</span>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-fw-md px-3 py-2.5">
+                <Skeleton circle className="h-10 w-10" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3.5 w-2/5" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : searchError ? (
+          <InlineNotice tone="danger" title="Couldn’t search messages">
+            Something went wrong searching your messages. Check your connection and try again.
+          </InlineNotice>
+        ) : searchResults.length > 0 ? (
+          <ul className="flex flex-col gap-1">
+            {searchResults.map((result) => (
+              <li key={result.messageId}>
+                <SearchResultRow
+                  result={result}
+                  isSelected={selectedId === result.conversationId}
+                  onSelect={() => handleResultSelect(result)}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            variant="search"
+            title={`No matches for “${trimmedQuery}”`}
+            description="Try a different word, or clear the search to see all conversations."
+          />
+        )
+      ) : (
       <div className="flex flex-col gap-3">
         {unread.length > 0 ? (
           <div>
@@ -343,6 +538,7 @@ export function MessageConversationRail({
           );
         })}
       </div>
+      )}
     </InstrumentPanel>
   );
 }

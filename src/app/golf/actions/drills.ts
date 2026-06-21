@@ -121,6 +121,92 @@ export async function getDrillsForInsight(
 }
 
 /**
+ * Batched sibling of {@link getDrillsForInsight}: loads the top-3 drills for
+ * MANY insights in a SINGLE round-trip and returns a `{ [insightId]: drills }`
+ * map. This lets a list of insight-sourced cards collapse what would be N
+ * post-hydration client→server fetches (the P176 N+1 waterfall) into one.
+ *
+ * RLS on `golf_insight_drill_attachments` already constrains SELECT to rows the
+ * user can see, so we only need the auth check — missing/inaccessible insights
+ * simply yield an empty array for that key. Per-insight ordering + the top-3 cap
+ * are applied client-side here because PostgREST can't window-per-group in one
+ * query; the row volume (≤3 × #insights on a development page) is trivially small.
+ */
+export async function getDrillsForInsights(
+  insightIds: string[],
+): Promise<Record<string, InsightDrill[]>> {
+  const ids = Array.from(new Set(insightIds.filter((id): id is string => !!id)));
+  if (ids.length === 0) return {};
+
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    // Return empty arrays for every requested id so callers render nothing
+    // (same honest-empty contract as the single-insight action).
+    return Object.fromEntries(ids.map((id) => [id, []]));
+  }
+
+  const { data, error } = await supabase
+    .from('golf_insight_drill_attachments')
+    .select(
+      `
+      insight_id,
+      rank,
+      drill:golf_drills (
+        id,
+        slug,
+        title,
+        category,
+        tags,
+        description,
+        duration_min,
+        difficulty,
+        video_url
+      )
+    `,
+    )
+    .in('insight_id', ids)
+    .order('rank', { ascending: true });
+
+  if (error) {
+    await logServerError(
+      `getDrillsForInsights failed: ${error.message}`,
+      {
+        action: 'drills.getDrillsForInsights',
+        featureArea: 'insights',
+        extra: { insightCount: ids.length, errorCode: error.code },
+      },
+    );
+    return Object.fromEntries(ids.map((id) => [id, []]));
+  }
+
+  const rows = (data ?? []) as unknown as Array<AttachmentRow & { insight_id: string }>;
+
+  // Seed every requested id with [] so the map is total (no undefined keys),
+  // then bucket the rows by insight and cap each bucket at the top-3 by rank.
+  const byInsight: Record<string, InsightDrill[]> = Object.fromEntries(ids.map((id) => [id, []]));
+  for (const r of rows) {
+    if (!r.drill) continue;
+    const bucket = byInsight[r.insight_id];
+    if (!bucket || bucket.length >= 3) continue; // rows are rank-ordered → first 3 are top-3
+    bucket.push({
+      id: r.drill.id,
+      slug: r.drill.slug,
+      title: r.drill.title,
+      category: r.drill.category,
+      tags: r.drill.tags ?? [],
+      description: r.drill.description,
+      duration_min: r.drill.duration_min,
+      difficulty: r.drill.difficulty,
+      video_url: r.drill.video_url,
+      rank: r.rank ?? 0,
+    });
+  }
+
+  return byInsight;
+}
+
+/**
  * Records that a player opened a drill. For now we just log at info level —
  * when we need real analytics we'll back this with `golf_drill_views`.
  */

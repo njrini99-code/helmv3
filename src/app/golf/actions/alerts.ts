@@ -226,6 +226,29 @@ export async function getAlertCounts(
 // GENERATE ALERTS (Scan team and create new alerts)
 // ============================================================================
 
+/**
+ * P2-14 / P2-19 — count the rows the CANONICAL V3 feed would surface for this
+ * coach right now, applying the SAME visibility contract
+ * (`applyInsightVisibility`) the live read uses. RLS scopes the read to teams
+ * the coach staffs, so no coach_id filter is needed. Used to compute the honest
+ * "visible delta" a Scan Team reports, instead of the raw insert count — which
+ * over-claimed because freshly-written rows that aren't V3-visible never reach
+ * the feed. Returns null when the count query errors so the caller can fall
+ * back rather than report a fabricated number.
+ */
+async function countVisibleCoachInsights(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+): Promise<number | null> {
+  const { count, error } = await applyInsightVisibility(
+    supabase
+      .from('golf_coach_insights')
+      .select('id', { count: 'exact', head: true })
+      .not('evidence', 'is', null),
+  );
+  if (error) return null;
+  return count ?? 0;
+}
+
 export async function generateAlerts(
   coachId: string,
   teamId: string
@@ -255,6 +278,17 @@ export async function generateAlerts(
   }
 
   try {
+    // P2-14 / P2-19: the canonical V3 feed (insight-delivery.getInsightsForCoach
+    // via applyInsightVisibility) only surfaces rows stamped engine_version='v3'
+    // OR a `v3:` signature AND in a visible lifecycle_state. Historically the
+    // rows generateAlerts wrote carried NEITHER, so a coach saw a "generated N"
+    // success while the V3 feed never reflected those rows. We now (a) stamp the
+    // generated rows so they ARE V3-visible, (b) measure the count as the visible
+    // delta from the canonical read (not newAlerts.length), and (c) fail the
+    // action when the insert fails instead of swallowing it. Capture the
+    // pre-scan visible count as the baseline for the honest delta.
+    const visibleBefore = await countVisibleCoachInsights(supabase);
+
     // Get active players on the team
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
@@ -401,7 +435,10 @@ export async function generateAlerts(
           featureArea: 'alerts',
           extra: { coachId, teamId, alertCount: newAlerts.length, errorCode: insertError.code },
         });
-        // Continue - we'll still return what we have
+        // P2-14 acceptance test 2: an insert failure must return an error, NOT
+        // a success that reports the requested count. Previously this swallowed
+        // the error and reported `generated: newAlerts.length` — a false claim.
+        return { success: false, error: 'Could not save the scan results. Try again.' };
       }
     }
 
@@ -411,10 +448,22 @@ export async function generateAlerts(
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/alerts');
 
+    // P2-14 acceptance test 1: the reported count must equal the rows the
+    // canonical V3 feed actually surfaces, NOT `newAlerts.length`. The legacy
+    // alert rows (metadata-shaped, no `evidence`, not engine_version='v3') are
+    // structurally invisible to the V3 read, so reporting the insert count
+    // over-claimed. Report the visible delta from the canonical read instead;
+    // when the count read fails, omit the number rather than fabricate one.
+    const visibleAfter = await countVisibleCoachInsights(supabase);
+    const visibleDelta =
+      visibleBefore != null && visibleAfter != null
+        ? Math.max(0, visibleAfter - visibleBefore)
+        : undefined;
+
     return {
       success: true,
       alerts: fetchResult.alerts || [],
-      generated: newAlerts.length,
+      generated: visibleDelta,
     };
   } catch (error) {
     await logServerError(`generateAlerts failed: ${error instanceof Error ? error.message : String(error)}`, {

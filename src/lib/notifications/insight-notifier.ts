@@ -1,7 +1,6 @@
-import { Redis } from '@upstash/redis';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { sendPushNotification } from '@/lib/notifications/push';
 import { logServerError } from '@/lib/server-error-logger';
+import { dispatchCoachHelmNotification } from '@/lib/coachhelm/v3/notifications/dispatch';
+import type { NotificationCategory } from '@/lib/coachhelm/v3/notifications/router';
 import type { InsightEvidence, InsightLifecycleState } from '@/lib/coachhelm/v2/insights/types';
 
 /**
@@ -38,66 +37,10 @@ export interface NotifyInsightArgs {
   was_lifecycle_promotion: boolean;
 }
 
-let cachedRedis: Redis | null | undefined;
-
-function getRedis(): Redis | null {
-  if (cachedRedis !== undefined) return cachedRedis;
-  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
-  cachedRedis = url && token ? new Redis({ url, token }) : null;
-  return cachedRedis;
-}
-
-/** Exposed for tests — resets the lazy Redis singleton. */
-export function __resetRedisForTests(): void {
-  cachedRedis = undefined;
-}
-
-function todayUtcStamp(now: Date = new Date()): string {
-  // YYYY-MM-DD in UTC; Date#toISOString is always UTC.
-  return now.toISOString().slice(0, 10);
-}
-
-function throttleKey(playerId: string, kind: InsightPushKind, day: string): string {
-  return `push:player:${playerId}:${kind}:${day}`;
-}
-
-/**
- * Try to claim today's slot for (player, kind). Returns true if claimed
- * (→ safe to send), false if already taken (→ throttle). On Redis failure we
- * fail-open so signal isn't dropped silently.
- */
-async function tryClaimDailySlot(
-  playerId: string,
-  kind: InsightPushKind,
-): Promise<boolean> {
-  const client = getRedis();
-  if (!client) {
-    // No Redis configured — log once, let it through. Local dev + preview
-    // envs without the KV integration still get push delivery.
-    return true;
-  }
-  try {
-    const key = throttleKey(playerId, kind, todayUtcStamp());
-    const res = await client.set(key, '1', { ex: 60 * 60 * 24, nx: true });
-    // upstash-js returns 'OK' on NX success, null when NX fails.
-    return res === 'OK';
-  } catch (err) {
-    await logServerError(
-      `insight-notifier: throttle check failed: ${err instanceof Error ? err.message : String(err)}`,
-      {
-        action: 'insight_notifier.throttle',
-        featureArea: 'coachhelm.insights',
-        playerId,
-        metadata: { kind },
-        handled: true,
-      },
-      'warning',
-    );
-    // Fail-open on transient Redis errors — do NOT block delivery.
-    return true;
-  }
-}
+// P1-10 — the throttle + recipient resolution + delivery now live in the V3
+// dispatcher (dispatchCoachHelmNotification), which honours the player's
+// per-category prefs + quiet mode + in-app receipt. This module's job is reduced
+// to: decide WHEN an insight warrants a notification + compose the copy.
 
 function composeBody(args: NotifyInsightArgs, kind: InsightPushKind): string {
   if (kind === 'insight_resolved') {
@@ -137,50 +80,6 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 /**
- * Resolve `golf_players.id → auth users.id` so we can reuse the existing
- * `sendPushNotification(type, userId, data)` pipeline (which looks up tokens
- * by user_id on `device_tokens`).
- */
-async function resolvePlayerUserId(playerId: string): Promise<string | null> {
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from('golf_players')
-      .select('user_id')
-      .eq('id', playerId)
-      .maybeSingle();
-
-    if (error) {
-      await logServerError(
-        `insight-notifier: player→user lookup failed: ${error.message}`,
-        {
-          action: 'insight_notifier.resolve_user',
-          featureArea: 'coachhelm.insights',
-          playerId,
-          errorCode: error.code ?? undefined,
-          handled: true,
-        },
-        'warning',
-      );
-      return null;
-    }
-    return data?.user_id ?? null;
-  } catch (err) {
-    await logServerError(
-      `insight-notifier: player→user lookup threw: ${err instanceof Error ? err.message : String(err)}`,
-      {
-        action: 'insight_notifier.resolve_user',
-        featureArea: 'coachhelm.insights',
-        playerId,
-        handled: true,
-      },
-      'warning',
-    );
-    return null;
-  }
-}
-
-/**
  * Public entry point — called from `upsertInsight` after each successful
  * write. NEVER throws.
  */
@@ -199,38 +98,31 @@ export async function notifyInsightLanded(args: NotifyInsightArgs): Promise<void
       return;
     }
 
-    // 3. Throttle — 1 per (player, kind) per UTC day.
-    const claimed = await tryClaimDailySlot(args.player_id, kind);
-    if (!claimed) return;
-
-    // 4. Resolve recipient.
-    const userId = await resolvePlayerUserId(args.player_id);
-    if (!userId) return;
-
-    // 5. Compose + send. Uses the existing notification-type 'coachhelm_insight'
-    //    so it respects the player's `push_events` preference.
+    // 3. Compose + dispatch through the V3 dispatcher (P1-10) so the player's
+    //    per-category prefs + quiet mode govern delivery and an in-app receipt is
+    //    created — landed/matured/resolved insights now route through the same
+    //    pipeline as every other CoachHelm notification. The dispatcher owns the
+    //    throttle (1 per (player, kind) per UTC day via throttle_key) + recipient
+    //    resolution, so the legacy Redis/user-lookup steps here are no longer
+    //    needed. matured → new_insight, resolved → goal_achieved.
     const body = composeBody(args, kind);
-    const result = await sendPushNotification('coachhelm_insight', userId, {
-      insightTitle: `Helm — ${body}`,
-      insightId: args.insight_id,
-      category: args.category,
-      lifecycle_state: args.lifecycle_state,
-      kind,
+    const category: NotificationCategory =
+      kind === 'insight_resolved' ? 'goal_achieved' : 'new_insight';
+    await dispatchCoachHelmNotification({
+      player_id: args.player_id,
+      category,
+      title: `Helm — ${body}`,
+      body,
+      action_url: `/golf/dashboard/coachhelm`,
+      data: {
+        insightId: args.insight_id,
+        category: args.category,
+        lifecycle_state: args.lifecycle_state,
+        kind,
+      },
+      // Preserve the historical "1 per (player, kind) per UTC day" cadence.
+      throttle_key: kind,
     });
-
-    if (!result.success) {
-      await logServerError(
-        `insight-notifier: push send reported failure: ${result.error ?? 'unknown'}`,
-        {
-          action: 'insight_notifier.send',
-          featureArea: 'coachhelm.insights',
-          playerId: args.player_id,
-          metadata: { insightId: args.insight_id, kind, category: args.category },
-          handled: true,
-        },
-        'warning',
-      );
-    }
   } catch (err) {
     // Catch-all — a notification failure must NEVER break the upsert caller.
     await logServerError(

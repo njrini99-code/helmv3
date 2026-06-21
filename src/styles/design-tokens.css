@@ -84,7 +84,7 @@
   /* ---- Semantic text ---- */
   --fw-color-text-primary:   var(--fw-color-warm-900);
   --fw-color-text-secondary: var(--fw-color-warm-600);
-  --fw-color-text-tertiary:  oklch(0.585 0.014 70);  /* readable warm meta text (was warm-400 0.717 — too washed out for labels/values; this clears WCAG AA on cream) */
+  --fw-color-text-tertiary:  oklch(0.535 0.015 70);  /* P422: darkened from 0.585 (≈3.7-4.0:1, FAILED 4.5:1) so small descriptive/value text using this token clears WCAG 2.2 AA normal-text 4.5:1 on EVERY warm surface — measured ≥4.51:1 on canvas, ≥4.65:1 on sunken, ≥4.95:1 on the card. Still well-separated from text-secondary (~6.7:1). */
   --fw-color-text-on-accent: oklch(0.994 0.006 95); /* cream text on green */
   --fw-color-text-on-dark:   oklch(0.96 0.005 95);  /* sidebar text */
 
@@ -108,12 +108,22 @@
   --fw-color-nav-text-dim: oklch(0.62 0.007 60);   /* recessive warm nav labels */
   --fw-color-nav-accent:   var(--fw-color-accent-400); /* active marker on black */
 
-  /* ---- Radius scale (generous & soft — kind, tactile) ---- */
-  --fw-radius-sm:   0.625rem;  /* 10px — inputs, chips */
-  --fw-radius-md:   0.875rem;  /* 14px — list rows, insets */
-  --fw-radius-card: 1.25rem;   /* 20px — THE card radius */
-  --fw-radius-lg:   1.75rem;   /* 28px — modals, sheets, hero plinths, glass bars */
-  --fw-radius-full: 9999px;    /* pills, avatars, primary CTAs */
+  /* ---- Radius RAMP (generous & soft — kind, tactile) ----
+     THIS IS THE SYSTEM. A blessed, finite 4-step card-family ramp + pill.
+     Squinting at any surface reveals exactly ONE corner radius per element
+     class; the ramp is the only sanctioned source of roundness in the
+     flag-on (Fairway) path. Raw-Tailwind radii (rounded-2xl/xl/md/lg/sm,
+     rounded-[Npx]) are FORBIDDEN here — map every callsite to a step below.
+       step 1  fw-sm   (10px) — chip / input            (the tightest control)
+       step 2  fw-md   (14px) — list row / inset / nested tile
+       step 3  card    (20px) — THE card                (the workhorse surface)
+       step 4  fw-lg   (28px) — sheet / modal / hero plinth / glass bar
+     fw-full (pill) is its own axis: pills, avatars, primary CTAs only. */
+  --fw-radius-sm:   0.625rem;  /* 10px — step 1: inputs, chips */
+  --fw-radius-md:   0.875rem;  /* 14px — step 2: list rows, insets, nested tiles */
+  --fw-radius-card: 1.25rem;   /* 20px — step 3: THE card radius */
+  --fw-radius-lg:   1.75rem;   /* 28px — step 4: modals, sheets, hero plinths, glass bars */
+  --fw-radius-full: 9999px;    /* pill axis — avatars, primary CTAs */
 
   /* ---- Elevation — soft, layered, WARM-TINTED (hue ~60), low alpha, two layers.
           Reads as afternoon light on a matte surface, never hard UI elevation.

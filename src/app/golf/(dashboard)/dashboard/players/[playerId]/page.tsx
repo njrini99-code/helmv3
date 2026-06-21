@@ -9,6 +9,7 @@ import { FairwayPlayerInsight } from '@/components/fairway/pages/coachhelm/Fairw
 import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { computeCompositeRating } from './composite-rating';
 
 export const metadata: Metadata = {
   title: 'Player Insight | Helm Golf',
@@ -344,7 +345,11 @@ export default async function PlayerInsightPage({
   // -----------------------------------------------------------------------
   // 3. Compute composite rating (simple heuristic) from available data
   // -----------------------------------------------------------------------
-  const compositeRating = computeCompositeRating(rounds, patterns, focusAreas);
+  // null = no recorded rounds → the client renders an honest "awaiting first
+  // round" state (it gates every rating/bar/verdict on `rounds.length > 0`), so
+  // the numeric prop is never displayed in that case. Coalesce to 0 only to
+  // satisfy the component's `number` contract; the zero-data guard owns honesty.
+  const compositeRating = computeCompositeRating(rounds, patterns) ?? 0;
   const categoryBreakdown = computeCategoryBreakdown(rounds);
   const trendSummary = computeTrendSummary(rounds);
   const playerStatus = derivePlayerStatus(trendSummary.trend);
@@ -395,38 +400,6 @@ export default async function PlayerInsightPage({
 // ---------------------------------------------------------------------------
 // Computation helpers
 // ---------------------------------------------------------------------------
-
-function computeCompositeRating(
-  rounds: RoundRow[],
-  patterns: PatternRow[],
-  focusAreas: FocusAreaRow[],
-): number {
-  if (rounds.length === 0) return 50;
-
-  // Score based on recent scoring relative to par
-  const recentRounds = rounds.slice(0, 5);
-  let scoreComponent = 50;
-  const scoringDiffs = recentRounds
-    .filter((r) => r.score_to_par != null)
-    .map((r) => (r.score_to_par ?? 0) / (r.holes_played === 9 ? 0.5 : 1));
-
-  if (scoringDiffs.length > 0) {
-    const avgOverPar = scoringDiffs.reduce((a, b) => a + b, 0) / scoringDiffs.length;
-    // +0 → 80, +10 → 50, +20 → 20, -5 → 95
-    scoreComponent = Math.max(0, Math.min(100, 80 - avgOverPar * 3));
-  }
-
-  // Penalty for severe patterns
-  const severeCount = patterns.filter((p) => p.severity === 'critical' || p.severity === 'high').length;
-  const patternPenalty = Math.min(20, severeCount * 5);
-
-  // Bonus for active focus areas with progress
-  const progressBonus = focusAreas.filter(
-    (fa) => fa.status === 'active' && fa.current_value && fa.target_value && fa.current_value > 0,
-  ).length * 2;
-
-  return Math.round(Math.max(0, Math.min(100, scoreComponent - patternPenalty + progressBonus)));
-}
 
 interface CategoryBreakdown {
   teeGame: number;

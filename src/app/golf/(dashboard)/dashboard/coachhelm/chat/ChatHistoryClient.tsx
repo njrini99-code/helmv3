@@ -62,6 +62,8 @@ export function ChatHistoryClient({
         tool_results: null,
         cost_usd: null,
         created_at: new Date().toISOString(),
+        client_turn_id: null,
+        status: null,
       },
     ]);
     try {

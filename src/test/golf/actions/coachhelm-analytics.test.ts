@@ -17,6 +17,7 @@ vi.mock('@/lib/supabase/server', () => ({
 import {
   getInsightEffectiveness,
   getPatternImpact,
+  getPredictionPerformance,
 } from '@/app/golf/actions/coachhelm-analytics';
 
 describe('coachhelm-analytics — error surfacing (no silent mock fallback)', () => {
@@ -74,6 +75,39 @@ describe('coachhelm-analytics — error surfacing (no silent mock fallback)', ()
     const result = await getPatternImpact('team-1');
     expect(result.success).toBe(false);
     expect(result.error).toMatch(/pattern query broke/);
+  });
+
+  // P070 — the hero sentence "X% of N resolved proved accurate" must pair a
+  // rate and a count drawn from the SAME rolling-snapshot window. Previously
+  // overallAccuracy averaged accuracy_rate across ALL snapshots while
+  // validatedPredictions used only the latest snapshot — two denominators.
+  it('getPredictionPerformance reports overallAccuracy and validatedPredictions from the same (latest) window', async () => {
+    const snapshots = [
+      { period_end: '2026-06-01', accuracy_rate: 0.40, predictions_made: 10, predictions_validated: 6, mean_absolute_error: 0.2, overconfidence_rate: 0.1, underconfidence_rate: 0.1, calibration_score: 0.5, accuracy_by_confidence: {}, error_distribution: {} },
+      { period_end: '2026-06-15', accuracy_rate: 0.60, predictions_made: 12, predictions_validated: 8, mean_absolute_error: 0.2, overconfidence_rate: 0.1, underconfidence_rate: 0.1, calibration_score: 0.5, accuracy_by_confidence: {}, error_distribution: {} },
+      { period_end: '2026-06-29', accuracy_rate: 0.80, predictions_made: 14, predictions_validated: 10, mean_absolute_error: 0.2, overconfidence_rate: 0.1, underconfidence_rate: 0.1, calibration_score: 0.5, accuracy_by_confidence: {}, error_distribution: {} },
+    ];
+
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'u-1' } }, error: null }) },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            gte: () => ({
+              order: async () => ({ data: snapshots, error: null }),
+            }),
+          }),
+        }),
+      }),
+    });
+
+    const result = await getPredictionPerformance('team-1');
+    expect(result.success).toBe(true);
+    // Both must come from the LATEST snapshot (0.80 accuracy, 10 validated),
+    // NOT the all-snapshot average (which would be (0.4+0.6+0.8)/3 = 0.60).
+    expect(result.data?.summary.overallAccuracy).toBe(0.8);
+    expect(result.data?.summary.validatedPredictions).toBe(10);
+    expect(result.data?.summary.overallAccuracy).not.toBe(0.6);
   });
 
   it('getInsightEffectiveness returns Forbidden when verifyTeamAccess denies', async () => {

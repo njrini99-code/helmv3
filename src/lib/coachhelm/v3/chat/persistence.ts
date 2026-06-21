@@ -11,12 +11,17 @@ import type { Database, Json } from '@/lib/types/database';
 import type {
   ChatConversation,
   ChatMessage,
+  ChatMessageStatus,
   ChatRole,
   ToolCallRecord,
   ToolResultRecord,
 } from './types';
 
 type Sb = SupabaseClient<Database>;
+
+/** Columns selected for every message read (single source of truth). */
+const MESSAGE_COLUMNS =
+  'id, conversation_id, role, content, tool_calls, tool_results, cost_usd, created_at, client_turn_id, status';
 
 function rowToMessage(row: {
   id: string;
@@ -27,6 +32,8 @@ function rowToMessage(row: {
   tool_results: Json | null;
   cost_usd: number | null;
   created_at: string;
+  client_turn_id?: string | null;
+  status?: string | null;
 }): ChatMessage {
   return {
     id: row.id,
@@ -37,6 +44,9 @@ function rowToMessage(row: {
     tool_results: (row.tool_results as unknown as ToolResultRecord[] | null) ?? null,
     cost_usd: row.cost_usd,
     created_at: row.created_at,
+    client_turn_id: row.client_turn_id ?? null,
+    // Legacy rows (status NULL) read as a completed answer.
+    status: (row.status as ChatMessageStatus | null) ?? null,
   };
 }
 
@@ -64,10 +74,31 @@ export async function getConversation(
 export async function listMessages(sb: Sb, conversation_id: string): Promise<ChatMessage[]> {
   const { data } = await sb
     .from('golf_coachhelm_chat_messages')
-    .select('id, conversation_id, role, content, tool_calls, tool_results, cost_usd, created_at')
+    .select(MESSAGE_COLUMNS)
     .eq('conversation_id', conversation_id)
     .order('created_at', { ascending: true });
   return (data ?? []).map(rowToMessage);
+}
+
+/**
+ * P1-11 — idempotency probe. Returns the existing assistant turn for a given
+ * client_turn_id in this conversation, if one was already completed. The send
+ * route uses this so a retried request returns the prior answer instead of
+ * re-running the (paid) agent and creating a duplicate turn.
+ */
+export async function findAssistantTurn(
+  sb: Sb,
+  conversation_id: string,
+  client_turn_id: string,
+): Promise<ChatMessage | null> {
+  const { data } = await sb
+    .from('golf_coachhelm_chat_messages')
+    .select(MESSAGE_COLUMNS)
+    .eq('conversation_id', conversation_id)
+    .eq('client_turn_id', client_turn_id)
+    .eq('role', 'assistant')
+    .maybeSingle();
+  return data ? rowToMessage(data) : null;
 }
 
 export async function createConversation(
@@ -99,6 +130,8 @@ export async function appendMessage(
     tool_calls?: ToolCallRecord[] | null;
     tool_results?: ToolResultRecord[] | null;
     cost_usd?: number | null;
+    client_turn_id?: string | null;
+    status?: ChatMessageStatus | null;
   },
 ): Promise<ChatMessage> {
   const { data, error } = await sb
@@ -110,9 +143,45 @@ export async function appendMessage(
       tool_calls: (args.tool_calls as unknown as Json) ?? null,
       tool_results: (args.tool_results as unknown as Json) ?? null,
       cost_usd: args.cost_usd ?? null,
+      client_turn_id: args.client_turn_id ?? null,
+      status: args.status ?? null,
     })
-    .select('id, conversation_id, role, content, tool_calls, tool_results, cost_usd, created_at')
+    .select(MESSAGE_COLUMNS)
     .single();
   if (error) throw new Error(`appendMessage: ${error.message}`);
+  return rowToMessage(data);
+}
+
+/**
+ * P1-11 — idempotently record the user turn. When a `client_turn_id` is present
+ * the partial unique index (conversation_id, role, client_turn_id) makes a
+ * retried send a no-op upsert (returns the existing row) instead of a duplicate
+ * user bubble. Without a client_turn_id it behaves like a plain append.
+ */
+export async function upsertUserTurn(
+  sb: Sb,
+  args: { conversation_id: string; content: string; client_turn_id?: string | null },
+): Promise<ChatMessage> {
+  if (!args.client_turn_id) {
+    return appendMessage(sb, {
+      conversation_id: args.conversation_id,
+      role: 'user',
+      content: args.content,
+    });
+  }
+  const { data, error } = await sb
+    .from('golf_coachhelm_chat_messages')
+    .upsert(
+      {
+        conversation_id: args.conversation_id,
+        role: 'user',
+        content: args.content,
+        client_turn_id: args.client_turn_id,
+      },
+      { onConflict: 'conversation_id,role,client_turn_id', ignoreDuplicates: false },
+    )
+    .select(MESSAGE_COLUMNS)
+    .single();
+  if (error) throw new Error(`upsertUserTurn: ${error.message}`);
   return rowToMessage(data);
 }

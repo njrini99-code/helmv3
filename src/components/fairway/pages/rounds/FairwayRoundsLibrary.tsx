@@ -45,9 +45,13 @@ import Link from 'next/link';
 import { ViewHeader } from '@/components/fairway/view-header/view-header';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
+import { IconButton } from '@/components/fairway/controls/button';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { FilterPill } from '@/components/fairway/controls/filter-pill';
 import { Segmented } from '@/components/fairway/controls/segmented';
+import { Input } from '@/components/fairway/forms/Input';
+import { Select } from '@/components/fairway/forms/Select';
+import { IconSearch, IconX } from '@/components/icons';
 import { StatTile } from '@/components/fairway/charts/StatTile';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
@@ -136,6 +140,14 @@ function getWeekKey(date: Date): string {
   return `${startLabel} – ${endLabel}`;
 }
 
+/** A round's player display name (or null when unattributed). */
+function playerName(round: RoundLibraryRound): string | null {
+  const first = round.player?.first_name?.trim() ?? '';
+  const last = round.player?.last_name?.trim() ?? '';
+  const full = `${first} ${last}`.trim();
+  return full.length > 0 ? full : null;
+}
+
 /** Normalize a round's score to its 18-hole equivalent (for charts). */
 function normalizedScore(round: RoundLibraryRound): number | null {
   if (round.total_score === null || round.total_score <= 0) return null;
@@ -194,36 +206,90 @@ export function FairwayRoundsLibrary({
 }: FairwayRoundsLibraryProps) {
   const [grouping, setGrouping] = React.useState<Grouping>('month');
   const [filter, setFilter] = React.useState<RoundFilter>('all');
+  // P210 — coach-scale filtering. A coach sees every team member's rounds, so
+  // the toolbar needs a per-player filter + a free-text search to find one
+  // player (or one course) without scrolling the whole ledger. Pure client
+  // filters over the data already in memory — no extra fetch.
+  const [playerFilter, setPlayerFilter] = React.useState<string>('all');
+  const [search, setSearch] = React.useState<string>('');
 
   const isCoach = userRole === 'coach';
   // Coaches NEVER get the in-progress section or the New-round CTA.
   const showUnfinished = !isCoach && inProgressRounds.length > 0;
 
-  // Real, tabular filter counts straight from the rounds array.
+  // P210 — coach-only player roster derived from the rounds in memory. Built as
+  // de-duped, alphabetically-sorted options so a coach can scope to one player.
+  const playerOptions = React.useMemo(() => {
+    if (!isCoach) return [];
+    const names = new Set<string>();
+    for (const r of rounds) {
+      const name = playerName(r);
+      if (name) names.add(name);
+    }
+    return Array.from(names)
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ label: name, value: name }));
+  }, [rounds, isCoach]);
+
+  // P210 — keep the active player filter valid: if the selected player drops out
+  // of the data (e.g. a roster change), fall back to "all".
+  React.useEffect(() => {
+    if (playerFilter !== 'all' && !playerOptions.some((o) => o.value === playerFilter)) {
+      setPlayerFilter('all');
+    }
+  }, [playerFilter, playerOptions]);
+
+  // P210 — apply the coach player filter + free-text search BEFORE the round-type
+  // counts/filter, so the type pills count the currently-scoped set and the
+  // history list shows only matching rounds. Search matches player name OR
+  // course name (case-insensitive). On the player surface there is no player
+  // filter, so this collapses to the plain text search.
+  const scopedRounds = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (playerFilter === 'all' && q === '') return rounds;
+    return rounds.filter((r) => {
+      if (isCoach && playerFilter !== 'all' && playerName(r) !== playerFilter) return false;
+      if (q !== '') {
+        const haystack = `${playerName(r) ?? ''} ${r.course_name ?? ''}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rounds, isCoach, playerFilter, search]);
+
+  // Real, tabular filter counts over the currently-scoped rounds.
   const filterCounts = React.useMemo(() => {
     const counts: Record<RoundFilter, number> = {
-      all: rounds.length,
+      all: scopedRounds.length,
       practice: 0,
       qualifier: 0,
       tournament: 0,
     };
-    for (const r of rounds) {
+    for (const r of scopedRounds) {
       const t = (r.round_type || '').toLowerCase();
       if (t === 'practice') counts.practice++;
       else if (t === 'qualifier' || t === 'qualifying') counts.qualifier++;
       else if (t === 'tournament') counts.tournament++;
     }
     return counts;
-  }, [rounds]);
+  }, [scopedRounds]);
 
   const filteredRounds = React.useMemo(() => {
-    if (filter === 'all') return rounds;
-    return rounds.filter((r) => {
+    if (filter === 'all') return scopedRounds;
+    return scopedRounds.filter((r) => {
       const t = (r.round_type || '').toLowerCase();
       if (filter === 'qualifier') return t === 'qualifier' || t === 'qualifying';
       return t === filter;
     });
-  }, [rounds, filter]);
+  }, [scopedRounds, filter]);
+
+  // Is any narrowing active (drives the filter-zero empty-state copy + reset)?
+  const isNarrowed = filter !== 'all' || playerFilter !== 'all' || search.trim() !== '';
+  const resetFilters = React.useCallback(() => {
+    setFilter('all');
+    setPlayerFilter('all');
+    setSearch('');
+  }, []);
 
   const grouped = React.useMemo(() => {
     const map: Record<string, { label: string; rounds: RoundLibraryRound[] }> = {};
@@ -421,33 +487,79 @@ export function FairwayRoundsLibrary({
         </Surface>
       ) : (
         <>
-          {/* ── 2. Quiet toolbar — FilterPills + Month/Week toggle ────────--*/}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              {(['all', 'practice', 'qualifier', 'tournament'] as RoundFilter[]).map((f) => (
-                <FilterPill
-                  key={f}
+          {/* ── 2. Quiet toolbar — FilterPills + Month/Week toggle, plus the
+              P210 coach player filter + free-text search row for scale. ────--*/}
+          <div className="flex flex-col gap-3">
+            {/* Scale row: coach-only player Select + search input. */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              {isCoach && playerOptions.length > 1 && (
+                <div className="w-full sm:w-56">
+                  <Select
+                    size="sm"
+                    value={playerFilter}
+                    onValueChange={(v) => setPlayerFilter(v ?? 'all')}
+                    aria-label="Filter rounds by player"
+                    options={[
+                      { label: 'All players', value: 'all' },
+                      ...playerOptions,
+                    ]}
+                  />
+                </div>
+              )}
+              <div className="w-full sm:max-w-xs">
+                <Input
                   size="sm"
-                  selected={filter === f}
-                  showCheck={false}
-                  count={filterCounts[f]}
-                  onClick={() => setFilter(f)}
-                >
-                  {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
-                </FilterPill>
-              ))}
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.currentTarget.value)}
+                  aria-label={isCoach ? 'Search rounds by player or course' : 'Search rounds by course'}
+                  placeholder={isCoach ? 'Search player or course…' : 'Search course…'}
+                  leading={<IconSearch size={16} aria-hidden className="text-text-tertiary" />}
+                  trailing={
+                    search ? (
+                      <IconButton
+                        aria-label="Clear search"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSearch('')}
+                        className="-mr-1 h-7 w-7"
+                      >
+                        <IconX size={16} aria-hidden />
+                      </IconButton>
+                    ) : undefined
+                  }
+                />
+              </div>
             </div>
-            <div className="ml-auto">
-              <Segmented<Grouping>
-                size="sm"
-                aria-label="Group rounds by"
-                value={grouping}
-                onValueChange={setGrouping}
-                options={[
-                  { value: 'month', label: 'Month' },
-                  { value: 'week', label: 'Week' },
-                ]}
-              />
+
+            {/* Type pills + Month/Week toggle. */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {(['all', 'practice', 'qualifier', 'tournament'] as RoundFilter[]).map((f) => (
+                  <FilterPill
+                    key={f}
+                    size="sm"
+                    selected={filter === f}
+                    showCheck={false}
+                    count={filterCounts[f]}
+                    onClick={() => setFilter(f)}
+                  >
+                    {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
+                  </FilterPill>
+                ))}
+              </div>
+              <div className="ml-auto">
+                <Segmented<Grouping>
+                  size="sm"
+                  aria-label="Group rounds by"
+                  value={grouping}
+                  onValueChange={setGrouping}
+                  options={[
+                    { value: 'month', label: 'Month' },
+                    { value: 'week', label: 'Week' },
+                  ]}
+                />
+              </div>
             </div>
           </div>
 
@@ -457,11 +569,17 @@ export function FairwayRoundsLibrary({
               <EmptyState
                 variant="search"
                 title="No rounds in this view"
-                description={`No ${filter === 'all' ? '' : `${filter} `}rounds match the current filter.`}
+                description={
+                  isNarrowed
+                    ? 'No rounds match the current filters.'
+                    : 'No rounds to show.'
+                }
                 action={
-                  <Button variant="secondary" size="sm" onClick={() => setFilter('all')}>
-                    Clear filter
-                  </Button>
+                  isNarrowed ? (
+                    <Button variant="secondary" size="sm" onClick={resetFilters}>
+                      Clear filters
+                    </Button>
+                  ) : undefined
                 }
               />
             </Surface>

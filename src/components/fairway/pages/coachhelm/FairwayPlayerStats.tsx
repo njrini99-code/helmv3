@@ -83,7 +83,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
               />
             </Surface>
           ) : (
-            <FairwayStatsCockpit playerId={resolvedPlayerId} />
+            <FairwayStatsCockpit playerId={resolvedPlayerId} isOwnStats={!isCoachView} />
           )}
         </CoachHelmShell>
       </div>

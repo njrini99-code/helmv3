@@ -44,12 +44,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, Sparkles, ArrowRight, RotateCw, TrendingDown, TrendingUp } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ChevronDown, Printer, Sparkles, ArrowRight, RotateCw, TrendingDown, TrendingUp } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
   InstrumentPanel,
   Readout,
+  type ReadoutDelta,
   Ribbon,
   type RibbonPoint,
   Surface,
@@ -58,7 +61,6 @@ import {
   InsufficientData,
   Skeleton,
   InlineNotice,
-  LeakMap,
   BarCompare,
   StandingStrip,
   Tabs,
@@ -66,17 +68,48 @@ import {
   TabsTrigger,
   TabsContent,
   type LeakMapBucket,
-  ShotDispersion,
   type ShotPoint,
-  PuttingHeatmap,
   type HeatCell,
 } from '@/components/fairway';
 
 // REUSED UNCHANGED loaders — the legacy detailed stats + trend analysis.
 import { getDetailedStats, getTrendAnalysis, getSprayChartData } from '@/app/golf/actions/stats-data';
 import type { TrendAnalysisResponse, SprayChartResponse } from '@/app/golf/actions/stats-data-types';
-import { FairwayDrivingSpray } from './FairwayDrivingSpray';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * P449 · Code-split the heaviest NON-first-paint charts. The default tab is
+ * Scoring (Ribbon + BarCompare stay eager); the visx-canvas charts (LeakMap,
+ * ShotDispersion, PuttingHeatmap) and the driving spray only render in the
+ * Driving / Approach / Putting / Analysis tabs, so they ship lazily with a
+ * Skeleton fallback — bounding the first-route JS on the primary stats route.
+ * Pattern mirrors FairwayStatsSection's dynamic chart imports.
+ * ────────────────────────────────────────────────────────────────────────── */
+function ChartLoading() {
+  return (
+    <Surface elevation="border" padding="md" className="flex flex-col gap-4">
+      <Skeleton className="h-4 w-40" />
+      <Skeleton className="h-[200px] w-full rounded-fw-md" />
+    </Surface>
+  );
+}
+
+const LeakMap = dynamic(
+  () => import('@/components/fairway/charts/LeakMap').then((m) => m.LeakMap),
+  { ssr: false, loading: () => <ChartLoading /> },
+);
+const ShotDispersion = dynamic(
+  () => import('@/components/fairway/charts/ShotDispersion').then((m) => m.ShotDispersion),
+  { ssr: false, loading: () => <ChartLoading /> },
+);
+const PuttingHeatmap = dynamic(
+  () => import('@/components/fairway/charts/PuttingHeatmap').then((m) => m.PuttingHeatmap),
+  { ssr: false, loading: () => <ChartLoading /> },
+);
+const FairwayDrivingSpray = dynamic(
+  () => import('./FairwayDrivingSpray').then((m) => m.FairwayDrivingSpray),
+  { ssr: false, loading: () => <ChartLoading /> },
+);
 
 // Batch-0 shared reads (gated by verifyPlayerAccess inside each export).
 import {
@@ -146,6 +179,15 @@ const STATS_TABS = [
   { id: 'analysis', label: 'Analysis' },
 ] as const;
 
+const STATS_TAB_IDS = STATS_TABS.map((t) => t.id);
+const DEFAULT_STATS_TAB = STATS_TABS[0].id;
+/** The `?tab=` search param key the cockpit syncs the active tab to. */
+const TAB_PARAM = 'tab';
+
+function isStatsTab(value: string | null | undefined): value is (typeof STATS_TABS)[number]['id'] {
+  return value != null && (STATS_TAB_IDS as readonly string[]).includes(value);
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — the consumer hands a resolved playerId. (No useGolfUser here; the
  * shell/header that wraps the cockpit owns identity + role.)
@@ -153,6 +195,13 @@ const STATS_TABS = [
 export interface FairwayStatsCockpitProps {
   playerId: string;
   className?: string;
+  /**
+   * True when the viewer is the player whose stats these are (the own-stats
+   * route). Drives the cold-start CTA — only the player can log a round, so a
+   * coach drill-down (which omits this) gets no player-only action. Defaults
+   * to false so the roster profile path stays CTA-free.
+   */
+  isOwnStats?: boolean;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -170,6 +219,50 @@ function toChartBuckets(buckets: LeakBucket[]): LeakMapBucket[] {
     pgaValue: b.pga_value,
     sampleN: b.sample_n,
   }));
+}
+
+/**
+ * P350 · Build the honest last-30d-vs-previous-30d delta line for a vitals
+ * Readout. Returns `undefined` (no delta shown — never a fabricated 0) unless
+ * BOTH windows carry real rounds AND both values are finite. `goodWhenLower`
+ * flips the success/warning direction so that, e.g., FEWER putts reads as a
+ * green ▲ improvement rather than an amber ▼ regression.
+ */
+function buildVitalDelta({
+  current,
+  previous,
+  currentRounds,
+  previousRounds,
+  goodWhenLower = false,
+  percent = false,
+  digits = 1,
+}: {
+  current: number | null;
+  previous: number | null;
+  currentRounds: number;
+  previousRounds: number;
+  goodWhenLower?: boolean;
+  percent?: boolean;
+  digits?: number;
+}): ReadoutDelta | undefined {
+  const a = finite(current);
+  const b = finite(previous);
+  if (a === null || b === null || currentRounds <= 0 || previousRounds <= 0) return undefined;
+  const change = a - b;
+  // Direction is by IMPROVEMENT, not raw sign: when lower is better, a negative
+  // change (e.g. fewer putts) is an improvement → up/green.
+  const improved = goodWhenLower ? change < 0 : change > 0;
+  const direction: ReadoutDelta['direction'] =
+    change === 0 ? 'flat' : improved ? 'up' : 'down';
+  const sign = change > 0 ? '+' : change < 0 ? '−' : '';
+  const mag = Math.abs(change);
+  const text = percent ? `${sign}${Math.round(mag)}%` : `${sign}${mag.toFixed(digits)}`;
+  return {
+    value: change,
+    direction,
+    format: () => text,
+    caption: 'vs prev 30d',
+  };
 }
 
 /** Signed strokes-gained, e.g. "+0.42" / "−0.31" / "E". */
@@ -314,15 +407,48 @@ function HeadlineReadout({
   );
 }
 
+/**
+ * P354 · The scoped leak-map failure notice. Rendered in the Approach/Putting
+ * bands when the leak-map enrichment fetch genuinely FAILED (the rest of the
+ * page is healthy) so a backend error reads honestly as "couldn't load — retry"
+ * instead of being masked as the LeakMap's insufficient-data empty state.
+ */
+function LeakLoadError({ onRetry, retrying }: { onRetry: () => void; retrying: boolean }) {
+  return (
+    <InlineNotice
+      tone="danger"
+      title="Couldn’t load the leak map"
+      action={
+        <Button
+          variant="secondary"
+          size="sm"
+          busy={retrying}
+          leftIcon={<RotateCw className="h-4 w-4" aria-hidden />}
+          onClick={onRetry}
+        >
+          Try again
+        </Button>
+      }
+    >
+      The strokes-gained leak detail failed to load. Your other stats are
+      up to date — retry to pull the make-rate and proximity bands.
+    </InlineNotice>
+  );
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
 
-export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpitProps) {
+export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }: FairwayStatsCockpitProps) {
   const [detailedStats, setDetailedStats] = useState<GolfStats | null>(null);
   const [trendData, setTrendData] = useState<TrendAnalysisResponse | null>(null);
   const [standingRows, setStandingRows] = useState<PlayerStandingRow[] | null>(null);
   const [leakMaps, setLeakMaps] = useState<PlayerLeakMaps | null>(null);
+  // Distinguish a leak-maps FETCH FAILURE from genuine no-data, so the
+  // Approach/Putting bands render an honest "couldn't load — retry" notice
+  // instead of masking a backend error as the insufficient-data empty state.
+  const [leakError, setLeakError] = useState(false);
   const [sprayData, setSprayData] = useState<SprayChartResponse | null>(null);
   const [patterns, setPatterns] = useState<CoachHelmPattern[]>([]);
   const [loading, setLoading] = useState(true);
@@ -330,9 +456,32 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
   const [showDetailed, setShowDetailed] = useState(false);
   const [showComprehensive, setShowComprehensive] = useState(false);
 
+  // ── P355 · Tab persistence — sync the active tab to the `?tab=` search param ─
+  // so refresh / browser-back / deep-link all restore (and share) the user's
+  // place instead of always snapping back to Scoring. Falls back to the default
+  // tab for a missing or unknown param.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get(TAB_PARAM);
+  const activeTab = isStatsTab(tabParam) ? tabParam : DEFAULT_STATS_TAB;
+  const handleTabChange = useCallback(
+    (value: string) => {
+      if (!isStatsTab(value)) return;
+      const params = new URLSearchParams(searchParams.toString());
+      if (value === DEFAULT_STATS_TAB) params.delete(TAB_PARAM);
+      else params.set(TAB_PARAM, value);
+      const query = params.toString();
+      // shallow replace (no scroll, no history spam) keeps the URL shareable.
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
+
   const loadAll = useCallback(async (id: string) => {
     setLoading(true);
     setLoadError(null);
+    setLeakError(false);
     try {
       const [detailedRes, trendRes, standingRes, leakRes, patternsRes, sprayRes] = await Promise.allSettled([
         getDetailedStats(id, 'overall'),
@@ -352,6 +501,12 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
       }
       if (leakRes.status === 'fulfilled' && leakRes.value.success) {
         setLeakMaps(leakRes.value.data ?? null);
+      } else {
+        // Leak fetch genuinely FAILED (rejected or success:false) — clear any
+        // stale maps so the Approach/Putting bands render an honest "couldn't
+        // load — retry" notice instead of masking the failure as the
+        // insufficient-data empty state. (P354)
+        setLeakMaps(null);
       }
       // CoachHelm patterns are a non-blocking enrichment — a failure (or a
       // CoachHelm-disabled player) just hides the section, never errors the page.
@@ -385,6 +540,11 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
 
       if (standingFailed && leakFailed) {
         setLoadError('Failed to load stats. Please try again.');
+      } else if (leakFailed) {
+        // The page is otherwise healthy, but the leak-map enrichment failed on
+        // its own — surface a scoped, retryable notice in the Approach/Putting
+        // bands rather than letting them read as "not enough data". (P354)
+        setLeakError(true);
       }
     } catch {
       setLoadError('Failed to load stats. Please try again.');
@@ -490,6 +650,40 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
   }, [trendData]);
   const trendBenchmark = finite(trendData?.periodComparison.last30Days.scoringAvg);
 
+  // ── P350 · Vitals movement: last-30d vs prev-30d deltas for the KPI band ────
+  // Sourced from the already-fetched periodComparison; honest (no delta unless
+  // both windows have real rounds + finite values). Putts are good-when-lower.
+  const vitalsDeltas = useMemo(() => {
+    const cmp = trendData?.periodComparison ?? null;
+    if (!cmp) return { fairways: undefined, gir: undefined, putts: undefined };
+    const cr = cmp.last30Days.roundCount;
+    const pr = cmp.previous30Days.roundCount;
+    return {
+      fairways: buildVitalDelta({
+        current: cmp.last30Days.fairwayPct,
+        previous: cmp.previous30Days.fairwayPct,
+        currentRounds: cr,
+        previousRounds: pr,
+        percent: true,
+      }),
+      gir: buildVitalDelta({
+        current: cmp.last30Days.girPct,
+        previous: cmp.previous30Days.girPct,
+        currentRounds: cr,
+        previousRounds: pr,
+        percent: true,
+      }),
+      putts: buildVitalDelta({
+        current: cmp.last30Days.puttsPerRound,
+        previous: cmp.previous30Days.puttsPerRound,
+        currentRounds: cr,
+        previousRounds: pr,
+        goodWhenLower: true,
+        digits: 1,
+      }),
+    };
+  }, [trendData]);
+
   // Scoring distribution by par (3/4/5) — from the extended GolfStats engine.
   const scoringByPar = detailedStats?.scoringByPar ?? null;
   const hasParData =
@@ -529,6 +723,13 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
         <EmptyState
           title="More rounds needed"
           description="Log 5+ rounds and the strokes-gained standing vs PGA Tour and the team fills in — plus the putting and approach leak maps."
+          action={
+            isOwnStats ? (
+              <Button asChild variant="primary">
+                <Link href="/golf/dashboard/rounds/new">Log a round</Link>
+              </Button>
+            ) : undefined
+          }
         />
       </Surface>
     );
@@ -536,6 +737,21 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
 
   return (
     <div className={cn('flex flex-col gap-10', className)}>
+      {/* ════════════════ 0 · EXPORT — print / save-as-PDF the stat sheet ═════ */}
+      {/* P351 · A coach or player viewing the full stat sheet can print or save
+          it as a PDF to share. `print:hidden` drops the control from the printed
+          output; the global @media print stylesheet handles the page layout. */}
+      <div className="flex justify-end print:hidden">
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<Printer className="h-4 w-4" aria-hidden />}
+          onClick={() => window.print()}
+        >
+          Print / Save as PDF
+        </Button>
+      </div>
+
       {/* ════════════════ 1 · VERDICT — SG hero + synthesized read ════════════ */}
       <SgVerdict sgTotal={sgTotal} detailedStats={detailedStats} gainLeak={gainLeak} />
 
@@ -551,14 +767,14 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
         <SectionHeading>The fundamentals</SectionHeading>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <RoundsReadout detailedStats={detailedStats} />
-          <FairwaysReadout detailedStats={detailedStats} />
-          <GirReadout detailedStats={detailedStats} />
-          <PuttsReadout detailedStats={detailedStats} />
+          <FairwaysReadout detailedStats={detailedStats} delta={vitalsDeltas.fairways} />
+          <GirReadout detailedStats={detailedStats} delta={vitalsDeltas.gir} />
+          <PuttsReadout detailedStats={detailedStats} delta={vitalsDeltas.putts} />
         </div>
       </section>
 
       <Surface padding="none" elevation="border" className="overflow-hidden">
-        <Tabs defaultValue="scoring" className="gap-0">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="gap-0">
           <TabsList className="px-4">
             {STATS_TABS.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id}>
@@ -608,30 +824,38 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
             <div className="flex flex-col gap-6">
               <ApproachHeadlineSection detailedStats={detailedStats} />
               <ApproachLegacyDetail detailedStats={detailedStats} />
-              <LeakMap
-                title="Approach proximity"
-                overline="Approach"
-                subtitle="Average proximity to the hole by approach distance vs PGA Tour"
-                takeaway="Bands above the dashed Tour line leave you farther from the hole than Tour."
-                direction="lower_better"
-                unit="feet"
-                data={leakMaps ? toChartBuckets(leakMaps.approach) : []}
-              />
+              {leakError ? (
+                <LeakLoadError onRetry={() => void loadAll(playerId)} retrying={loading} />
+              ) : (
+                <LeakMap
+                  title="Approach proximity"
+                  overline="Approach"
+                  subtitle="Average proximity to the hole by approach distance vs PGA Tour"
+                  takeaway="Bands above the dashed Tour line leave you farther from the hole than Tour."
+                  direction="lower_better"
+                  unit="feet"
+                  data={leakMaps ? toChartBuckets(leakMaps.approach) : []}
+                />
+              )}
             </div>
           </TabsContent>
 
           <TabsContent value="putting" className="px-4 py-5 sm:px-5">
             <div className="flex flex-col gap-6">
               <PuttingLegacyDetail detailedStats={detailedStats} />
-              <LeakMap
-                title="Putt make %"
-                overline="Putting"
-                subtitle="Make rate by distance vs PGA Tour"
-                takeaway="Bands below the dashed Tour line are where putts are leaking."
-                direction="higher_better"
-                unit="percent"
-                data={leakMaps ? toChartBuckets(leakMaps.putting) : []}
-              />
+              {leakError ? (
+                <LeakLoadError onRetry={() => void loadAll(playerId)} retrying={loading} />
+              ) : (
+                <LeakMap
+                  title="Putt make %"
+                  overline="Putting"
+                  subtitle="Make rate by distance vs PGA Tour"
+                  takeaway="Bands below the dashed Tour line are where putts are leaking."
+                  direction="higher_better"
+                  unit="percent"
+                  data={leakMaps ? toChartBuckets(leakMaps.putting) : []}
+                />
+              )}
             </div>
           </TabsContent>
 
@@ -875,9 +1099,16 @@ function RoundsReadout({ detailedStats }: { detailedStats: GolfStats | null }) {
   );
 }
 
-function FairwaysReadout({ detailedStats }: { detailedStats: GolfStats | null }) {
+function FairwaysReadout({
+  detailedStats,
+  delta,
+}: {
+  detailedStats: GolfStats | null;
+  delta?: ReadoutDelta;
+}) {
   const pct = finite(detailedStats?.fairwayPercentage);
   const opps = detailedStats?.fairwayOpportunities ?? 0;
+  const live = pct != null && opps > 0;
   return (
     <InstrumentPanel depth="base" padding="md" className="h-full">
       <Readout
@@ -886,17 +1117,25 @@ function FairwaysReadout({ detailedStats }: { detailedStats: GolfStats | null })
         unit="%"
         label="Fairways"
         size="md"
-        state={pct != null && opps > 0 ? 'live' : 'awaiting'}
-        samples={pct != null && opps > 0 ? undefined : { have: 0, need: 1 }}
+        state={live ? 'live' : 'awaiting'}
+        samples={live ? undefined : { have: 0, need: 1 }}
         awaitingLabel="No tee shots"
+        delta={live ? delta : undefined}
       />
     </InstrumentPanel>
   );
 }
 
-function GirReadout({ detailedStats }: { detailedStats: GolfStats | null }) {
+function GirReadout({
+  detailedStats,
+  delta,
+}: {
+  detailedStats: GolfStats | null;
+  delta?: ReadoutDelta;
+}) {
   const pct = finite(detailedStats?.girPercentage);
   const opps = detailedStats?.girOpportunities ?? 0;
+  const live = pct != null && opps > 0;
   return (
     <InstrumentPanel depth="base" padding="md" className="h-full">
       <Readout
@@ -905,17 +1144,25 @@ function GirReadout({ detailedStats }: { detailedStats: GolfStats | null }) {
         unit="%"
         label="GIR"
         size="md"
-        state={pct != null && opps > 0 ? 'live' : 'awaiting'}
-        samples={pct != null && opps > 0 ? undefined : { have: 0, need: 1 }}
+        state={live ? 'live' : 'awaiting'}
+        samples={live ? undefined : { have: 0, need: 1 }}
         awaitingLabel="No approaches"
+        delta={live ? delta : undefined}
       />
     </InstrumentPanel>
   );
 }
 
-function PuttsReadout({ detailedStats }: { detailedStats: GolfStats | null }) {
+function PuttsReadout({
+  detailedStats,
+  delta,
+}: {
+  detailedStats: GolfStats | null;
+  delta?: ReadoutDelta;
+}) {
   const perRound = finite(detailedStats?.puttsPerRound);
   const putts = detailedStats?.totalPutts ?? 0;
+  const live = perRound != null && putts > 0;
   return (
     <InstrumentPanel depth="base" padding="md" className="h-full">
       <Readout
@@ -923,9 +1170,10 @@ function PuttsReadout({ detailedStats }: { detailedStats: GolfStats | null }) {
         format={{ maximumFractionDigits: 1 }}
         label="Putts / round"
         size="md"
-        state={perRound != null && putts > 0 ? 'live' : 'awaiting'}
-        samples={perRound != null && putts > 0 ? undefined : { have: 0, need: 1 }}
+        state={live ? 'live' : 'awaiting'}
+        samples={live ? undefined : { have: 0, need: 1 }}
         awaitingLabel="No putts"
+        delta={live ? delta : undefined}
       />
     </InstrumentPanel>
   );
@@ -1096,7 +1344,7 @@ function ShortGameSection({ detailedStats }: { detailedStats: GolfStats | null }
       </div>
       {hasDrill ? (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-2 px-1" aria-label="Scrambling cut filter">
+          <div role="group" className="flex flex-wrap gap-2 px-1" aria-label="Scrambling cut filter">
             <ToggleChip active={scrambleCut === 'lie'} value="lie" label="By lie" onSelect={setScrambleCut} />
             <ToggleChip
               active={scrambleCut === 'distance'}
@@ -1399,7 +1647,7 @@ function ToggleChip<T extends string>({
       type="button"
       onClick={() => onSelect(value)}
       className={cn(
-        'min-h-9 rounded-full border px-3.5 py-1.5 font-fw-sans text-label font-medium outline-none transition-colors [transition-duration:180ms]',
+        'inline-flex min-h-11 items-center rounded-full border px-3.5 py-1.5 font-fw-sans text-label font-medium outline-none transition-colors [transition-duration:180ms]',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none',
         active
           ? 'border-accent-500 bg-accent-50 text-accent-700'
@@ -1593,7 +1841,7 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-2 px-1" aria-label="Approach lie filter">
+        <div role="group" className="flex flex-wrap gap-2 px-1" aria-label="Approach lie filter">
           <ToggleChip active={selectedLie === 'fairway'} value="fairway" label="Fairway" onSelect={setSelectedLie} />
           <ToggleChip active={selectedLie === 'rough'} value="rough" label="Rough" onSelect={setSelectedLie} />
           <ToggleChip active={selectedLie === 'sand'} value="sand" label="Sand" onSelect={setSelectedLie} />
@@ -1708,7 +1956,7 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
         ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-2 px-1" aria-label="Putt break filter">
+      <div role="group" className="flex flex-wrap gap-2 px-1" aria-label="Putt break filter">
         <ToggleChip active={selectedBreak === 'left_to_right'} value="left_to_right" label="L -> R" onSelect={setSelectedBreak} />
         <ToggleChip active={selectedBreak === 'right_to_left'} value="right_to_left" label="R -> L" onSelect={setSelectedBreak} />
         <ToggleChip active={selectedBreak === 'straight'} value="straight" label="Straight" onSelect={setSelectedBreak} />

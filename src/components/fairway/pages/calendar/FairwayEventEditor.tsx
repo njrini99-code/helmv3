@@ -39,6 +39,7 @@ import {
   Trash2,
   Check,
   Ban,
+  ChevronDown,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -114,6 +115,11 @@ const RECURRENCE_OPTIONS: ReadonlyArray<{ value: RecurrenceFrequency; label: str
 const fieldCls =
   'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2 font-fw-sans text-body-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25 disabled:opacity-50';
 const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
+// Native <select> styled to match Fairway inputs (P241): strip the OS chevron
+// (appearance-none, incl. legacy IE/FF) and reserve right padding for a custom
+// lucide ChevronDown overlay so it reads as tokenized as the rest of the form.
+const selectFieldCls =
+  'w-full appearance-none rounded-fw-md border border-border-subtle bg-surface-sunken py-2 pl-3 pr-9 font-fw-sans text-body-sm text-text-primary outline-none transition-colors focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25 disabled:opacity-50 [&::-ms-expand]:hidden';
 
 function getTodayDate(): string {
   const d = new Date();
@@ -628,7 +634,7 @@ export function FairwayEventEditor({
             <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
               <div className="flex items-center gap-3">
                 <CalendarIcon className="h-4 w-4 flex-shrink-0 text-accent-700" aria-hidden />
-                <div className="grid flex-1 grid-cols-2 gap-3">
+                <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label htmlFor="ev-start-date" className={labelCls}>Start date</label>
                     <input
@@ -658,7 +664,7 @@ export function FairwayEventEditor({
               {!formData.allDay && (
                 <div className="flex items-center gap-3">
                   <Clock className="h-4 w-4 flex-shrink-0 text-accent-700" aria-hidden />
-                  <div className="grid flex-1 grid-cols-2 gap-3">
+                  <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label htmlFor="ev-start-time" className={labelCls}>Start time</label>
                       <input
@@ -745,7 +751,7 @@ export function FairwayEventEditor({
                 disabled={locked}
               />
               {formData.requiresRsvp && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label htmlFor="ev-rsvp-deadline" className={labelCls}>RSVP deadline</label>
                     <input
@@ -913,21 +919,27 @@ export function FairwayEventEditor({
                     <Repeat className="h-3.5 w-3.5 text-accent-700" /> {isSeriesRoot ? 'Series pattern' : 'Repeat'}
                   </span>
                 </span>
-                <select
-                  value={formData.recurrence}
-                  onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as RecurrenceFrequency })}
-                  disabled={locked}
-                  aria-label="Recurrence"
-                  className={cn(fieldCls, 'bg-surface')}
-                >
-                  {/* A series root can't be flipped back to a one-off here —
-                      that's a delete-with-scope, not a pattern change. */}
-                  {RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={formData.recurrence}
+                    onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as RecurrenceFrequency })}
+                    disabled={locked}
+                    aria-label="Recurrence"
+                    className={cn(selectFieldCls, 'bg-surface')}
+                  >
+                    {/* A series root can't be flipped back to a one-off here —
+                        that's a delete-with-scope, not a pattern change. */}
+                    {RECURRENCE_OPTIONS.filter((o) => !isSeriesRoot || o.value !== 'none').map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
+                    aria-hidden
+                  />
+                </div>
 
                 {(formData.recurrence === 'weekly' || formData.recurrence === 'biweekly') && (
                   <div className="flex flex-col gap-1.5">
@@ -963,21 +975,27 @@ export function FairwayEventEditor({
                 )}
 
                 {formData.recurrence !== 'none' && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label htmlFor="ev-recurrence-end" className={labelCls}>Series ends</label>
-                      <select
-                        id="ev-recurrence-end"
-                        value={formData.recurrenceEndMode ?? 'count'}
-                        onChange={(e) =>
-                          setFormData({ ...formData, recurrenceEndMode: e.target.value as RecurrenceEndMode })
-                        }
-                        disabled={locked}
-                        className={cn(fieldCls, 'bg-surface')}
-                      >
-                        <option value="count">After a number of events</option>
-                        <option value="until">On a date</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          id="ev-recurrence-end"
+                          value={formData.recurrenceEndMode ?? 'count'}
+                          onChange={(e) =>
+                            setFormData({ ...formData, recurrenceEndMode: e.target.value as RecurrenceEndMode })
+                          }
+                          disabled={locked}
+                          className={cn(selectFieldCls, 'bg-surface')}
+                        >
+                          <option value="count">After a number of events</option>
+                          <option value="until">On a date</option>
+                        </select>
+                        <ChevronDown
+                          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
+                          aria-hidden
+                        />
+                      </div>
                     </div>
                     {(formData.recurrenceEndMode ?? 'count') === 'count' ? (
                       <div>

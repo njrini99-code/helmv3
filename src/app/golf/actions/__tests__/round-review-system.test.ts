@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Regression tests for calculateComparisonAverages (stats-accuracy audit
@@ -24,7 +24,7 @@ function createChainableMock({
     error,
     count: Array.isArray(data) ? data.length : 0,
   };
-  const methods = ['select', 'eq', 'neq', 'in', 'gte', 'lte', 'not', 'order', 'limit', 'range', 'filter'];
+  const methods = ['select', 'eq', 'neq', 'in', 'gte', 'lte', 'not', 'order', 'limit', 'range', 'filter', 'upsert'];
   for (const method of methods) {
     chain[method] = vi.fn(() => chain);
   }
@@ -35,7 +35,53 @@ function createChainableMock({
 
 let mockRoundsData: unknown[] = [];
 
+// ── P2-13 coordinator-test harness (opt-in via `coordinatorMode`) ───────────
+// When enabled, `golf_rounds.single()` returns ONE completed round (so the
+// compute path proceeds), `golf_round_reviews.upsert(...).select().single()`
+// returns a fixed review id, and every compute pass increments
+// `upsertCallCount` after an awaitable `upsertGate` — letting a test hold two
+// concurrent calls in-flight at once and assert the single-flight collapse.
+let coordinatorMode = false;
+let upsertCallCount = 0;
+let upsertGate: Promise<void> = Promise.resolve();
+const COORD_ROUND: Record<string, unknown> = {
+  id: 'round-coord-1',
+  player_id: '11111111-1111-1111-1111-111111111111',
+  course_name: 'Test GC',
+  round_date: '2026-06-21',
+  total_score: 75,
+  score_to_par: 3,
+  total_putts: 30,
+  total_fairways_hit: 8,
+  total_fairways: 14,
+  total_gir: 10,
+  total_gir_possible: 18,
+  holes_played: 18,
+  status: 'completed',
+};
+
 const mockFrom = vi.fn((table: string) => {
+  if (coordinatorMode) {
+    if (table === 'golf_rounds') {
+      // Two shapes are read from golf_rounds in the compute: the single round
+      // (`.single()`) and the player-history list (resolved via the chain's
+      // `data`). Return the round for `.single()` and an empty history list.
+      const chain = createChainableMock({ data: [] });
+      chain.single = vi.fn(async () => ({ data: COORD_ROUND, error: null }));
+      return chain;
+    }
+    if (table === 'golf_round_reviews') {
+      const chain = createChainableMock();
+      // Count each compute pass and gate it so concurrent callers overlap.
+      chain.single = vi.fn(async () => {
+        await upsertGate;
+        upsertCallCount += 1;
+        return { data: { id: 'review-coord-1' }, error: null };
+      });
+      return chain;
+    }
+    return createChainableMock({ data: [] });
+  }
   if (table === 'golf_rounds') {
     return createChainableMock({ data: mockRoundsData });
   }
@@ -74,7 +120,7 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
-import { getStatAverages } from '../round-review-system';
+import { getStatAverages, generateAndStoreRoundReview } from '../round-review-system';
 
 const PLAYER_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -138,5 +184,78 @@ describe('getStatAverages — comparison averages', () => {
 
     expect(result.success).toBe(true);
     expect(result.playerAvg).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P2-13 — round-review cold path single-flight coordinator.
+// Acceptance tests:
+//   • Two concurrent cold requests create ONE analysis job (one compute/upsert).
+//   • The UI receives the SAME review id from both callers.
+// ---------------------------------------------------------------------------
+describe('generateAndStoreRoundReview — single-flight coordinator (P2-13)', () => {
+  beforeEach(() => {
+    coordinatorMode = true;
+    upsertCallCount = 0;
+    upsertGate = Promise.resolve();
+    mockFrom.mockClear();
+  });
+
+  // Reset the harness flag so later suites (if reordered) are unaffected.
+  afterEach(() => {
+    coordinatorMode = false;
+  });
+
+  it('collapses two concurrent cold requests into ONE analysis job', async () => {
+    // Hold both computes open until we release the gate so they truly overlap.
+    let release: () => void = () => {};
+    upsertGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const a = generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+    const b = generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+
+    // Let the auth/access microtasks settle so the second call observes the
+    // first's in-flight promise BEFORE either compute reaches the upsert.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    release();
+    const [ra, rb] = await Promise.all([a, b]);
+
+    expect(ra.success).toBe(true);
+    expect(rb.success).toBe(true);
+    // Exactly ONE compute pass ran (the upsert is the compute's terminal step).
+    expect(upsertCallCount).toBe(1);
+  });
+
+  it('returns the SAME review id to both concurrent callers', async () => {
+    let release: () => void = () => {};
+    upsertGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const a = generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+    const b = generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+    await Promise.resolve();
+    await Promise.resolve();
+    release();
+
+    const [ra, rb] = await Promise.all([a, b]);
+    expect(ra.review?.id).toBe('review-coord-1');
+    expect(rb.review?.id).toBe(ra.review?.id);
+  });
+
+  it('recomputes after the in-flight job settles (a later Refresh is not deduped)', async () => {
+    // First call (gate open → resolves immediately).
+    const first = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+    expect(first.success).toBe(true);
+    expect(upsertCallCount).toBe(1);
+
+    // A subsequent, non-overlapping call must dispatch a fresh compute.
+    const second = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+    expect(second.success).toBe(true);
+    expect(upsertCallCount).toBe(2);
   });
 });

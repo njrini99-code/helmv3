@@ -62,8 +62,8 @@ interface ActionResult<T = void> {
 // ============================================================================
 
 const createAnnouncementSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200),
-  body: z.string().min(1, 'Message is required').max(10000),
+  title: z.string().min(1, 'Title is required').max(200, 'Title must be 200 characters or fewer'),
+  body: z.string().min(1, 'Message is required').max(10000, 'Message must be 10,000 characters or fewer'),
   urgency: z.enum(['low', 'normal', 'high', 'urgent']),
   requiresAcknowledgement: z.boolean(),
   recipientPlayerIds: z.array(z.string().uuid()).nullable(), // null = all team
@@ -315,7 +315,15 @@ export async function createEnrichedAnnouncement(input: {
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: 'Invalid input. Please check your entries.' };
+      // Surface the specific offending field + its constraint (Nielsen #9 —
+      // help users recover from errors) instead of a generic catch-all toast.
+      const issue = error.issues[0];
+      return {
+        success: false,
+        error: issue?.message
+          ? issue.message
+          : 'Invalid input. Please check your entries.',
+      };
     }
     return formatSafeErrorResponse(error);
   }

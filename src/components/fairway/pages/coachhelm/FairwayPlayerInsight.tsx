@@ -46,7 +46,14 @@ import type { FwStatusTone } from '@/components/fairway/controls';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
-import { IconMessage, IconTarget, IconChartBar, IconEye } from '@/components/icons';
+import {
+  IconMessage,
+  IconTarget,
+  IconChartBar,
+  IconCalendar,
+  IconChartRadar,
+  IconLayers,
+} from '@/components/icons';
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
 
 // Reused logic widgets (warm-palette, action-bearing) — embedded as-is.
@@ -337,10 +344,30 @@ function CompositeRatingCircle({ rating }: { rating: number }) {
   );
 }
 
-function CategoryBar({ label, value }: { label: string; value: number }) {
+function CategoryBar({
+  label,
+  value,
+  estimated,
+}: {
+  label: string;
+  value: number;
+  /** Marks a derived/proxy metric — surfaces an "Est." qualifier so the bar is
+   *  never presented as a directly-measured category (data honesty). */
+  estimated?: boolean;
+}) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-28 flex-shrink-0 font-fw-sans text-body-sm text-text-secondary">{label}</span>
+      <span className="flex w-28 flex-shrink-0 items-baseline gap-1 font-fw-sans text-body-sm text-text-secondary">
+        {label}
+        {estimated ? (
+          <span
+            className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-text-tertiary"
+            title="Estimated — averaged from tee, approach, and putting (no direct short-game data yet)."
+          >
+            Est.
+          </span>
+        ) : null}
+      </span>
       <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface">
         <div
           className={cn('h-full rounded-full transition-all duration-700', categoryBarTone(value))}
@@ -375,6 +402,12 @@ export function FairwayPlayerInsight({
   const coachId = golfUser.coachId ?? null;
   const playerName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
   const tint = tintFor(player.id);
+
+  // Avatar load-failure guard: an expired/broken avatar_url must degrade to the
+  // tinted initials (the same fallback shown when avatar_url is absent), never a
+  // broken-image glyph.
+  const [avatarErrored, setAvatarErrored] = useState(false);
+  const showAvatarImage = Boolean(player.avatar_url) && !avatarErrored;
 
   const [insights, setInsights] = useState<EvidenceInsight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -569,16 +602,26 @@ export function FairwayPlayerInsight({
 
   return (
     <div className="mx-auto w-full max-w-[860px] px-4 py-6 md:px-6 md:py-8">
-      {/* ── Back ── */}
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        leftIcon={<ArrowLeft className="h-4 w-4" />}
-        className="mb-6 -ml-2 text-text-tertiary"
-      >
-        <Link href={`/golf/dashboard/roster/${player.id}`}>Player</Link>
-      </Button>
+      {/* ── Back + sibling cross-links (P107) ── */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          leftIcon={<ArrowLeft className="h-4 w-4" />}
+          className="-ml-2 text-text-tertiary"
+        >
+          <Link href={`/golf/dashboard/roster/${player.id}`}>Player</Link>
+        </Button>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button asChild variant="ghost" size="sm" leftIcon={<IconChartRadar size={15} />}>
+            <Link href={`/golf/dashboard/players/${player.id}/game`}>Game fingerprint</Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
+            <Link href={`/golf/dashboard/coachhelm/genome/${player.id}`}>Genome</Link>
+          </Button>
+        </div>
+      </div>
 
       <div className="space-y-12">
         {/* ════════ A · WHO + VERDICT ════════ */}
@@ -586,10 +629,15 @@ export function FairwayPlayerInsight({
           <div className="flex items-start gap-5">
             <span
               className="grid h-16 w-16 flex-shrink-0 place-items-center overflow-hidden rounded-2xl font-fw-display text-h3 font-semibold ring-1 ring-border-subtle md:h-20 md:w-20"
-              style={player.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
+              style={showAvatarImage ? undefined : { backgroundColor: tint.bg, color: tint.text }}
             >
-              {player.avatar_url ? (
-                <img src={player.avatar_url} alt="" className="h-full w-full object-cover" />
+              {showAvatarImage ? (
+                <img
+                  src={player.avatar_url!}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  onError={() => setAvatarErrored(true)}
+                />
               ) : (
                 `${player.first_name?.[0] ?? ''}${player.last_name?.[0] ?? ''}`.toUpperCase() || '—'
               )}
@@ -651,7 +699,7 @@ export function FairwayPlayerInsight({
             <div className="mt-3 flex flex-col gap-3 rounded-card bg-surface-sunken p-6">
               <CategoryBar label="Tee Game" value={categoryBreakdown.teeGame} />
               <CategoryBar label="Approach" value={categoryBreakdown.approach} />
-              <CategoryBar label="Short Game" value={categoryBreakdown.shortGame} />
+              <CategoryBar label="Short Game" value={categoryBreakdown.shortGame} estimated />
               <CategoryBar label="Putting" value={categoryBreakdown.putting} />
               <CategoryBar label="Scoring" value={categoryBreakdown.scoring} />
             </div>
@@ -899,8 +947,8 @@ export function FairwayPlayerInsight({
           <Button asChild variant="secondary" leftIcon={<IconTarget size={16} />}>
             <Link href={`/golf/dashboard/development?player=${player.id}`}>Create focus area</Link>
           </Button>
-          <Button asChild variant="ghost" leftIcon={<IconEye size={16} />}>
-            <Link href="/golf/dashboard/calendar">Schedule practice</Link>
+          <Button asChild variant="ghost" leftIcon={<IconCalendar size={16} />}>
+            <Link href="/golf/dashboard/calendar">Open calendar</Link>
           </Button>
         </div>
       </div>

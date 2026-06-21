@@ -10,11 +10,21 @@
  *  - cancelled events render a Cancelled badge instead of disappearing
  *  - coach view mounts AttendancePanel with { eventId, teamId, canManage }
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import * as React from 'react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RsvpRespondResult } from '@/hooks/useRSVP';
+
+// next/link in jsdom triggers IntersectionObserver-backed prefetch (an uncaught
+// async throw). Stub it to a plain anchor so the cross-link renders without it.
+vi.mock('next/link', () => ({
+  default: ({ href, children, ...rest }: { href: string; children?: React.ReactNode } & Record<string, unknown>) => (
+    <a href={typeof href === 'string' ? href : '#'} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 
 // The drawer's ONLY next/dynamic usage is the coach AttendancePanel — stub it
 // so we can assert the mount + contract props without loading the real panel.
@@ -71,6 +81,19 @@ vi.mock('@/components/fairway', () => {
     StatusPill: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
   };
 });
+
+// The calendar→travel cross-link (P440) looks up the linked itinerary on open.
+// Mock the server action so the lookup is deterministic + offline. Default = no
+// linked trip; individual tests override via `mockResolvedValueOnce`.
+const getItineraryForEvent = vi.fn(
+  async (_eventId: string): Promise<{ success: boolean; data?: { id: string; event_name: string; destination: string } | null }> => ({
+    success: true,
+    data: null,
+  }),
+);
+vi.mock('@/app/golf/actions/travel', () => ({
+  getItineraryForEvent: (eventId: string) => getItineraryForEvent(eventId),
+}));
 
 import { FairwayEventDetailDrawer } from '../FairwayEventDetailDrawer';
 
@@ -183,5 +206,41 @@ describe('FairwayEventDetailDrawer — coach view', () => {
     expect(panel).toHaveAttribute('data-can-manage', 'true');
     // No player RSVP controls in the coach view.
     expect(screen.queryByText('Going')).not.toBeInTheDocument();
+  });
+});
+
+// P440 — calendar↔travel cross-link. The drawer offers a "View itinerary" deep
+// link ONLY when the reverse join returns a linked trip; otherwise it's hidden
+// (honest — never assert a trip that isn't there).
+describe('FairwayEventDetailDrawer — linked travel itinerary (P440)', () => {
+  beforeEach(() => {
+    getItineraryForEvent.mockClear();
+  });
+
+  it('renders a "View itinerary" link to Travel HQ when the event has a linked trip', async () => {
+    getItineraryForEvent.mockResolvedValueOnce({
+      success: true,
+      data: { id: 'trip-9', event_name: 'Spring Invitational', destination: 'Pinehurst, NC' },
+    });
+    renderDrawer();
+    const link = await screen.findByRole('link', { name: /View itinerary/i });
+    expect(link).toHaveAttribute('href', '/golf/dashboard/travel');
+    expect(link).toHaveTextContent('Pinehurst, NC');
+    expect(getItineraryForEvent).toHaveBeenCalledWith('evt-1');
+  });
+
+  it('hides the link when the event has no linked itinerary', async () => {
+    getItineraryForEvent.mockResolvedValueOnce({ success: true, data: null });
+    renderDrawer();
+    // Wait a microtask for the lookup effect to settle, then assert absence.
+    await waitFor(() => expect(getItineraryForEvent).toHaveBeenCalled());
+    expect(screen.queryByText(/View itinerary/i)).not.toBeInTheDocument();
+  });
+
+  it('hides the link (fails silent) when the lookup errors', async () => {
+    getItineraryForEvent.mockResolvedValueOnce({ success: false });
+    renderDrawer();
+    await waitFor(() => expect(getItineraryForEvent).toHaveBeenCalled());
+    expect(screen.queryByText(/View itinerary/i)).not.toBeInTheDocument();
   });
 });

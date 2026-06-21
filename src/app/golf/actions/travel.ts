@@ -963,3 +963,42 @@ export async function getBudgetsForItinerary(itineraryId: string): Promise<{ suc
 
   return { success: true, data: data || [] };
 }
+
+/**
+ * The travel itinerary linked to a calendar event (calendar→travel cross-link).
+ * The join already exists on the itinerary side (`event_id`); this is the reverse
+ * lookup so the event-detail drawer can offer a "View itinerary" affordance.
+ * Returns the minimal shape the link needs — id + display name — or `null` when
+ * the event has no linked trip (honest: the caller hides the link entirely).
+ * RLS on golf_travel_itineraries already scopes the read to the team.
+ */
+export async function getItineraryForEvent(
+  eventId: string,
+): Promise<{ success: boolean; data?: { id: string; event_name: string; destination: string } | null; error?: string }> {
+  const parsed = uuidSchema.safeParse(eventId);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid event ID.' };
+  }
+
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('golf_travel_itineraries')
+    .select('id, event_name, destination')
+    .eq('event_id', parsed.data)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return { success: false, error: 'Failed to look up linked itinerary.' };
+  }
+
+  return { success: true, data: data ?? null };
+}

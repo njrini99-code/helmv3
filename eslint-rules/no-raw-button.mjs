@@ -7,13 +7,15 @@
  * button is a missing focus ring, missing keyboard handler, and missing
  * disabled state.
  *
- * Allowlist: components under `src/components/ui/`, mockup pages, the
- * Tailwind config file, and this lint-rule directory itself can use raw
- * elements because they're either (a) the primitive being wrapped or
+ * Allowlist: components under `src/components/ui/` and the Fairway controls
+ * primitive family `src/components/fairway/controls/` (P404 — the shared
+ * SelectablePill / Button / Segmented / etc. ARE the wrapped primitives), mockup
+ * pages, the Tailwind config file, and this lint-rule directory itself can use
+ * raw elements because they're either (a) the primitive being wrapped or
  * (b) demo / configuration code.
  */
 
-const ALLOWED_PATH = /(\/(components\/ui|mockups|eslint-rules)\/|tailwind\.config\.ts$|\.stories\.[jt]sx?$)/;
+const ALLOWED_PATH = /(\/(components\/ui|components\/fairway\/controls|mockups|eslint-rules)\/|tailwind\.config\.ts$|\.stories\.[jt]sx?$)/;
 
 export default {
   meta: {

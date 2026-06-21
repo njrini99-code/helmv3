@@ -55,6 +55,8 @@ import {
   type SegmentTone,
 } from '@/components/fairway';
 
+import { IconSparkles, IconLayers } from '@/components/icons';
+
 import type {
   PlayerFingerprint,
   SectionData,
@@ -200,9 +202,18 @@ export function FairwayPlayerGameFingerprint({
             </Button>
           }
           secondaryActions={
-            <Button asChild variant="ghost" size="sm">
-              <Link href={`/golf/dashboard/roster/${player.id}`}>Player page</Link>
-            </Button>
+            // Sibling cross-links (P107) — Game ↔ Insight ↔ Genome ↔ Profile.
+            <>
+              <Button asChild variant="ghost" size="sm" leftIcon={<IconSparkles size={15} />}>
+                <Link href={`/golf/dashboard/players/${player.id}`}>AI Insight</Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
+                <Link href={`/golf/dashboard/coachhelm/genome/${player.id}`}>Genome</Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href={`/golf/dashboard/roster/${player.id}`}>Player page</Link>
+              </Button>
+            </>
           }
         />
 

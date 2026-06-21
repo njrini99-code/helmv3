@@ -31,7 +31,8 @@
  * ========================================================================== */
 
 import Link from 'next/link';
-import { Flag } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Flag, AlertTriangle } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -52,6 +53,14 @@ export interface FairwayMyQualifiersProps {
   qualifiers: PlayerQualifierInfo[];
   /** Present only on the coach-bounce path. */
   error?: string;
+  /**
+   * P182: TRUE when the entries fetch actually FAILED (Supabase error), as
+   * opposed to the player simply having no qualifiers. A fetch failure must read
+   * as a recoverable error ("Couldn't load…" + retry), NOT the cheerful
+   * "No qualifiers yet" empty state — a DB hiccup is not the same as "you have
+   * none". Mutually exclusive with the happy path; takes precedence over empty.
+   */
+  loadError?: boolean;
 }
 
 function statusConfig(status: string): { tone: FwStatusTone; label: string; pulse: boolean } {
@@ -61,7 +70,11 @@ function statusConfig(status: string): { tone: FwStatusTone; label: string; puls
     case 'completed':
       return { tone: 'neutral', label: 'Completed', pulse: false };
     case 'upcoming':
-      return { tone: 'accent', label: 'Upcoming', pulse: false };
+      // Distinct from the green 'Live' pill so the two lifecycle states are
+      // separable without relying on the pulse dot (which vanishes in a
+      // grayscale/squint screenshot and under reduced-motion). Matches
+      // FairwayQualifierDetail's STATUS_META mapping for 'upcoming'.
+      return { tone: 'warning', label: 'Upcoming', pulse: false };
     default:
       return { tone: 'neutral', label: status.replace(/_/g, ' '), pulse: false };
   }
@@ -89,13 +102,22 @@ function formatToPar(toPar: number | null): string {
   return toPar > 0 ? `+${toPar}` : `${toPar}`;
 }
 
-/** "thru R1, R2" — never a fabricated X/N denominator. */
+/**
+ * "thru R1, R2" — never a fabricated X/N denominator. For 3+ posted rounds we
+ * collapse to "thru R4 (4)" so the 1/3-width cell never wraps/distorts the
+ * 3-up score row on the narrowest single-column card.
+ */
 function thruLabel(rounds: number[]): string {
   if (rounds.length === 0) return 'Not started';
+  if (rounds.length > 2) {
+    const last = rounds[rounds.length - 1];
+    return `thru R${last} (${rounds.length})`;
+  }
   return `thru ${rounds.map((n) => `R${n}`).join(', ')}`;
 }
 
-export function FairwayMyQualifiers({ qualifiers, error }: FairwayMyQualifiersProps) {
+export function FairwayMyQualifiers({ qualifiers, error, loadError }: FairwayMyQualifiersProps) {
+  const router = useRouter();
   const active = qualifiers.filter(
     (q) => (q.status ?? 'upcoming') === 'upcoming' || q.status === 'in_progress',
   );
@@ -124,7 +146,34 @@ export function FairwayMyQualifiers({ qualifiers, error }: FairwayMyQualifiersPr
       {error ? (
         <div className="mt-8">
           <Surface elevation="border" padding="lg">
-            <EmptyState icon={Flag} title="Players only" description={error} />
+            <EmptyState
+              icon={Flag}
+              title="Players only"
+              description={error}
+              action={
+                <Button variant="primary" size="sm" asChild>
+                  <Link href="/golf/dashboard/qualifiers">
+                    <span>Go to qualifiers</span>
+                    <IconArrowRight size={15} />
+                  </Link>
+                </Button>
+              }
+            />
+          </Surface>
+        </div>
+      ) : loadError ? (
+        <div className="mt-8">
+          <Surface elevation="border" padding="lg">
+            <EmptyState
+              icon={AlertTriangle}
+              title="Couldn't load your qualifiers"
+              description="Something went wrong loading your qualifier entries. This is usually temporary — try again in a moment."
+              action={
+                <Button variant="primary" size="sm" onClick={() => router.refresh()}>
+                  <span>Try again</span>
+                </Button>
+              }
+            />
           </Surface>
         </div>
       ) : qualifiers.length === 0 ? (
@@ -134,6 +183,14 @@ export function FairwayMyQualifiers({ qualifiers, error }: FairwayMyQualifiersPr
               icon={Flag}
               title="No qualifiers yet"
               description="No qualifiers have been posted by your coach yet. When one is, it shows up here so you can post your rounds."
+              action={
+                <Button variant="secondary" size="sm" asChild>
+                  <Link href="/golf/dashboard/rounds">
+                    <IconGolf size={15} />
+                    <span>View your rounds</span>
+                  </Link>
+                </Button>
+              }
             />
           </Surface>
         </div>
@@ -178,9 +235,11 @@ export function FairwayMyQualifiers({ qualifiers, error }: FairwayMyQualifiersPr
               How qualifiers work
             </p>
             <p className="mt-1.5 max-w-[70ch] font-fw-sans text-body-sm text-text-secondary">
-              Your coach posts a qualifier; you post rounds against it from the new-round flow. Every
-              round counts toward your cumulative score — the leaderboard ranks the team by total to-par,
-              lowest first, and the top finishers earn the travel lineup.
+              Your coach posts a qualifier; you post rounds against it with{' '}
+              <span className="font-medium text-text-primary">Start qualifying round</span>. Every round
+              counts toward your cumulative score, and{' '}
+              <span className="font-medium text-text-primary">View leaderboard</span> ranks the team by
+              total to-par, lowest first.
             </p>
           </Surface>
         </div>
@@ -190,10 +249,13 @@ export function FairwayMyQualifiers({ qualifiers, error }: FairwayMyQualifiersPr
 }
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
+  // <h2>: keeps a strict h1 (ViewHeader) → h2 (section) → h3 (card title)
+  // outline so assistive-tech rotor navigation can tell a section apart from
+  // the items inside it. Visual size is governed by the classes, not the tag.
   return (
-    <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+    <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
       {children}
-    </h3>
+    </h2>
   );
 }
 
@@ -238,12 +300,18 @@ function MyQualifierCard({ qualifier: q }: { qualifier: PlayerQualifierInfo }) {
             <span className="truncate">{q.courseName}</span>
           </div>
         )}
+        {q.holesPerRound > 0 && (
+          <div className="flex items-center gap-2">
+            <IconGolf size={15} className="flex-shrink-0 text-text-tertiary" />
+            <span className="tabular-nums">{q.holesPerRound} holes/round</span>
+          </div>
+        )}
       </div>
 
       {/* The player's own scorecard — thru / total / to-par */}
       <div className="grid grid-cols-3 gap-3 rounded-fw-md bg-surface-sunken px-4 py-3">
         <ScoreCell label="Thru">
-          <span className="font-fw-sans text-body-sm font-medium text-text-primary">
+          <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
             {thruLabel(q.completedRoundNumbers)}
           </span>
         </ScoreCell>
@@ -286,8 +354,10 @@ function MyQualifierCard({ qualifier: q }: { qualifier: PlayerQualifierInfo }) {
 }
 
 function ScoreCell({ label, children }: { label: string; children: React.ReactNode }) {
+  // min-w-0 lets the (grid) cell shrink below its content width so a long Thru
+  // label truncates instead of pushing the other two cells out of the 3-up row.
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5">
       <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-text-tertiary">
         {label}
       </span>

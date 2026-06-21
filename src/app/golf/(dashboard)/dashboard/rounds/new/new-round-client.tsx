@@ -65,6 +65,9 @@ import {
 import { useRedesign, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
+import { Button as FwButton } from '@/components/fairway/controls/button';
+import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { FairwayRoundSummarySheet } from '@/components/fairway/pages/rounds-new/FairwayRoundSummarySheet';
 
 type Hole = RoundHole;
 
@@ -80,16 +83,7 @@ interface RoundSetupForm {
 }
 
 
-interface NewRoundClientProps {
-  existingInProgressRound?: {
-    id: string;
-    courseName: string;
-    currentHole: number;
-    holesPlayed: number;
-  } | null;
-}
-
-export default function NewRoundClient({ existingInProgressRound }: NewRoundClientProps) {
+export default function NewRoundClient() {
   const prefersReducedMotion = useReducedMotion();
   const redesign = useRedesign();
   // Flag-gated overlay swaps — Fairway versions share the legacy prop contracts
@@ -102,8 +96,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // Unfinished rounds are surfaced on the /rounds page (UnfinishedRoundsSection),
   // not as a gate here — starting a New Round lands straight on the course
   // carousel. There is no in-flow resume prompt (the old prompt state was never
-  // reachable). `existingInProgressRound` is still accepted as a prop for the
-  // caller's contract.
+  // reachable), so this page no longer fetches the in-progress round.
 
   // Hide mobile bottom nav for entire round flow (setup → holes → tracking → submit)
   const { hide: hideMobileNav, show: showMobileNav } = useMobileNav();
@@ -580,35 +573,42 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     }
   }, [searchParams]);
 
+  // Reusable qualifier fetch — runs on round-type change AND on the inline
+  // "Try again" retry, so a transient failure recovers without a full page
+  // refresh (Nielsen #9: help users recover from errors).
+  const loadQualifiers = useCallback(() => {
+    setLoadingQualifiers(true);
+    setQualifierError(null);
+    getPlayerQualifiers()
+      .then(result => {
+        setLoadingQualifiers(false);
+        if (!result.success) {
+          setQualifierError(result.error);
+          return;
+        }
+        // Filter to only active/in-progress qualifiers with remaining rounds
+        const activeQualifiers = result.data.filter(
+          q => q.status !== 'completed' && q.roundsCompleted < q.numRounds
+        );
+        setQualifiers(activeQualifiers);
+        if (activeQualifiers.length === 0) {
+          setQualifierError('You have no active qualifiers to enter rounds for.');
+        }
+      })
+      .catch((err: Error) => {
+        if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
+          window.location.reload();
+          return;
+        }
+        setLoadingQualifiers(false);
+        setQualifierError('Failed to load qualifiers. Please try again.');
+      });
+  }, []);
+
   // Fetch qualifiers when round type changes to 'qualifier'
   useEffect(() => {
     if (setupData.roundType === 'qualifier') {
-      setLoadingQualifiers(true);
-      setQualifierError(null);
-      getPlayerQualifiers()
-        .then(result => {
-          setLoadingQualifiers(false);
-          if (!result.success) {
-            setQualifierError(result.error);
-            return;
-          }
-          // Filter to only active/in-progress qualifiers with remaining rounds
-          const activeQualifiers = result.data.filter(
-            q => q.status !== 'completed' && q.roundsCompleted < q.numRounds
-          );
-          setQualifiers(activeQualifiers);
-          if (activeQualifiers.length === 0) {
-            setQualifierError('You have no active qualifiers to enter rounds for.');
-          }
-        })
-        .catch((err: Error) => {
-          if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
-            window.location.reload();
-            return;
-          }
-          setLoadingQualifiers(false);
-          setQualifierError('Failed to load qualifiers. Please try refreshing.');
-        });
+      loadQualifiers();
     } else {
       // Reset qualifier state when switching away from qualifier
       // Guard: don't wipe if URL param just set the qualifier (prevents race condition)
@@ -621,7 +621,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       setAvailableRounds([]);
       setQualifierError(null);
     }
-  }, [setupData.roundType]);
+  }, [setupData.roundType, loadQualifiers]);
 
   // Fetch available round numbers when qualifier is selected
   useEffect(() => {
@@ -1657,21 +1657,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // steps still fall through to the legacy render below (a later phase). Flag
   // OFF → every legacy branch below is byte-for-byte unchanged. No
   // mutation/autosave/optimistic-lock logic moves; this is presentation only.
-  // The resume prompt is never shown here (it lives on /rounds), so the resume
-  // props are passed as inert constants to satisfy the component contract.
+  // The resume prompt is never shown here (it lives on /rounds), so the entry
+  // component no longer carries any resume-gate props or a discarded query.
   // ============================================================================
   if (redesign && (step === 'setup' || step === 'holes')) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayNewRoundEntry
           step={step}
-          showResumePrompt={false}
-          existingInProgressRound={existingInProgressRound}
-          onContinueResume={() =>
-            existingInProgressRound &&
-            router.push(`/golf/dashboard/rounds/continue/${existingInProgressRound.id}`)
-          }
-          onStartFresh={() => { /* no-op: resume prompt is never shown */ }}
           onBrowseCourseLibrary={() => setTeePickerOpen(true)}
           recentCourses={recentCourses}
           onQuickPickConfirm={handleQuickPickConfirm}
@@ -1748,6 +1741,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           qualifiers={qualifiers}
           loadingQualifiers={loadingQualifiers}
           qualifierError={qualifierError}
+          onRetryQualifiers={loadQualifiers}
           selectedQualifierId={selectedQualifierId}
           setSelectedQualifierId={setSelectedQualifierId}
           availableRounds={availableRounds}
@@ -1757,6 +1751,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           isStartingRound={isStartingRound}
           onSubmit={handleSetupSubmit}
           onCancel={() => router.back()}
+          onExitToDashboard={() => router.push('/golf/dashboard')}
           onHolesSave={handleHolesSave}
           onHolesBack={() => setStep('setup')}
         />
@@ -2484,19 +2479,70 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const activeHoleShots = completedStatsForHole?.shots ?? inProgressShots;
   const activeShotNumber = activeHoleShots.length > 0 ? activeHoleShots.length + 1 : 1;
 
+  // Shared dialog handlers (identical in legacy + redesign renders) — hoisted so
+  // the Fairway-token (ModalShell) and legacy (Drawer) variants can both call
+  // them without duplicating the recovery/reset logic.
+  const recoveredHoleCount =
+    newRoundRecoveryData?.completedHoleStats?.filter(h => h != null).length || 0;
+  const handleDiscardRecovery = () => {
+    clearEmergencySave(null);
+    setShowNewRoundRecovery(false);
+    setNewRoundRecoveryData(null);
+  };
+  const handleRestoreRecovery = () => {
+    const rd = newRoundRecoveryData;
+    if (!rd) return;
+    if (rd.completedHoleStats) setCompletedHoleStats(rd.completedHoleStats);
+    if (rd.inProgressShotsByHole) setInProgressShotsByHole(rd.inProgressShotsByHole);
+    if (rd.holes?.length > 0) setHoles(rd.holes);
+    if (rd.currentHoleIndex != null) {
+      setCurrentHoleIndex(rd.currentHoleIndex);
+      activeProgressHoleRef.current = rd.currentHoleIndex;
+    }
+    if (rd.setupData) setSetupData(rd.setupData);
+    if (rd.holesPerRound) setHolesPerRound(rd.holesPerRound);
+    setStep('tracking');
+    setShowNewRoundRecovery(false);
+    setNewRoundRecoveryData(null);
+  };
+  const handleConfirmBackToSetup = () => {
+    setShowBackToSetupModal(false);
+    setCompletedHoleStats([]);
+    setInProgressShotsByHole({});
+    setCurrentHoleIndex(0);
+    activeProgressHoleRef.current = 0;
+    setSavedRoundId(null);
+    savedRoundIdRef.current = null;
+    setStep(preloadedHoleConfigs ? 'setup' : 'holes');
+  };
+
   return (
     <>
       {/* Submit banner — shown when all holes are done but finish confirm was dismissed */}
       {pendingFinalStats && !showFinishConfirm && step === 'tracking' && (
-        <div className="sticky top-[var(--golf-mobile-header-offset)] z-20 bg-primary-600 px-4 py-3 text-white lg:top-[49px] flex items-center justify-between gap-3">
-          <p className="text-sm font-medium">All holes completed — ready to submit!</p>
-          <Button variant="primary"
-            onClick={() => setShowFinishConfirm(true)}
-            className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
-          >
-            Submit Round
-          </Button>
-        </div>
+        redesign ? (
+          <div className={fairwayScope('sticky top-[var(--golf-mobile-header-offset)] z-20 flex items-center justify-between gap-3 bg-accent-600 px-4 py-3 text-text-on-accent lg:top-[49px]')}>
+            <p className="font-fw-sans text-sm font-medium">All holes completed — ready to submit!</p>
+            <FwButton
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowFinishConfirm(true)}
+              className="flex-shrink-0"
+            >
+              Submit Round
+            </FwButton>
+          </div>
+        ) : (
+          <div className="sticky top-[var(--golf-mobile-header-offset)] z-20 bg-primary-600 px-4 py-3 text-white lg:top-[49px] flex items-center justify-between gap-3">
+            <p className="text-sm font-medium">All holes completed — ready to submit!</p>
+            <Button variant="primary"
+              onClick={() => setShowFinishConfirm(true)}
+              className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
+            >
+              Submit Round
+            </Button>
+          </div>
+        )
       )}
 
       {/* FAIRWAY FORK (ADDITIVE) — flag ON renders the redesigned shot-tracking
@@ -2551,29 +2597,67 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
       {/* Draft Auto-Save Indicator removed - was too noisy */}
 
-      {/* Back to Setup - always available during tracking */}
-      <div className="fixed left-4 z-40 top-[max(1rem,env(safe-area-inset-top,0px))]">
-        <Button variant="ghost"
-          onClick={() => {
-            const hasCompletedHoles = completedHoleStats.some(s => s?.score != null);
-            if (hasCompletedHoles) {
-              setShowBackToSetupModal(true);
-            } else {
-              setStep(preloadedHoleConfigs ? 'setup' : 'holes');
-              setCurrentHoleIndex(0);
-              activeProgressHoleRef.current = 0;
-            }
-          }}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-white transition-colors shadow-sm"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back
-        </Button>
-      </div>
+      {/* Back to Setup — legacy-only floating control. In the redesign path this is
+          REMOVED: FairwayScorecardHeader already provides a single sticky Exit/Prev/Next
+          control row in the same top region, so a second cream-styled Back here would
+          overlap and compete with it (Nielsen #4 consistency / #8 minimalist). */}
+      {!redesign && (
+        <div className="fixed left-4 z-40 top-[max(1rem,env(safe-area-inset-top,0px))]">
+          <Button variant="ghost"
+            onClick={() => {
+              const hasCompletedHoles = completedHoleStats.some(s => s?.score != null);
+              if (hasCompletedHoles) {
+                setShowBackToSetupModal(true);
+              } else {
+                setStep(preloadedHoleConfigs ? 'setup' : 'holes');
+                setCurrentHoleIndex(0);
+                activeProgressHoleRef.current = 0;
+              }
+            }}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-white transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </Button>
+        </div>
+      )}
 
       {/* Emergency Save Recovery Dialog (new round) */}
+      {redesign ? (
+        <ModalShell
+          open={Boolean(showNewRoundRecovery && newRoundRecoveryData)}
+          onOpenChange={(next) => {
+            if (!next) setShowNewRoundRecovery(false);
+          }}
+          size="sm"
+          title="Recover Unsaved Progress?"
+          hideTitle
+          hideClose
+        >
+          <div className="px-6 pb-6 pt-6">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-fw-md bg-fw-warning-bg">
+              <IconWarning size={24} className="text-fw-warning" />
+            </div>
+            <h2 className="mb-2 text-center font-fw-display text-body-lg font-medium tracking-[-0.012em] text-text-primary">
+              Recover Unsaved Progress?
+            </h2>
+            <p className="mb-6 text-center font-fw-sans text-sm text-text-tertiary">
+              Found locally saved data with {recoveredHoleCount} completed holes. This data may have
+              been saved when the app was interrupted.
+            </p>
+            <div className="flex gap-3">
+              <FwButton variant="secondary" className="flex-1" onClick={handleDiscardRecovery}>
+                Discard
+              </FwButton>
+              <FwButton variant="primary" className="flex-1" onClick={handleRestoreRecovery}>
+                Restore
+              </FwButton>
+            </div>
+          </div>
+        </ModalShell>
+      ) : (
       <Drawer
         open={Boolean(showNewRoundRecovery && newRoundRecoveryData)}
         onOpenChange={(next) => {
@@ -2592,37 +2676,18 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             </DrawerTitle>
             <p className="text-sm text-warm-500 text-center mb-6">
               Found locally saved data with{' '}
-              {newRoundRecoveryData?.completedHoleStats?.filter(h => h != null).length || 0} completed holes.
+              {recoveredHoleCount} completed holes.
               This data may have been saved when the app was interrupted.
             </p>
             <div className="flex gap-3">
               <Button variant="ghost"
-                onClick={() => {
-                  clearEmergencySave(null);
-                  setShowNewRoundRecovery(false);
-                  setNewRoundRecoveryData(null);
-                }}
+                onClick={handleDiscardRecovery}
                 className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 transition-colors"
               >
                 Discard
               </Button>
               <Button variant="primary"
-                onClick={() => {
-                  const rd = newRoundRecoveryData;
-                  if (!rd) return;
-                  if (rd.completedHoleStats) setCompletedHoleStats(rd.completedHoleStats);
-                  if (rd.inProgressShotsByHole) setInProgressShotsByHole(rd.inProgressShotsByHole);
-                  if (rd.holes?.length > 0) setHoles(rd.holes);
-                  if (rd.currentHoleIndex != null) {
-                    setCurrentHoleIndex(rd.currentHoleIndex);
-                    activeProgressHoleRef.current = rd.currentHoleIndex;
-                  }
-                  if (rd.setupData) setSetupData(rd.setupData);
-                  if (rd.holesPerRound) setHolesPerRound(rd.holesPerRound);
-                  setStep('tracking');
-                  setShowNewRoundRecovery(false);
-                  setNewRoundRecoveryData(null);
-                }}
+                onClick={handleRestoreRecovery}
                 className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
               >
                 Restore
@@ -2631,6 +2696,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           </div>
         </DrawerContent>
       </Drawer>
+      )}
 
       {/* Save Round Modal */}
       <ExitRoundModal
@@ -2643,6 +2709,42 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       />
 
       {/* Back to Setup Confirmation Modal */}
+      {redesign ? (
+        <ModalShell
+          open={showBackToSetupModal}
+          onOpenChange={(next) => {
+            if (!next) setShowBackToSetupModal(false);
+          }}
+          size="sm"
+          title="Go back to setup?"
+          hideTitle
+          hideClose
+        >
+          <div className="px-6 pb-6 pt-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md bg-fw-warning-bg">
+                <IconWarning size={20} className="text-fw-warning" />
+              </div>
+              <div>
+                <h2 className="font-fw-display text-body font-medium tracking-[-0.005em] text-text-primary">
+                  Go back to setup?
+                </h2>
+                <p className="mt-0.5 font-fw-sans text-sm text-text-tertiary">
+                  Your progress and shot data will be lost.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <FwButton variant="secondary" className="flex-1" onClick={() => setShowBackToSetupModal(false)}>
+                Keep Playing
+              </FwButton>
+              <FwButton variant="danger" className="flex-1" onClick={handleConfirmBackToSetup}>
+                Reset &amp; Go Back
+              </FwButton>
+            </div>
+          </div>
+        </ModalShell>
+      ) : (
       <Drawer
         open={showBackToSetupModal}
         onOpenChange={(next) => {
@@ -2673,16 +2775,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 Keep Playing
               </Button>
               <Button variant="danger"
-                onClick={() => {
-                  setShowBackToSetupModal(false);
-                  setCompletedHoleStats([]);
-                  setInProgressShotsByHole({});
-                  setCurrentHoleIndex(0);
-                  activeProgressHoleRef.current = 0;
-                  setSavedRoundId(null);
-                  savedRoundIdRef.current = null;
-                  setStep(preloadedHoleConfigs ? 'setup' : 'holes');
-                }}
+                onClick={handleConfirmBackToSetup}
                 className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 active:bg-red-700 transition-colors min-h-[44px]"
               >
                 Reset & Go Back
@@ -2691,8 +2784,25 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           </div>
         </DrawerContent>
       </Drawer>
+      )}
 
       {/* Finish Round — Premium Round Summary */}
+      {redesign ? (
+        <FairwayRoundSummarySheet
+          open={Boolean(showFinishConfirm && pendingFinalStats)}
+          onOpenChange={(next) => {
+            if (!next) setShowFinishConfirm(false);
+          }}
+          finalStats={pendingFinalStats ?? []}
+          courseName={setupData.courseName}
+          onGoBack={() => setShowFinishConfirm(false)}
+          onSubmit={async () => {
+            if (!pendingFinalStats) return;
+            setShowFinishConfirm(false);
+            await handleRoundSubmit(pendingFinalStats);
+          }}
+        />
+      ) : (
       <LazyMotion features={domAnimation}>
         <AnimatePresence>
           {showFinishConfirm && pendingFinalStats && (() => {
@@ -2884,6 +2994,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           })()}
         </AnimatePresence>
       </LazyMotion>
+      )}
 
       {/* Submit Overlay — shows during submission, success celebration, and errors */}
       <SubmitOverlay

@@ -57,8 +57,11 @@ const sizeTrack: Record<'sm' | 'md' | 'lg', string> = {
 };
 
 const sizeItem: Record<'sm' | 'md' | 'lg', string> = {
-  sm: 'min-h-[30px] px-3 text-[13px] leading-4 gap-1.5',
-  md: 'min-h-[36px] px-4 text-[13px] leading-4 gap-1.5',
+  sm: 'min-h-[30px] [@media(pointer:coarse)]:min-h-[44px] px-3 text-[13px] leading-4 gap-1.5',
+  // Dense (36px) on fine pointers, but expands to the WCAG 2.2 AA 2.5.8 / DoD
+  // 44px touch target on coarse pointers (touch) — mirrors the Button `sm`
+  // pattern so the toolbar stays calm on desktop yet tappable on mobile.
+  md: 'min-h-[36px] [@media(pointer:coarse)]:min-h-[44px] px-4 text-[13px] leading-4 gap-1.5',
   // 44px touch target (WCAG 2.2 AA 2.5.8) — the item itself is the hit area.
   lg: 'min-h-[44px] px-4 text-[13px] leading-4 gap-1.5',
 };

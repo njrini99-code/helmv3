@@ -74,6 +74,8 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
+  IconTrash,
+  IconRotateCcw,
 } from '@/components/icons';
 import {
   getAreaType,
@@ -159,6 +161,21 @@ export interface FocusAreaCardProps {
   onLogProgress?: (focusArea: FocusAreaCardData) => void;
   /** Mark-complete handler. When omitted, the Mark complete action is hidden. */
   onComplete?: (focusArea: FocusAreaCardData) => void;
+  /**
+   * Reopen (reactivate) handler for a COMPLETED area. When provided, the
+   * completed-card row shows a quiet "Reopen" affordance so an irreversible
+   * completion is recoverable (Nielsen #3 user control / #5 error prevention).
+   * The consumer owns the reactivateFocusArea write + toast + refresh.
+   */
+  onReopen?: (focusArea: FocusAreaCardData) => void;
+  /** Busy flag for the reopen action (optimistic UI on the completed card). */
+  reopening?: boolean;
+  /**
+   * Delete handler (coach only). When provided AND role==="coach", the card shows
+   * a quiet destructive "Delete" affordance. The consumer owns the forced-choice
+   * confirm + the deleteFocusArea server-action call; the card just requests it.
+   */
+  onDelete?: (focusArea: FocusAreaCardData) => void;
   /** Busy flag for the complete action (optimistic UI). */
   completing?: boolean;
   /**
@@ -461,6 +478,9 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
       onEdit,
       onLogProgress,
       onComplete,
+      onReopen,
+      reopening = false,
+      onDelete,
       onRecordOutcome,
       completing = false,
       index = 0,
@@ -544,6 +564,20 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 })}
               </span>
             ) : null}
+            {/* Reopen — recovers from an accidental / premature completion. Quiet
+                ghost so it never competes with the "Complete" status pill. */}
+            {typeof onReopen === 'function' ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                busy={reopening}
+                leftIcon={<IconRotateCcw size={14} />}
+                onClick={() => onReopen(focusArea)}
+                className="flex-shrink-0"
+              >
+                Reopen
+              </Button>
+            ) : null}
           </Surface>
         </motion.div>
       );
@@ -553,6 +587,9 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
     const showEdit = role === 'coach' && typeof onEdit === 'function';
     const showLogProgress = typeof onLogProgress === 'function';
     const showComplete = typeof onComplete === 'function';
+    // Delete is a coach-only destructive capability (mirrors the legacy fork).
+    // The card requests it; the consumer owns the forced-choice confirm + write.
+    const showDelete = role === 'coach' && typeof onDelete === 'function';
     // Outcome capture is an ADDITIONAL coach capability — it never replaces the
     // complete/progress actions. Shown when a handler is wired for a coach.
     const showOutcome = role === 'coach' && typeof onRecordOutcome === 'function';
@@ -707,7 +744,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
           ) : null}
 
           {/* Actions — role-gated. Outcome capture lives in its own row above. */}
-          {(showEdit || showLogProgress || showComplete) && (
+          {(showEdit || showLogProgress || showComplete || showDelete) && (
             <div className="flex flex-wrap items-center gap-2 pt-1">
               {showLogProgress ? (
                 <Button
@@ -730,15 +767,31 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   Mark complete
                 </Button>
               ) : null}
-              {showEdit ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto"
-                  onClick={() => onEdit!(focusArea)}
-                >
-                  Edit
-                </Button>
+              {/* Edit + Delete grouped to the right; Delete is a quiet destructive
+                  ghost (Nielsen #3 user control) — the consumer confirms first. */}
+              {showEdit || showDelete ? (
+                <div className="ml-auto flex items-center gap-1">
+                  {showEdit ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit!(focusArea)}
+                    >
+                      Edit
+                    </Button>
+                  ) : null}
+                  {showDelete ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      leftIcon={<IconTrash size={15} />}
+                      className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+                      onClick={() => onDelete!(focusArea)}
+                    >
+                      Delete
+                    </Button>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           )}

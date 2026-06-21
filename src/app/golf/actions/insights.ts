@@ -1258,6 +1258,81 @@ export async function dismissInsight(insightId: string) {
 }
 
 // ============================================================================
+// REACTIVATE INSIGHT (undo for acknowledge / dismiss)
+// ============================================================================
+
+/**
+ * P030 — the truthful reverse of `acknowledgeInsight` / `dismissInsight`, so a
+ * per-row triage toast can offer a real Undo (Nielsen #3) that actually
+ * restores the row server-side, not just in the UI. Sets the coach axis back to
+ * `status='active'`, clears the acknowledge/dismiss stamps, and restores the
+ * engine lifecycle axis to the row's prior visible state (passed by the caller
+ * from its optimistic snapshot — defaults to 'detected', a visible state, so the
+ * row reappears in the canonical V3 feed). Same auth + ownership boundary as the
+ * forward actions. Additive — no existing action's contract changes.
+ */
+export async function reactivateInsight(
+  insightId: string,
+  priorLifecycleState?: 'detected' | 'matured' | 'addressed' | 'resolved',
+) {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const access = await verifyInsightAccess(insightId, user.id, supabase);
+    if (!access.allowed) {
+      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+    }
+
+    // Restore to a VISIBLE lifecycle state so the row returns to the feed; never
+    // leave it 'archived'/'tentative' (the visibility filter would hide it).
+    const lifecycle = priorLifecycleState ?? 'detected';
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('golf_coach_insights')
+      .update({
+        status: 'active',
+        acknowledged_at: null,
+        dismissed: false,
+        dismissed_at: null,
+        lifecycle_state: lifecycle,
+      })
+      .eq('id', insightId)
+      .eq('team_id', access.teamId)
+      .select('id');
+
+    if (error) {
+      await logServerError(`reactivateInsight failed: ${error.message}`, {
+        action: 'reactivateInsight',
+        featureArea: 'insights',
+        extra: { insightId, errorCode: error.code },
+      });
+      return { success: false, error: 'Operation failed. Please try again.' };
+    }
+
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Insight not found' };
+    }
+
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/insights');
+    return { success: true };
+  } catch (error) {
+    await logServerError(`reactivateInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'reactivateInsight',
+      featureArea: 'insights',
+      extra: { insightId },
+    });
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
 // RESOLVE INSIGHT
 // ============================================================================
 
@@ -2120,6 +2195,10 @@ export async function generatePracticeRecommendations(playerId: string): Promise
   focusAreas?: Array<{
     area: string;
     strokesGained: number;
+    /** Display magnitude in the row's native unit (defaults to strokesGained). */
+    value?: number;
+    /** Native unit for `value`. Only 'strokes/round' traces to strokes_impact. */
+    unit?: 'strokes/round' | 'yd from target' | 'opportunity';
     trend: 'improving' | 'stable' | 'declining';
     recommendation: string;
   }>;
@@ -2418,10 +2497,18 @@ export interface PlayerCoachHelmDashboardData {
   // Active insights
   insights: ComposedInsight[];
 
-  // Focus areas with strokes gained context
+  // Focus areas with strokes gained context.
+  // P2-18: `strokesGained` is kept as the internal ordering magnitude (back-compat
+  // contract), but ONLY stroke-impact-derived rows may be LABELLED strokes/round.
+  // `value` + `unit` carry each row's NATIVE quantity so the UI never presents a
+  // distance error or a causal effect-size as "strokes/round".
   focusAreas: Array<{
     area: string;
     strokesGained: number;
+    /** Display magnitude in the row's native unit (defaults to strokesGained). */
+    value?: number;
+    /** Native unit for `value`. Only 'strokes/round' traces to strokes_impact. */
+    unit?: 'strokes/round' | 'yd from target' | 'opportunity';
     trend: 'improving' | 'stable' | 'declining';
     recommendation: string;
   }>;
@@ -2674,6 +2761,9 @@ function buildFocusAreasFromAnalysis(analysis: PlayerAnalysis | null): PlayerCoa
     focusAreas.push({
       area: areaName,
       strokesGained: -pattern.strokeImpact, // Negative because it's costing strokes
+      // P2-18: pattern.strokeImpact IS a per-round stroke impact, so this row may
+      // honestly be labelled strokes/round.
+      unit: 'strokes/round',
       trend: pattern.trend === 'strengthening' ? 'declining' :
              pattern.trend === 'weakening' ? 'improving' : 'stable',
       recommendation: pattern.recommendation || 'Focus on improving this area.',
@@ -2689,7 +2779,13 @@ function buildFocusAreasFromAnalysis(analysis: PlayerAnalysis | null): PlayerCoa
 
       focusAreas.push({
         area: areaName,
-        strokesGained: -(shotPattern.avgDistanceError / 10), // Approximate strokes impact
+        // P2-18: avgDistanceError is YARDS from target, NOT strokes/round. The
+        // legacy `/10` was a fabricated stroke conversion. Keep a small negative
+        // strokesGained ONLY for internal ordering, but surface the row's NATIVE
+        // value+unit (yards) so the UI never mislabels it as strokes/round.
+        strokesGained: -(shotPattern.avgDistanceError / 10),
+        value: shotPattern.avgDistanceError,
+        unit: 'yd from target',
         trend: 'stable',
         recommendation: shotPattern.recommendation,
       });
@@ -2705,7 +2801,12 @@ function buildFocusAreasFromAnalysis(analysis: PlayerAnalysis | null): PlayerCoa
 
       focusAreas.push({
         area: areaName,
+        // P2-18: causal.strength is a unitless effect size (0-1), NOT strokes.
+        // Keep it negative for ordering, but mark it a qualitative opportunity so
+        // the UI shows an "opportunity" tier rather than a fake strokes/round value.
         strokesGained: -causal.strength,
+        value: causal.strength,
+        unit: 'opportunity',
         trend: 'stable',
         recommendation: `Improving ${causal.cause} could positively impact ${causal.effect}.`,
       });
@@ -3678,6 +3779,25 @@ async function ensureCoachInTeamOrg(
   const isHeadCoach = isPrimaryRaw === true;
 
   return { ok: true, userId: user.id, coachId: coach.id, isHeadCoach };
+}
+
+/**
+ * P084 — resolve whether the current coach is the head coach for a team, using
+ * the SAME canonical gate (`ensureCoachInTeamOrg` → `is_golf_team_primary_coach`
+ * RPC) that `updateTeamCoachHelmSettings` enforces server-side. Settings pages
+ * call this so the Team CoachHelm master switch can be rendered DISABLED for
+ * assistant coaches (error prevention, Nielsen #5) instead of letting them flip
+ * it and watch it revert with a permission error.
+ */
+export async function getTeamCoachHelmAccess(
+  teamId: string,
+): Promise<{ success: boolean; isHeadCoach: boolean; error?: string }> {
+  if (!teamId) return { success: false, isHeadCoach: false, error: 'Team id required' };
+
+  const access = await ensureCoachInTeamOrg(teamId);
+  if (!access.ok) return { success: false, isHeadCoach: false, error: access.error };
+
+  return { success: true, isHeadCoach: access.isHeadCoach };
 }
 
 export async function getOrCreateTeamCoachHelmSettings(

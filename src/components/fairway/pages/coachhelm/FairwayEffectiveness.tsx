@@ -14,14 +14,15 @@
  * tertiary, on layered frosted-glass instrument panels that float above the
  * canvas wash:
  *
- *   PRIMARY (focal, raised glass) — a sweeping RadialGauge of overall prediction
- *     ACCURACY (climbing toward ~70%) with the huge mono readout + the coin-flip
- *     benchmark tick, PAIRED below with the accuracy RIBBON (the bold filled
- *     30-day rising trend) inside the same raised panel. The cockpit centerpiece.
+ *   PRIMARY (focal, raised glass) — a flat, clean hero of overall prediction
+ *     ACCURACY (climbing toward ~70%) rendered as the huge mono Readout (size
+ *     "hero") with a Climbing/Holding delta chip, PAIRED below with the accuracy
+ *     RIBBON (the bold filled rising trend, with its own coin-flip benchmark
+ *     tick) inside the same raised panel. The cockpit centerpiece.
  *   SECONDARY rail — the OUTCOMES instrument (a chunky SegmentBar of improved /
  *     no-change / worsened with the improvement-rate called out big — the now-
- *     REAL "is CoachHelm helping" payoff), and a small calibration Dial paired
- *     with a resolved-count Readout.
+ *     REAL "is CoachHelm helping" payoff), and a small calibration Readout
+ *     paired with a resolved-count Readout.
  *   TERTIARY foot row — micro Readouts: insights surfaced, mean abs error,
  *     patterns resolved.
  *
@@ -88,6 +89,7 @@ import {
   InlineNotice,
   SkeletonCard,
   Surface,
+  fairwayToast,
   formatPercent,
   type RibbonPoint,
   type SegmentBarPart,
@@ -126,6 +128,17 @@ const DATE_RANGES: ReadonlyArray<{ id: DateRangeType; label: string; days: numbe
 
 const rangeDays = (id: DateRangeType): number =>
   DATE_RANGES.find((r) => r.id === id)?.days ?? 30;
+
+/** Compact "just now / Nm ago / Nh ago" for the refresh freshness line. */
+const RELATIVE_TIME = new Intl.RelativeTimeFormat('en', { numeric: 'auto', style: 'short' });
+function formatFreshness(at: Date | null): string {
+  if (!at) return '';
+  const seconds = Math.round((Date.now() - at.getTime()) / 1000);
+  if (seconds < 45) return 'Updated just now';
+  if (seconds < 3600) return `Updated ${RELATIVE_TIME.format(-Math.round(seconds / 60), 'minute')}`;
+  if (seconds < 86400) return `Updated ${RELATIVE_TIME.format(-Math.round(seconds / 3600), 'hour')}`;
+  return `Updated ${RELATIVE_TIME.format(-Math.round(seconds / 86400), 'day')}`;
+}
 
 export interface FairwayEffectivenessProps {
   /** Team scope for the four re-fetches (the SAME teamId the SSR fetch used). */
@@ -169,6 +182,18 @@ export function FairwayEffectiveness({
   const [performance, setPerformance] = React.useState(initialPerformance);
   const [patternImpact, setPatternImpact] = React.useState(initialPatternImpact);
   const [loadError, setLoadError] = React.useState<string | null>(null);
+  // Refresh freshness — when the instruments last took on new data. Seeded from
+  // the SSR overview snapshot, advanced on every successful re-fetch so the
+  // "Updated …" line gives visible completion feedback even when numbers match.
+  const [lastRefreshedAt, setLastRefreshedAt] = React.useState<Date | null>(() =>
+    initialOverview?.lastUpdated ? new Date(initialOverview.lastUpdated) : null,
+  );
+  // Tick once a minute so the relative "Updated …" label stays honest.
+  const [, forceFreshnessTick] = React.useState(0);
+  React.useEffect(() => {
+    const id = window.setInterval(() => forceFreshnessTick((n) => n + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // ── PRESERVED interaction core — same calls as CoachHelmAnalyticsDashboard ──
   // handleRefresh re-fetches ALL four over the active range.
@@ -198,7 +223,16 @@ export function FairwayEffectiveness({
         (!performanceResult.success && performanceResult.error) ||
         (!patternResult.success && patternResult.error) ||
         null;
-      if (firstError) setLoadError(firstError);
+      if (firstError) {
+        setLoadError(firstError);
+      } else {
+        // Visible completion feedback — confirms the refresh landed even when
+        // the figures are identical (Nielsen #1 visibility of system status).
+        setLastRefreshedAt(new Date());
+        fairwayToast.success('Instruments refreshed', {
+          description: `Latest accuracy and outcomes over the last ${rangeDays(selectedRange)} days.`,
+        });
+      }
     });
   }, [selectedRange, teamId]);
 
@@ -232,7 +266,11 @@ export function FairwayEffectiveness({
           (!performanceResult.success && performanceResult.error) ||
           (!patternResult.success && patternResult.error) ||
           null;
-        if (firstError) setLoadError(firstError);
+        if (firstError) {
+          setLoadError(firstError);
+        } else {
+          setLastRefreshedAt(new Date());
+        }
       });
     },
     [teamId],
@@ -241,8 +279,17 @@ export function FairwayEffectiveness({
   const days = rangeDays(selectedRange);
 
   // ── Shell action cluster: range Segmented + Refresh (NO infinite spinner) ──
+  const freshness = formatFreshness(lastRefreshedAt);
   const actions = (
     <div className="flex items-center gap-3">
+      {freshness ? (
+        <span
+          className="hidden font-fw-sans text-caption text-text-tertiary sm:inline"
+          aria-live="polite"
+        >
+          {freshness}
+        </span>
+      ) : null}
       <Segmented<DateRangeType>
         options={DATE_RANGES.map((r) => ({ value: r.id, label: r.label }))}
         value={selectedRange}
@@ -291,6 +338,7 @@ export function FairwayEffectiveness({
             effectiveness={effectiveness}
             performance={performance}
             patternImpact={patternImpact}
+            days={days}
             onDrillIn={setActiveView}
           />
         ) : activeView === 'predictions' ? (
@@ -331,32 +379,52 @@ function CockpitView({
   effectiveness,
   performance,
   patternImpact,
+  days,
   onDrillIn,
 }: {
   overview?: CoachHelmOverviewData;
   effectiveness?: InsightEffectivenessData;
   performance?: PredictionPerformanceData;
   patternImpact?: PatternImpactData;
+  days: number;
   onDrillIn: (v: ViewType) => void;
 }) {
-  if (!overview && !effectiveness && !performance && !patternImpact) {
+  // Genuinely-empty first-run: the loaders return success with ZEROED objects
+  // (not undefined) for a brand-new team, so derive emptiness from the real
+  // aggregates rather than prop presence — otherwise this branch is dead and a
+  // first-run coach sees a grid of dim "awaiting" gauges instead of a clear
+  // "no signal yet, here's how to start" moment.
+  const insightsSurfaced =
+    effectiveness?.overall.totalGenerated ?? overview?.totalInsights ?? 0;
+  const predictionsResolved = performance?.summary.validatedPredictions ?? 0;
+  const patternsDetected = patternImpact?.patternsDetected ?? 0;
+  const noSignalYet =
+    insightsSurfaced === 0 && predictionsResolved === 0 && patternsDetected === 0;
+
+  if (noSignalYet) {
     return (
       <EmptyState
+        icon={Sparkles}
         title="No effectiveness signal yet"
         description="As CoachHelm surfaces insights and predictions resolve, these instruments power up. Until outcomes are recorded, effectiveness reads as ‘awaiting signal,’ never 0%."
+        action={
+          <Button asChild rightIcon={<ArrowRight className="h-4 w-4" />}>
+            <Link href="/golf/dashboard/development">Set up player focus areas</Link>
+          </Button>
+        }
       />
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* The cockpit cluster: focal gauge+ribbon, flanking outcomes + calibration
+      {/* The cockpit cluster: focal hero+ribbon, flanking outcomes + calibration
           rail, foot row of micro-readouts. */}
       <InstrumentCluster
         ariaLabel="CoachHelm effectiveness instrument cluster"
         balance="focal"
         tertiaryColumns={3}
-        primary={<PrimaryInstrument data={performance} />}
+        primary={<PrimaryInstrument data={performance} days={days} />}
         secondary={[
           <OutcomesInstrument
             key="outcomes"
@@ -381,12 +449,13 @@ function CockpitView({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * PRIMARY INSTRUMENT — the cockpit centerpiece. A sweeping RadialGauge of
- * overall prediction ACCURACY (vs the coin-flip benchmark) on a RAISED glass
- * panel, PAIRED below with the accuracy RIBBON (the bold filled rising trend)
- * inset into the same panel's lower band. Live from getPredictionPerformance.
+ * PRIMARY INSTRUMENT — the cockpit centerpiece. A flat, clean hero of overall
+ * prediction ACCURACY rendered as the huge mono Readout (size "hero"), with a
+ * Climbing/Holding delta chip, on a RAISED glass panel — PAIRED below with the
+ * accuracy RIBBON (the bold filled rising trend, with its coin-flip benchmark
+ * tick) inset into the same panel's lower band. Live from getPredictionPerformance.
  * ─────────────────────────────────────────────────────────────────────────── */
-function PrimaryInstrument({ data }: { data?: PredictionPerformanceData }) {
+function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; days: number }) {
   const resolved = data?.summary.validatedPredictions ?? 0;
   const accuracy = data?.summary.overallAccuracy ?? 0;
 
@@ -414,15 +483,20 @@ function PrimaryInstrument({ data }: { data?: PredictionPerformanceData }) {
 
   return (
     <InstrumentPanel depth="raised" padding="lg" header="Prediction accuracy" as="section" className="flex flex-col gap-6">
-      {/* Flat, clean hero — a big SF/mono number, NOT a gauge. */}
+      {/* Flat, clean hero — the focal mono readout via the design-system
+          primitive (size="hero" = 72px, on-scale), with its own live/awaiting
+          honesty contract instead of a bespoke `live ? … : —`. */}
       <div className="flex flex-col gap-2">
-        <span className="font-fw-sans text-caption uppercase tracking-[0.1em] text-text-tertiary">
-          Validated predictions · last 30 days
-        </span>
         <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-          <span className="font-fw-mono text-[64px] font-semibold leading-none tabular-nums text-text-primary">
-            {live ? formatPercent(accuracy, 0) : '—'}
-          </span>
+          <Readout
+            label={`Validated predictions · last ${days} days`}
+            value={accuracy}
+            display={formatPercent(accuracy, 0)}
+            size="hero"
+            state={live ? 'live' : 'awaiting'}
+            samples={live ? undefined : { have: resolved, need: GAUGE_MIN_RESOLVED }}
+            awaitingLabel="Awaiting predictions"
+          />
           {live && typeof climbDelta === 'number' ? (
             <span
               className={cn(
@@ -436,11 +510,11 @@ function PrimaryInstrument({ data }: { data?: PredictionPerformanceData }) {
             </span>
           ) : null}
         </div>
-        <span className="font-fw-sans text-body-sm text-text-secondary">
-          {live
-            ? `of ${resolved} resolved predictions proved accurate — well above a 50% coin flip.`
-            : `Awaiting resolved predictions — ${resolved} of ${GAUGE_MIN_RESOLVED}.`}
-        </span>
+        {live ? (
+          <span className="font-fw-sans text-body-sm text-text-secondary">
+            of {resolved} resolved predictions proved accurate — well above a 50% coin flip.
+          </span>
+        ) : null}
       </div>
 
       {/* Accuracy over time — a clean flat line (no bezel, no nested card). */}
@@ -553,10 +627,10 @@ function OutcomesInstrument({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * CALIBRATION INSTRUMENT (secondary) — a small calibration Dial paired with a
- * resolved-count Readout, on a base glass panel. The Dial reads "does a 70% call
- * land 70% of the time" (the summary calibrationScore); it dims to calibrating
- * while no confidence band has enough resolved predictions.
+ * CALIBRATION INSTRUMENT (secondary) — a small calibration Readout paired with a
+ * resolved-count Readout, on a base glass panel. The Readout reads "does a 70%
+ * call land 70% of the time" (the summary calibrationScore); it dims to
+ * calibrating while no confidence band has enough resolved predictions.
  * ─────────────────────────────────────────────────────────────────────────── */
 function CalibrationInstrument({ data }: { data?: PredictionPerformanceData }) {
   const resolved = data?.summary.validatedPredictions ?? 0;

@@ -7,6 +7,13 @@
 
 export type ChatRole = 'user' | 'assistant' | 'tool';
 
+/**
+ * Assistant-turn lifecycle. 'complete' = a normal grounded answer; 'failed' =
+ * the agent/model errored so the UI renders a visible "couldn't answer" bubble
+ * with Retry (never an orphaned user turn). Legacy rows read as 'complete'.
+ */
+export type ChatMessageStatus = 'complete' | 'failed';
+
 export interface ChatMessage {
   id: string;
   conversation_id: string;
@@ -18,6 +25,47 @@ export interface ChatMessage {
   tool_results: ToolResultRecord[] | null;
   cost_usd: number | null;
   created_at: string;
+  /**
+   * Client-supplied idempotency key for the user→assistant exchange. Lets a
+   * retried send dedupe instead of creating a second turn. Null on legacy +
+   * synthetic tool rows.
+   */
+  client_turn_id: string | null;
+  /** Assistant-turn lifecycle (see {@link ChatMessageStatus}). Null = complete. */
+  status: ChatMessageStatus | null;
+}
+
+/**
+ * P1-11 — a question is "data-grounded" when it asks about team/player/stat/
+ * pattern/why/compare facts the agent must look up. Such an answer is only
+ * trustworthy if at least one tool was actually called; an answer with zero
+ * tool calls to one of these questions fails verification and the route falls
+ * back to an honest "couldn't ground that" reply instead of an ungrounded one.
+ */
+const DATA_GROUNDING_PATTERNS: RegExp[] = [
+  /\bteam\b/i,
+  /\bplayer'?s?\b/i,
+  /\broster\b/i,
+  /\bstat(s|istic)?\b/i,
+  /\bscore(s|d)?\b/i,
+  /\bround(s)?\b/i,
+  /\bstanding(s)?\b/i,
+  /\bpattern(s)?\b/i,
+  /\bgoal(s)?\b/i,
+  /\binsight(s)?\b/i,
+  /\bwhy\b/i,
+  /\bcompare|comparison|vs\.?\b/i,
+  /\bhandicap\b/i,
+  /\bputt(s|ing)?\b/i,
+  /\bfairway(s)?\b/i,
+  /\bgir\b/i,
+  /\bwho (needs|is|are|has)\b/i,
+];
+
+/** True when the message text needs tool-grounded data to answer honestly. */
+export function requiresDataGrounding(text: string): boolean {
+  if (!text || text.trim().length === 0) return false;
+  return DATA_GROUNDING_PATTERNS.some((re) => re.test(text));
 }
 
 export interface ToolCallRecord {

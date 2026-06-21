@@ -20,7 +20,7 @@
  * ========================================================================== */
 
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Users } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -178,6 +178,16 @@ export function FairwayTeamInfo({
   const pendingTasks = tasks.filter((t) => t.status !== 'completed');
   const completedTasks = tasks.filter((t) => t.status === 'completed');
   const rosterCount = roster.length;
+
+  // P371 — when EVERY region is empty the page would otherwise be a passive
+  // dead-end (all four EmptyStates with no next action). Surface ONE contextual
+  // escape to the player Team Hub so a wholly-empty page still has somewhere to
+  // go (gate B3 'empty + next action'). Suppressed the moment any content exists.
+  const isWhollyEmpty =
+    !coach &&
+    announcements.length === 0 &&
+    tasks.length === 0 &&
+    rosterCount === 0;
 
   return (
     <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-10">
@@ -458,6 +468,27 @@ export function FairwayTeamInfo({
             </dl>
           </Surface>
         </section>
+
+        {/* ── Wholly-empty escape (P371) ───────────────────────────────────── */}
+        {isWhollyEmpty ? (
+          <Surface elevation="border" padding="md">
+            <EmptyState
+              variant="subtle"
+              icon={Users}
+              title="Nothing here yet"
+              description="Your coach, announcements, tasks, and teammates will appear here once your team is set up. In the meantime, head to your Team Hub."
+              action={
+                <Button
+                  asChild
+                  variant="secondary"
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  <Link href="/golf/dashboard/team-hub">Go to Team Hub</Link>
+                </Button>
+              }
+            />
+          </Surface>
+        ) : null}
       </div>
     </div>
   );

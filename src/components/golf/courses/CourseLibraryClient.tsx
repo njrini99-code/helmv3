@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { CourseCard } from './CourseCard';
 import { CourseDetailDrawer } from './CourseDetailDrawer';
 import { CourseFormDrawer } from './CourseFormDrawer';
-import { Button } from '@/components/ui/button';
-import { IconSearch, IconPlus, IconFlag } from '@/components/icons';
+import { Button } from '@/components/fairway/controls/button';
+import { IconSearch, IconPlus, IconFlag, IconStar, IconX } from '@/components/icons';
 import { normalizeName } from '@/lib/golf/course-library';
 import type { GolfCourse, GolfTeamSavedCourseWithCourse } from '@/lib/types/golf-course';
 
@@ -35,9 +35,40 @@ export function CourseLibraryClient({
   const [query, setQuery] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const trimmed = query.trim();
+  // Defer the value that drives filtering so a large library doesn't re-render
+  // the whole grid on every keystroke (the input itself stays instant). (P342)
+  const deferredQuery = useDeferredValue(query);
+  const trimmed = deferredQuery.trim();
   const searching = trimmed.length > 0;
+
+  // ⌘K / Ctrl-K / "/" focuses the search — the frequent action gets a shortcut
+  // (Nielsen #7 flexibility & efficiency). "/" is ignored while typing in a
+  // field so it never hijacks normal text entry. (P342)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const cmdK = (e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K');
+      const slash =
+        e.key === '/' &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !(
+          e.target instanceof HTMLElement &&
+          (e.target.tagName === 'INPUT' ||
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.tagName === 'SELECT' ||
+            e.target.isContentEditable)
+        );
+      if (cmdK || slash) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Saved-course state (pin + default tee) keyed by course id, for the detail drawer.
   const savedById = useMemo(
@@ -59,6 +90,21 @@ export function CourseLibraryClient({
   const heroSaved = savedCourses[0];
   const heroCourse = heroSaved?.course ?? courses[0];
   const savedRest = heroSaved ? savedCourses.slice(1) : savedCourses;
+
+  // Dedupe the shelves: a premium catalog never shows the same course twice in
+  // one view. The hero card and the "Your team's courses" rail render specific
+  // courses above the "More courses" grid, so exclude those ids from the grid.
+  const shownAboveIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (heroCourse) ids.add(heroCourse.id);
+    for (const s of savedRest) ids.add(s.course_id);
+    return ids;
+  }, [heroCourse, savedRest]);
+
+  const restCourses = useMemo(
+    () => courses.filter((c) => !shownAboveIds.has(c.id)),
+    [courses, shownAboveIds],
+  );
 
   const refresh = () => router.refresh();
 
@@ -86,20 +132,46 @@ export function CourseLibraryClient({
           aria-hidden
           className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary"
         />
-        {/* eslint-disable-next-line helm/no-raw-input -- native type=search with a leading icon */}
+        {/* eslint-disable-next-line helm/no-raw-input -- native type=text with a leading icon + custom clear (consistent across browsers/iOS) */}
         <input
-          type="search"
+          ref={searchRef}
+          type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search courses…"
           aria-label="Search courses"
+          autoComplete="off"
+          enterKeyHint="search"
           className={cn(
-            'h-11 w-full rounded-fw-sm border border-border-subtle bg-surface-sunken pl-10 pr-3',
+            'h-11 w-full rounded-fw-sm border border-border-subtle bg-surface-sunken pl-10',
+            query ? 'pr-10' : 'pr-3',
             'font-fw-sans text-body text-text-primary placeholder:text-text-tertiary',
             'transition-colors [transition-duration:var(--fw-dur-fast)]',
             'focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-primary-500/30',
           )}
         />
+        {query && (
+          // Custom clear control: the native type=search "×" is inconsistent
+          // across browsers/iOS, so we render our own visible, keyboard-reachable
+          // one. (P342)
+          // eslint-disable-next-line helm/no-raw-button -- self-contained search clear affordance inside the input shell
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('');
+              searchRef.current?.focus();
+            }}
+            aria-label="Clear search"
+            className={cn(
+              'absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-fw-sm',
+              'text-text-tertiary transition-colors [transition-duration:var(--fw-dur-fast)]',
+              'hover:bg-surface hover:text-text-secondary',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+            )}
+          >
+            <IconX size={15} aria-hidden />
+          </button>
+        )}
       </div>
 
       {courses.length === 0 ? (
@@ -139,7 +211,7 @@ export function CourseLibraryClient({
           )}
 
           {/* Saved / team courses */}
-          {savedRest.length > 0 && (
+          {savedRest.length > 0 ? (
             <Section title="Your team's courses">
               <Grid>
                 {savedRest.map((s) => (
@@ -154,21 +226,45 @@ export function CourseLibraryClient({
                 ))}
               </Grid>
             </Section>
+          ) : (
+            // Coach with no saved courses: make the team-library capability
+            // discoverable up front (recognition over recall) rather than only
+            // after opening a course's detail drawer. (P346)
+            canManageTeam &&
+            savedCourses.length === 0 && (
+              <Section title="Your team's courses">
+                <div className="flex items-start gap-3 rounded-fw-lg border border-dashed border-border-subtle bg-surface px-5 py-4">
+                  <span
+                    aria-hidden
+                    className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600"
+                  >
+                    <IconStar size={16} />
+                  </span>
+                  <p className="text-body-sm text-text-secondary">
+                    Save courses your team plays for one-tap access. Open any course below and
+                    choose <span className="font-medium text-text-primary">Save to team</span>.
+                  </p>
+                </div>
+              </Section>
+            )
           )}
 
-          {/* All courses */}
-          <Section title="All courses">
-            <Grid>
-              {courses.map((c) => (
-                <CourseCard
-                  key={c.id}
-                  course={c}
-                  teeCount={teeCounts[c.id]}
-                  onSelect={setSelectedCourseId}
-                />
-              ))}
-            </Grid>
-          </Section>
+          {/* More courses — everything not already surfaced as the hero or in
+              the team rail above (deduped so no course renders twice). */}
+          {restCourses.length > 0 && (
+            <Section title={shownAboveIds.size > 0 ? 'More courses' : 'All courses'}>
+              <Grid>
+                {restCourses.map((c) => (
+                  <CourseCard
+                    key={c.id}
+                    course={c}
+                    teeCount={teeCounts[c.id]}
+                    onSelect={setSelectedCourseId}
+                  />
+                ))}
+              </Grid>
+            </Section>
+          )}
         </div>
       )}
 

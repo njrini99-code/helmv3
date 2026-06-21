@@ -9,6 +9,8 @@ import { Segmented } from '@/components/fairway/controls/segmented';
 import { Button } from '@/components/fairway/controls/button';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Chip } from '@/components/fairway/controls/badge';
+import { SearchField } from '@/components/fairway/command/search-field';
+import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
 import { exportRosterCSV } from '@/components/golf/roster/RosterToolbar';
@@ -34,9 +36,21 @@ const SORT_OPTIONS = [
 
 export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joinRequests }: FairwayCoachRosterProps) {
   const [sort, setSort] = React.useState<SortField>('name');
+  const [query, setQuery] = React.useState('');
+
+  // P253 — name search/filter. A roster is a list surface, so a coach overseeing
+  // a large dev squad needs a way to find a player beyond scrolling (Nielsen
+  // #6/#7). Case-insensitive match across first + last name.
+  const filtered = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return players;
+    return players.filter((p) =>
+      `${p.first_name ?? ''} ${p.last_name ?? ''}`.toLowerCase().includes(q),
+    );
+  }, [players, query]);
 
   const sorted = React.useMemo(() => {
-    const arr = [...players];
+    const arr = [...filtered];
     arr.sort((a, b) => {
       switch (sort) {
         case 'avg':
@@ -50,7 +64,7 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
       }
     });
     return arr;
-  }, [players, sort]);
+  }, [filtered, sort]);
 
   const activeCount = players.filter((p) => p.status === 'active' || p.status === null).length;
   const empty = players.length === 0;
@@ -87,15 +101,34 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
         </Surface>
       ) : (
         <>
-          {/* Toolbar */}
-          <div className="mb-4 mt-2 flex flex-wrap items-center justify-between gap-3">
-            <Segmented<SortField>
+          {/* Search (P253) — find a player by name without scrolling. */}
+          <div className="mb-3 mt-2 max-w-md">
+            <SearchField
               size="sm"
-              aria-label="Sort players"
-              value={sort}
-              onValueChange={setSort}
-              options={SORT_OPTIONS as unknown as { value: SortField; label: string }[]}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery('')}
+              placeholder="Search players by name"
+              aria-label="Search players"
             />
+          </div>
+
+          {/* Toolbar */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            {/* P249 — the Segmented pill is a fixed inline-flex strip that can
+                exceed a ~360px viewport with four labels. Wrap it in a
+                horizontally scrollable rail (negative-margin gutter so the scroll
+                area reaches the page edge) so all four sort options stay
+                reachable without forcing horizontal scroll on the whole page. */}
+            <div className="-mx-4 max-w-full overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <Segmented<SortField>
+                size="sm"
+                aria-label="Sort players"
+                value={sort}
+                onValueChange={setSort}
+                options={SORT_OPTIONS as unknown as { value: SortField; label: string }[]}
+              />
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -107,11 +140,24 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
-            {sorted.map((p) => (
-              <FairwayPlayerCard key={p.id} player={p} intent={intents[p.id] ?? null} />
-            ))}
-          </div>
+          {sorted.length === 0 ? (
+            <EmptyState
+              variant="search"
+              title="No players match your search"
+              description={`No players on ${teamName} match “${query.trim()}”.`}
+              action={
+                <Button variant="secondary" size="sm" onClick={() => setQuery('')}>
+                  Clear search
+                </Button>
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+              {sorted.map((p) => (
+                <FairwayPlayerCard key={p.id} player={p} intent={intents[p.id] ?? null} />
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

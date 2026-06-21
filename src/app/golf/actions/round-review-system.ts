@@ -1397,28 +1397,80 @@ export async function getRoundReview(roundId: string): Promise<{
   }
 }
 
-export async function generateAndStoreRoundReview(
-  roundId: string,
-  playerId: string
-): Promise<{
+type GenerateReviewResult = {
   success: boolean;
   review?: RoundReviewWithRound;
   error?: string;
-}> {
+};
+
+/**
+ * P2-13 — single-flight coordinator keyed by `round_id`.
+ *
+ * The cold round-review path is reachable from three places at once: the
+ * review PAGE's auto-generate effect, the `useRoundReviewV2` hook's
+ * auto-generate effect, and (via the hook) the AI-enhance pass. The DB upsert
+ * (UNIQUE on round_id) already collapses the *row*, but each caller still ran
+ * the full expensive `coachHelmIntelligence.generateRoundReview` analysis —
+ * computing the same review up to three times (latency, cost, race risk).
+ *
+ * This process-global map locks the COMPUTATION by round_id: the first cold
+ * request seeds the promise; concurrent requests for the same round await that
+ * same promise and resolve from the SAME analysis job (and the SAME review id).
+ * The entry is cleared when the promise settles so a later user-triggered
+ * Refresh always recomputes. Auth + access are checked PER caller BEFORE the
+ * lock (security is never shared), so an unauthorized caller can never piggyback
+ * an authorized caller's in-flight job.
+ */
+const inFlightRoundReviews = new Map<string, Promise<GenerateReviewResult>>();
+
+export async function generateAndStoreRoundReview(
+  roundId: string,
+  playerId: string
+): Promise<GenerateReviewResult> {
+  const supabase = await createClient();
+
+  // Auth + access are verified per-caller, never shared through the coordinator.
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
+  if (!access.authorized) {
+    return { success: false, error: access.error || 'Not authorized to generate review for this player' };
+  }
+
+  // Single-flight by round_id: join an in-progress analysis instead of
+  // dispatching a second concurrent compute for the same round.
+  const existing = inFlightRoundReviews.get(roundId);
+  if (existing) {
+    return existing;
+  }
+
+  const run = computeAndStoreRoundReview(roundId, playerId);
+  inFlightRoundReviews.set(roundId, run);
+  try {
+    return await run;
+  } finally {
+    // Clear only if we still own the slot (a settled job must not evict a newer
+    // run that a later Refresh may have started).
+    if (inFlightRoundReviews.get(roundId) === run) {
+      inFlightRoundReviews.delete(roundId);
+    }
+  }
+}
+
+/**
+ * The expensive compute + idempotent upsert. Invoked through the
+ * {@link generateAndStoreRoundReview} coordinator so concurrent cold callers
+ * share ONE invocation. Assumes the caller already verified auth + access.
+ */
+async function computeAndStoreRoundReview(
+  roundId: string,
+  playerId: string
+): Promise<GenerateReviewResult> {
   const supabase = await createClient();
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    // Verify the caller owns this player or is their coach
-    const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
-    if (!access.authorized) {
-      return { success: false, error: access.error || 'Not authorized to generate review for this player' };
-    }
-
     const { data: round, error: roundError } = await supabase
       .from('golf_rounds')
       .select('id, player_id, course_name, round_date, total_score, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, holes_played, status')

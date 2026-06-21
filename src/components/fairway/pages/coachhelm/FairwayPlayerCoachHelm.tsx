@@ -16,8 +16,16 @@
  *     insight on a calm flat hero. A big Fragment-Mono number reads the player's
  *     KEY GAME NUMBER (their team percentile / measured value, straight off the
  *     insight evidence) with a small uppercase label — NO gauge, NO arc, NO
- *     needle — plus the LLM HeroNarrativeCard body and the RESERVED "Ask
- *     CoachHelm about this" entry.
+ *     needle — plus the LLM HeroNarrativeCard body and the insight feedback
+ *     (Helpful / Dismiss) entry.
+ *
+ *   ── ASK / CHAT SCOPE (P163): Ask CoachHelm is COACH-ONLY by design. The
+ *   propose→confirm chat agent writes coach-scoped artifacts and the agent + the
+ *   AskWorkspace + the /coachhelm/chat route all gate on session.coach; the
+ *   player sub-nav (CoachHelmSubNav PLAYER_TABS) has no Ask tab, and the chat
+ *   route shows a coach-only notice that points players to Messages. This player
+ *   surface therefore renders NO Ask affordance at all (no disabled "coming
+ *   soon" tease — premium B1/B2: every visible control does something).
  *   SECONDARY rail — the PERFORMANCE-PREDICTION readout cluster: a big mono
  *     Readout of the predicted scoring number + a flat model-confidence Readout
  *     (NO dial). The reused PerformancePrediction panel sits below it as the
@@ -51,10 +59,8 @@ import { useCallback, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Sparkles,
   Settings,
   ChartLine,
-  Lightbulb,
   ChevronDown,
 } from 'lucide-react';
 
@@ -74,6 +80,13 @@ import {
   GenomeRadar,
   type GenomeAxis,
   formatPercent,
+  // Deep-dive section toggle — the design-system tab primitive (Radix-backed:
+  // role=tablist/tab, aria-selected, aria-controls→tabpanel, roving tabindex +
+  // arrow keys), matching the rest of CoachHelm instead of plain buttons.
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
 } from '@/components/fairway';
 import { CoachHelmShell } from './CoachHelmShell';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
@@ -367,7 +380,11 @@ export function FairwayPlayerCoachHelm({
     [addToast, router],
   );
 
-  /* ── Hero actions — feedback + the RESERVED Ask entry (no gate lift) ──────── */
+  /* ── Hero actions — insight feedback only. Ask CoachHelm is coach-only by
+       design (P163 — the chat agent + route + sub-nav all gate on the coach),
+       so the player hero carries NO Ask affordance: no dead disabled "coming
+       soon" tease on the focal hero — every visible control here does something
+       (premium B1/B2: no tease affordances on the primary surface). ────────── */
   const heroActions = topInsight ? (
     <div className="flex flex-wrap items-center gap-2">
       <Button
@@ -383,17 +400,6 @@ export function FairwayPlayerCoachHelm({
         onClick={() => void handleRate(topInsight.id, 'dismissed')}
       >
         Dismiss
-      </Button>
-      {/* RESERVED / disabled — the player-scoped chat gate-lift is a residual
-          human decision, so this entry ships disabled this wave (no tease). */}
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled
-        leftIcon={<Sparkles className="h-4 w-4" aria-hidden />}
-        title="Ask CoachHelm is coming soon for players"
-      >
-        Ask CoachHelm about this
       </Button>
     </div>
   ) : undefined;
@@ -411,16 +417,19 @@ export function FairwayPlayerCoachHelm({
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-2 md:px-6">
-        <CoachHelmShell
-          active="brief"
-          // eslint-disable-next-line jsx-a11y/aria-role
-          role="player"
-          eyebrow="CoachHelm AI"
-          title="Your edge this week"
-          description="The pattern that matters most, plus the supporting signal behind it."
-          actions={settingsAction}
-        >
+      {/* CoachHelmShell owns the single centered max-w-[1200px] container + its
+          own px gutters and vertical rhythm (masthead pt-2 / body py-6), so the
+          page scope must NOT re-wrap it in a second max-width + padding (that was
+          double-centering + double horizontal padding). */}
+      <CoachHelmShell
+        active="brief"
+        // eslint-disable-next-line jsx-a11y/aria-role
+        role="player"
+        eyebrow="CoachHelm AI"
+        title="Your edge this week"
+        description="The pattern that matters most, plus the supporting signal behind it."
+        actions={settingsAction}
+      >
           {/* ── Cold-start / no-data: one honest empty state ─────────────────── */}
           {!hasData ? (
             <Surface padding="lg">
@@ -649,30 +658,30 @@ export function FairwayPlayerCoachHelm({
                 </Surface>
 
                 {deepDiveOpen ? (
-                  <div id="coachhelm-deep-dive" className="mt-4 flex flex-col gap-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant={bottomTab === 'shot-analysis' ? 'secondary' : 'ghost'}
-                        size="sm"
-                        onClick={() => setBottomTab('shot-analysis')}
-                      >
-                        Shot analysis
-                      </Button>
-                      <Button
-                        variant={bottomTab === 'what-if' ? 'secondary' : 'ghost'}
-                        size="sm"
-                        onClick={() => setBottomTab('what-if')}
-                      >
-                        What if
-                      </Button>
-                    </div>
+                  // A real ARIA tablist (Radix-backed Fairway Tabs): role=tablist/
+                  // tab, aria-selected, aria-controls→tabpanel association, roving
+                  // tabindex + arrow-key nav — consistent with the rest of
+                  // CoachHelm and WCAG 2.2 operability, replacing the two plain
+                  // buttons + bare conditional panels.
+                  <Tabs
+                    id="coachhelm-deep-dive"
+                    value={bottomTab}
+                    onValueChange={(v) => setBottomTab(v as 'shot-analysis' | 'what-if')}
+                    className="mt-4 gap-3"
+                  >
+                    <TabsList className="justify-end">
+                      <TabsTrigger value="shot-analysis">Shot analysis</TabsTrigger>
+                      <TabsTrigger value="what-if">What if</TabsTrigger>
+                    </TabsList>
 
-                    {bottomTab === 'shot-analysis' ? (
+                    <TabsContent value="shot-analysis">
                       <ShotAnalysisCard
                         shotData={shotData ?? undefined}
                         playerId={playerId}
                       />
-                    ) : (
+                    </TabsContent>
+
+                    <TabsContent value="what-if">
                       <WhatIfPanel
                         playerId={playerId}
                         profileData={profileData ?? undefined}
@@ -691,14 +700,13 @@ export function FairwayPlayerCoachHelm({
                           };
                         }}
                       />
-                    )}
-                  </div>
+                    </TabsContent>
+                  </Tabs>
                 ) : null}
               </section>
             </div>
           )}
-        </CoachHelmShell>
-      </div>
+      </CoachHelmShell>
 
       {/* ── Expand-in-place — the SAME secondary signal blooms open here, never
             a navigation tease. Sheet (narrow) / docked (wide) via auto mode. ── */}
@@ -742,13 +750,10 @@ export function FairwayPlayerCoachHelm({
                   setOpenInsight(null);
                 },
               },
-              {
-                // RESERVED — no chat-gate lift this wave.
-                key: 'ask',
-                label: 'Ask CoachHelm',
-                icon: <Lightbulb className="h-4 w-4" aria-hidden />,
-                disabled: true,
-              },
+              // No "Ask CoachHelm" action — Ask is coach-only by design (P163);
+              // the player path is the coach via Messages. We omit the action
+              // rather than render a permanently-disabled control (premium
+              // B1/B2: every visible affordance does something).
             ] satisfies InsightPanelAction[]
           }
         >
@@ -769,9 +774,10 @@ export function FairwayPlayerCoachHelm({
  * The focal flat hero. A big Fragment-Mono number reads the player's KEY GAME
  * NUMBER straight off the insight evidence (their team percentile / measured
  * value) with a small uppercase label — NO gauge, NO arc. The LLM
- * HeroNarrativeCard is the body (PRESERVED), and the feedback + RESERVED Ask
- * actions sit in the footer. No insight yet → an honest "awaiting standout
- * signal" panel (never a fake 0).
+ * HeroNarrativeCard is the body (PRESERVED), and the insight feedback actions
+ * (Helpful / Dismiss) sit in the footer. Ask is coach-only (P163), so there is
+ * no Ask action here. No insight yet → an honest "awaiting standout signal"
+ * panel (never a fake 0).
  * ══════════════════════════════════════════════════════════════════════════ */
 /** Staggered cinematic reveal for the dark spotlight hero's elements. */
 const HERO_STAGGER = {
@@ -850,7 +856,11 @@ function EdgeInstrument({
   const hasEdge = teamPct != null || yourValue != null;
   const edgeDisplay =
     teamPct != null
-      ? ordinalRank(teamPct)
+      ? // Render the percentile WITH an explicit "pctl" suffix so the figure is
+        // never mistaken for a roster finishing place (e.g. "82nd pctl", not a
+        // bare "82nd" that reads as 82nd-of-8). Paired with the "team percentile"
+        // label below + the "Top N%" chip for an unambiguous percentile read.
+        `${ordinalRank(teamPct)} pctl`
       : ev.your_value_display || (yourValue != null ? String(Math.round(yourValue)) : '—');
   const edgeLabel =
     teamPct != null
@@ -879,10 +889,13 @@ function EdgeInstrument({
       <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent-500/20 blur-[80px]" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
 
-      {/* Diagnosis headline */}
+      {/* Diagnosis headline — the eyebrow is the INSIGHT's own category overline
+          (e.g. "Putting · Signal"), NOT a repeat of the shell page title ("Your
+          edge this week"); repeating the page title in the focal area was dead
+          duplicate copy within one viewport. */}
       <m.div variants={HERO_ITEM} className="relative">
         <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-nav-accent">
-          Your edge this week
+          {insightOverline(insight)}
         </p>
         <h2 className="mt-2 font-fw-display text-h3 font-semibold leading-tight tracking-[-0.01em] text-nav-text">
           {insight.title}
@@ -925,7 +938,7 @@ function EdgeInstrument({
             </div>
           ) : hasEdge ? (
             <div className="flex flex-col gap-2 md:items-end md:text-right">
-              <span className="font-fw-mono text-[72px] font-bold leading-none tabular-nums text-nav-accent">
+              <span className="font-fw-mono text-stat-xl font-bold leading-none tabular-nums text-nav-accent">
                 {edgeDisplay}
               </span>
               <span className="font-fw-sans text-caption font-semibold uppercase tracking-[0.12em] text-nav-text-dim">

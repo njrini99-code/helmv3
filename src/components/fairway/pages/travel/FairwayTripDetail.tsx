@@ -15,16 +15,19 @@
  *                it. The parent owns the load/export/CRUD wiring and passes it
  *                down (no writes happen in this presentational component).
  *
- * Coach actions (edit / delete) sit in the panel header; delete is a two-tap
- * inline confirm (no destructive auto-fire) and calls the parent handler which
- * uses the unchanged deleteGolfTravelItinerary action.
+ * Coach actions (edit / delete) sit in the panel header. Delete opens a
+ * ModalShell confirm that names the destructive cascade explicitly ("Deletes
+ * the trip and its N expenses") — a two-tap had no consequence copy for a cascade
+ * that removes the whole itinerary AND every expense. Confirm calls the parent
+ * handler, which uses the unchanged deleteGolfTravelItinerary action.
  *
  * Presentation only. Tokens ONLY (legacy expense components keep their own
  * styling — they are reused, not re-skinned, per the file-ownership rule).
  * ========================================================================== */
 
 import * as React from 'react';
-import { MapPin, Pencil, Trash2, Download, Plus, Receipt } from 'lucide-react';
+import Link from 'next/link';
+import { MapPin, Pencil, Trash2, Download, Plus, Receipt, CalendarDays, ArrowRight } from 'lucide-react';
 
 import {
   Surface,
@@ -36,6 +39,7 @@ import {
   TabsContent,
   EmptyState,
   Skeleton,
+  ModalShell,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import { ExpenseList, ExpenseSummary } from '@/components/golf/travel';
@@ -105,24 +109,25 @@ export function FairwayTripDetail({
   onRefreshExpenses,
   onExportCSV,
 }: FairwayTripDetailProps) {
-  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
   const Icon = TRANSPORT_ICON[itinerary.transportation_type];
 
-  // Reset the delete confirm when the selected trip changes.
+  // The destructive cascade size — the trip plus every logged expense. Surfaced
+  // in the confirm copy so the coach is told exactly what gets removed.
+  const expenseCount = expenses.length;
+
+  // Close the confirm when the selected trip changes.
   React.useEffect(() => {
-    setConfirmingDelete(false);
+    setConfirmOpen(false);
   }, [itinerary.id]);
 
-  const handleDeleteClick = () => {
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
-      return;
-    }
-    setConfirmingDelete(false);
+  const handleConfirmDelete = () => {
+    setConfirmOpen(false);
     onDelete();
   };
 
   return (
+    <>
     <Surface elevation="border" padding="none" className="overflow-hidden">
       {/* A single Tabs root spans the header (TabsList) AND the body
           (TabsContent) — Radix Tabs share context, so they must co-exist under
@@ -158,8 +163,9 @@ export function FairwayTripDetail({
             {isCoach ? (
               <div className="flex flex-shrink-0 items-center gap-1.5">
                 {/* aria-labels: below the sm breakpoint the text is hidden and
-                    the icons are aria-hidden, leaving the buttons unnamed for
-                    assistive tech (and untargetable in tests) on phones. */}
+                    the icons are aria-hidden, so the buttons rely on aria-label
+                    for assistive tech. size="sm" floors the tap target at 44px
+                    on coarse pointers (button primitive), meeting WCAG 2.2. */}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -170,14 +176,13 @@ export function FairwayTripDetail({
                   <span className="hidden sm:inline">Edit</span>
                 </Button>
                 <Button
-                  variant={confirmingDelete ? 'danger' : 'ghost'}
+                  variant="ghost"
                   size="sm"
-                  onClick={handleDeleteClick}
-                  onBlur={() => setConfirmingDelete(false)}
-                  aria-label={confirmingDelete ? 'Tap to confirm delete' : 'Delete itinerary'}
+                  onClick={() => setConfirmOpen(true)}
+                  aria-label="Delete itinerary"
                   leftIcon={<Trash2 className="h-4 w-4" />}
                 >
-                  {confirmingDelete ? 'Tap to confirm' : <span className="hidden sm:inline">Delete</span>}
+                  <span className="hidden sm:inline">Delete</span>
                 </Button>
               </div>
             ) : null}
@@ -228,6 +233,25 @@ export function FairwayTripDetail({
                 </Inset>
               ) : null}
             </div>
+
+            {/* Linked calendar event — only when this trip is linked to a
+                golf_events row. Deep-links to the calendar so the coach/player
+                can jump straight to the event. Honest: hidden when unlinked. */}
+            {itinerary.event_id ? (
+              <Link
+                href="/golf/dashboard/calendar"
+                className="group flex items-center gap-2.5 rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2.5 font-fw-sans text-body-sm text-text-secondary transition-colors hover:border-accent-500 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
+              >
+                <CalendarDays className="h-4 w-4 shrink-0 text-accent-700" aria-hidden />
+                <span className="min-w-0 flex-1 truncate">
+                  Linked to:{' '}
+                  <span className="font-medium text-text-primary">
+                    {itinerary.event_title || 'calendar event'}
+                  </span>
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-accent-700" aria-hidden />
+              </Link>
+            ) : null}
 
             {/* Lodging */}
             {itinerary.hotel_name ? (
@@ -389,6 +413,51 @@ export function FairwayTripDetail({
         </TabsContent>
       </Tabs>
     </Surface>
+
+    {/* Destructive-cascade confirm — names what gets removed (the trip AND its
+        N expenses), consistent with the Fairway remove-player confirm. A two-tap
+        with only "Tap to confirm" copy under-warned for a cascade. */}
+    <ModalShell
+      open={confirmOpen}
+      onOpenChange={setConfirmOpen}
+      size="md"
+      title="Delete this trip?"
+      description={
+        <>
+          Delete <span className="font-medium text-text-primary">{itinerary.event_name}</span>?
+          This can&rsquo;t be undone.
+        </>
+      }
+    >
+      <ModalShell.Body>
+        <p className="rounded-fw-md border border-border-subtle bg-surface-sunken px-4 py-3 font-fw-sans text-body-sm text-text-secondary">
+          {expenseCount > 0 ? (
+            <>
+              This removes the entire itinerary{' '}
+              <span className="font-medium text-text-primary">
+                and its {expenseCount} {expenseCount === 1 ? 'expense' : 'expenses'}
+              </span>
+              .
+            </>
+          ) : (
+            <>
+              This removes the entire itinerary. No expenses are logged on this
+              trip yet.
+            </>
+          )}
+        </p>
+      </ModalShell.Body>
+
+      <ModalShell.Footer>
+        <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+          Cancel
+        </Button>
+        <Button variant="danger" onClick={handleConfirmDelete}>
+          Delete trip
+        </Button>
+      </ModalShell.Footer>
+    </ModalShell>
+    </>
   );
 }
 

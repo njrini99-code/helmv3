@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useId, useEffect } from 'react';
+import { useState, useId, useEffect, useMemo, useRef } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
@@ -147,6 +147,38 @@ function detectConflicts(
   return conflicts;
 }
 
+/**
+ * Build the semester <option> list dynamically from `now` so the current term is
+ * ALWAYS selectable and pre-selected — a hard-coded year list silently goes stale
+ * and detaches the <select> from formData.semester (which drives the calendar
+ * sync date range). Returns the previous term, the current term, and the next
+ * three terms in chronological Spring → Summer → Fall order.
+ *
+ * Exported for deterministic unit testing.
+ */
+export function generateSemesterOptions(now: Date = new Date()): string[] {
+  // Academic term ordering within a calendar year.
+  const TERMS = ['Spring', 'Summer', 'Fall'] as const;
+  const month = now.getMonth();
+  const year = now.getFullYear();
+
+  // Current term index, mirroring detectSemester()'s month buckets:
+  // Jan–May → Spring, Jun–Jul → Summer, Aug–Dec → Fall.
+  const currentTermIndex = month <= 4 ? 0 : month <= 7 ? 1 : 2;
+
+  // Absolute term position = year * 3 + termIndex. Walk from one term before the
+  // current term through three terms after it (5 terms total).
+  const currentAbsolute = year * TERMS.length + currentTermIndex;
+  const options: string[] = [];
+  for (let offset = -1; offset <= 3; offset++) {
+    const absolute = currentAbsolute + offset;
+    const termYear = Math.floor(absolute / TERMS.length);
+    const term = TERMS[((absolute % TERMS.length) + TERMS.length) % TERMS.length];
+    options.push(`${term} ${termYear}`);
+  }
+  return options;
+}
+
 function emptyClassForm(): ClassFormData {
   return {
     course_code: '',
@@ -171,6 +203,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
   const [conflicts, setConflicts] = useState<ClassConflict[]>([]);
   const [showConflictWarning, setShowConflictWarning] = useState(false);
   const [formData, setFormData] = useState<ClassFormData>(() => editingClass ?? emptyClassForm());
+  const conflictPanelRef = useRef<HTMLDivElement>(null);
 
   // Reset conflicts when modal closes or form changes significantly
   const resetConflictState = () => {
@@ -189,6 +222,16 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
     setConflicts([]);
     setShowConflictWarning(false);
   }, [isOpen, editingClass]);
+
+  // a11y: when the conflict panel appears, move focus to it so screen-reader and
+  // keyboard users land on the alert (the Submit button is now offscreen above
+  // the injected panel). role="alert" on the container also triggers an AT
+  // announcement; focusing makes the warning + its actions immediately reachable.
+  useEffect(() => {
+    if (showConflictWarning && conflicts.length > 0) {
+      conflictPanelRef.current?.focus();
+    }
+  }, [showConflictWarning, conflicts.length]);
 
   const handleDayToggle = (day: string) => {
     setFormData(prev => ({
@@ -266,6 +309,18 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
 
   // Check if any conflict is an exact duplicate (should be blocked)
   const hasExactDuplicate = conflicts.some(c => c.isExactDuplicate);
+
+  // Dynamic term list (prev / current / next-3) so the current semester is always
+  // selectable + pre-selected. When editing a class whose stored term falls
+  // outside that window, splice it in so the <select> never renders blank or
+  // silently re-binds to the wrong term (which would misplace synced events).
+  const semesterOptions = useMemo(() => {
+    const options = generateSemesterOptions();
+    if (formData.semester && !options.includes(formData.semester)) {
+      options.push(formData.semester);
+    }
+    return options;
+  }, [formData.semester]);
 
   return (
     <Drawer
@@ -465,10 +520,11 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                 aria-label="Semester"
                 className="w-full px-3 py-2 border border-border-subtle rounded-lg text-base lg:text-sm min-h-[44px] bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30"
               >
-                <option value="Spring 2025">Spring 2025</option>
-                <option value="Summer 2025">Summer 2025</option>
-                <option value="Fall 2025">Fall 2025</option>
-                <option value="Spring 2026">Spring 2026</option>
+                {semesterOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -509,7 +565,13 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
 
         {/* Conflict Warning */}
         {showConflictWarning && conflicts.length > 0 && (
-          <div className="mx-6 mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50">
+          <div
+            ref={conflictPanelRef}
+            role="alert"
+            aria-live="assertive"
+            tabIndex={-1}
+            className="mx-6 mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2"
+          >
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
                 <IconWarning size={18} className="text-amber-600" />
@@ -530,7 +592,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                       className="text-sm text-amber-800 bg-amber-100/50 rounded-lg px-3 py-2"
                     >
                       <span className="font-medium">{conflict.existingClass.class_name}</span>
-                      <span className="text-amber-600 ml-2">
+                      <span className="text-amber-800 ml-2">
                         ({conflict.conflictingDays.join(', ')} at {conflict.existingClass.start_time} - {conflict.existingClass.end_time})
                       </span>
                     </li>
@@ -550,7 +612,9 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                       type="button"
                       size="sm"
                       onClick={handleConfirmWithConflicts}
-                      className="bg-amber-600 hover:bg-amber-700 transition-colors"
+                      // amber-800 (#92400E) on white text ≈ 6.4:1 — clears WCAG AA
+                      // 4.5:1 (the old amber-600 fill was ~2.8:1 and failed).
+                      className="bg-amber-800 text-white hover:bg-amber-900 transition-colors"
                     >
                       Add Anyway
                     </Button>

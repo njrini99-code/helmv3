@@ -25,11 +25,17 @@ import { buildCoachChatAgent } from '@/lib/coachhelm/v3/chat/agent';
 import {
   appendMessage,
   createConversation,
+  findAssistantTurn,
   getConversation,
   listMessages,
   touchConversation,
+  upsertUserTurn,
 } from '@/lib/coachhelm/v3/chat/persistence';
-import type { ToolCallRecord, ToolResultRecord } from '@/lib/coachhelm/v3/chat/types';
+import {
+  requiresDataGrounding,
+  type ToolCallRecord,
+  type ToolResultRecord,
+} from '@/lib/coachhelm/v3/chat/types';
 import { estimateCostUsd, MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
 import { checkBudget, recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import type { ModelMessage } from 'ai';
@@ -47,7 +53,20 @@ const CHAT_TURN_COST_ESTIMATE_USD = estimateCostUsd(
 const SendBody = z.object({
   conversation_id: z.string().uuid().optional(),
   user_message: z.string().min(1).max(4000),
+  /**
+   * P1-11 — client-supplied idempotency key for this user→assistant exchange.
+   * A retried send with the same id returns the prior answer instead of
+   * re-running the (paid) agent and creating a duplicate turn.
+   */
+  client_turn_id: z.string().min(1).max(128).optional(),
 });
+
+/** User-facing copy for a turn the agent couldn't complete. */
+const FAILED_TURN_TEXT =
+  "I couldn't complete that just now — please try again in a moment.";
+/** User-facing copy when a data question came back ungrounded (no tool call). */
+const UNGROUNDED_TURN_TEXT =
+  "I couldn't ground that answer in your team's data just now, so I'd rather not guess. Please try again.";
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,12 +87,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Bad request', details: parsed.error.format() }, { status: 400 });
     }
 
+    const clientTurnId = parsed.data.client_turn_id ?? null;
+
     // --- Conversation: load or create ---
     let conversationId = parsed.data.conversation_id;
     if (conversationId) {
       const existing = await getConversation(supabase, conversationId);
       if (!existing || existing.coach_id !== coach.id) {
         return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+      }
+
+      // --- Idempotency (P1-11) ---
+      // A retried send for an exchange we already answered must NOT re-run the
+      // (paid) agent or append a duplicate turn. If this client_turn_id already
+      // has an assistant turn, return the conversation as-is.
+      if (clientTurnId) {
+        const existingAssistant = await findAssistantTurn(supabase, conversationId, clientTurnId);
+        if (existingAssistant) {
+          const messages = await listMessages(supabase, conversationId);
+          return NextResponse.json({ conversation_id: conversationId, messages });
+        }
       }
     } else {
       const created = await createConversation(supabase, {
@@ -83,18 +116,13 @@ export async function POST(req: NextRequest) {
       conversationId = created.id;
     }
 
-    // --- Append user turn ---
-    await appendMessage(supabase, {
-      conversation_id: conversationId,
-      role: 'user',
-      content: parsed.data.user_message,
-    });
-
-    // --- Budget gate (W30 governance for the chat surface) ---
+    // --- Budget gate BEFORE appending the user turn (P1-11) ---
+    // Gating after the user append left an orphan user-only turn whenever the
+    // budget was exhausted. Gate first so an exhausted budget creates NO turn at
+    // all (the client surfaces a recoverable error and can retry tomorrow).
     // Uses an admin client so the per-day spend table can be read/upserted
     // outside player/coach RLS. Same gate the round-review + hero-narrative
-    // surfaces go through via compose() — chat is structurally different
-    // (tool loop, not single-shot) so we gate here instead.
+    // surfaces go through via compose().
     const admin = createAdminClient();
     const gate = await checkBudget(admin, coach.id, CHAT_TURN_COST_ESTIMATE_USD);
     if (!gate.allowed) {
@@ -112,6 +140,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // --- Append (idempotent) user turn — only after the budget gate passed ---
+    await upsertUserTurn(supabase, {
+      conversation_id: conversationId,
+      content: parsed.data.user_message,
+      client_turn_id: clientTurnId,
+    });
+
     // --- Build prior history as ModelMessages (skip 'tool' rows from our
     //     synthetic ledger — the agent recomputes its own tool loop).
     const prior = await listMessages(supabase, conversationId);
@@ -122,14 +157,44 @@ export async function POST(req: NextRequest) {
         content: m.content ?? '',
       }));
 
-    // --- Run agent ---
+    // --- Run agent (model failures persist a visible assistant failure) ---
     const agent = await buildCoachChatAgent({
       sb: supabase,
       authed_user_id: user.id,
       coach_id: coach.id,
     });
 
-    const result = await agent.generate({ messages: history });
+    let result: Awaited<ReturnType<typeof agent.generate>>;
+    try {
+      result = await agent.generate({ messages: history });
+    } catch (agentErr) {
+      // Re-throw upstream-quota errors so the outer handler can map them to a
+      // 503 (operational, not a per-turn failure) without persisting a turn.
+      const m = agentErr instanceof Error ? agentErr.message : String(agentErr);
+      const isUpstreamQuota =
+        m.includes('Free tier users do not have access to this model') ||
+        (m.includes('AI Gateway') && /quota|credit|tier/i.test(m));
+      if (isUpstreamQuota) throw agentErr;
+
+      // P1-11 — a model failure must leave a VISIBLE assistant failure turn (not
+      // an orphan user-only turn). Persist it carrying the same client_turn_id so
+      // a retry is idempotent against THIS turn.
+      await logServerError(
+        `chat/send: agent.generate failed — ${m}`,
+        { action: 'v3.chat.send.agent' },
+        'warning',
+      );
+      await appendMessage(supabase, {
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: FAILED_TURN_TEXT,
+        status: 'failed',
+        client_turn_id: clientTurnId,
+      });
+      await touchConversation(supabase, conversationId);
+      const messages = await listMessages(supabase, conversationId);
+      return NextResponse.json({ conversation_id: conversationId, messages });
+    }
 
     // --- Cost + tool-call ledger ---
     const usage = result.usage as { inputTokens?: number; outputTokens?: number } | undefined;
@@ -152,22 +217,48 @@ export async function POST(req: NextRequest) {
       }),
     );
 
-    if (toolCallRecords.length > 0) {
+    // P1-11 — grounding verification. A data-grounded question answered with ZERO
+    // tool calls is not trustworthy, so we do NOT present the model's ungrounded
+    // prose as fact: persist an honest failure turn and fall back. (Goal-proposal
+    // turns DO call a tool, so a warranted goal still surfaces normally.)
+    const ungrounded =
+      requiresDataGrounding(parsed.data.user_message) && toolCallRecords.length === 0;
+
+    if (ungrounded) {
+      await logServerError(
+        `chat/send: ungrounded answer to data question (0 tool calls) for coach_id=${coach.id}`,
+        { action: 'v3.chat.send.ungrounded' },
+        'warning',
+      );
       await appendMessage(supabase, {
         conversation_id: conversationId,
-        role: 'tool',
-        content: null,
-        tool_calls: toolCallRecords,
-        tool_results: toolResultRecords,
+        role: 'assistant',
+        content: UNGROUNDED_TURN_TEXT,
+        status: 'failed',
+        cost_usd: cost,
+        client_turn_id: clientTurnId,
+      });
+    } else {
+      // Persist the tool ledger (every data-grounded answer) THEN the answer.
+      if (toolCallRecords.length > 0) {
+        await appendMessage(supabase, {
+          conversation_id: conversationId,
+          role: 'tool',
+          content: null,
+          tool_calls: toolCallRecords,
+          tool_results: toolResultRecords,
+        });
+      }
+
+      await appendMessage(supabase, {
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: result.text,
+        cost_usd: cost,
+        status: 'complete',
+        client_turn_id: clientTurnId,
       });
     }
-
-    await appendMessage(supabase, {
-      conversation_id: conversationId,
-      role: 'assistant',
-      content: result.text,
-      cost_usd: cost,
-    });
 
     // Mirror W30: log this call into golf_coachhelm_llm_calls so the
     // admin spend view + budget enforcement see chat costs alongside

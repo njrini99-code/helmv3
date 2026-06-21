@@ -15,9 +15,9 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, GraduationCap } from 'lucide-react';
+import { Plus, Search, GraduationCap, X, RotateCw } from 'lucide-react';
 
-import { Button } from '@/components/fairway/controls/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { FilterPill } from '@/components/fairway/controls/filter-pill';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
@@ -26,6 +26,8 @@ import { Input } from '@/components/fairway/forms/Input';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { ViewHeader } from '@/components/fairway/view-header/view-header';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { cn } from '@/lib/utils';
 import type { Recruit, RecruitStatus } from '@/app/golf/actions/recruiting';
 import { FairwayRecruitCard } from './FairwayRecruitCard';
 import { FairwayRecruitFormSheet } from './FairwayRecruitFormSheet';
@@ -53,12 +55,22 @@ export function FairwayRecruitingPage({
   // No mutable local array — lean on router.refresh() so the list always
   // matches server-truth after a save/delete.
   const recruits = initialRecruits;
-  const [filter, setFilter] = React.useState<StatusFilter>('all');
+  // P124 — remember the coach's last sort + filter across visits. useLocalStorage
+  // is hydration-safe (returns the default during SSR, the stored value after
+  // mount) so the first paint never mismatches the server-rendered markup.
+  const [filter, setFilter] = useLocalStorage<StatusFilter>(
+    'fw-recruiting-filter',
+    'all',
+  );
   const [search, setSearch] = React.useState('');
-  const [sort, setSort] = React.useState<SortKey>('updated');
+  const [sort, setSort] = useLocalStorage<SortKey>('fw-recruiting-sort', 'updated');
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Recruit | null>(null);
   const [isPending, startTransition] = React.useTransition();
+  // P127 — focus + SR cues across the save → sheet-close → router.refresh() churn.
+  const addButtonRef = React.useRef<HTMLButtonElement>(null);
+  const returnFocusAfterClose = React.useRef(false);
+  const [statusMessage, setStatusMessage] = React.useState('');
 
   // Counts per status (drives the funnel filter plates).
   const counts = React.useMemo(() => {
@@ -104,8 +116,48 @@ export function FairwayRecruitingPage({
     return list;
   }, [recruits, filter, search, sort]);
 
+  // P127 — after the sheet closes, vaul/Radix tries to restore focus to whatever
+  // was focused before it opened (the edited card), but that card is removed by
+  // router.refresh(), so focus falls to document.body. Once the sheet is closed
+  // we deterministically steer focus to the stable "Add prospect" control. vaul's
+  // focus restore can land late (after its exit animation), so we re-assert focus
+  // briefly until the button actually holds it, winning the race either way.
+  React.useEffect(() => {
+    if (formOpen || !returnFocusAfterClose.current) return;
+    returnFocusAfterClose.current = false;
+    const start = Date.now();
+    let raf = 0;
+    const claim = () => {
+      const btn = addButtonRef.current;
+      const active = document.activeElement;
+      // Only reclaim while focus is "lost" to the document body (the bug state)
+      // or still held by vaul's own restore guard — never yank focus away from a
+      // real control the user has since tabbed to (that would be a focus trap).
+      const focusIsLost =
+        !active || active === document.body || active.getAttribute('data-radix-focus-guard') !== null;
+      if (btn && active !== btn && focusIsLost) btn.focus();
+      // Re-claim for a short window so we outlast vaul's late (post-animation) restore.
+      if ((!active || active === document.body) && Date.now() - start < 400) {
+        raf = window.requestAnimationFrame(claim);
+      }
+    };
+    raf = window.requestAnimationFrame(claim);
+    return () => window.cancelAnimationFrame(raf);
+  }, [formOpen]);
+
   const handleSaved = () => {
+    // Announce the result for screen-reader users (more durable than the
+    // transient toast) and arm the post-close focus return above.
+    setStatusMessage('Prospect list updated.');
+    returnFocusAfterClose.current = true;
     // Re-fetch from server via revalidate (server-truth, no local mutation).
+    startTransition(() => {
+      router.refresh();
+    });
+  };
+
+  const handleRetry = () => {
+    // P117 — a real, working retry for the load-error surface.
     startTransition(() => {
       router.refresh();
     });
@@ -116,7 +168,17 @@ export function FairwayRecruitingPage({
     setFormOpen(true);
   };
 
+  // P120 — one-tap escape from a filtered/searched dead-end.
+  const resetFilters = () => {
+    setFilter('all');
+    setSearch('');
+    setSort('updated');
+  };
+
   const isFiltered = recruits.length > 0;
+  // P119 — distinguish "nothing yet" from real metrics: the funnel plates show
+  // authoritative zeros only when there's actually data behind them.
+  const hasRecruits = recruits.length > 0;
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
@@ -128,120 +190,205 @@ export function FairwayRecruitingPage({
         title="Your prospects."
         description="Track prospects from first look to letter of intent."
         primaryAction={
-          <Button variant="primary" leftIcon={<Plus className="h-4 w-4" />} onClick={openAdd}>
+          <Button
+            ref={addButtonRef}
+            variant="primary"
+            leftIcon={<Plus className="h-4 w-4" />}
+            onClick={openAdd}
+          >
             Add prospect
           </Button>
         }
       />
 
+      {/* P127 — polite live region: durable SR cue after a save/delete + refresh,
+          beyond the transient toast. Visually hidden; announced on change. */}
+      <p className="sr-only" role="status" aria-live="polite">
+        {statusMessage}
+      </p>
+
       {loadError ? (
-        <InlineNotice tone="danger" title="Couldn’t load your prospect list" className="mb-4">
-          {loadError}. Try refreshing.
-        </InlineNotice>
-      ) : null}
-
-      {/* Funnel snapshot — one stat plate per status; click toggles the filter */}
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {RECRUIT_STATUS_META.map((s) => {
-          const active = filter === s.value;
-          return (
-            <Surface
-              key={s.value}
-              elevation={active ? 'shadow' : 'border'}
-              padding="none"
-              className="overflow-hidden"
+        /* P117 — a load failure is NOT an empty list. Render a dedicated error
+           surface with a real, working Retry; suppress the funnel/toolbar/grid
+           (and the cheerful "Add your first prospect" CTA) entirely so a failure
+           is never masked as "nothing here yet". */
+        <InlineNotice
+          tone="danger"
+          title="Couldn’t load your prospect list"
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<RotateCw className="h-4 w-4" />}
+              busy={isPending}
+              onClick={handleRetry}
             >
-              {/* Intentional raw <button>: the stat plate is the click target
-                  wrapping warm Fairway chrome (Surface/StatusPill + a big mono
-                  count). <Button> would impose pill-CTA chrome. Same exception
-                  the sibling FairwayIntentControl / InlineNotice take. */}
-              {/* eslint-disable-next-line helm/no-raw-button */}
-              <button
-                type="button"
-                onClick={() => setFilter(active ? 'all' : (s.value as StatusFilter))}
-                aria-pressed={active}
-                className="flex w-full flex-col items-start gap-1.5 p-4 text-left transition-colors hover:bg-surface-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-              >
-                <StatusPill tone={s.tone}>{s.label}</StatusPill>
-                <span className="font-fw-mono text-h2 font-semibold leading-none tabular-nums text-text-primary">
-                  {counts[s.value]}
-                </span>
-                <span className="font-fw-sans text-caption text-text-tertiary">
-                  {active ? 'Filtering' : s.description}
-                </span>
-              </button>
-            </Surface>
-          );
-        })}
-      </div>
-
-      {/* Toolbar — search + reset + sort */}
-      <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
-        <div className="flex-1">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, hometown, email, or notes…"
-            aria-label="Search prospects"
-            leading={<Search className="h-4 w-4" />}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <FilterPill
-            selected={filter === 'all'}
-            count={counts.all}
-            onClick={() => setFilter('all')}
-            disabled={filter === 'all'}
-          >
-            All
-          </FilterPill>
-          <Segmented<SortKey>
-            size="sm"
-            aria-label="Sort prospects"
-            value={sort}
-            onValueChange={setSort}
-            options={SORT_OPTIONS}
-          />
-        </div>
-      </div>
-
-      {/* Grid + honest empties */}
-      <div aria-busy={isPending}>
-        {visible.length === 0 ? (
-          <Surface elevation="border" padding="none">
-            <EmptyState
-              variant={isFiltered ? 'search' : 'default'}
-              icon={GraduationCap}
-              title={isFiltered ? 'No prospects match' : 'Start your prospect list'}
-              description={
-                isFiltered
-                  ? 'Try a different status, sort, or search term.'
-                  : 'Add high-school golfers you’re tracking. Notes, contact info, and status all live here.'
-              }
-              action={
-                isFiltered ? undefined : (
-                  <Button variant="primary" leftIcon={<Plus className="h-4 w-4" />} onClick={openAdd}>
-                    Add your first prospect
-                  </Button>
-                )
-              }
-            />
-          </Surface>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {visible.map((r) => (
-              <FairwayRecruitCard
-                key={r.id}
-                recruit={r}
-                onClick={() => {
-                  setEditing(r);
-                  setFormOpen(true);
-                }}
-              />
-            ))}
+              Try again
+            </Button>
+          }
+        >
+          {loadError} Your prospects are safe — this is just a display hiccup.
+        </InlineNotice>
+      ) : (
+        <>
+          {/* Funnel snapshot — one stat plate per status; click toggles the
+              filter. P119: with no recruits the four counts are all 0; dim them
+              so they read as "nothing yet", not authoritative metrics, and let
+              the empty state below carry the single message. */}
+          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {RECRUIT_STATUS_META.map((s) => {
+              const active = filter === s.value;
+              return (
+                <Surface
+                  key={s.value}
+                  elevation={active ? 'shadow' : 'border'}
+                  padding="none"
+                  className="overflow-hidden"
+                >
+                  {/* Intentional raw <button>: the stat plate is the click target
+                      wrapping warm Fairway chrome (Surface/StatusPill + a big mono
+                      count). <Button> would impose pill-CTA chrome. Same exception
+                      the sibling FairwayIntentControl / InlineNotice take. */}
+                  {/* eslint-disable-next-line helm/no-raw-button */}
+                  <button
+                    type="button"
+                    onClick={() => setFilter(active ? 'all' : (s.value as StatusFilter))}
+                    aria-pressed={active}
+                    disabled={!hasRecruits}
+                    className="flex w-full flex-col items-start gap-1.5 p-4 text-left transition-colors hover:bg-surface-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-default disabled:hover:bg-transparent"
+                  >
+                    <StatusPill tone={s.tone}>{s.label}</StatusPill>
+                    <span
+                      className={cn(
+                        'font-fw-mono text-h2 font-semibold leading-none tabular-nums',
+                        // P119: a real value is authoritative; an all-zero plate
+                        // (no data) is de-emphasized so it doesn't read as a metric.
+                        hasRecruits ? 'text-text-primary' : 'text-text-tertiary/60',
+                      )}
+                    >
+                      {counts[s.value]}
+                    </span>
+                    <span className="font-fw-sans text-caption text-text-tertiary">
+                      {active ? 'Filtering' : s.description}
+                    </span>
+                  </button>
+                </Surface>
+              );
+            })}
           </div>
-        )}
-      </div>
+
+          {/* Toolbar — search (with clear) + filter + labeled sort.
+              P126: a flex-wrap row crammed the All pill + a 3-segment control at
+              360px. The sort now sits in its own labeled row that stacks below the
+              search on mobile and only rejoins it inline at md, so it never wraps
+              to a cramped second line and never needs horizontal scroll. */}
+          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="flex-1">
+              <Input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, hometown, email, or notes…"
+                aria-label="Search prospects"
+                autoComplete="off"
+                enterKeyHint="search"
+                leading={<Search className="h-4 w-4" />}
+                trailing={
+                  search ? (
+                    /* P120 — trailing clear for the search well. */
+                    <IconButton
+                      aria-label="Clear search"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearch('')}
+                      className="-mr-1 h-7 w-7"
+                    >
+                      <X className="h-4 w-4" />
+                    </IconButton>
+                  ) : undefined
+                }
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <FilterPill
+                selected={filter === 'all'}
+                count={counts.all}
+                onClick={() => setFilter('all')}
+                disabled={filter === 'all'}
+              >
+                All
+              </FilterPill>
+            </div>
+            {/* Sort — its own cluster with a visible "Sort" label (P126). The
+                Segmented carries the SR group name via aria-label; the visible
+                label is a redundant visual cue, so it's aria-hidden to avoid a
+                double announcement. */}
+            <div className="flex items-center gap-2">
+              <span
+                aria-hidden="true"
+                className="shrink-0 font-fw-sans text-caption font-medium text-text-tertiary"
+              >
+                Sort
+              </span>
+              <Segmented<SortKey>
+                size="sm"
+                aria-label="Sort prospects"
+                value={sort}
+                onValueChange={setSort}
+                options={SORT_OPTIONS}
+                className="overflow-x-auto"
+              />
+            </div>
+          </div>
+
+          {/* Grid + honest empties */}
+          <div aria-busy={isPending}>
+            {visible.length === 0 ? (
+              <Surface elevation="border" padding="none">
+                <EmptyState
+                  variant={isFiltered ? 'search' : 'default'}
+                  icon={GraduationCap}
+                  title={isFiltered ? 'No prospects match' : 'Start your prospect list'}
+                  description={
+                    isFiltered
+                      ? 'Try a different status, sort, or search term.'
+                      : 'Add high-school golfers you’re tracking. Notes, contact info, and status all live here.'
+                  }
+                  action={
+                    isFiltered ? (
+                      /* P120 — one-tap reset of filter + search + sort. */
+                      <Button variant="secondary" onClick={resetFilters}>
+                        Clear filters
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        leftIcon={<Plus className="h-4 w-4" />}
+                        onClick={openAdd}
+                      >
+                        Add your first prospect
+                      </Button>
+                    )
+                  }
+                />
+              </Surface>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {visible.map((r) => (
+                  <FairwayRecruitCard
+                    key={r.id}
+                    recruit={r}
+                    onClick={() => {
+                      setEditing(r);
+                      setFormOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       <FairwayRecruitFormSheet
         open={formOpen}

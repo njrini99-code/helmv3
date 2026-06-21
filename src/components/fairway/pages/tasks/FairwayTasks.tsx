@@ -47,13 +47,34 @@ import {
   StatusPill,
   Chip,
   Button,
+  IconButton,
   FilterPill,
   EmptyState,
   InlineNotice,
+  SearchField,
+  ModalShell,
+  Form,
+  FormField,
+  Input,
+  PopoverPanel,
+  fairwayToast,
   type FwStatusTone,
 } from '@/components/fairway';
-import { IconCheck, IconClock, IconUsers, IconPlus } from '@/components/icons';
-import type { TaskTemplate } from '@/app/golf/actions/tasks';
+import {
+  IconCheck,
+  IconClock,
+  IconUsers,
+  IconPlus,
+  IconMoreVertical,
+  IconBell,
+  IconTrash,
+} from '@/components/icons';
+import {
+  deleteTask,
+  setTaskReminder,
+  clearTaskReminder,
+  type TaskTemplate,
+} from '@/app/golf/actions/tasks';
 
 import { FairwayCreateTaskModal } from './FairwayCreateTaskModal';
 import { FairwayCreateFromTemplateModal } from './FairwayCreateFromTemplateModal';
@@ -112,10 +133,54 @@ export interface FairwayTasksProps {
   stats: FairwayTaskStats;
   /** Roster players, for the coach create / template assignment flows. */
   players: FairwayTaskPlayer[];
+  /**
+   * P292 — whether the roster fetch itself failed (vs a genuinely empty roster).
+   * Threaded to the create modal so it shows an honest "couldn't load the roster"
+   * notice instead of "No players yet", and warns before an all-members create
+   * that would assign to nobody.
+   */
+  playersError?: boolean;
+  /**
+   * Live-fetch error from useTaskRealtime (P283). When set, the list renders an
+   * honest, recoverable error state instead of letting the failure fall through
+   * to the "No tasks yet" empty state (which would mask an outage). Null/undefined
+   * when the fetch succeeded.
+   */
+  error?: string | null;
   /** Refetch the live task list after a mutation (the hook's refetch). */
   onRefetch: () => void | Promise<void>;
-  /** Player-only optimistic complete (owned by the wrapper). Coach passes none. */
-  onCompleteTask?: (taskId: string) => Promise<void>;
+  /**
+   * Player-only complete (owned by the wrapper). Coach passes none.
+   * P284 — returns the completeTask ActionResult so the card can show honest
+   * success/failure feedback (completeTask resolves `{ success:false }` on a soft
+   * failure rather than throwing). A bare `void` resolution is treated as success.
+   */
+  onCompleteTask?: (taskId: string) => Promise<CompleteResult | void>;
+}
+
+/** The subset of completeTask's ActionResult the card needs (P284). */
+type CompleteResult = { success: boolean; error?: string };
+
+/**
+ * P284 — pure decision for the player "Mark complete" feedback. completeTask
+ * resolves an ActionResult that may report `success: false` WITHOUT throwing, so
+ * a void/undefined resolution and an explicit `{ success: true }` both count as
+ * success. Exported for deterministic unit tests.
+ *
+ *  - success  → a confirmation toast, no rollback.
+ *  - failure  → an error toast (the action's message, or a fallback) + rollback.
+ */
+export function completionFeedback(
+  result: CompleteResult | void | undefined,
+): { kind: 'success'; message: string } | { kind: 'error'; message: string; rollback: true } {
+  if (result && result.success === false) {
+    return {
+      kind: 'error',
+      message: result.error ?? 'Could not mark the task complete.',
+      rollback: true,
+    };
+  }
+  return { kind: 'success', message: 'Marked complete.' };
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -127,12 +192,31 @@ export function FairwayTasks({
   tasks,
   stats,
   players,
+  playersError = false,
+  error,
   onRefetch,
   onCompleteTask,
 }: FairwayTasksProps) {
   const isCoach = role === 'coach';
+  // P283 — true fetch failure. Track an in-flight retry so the "Try again" action
+  // shows progress and can't be double-fired.
+  const [retrying, setRetrying] = useState(false);
+  const handleRetry = async () => {
+    if (retrying) return;
+    setRetrying(true);
+    try {
+      await onRefetch();
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   const [filter, setFilter] = useState<FilterType>('all');
+  // P287 — text search (title/description) + category narrowing for coaches at scale.
+  const [query, setQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  // P293 — when on Active, the overdue banner sorts overdue tasks to the top.
+  const [overdueFirst, setOverdueFirst] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
@@ -154,10 +238,47 @@ export function FairwayTasks({
     }).length;
   }, [tasks, now]);
 
-  const filteredTasks = tasks.filter((t) => {
-    if (filter === 'all') return true;
-    return t.status === filter;
-  });
+  // P287 — distinct task categories (honest: derived only from real task data).
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of tasks) {
+      if (t.category) set.add(t.category);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [tasks]);
+
+  // A stale category filter (the only task with that category was deleted) must
+  // not silently hide the whole list — drop it when it no longer exists.
+  useEffect(() => {
+    if (categoryFilter && !categories.includes(categoryFilter)) {
+      setCategoryFilter(null);
+    }
+  }, [categories, categoryFilter]);
+
+  // P287 — status + text search + category, all honest predicates.
+  const filteredTasks = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const matched = tasks.filter((t) => {
+      if (filter !== 'all' && t.status !== filter) return false;
+      if (categoryFilter && t.category !== categoryFilter) return false;
+      if (q) {
+        const haystack = `${t.title} ${t.description ?? ''}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+
+    // P293 — on Active, surface overdue tasks to the top when requested. Stable:
+    // overdue rows float up, the rest keep the hook's due_date asc order.
+    if (overdueFirst && now) {
+      const isOverdueRow = (t: FairwayTask) =>
+        t.status !== 'completed' &&
+        !!t.due_date &&
+        new Date(t.due_date) < now;
+      return [...matched].sort((a, b) => Number(isOverdueRow(b)) - Number(isOverdueRow(a)));
+    }
+    return matched;
+  }, [tasks, filter, categoryFilter, query, overdueFirst, now]);
 
   // ── Masthead meta — honest count chips, rendered ONLY when > 0. ──────────────
   const meta =
@@ -192,7 +313,22 @@ export function FairwayTasks({
         primaryAction={createCta}
       />
 
-      {tasks.length === 0 ? (
+      {error ? (
+        // ── FETCH FAILURE — never masquerade as the empty state (P283). ───────
+        <div className="mt-8">
+          <InlineNotice
+            tone="danger"
+            title="Couldn't load tasks"
+            action={
+              <Button variant="ghost" size="sm" busy={retrying} disabled={retrying} onClick={handleRetry}>
+                Try again
+              </Button>
+            }
+          >
+            Something went wrong loading your tasks. Check your connection and try again.
+          </InlineNotice>
+        </div>
+      ) : tasks.length === 0 ? (
         // ── FULL-EMPTY — no tasks at all ─────────────────────────────────────
         <div className="mt-8">
           <Surface elevation="shadow" padding="lg">
@@ -226,10 +362,22 @@ export function FairwayTasks({
               } attention`}
               action={
                 filter !== 'active' ? (
+                  // Not yet on Active — jump there to triage the overdue items.
                   <Button variant="ghost" size="sm" onClick={() => setFilter('active')}>
                     View active
                   </Button>
-                ) : undefined
+                ) : (
+                  // P293 — already on Active: keep the banner actionable by sorting
+                  // the overdue tasks to the top (toggleable so it never traps focus).
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setOverdueFirst((v) => !v)}
+                    aria-pressed={overdueFirst}
+                  >
+                    {overdueFirst ? 'Clear sort' : 'Show overdue first'}
+                  </Button>
+                )
               }
             >
               Review tasks that are past their due date.
@@ -264,6 +412,40 @@ export function FairwayTasks({
             </FilterPill>
           </div>
 
+          {/* ── P287 — Search + category narrowing. ───────────────────────────── */}
+          <div className="flex flex-col gap-3">
+            <div className="max-w-md">
+              <SearchField
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onClear={() => setQuery('')}
+                placeholder="Search tasks by title or description"
+                aria-label="Search tasks"
+              />
+            </div>
+            {categories.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by category">
+                <FilterPill
+                  selected={categoryFilter === null}
+                  showCheck={false}
+                  onClick={() => setCategoryFilter(null)}
+                >
+                  All categories
+                </FilterPill>
+                {categories.map((cat) => (
+                  <FilterPill
+                    key={cat}
+                    selected={categoryFilter === cat}
+                    showCheck={false}
+                    onClick={() => setCategoryFilter((c) => (c === cat ? null : cat))}
+                  >
+                    {cat}
+                  </FilterPill>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* ── Main grid: list + coach Templates rail. ───────────────────────── */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
@@ -272,11 +454,33 @@ export function FairwayTasks({
                   <EmptyState
                     variant="subtle"
                     icon={ClipboardList}
-                    title={filter === 'all' ? 'No tasks' : `No ${filter} tasks`}
+                    title={
+                      query.trim() || categoryFilter
+                        ? 'No matching tasks'
+                        : filter === 'all'
+                          ? 'No tasks'
+                          : `No ${filter} tasks`
+                    }
                     description={
-                      filter === 'completed'
-                        ? 'Completed tasks will collect here.'
-                        : 'Nothing in this view right now.'
+                      query.trim() || categoryFilter
+                        ? 'No tasks match your search or category filter. Try clearing them.'
+                        : filter === 'completed'
+                          ? 'Completed tasks will collect here.'
+                          : 'Nothing in this view right now.'
+                    }
+                    action={
+                      query.trim() || categoryFilter ? (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setQuery('');
+                            setCategoryFilter(null);
+                          }}
+                        >
+                          Clear filters
+                        </Button>
+                      ) : undefined
                     }
                   />
                 </Surface>
@@ -289,6 +493,10 @@ export function FairwayTasks({
                       now={now}
                       role={role}
                       onComplete={onCompleteTask}
+                      // P285 — coach task management (delete / reminder). Only wired
+                      // when the viewer is a coach with a resolved team.
+                      canManage={isCoach && !!teamId}
+                      onManaged={onRefetch}
                     />
                   ))}
                 </div>
@@ -345,10 +553,14 @@ export function FairwayTasks({
                     </div>
                     {stats.overdue_tasks > 0 && (
                       <div className="mt-3 rounded-fw-md bg-fw-warning-bg px-4 py-3 text-center">
-                        <p className="font-fw-display text-h3 font-medium tabular-nums text-warm-800">
+                        {/* P288 — on-system text tokens (no legacy warm-* class). The
+                            warning surface is carried by bg-fw-warning-bg; the numerals
+                            stay readable on it (text-primary ≈ 13:1, text-secondary ≈ 4.9:1,
+                            both clear WCAG AA — text-fw-warning would only be ~2:1 here). */}
+                        <p className="font-fw-display text-h3 font-medium tabular-nums text-text-primary">
                           {stats.overdue_tasks}
                         </p>
-                        <p className="font-fw-sans text-caption text-warm-800">Overdue</p>
+                        <p className="font-fw-sans text-caption text-text-secondary">Overdue</p>
                       </div>
                     )}
                   </Surface>
@@ -367,6 +579,7 @@ export function FairwayTasks({
           onTaskCreated={onRefetch}
           teamId={teamId}
           players={players}
+          playersError={playersError}
         />
       )}
 
@@ -428,7 +641,14 @@ function statusPill(status: string): { tone: FwStatusTone; label: string } {
  * Reminder urgency → token tone (mirrors the legacy ReminderIcon thresholds,
  * but on Fairway tokens: fw-warning for soon/imminent, tertiary for upcoming/past).
  * ────────────────────────────────────────────────────────────────────────── */
-function reminderTone(reminderAt: string, now: Date): 'imminent' | 'soon' | 'upcoming' | 'past' {
+function reminderTone(
+  reminderAt: string,
+  now: Date | null,
+): 'imminent' | 'soon' | 'upcoming' | 'past' {
+  // P294 — before hydration (now === null) we cannot know urgency, so default to
+  // the quiet `upcoming` tone. This lets the Bell render on first paint (no
+  // pop-in) and only deepens to imminent/soon after `now` resolves.
+  if (!now) return 'upcoming';
   const diff = new Date(reminderAt).getTime() - now.getTime();
   if (diff < 0) return 'past';
   const hours = diff / (1000 * 60 * 60);
@@ -463,21 +683,51 @@ function formatReminderLabel(dateString: string, now: Date | null): string {
 /* ───────────────────────────────────────────────────────────────────────────
  * TaskCard — matte Surface row. Honest per-player completion (only when the
  * task actually has assignment rows). Coach sees an expandable per-player
- * progress list; player sees a Mark-complete action (optimistic, reused action).
+ * progress list plus a manage menu (reminder / delete); player sees a
+ * Mark-complete action that flips OPTIMISTICALLY (reused completeTask action).
  * ────────────────────────────────────────────────────────────────────────── */
 function FairwayTaskCard({
   task,
   now,
   role,
   onComplete,
+  canManage = false,
+  onManaged,
 }: {
   task: FairwayTask;
   now: Date | null;
   role: 'coach' | 'player';
-  onComplete?: (taskId: string) => Promise<void>;
+  onComplete?: (taskId: string) => Promise<CompleteResult | void>;
+  /** Coach-only: enable the reminder/delete manage menu. */
+  canManage?: boolean;
+  /** Refetch the live list after a coach mutation. */
+  onManaged?: () => void | Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [completing, setCompleting] = useState(false);
+  // P290 — true optimistic completion. We flip the card locally the instant the
+  // player taps, then let the realtime prop reconcile. `optimisticDone` clears
+  // automatically once the authoritative task.status catches up (effect below),
+  // and rolls back if the action fails.
+  const [optimisticDone, setOptimisticDone] = useState(false);
+
+  // P285 — coach manage state.
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [reminderValue, setReminderValue] = useState('');
+  const [savingReminder, setSavingReminder] = useState(false);
+  const [clearingReminder, setClearingReminder] = useState(false);
+
+  // Reconcile the optimistic flip with the source of truth.
+  useEffect(() => {
+    if (task.status === 'completed' && optimisticDone) {
+      setOptimisticDone(false);
+    }
+  }, [task.status, optimisticDone]);
+
+  // The status the card SHOWS (optimistic completion wins until reconciled).
+  const displayStatus = optimisticDone ? 'completed' : task.status;
 
   const completedCount = task.assignments.filter((a) => a.status === 'completed').length;
   const totalCount = task.assignments.length;
@@ -485,22 +735,116 @@ function FairwayTaskCard({
   const hasAssignments = totalCount > 0;
 
   const isOverdue =
-    !!now && !!task.due_date && new Date(task.due_date) < now && completionRate < 100 && task.status !== 'completed';
+    !!now &&
+    !!task.due_date &&
+    new Date(task.due_date) < now &&
+    completionRate < 100 &&
+    displayStatus !== 'completed';
 
-  const pill = statusPill(task.status);
+  const pill = statusPill(displayStatus);
 
-  // Player-side complete: only when the action is provided, the task isn't
-  // already complete, and there's a real assignment for this viewer.
+  // Player-side complete: only when the action is provided and the task isn't
+  // already complete (and isn't optimistically completing).
   const playerCanComplete =
-    role === 'player' && !!onComplete && task.status !== 'completed';
+    role === 'player' && !!onComplete && displayStatus !== 'completed';
 
   const handleComplete = async () => {
     if (!onComplete || completing) return;
     setCompleting(true);
+    setOptimisticDone(true); // flip immediately — no spinner wait
     try {
-      await onComplete(task.id);
+      // P284 — completeTask resolves an ActionResult { success, error } on a soft
+      // failure (RLS denial, "not assigned", network) rather than throwing. The pure
+      // completionFeedback() decides: a `success: false` rolls back + error-toasts
+      // just like a thrown error, and a success (explicit or bare void) confirms with
+      // a toast (it was previously silent). The realtime refetch reconciles state.
+      const feedback = completionFeedback(await onComplete(task.id));
+      if (feedback.kind === 'error') {
+        setOptimisticDone(false);
+        fairwayToast.error(feedback.message);
+        return;
+      }
+      fairwayToast.success(feedback.message);
+    } catch (error) {
+      // A genuinely thrown error — roll back the optimistic flip and tell the player.
+      setOptimisticDone(false);
+      fairwayToast.error(
+        error instanceof Error ? error.message : 'Could not mark the task complete.',
+      );
     } finally {
       setCompleting(false);
+    }
+  };
+
+  /* ---- P285 · coach manage actions (reuse the unchanged server actions) ---- */
+
+  const openReminderModal = () => {
+    // Seed the picker from the existing reminder (as a local datetime-local value).
+    setReminderValue(task.reminder_at ? toDateTimeLocal(task.reminder_at) : '');
+    setReminderOpen(true);
+  };
+
+  const handleSaveReminder = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!reminderValue) {
+      fairwayToast.warning('Pick a date and time for the reminder.');
+      return;
+    }
+    setSavingReminder(true);
+    try {
+      const result = await setTaskReminder(task.id, new Date(reminderValue).toISOString());
+      if (result.success) {
+        fairwayToast.success('Reminder set.');
+        setReminderOpen(false);
+        await onManaged?.();
+      } else {
+        fairwayToast.error(result.error ?? 'Failed to set the reminder.');
+      }
+    } catch (error) {
+      fairwayToast.error(
+        error instanceof Error ? error.message : 'Failed to set the reminder.',
+      );
+    } finally {
+      setSavingReminder(false);
+    }
+  };
+
+  const handleClearReminder = async () => {
+    setClearingReminder(true);
+    try {
+      const result = await clearTaskReminder(task.id);
+      if (result.success) {
+        fairwayToast.success('Reminder cleared.');
+        await onManaged?.();
+      } else {
+        fairwayToast.error(result.error ?? 'Failed to clear the reminder.');
+      }
+    } catch (error) {
+      fairwayToast.error(
+        error instanceof Error ? error.message : 'Failed to clear the reminder.',
+      );
+    } finally {
+      setClearingReminder(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const result = await deleteTask(task.id);
+      if (result.success) {
+        fairwayToast.success('Task deleted.');
+        setPendingDelete(false);
+        await onManaged?.();
+      } else {
+        fairwayToast.error(result.error ?? 'Failed to delete the task.');
+      }
+    } catch (error) {
+      fairwayToast.error(
+        error instanceof Error ? error.message : 'Failed to delete the task.',
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -518,9 +862,53 @@ function FairwayTaskCard({
             </p>
           )}
         </div>
-        <StatusPill tone={pill.tone} size="sm" className="flex-shrink-0">
-          {pill.label}
-        </StatusPill>
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          <StatusPill tone={pill.tone} size="sm">
+            {pill.label}
+          </StatusPill>
+          {/* P285 — coach task management: reminder + delete, via the existing
+              setTaskReminder / clearTaskReminder / deleteTask server actions. */}
+          {canManage && (
+            <PopoverPanel
+              side="bottom"
+              align="end"
+              surface="matte"
+              width="sm"
+              ariaLabel={`Manage task: ${task.title}`}
+              trigger={
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Manage task: ${task.title}`}
+                >
+                  <IconMoreVertical size={18} />
+                </IconButton>
+              }
+            >
+              <PopoverPanel.Item onClick={openReminderModal}>
+                <IconBell size={18} className="text-text-tertiary" />
+                {task.reminder_at ? 'Update reminder' : 'Set reminder'}
+              </PopoverPanel.Item>
+              {task.reminder_at && (
+                <PopoverPanel.Item
+                  onClick={() => void handleClearReminder()}
+                  disabled={clearingReminder}
+                >
+                  <IconBell size={18} className="text-text-tertiary" />
+                  Clear reminder
+                </PopoverPanel.Item>
+              )}
+              <PopoverPanel.Separator />
+              <PopoverPanel.Item
+                onClick={() => setPendingDelete(true)}
+                className="text-fw-danger hover:bg-fw-danger-bg hover:text-fw-danger"
+              >
+                <IconTrash size={18} className="text-fw-danger" />
+                Delete task
+              </PopoverPanel.Item>
+            </PopoverPanel>
+          )}
+        </div>
       </div>
 
       {/* Progress — ONLY when the task has assignment rows (never a fake 0/0). */}
@@ -567,7 +955,10 @@ function FairwayTaskCard({
               {formatDueLabel(task.due_date, now)}
             </span>
           )}
-          {task.reminder_at && now && (
+          {/* P294 — render whenever a reminder exists (not gated on `now`), so the
+              Bell never pops in after hydration. Urgency color deepens once `now`
+              resolves; the label degrades to an absolute date pre-hydration. */}
+          {task.reminder_at && (
             <span
               className={cn(
                 'inline-flex items-center gap-1.5',
@@ -575,7 +966,9 @@ function FairwayTaskCard({
                   ? 'text-text-tertiary'
                   : reminderTone(task.reminder_at, now) === 'upcoming'
                     ? 'text-text-secondary'
-                    : 'text-warm-800',
+                    : // P288 — imminent/soon: strongest emphasis via an on-system token
+                      // (text-primary ≈ 13:1 on the card surface; no legacy warm-* class).
+                      'text-text-primary',
               )}
               suppressHydrationWarning
             >
@@ -660,8 +1053,83 @@ function FairwayTaskCard({
           </div>
         </div>
       )}
+
+      {/* P285 — Reminder picker (coach). Reuses setTaskReminder verbatim. */}
+      {canManage && (
+        <ModalShell
+          open={reminderOpen}
+          onOpenChange={(next) => {
+            if (!next && !savingReminder) setReminderOpen(false);
+          }}
+          size="sm"
+          title={task.reminder_at ? 'Update reminder' : 'Set reminder'}
+          description={`Choose when the team gets a nudge for "${task.title}".`}
+        >
+          <Form spacing="cozy" onSubmit={handleSaveReminder}>
+            <FormField label="Reminder" help="The team is nudged at this time.">
+              <Input
+                type="datetime-local"
+                name="reminderAt"
+                value={reminderValue}
+                onChange={(e) => setReminderValue(e.target.value)}
+                required
+              />
+            </FormField>
+            <ModalShell.Footer>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setReminderOpen(false)}
+                disabled={savingReminder}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" busy={savingReminder}>
+                {task.reminder_at ? 'Update reminder' : 'Set reminder'}
+              </Button>
+            </ModalShell.Footer>
+          </Form>
+        </ModalShell>
+      )}
+
+      {/* P285 — Delete confirm (coach). DESTRUCTIVE — explicit confirm only. */}
+      {canManage && (
+        <ModalShell
+          open={pendingDelete}
+          onOpenChange={(next) => {
+            if (!next && !deleting) setPendingDelete(false);
+          }}
+          size="sm"
+          title="Delete task?"
+          description={
+            <>
+              Delete <span className="font-medium text-text-primary">{task.title}</span>? This
+              also removes every player&apos;s assignment for it and can&apos;t be undone.
+            </>
+          }
+        >
+          <ModalShell.Footer>
+            <Button variant="secondary" onClick={() => setPendingDelete(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="danger" busy={deleting} onClick={handleDelete}>
+              Delete task
+            </Button>
+          </ModalShell.Footer>
+        </ModalShell>
+      )}
     </Surface>
   );
+}
+
+/* Convert a stored ISO timestamp to the `datetime-local` input value
+ * (YYYY-MM-DDTHH:mm) in the viewer's local time, so the picker pre-fills with
+ * the existing reminder instead of an empty field. */
+function toDateTimeLocal(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default FairwayTasks;

@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { Users } from 'lucide-react';
 import { TeamStatsTable } from './team-stats-table';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
@@ -9,6 +11,7 @@ import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence'
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamStats } from '@/components/fairway/pages/coachhelm/FairwayTeamStats';
+import { ViewHeader, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
@@ -70,6 +73,26 @@ export default async function TeamStatsPage() {
   }
 
   if (!teamId) {
+    // Fairway path: a real empty state inside the .fairway-ds scope with an
+    // actionable CTA (the legacy CTA-less centered block only renders flag-off).
+    if (isRedesignEnabled()) {
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+          <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8">
+            <EmptyState
+              icon={Users}
+              title="No team yet"
+              description="Create a team and add players to see team statistics, strokes-gained, and where the strokes leak."
+              action={
+                <Button asChild variant="primary" size="md">
+                  <Link href="/golf/dashboard/team">Create a team</Link>
+                </Button>
+              }
+            />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-full flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -101,6 +124,34 @@ export default async function TeamStatsPage() {
     : { data: [] };
 
   if (!players || players.length === 0) {
+    // Fairway path: a Fairway-styled empty state with a real next action
+    // (open the roster) inside the .fairway-ds scope. The legacy CTA-less
+    // MobileNavHeader block below renders only when the redesign is off.
+    if (isRedesignEnabled()) {
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+          <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8">
+            <ViewHeader
+              eyebrow="Team Stats"
+              title="Team Stats"
+              description={team?.name || 'Your Team'}
+            />
+            <div className="mt-8">
+              <EmptyState
+                icon={Users}
+                title="No players on your roster yet"
+                description="Add players to your roster and their rounds will roll up here into team strokes-gained, leak maps, and per-player tiles."
+                action={
+                  <Button asChild variant="primary" size="md">
+                    <Link href="/golf/dashboard/roster">Add players to your roster</Link>
+                  </Button>
+                }
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-full">
         <MobileNavHeader
@@ -378,19 +429,33 @@ export default async function TeamStatsPage() {
           ]),
         )
       : {};
+    // Honesty flags: a FAILED action must read as "couldn't load" (with retry),
+    // NOT as a cheerful empty. Distinguish failure (success === false) from a
+    // successful-but-empty result so the surface never masks a backend error.
+    const intelligenceError = !intelligenceResult.success;
+    // sampleSize = teammates with a stats-cache row that fed the z-score
+    // normalization; < 3 makes every composite statistically unstable (the
+    // composite UI should down-tone it). 0 when the fetch failed/returned none.
+    const intelligenceSampleSize = intelligenceResult.success && intelligenceResult.data
+      ? intelligenceResult.data.sampleSize
+      : 0;
     // Batched: ONE chunked .in('player_id', ...) read for every roster player
     // instead of N admin queries (one per player).
     const [leakRes, standingByPlayer] = await Promise.all([
       getTeamLeakMaps(teamId),
       loadPlayersStandingMap(playersWithStats.map((p) => p.id)),
     ]);
+    const leakError = !leakRes.success;
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <FairwayTeamStats
           teamName={team?.name ?? 'Your Team'}
           players={playersWithStats}
           intelligenceByPlayer={intelligenceByPlayer}
+          intelligenceError={intelligenceError}
+          intelligenceSampleSize={intelligenceSampleSize}
           leakMaps={leakRes.success ? leakRes.data ?? null : null}
+          leakError={leakError}
           standingByPlayer={standingByPlayer}
         />
       </div>

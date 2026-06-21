@@ -39,6 +39,9 @@ export type { StatusPillProps } from './status-pill';
 export { FilterPill } from './filter-pill';
 export type { FilterPillProps } from './filter-pill';
 
+export { SelectablePill } from './selectable-pill';
+export type { SelectablePillProps } from './selectable-pill';
+
 export { Badge, Chip } from './badge';
 export type { BadgeProps, ChipProps } from './badge';
 

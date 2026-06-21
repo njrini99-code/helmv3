@@ -28,6 +28,7 @@ export function SgBaselineSelector() {
   const [baseline, setBaseline] = useState<SgBaselineKey | null>(null);
   const [gender, setGender] = useState<'mens' | 'womens'>('mens');
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -39,6 +40,13 @@ export function SgBaselineSelector() {
       if (r.success) {
         setBaseline(r.data.baseline);
         setGender(r.data.gender);
+      } else {
+        // Load failure: surface a recoverable error instead of silently
+        // rendering an empty Select. Reuses the same status/aria-live region as
+        // save errors (P085).
+        setLoadFailed(true);
+        setStatus('error');
+        setErrorMsg(r.error ?? 'Couldn’t load your baseline');
       }
       setLoading(false);
     });
@@ -81,6 +89,12 @@ export function SgBaselineSelector() {
       <div className="mt-4 max-w-sm">
         {loading ? (
           <div className="h-11 w-full animate-pulse rounded-xl bg-warm-100" />
+        ) : loadFailed ? (
+          // Don't render an empty Select on load failure — show the error
+          // (also announced via the aria-live region below). P085.
+          <p className="text-sm text-red-600" role="alert">
+            {errorMsg ?? 'Couldn’t load your baseline'}
+          </p>
         ) : (
           <Select
             options={OPTIONS}
@@ -97,11 +111,11 @@ export function SgBaselineSelector() {
           <span className="text-warm-500">Recomputing team SG…</span>
         )}
         {status === 'saved' && (
-          <span className="inline-flex items-center gap-1.5 text-primary-600">
+          <span className="inline-flex items-center gap-1.5 text-accent-600">
             <IconCheck size={16} /> Saved — SG recomputed for this baseline.
           </span>
         )}
-        {status === 'error' && (
+        {status === 'error' && !loadFailed && (
           <span className="text-red-600">{errorMsg}</span>
         )}
       </div>

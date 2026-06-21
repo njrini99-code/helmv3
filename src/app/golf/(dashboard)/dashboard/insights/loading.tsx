@@ -1,47 +1,46 @@
+import { fairwayScope } from '@/lib/redesign/flag';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+
+/**
+ * P032 — Fairway-scoped route skeleton for the redesigned Signals workspace
+ * (/insights). Replaces the legacy skeleton-shimmer / surface-matte / warm-200
+ * layout (which reshaped the page when the real Fairway feed mounted → CLS).
+ * Reserves the ACTUAL Fairway layout: 3 MetricCard tiles + the toolbar row + a
+ * hero InsightCard + compact card rows, in Fairway tokens, so the live feed
+ * lands without a content jump.
+ */
 export default function Loading() {
   return (
-    <div className="relative">
-      <div className="sticky top-0 z-20 border-b border-warm-200/30 bg-cream-100/75 backdrop-blur-xl pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
-        <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 skeleton-shimmer rounded-xl" />
-              <div className="space-y-2">
-                <div className="h-6 w-32 skeleton-shimmer rounded" />
-                <div className="h-3 w-56 skeleton-shimmer rounded" />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <div className="h-9 w-24 skeleton-shimmer rounded-lg" />
-              <div className="h-9 w-9 skeleton-shimmer rounded-lg" />
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient px-4 py-6 md:px-6')}>
+      <div
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        className="mx-auto flex max-w-5xl flex-col gap-6"
+      >
+        <span className="sr-only">Loading insights…</span>
 
-      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-8 space-y-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="surface-matte rounded-3xl p-5 space-y-2">
-              <div className="h-3 w-20 skeleton-shimmer rounded" />
-              <div className="h-7 w-12 skeleton-shimmer rounded" />
-            </div>
+        {/* title row */}
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+
+        {/* 3 metric tiles */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-card" />
           ))}
         </div>
 
-        <div className="h-10 w-full max-w-md skeleton-shimmer rounded-xl" />
+        {/* toolbar */}
+        <Skeleton className="h-12 w-full rounded-card" />
 
-        <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="surface-matte rounded-3xl p-5 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 skeleton-shimmer rounded-lg" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-48 skeleton-shimmer rounded" />
-                  <div className="h-3 w-full skeleton-shimmer rounded" />
-                </div>
-              </div>
-            </div>
+        {/* hero card + 3 compact rows */}
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-32 w-full rounded-card" />
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-card" />
           ))}
         </div>
       </div>

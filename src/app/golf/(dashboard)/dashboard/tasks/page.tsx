@@ -56,6 +56,9 @@ export default function GolfTasksPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
   const [players, setPlayers] = useState<Player[]>([]);
+  // P292 — distinguish "roster fetch failed" from a genuinely empty roster, so
+  // the create modal doesn't show "No players on the roster yet" on an outage.
+  const [playersError, setPlayersError] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
 
@@ -65,7 +68,7 @@ export default function GolfTasksPage() {
   const userRole = golfUser.role;
 
   // Real-time tasks subscription
-  const { tasks: realtimeTasks, stats, loading: tasksLoading, refetch } = useTaskRealtime(teamId, {
+  const { tasks: realtimeTasks, stats, loading: tasksLoading, error: tasksError, refetch } = useTaskRealtime(teamId, {
     playerId: userRole === 'player' ? playerId : undefined,
     assignedToPlayerOnly: userRole === 'player',
   });
@@ -109,24 +112,39 @@ export default function GolfTasksPage() {
   async function loadPlayers(tId: string) {
     const supabase = createClient();
 
-    const { data: teamMembers } = await supabase
+    // P292 — surface fetch errors instead of swallowing them. On failure the
+    // roster stays empty, which is indistinguishable from a genuinely empty
+    // roster unless we record that the fetch itself failed.
+    const { data: teamMembers, error: membersError } = await supabase
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', tId);
 
+    if (membersError) {
+      setPlayersError(true);
+      return;
+    }
+
     const playerIds = (teamMembers || []).map(tm => tm.player_id);
 
     if (playerIds.length > 0) {
-      const { data: playersData } = await supabase
+      const { data: playersData, error: playersDataError } = await supabase
         .from('golf_players')
         .select('id, first_name, last_name')
         .in('id', playerIds)
         .order('last_name');
 
+      if (playersDataError) {
+        setPlayersError(true);
+        return;
+      }
+
       if (playersData) {
         setPlayers(playersData);
       }
     }
+    // Reached here without an error → the roster is genuinely as fetched.
+    setPlayersError(false);
   }
 
   const activeCount = tasks.filter(t => t.status === 'active').length;
@@ -142,9 +160,16 @@ export default function GolfTasksPage() {
   // Player complete handler — shared by the legacy + Fairway paths. Completes
   // via golf_task_assignments (the completeTask action), then refetches so the
   // live list + stats reflect the change.
-  const handleCompleteTask = async (taskId: string) => {
-    await completeTask(taskId);
+  //
+  // P284 — completeTask returns an ActionResult { success, error } and does NOT
+  // throw on a soft failure (RLS denial, "not assigned", etc). We RETURN that
+  // result so the caller can surface honest success/failure feedback. The legacy
+  // TaskCard types onComplete as `Promise<void> | void` and simply ignores the
+  // returned value, so this is backward-compatible with the flag-off fork.
+  const handleCompleteTask = async (taskId: string): Promise<{ success: boolean; error?: string }> => {
+    const result = await completeTask(taskId);
     await refetch();
+    return result;
   };
 
   if (loading) {
@@ -187,6 +212,8 @@ export default function GolfTasksPage() {
           tasks={tasks}
           stats={stats}
           players={players}
+          playersError={playersError}
+          error={tasksError}
           onRefetch={refetch}
           onCompleteTask={userRole === 'player' ? handleCompleteTask : undefined}
         />
@@ -327,7 +354,15 @@ export default function GolfTasksPage() {
               tasks={tasks}
               filter={filter}
               role={userRole === 'player' ? 'player' : 'coach'}
-              onComplete={userRole === 'player' ? handleCompleteTask : undefined}
+              // Legacy fork — the legacy TaskCard consumes a void-returning
+              // onComplete and ignores any result, so adapt the richer wrapper.
+              onComplete={
+                userRole === 'player'
+                  ? async (taskId: string) => {
+                      await handleCompleteTask(taskId);
+                    }
+                  : undefined
+              }
             />
           </div>
 

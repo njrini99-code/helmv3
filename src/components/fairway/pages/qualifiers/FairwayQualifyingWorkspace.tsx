@@ -231,7 +231,12 @@ function SlotLeaderboard({
             description="Candidates appear here as players are entered and post rounds."
           />
         ) : (
-          <ul className="flex flex-col">
+          // The fixed rank/rounds/score/status columns (~244px + gaps) leave too
+          // little room for the player name on a ~320px phone, so the row gets a
+          // min-width and the list scrolls horizontally (matching the detail-page
+          // tables) instead of squeezing/wrapping the name.
+          <div className="-mx-1 overflow-x-auto px-1">
+          <ul className="flex min-w-[460px] flex-col">
             {ranked.map((c) => {
               const locked = c.is_top_score_slot;
               const picked = c.selection?.selection_type === 'coach_pick';
@@ -277,6 +282,7 @@ function SlotLeaderboard({
               );
             })}
           </ul>
+          </div>
         )}
       </Surface.Body>
     </Surface>
@@ -330,12 +336,44 @@ function CoachPicks({
     });
   };
 
-  const handleRemove = (playerId: string) => {
+  const handleRemove = (c: SelectionCandidate) => {
+    const playerId = c.player_id;
+    // Capture the prior reasoning BEFORE the mutation so an Undo can restore the
+    // pick verbatim — Remove is a single-click destructive act, so we gate it
+    // behind an undo affordance (Nielsen #3 user control + #5 error prevention).
+    const priorReasoning = c.selection?.coach_reasoning ?? '';
+    const playerName = `${c.player_first_name} ${c.player_last_name}`.trim();
     setPendingPlayer(playerId);
     startTransition(async () => {
       const r = await removeQualifierCoachPick(qualifierId, playerId);
-      if (!r.ok) fairwayToast.danger("Couldn't remove pick", { description: r.error });
-      else fairwayToast.success('Coach pick removed');
+      if (!r.ok) {
+        fairwayToast.danger("Couldn't remove pick", { description: r.error });
+      } else {
+        fairwayToast.success('Coach pick removed', {
+          description: priorReasoning
+            ? `${playerName}'s reasoning was saved — undo to restore it.`
+            : `${playerName} is no longer a coach pick.`,
+          action: priorReasoning
+            ? {
+                label: 'Undo',
+                onClick: () => {
+                  startTransition(async () => {
+                    const restore = await setQualifierCoachPick(
+                      qualifierId,
+                      playerId,
+                      priorReasoning,
+                    );
+                    if (!restore.ok) {
+                      fairwayToast.danger("Couldn't restore pick", { description: restore.error });
+                    } else {
+                      fairwayToast.success('Coach pick restored');
+                    }
+                  });
+                },
+              }
+            : undefined,
+        });
+      }
       setPendingPlayer(null);
     });
   };
@@ -364,7 +402,7 @@ function CoachPicks({
             variant="subtle"
             icon={Flag}
             title="Everyone's auto-locked"
-            description={`All entries are within the top-${candidates.length - eligible.length} auto-lock — no discretionary picks needed.`}
+            description="Every entry is auto-locked on merit — no discretionary picks needed."
           />
         ) : (
           <ul className="flex flex-col">
@@ -394,7 +432,7 @@ function CoachPicks({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleRemove(c.player_id)}
+                            onClick={() => handleRemove(c)}
                             busy={isPending}
                             className="text-fw-danger hover:text-fw-danger"
                           >

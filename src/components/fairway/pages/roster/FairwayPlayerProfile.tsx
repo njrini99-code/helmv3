@@ -28,7 +28,16 @@ import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
-import { IconMessage, IconMapPin, IconMail, IconPhone } from '@/components/icons';
+import {
+  IconMessage,
+  IconMapPin,
+  IconMail,
+  IconPhone,
+  IconSparkles,
+  IconChartRadar,
+  IconLayers,
+  IconArrowRight,
+} from '@/components/icons';
 import { FairwayYearBadge } from './FairwayYearBadge';
 import { FairwayPlayerStatusBadge } from './FairwayPlayerStatusBadge';
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
@@ -172,10 +181,81 @@ export function FairwayPlayerProfile({
         </div>
       </Surface>
 
+      {/* ── Cross-surface links (P107) — the canonical player page is the hub:
+           every player-scoped coach surface is reachable from here, not just the
+           stats cockpit. Recognition over recall — siblings cross-link too. ── */}
+      <nav
+        aria-label="Player surfaces"
+        className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3"
+      >
+        <PlayerSurfaceLink
+          href={`/golf/dashboard/players/${player.id}`}
+          icon={<IconSparkles size={18} className="text-accent-600" />}
+          title="AI Insight"
+          description="Verdict, evidence & plan"
+        />
+        <PlayerSurfaceLink
+          href={`/golf/dashboard/players/${player.id}/game`}
+          icon={<IconChartRadar size={18} className="text-accent-600" />}
+          title="Game Fingerprint"
+          description="Composite rating profile"
+        />
+        <PlayerSurfaceLink
+          href={`/golf/dashboard/coachhelm/genome/${player.id}`}
+          icon={<IconLayers size={18} className="text-accent-600" />}
+          title="Genome"
+          description="Game-profile radar"
+        />
+      </nav>
+
       {/* ── The shared stats cockpit (stats · leak maps · trend · CoachHelm ·
            detailed standings · recent rounds) ── */}
       <FairwayStatsCockpit playerId={player.id} />
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * PlayerSurfaceLink — a matte sibling-surface card link (P107). Tokens only,
+ * visible focus ring, full-card tap target ≥44px.
+ * ------------------------------------------------------------------------- */
+
+function PlayerSurfaceLink({
+  href,
+  icon,
+  title,
+  description,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'group flex items-center gap-3 rounded-2xl border border-border-subtle bg-surface px-4 py-3',
+        'transition-colors hover:bg-surface-sunken',
+        'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+      )}
+    >
+      <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-surface-sunken ring-1 ring-border-subtle">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-fw-sans text-body-sm font-semibold text-text-primary">
+          {title}
+        </span>
+        <span className="block truncate font-fw-sans text-caption text-text-tertiary">
+          {description}
+        </span>
+      </span>
+      <IconArrowRight
+        size={16}
+        className="flex-shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+      />
+    </Link>
   );
 }
 

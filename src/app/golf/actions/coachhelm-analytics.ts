@@ -400,16 +400,16 @@ export async function getPredictionPerformance(
       percentage: totalErrors > 0 ? (count / totalErrors) * 100 : 0,
     }));
 
-    // Average rate-style metrics across snapshots; pull totals from the latest
-    // snapshot so we don't double-count overlapping rolling windows.
+    // Average rate-style metrics across snapshots for the secondary
+    // (informational) error rates; pull totals from the latest snapshot so we
+    // don't double-count overlapping rolling windows.
     const rateTotals = performance.reduce(
-      (acc: { accuracy: number; mae: number; overconf: number; underconf: number }, p: Record<string, unknown>) => ({
-        accuracy: acc.accuracy + ((p.accuracy_rate as number) || 0),
+      (acc: { mae: number; overconf: number; underconf: number }, p: Record<string, unknown>) => ({
         mae: acc.mae + ((p.mean_absolute_error as number) || 0),
         overconf: acc.overconf + ((p.overconfidence_rate as number) || 0),
         underconf: acc.underconf + ((p.underconfidence_rate as number) || 0),
       }),
-      { accuracy: 0, mae: 0, overconf: 0, underconf: 0 }
+      { mae: 0, overconf: 0, underconf: 0 }
     );
 
     const count = performance.length || 1;
@@ -423,7 +423,12 @@ export async function getPredictionPerformance(
         summary: {
           totalPredictions: (latest?.predictions_made as number) || 0,
           validatedPredictions: (latest?.predictions_validated as number) || 0,
-          overallAccuracy: rateTotals.accuracy / count,
+          // overallAccuracy must share the SAME window as validatedPredictions
+          // so the hero sentence "X% of N resolved proved accurate" is
+          // arithmetically true. Both now describe the latest rolling snapshot
+          // rather than pairing an all-snapshot average rate with a
+          // single-snapshot count (two different denominators).
+          overallAccuracy: (latest?.accuracy_rate as number) || 0,
           meanAbsoluteError: rateTotals.mae / count,
           calibrationScore: (latest?.calibration_score as number) || 0,
           overconfidenceRate: rateTotals.overconf / count,

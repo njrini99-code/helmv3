@@ -38,17 +38,25 @@ export default async function GolfAnnouncementsPage() {
   // Team lookup in parallel for coach and player paths.
   //
   // A genuine "no team yet" resolves to `null` (no row) and is a legitimate
-  // empty state. A network/DB failure THROWS here and is allowed to propagate
-  // to error.tsx — we must not swallow it into a null teamId, which would render
-  // the empty state and make an outage look like a team with no announcements.
+  // empty state. A network/DB failure must NOT be swallowed into a null teamId —
+  // that would render the new-user empty state and make an outage look like a
+  // team with no announcements (P270). Supabase client queries do not throw on
+  // a DB error; they return `{ data: null, error }`, so we inspect the player
+  // lookup's `error` explicitly and throw to route to the sibling error.tsx
+  // (a recoverable "try again" boundary) instead of falling through to empty.
   const [coachTeamId, playerTeamResult] = await Promise.all([
     orgId
       ? resolveCoachTeamIdWithCookie(supabase, orgId, coach?.id ?? null)
       : Promise.resolve(null),
     playerId
       ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
-      : Promise.resolve({ data: null }),
+      : Promise.resolve({ data: null, error: null }),
   ]);
+  if (playerTeamResult.error) {
+    // Transient lookup failure (not a legitimately team-less player) — surface a
+    // recoverable error boundary rather than the misleading new-user empty state.
+    throw new Error('Failed to load your team');
+  }
   const teamId: string | null = coachTeamId || playerTeamResult.data?.team_id || null;
 
   // Fetch announcements + coach data (roster + documents) in parallel.

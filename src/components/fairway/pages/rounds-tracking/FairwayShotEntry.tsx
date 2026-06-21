@@ -71,19 +71,30 @@ const segBtn = (active: boolean) =>
 
 function Section({
   label,
+  labelFor,
   hint,
   tint,
   children,
 }: {
   label: string;
+  /** When set, the section heading becomes a real <label htmlFor> bound to the
+   *  control's id, so the visible label is programmatically associated with the
+   *  input (WCAG 1.3.1 / 3.3.2) — not just visually adjacent. */
+  labelFor?: string;
   hint?: React.ReactNode;
   tint?: boolean;
   children: React.ReactNode;
 }) {
+  const headingClass =
+    'font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-tertiary';
   return (
     <div className={cn('px-5 py-5', tint && 'bg-accent-50/40')}>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-tertiary">{label}</p>
+        {labelFor ? (
+          <label htmlFor={labelFor} className={headingClass}>{label}</label>
+        ) : (
+          <p className={headingClass}>{label}</p>
+        )}
         {hint}
       </div>
       {children}
@@ -123,6 +134,32 @@ export function FairwayShotEntry({
   const ready = isReadyForNextShot();
   const distanceInvalid =
     !!distanceAfterShot && (!Number.isFinite(parseFloat(distanceAfterShot)) || parseFloat(distanceAfterShot) < 0);
+
+  // Visibility of system status (Nielsen #1) + error prevention/recovery (#5/#9):
+  // when the primary action is disabled, name the ONE requirement still missing so
+  // the user knows what to do. The order/conditions mirror isReadyForNextShot()
+  // VERBATIM so the hint can never disagree with the disabled state.
+  const nextShotBlocker: string | null = (() => {
+    if (ready) return null;
+    if (!resultOfShot) return isPutting ? 'Select a putt result' : 'Select a shot result';
+    if (isTeeShot && currentHole.par !== 3 && usedDriver === null) return 'Choose driver or non-driver';
+    if (isPutting && !puttBreak) return 'Select a putt break';
+    if (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection)
+      return 'Choose a miss direction';
+    if (isApproachOrAroundGreen && !['green', 'hole'].includes(resultOfShot) && !approachMissDirection)
+      return 'Choose a miss direction';
+    if (resultOfShot !== 'hole') {
+      const trimmed = distanceAfterShot.trim();
+      if (!trimmed) return isPutting ? 'Enter the leave distance' : 'Enter the distance remaining';
+      const parsed = parseFloat(trimmed);
+      if (!Number.isFinite(parsed) || parsed < 0) return 'Enter a valid distance';
+      if (resultOfShot === 'green') {
+        const afterInFeet = distanceAfterUnit === 'feet' ? parsed : parsed * 3;
+        if (afterInFeet > 150) return 'Green proximity must be under 150 ft';
+      }
+    }
+    return 'Complete the required fields above';
+  })();
 
   // Distance-after unit is DETERMINED by context, never a free toggle. This kills the
   // footgun that let putts / on-green proximity be stored in yards — the unit-blend that
@@ -307,6 +344,7 @@ export function FairwayShotEntry({
           {resultOfShot && resultOfShot !== 'hole' && (
             <Section
               label={distanceLabel}
+              labelFor="fw-distance-after"
               tint
               hint={<StatusPill tone="accent" dot={false} size="sm">Required</StatusPill>}
             >
@@ -314,6 +352,7 @@ export function FairwayShotEntry({
                 {/* REAL focusable native input — the state-machine auto-focus effect targets this ref. */}
                 {/* eslint-disable-next-line helm/no-raw-input */}
                 <input
+                  id="fw-distance-after"
                   ref={distanceInputRef}
                   type="number"
                   inputMode="numeric"
@@ -419,11 +458,24 @@ export function FairwayShotEntry({
 
       {/* ── Sticky action bar (thumb zone) ──────────────────────────────────── */}
       <div className="sticky bottom-0 z-10 -mx-4 mt-1 border-t border-border-subtle bg-canvas px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:-mx-6 sm:px-6">
+        {/* Visibility of system status (Nielsen #1): name the missing requirement
+            instead of leaving the primary action silently disabled. */}
+        {nextShotBlocker && (
+          <p
+            id="fw-next-shot-blocker"
+            role="status"
+            aria-live="polite"
+            className="mb-2 text-center font-fw-sans text-caption font-medium text-text-tertiary"
+          >
+            {nextShotBlocker}
+          </p>
+        )}
         <Button
           variant="primary"
           fullWidth
           onClick={onNextShot}
           disabled={!ready}
+          aria-describedby={nextShotBlocker ? 'fw-next-shot-blocker' : undefined}
           aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
         >
           {resultOfShot === 'hole' ? `Complete hole · Score ${currentShot}` : 'Next shot →'}

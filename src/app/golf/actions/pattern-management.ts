@@ -686,6 +686,72 @@ export async function resolvePattern(
 }
 
 // ============================================================================
+// REOPEN PATTERN (undo for dismiss / address / resolve)
+// ============================================================================
+
+/**
+ * P044 — the truthful reverse of `dismissPattern` / `markPatternAddressed` /
+ * `resolvePattern`, so a per-row pattern triage toast can offer a real Undo
+ * (Nielsen #3) that restores the row server-side, not just optimistically in
+ * the UI. Restores `lifecycle_state` to the prior visible state (passed from
+ * the optimistic snapshot — defaults to 'detected'), re-activates the row, and
+ * clears the dismiss/resolve stamps. Same auth + ownership boundary as the
+ * forward actions. Additive — no existing action's contract changes.
+ */
+export async function reopenPattern(
+  patternId: string,
+  priorLifecycleState?: 'detected' | 'confirmed' | 'addressed',
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const ownership = await verifyPatternAccess(patternId, user.id, supabase);
+    if (!ownership.allowed) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const patternsTable = fromUntyped(supabase, 'golf_patterns_v2');
+
+    // Restore a visible, active lifecycle and clear the terminal stamps so the
+    // row returns to the patterns workspace exactly as it was pre-triage.
+    const { error } = await patternsTable
+      .update({
+        lifecycle_state: priorLifecycleState ?? 'detected',
+        is_active: true,
+        dismissed_at: null,
+        dismissed_reason: null,
+        resolved_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', patternId);
+
+    if (error) {
+      await logServerError(`reopenPattern update failed: ${error.message}`, {
+        action: 'reopenPattern',
+        featureArea: 'pattern_management',
+        extra: { patternId, errorCode: error.code },
+      });
+      return { success: false, error: 'Failed to reopen pattern' };
+    }
+
+    revalidatePath('/golf/dashboard/patterns');
+    return { success: true };
+  } catch (error) {
+    await logServerError(`reopenPattern failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'reopenPattern',
+      featureArea: 'pattern_management',
+      extra: { patternId },
+    });
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
 // CREATE FOCUS AREA FROM PATTERN
 // ============================================================================
 

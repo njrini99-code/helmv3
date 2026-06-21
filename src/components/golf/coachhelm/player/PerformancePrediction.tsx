@@ -160,7 +160,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, delay: 0.5 })}
-              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-primary-600 rounded-full shadow-md"
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-surface border-2 border-primary-600 rounded-full shadow-md"
               style={{
                 left: `${Math.min(Math.max(((Number(rangeHigh) - Number(rangeLow)) > 0 ? ((predictedValue - Number(rangeLow)) / (Number(rangeHigh) - Number(rangeLow))) * 100 : 50), 5), 95)}%`,
                 transform: 'translate(-50%, -50%)',
@@ -183,7 +183,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, delay: 0.1 * i })}
-                className="flex items-center justify-between text-sm bg-cream-100/60 rounded-lg px-3 py-2"
+                className="flex items-center justify-between text-sm bg-surface-sunken rounded-lg px-3 py-2"
               >
                 <span className="text-warm-600">{factor.name}</span>
                 <span className={cn(
@@ -200,7 +200,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
 
       {/* Tail Risks */}
       {isTailRiskProbabilities(prediction.tailRisks) && (
-        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/20">
+        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border-subtle">
           <div className="text-center p-3 bg-red-50/50 rounded-lg">
             <p className="text-xs text-warm-500 mb-1">Rough Round Risk</p>
             <p className="text-body-lg font-medium tracking-[-0.005em] text-red-500">
@@ -222,7 +222,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 })}
-          className="mt-4 pt-4 border-t border-white/20 flex items-center gap-2"
+          className="mt-4 pt-4 border-t border-border-subtle flex items-center gap-2"
         >
           <stateMessage.icon size={16} className={stateMessage.color} />
           <span className={cn('text-sm font-medium', stateMessage.color)}>

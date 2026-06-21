@@ -28,6 +28,7 @@ import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Reveal } from '@/components/ui/reveal';
 import type { Metadata } from 'next';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { GenomeDetailView, type FocusAreaCardData } from '@/components/fairway';
 
@@ -54,6 +55,23 @@ export default async function CoachGenomePage({ params }: PageProps) {
   if (!session.coach) redirect('/golf/dashboard');
 
   const sb = await createClient();
+
+  // Scope to the coach's ACTIVE team (cookie-resolved), matching
+  // `/players/[playerId]` and `/players/[playerId]/game`. RLS already prevents
+  // cross-org IDOR, but without this gate a multi-team coach could open the
+  // genome for a player on a NON-active team — inconsistent with the team
+  // toggle that Insight/Game honor.
+  const teamId = await resolveCoachTeamIdWithCookie(sb, session.coach.organization_id, session.coach.id);
+  if (!teamId) redirect('/golf/dashboard/roster');
+
+  const { data: membership } = await sb
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', teamId)
+    .eq('player_id', playerId)
+    .maybeSingle();
+  if (!membership) notFound();
+
   const { data: player } = await sb
     .from('golf_players')
     .select('id, first_name, last_name')

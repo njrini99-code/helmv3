@@ -238,8 +238,10 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
       isHero
         ? heroGlassClassName
         : 'bg-surface border border-border-subtle',
-      // density
-      isCompact ? 'gap-3 p-4 items-center' : 'gap-4',
+      // density — compact wraps on narrow viewports so a multi-button trailing
+      // action cluster drops BELOW the title row (no horizontal overflow / title
+      // crush at 360px) and sits inline on the right from `sm:` up.
+      isCompact ? 'gap-x-3 gap-y-2 p-4 flex-wrap items-center' : 'gap-4',
       !isCompact && (isHero ? 'p-8' : 'p-6'),
       // interactivity — visual lift only on the container; the focus ring + the
       // actual keyboard/click affordance live on the overlay <button> (so the
@@ -449,9 +451,13 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
           ) : null}
         </div>
 
-        {/* compact: trailing action cluster on the right (above the overlay). */}
+        {/* compact: trailing action cluster. On narrow viewports it wraps to a
+            full-width row BELOW the title (basis-full) so 3–4 buttons never
+            overflow or crush the line-clamped title; from `sm:` up it collapses
+            back to the inline trailing cluster on the right. The cluster itself
+            wraps so each ≥44px touch target stays whole. Sits above the overlay. */}
         {actions && isCompact ? (
-          <div className="relative z-20 flex shrink-0 items-center gap-1.5 pointer-events-auto">
+          <div className="relative z-20 flex basis-full flex-wrap items-center gap-1.5 pointer-events-auto sm:basis-auto sm:ml-auto sm:shrink-0 sm:flex-nowrap">
             {actions}
           </div>
         ) : null}

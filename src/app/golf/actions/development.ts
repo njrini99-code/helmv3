@@ -408,6 +408,68 @@ export async function completeFocusArea(
 }
 
 /**
+ * Reactivate (re-open) a completed focus area.
+ *
+ * The inverse of `completeFocusArea` — used to recover from an accidental
+ * "Mark complete" tap (toast Undo) and to re-open a finished area from the
+ * completed list. Sets `status='active'` and clears `completed_at`. Mirrors the
+ * same auth + access checks and the select-back guard so a 0-row update (id
+ * mismatch / not permitted) surfaces as a failure rather than a false success.
+ */
+export async function reactivateFocusArea(
+  focusAreaId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data: focusArea } = await supabase
+    .from('golf_player_focus_areas')
+    .select('player_id, status')
+    .eq('id', focusAreaId)
+    .maybeSingle();
+
+  if (!focusArea?.player_id) {
+    return { success: false, error: 'Focus area not found' };
+  }
+
+  const access = await verifyPlayerAccess(focusArea.player_id, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  const nowIso = new Date().toISOString();
+  const { data: updated, error } = await supabase
+    .from('golf_player_focus_areas')
+    .update({
+      status: 'active',
+      completed_at: null,
+      updated_at: nowIso,
+    })
+    .eq('id', focusAreaId)
+    .select('id');
+
+  if (error) {
+    await logServerError(`Failed to reactivate focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.reactivateFocusArea' });
+    return { success: false, error: 'Failed to reopen. Please try again.' };
+  }
+
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Focus area not found or not permitted' };
+  }
+
+  revalidatePath('/golf/dashboard/development');
+  revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/analytics/coachhelm');
+
+  return { success: true };
+}
+
+/**
  * Resolve a player's current team + a coach to attribute a new focus area to.
  * Returns the first active team membership for the player.
  * `coach_id` falls back to whichever coach staffs that team (any one), or null.

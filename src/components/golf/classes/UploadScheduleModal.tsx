@@ -24,34 +24,56 @@ interface UploadScheduleModalProps {
   onParsed: (classes: ParsedClass[]) => void;
 }
 
-// Load PDF.js from CDN (avoids Vercel native dependency issues)
-const loadPdfJs = async () => {
+// Distinct sentinel so the caller can tell a CDN/library *load* failure apart
+// from a *parse* failure and show the right message (P225). A load failure is
+// recoverable by switching to TXT/paste; a parse failure usually means a
+// scanned/image-only PDF.
+const PDFJS_LOAD_ERROR = 'pdfjs-load-failed';
+
+// Load PDF.js from CDN (avoids Vercel native dependency issues). The runtime
+// pdfjs-dist in node_modules is a transitive *dev* dependency on a different
+// major (5.x) with an incompatible ESM API, so we pin the 3.x CDN build that
+// matches this code — but with a Subresource Integrity (SRI) hash so a
+// tampered/poisoned CDN response is rejected by the browser instead of
+// executed. (P225) Hashes are the official cdnjs SRI for pdf.js 3.11.174.
+const loadPdfJs = async (): Promise<PdfJsLib> => {
   const PDFJS_VERSION = '3.11.174';
   const PDFJS_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}`;
-  
+  // sha512 SRI from https://api.cdnjs.com/libraries/pdf.js/3.11.174?fields=sri
+  const PDFJS_MAIN_SRI =
+    'sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==';
+
   // Check if already loaded
   const pdfWindow = window as Window & { pdfjsLib?: PdfJsLib };
   if (pdfWindow.pdfjsLib) {
     return pdfWindow.pdfjsLib;
   }
-  
-  // Load the main library
-  await new Promise<void>((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = `${PDFJS_CDN}/pdf.min.js`;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load PDF.js'));
-    document.head.appendChild(script);
-  });
-  
+
+  // Load the main library with SRI + CORS (required for the browser to verify
+  // the integrity hash on a cross-origin script).
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = `${PDFJS_CDN}/pdf.min.js`;
+      script.integrity = PDFJS_MAIN_SRI;
+      script.crossOrigin = 'anonymous';
+      script.onload = () => resolve();
+      // Fires for network failure, CSP/offline block, AND SRI mismatch.
+      script.onerror = () => reject(new Error(PDFJS_LOAD_ERROR));
+      document.head.appendChild(script);
+    });
+  } catch {
+    throw new Error(PDFJS_LOAD_ERROR);
+  }
+
   const pdfjsLib = pdfWindow.pdfjsLib;
   if (!pdfjsLib) {
-    throw new Error('PDF.js failed to load.');
+    throw new Error(PDFJS_LOAD_ERROR);
   }
   // Type assertion needed because TypeScript can't infer the type after dynamic script load
   const typedPdfjsLib = pdfjsLib as PdfJsLib;
   typedPdfjsLib.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN}/pdf.worker.min.js`;
-  
+
   return typedPdfjsLib;
 };
 
@@ -133,8 +155,16 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
       }
 
       return fullText;
-    } catch {
-      throw new Error('Failed to extract text from PDF. Try using TXT or paste text instead.');
+    } catch (err) {
+      // Distinguish a library *load* failure (CDN blocked by CSP/offline/
+      // ad-block, or an SRI mismatch) from an actual *parse* failure, so the
+      // player gets an actionable message instead of one catch-all. (P225)
+      if (err instanceof Error && err.message === PDFJS_LOAD_ERROR) {
+        throw new Error(
+          'PDF import is unavailable right now (the PDF reader could not be loaded — this can happen offline or on a restricted network). Please use a TXT file or paste your schedule text instead.',
+        );
+      }
+      throw new Error('Failed to read this PDF. It may be a scanned/image-only file. Try using TXT or paste text instead.');
     }
   };
 
@@ -273,16 +303,29 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           </div>
 
           {!pasteMode ? (
-            /* Upload Area */
-            // eslint-disable-next-line jsx-a11y/no-static-element-interactions,jsx-a11y/click-events-have-key-events
+            /* Upload Area — keyboard-operable dropzone (P224). role="button" +
+               tabIndex + Enter/Space handler + a visible focus ring make it a
+               real, focusable control so keyboard-only users can open the file
+               picker. Drag/drop stays on the same surface. */
             <div
+              role="button"
+              tabIndex={0}
+              aria-label="Upload a PDF or TXT schedule file. Press Enter or Space to browse files, or drop a file here."
+              aria-disabled={loading || undefined}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
               className={`
                 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-surface
                 ${dragActive
                   ? 'border-accent-500 bg-accent-500/10'
                   : 'border-border-subtle hover:border-border-strong hover:bg-surface-sunken active:bg-surface-sunken'

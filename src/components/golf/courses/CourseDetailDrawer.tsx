@@ -5,7 +5,10 @@ import { cn } from '@/lib/utils';
 import { CourseImage } from './CourseImage';
 import { CourseFormDrawer } from './CourseFormDrawer';
 import { TeeFormDrawer } from './TeeFormDrawer';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/fairway/controls/button';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useToast } from '@/components/ui/sonner';
 import {
@@ -14,6 +17,7 @@ import {
 import {
   getCourseDetail, getTeeWithHoles, saveTeamCourse, unsaveTeamCourse,
   setCourseImageUrl, removeCourseImage, setTeamCoursePinned, setTeamCourseDefaultTee,
+  softDeleteCourse, softDeleteTee,
 } from '@/app/golf/actions/course-library';
 import { uploadCourseImage } from '@/lib/golf/upload-course-image';
 import type {
@@ -43,10 +47,18 @@ export function CourseDetailDrawer({
   const fileRef = useRef<HTMLInputElement>(null);
   const [detail, setDetail] = useState<{ course: GolfCourse; tees: GolfCourseTee[] } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [editCourseOpen, setEditCourseOpen] = useState(false);
   const [teeForm, setTeeForm] = useState<{ open: boolean; mode: 'create' | 'edit'; tee?: GolfCourseTeeWithHoles }>({ open: false, mode: 'create' });
   const [uploading, setUploading] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  // Destructive confirmations (Nielsen #5 error prevention): photo removal,
+  // tee-set deletion, and whole-course removal each route through ConfirmDialog.
+  const [removePhotoConfirm, setRemovePhotoConfirm] = useState(false);
+  const [deleteTee, setDeleteTee] = useState<{ id: string; name: string } | null>(null);
+  const [deleteCourseConfirm, setDeleteCourseConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isSaved = courseId ? savedCourseIds.has(courseId) : false;
   const savedRow = courseId ? savedById?.get(courseId) : undefined;
@@ -68,13 +80,20 @@ export function CourseDetailDrawer({
     setDetail(d);
   };
 
+  const loadDetail = (id: string) => {
+    setLoading(true);
+    setLoadError(false);
+    setDetail(null);
+    getCourseDetail(id)
+      .then((d) => setDetail(d))
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
     if (!open || !courseId) return;
-    setLoading(true);
-    setDetail(null);
-    getCourseDetail(courseId)
-      .then((d) => setDetail(d))
-      .finally(() => setLoading(false));
+    loadDetail(courseId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, courseId]);
 
   const afterMutation = async () => {
@@ -99,11 +118,41 @@ export function CourseDetailDrawer({
 
   const handleRemoveImage = () => {
     if (!courseId) return;
+    setRemovePhotoConfirm(false);
     startTransition(async () => {
       const res = await removeCourseImage(courseId);
       if (!res.success) { showToast(res.error, 'error'); return; }
       showToast('Photo removed', 'success');
       await afterMutation();
+    });
+  };
+
+  const handleDeleteTee = () => {
+    if (!deleteTee) return;
+    const teeId = deleteTee.id;
+    setDeleting(true);
+    startTransition(async () => {
+      const res = await softDeleteTee(teeId);
+      setDeleting(false);
+      setDeleteTee(null);
+      if (!res.success) { showToast(res.error, 'error'); return; }
+      showToast('Tee set removed', 'success');
+      await afterMutation();
+    });
+  };
+
+  const handleDeleteCourse = () => {
+    if (!courseId) return;
+    const id = courseId;
+    setDeleting(true);
+    startTransition(async () => {
+      const res = await softDeleteCourse(id);
+      setDeleting(false);
+      setDeleteCourseConfirm(false);
+      if (!res.success) { showToast(res.error, 'error'); return; }
+      showToast('Course removed', 'success');
+      onChanged?.();
+      onOpenChange(false);
     });
   };
 
@@ -200,7 +249,7 @@ export function CourseDetailDrawer({
                   // eslint-disable-next-line helm/no-raw-button -- glass overlay control on the hero image
                   <button
                     type="button"
-                    onClick={handleRemoveImage}
+                    onClick={() => setRemovePhotoConfirm(true)}
                     disabled={pending}
                     aria-label="Remove photo"
                     className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition-colors hover:bg-black/50 disabled:opacity-60"
@@ -224,7 +273,7 @@ export function CourseDetailDrawer({
               {/* title overlay */}
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <h2 className="font-fw-display text-title-2 font-semibold tracking-tight text-white drop-shadow-sm">
-                  {course?.name ?? 'Loading…'}
+                  {course?.name ?? (loadError ? 'Couldn’t load course' : 'Loading…')}
                 </h2>
                 {location && (
                   <p className="mt-0.5 inline-flex items-center gap-1 text-body-sm text-white/85">
@@ -236,6 +285,26 @@ export function CourseDetailDrawer({
 
             {/* Body */}
             <div className="space-y-6 p-5">
+              {/* Detail-fetch failure: explicit error + retry (the drawer must never
+                  hang on a permanent "Loading…" hero when getCourseDetail rejects). */}
+              {loadError && !loading ? (
+                <InlineNotice
+                  tone="danger"
+                  title="Couldn’t load this course"
+                  action={
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => { if (courseId) loadDetail(courseId); }}
+                    >
+                      Try again
+                    </Button>
+                  }
+                >
+                  Something went wrong fetching the course details.
+                </InlineNotice>
+              ) : (
+              <>
               {/* actions */}
               <div className="flex flex-wrap gap-2">
                 {canManageTeam && course && (
@@ -243,7 +312,7 @@ export function CourseDetailDrawer({
                     variant={isSaved ? 'secondary' : 'primary'}
                     size="sm"
                     onClick={handleToggleSave}
-                    isLoading={pending && !pinPending && defaultTeePending === null}
+                    busy={pending && !pinPending && defaultTeePending === null}
                   >
                     {isSaved ? <><IconCheck size={14} aria-hidden /> Saved</> : <><IconStar size={14} aria-hidden /> Save to team</>}
                   </Button>
@@ -253,7 +322,7 @@ export function CourseDetailDrawer({
                     variant="ghost"
                     size="sm"
                     onClick={handleTogglePin}
-                    isLoading={pinPending}
+                    busy={pinPending}
                     aria-pressed={pinned}
                   >
                     <IconStar
@@ -267,6 +336,16 @@ export function CourseDetailDrawer({
                 {course && (
                   <Button variant="ghost" size="sm" onClick={() => setEditCourseOpen(true)}>
                     <IconPencil size={14} aria-hidden /> Edit course
+                  </Button>
+                )}
+                {canManageTeam && course && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => setDeleteCourseConfirm(true)}
+                    className="ml-auto"
+                  >
+                    <IconTrash size={14} aria-hidden /> Remove course
                   </Button>
                 )}
               </div>
@@ -302,9 +381,10 @@ export function CourseDetailDrawer({
                 </div>
 
                 {loading ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2" role="status" aria-busy="true" aria-live="polite">
+                    <span className="sr-only">Loading tee sets…</span>
                     {[0, 1].map((i) => (
-                      <div key={i} className="h-16 animate-pulse rounded-fw-md bg-surface-sunken" />
+                      <Skeleton key={i} className="h-16 w-full rounded-fw-md" />
                     ))}
                   </div>
                 ) : tees.length === 0 ? (
@@ -319,9 +399,11 @@ export function CourseDetailDrawer({
                           tee={tee}
                           onEdit={() => handleEditTee(tee.id)}
                           canManageTeam={canManageTeam && isSaved}
+                          canDelete={canManageTeam}
                           isDefault={defaultTeeId === tee.id}
                           settingDefault={defaultTeePending === tee.id}
                           onSetDefault={() => handleSetDefaultTee(tee.id)}
+                          onDelete={() => setDeleteTee({ id: tee.id, name: tee.tee_name })}
                         />
                       </li>
                     ))}
@@ -333,6 +415,8 @@ export function CourseDetailDrawer({
                 <p className="text-caption text-text-tertiary">
                   Last edited {new Date(course.last_edited_at).toLocaleDateString()}
                 </p>
+              )}
+              </>
               )}
             </div>
           </div>
@@ -361,24 +445,68 @@ export function CourseDetailDrawer({
           onSaved={() => { void afterMutation(); setTeeForm((s) => ({ ...s, open: false })); }}
         />
       )}
+
+      {/* Destructive confirmations (Nielsen #5) */}
+      <ConfirmDialog
+        open={removePhotoConfirm}
+        variant="danger"
+        title="Remove photo?"
+        message="This clears the course photo. You can re-upload one later."
+        confirmLabel="Remove photo"
+        isLoading={pending}
+        onConfirm={handleRemoveImage}
+        onCancel={() => setRemovePhotoConfirm(false)}
+      />
+      <ConfirmDialog
+        open={deleteTee !== null}
+        variant="danger"
+        title="Delete tee set?"
+        message={
+          deleteTee
+            ? `“${deleteTee.name}” will be removed from this course. Recorded rounds keep their own snapshots.`
+            : ''
+        }
+        confirmLabel="Delete tee set"
+        isLoading={deleting}
+        onConfirm={handleDeleteTee}
+        onCancel={() => { if (!deleting) setDeleteTee(null); }}
+      />
+      <ConfirmDialog
+        open={deleteCourseConfirm}
+        variant="danger"
+        title="Remove course?"
+        message={`${course?.name ?? 'This course'} will be removed from the library. Recorded rounds keep their own snapshots.`}
+        confirmLabel="Remove course"
+        isLoading={deleting}
+        onConfirm={handleDeleteCourse}
+        onCancel={() => { if (!deleting) setDeleteCourseConfirm(false); }}
+      />
     </>
   );
 }
 
 function TeeRow({
-  tee, onEdit, canManageTeam = false, isDefault = false, settingDefault = false, onSetDefault,
+  tee, onEdit, canManageTeam = false, canDelete = false, isDefault = false, settingDefault = false, onSetDefault, onDelete,
 }: {
   tee: GolfCourseTee;
   onEdit: () => void;
   canManageTeam?: boolean;
+  canDelete?: boolean;
   isDefault?: boolean;
   settingDefault?: boolean;
   onSetDefault?: () => void;
+  onDelete?: () => void;
 }) {
   const cat = tee.category ? CATEGORY_LABEL[tee.category] ?? tee.category : null;
+  // Draft honesty: total_par/total_yards are summed only over the holes that
+  // exist, so for a draft (incomplete) tee they are PARTIAL — never present them
+  // as a complete-course par. Qualify the par/yards with "(partial)" so the small
+  // number can't be misread as a full-course figure. The "Draft · partial of N
+  // holes" label below names the target hole count for the full context.
+  const partialSuffix = tee.is_draft ? ' (partial)' : '';
   const facts = [
-    typeof tee.total_par === 'number' ? `Par ${tee.total_par}` : null,
-    typeof tee.total_yards === 'number' ? `${tee.total_yards.toLocaleString()} yds` : null,
+    typeof tee.total_par === 'number' ? `Par ${tee.total_par}${partialSuffix}` : null,
+    typeof tee.total_yards === 'number' ? `${tee.total_yards.toLocaleString()} yds${partialSuffix}` : null,
     typeof tee.course_rating === 'number' && typeof tee.slope_rating === 'number'
       ? `${tee.course_rating}/${tee.slope_rating}` : null,
   ].filter(Boolean);
@@ -411,7 +539,7 @@ function TeeRow({
           )}
           {tee.is_draft && (
             <span className="rounded-full bg-warning/15 px-2 py-0.5 text-caption font-medium text-warning">
-              Draft
+              Draft · partial of {tee.holes_count} holes
             </span>
           )}
         </div>
@@ -424,7 +552,7 @@ function TeeRow({
           variant="ghost"
           size="sm"
           onClick={onSetDefault}
-          isLoading={settingDefault}
+          busy={settingDefault}
           aria-pressed={isDefault}
           aria-label={isDefault ? `Clear ${tee.tee_name} as team default tee` : `Set ${tee.tee_name} as team default tee`}
         >
@@ -434,6 +562,16 @@ function TeeRow({
       <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit ${tee.tee_name}`}>
         <IconPencil size={14} aria-hidden /> Edit
       </Button>
+      {canDelete && onDelete && (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={onDelete}
+          aria-label={`Delete ${tee.tee_name} tee set`}
+        >
+          <IconTrash size={14} aria-hidden />
+        </Button>
+      )}
     </div>
   );
 }

@@ -197,6 +197,14 @@ export interface CoachHelmSubNavProps {
   /**
    * Unread urgent/high open-signal count for the Signals tab badge. `null` /
    * `0` / undefined → no badge (honest: never a fake "0"). Coach only.
+   *
+   * P414 — ONE SOURCE contract: this is the SAME number as the sidebar
+   * "CoachHelm AI" cluster badge (FairwayDashboardShell badges.coachhelm). Both
+   * derive from getAlertCounts().counts.critical (open urgent+high insights), so
+   * the two never contradict when both are visible on a CoachHelm screen. The
+   * only intentional divergence: the insights page passes `null` here to defer
+   * to its on-page "Urgent + high" tile (the sidebar badge stays as the rail
+   * cue). Callers MUST keep seeding this from getAlertCounts().counts.critical.
    */
   signalCount?: number | null;
   /** Accessible label for the nav landmark. Default "CoachHelm sections". */

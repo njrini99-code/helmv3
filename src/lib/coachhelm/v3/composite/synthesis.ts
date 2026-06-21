@@ -305,7 +305,14 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
     result.errors += 1;
     return result;
   }
-  if (insights.length === 0) return result;
+  // P2-20: do NOT early-return when there are no Tier-1 insights. Several
+  // composites are CONTEXT-ONLY (closing-hole fatigue, front-9 starter,
+  // doubles-after-bogey, short-side scrambling) — they detect() off raw
+  // hole/shot context and ignore `insights` entirely. Bailing here meant a
+  // player with rich shot data but no Tier-1 rows produced zero composites.
+  // Insight-driven rules safely no-op on an empty `insights` array (they
+  // filter for matching insight types and find none), so it is correct to
+  // fall through and let every rule see the loaded ctx below.
 
   // W30.5: pre-load hole-sequence + lie-typed shot context once so rules
   // that need raw data (closing-hole fatigue, doubles-after-bogey, etc.)

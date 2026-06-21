@@ -22,6 +22,7 @@ interface TeamForClient {
   season: string | null;
   join_code: string | null;
   created_at: string;
+  gender: string | null;
 }
 
 interface CoachWithTeam {
@@ -48,7 +49,7 @@ export default async function TeamSettingsPage() {
     const { data: orgTeam } = orgTeamId
       ? await supabase
           .from('golf_teams')
-          .select('id, name, season, join_code, created_at')
+          .select('id, name, season, join_code, created_at, gender')
           .eq('id', orgTeamId)
           .maybeSingle()
       : { data: null };
@@ -64,6 +65,7 @@ export default async function TeamSettingsPage() {
         season: orgTeam.season,
         join_code: orgTeam.join_code,
         created_at: orgTeam.created_at || '',
+        gender: orgTeam.gender ?? null,
       } : null,
     };
   } else if (coach) {

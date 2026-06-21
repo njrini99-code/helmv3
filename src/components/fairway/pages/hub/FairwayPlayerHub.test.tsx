@@ -154,6 +154,19 @@ describe('FairwayPlayerHub — optimistic write boundary', () => {
     await waitFor(() => expect(respondToEvent).toHaveBeenCalled());
     expect(toastError).not.toHaveBeenCalled();
   });
+
+  it('RSVP success shows an explicit confirmation toast (P156)', async () => {
+    respondToEvent.mockResolvedValue({ success: true });
+    render(<FairwayPlayerHubWrapper {...baseProps} events={[pendingEvent]} />);
+
+    fireEvent.click(screen.getByText('rsvp-going'));
+
+    await waitFor(() => expect(respondToEvent).toHaveBeenCalledWith('evt1', 'accepted'));
+    // A saved RSVP must be visibly distinct from a silent failure: success toast
+    // fires, error toast does not (visibility-of-system-status, Nielsen #1).
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("RSVP saved — you're going"));
+    expect(toastError).not.toHaveBeenCalled();
+  });
 });
 
 describe('FairwayPlayerHub — honest-empty bucketing', () => {

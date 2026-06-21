@@ -299,6 +299,7 @@ export function FairwayPlayerAnnouncementCard({
         type="button"
         onClick={handleExpand}
         aria-expanded={expanded}
+        aria-controls={`announcement-detail-${ann.id}`}
         className={cn(
           'flex w-full items-start gap-3 px-5 py-4 text-left',
           'transition-colors duration-fast hover:bg-surface-sunken/40',
@@ -384,7 +385,12 @@ export function FairwayPlayerAnnouncementCard({
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="border-t border-border-subtle px-5 pb-5 pt-4">
+        <div
+          id={`announcement-detail-${ann.id}`}
+          role="region"
+          aria-label={`Details for ${ann.title}`}
+          className="border-t border-border-subtle px-5 pb-5 pt-4"
+        >
           {loadingDetail ? (
             <div className="flex flex-col gap-3">
               <Skeleton className="h-4 w-full" />

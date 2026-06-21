@@ -14,7 +14,7 @@
  * ========================================================================== */
 
 import { memo } from 'react';
-import { cn } from '@/lib/utils';
+import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
 
 interface FairwayShotPillsProps {
   currentShot: number;
@@ -51,24 +51,22 @@ export const FairwayShotPills = memo(function FairwayShotPills({
               const isSelected = selectedShotNumber === num;
 
               return (
-                <button
+                // P404 — the shared selectable-pill primitive (active/completed/
+                // future/selected vocabulary) replaces the hand-rolled <button>
+                // + class soup; same shape, same focus/disabled/motion contract.
+                <SelectablePill
                   key={num}
-                  type="button"
+                  active={isActive}
+                  completed={isCompleted}
+                  future={isFuture}
+                  selected={isSelected}
                   disabled={!isRecorded}
                   onClick={() => isRecorded && onSelectShot(num)}
-                  className={cn(
-                    'flex h-10 min-w-[44px] items-center justify-center rounded-fw-md px-3 font-fw-sans text-sm font-medium tabular-nums transition-colors',
-                    'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                    isActive && 'bg-accent-500 text-text-on-accent shadow-flat',
-                    isCompleted && 'bg-accent-50 text-accent-700 ring-1 ring-accent-200',
-                    isFuture && 'bg-surface-sunken text-text-tertiary ring-1 ring-border-subtle',
-                    isSelected && 'ring-2 ring-accent-500',
-                    isRecorded ? 'cursor-pointer' : 'cursor-default',
-                  )}
+                  className={isRecorded ? 'cursor-pointer' : 'cursor-default'}
                   aria-label={isRecorded ? `View shot ${num}` : `Shot ${num} not recorded`}
                 >
                   {num}
-                </button>
+                </SelectablePill>
               );
             })}
           </div>

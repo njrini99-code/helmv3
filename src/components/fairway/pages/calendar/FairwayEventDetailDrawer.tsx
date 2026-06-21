@@ -22,14 +22,16 @@
 
 import * as React from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { format } from 'date-fns';
-import { Check, X, MapPin, Clock, ExternalLink, Pencil, Lock, CalendarClock } from 'lucide-react';
+import { Check, X, MapPin, Clock, ExternalLink, Pencil, Lock, CalendarClock, Plane, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, Inset, Readout, Button, StatusPill, Skeleton } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { rsvpLockMessage } from '@/hooks/useRSVP';
+import { getItineraryForEvent } from '@/app/golf/actions/travel';
 
 // Coach-only roll-call panel — code-split so players never download it.
 const AttendancePanel = dynamic(
@@ -123,6 +125,12 @@ export function FairwayEventDetailDrawer({
 }: FairwayEventDetailDrawerProps) {
   const [pendingStatus, setPendingStatus] = React.useState<RSVPStatus | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  // Calendar→travel cross-link (P440): the travel itinerary linked to this event,
+  // looked up on open via the reverse join (golf_travel_itineraries.event_id).
+  // null = no linked trip → the affordance stays hidden (honest).
+  const [linkedTrip, setLinkedTrip] = React.useState<
+    { id: string; event_name: string; destination: string } | null
+  >(null);
 
   React.useEffect(() => {
     if (!open) {
@@ -130,6 +138,30 @@ export function FairwayEventDetailDrawer({
       setError(null);
     }
   }, [open]);
+
+  // Resolve the linked itinerary when the drawer opens for an event. Self-
+  // contained (no orchestrator threading) + failure-silent — a lookup error or
+  // unlinked event simply leaves `linkedTrip` null, so the link never asserts a
+  // trip that isn't there.
+  React.useEffect(() => {
+    if (!open || !event) {
+      setLinkedTrip(null);
+      return;
+    }
+    let cancelled = false;
+    const eventId = event.id;
+    void (async () => {
+      try {
+        const res = await getItineraryForEvent(eventId);
+        if (!cancelled) setLinkedTrip(res.success ? res.data ?? null : null);
+      } catch {
+        if (!cancelled) setLinkedTrip(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, event]);
 
   // Standalone non-optional fallback — TYPE_META.other is `| undefined` under
   // noUncheckedIndexedAccess, so it can't guarantee a non-undefined `meta`.
@@ -221,6 +253,7 @@ export function FairwayEventDetailDrawer({
               href={mapsHref(event.location)}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={`Open ${event.location} in Google Maps (opens in a new tab)`}
               className={cn(
                 'flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-4 py-3',
                 'outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint',
@@ -242,6 +275,31 @@ export function FairwayEventDetailDrawer({
             <p className="whitespace-pre-wrap font-fw-sans text-body-sm leading-[1.5] text-text-secondary">
               {event.description}
             </p>
+          ) : null}
+
+          {/* Linked travel itinerary (P440) — only when this event has a trip in
+              golf_travel_itineraries pointing back at it. Deep-links to Travel HQ
+              so the coach/player can jump straight to the itinerary, mirroring the
+              reverse "View on calendar" affordance on FairwayTripDetail. Honest:
+              hidden when the event has no linked trip. */}
+          {linkedTrip ? (
+            <Link
+              href="/golf/dashboard/travel"
+              className={cn(
+                'group flex items-center gap-2.5 rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2.5',
+                'font-fw-sans text-body-sm text-text-secondary transition-colors hover:border-accent-500 hover:bg-surface',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40',
+              )}
+            >
+              <Plane className="h-4 w-4 shrink-0 text-accent-700" aria-hidden />
+              <span className="min-w-0 flex-1 truncate">
+                View itinerary:{' '}
+                <span className="font-medium text-text-primary">
+                  {linkedTrip.destination || linkedTrip.event_name || 'travel itinerary'}
+                </span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-accent-700" aria-hidden />
+            </Link>
           ) : null}
 
           {/* Coach attendance — 4 Readouts, tabular-nums, 0 rendered as 0. */}

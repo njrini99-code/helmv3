@@ -25,7 +25,7 @@
 
 import { type Dispatch, type SetStateAction } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
-import { Flag, MapPin, Check, BarChart3, Trophy, Search } from 'lucide-react';
+import { MapPin, Check, BarChart3, Trophy, Search, ChevronLeft } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
@@ -33,6 +33,7 @@ import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Chip } from '@/components/fairway/controls/badge';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { FairwayRecentCourses } from './FairwayRecentCourses';
 import { OfflineWarningBanner } from '@/components/golf';
 import { FairwayHoleConfig } from './FairwayHoleConfig';
@@ -60,15 +61,6 @@ type Step = 'setup' | 'holes' | 'tracking' | 'submitting';
 
 export interface FairwayNewRoundEntryProps {
   step: Step;
-  showResumePrompt: boolean;
-  existingInProgressRound?: {
-    id: string;
-    courseName: string;
-    currentHole: number;
-    holesPlayed: number;
-  } | null;
-  onContinueResume: () => void;
-  onStartFresh: () => void;
 
   /** Opens the Cloud Course Library tee picker (primary course-selection CTA). */
   onBrowseCourseLibrary: () => void;
@@ -108,6 +100,8 @@ export interface FairwayNewRoundEntryProps {
   qualifiers: PlayerQualifierInfo[];
   loadingQualifiers: boolean;
   qualifierError: string | null;
+  /** Re-runs the qualifier fetch — wired to the inline "Try again" retry. */
+  onRetryQualifiers: () => void;
   selectedQualifierId: string | null;
   setSelectedQualifierId: (id: string | null) => void;
   availableRounds: number[];
@@ -118,6 +112,10 @@ export interface FairwayNewRoundEntryProps {
   isStartingRound: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
+  /** Persistent back-to-dashboard nav (rendered in the cockpit header on the
+   *  setup step) so a player can always leave without relying on the form Cancel
+   *  button — Nielsen #3 user control & freedom. */
+  onExitToDashboard: () => void;
 
   onHolesSave: (holes: HoleConfig[]) => void;
   onHolesBack: () => void;
@@ -202,16 +200,31 @@ function CockpitBand({
   eyebrow,
   title,
   description,
+  onBack,
+  backLabel,
 }: {
   step: Step;
   eyebrow: string;
   title: string;
   description?: string;
+  /** Optional persistent back affordance rendered at the top of the band. */
+  onBack?: () => void;
+  backLabel?: string;
 }) {
   return (
     <div className="on-dark relative overflow-hidden rounded-card bg-nav-bg p-7 text-nav-text shadow-soft md:p-8">
       <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-500/15 blur-[70px]" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="relative -ml-1 mb-3 inline-flex min-h-[44px] items-center gap-1 rounded-fw-sm px-1 font-fw-sans text-body-sm font-medium text-nav-text-dim transition-colors hover:text-nav-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-nav-bg"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+          {backLabel ?? 'Back'}
+        </button>
+      )}
       <p className="relative font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-nav-accent">
         {eyebrow}
       </p>
@@ -227,7 +240,7 @@ function CockpitBand({
 }
 
 export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
-  const { step, showResumePrompt } = props;
+  const { step } = props;
   const prefersReducedMotion = useReducedMotion();
   const enter = (i: number) =>
     prefersReducedMotion
@@ -238,37 +251,9 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
           transition: { duration: 0.45, delay: 0.05 * i, ease: [0.16, 1, 0.3, 1] as const },
         };
 
-  // ── Resume gate ─────────────────────────────────────────────────────────
-  if (showResumePrompt && props.existingInProgressRound) {
-    const r = props.existingInProgressRound;
-    return (
-      <div className="mx-auto flex min-h-full w-full max-w-md items-center justify-center px-4 py-12">
-        <m.div {...enter(0)} className="w-full">
-          <Surface elevation="shadow" padding="lg" className="text-center">
-            <span className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-accent-50 text-accent-700">
-              <Flag className="h-6 w-6" aria-hidden />
-            </span>
-            <h2 className="font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary">
-              Round in progress
-            </h2>
-            <p className="mt-2 font-fw-sans text-body-sm text-text-tertiary">You have an unfinished round at</p>
-            <p className="mt-1 font-fw-sans text-body font-medium text-text-primary">{r.courseName}</p>
-            <p className="mt-1 font-fw-sans text-caption text-text-tertiary">
-              Hole {r.currentHole} of {r.holesPlayed}
-            </p>
-            <div className="mt-6 flex flex-col gap-3">
-              <Button variant="primary" onClick={props.onContinueResume}>
-                Continue round
-              </Button>
-              <Button variant="secondary" onClick={props.onStartFresh}>
-                Start fresh round
-              </Button>
-            </div>
-          </Surface>
-        </m.div>
-      </div>
-    );
-  }
+  // NOTE: there is intentionally NO in-flow resume gate here. Unfinished rounds
+  // are surfaced on the /rounds page (UnfinishedRoundsSection), so this entry
+  // screen always renders the setup/holes flow directly.
 
   // ── Holes config step ─────────────────────────────────────────────────────
   if (step === 'holes') {
@@ -327,24 +312,24 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             eyebrow="New round · Setup"
             title="Track every shot of this round."
             description="Pick a course, set up your scorecard, then start tracking."
+            onBack={props.onExitToDashboard}
+            backLabel="Dashboard"
           />
         </m.div>
 
         {/* PRIMARY course source: the shared Cloud Course Library (course + tee). */}
-        {!showResumePrompt && (
-          <m.div {...enter(i++)}>
-            <Button
-              type="button"
-              variant="primary"
-              onClick={props.onBrowseCourseLibrary}
-              className="w-full justify-center"
-            >
-              <MapPin size={16} aria-hidden /> Browse course library
-            </Button>
-          </m.div>
-        )}
+        <m.div {...enter(i++)}>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={props.onBrowseCourseLibrary}
+            className="w-full justify-center"
+          >
+            <MapPin size={16} aria-hidden /> Browse course library
+          </Button>
+        </m.div>
 
-        {props.recentCourses.length > 0 && !showResumePrompt && (
+        {props.recentCourses.length > 0 && (
           <m.div {...enter(i++)}>
             <FairwayRecentCourses courses={props.recentCourses} onConfirmCourse={props.onQuickPickConfirm} />
           </m.div>
@@ -769,7 +754,24 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                 {loadingQualifiers ? (
                   <p className="font-fw-sans text-body-sm text-text-tertiary">Loading your qualifiers…</p>
                 ) : qualifierError ? (
-                  <p className="font-fw-sans text-body-sm text-fw-danger">{qualifierError}</p>
+                  // "no active qualifiers" is an empty-state (quiet info, no retry);
+                  // anything else is a genuine fetch failure → InlineNotice with an
+                  // inline "Try again" so the player never has to refresh the page.
+                  /no active qualifiers/i.test(qualifierError) ? (
+                    <p className="font-fw-sans text-body-sm text-text-tertiary">{qualifierError}</p>
+                  ) : (
+                    <InlineNotice
+                      tone="danger"
+                      title="Couldn't load your qualifiers"
+                      action={
+                        <Button type="button" variant="secondary" size="sm" onClick={props.onRetryQualifiers}>
+                          Try again
+                        </Button>
+                      }
+                    >
+                      {qualifierError}
+                    </InlineNotice>
+                  )
                 ) : qualifiers.length === 0 ? (
                   <p className="font-fw-sans text-body-sm text-text-tertiary">
                     You are not entered in any active qualifiers. Please contact your coach.
