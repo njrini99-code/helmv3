@@ -101,10 +101,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const { showToast } = useToast();
   // Unfinished rounds are surfaced on the /rounds page (UnfinishedRoundsSection),
   // not as a gate here — starting a New Round lands straight on the course
-  // carousel. (existingInProgressRound is still used for emergency-save/status
-  // wiring below; we just never show the resume prompt.)
-  const [showResumePrompt, setShowResumePrompt] = useState(false);
-  const resumePromptUpdatedAtRef = useRef<string | undefined>(undefined);
+  // carousel. There is no in-flow resume prompt (the old prompt state was never
+  // reachable). `existingInProgressRound` is still accepted as a prop for the
+  // caller's contract.
 
   // Hide mobile bottom nav for entire round flow (setup → holes → tracking → submit)
   const { hide: hideMobileNav, show: showMobileNav } = useMobileNav();
@@ -271,7 +270,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     }
 
     setError('');
-    setShowResumePrompt(false);
     isSubmittingRef.current = false;
     startTransition(() => {
       router.replace(`/golf/dashboard/rounds/${targetRoundId}`);
@@ -340,14 +338,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   setupDataRef.current = setupData;
   const holesPerRoundRef = useRef(holesPerRound);
   holesPerRoundRef.current = holesPerRound;
-
-  useRoundStatusSync({
-    roundId: step === 'setup' && showResumePrompt ? existingInProgressRound?.id ?? null : null,
-    expectedUpdatedAtRef: resumePromptUpdatedAtRef,
-    onRoundCompleted: () => {
-      setShowResumePrompt(false);
-    },
-  });
 
   useRoundStatusSync({
     roundId: savedRoundId,
@@ -794,7 +784,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // does not reopen (the ref latches).
   const autoOpenedPickerRef = useRef(false);
   useEffect(() => {
-    if (!redesign || showResumePrompt || step !== 'setup') return;
+    if (!redesign || step !== 'setup') return;
     if (autoOpenedPickerRef.current) return;
     // A `_new` emergency save is pending recovery — let the "Recover Unsaved
     // Progress?" dialog surface instead of burying it under the course picker.
@@ -808,7 +798,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       !selectedCourseId && selectedTeeIdRef.current == null && !setupData.courseName;
     autoOpenedPickerRef.current = true;
     if (nothingChosenYet) setTeePickerOpen(true);
-  }, [redesign, showResumePrompt, step, selectedCourseId, setupData.courseName, connectionStatus.isOnline]);
+  }, [redesign, step, selectedCourseId, setupData.courseName, connectionStatus.isOnline]);
 
   // Handle saved course selection
   const handleSavedCourseSelect = (courseId: string | null) => {
@@ -1663,23 +1653,25 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
   // ============================================================================
   // FAIRWAY FORK (ADDITIVE) — flag ON renders the redesigned ENTRY screens
-  // (resume gate + setup + holes) from the SAME state + handlers. The tracking
-  // and submitting steps still fall through to the legacy render below (a later
-  // phase). Flag OFF → every legacy branch below is byte-for-byte unchanged. No
+  // (setup + holes) from the SAME state + handlers. The tracking and submitting
+  // steps still fall through to the legacy render below (a later phase). Flag
+  // OFF → every legacy branch below is byte-for-byte unchanged. No
   // mutation/autosave/optimistic-lock logic moves; this is presentation only.
+  // The resume prompt is never shown here (it lives on /rounds), so the resume
+  // props are passed as inert constants to satisfy the component contract.
   // ============================================================================
-  if (redesign && (showResumePrompt || step === 'setup' || step === 'holes')) {
+  if (redesign && (step === 'setup' || step === 'holes')) {
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayNewRoundEntry
           step={step}
-          showResumePrompt={showResumePrompt}
+          showResumePrompt={false}
           existingInProgressRound={existingInProgressRound}
           onContinueResume={() =>
             existingInProgressRound &&
             router.push(`/golf/dashboard/rounds/continue/${existingInProgressRound.id}`)
           }
-          onStartFresh={() => setShowResumePrompt(false)}
+          onStartFresh={() => { /* no-op: resume prompt is never shown */ }}
           onBrowseCourseLibrary={() => setTeePickerOpen(true)}
           recentCourses={recentCourses}
           onQuickPickConfirm={handleQuickPickConfirm}
@@ -1774,52 +1766,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   }
 
   // ============================================================================
-  // RESUME IN-PROGRESS ROUND PROMPT
-  // ============================================================================
-  if (showResumePrompt && existingInProgressRound) {
-    return (
-      <>
-        <MobileNavHeader title="New Round" backHref="/golf/dashboard" backLabel="Dashboard" />
-        <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
-          <div className="relative surface-matte rounded-3xl overflow-clip p-6 sm:p-8 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
-              <IconFlag size={24} className="text-primary-500" />
-            </div>
-            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">
-              Round in Progress
-            </h2>
-            <p className="text-warm-500 text-sm mb-1">
-              You have an unfinished round at
-            </p>
-            <p className="text-warm-800 font-medium mb-1">
-              {existingInProgressRound.courseName}
-            </p>
-            <p className="text-warm-400 text-sm mb-6">
-              Hole {existingInProgressRound.currentHole} of {existingInProgressRound.holesPlayed}
-            </p>
-            <div className="flex flex-col gap-3">
-              <Button variant="primary"
-                onClick={() => router.push(`/golf/dashboard/rounds/continue/${existingInProgressRound.id}`)}
-                className="w-full py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors shadow-sm"
-              >
-                Continue Round
-              </Button>
-              <Button variant="ghost"
-                onClick={() => setShowResumePrompt(false)}
-                className="w-full py-3 rounded-xl bg-warm-100 text-warm-600 font-medium hover:bg-warm-200 transition-colors"
-              >
-                Start Fresh Round
-              </Button>
-            </div>
-          </div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // ============================================================================
   // SETUP STEP
   // ============================================================================
   if (step === 'setup') {
@@ -1830,15 +1776,13 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           <div className="w-full max-w-2xl space-y-5">
           {/* PRIMARY course source: the shared Cloud Course Library (course + tee,
               pre-fills pars/yards and links the round to the catalog). */}
-          {!showResumePrompt && (
-            <Button
-              variant="primary"
-              onClick={() => setTeePickerOpen(true)}
-              className="w-full justify-center"
-            >
-              <IconMapPin size={16} aria-hidden /> Browse course library
-            </Button>
-          )}
+          <Button
+            variant="primary"
+            onClick={() => setTeePickerOpen(true)}
+            className="w-full justify-center"
+          >
+            <IconMapPin size={16} aria-hidden /> Browse course library
+          </Button>
           {/* This legacy setup block is only reached with redesign OFF — the
               redesign path returns early above (the `redesign && step==='setup'`
               guard) and renders FairwayCoursePicker there. So this is always the
@@ -1846,7 +1790,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           <TeePickerDrawer open={teePickerOpen} onOpenChange={setTeePickerOpen} onPick={handleTeePick} />
 
           {/* Fallback: courses you've played before (per-player). Hidden when empty. */}
-          {recentCourses.length > 0 && !showResumePrompt && (
+          {recentCourses.length > 0 && (
             <RecentCoursesQuickPick
               courses={recentCourses}
               onConfirmCourse={handleQuickPickConfirm}

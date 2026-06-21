@@ -243,12 +243,15 @@ export function GenomeFingerprintTeaser({
       .map((r) => ({ label: r.label, value: r.v }));
   }, [strokesGained]);
 
-  // < 3 axes with data → GenomeRadar renders its own insufficient-data state.
+  // Only render a real shape when ≥3 of the four scoring zones carry SG data;
+  // otherwise the radar collapses to a degenerate/near-null vector, so fall
+  // back to GenomeRadar's honest insufficient-data state instead of plotting it.
+  const hasShape = axes.length >= 3;
   return (
     <Surface padding="md" className="flex h-full flex-col">
       <Surface.Header
-        title="Your genome"
-        subtitle="A shape of where your strokes come from"
+        title="Strokes-gained shape"
+        subtitle="Where your strokes come from across the four scoring zones"
         actions={
           <Button
             asChild
@@ -267,11 +270,11 @@ export function GenomeFingerprintTeaser({
           seriesName="Strokes gained"
           height={220}
           takeaway={
-            axes.length >= 3
-              ? 'Your strokes-gained fingerprint across the four scoring zones.'
+            hasShape
+              ? 'Your strokes-gained shape across the four scoring zones.'
               : undefined
           }
-          state={axes.length < 3 ? 'insufficient-data' : 'ready'}
+          state={hasShape ? 'ready' : 'insufficient-data'}
         />
       </div>
     </Surface>

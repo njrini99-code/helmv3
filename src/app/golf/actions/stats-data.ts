@@ -1425,11 +1425,15 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
     const hp = r.holes_played ?? 18;
     const normalizedScore = Math.round(r.total_score! * (18 / hp));
     const normalizedPutts = r.total_putts !== null ? Math.round(r.total_putts * (18 / hp) * 10) / 10 : null;
+    // Normalize to-par to the same 18-hole basis as `score` so the trend line
+    // and the to-par readout agree (a 9-hole -1 must read as -2 over 18, not -1).
+    // Mirrors the score normalization above and personalBests.bestToPar below.
+    const normalizedToPar = Math.round((r.score_to_par ?? 0) * (18 / hp));
     return {
       id: r.id,
       date: r.round_date,
       score: normalizedScore,
-      toPar: r.score_to_par ?? 0,
+      toPar: normalizedToPar,
       courseName: r.course_name || 'Unknown Course',
       roundType: r.round_type ? roundTypeFromDb(r.round_type) : null,
       holesPlayed: hp,
@@ -1499,19 +1503,10 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
   // Personal bests
   const personalBests = {
     bestScore: findBest(rounds, 'score', true),
-    // Normalize to-par to an 18-hole equivalent before comparing — a raw -1
-    // over 9 holes must not beat E over 18 (matches bestScore, whose `score`
-    // is already 18-hole-normalized above).
-    bestToPar: findBest(
-      rounds.map(r => ({
-        ...r,
-        toParNormalized: r.holesPlayed > 0
-          ? Math.round(r.toPar * (18 / r.holesPlayed))
-          : r.toPar,
-      })),
-      'toParNormalized',
-      true
-    ),
+    // `toPar` is already 18-hole-normalized above (matching `score`), so a raw
+    // -1 over 9 holes already reads as -2 and won't falsely beat E over 18.
+    // Compare it directly — no second normalization (that would double-apply).
+    bestToPar: findBest(rounds, 'toPar', true),
     bestGir: findBest(rounds.filter(r => r.girPct !== null) as (RoundTrendData & { girPct: number })[], 'girPct', false),
     lowestPutts: findBest(rounds.filter(r => r.putts !== null) as (RoundTrendData & { putts: number })[], 'putts', true),
   };
