@@ -30,6 +30,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Field } from '@base-ui-components/react/field';
 
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
@@ -145,11 +146,41 @@ function SectionCard({
   );
 }
 
+/** Shared visual recipe for every field label (input-bound or group/display). */
+const FIELD_LABEL_CLASS =
+  'mb-1.5 block font-fw-sans text-body-sm font-medium text-text-secondary';
+
+/**
+ * Visual-only label for non-control rows — button groups (display density, tees,
+ * benchmark…) and read-only display values (current email, invite code/link).
+ * These have no single focusable control to associate, so a plain <span> is the
+ * correct, honest markup. For real text inputs use `LabeledField` instead.
+ */
 function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <span className={FIELD_LABEL_CLASS}>{children}</span>;
+}
+
+/**
+ * A11y (P372): label↔control association for every text input. Wraps the control
+ * in Base UI's `Field` so the rendered <label> auto-wires `htmlFor` to the
+ * control's generated `id` (WCAG 1.3.1/3.3.2/4.1.2) — screen readers, voice
+ * control and click-to-focus all work, with no manual id bookkeeping. The
+ * Fairway `Input` registers itself as the field control when nested here.
+ */
+function LabeledField({
+  label,
+  children,
+  className,
+}: {
+  label: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <span className="mb-1.5 block font-fw-sans text-body-sm font-medium text-text-secondary">
+    <Field.Root className={className}>
+      <Field.Label className={FIELD_LABEL_CLASS}>{label}</Field.Label>
       {children}
-    </span>
+    </Field.Root>
   );
 }
 
@@ -589,32 +620,29 @@ function PersonalInfoPanel({
         </div>
 
         {profile.role === 'coach' ? (
-          <div>
-            <FieldLabel>Full name</FieldLabel>
+          <LabeledField label="Full name">
             <Input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Coach Smith"
             />
-          </div>
+          </LabeledField>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <FieldLabel>First name</FieldLabel>
+            <LabeledField label="First name">
               <Input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="John"
               />
-            </div>
-            <div>
-              <FieldLabel>Last name</FieldLabel>
+            </LabeledField>
+            <LabeledField label="Last name">
               <Input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Smith"
               />
-            </div>
+            </LabeledField>
           </div>
         )}
       </div>
@@ -661,15 +689,14 @@ function EmailPanel({ currentEmail }: { currentEmail: string }) {
             {currentEmail || EM_DASH}
           </div>
         </div>
-        <div>
-          <FieldLabel>New email address</FieldLabel>
+        <LabeledField label="New email address">
           <Input
             type="email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             placeholder="new@example.com"
           />
-        </div>
+        </LabeledField>
         <p className="font-fw-sans text-caption text-text-tertiary">
           We&rsquo;ll send a confirmation email to verify the change.
         </p>
@@ -713,24 +740,22 @@ function PasswordPanel() {
   return (
     <SectionCard icon={<IconShield size={18} aria-hidden />} title="Password & security">
       <div className="space-y-3">
-        <div>
-          <FieldLabel>New password</FieldLabel>
+        <LabeledField label="New password">
           <Input
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="••••••••"
           />
-        </div>
-        <div>
-          <FieldLabel>Confirm password</FieldLabel>
+        </LabeledField>
+        <LabeledField label="Confirm password">
           <Input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••"
           />
-        </div>
+        </LabeledField>
         <p className="font-fw-sans text-caption text-text-tertiary">
           At least 8 characters. Use a unique password.
         </p>
@@ -1154,14 +1179,13 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           </div>
         </div>
 
-        <div>
-          <FieldLabel>Handicap system</FieldLabel>
+        <LabeledField label="Handicap system">
           <Select value={handicapSystem} onValueChange={(v) => setHandicapSystem(v as string)}>
             <Select.Item value="usga">USGA Handicap</Select.Item>
             <Select.Item value="world">World Handicap System</Select.Item>
             <Select.Item value="none">No Handicap</Select.Item>
           </Select>
-        </div>
+        </LabeledField>
 
         <div>
           <FieldLabel>Default tees</FieldLabel>
@@ -1186,8 +1210,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           </div>
         </div>
 
-        <div>
-          <FieldLabel>Timezone</FieldLabel>
+        <LabeledField label="Timezone">
           <Select value={timezone} onValueChange={(v) => setTimezone(v as string)}>
             <Select.Item value="America/New_York">Eastern (ET)</Select.Item>
             <Select.Item value="America/Chicago">Central (CT)</Select.Item>
@@ -1196,7 +1219,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
             <Select.Item value="America/Anchorage">Alaska (AKT)</Select.Item>
             <Select.Item value="Pacific/Honolulu">Hawaii (HT)</Select.Item>
           </Select>
-        </div>
+        </LabeledField>
 
         <div className="border-t border-border-subtle pt-4">
           <FieldLabel>Strokes gained benchmark</FieldLabel>
@@ -1299,38 +1322,32 @@ function PlayerGolfDetailsPanel({
     >
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <FieldLabel>Handicap</FieldLabel>
+          <LabeledField label="Handicap">
             <Input type="number" value={handicap} onChange={(e) => setHandicap(e.target.value)} placeholder="5.2" />
-          </div>
-          <div>
-            <FieldLabel>Handicap index</FieldLabel>
+          </LabeledField>
+          <LabeledField label="Handicap index">
             <Input
               type="number"
               value={handicapIndex}
               onChange={(e) => setHandicapIndex(e.target.value)}
               placeholder="4.8"
             />
-          </div>
+          </LabeledField>
         </div>
-        <div>
-          <FieldLabel>Graduation year</FieldLabel>
+        <LabeledField label="Graduation year">
           <Input type="number" value={gradYear} onChange={(e) => setGradYear(e.target.value)} placeholder="2027" />
-        </div>
+        </LabeledField>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <FieldLabel>Hometown</FieldLabel>
+          <LabeledField label="Hometown">
             <Input value={hometown} onChange={(e) => setHometown(e.target.value)} placeholder="Austin" />
-          </div>
-          <div>
-            <FieldLabel>State</FieldLabel>
+          </LabeledField>
+          <LabeledField label="State">
             <Input value={homeState} onChange={(e) => setHomeState(e.target.value)} placeholder="TX" maxLength={2} />
-          </div>
+          </LabeledField>
         </div>
-        <div>
-          <FieldLabel>Phone</FieldLabel>
+        <LabeledField label="Phone">
           <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
-        </div>
+        </LabeledField>
       </div>
       <SaveRow onSave={handleSave} busy={saving} />
     </SectionCard>
@@ -1455,43 +1472,36 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
       description="Program name, season and organization details."
     >
       <div className="space-y-4">
-        <div>
-          <FieldLabel>Team name</FieldLabel>
+        <LabeledField label="Team name">
           <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Men's Golf Team" />
-        </div>
-        <div>
-          <FieldLabel>Season</FieldLabel>
+        </LabeledField>
+        <LabeledField label="Season">
           <Input value={season} onChange={(e) => setSeason(e.target.value)} placeholder="2025-2026" />
-        </div>
+        </LabeledField>
 
         {organizationId ? (
           <div className="space-y-4 border-t border-border-subtle pt-4">
             <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
               Organization
             </p>
-            <div>
-              <FieldLabel>School name</FieldLabel>
+            <LabeledField label="School name">
               <Input value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="University" />
-            </div>
+            </LabeledField>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>City</FieldLabel>
+              <LabeledField label="City">
                 <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Los Angeles" />
-              </div>
-              <div>
-                <FieldLabel>State</FieldLabel>
+              </LabeledField>
+              <LabeledField label="State">
                 <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="CA" maxLength={2} />
-              </div>
+              </LabeledField>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>Division</FieldLabel>
+              <LabeledField label="Division">
                 <Input value={division} onChange={(e) => setDivision(e.target.value)} placeholder="Division I" />
-              </div>
-              <div>
-                <FieldLabel>Conference</FieldLabel>
+              </LabeledField>
+              <LabeledField label="Conference">
                 <Input value={conference} onChange={(e) => setConference(e.target.value)} placeholder="Pac-12" />
-              </div>
+              </LabeledField>
             </div>
           </div>
         ) : null}

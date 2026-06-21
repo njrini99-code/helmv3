@@ -47,6 +47,14 @@ interface InsightsPageProps {
      * below so the existing triage-chip filter consumes it.
      */
     category?: string;
+    /**
+     * Single insight id from a deep-link (e.g. the command palette's
+     * `/golf/dashboard/insights?id=<insightId>`). Seeds `openRowId` in
+     * FairwayCoachHelmSignals so the palette result opens the exact insight
+     * panel instead of landing on the firehose list. Passed straight through
+     * via `restParams` (see below).
+     */
+    id?: string;
   }>;
 }
 

@@ -257,12 +257,15 @@ export async function createDocument(
 
     if (insertError) throw insertError;
 
-    // Create initial version record
+    // Create initial version record. file_url is NOT NULL in
+    // golf_document_versions, so it must be supplied here (omitting it throws a
+    // not-null violation). Reuse the public URL already derived for the document.
     const { error: versionError } = await supabase
       .from('golf_document_versions' as any)
       .insert({
         document_id: document.id,
         version_number: 1,
+        file_url: urlData.publicUrl,
         file_name: file.name,
         file_size: file.size,
         mime_type: file.type,
@@ -443,12 +446,16 @@ export async function uploadNewVersion(
       .from('documents')
       .getPublicUrl(storagePath);
 
-    // Create version record
+    // Create version record. file_url is NOT NULL in golf_document_versions,
+    // so it must be supplied here (omitting it throws a not-null violation and
+    // breaks "Upload new version" entirely). Derive it the same way
+    // createGolfDocument does, from the just-uploaded storage path.
     const { data: version, error: versionError } = await supabase
       .from('golf_document_versions' as any)
       .insert({
         document_id: documentId,
         version_number: newVersionNumber,
+        file_url: urlData.publicUrl,
         file_name: file.name,
         file_size: file.size,
         mime_type: file.type,
@@ -595,12 +602,16 @@ export async function revertToVersion(
       .from('documents')
       .getPublicUrl(version.storage_path);
 
-    // Create new version record (revert is a new version)
+    // Create new version record (revert is a new version). file_url is NOT NULL
+    // in golf_document_versions, so it must be supplied here (omitting it throws
+    // a not-null violation). Reuse the public URL derived from the reverted
+    // version's storage path.
     const { error: newVersionError } = await supabase
       .from('golf_document_versions' as any)
       .insert({
         document_id: documentId,
         version_number: newVersionNumber,
+        file_url: urlData.publicUrl,
         file_name: version.file_name,
         file_size: version.file_size,
         mime_type: version.mime_type,

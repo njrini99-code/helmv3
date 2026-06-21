@@ -314,8 +314,28 @@ export function FairwayCoachHelmSignals({
   /* -- selection (drives the bulk-action bar) -- */
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  /* -- expand-in-place panel (the InsightPanel read of one signal) -- */
-  const [openRowId, setOpenRowId] = useState<string | null>(null);
+  /* -- expand-in-place panel (the InsightPanel read of one signal) --
+        Seed from a `?id=` deep-link (the command palette's "Recent insights"
+        result pushes `/golf/dashboard/insights?id=<insightId>`) so the palette
+        lands on the EXACT insight panel, not the firehose list. The targeted
+        row resolves once the data load completes (rows.find / allRows.find at
+        the panel below). The param is stripped on mount (effect below) to keep
+        the URL clean — `?id=` is a one-shot open intent, not shareable filter
+        state. (Premium hard-gate B1: a deep-link must reach its target.) */
+  const [openRowId, setOpenRowId] = useState<string | null>(sp.id ?? null);
+
+  // Strip the one-shot `?id=` deep-link param once consumed into openRowId, so
+  // it doesn't linger in the shareable URL (syncUrl owns the persisted filter
+  // state and never emits `id`). Runs once on mount; replace (not push) avoids
+  // a history entry and { scroll: false } preserves position.
+  useEffect(() => {
+    if (!sp.id) return;
+    const params = new URLSearchParams(window.location.search);
+    params.delete('id');
+    const qs = params.toString();
+    router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* -- the smart-default narrowing: ON by first paint, DISMISSIBLE (never
         hides anything silently — the banner says "show all"). Only ever armed

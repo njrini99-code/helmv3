@@ -47,6 +47,7 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  fairwayToast,
 } from '@/components/fairway';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { formatTimeDisplay, formatDaysDisplay } from '@/lib/utils/schedule-parser';
@@ -400,6 +401,8 @@ export function FairwayTeamHubWrapper({
             t.id === taskId ? { ...t, status: 'pending' as const, completed_at: null } : t,
           ),
         );
+        // Surface the failure so the silent revert is explained (gate B3 / Nielsen #1, #9).
+        fairwayToast.error(result.error || 'Could not mark task complete. Please try again.');
       }
 
       startTransition(() => {

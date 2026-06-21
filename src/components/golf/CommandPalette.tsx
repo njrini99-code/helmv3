@@ -269,7 +269,13 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     key={`player-${p.id}`}
                     value={`Player ${p.full_name} ${p.handicap ?? ''}`}
                     onSelect={() => {
-                      router.push(`/golf/dashboard/roster?playerId=${p.id}`);
+                      // Land on the real per-player surface, NOT the unfiltered
+                      // roster. The roster route does not consume ?playerId=
+                      // (the param was silently dropped); /players/[playerId]
+                      // is the id-aware destination the roster card's own
+                      // "View Player" CTA links to. The palette result now
+                      // reaches the targeted player. (Premium hard-gate B1.)
+                      router.push(`/golf/dashboard/players/${p.id}`);
                       setOpen(false);
                     }}
                     className={cn(

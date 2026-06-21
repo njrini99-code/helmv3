@@ -582,8 +582,10 @@ export function FairwayEventEditor({
               </div>
             ) : null}
 
-            {/* Title — with a green editorial spine */}
-            <div className="flex items-center gap-3">
+            {/* Title — with a green editorial spine. The wrapper carries the
+                visible focus cue (WCAG 2.4.7) since the input itself is a
+                bare editorial field with no border. */}
+            <div className="flex items-center gap-3 rounded-fw-md transition-shadow focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-2 focus-within:ring-offset-canvas">
               <span aria-hidden className="h-7 w-1 flex-shrink-0 rounded-full bg-accent-500" />
               <input
                 type="text"

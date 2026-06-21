@@ -27,6 +27,7 @@ type ExpenseIcon = ComponentType<SVGAttributes<SVGElement> & { size?: number }>;
 import {
   createTravelExpense,
   updateTravelExpense,
+  uploadExpenseReceipt,
   type ExpenseCategory,
   type ExpensePaidBy,
   type TravelExpense,
@@ -73,6 +74,7 @@ export function ExpenseForm({
   const uid = useId();
   const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [category, setCategory] = useState<ExpenseCategory>('other');
@@ -131,11 +133,19 @@ export function ExpenseForm({
     setLoading(true);
 
     try {
-      // Handle receipt upload if there's a new file
-      const finalReceiptUrl = receiptUrl;
+      // Upload the receipt first so its URL is persisted with the expense.
+      // This is the only write path for receipt_url — without it the attached
+      // file would be silently dropped on save.
+      let finalReceiptUrl = receiptUrl;
       if (receiptFile) {
-        // For now, we'll handle receipt upload in a separate flow
-        // In production, you'd upload to Supabase Storage here
+        setUploading(true);
+        const uploadResult = await uploadExpenseReceipt(receiptFile, teamId, expense?.id);
+        setUploading(false);
+        if (!uploadResult.success || !uploadResult.url) {
+          setError(uploadResult.error || 'Failed to upload receipt');
+          return;
+        }
+        finalReceiptUrl = uploadResult.url;
       }
 
       if (expense) {
@@ -186,6 +196,7 @@ export function ExpenseForm({
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      setUploading(false);
     }
   }
 
@@ -407,7 +418,11 @@ export function ExpenseForm({
             Cancel
           </Button>
           <Button type="submit" isLoading={loading}>
-            {expense ? 'Save Changes' : 'Add Expense'}
+            {uploading
+              ? 'Uploading receipt…'
+              : expense
+                ? 'Save Changes'
+                : 'Add Expense'}
           </Button>
         </div>
       </form>
