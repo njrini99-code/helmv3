@@ -164,6 +164,13 @@ export interface PlayersGridViewProps {
   causalByPlayer?: Record<string, CausalRelationshipRow[]>;
   /** Load error from the route (honest error state, distinct from empty). */
   loadError?: string | null;
+  /**
+   * F133: deep-link target. Coach surfaces (FairwayPlayerInsight, GenomeDetailView)
+   * link to `/golf/dashboard/development?player=<id>` to land scoped to one player.
+   * The route validates the id against the team roster and passes it here so the
+   * grid opens on that player instead of silently ignoring the param.
+   */
+  initialSelectedPlayerId?: string | null;
   className?: string;
 }
 
@@ -241,6 +248,7 @@ export function PlayersGridView({
   playerNameById = {},
   causalByPlayer = {},
   loadError,
+  initialSelectedPlayerId = null,
   className,
 }: PlayersGridViewProps) {
   const router = useRouter();
@@ -248,7 +256,9 @@ export function PlayersGridView({
   // "grid" = roster table; "areas" = the flat focus-area board. Local view-state
   // only (no data wiring change). Default "grid".
   const [view, setView] = React.useState<'grid' | 'areas'>('grid');
-  const [selectedPlayerId, setSelectedPlayerId] = React.useState<string | null>(null);
+  // F133: seed from the ?player= deep-link (route-validated) so a coach arriving
+  // from a player's insight/genome card lands scoped to that player.
+  const [selectedPlayerId, setSelectedPlayerId] = React.useState<string | null>(initialSelectedPlayerId);
 
   // Modal + form state — same lifecycle as the legacy client, re-skinned chrome.
   const [createOpen, setCreateOpen] = React.useState(false);

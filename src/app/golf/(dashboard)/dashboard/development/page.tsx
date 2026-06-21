@@ -20,7 +20,11 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-export default async function DevelopmentPlansPage() {
+export default async function DevelopmentPlansPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ player?: string | string[] }>;
+}) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
@@ -318,6 +322,16 @@ export default async function DevelopmentPlansPage() {
     // Dedupe-aware causal "why their scores move" rows, keyed by player_id.
     const causalByPlayer = await getTeamCausalRelationships(teamId);
 
+    // F133: honor the ?player= deep-link from a player's insight/genome card —
+    // open the grid scoped to that player, but only if the id is actually on this
+    // coach's roster (never trust the raw query param).
+    const resolvedParams = (await searchParams) ?? {};
+    const requestedPlayer = Array.isArray(resolvedParams.player)
+      ? resolvedParams.player[0]
+      : resolvedParams.player;
+    const initialSelectedPlayerId =
+      requestedPlayer && playerIds.includes(requestedPlayer) ? requestedPlayer : null;
+
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <PlayersGridView
@@ -329,6 +343,7 @@ export default async function DevelopmentPlansPage() {
           goalsByPlayer={goalsByPlayer}
           playerNameById={playerNameById}
           causalByPlayer={causalByPlayer}
+          initialSelectedPlayerId={initialSelectedPlayerId}
         />
       </div>
     );
