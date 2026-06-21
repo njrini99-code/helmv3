@@ -39,3 +39,21 @@ These target the legacy (flag-off) fork or a dormant, never-surfaced feature. Pr
 
 - **F147** (rounds): `getPlayerTeamId` returned null for non-active members → their rounds saved `team_id = NULL` and went invisible to the coach. Was unaddressed by the batch; fixed write-side (fallback to most-recent membership, no RLS loosening). → #332
 - **F015 / F024**: previously tabled as 'refuted'; each had a small real residual (integer-credits input mismatch; coach-onboarding could create a stray coach row for a player). Both fixed safely rather than left open. → #332
+
+## Prod-readiness verification (2026-06-21)
+
+After the six PRs landed, all branches were merged into a throwaway integration worktree and the **combined** state was verified (individually-green PRs can collectively break):
+
+- **Merge:** all 6 branches merge into `main` with **0 conflicts**, in any order (the only file two PRs both touch, `AddClassModal.tsx` in #331∩#332, merges cleanly — separate regions).
+- **Integrated `tsc --noEmit`:** rc=0.
+- **Integrated full unit suite:** **2534 passed / 39 skipped / 0 failed**.
+- **Integrated `next build` (with prod env):** ✓ compiled in 77s, 129/129 static pages generated, exit 0.
+- **5-dimension adversarial review** (completeness · security/RLS · regressions · config/cron · CodeRabbit hard-rules): **0 confirmed prod-blockers**. Wave A is net security *hardening* (closes 4 pre-existing anon-grant/IDOR holes); the new task-reminders cron is auth-gated (fail-closed on missing secret); no service-role key in any client bundle; no destructive DELETE-then-INSERT in a save path; no bare (non-sport-prefixed) table names.
+
+**Three issues the verification surfaced and closed:**
+
+1. **CoachHelmSubNav test (merge-blocker)** → #330. F137 added a 4th player tab ("Game Profile") but #330's scoped gate missed the stale 3-tab assertion; it only failed once the *full* suite ran on the integrated tree. Test updated to expect the 4 canonical tabs.
+2. **F133 recurs on the LIVE path** → #332. The dead `?player=` deep-link the audit marked skip-dormant (legacy-only) is also live in `FairwayPlayerInsight` + `GenomeDetailView`. The development page now reads `?player=`, validates against the roster, and opens scoped to that player.
+3. **F147 not mirrored in `round-drafts.ts`** → #332. The same active-only `team_id` lookup orphaned injured/inactive players' *draft* rounds; given the same fallback.
+
+**Known low-severity residuals (not blockers, documented):** F133's `&focus=` pre-fill param is still ignored (player selection restored; focus pre-fill is a future enhancement); a pre-existing INFO-tier anon oracle on `verify_coach_owns_player` remains (consciously deferred, not a regression); the pgTAP header references the pre-rename migration timestamps (cosmetic).
