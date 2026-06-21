@@ -22,10 +22,10 @@ _Scan of all remediation agent transcripts + `supabase/migrations/`. Re-run `scr
 | `20260621041849_focus_areas_progress_notes_default.sql` | yes | ❌ **NOT APPLIED** | `golf_player_focus_areas` | ✅ |
 | `20260621120000_chat_client_turn_id.sql` | yes | ✅ yes | `golf_coachhelm_chat_messages` | ✅ |
 | `20260621130000_ingest_external_round_atomic.sql` | yes | ❌ **NOT APPLIED** | `golf_rounds` | ✅ |
-| `20260621140000_focus_areas_outcome_status.sql` | **UNTRACKED** | ❌ **NOT APPLIED** | `golf_player_focus_areas` | ✅ |
-| `20260621150000_player_classes_semester.sql` | **UNTRACKED** | ❌ **NOT APPLIED** | `golf_player_classes` | ✅ |
-| `20260621160000_insight_event_ledger.sql` | **UNTRACKED** | ❌ **NOT APPLIED** | `golf_insight_exposure` | ⚠️ |
-| `20260621170000_retire_stranded_predictions.sql` | **UNTRACKED** | ❌ **NOT APPLIED** | `golf_predictions` | ✅ |
+| `20260621140000_focus_areas_outcome_status.sql` | yes | ❌ **NOT APPLIED** | `golf_player_focus_areas` | ✅ |
+| `20260621150000_player_classes_semester.sql` | yes | ❌ **NOT APPLIED** | `golf_player_classes` | ✅ |
+| `20260621160000_insight_event_ledger.sql` | yes | ❌ **NOT APPLIED** | `golf_insight_exposure` | ⚠️ |
+| `20260621170000_retire_stranded_predictions.sql` | yes | ❌ **NOT APPLIED** | `golf_predictions` | ✅ |
 
 ## 3. Every DB directive in the CoachHelm audit — cross-checked to status
 
