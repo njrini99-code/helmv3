@@ -99,8 +99,16 @@ export function useGolfMessages(conversationId: string) {
     setMessages(((data || []) as MessageWithReadStatus[]).reverse());
     setLoading(false);
 
-    // Mark messages as read
-    markGolfMessagesAsRead(conversationId);
+    // Mark messages as read. Awaited + caught so a DB error in the server action
+    // can't surface as an unhandled promise rejection and tear down the hook.
+    // Clearing the unread badge for the viewer relies on this write completing:
+    // it bumps the participant's last_read_at + flips read=true on others' messages,
+    // which fires the realtime refetch in useGolfConversations (F124).
+    try {
+      await markGolfMessagesAsRead(conversationId);
+    } catch (err) {
+      console.error('[useGolfMessages] Failed to mark messages as read:', err);
+    }
 
     // Fetch read receipt status
     fetchOtherParticipantReadStatus();

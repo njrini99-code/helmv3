@@ -51,11 +51,15 @@ const CATEGORIES: { value: ExpenseCategory; label: string; icon: ExpenseIcon }[]
   { value: 'other', label: 'Other', icon: IconLayers },
 ];
 
+// NOTE: The 'split' paid-by option is intentionally NOT offered here. Cost
+// splitting is a deferred feature — the golf_travel_expense_splits table exists
+// but has no CRUD/calc anywhere yet, so a "Split" choice would be a dead end.
+// The ExpensePaidBy type/schema/summary still accept 'split' so any legacy rows
+// render correctly; re-add the option below once splitting is actually built.
 const PAID_BY_OPTIONS: { value: ExpensePaidBy; label: string }[] = [
   { value: 'team', label: 'Team' },
   { value: 'player', label: 'Player' },
   { value: 'pending_reimbursement', label: 'Pending Reimbursement' },
-  { value: 'split', label: 'Split' },
 ];
 
 export function ExpenseForm({

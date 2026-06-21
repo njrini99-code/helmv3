@@ -11,6 +11,7 @@
 
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { createClient } from '@/lib/supabase/server';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 
@@ -660,12 +661,20 @@ export async function getCoachHelmOverview(
     // Visible-truth alignment (rescore partial #5): analytics counts must
     // match what the product actually surfaced — same shared contract as the
     // badge/feed, no hand-rolled predicate to drift.
-    const { data: insightRows } = await applyInsightVisibility(
-      supabase
-        .from('golf_coach_insights')
-        .select('created_at, action_taken, outcome_status')
-        .in('player_id', playerIds),
-    ).gte('created_at', thirtyDaysAgo.toISOString());
+    // Paginate past the PostgREST 1000-row cap — a 30-day team window of
+    // insights easily exceeds 1000 rows and an unpaginated read would silently
+    // under-count totalInsights / action / improvement rates.
+    const { data: insightRows } = await fetchAllRowsResult((from, to) =>
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select('created_at, action_taken, outcome_status')
+          .in('player_id', playerIds),
+      )
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
 
     const thirtyMs = thirtyDaysAgo.getTime();
     const sevenMs = sevenDaysAgo.getTime();
@@ -725,19 +734,17 @@ export async function getCoachHelmOverview(
       ? (((insightsThisWeek || 0) - (insightsLastWeek || 0)) / (insightsLastWeek || 1)) * 100
       : 0;
 
-    // Query prediction accuracy (simplified - average of validated predictions)
-    const { data: predictions } = await supabase
-      .from('golf_predictions')
-      .select('was_accurate')
-      .in('player_id', playerIds)
-      .not('was_accurate', 'is', null)
-      .gte('validated_at', thirtyDaysAgo.toISOString());
-
-    const predictionAccuracy = predictions && predictions.length > 0
-      ? (predictions as Array<{ was_accurate: boolean | null }>).reduce(
-          (sum, p) => sum + (p.was_accurate ? 1 : 0),
-          0,
-        ) / predictions.length
+    // Prediction accuracy — read from the SAME source of truth the
+    // effectiveness panel's hero gauge uses (getPredictionPerformance →
+    // summary.overallAccuracy, derived from the golf_prediction_model_performance
+    // rollup with a paginated raw fallback). Previously this hand-rolled a raw,
+    // unpaginated golf_predictions aggregation, producing a DIFFERENT
+    // "Prediction Accuracy" number than the hero — the two now match by
+    // construction. A failed performance read degrades to 0 here rather than
+    // failing the whole overview.
+    const performanceResult = await getPredictionPerformance(teamId);
+    const predictionAccuracy = performanceResult.success
+      ? performanceResult.data?.summary.overallAccuracy ?? 0
       : 0;
 
     return {
@@ -836,21 +843,28 @@ async function calculateInsightEffectivenessFromInsights(
 
     const playerIds = teamMembers.map((m) => m.player_id);
 
-    // Query insights
-    const { data: insights, error } = await applyInsightVisibility(
-      supabase
-        .from('golf_coach_insights')
-        .select('insight_type, status, action_taken, outcome_status')
-        .in('player_id', playerIds),
-    )
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString());
+    // Query insights — paginate past the PostgREST 1000-row cap so a large
+    // team window isn't silently truncated into wrong effectiveness aggregates.
+    const { data: insights, error } = await fetchAllRowsResult((from, to) =>
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select('insight_type, status, action_taken, outcome_status')
+          .in('player_id', playerIds),
+      )
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString())
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
 
     if (error) {
+      // fetchAllRowsResult narrows the error to { message }, so the PostgREST
+      // `code` field is no longer in the static type — log just the message.
       await logServerError(`calculateInsightEffectivenessFromInsights query failed: ${error.message}`, {
         action: 'calculateInsightEffectivenessFromInsights',
         featureArea: 'coachhelm_analytics',
-        extra: { teamId, errorCode: error.code },
+        extra: { teamId },
       });
       return { success: false, error: error.message };
     }
@@ -970,20 +984,27 @@ async function calculatePredictionPerformanceFromPredictions(
 
     const playerIds = teamMembers.map((m) => m.player_id);
 
-    // Query predictions
-    const { data: predictions, error } = await supabase
-      .from('golf_predictions')
-      .select('created_at, validated_at, was_accurate, confidence, predicted_value, actual_value, error_category')
-      .in('player_id', playerIds)
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString())
-      .order('created_at', { ascending: true });
+    // Query predictions — paginate past the PostgREST 1000-row cap. Order by the
+    // unique `id` for STABLE page boundaries (the downstream aggregation buckets
+    // by date via a Map, so it does not rely on chronological row order).
+    const { data: predictions, error } = await fetchAllRowsResult((from, to) =>
+      supabase
+        .from('golf_predictions')
+        .select('created_at, validated_at, was_accurate, confidence, predicted_value, actual_value, error_category')
+        .in('player_id', playerIds)
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString())
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
 
     if (error) {
+      // fetchAllRowsResult narrows the error to { message }, so the PostgREST
+      // `code` field is no longer in the static type — log just the message.
       await logServerError(`calculatePredictionPerformanceFromPredictions query failed: ${error.message}`, {
         action: 'calculatePredictionPerformanceFromPredictions',
         featureArea: 'coachhelm_analytics',
-        extra: { teamId, errorCode: error.code },
+        extra: { teamId },
       });
       return { success: false, error: error.message };
     }

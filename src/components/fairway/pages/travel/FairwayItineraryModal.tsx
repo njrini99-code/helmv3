@@ -17,9 +17,10 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { MapPin, Calendar as CalendarIcon, Clock, Hotel, Package } from 'lucide-react';
+import { MapPin, Calendar as CalendarIcon, Clock, Hotel, Package, Link2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button, InlineNotice } from '@/components/fairway';
 import { Input, Select, TextArea } from '@/components/fairway/forms';
@@ -33,8 +34,15 @@ const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-s
 const sectionTitleCls =
   'flex items-center gap-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary';
 
-/* ── the form shape — IDENTICAL to the legacy TravelClient formData ───────── */
+/* ── the form shape — IDENTICAL to the legacy TravelClient formData, plus the
+ * optional event_id link (createGolfTravelItinerary already accepts it). ───── */
 export interface ItineraryFormData {
+  /**
+   * Optional link to a golf_events row. Omitted/undefined = no link (the server
+   * action persists null). Never sent as '' — that fails the action's optional
+   * UUID schema.
+   */
+  event_id?: string;
   event_name: string;
   destination: string;
   transportation_type: TransportationType;
@@ -57,6 +65,7 @@ export interface ItineraryFormData {
 }
 
 export const EMPTY_ITINERARY_FORM: ItineraryFormData = {
+  event_id: undefined,
   event_name: '',
   destination: '',
   transportation_type: 'bus',
@@ -80,7 +89,12 @@ export const EMPTY_ITINERARY_FORM: ItineraryFormData = {
 
 /** Map a legacy itinerary row → editable form values (verbatim prefill). */
 export function itineraryToForm(itinerary: TravelItinerary): ItineraryFormData {
+  // event_id isn't part of the TravelItinerary prop shape (the page mapper drops
+  // it), so prefill it defensively from the row when present; otherwise start the
+  // picker empty. Re-linking still saves either way.
+  const linkedEventId = (itinerary as { event_id?: string | null }).event_id;
   return {
+    event_id: linkedEventId ?? undefined,
     event_name: itinerary.event_name,
     destination: itinerary.destination,
     transportation_type: itinerary.transportation_type,
@@ -105,6 +119,13 @@ export function itineraryToForm(itinerary: TravelItinerary): ItineraryFormData {
 
 const TRANSPORT_OPTIONS: TransportationType[] = ['bus', 'van', 'flight', 'carpool'];
 
+/** A minimal golf_events row for the optional "Link to event" picker. */
+interface EventOption {
+  id: string;
+  title: string;
+  start_time: string | null;
+}
+
 export interface FairwayItineraryModalProps {
   open: boolean;
   onClose: () => void;
@@ -115,6 +136,11 @@ export interface FairwayItineraryModalProps {
   error: string | null;
   /** Hands the gathered form data back; the parent owns the write. */
   onSave: (data: ItineraryFormData) => void;
+  /**
+   * The team whose golf_events power the optional "Link to event" picker. When
+   * omitted the picker is hidden (the field stays optional/nullable either way).
+   */
+  teamId?: string;
 }
 
 export function FairwayItineraryModal({
@@ -124,10 +150,12 @@ export function FairwayItineraryModal({
   saving,
   error,
   onSave,
+  teamId,
 }: FairwayItineraryModalProps) {
   const isEditing = !!editing;
   const [formData, setFormData] = React.useState<ItineraryFormData>(EMPTY_ITINERARY_FORM);
   const [localError, setLocalError] = React.useState<string | null>(null);
+  const [events, setEvents] = React.useState<EventOption[]>([]);
 
   // Edit prefill / create reset on open (verbatim contract).
   React.useEffect(() => {
@@ -135,6 +163,26 @@ export function FairwayItineraryModal({
     setFormData(editing ? itineraryToForm(editing) : EMPTY_ITINERARY_FORM);
     setLocalError(null);
   }, [open, editing]);
+
+  // Load the team's events for the optional "Link to event" picker. Client-side
+  // read, scoped to the team; failures degrade quietly (the link is optional).
+  React.useEffect(() => {
+    if (!open || !teamId) return;
+    let cancelled = false;
+    void (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('golf_events')
+        .select('id, title, start_time')
+        .eq('team_id', teamId)
+        .order('start_time', { ascending: false })
+        .limit(500);
+      if (!cancelled) setEvents((data as EventOption[] | null) ?? []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, teamId]);
 
   const set = <K extends keyof ItineraryFormData>(key: K, value: ItineraryFormData[K]) =>
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -146,10 +194,28 @@ export function FairwayItineraryModal({
       return;
     }
     setLocalError(null);
-    onSave(formData);
+    // Never send event_id as '' — the create action treats it as an optional
+    // UUID, so an empty string fails validation. Pass undefined when unlinked.
+    onSave({ ...formData, event_id: formData.event_id || undefined });
   };
 
   const shownError = localError || error;
+
+  // Event picker options. A leading "No linked event" choice clears the link
+  // (mapped back to undefined → the server action persists null).
+  const NO_EVENT = '__none__';
+  const eventOptions = React.useMemo(
+    () => [
+      { value: NO_EVENT, label: 'No linked event' },
+      ...events.map((ev) => ({
+        value: ev.id,
+        label: ev.start_time
+          ? `${ev.title} · ${new Date(ev.start_time).toLocaleDateString()}`
+          : ev.title,
+      })),
+    ],
+    [events],
+  );
 
   return (
     <ModalShell
@@ -225,6 +291,27 @@ export function FairwayItineraryModal({
             />
           </div>
         </div>
+
+        {/* Optional link to a calendar event (golf_events). Hidden when no team
+            is supplied or the team has no events — the link is always optional. */}
+        {teamId && events.length > 0 ? (
+          <div>
+            <label htmlFor="trip-event" className={labelCls}>
+              <span className="inline-flex items-center gap-1.5">
+                <Link2 className="h-3.5 w-3.5 text-accent-700" /> Link to event (optional)
+              </span>
+            </label>
+            <Select
+              name="trip-event"
+              value={formData.event_id || NO_EVENT}
+              onValueChange={(value) => set('event_id', !value || value === NO_EVENT ? undefined : value)}
+              disabled={saving}
+              options={eventOptions}
+              placeholder="No linked event"
+              className={cn(fieldCls, 'bg-surface')}
+            />
+          </div>
+        ) : null}
 
         {/* Departure / return well */}
         <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
