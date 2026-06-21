@@ -1652,19 +1652,33 @@ export async function getStatAverages(
 
     const playerAvg = calculateComparisonAverages((playerRounds ?? []) as ComparisonRoundRow[]) ?? undefined;
 
-    let teamAvg = undefined;
-    if (teamId) {
-      // Player-scoped RLS on golf_rounds returns only own rounds, so the
-      // team comparison would always be sparse. We've already authorized
-      // the caller for this player via verifyReviewAccess above; the team
-      // aggregate output reveals no individual-round data, so the admin
-      // client is safe here.
-      const admin = createAdminClient();
+    // Player-scoped RLS on golf_rounds returns only own rounds, so the team
+    // comparison would always be sparse. We've already authorized the caller
+    // for this player via verifyReviewAccess above; the team aggregate output
+    // reveals no individual-round data, so the admin client is safe here.
+    const admin = createAdminClient();
 
+    // Resolve the player's active team when the caller doesn't supply one.
+    // golf_players has no team_id column — team scope is derived via
+    // golf_team_members (status='active'). Without this lookup the teamAvg
+    // branch below never runs and the "vs team" comparison is silently dead.
+    let resolvedTeamId = teamId;
+    if (!resolvedTeamId) {
+      const { data: ownMembership } = await admin
+        .from('golf_team_members')
+        .select('team_id')
+        .eq('player_id', playerId)
+        .eq('status', 'active')
+        .maybeSingle();
+      resolvedTeamId = ownMembership?.team_id ?? undefined;
+    }
+
+    let teamAvg = undefined;
+    if (resolvedTeamId) {
       const { data: teamMembers } = await admin
         .from('golf_team_members')
         .select('player_id')
-        .eq('team_id', teamId)
+        .eq('team_id', resolvedTeamId)
         .eq('status', 'active');
 
       if (teamMembers && teamMembers.length > 0) {

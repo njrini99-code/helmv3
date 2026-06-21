@@ -26,6 +26,7 @@ import {
   IconTrendingUp,
   IconCheck,
   IconX,
+  IconWarning,
 } from '@/components/icons';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PageHeader } from '@/components/ui/page-header';
@@ -303,6 +304,11 @@ export function InsightsPageContent({
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  // F055: distinguish a failed/timed-out read from a genuinely empty feed. The
+  // read action returns [] on internal DB errors, but a rejected promise
+  // (network / server-action transport / timeout) surfaces here — when it does
+  // we render an error banner instead of the "all clear" empty state.
+  const [loadError, setLoadError] = useState(false);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
@@ -349,6 +355,13 @@ export function InsightsPageContent({
           categories: filters.insightType ? [filters.insightType] : undefined,
         });
         setAllInsights(rows);
+        setLoadError(false);
+      } catch {
+        // F055: a rejected read (network / server-action transport / timeout)
+        // must NOT collapse into the empty "all clear" state. Flag the error so
+        // the banner renders and the stale list (if any) is cleared.
+        setLoadError(true);
+        setAllInsights([]);
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
@@ -636,15 +649,15 @@ export function InsightsPageContent({
               value={stats.total}
               icon={<IconSparkles size={20} />}
             />
+            {/* F111: no `trend` prop. The previous code passed the
+                urgent+high COUNT as `{ direction: 'up' }`, which StatCard
+                renders as a "+N%" up-arrow — a fabricated trend (there is no
+                prior period to compare against). A raw count is not a
+                direction, so we surface the count alone. */}
             <StatCard
               label="Active"
               value={stats.active}
               icon={<IconTrendingUp size={20} />}
-              trend={
-                stats.active > 0
-                  ? { value: stats.byPriority.urgent + stats.byPriority.high, direction: 'up' }
-                  : undefined
-              }
             />
             <StatCard
               label="Acknowledged"
@@ -702,7 +715,9 @@ export function InsightsPageContent({
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
         >
-          {!isLoading && triageActiveCount > 0 && totalCount === 0 ? (
+          {!isLoading && loadError ? (
+            <InsightsErrorState onRetry={handleRefresh} isRetrying={isRefreshing} />
+          ) : !isLoading && triageActiveCount > 0 && totalCount === 0 ? (
             <TriageEmptyState onClearAll={handleClearTriage} />
           ) : (
             <InsightListView
@@ -941,6 +956,55 @@ function TriageEmptyState({ onClearAll }: TriageEmptyStateProps) {
         )}
       >
         Clear all filters
+      </Button>
+    </div>
+  );
+}
+
+// ============================================================================
+// INSIGHTS ERROR STATE — F055
+// ============================================================================
+// Shown when the insights read fails (rejected/timed-out promise) so a load
+// failure is never mistaken for a genuinely empty "all clear" feed.
+
+interface InsightsErrorStateProps {
+  onRetry: () => void;
+  isRetrying: boolean;
+}
+
+function InsightsErrorState({ onRetry, isRetrying }: InsightsErrorStateProps) {
+  return (
+    <div
+      role="alert"
+      className={cn(
+        'surface-matte rounded-2xl',
+        'p-10 text-center',
+      )}
+    >
+      <div className="mx-auto w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mb-4">
+        <IconWarning size={24} className="text-amber-700" />
+      </div>
+      <p className="text-sm font-medium text-warm-900 mb-1">
+        Couldn&apos;t load insights
+      </p>
+      <p className="text-sm text-warm-500 mb-4">
+        Something went wrong fetching your insights. This is a load error, not an
+        empty feed — try again in a moment.
+      </p>
+      <Button variant="primary"
+        type="button"
+        onClick={onRetry}
+        isLoading={isRetrying}
+        disabled={isRetrying}
+        className={cn(
+          'inline-flex items-center gap-1.5 px-4 py-2 rounded-full',
+          'text-sm font-medium',
+          'bg-primary-600 text-white border border-primary-600',
+          'hover:bg-primary-700 active:bg-primary-800 transition-colors',
+        )}
+      >
+        <IconRefresh size={14} />
+        Retry
       </Button>
     </div>
   );

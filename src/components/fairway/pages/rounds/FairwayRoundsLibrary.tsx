@@ -20,8 +20,8 @@
  *
  * ── ONE MASTHEAD ───────────────────────────────────────────────────────────
  *   A single Fairway ViewHeader (kills the legacy double-title). Honest meta
- *   count + month range; when the coach query hits its 50-row cap the meta says
- *   "showing most recent 50" rather than fabricating a total it doesn't have.
+ *   count + month range; the server paginates past the PostgREST cap, so the
+ *   meta reports the true total round count.
  *
  * ── ONE HERO ───────────────────────────────────────────────────────────────
  *   A compact KPI strip of StatTile tiles on Inset wells (Rounds · Avg score ·
@@ -270,10 +270,9 @@ export function FairwayRoundsLibrary({
     const n = rounds.length;
     const range = honestRange(rounds);
     const noun = `${n} round${n === 1 ? '' : 's'} recorded`;
-    // The coach completed query is capped at 50; when it's saturated, say so
-    // honestly rather than implying it's the full count.
-    const capNote = isCoach && n === 50 ? 'showing most recent 50' : null;
-    const parts = [capNote ?? noun, range].filter(Boolean);
+    // The server now paginates past the PostgREST cap (fetchAllRowsResult), so
+    // `rounds` is the complete set — report the true count, no cap caveat.
+    const parts = [noun, range].filter(Boolean);
     return parts.join(' · ');
   })();
 

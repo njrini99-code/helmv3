@@ -698,15 +698,31 @@ export async function getInsightsStats(
   const supabase = await createClient();
 
   try {
-    // Apply the SAME shared product-visibility contract (P2 legacy-surface) so
-    // the legacy stats counts reflect the product-visible truth (e.g. 212),
-    // not every stale v2 / archived / tentative row (313).
+    // Auth gate — mirror `getInsightsForCoach` (insight-delivery.ts), which
+    // returns an empty set when there is no authenticated user. We short-circuit
+    // to zeroed stats so the StatCards render cleanly rather than throwing.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user || !coachId) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Mirror the LIST scope (F054). `getInsightsForCoach` (insight-delivery.ts)
+    // scopes its team-wide sweep purely through RLS (the coach's staffed teams)
+    // + `applyInsightVisibility` + an evidence-backed predicate — it does NOT
+    // filter by `coach_id`. The previous `.eq('coach_id', coachId)` here
+    // diverged on multi-coach programs: an insight authored by a co-coach on the
+    // same team is RLS-visible in the list yet was excluded from these counts,
+    // so the StatCards under-counted the visible feed. Drop the author filter
+    // and add the same `.not('evidence', 'is', null)` predicate so the stats
+    // count exactly the rows the list renders.
     const { data: insights, error } = await applyInsightVisibility(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from('golf_coach_insights')
         .select('status, priority, insight_type')
-        .eq('coach_id', coachId),
+        .not('evidence', 'is', null),
     );
 
     if (error) {
