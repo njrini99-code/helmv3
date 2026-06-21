@@ -62,9 +62,16 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
         fallback_text: props.fallbackText,
       });
       if (cancelled) return;
-      if (r.ok && r.text) {
+      // Grounding gate (P0-03): ONLY swap in the LLM prose when the model
+      // went through the LLM path AND every numeric claim it made was
+      // verified against the supplied evidence. Anything else
+      // (ok=false, budget gate, LLM error, or discarded unverified text)
+      // keeps the deterministic fallback visible. Unsupported claims must
+      // never render as fact.
+      const verified = r.ok && !!r.used_llm && !!r.citations_verified;
+      if (verified && r.text) {
         setText(r.text);
-        setUsedLlm(!!r.used_llm);
+        setUsedLlm(true);
       }
       setLoading(false);
     })();

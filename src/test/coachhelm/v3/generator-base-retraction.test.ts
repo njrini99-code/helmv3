@@ -219,7 +219,7 @@ beforeEach(() => {
 describe('BaseGenerator stale-scope retraction (audit P2 + regrade hardening)', () => {
   it('retracts the full scope when aggregate() returns null (dequalified), stamping provenance', async () => {
     const result = await new ScopedGenerator('player-1', { agg: null }).run();
-    expect(result).toEqual({ id: null, gated: false, retracted: 2 });
+    expect(result).toEqual({ id: null, gated: false, status: 'no_data', retracted: 2 });
 
     // One candidate SELECT with the full guard set (matured now included —
     // it gets the staleness bound client-side).
@@ -283,7 +283,7 @@ describe('BaseGenerator stale-scope retraction (audit P2 + regrade hardening)', 
   it('does NOT retract on the no-standing exit (infrastructure lag)', async () => {
     loadStandingForMetricMock.mockResolvedValue(null);
     const result = await new ScopedGenerator('player-1', { requiresStanding: true }).run();
-    expect(result).toEqual({ id: null, gated: false });
+    expect(result).toEqual({ id: null, gated: false, status: 'standing_lag' });
     expect(recordedSelects).toHaveLength(0);
     expect(recordedUpdates).toHaveLength(0);
   });
@@ -299,26 +299,27 @@ describe('BaseGenerator stale-scope retraction (audit P2 + regrade hardening)', 
   it('does NOT retract when the philosophy gate suppresses the write', async () => {
     upsertInsightV3Mock.mockResolvedValue('__gated_out__');
     const result = await new ScopedGenerator('player-1', { requiresStanding: false }).run();
-    expect(result).toEqual({ id: null, gated: true });
+    expect(result).toEqual({ id: null, gated: true, status: 'gated' });
     expect(recordedSelects).toHaveLength(0);
   });
 
   it('DOES retract when the team toggle disables the generator (regrade NEW-P3)', async () => {
     const result = await new ScopedGenerator('player-1', { enabled: false }).run();
-    expect(result).toEqual({ id: null, gated: true, retracted: 2 });
+    expect(result).toEqual({ id: null, gated: true, status: 'gated', retracted: 2 });
     expect(recordedUpdates).toHaveLength(2);
   });
 
   it('does NOT retract from the error path (error \u2260 dequalification)', async () => {
     const result = await new ScopedGenerator('player-1', { aggThrows: true }).run();
-    expect(result).toEqual({ id: null, gated: false });
+    // P0-04: the error path now reports an explicit failed receipt.
+    expect(result).toEqual({ id: null, gated: false, status: 'failed' });
     expect(recordedSelects).toHaveLength(0);
     expect(logServerErrorMock).toHaveBeenCalled();
   });
 
   it('is a no-op when the generator declares no scope (default)', async () => {
     const result = await new ScopedGenerator('player-1', { agg: null, scope: null }).run();
-    expect(result).toEqual({ id: null, gated: false, retracted: 0 });
+    expect(result).toEqual({ id: null, gated: false, status: 'no_data', retracted: 0 });
     expect(recordedSelects).toHaveLength(0);
   });
 

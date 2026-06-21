@@ -237,10 +237,13 @@ async function handle(): Promise<NextResponse> {
           target_metric_id: row.target_metric_id,
           baseline_value: row.baseline_value,
           post_value: row.post_value,
-          delta: row.delta,
+          // P0-01: `delta` stores the direction-AGNOSTIC raw change; `lift`
+          // stores the direction-CORRECTED improvement signal. Only `lift`
+          // (improvement_lift) is ever fed to the weight update below.
+          delta: row.raw_delta,
           n_rounds_before: row.n_rounds_before,
           n_rounds_after: row.n_rounds_after,
-          lift: row.lift,
+          lift: row.improvement_lift,
         });
       if (insErr) {
         // Postgres 23503 = foreign_key_violation. As of migration
@@ -268,16 +271,20 @@ async function handle(): Promise<NextResponse> {
         continue;
       }
       // Update coach weight EMA for (coach, insight_type, intent='general').
-      // Skip entirely when lift is null: nextWeight no-ops on null (returns
-      // prev unchanged), so the upsert would only re-write the unchanged base
-      // {weight:1.0, sample_n:0} row — repopulating the freshly-wiped weights
-      // table with zero-evidence baseline rows that LOOK like learned state,
-      // and touching updated_at on real rows without any weight movement.
-      if (c.coach_id && row.lift !== null) {
+      // P0-01: learning is driven by `improvement_lift` — the direction-CORRECTED
+      // signal — never the raw delta. A drop in a lower-is-better metric is a
+      // positive improvement_lift and so correctly RAISES the weight.
+      // Skip entirely when improvement_lift is null: nextWeight no-ops on null
+      // (returns prev unchanged), so the upsert would only re-write the
+      // unchanged base {weight:1.0, sample_n:0} row — repopulating the
+      // freshly-wiped weights table with zero-evidence baseline rows that LOOK
+      // like learned state, and touching updated_at on real rows without any
+      // weight movement.
+      if (c.coach_id && row.improvement_lift !== null) {
         const weightErr = await updateCoachWeight(sb, {
           coach_id: c.coach_id,
           insight_type: c.insight_type,
-          lift: row.lift,
+          lift: row.improvement_lift,
         });
         if (weightErr) {
           await logServerError(

@@ -42,6 +42,17 @@ type FailureCode =
   | 'engine_generator_failure'
   | 'engine_error';
 
+/**
+ * Partial-success marker (P0-04). When the engine succeeded OVERALL but one or
+ * more mandatory generators threw, the round IS analyzed but is NOT clean — we
+ * stamp `coachhelm_analyzed_at` (so the safety-net cron stops re-running it) AND
+ * record this in `coachhelm_failure_reason` so a repair job / operator can tell
+ * a fully-clean run from one that silently dropped a generator. A NEW
+ * `analysis_status` column would be cleaner, but this reuses the existing
+ * columns honestly without a schema change.
+ */
+const PARTIAL_FAILURE_REASON = 'engine_partial_failure' as const;
+
 function sanitizeFailureReason(reason: string): FailureCode {
   const lower = reason.toLowerCase();
   if (lower.includes('timeout') || lower.includes('timed out')) return 'engine_timeout';
@@ -103,7 +114,7 @@ async function writeTerminalState(
 export async function postRoundTrigger(
   admin: SupabaseClient,
   args: PostRoundTriggerArgs,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; partial?: boolean }> {
   const now = new Date().toISOString();
   try {
     const result = await triggerPlayerInsightsAfterRound(args.playerId);
@@ -126,6 +137,40 @@ export async function postRoundTrigger(
         extra: { roundId: args.roundId, triggerReason: args.triggerReason ?? 'round_submitted' },
       });
       return { success: false, error: reason };
+    }
+
+    // P0-04: the engine ran but may have lost one or more generators to an
+    // internal throw (now surfaced via the orchestrator's generatorSummary →
+    // `result.partial`). Mark the round analyzed (so the safety-net cron stops
+    // re-running it) but flag it partial in coachhelm_failure_reason so a repair
+    // job / operator can distinguish a clean run from a degraded one. Reading
+    // `partial` defensively keeps this back-compatible with callers that don't
+    // yet thread it.
+    const partial = result.partial === true;
+    if (partial) {
+      await writeTerminalState(
+        admin,
+        args.roundId,
+        {
+          coachhelm_analyzed_at: now,
+          coachhelm_failed_at: null,
+          coachhelm_failure_reason: PARTIAL_FAILURE_REASON,
+        },
+        'postRoundTrigger.enginePartial',
+      );
+      await logServerError(
+        `postRoundTrigger engine partial: one or more generators failed but the round was analyzed`,
+        {
+          action: 'postRoundTrigger.enginePartial',
+          featureArea: 'coachhelm',
+          playerId: args.playerId,
+          // Routine partial-failure marker — admin-feed only, not Sentry.
+          skipSentry: true,
+          extra: { roundId: args.roundId, triggerReason: args.triggerReason ?? 'round_submitted' },
+        },
+        'warning',
+      );
+      return { success: true, partial: true };
     }
 
     await writeTerminalState(

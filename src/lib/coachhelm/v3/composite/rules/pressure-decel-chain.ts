@@ -111,11 +111,22 @@ const rule: CompositeRule = {
         strokes_impact: recoverablePerRound,
         strokes_impact_method: 'peer_delta',
         confidence: 0.7,
+        // P0-06: static placeholders, not per-round dispersion → flag unmeasured
+        // so calcConfidence drops the fabricated recency/variance blend and the
+        // synthesis normalization calibrates the inferred chain down.
         confidence_factors: {
           sample_adequacy: 0.8,
           recency: 1.0,
           variance: 0.5,
+          factors_measured: false,
         },
+        // P0-06: the pressure delta IS measured, but ATTRIBUTING it to short-putt
+        // decel is a hypothesis built from two independent standings (pressure
+        // gap + weak short putt) — no shot sequence proves the grip tightened on
+        // the knee-knockers. So the chain is inferred, not observed. The recovered
+        // strokes are a projection, hence estimated.
+        estimated: true,
+        causality_level: 'inferred_hypothesis',
       },
     };
   },

@@ -13,12 +13,33 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { upsertInsightV3, GATED_OUT } from '@/lib/coachhelm/v3/insights/upsert-v3';
 import { logServerError } from '@/lib/server-error-logger';
+import { calcConfidence } from '@/lib/coachhelm/v2/insights/types';
+import type { CausalityLevel, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { COMPOSITE_RULES } from './index';
 import { loadRecentInsightsForPlayer } from './loader';
 import { loadCompositeContext } from './hole-sequence-loader';
 import type { CompositeMatch, CompositeRule, EvidenceInsight } from './types';
 
 const COMPOSITE_PREFIX = 'composite';
+
+/**
+ * P0-06 composite confidence calibration.
+ *
+ * Composites combine TWO Tier-1 signals, so the joint evidence is thinner than
+ * either source — use a 30-round target (matching putt-distance / course-mgmt,
+ * the most common single-metric target) so `sample_adequacy` reflects the real
+ * combined `sample_n` instead of the static 0.8 every rule used to hard-code.
+ */
+const COMPOSITE_TARGET_N = 30;
+
+/**
+ * Confidence ceiling for an `inferred_hypothesis` composite (P0-06). A cascade
+ * synthesized from independent standings is a coach HYPOTHESIS, not a measured
+ * fact — even a fully-sampled one must not present with the conviction of a
+ * directly-measured single-metric leak. `observed_sequence` composites (the
+ * cause was seen in an actual shot sequence) are NOT capped here.
+ */
+const INFERRED_CONFIDENCE_CEILING = 0.6;
 
 /**
  * Diagnostic `strokes_impact` backfill for composites (tee-strat-1/lag3putt-3).
@@ -78,6 +99,111 @@ export function buildSourceImpactLookup(insights: EvidenceInsight[]): Map<string
     }
   }
   return lookup;
+}
+
+/**
+ * Pick the widest source window (earliest start, latest end) across the
+ * composite's source insights (P0-06). A composite spans whichever rounds its
+ * contributing signals were drawn from, so its window should at least cover
+ * theirs — the rules ship `window_start/end: ''`. Returns `null` when no source
+ * carries a usable ISO window so the caller leaves the field untouched.
+ * Pure + exported for direct unit testing.
+ */
+export function sourceWindowSpan(
+  sourceInsightIds: string[],
+  insights: EvidenceInsight[],
+): { window_start: string; window_end: string } | null {
+  const ids = new Set(sourceInsightIds);
+  let start: string | null = null;
+  let end: string | null = null;
+  for (const i of insights) {
+    if (!ids.has(i.id)) continue;
+    const ws = i.evidence?.window_start;
+    const we = i.evidence?.window_end;
+    if (typeof ws === 'string' && ws && (start === null || ws < start)) start = ws;
+    if (typeof we === 'string' && we && (end === null || we > end)) end = we;
+  }
+  if (start === null && end === null) return null;
+  return { window_start: start ?? '', window_end: end ?? '' };
+}
+
+/**
+ * P0-06 — calibrate a composite's confidence down to what the evidence actually
+ * supports, and copy real windows from its source insights.
+ *
+ * Composites bypass `BaseGenerator.run()` (the synthesis runner calls
+ * `rule.compose()` then upserts directly), so they never got the honesty
+ * treatment generators do. Every composite hard-coded
+ * `{ sample_adequacy: 0.8, recency: 1.0, variance: 0.5 }`, which `calcConfidence`
+ * blended into a fabricated 0.77 — over-confident for what is usually a
+ * hypothesis built from two independent standings.
+ *
+ * This normalization:
+ *   1. Recomputes `sample_adequacy` HONESTLY from the composite's real combined
+ *      `sample_n` (vs `COMPOSITE_TARGET_N`) instead of the static 0.8.
+ *   2. Forces `factors_measured: false` — a composite has no per-round
+ *      dispersion, so recency/variance are placeholders. `calcConfidence` then
+ *      drops the fabricated +0.45 blend and surfaces honest sample-adequacy.
+ *   3. Defaults `causality_level` to `inferred_hypothesis` unless a rule proved
+ *      an observed sequence — most composites are hypotheses.
+ *   4. CAPS the confidence of an inferred chain at `INFERRED_CONFIDENCE_CEILING`
+ *      so it never reads as a measured fact. An `observed_sequence` chain keeps
+ *      its honest sample-adequacy confidence (no cap).
+ *   5. Copies the widest source window into empty composite windows.
+ *
+ * Pure + exported for direct unit testing.
+ */
+export function normalizeCompositeEvidence(
+  evidence: InsightEvidence,
+  sourceWindow: { window_start: string; window_end: string } | null,
+): InsightEvidence {
+  const clamp01 = (n: number): number =>
+    !Number.isFinite(n) ? 0 : n < 0 ? 0 : n > 1 ? 1 : n;
+
+  const causality_level: CausalityLevel = evidence.causality_level ?? 'inferred_hypothesis';
+
+  const sampleN = Number.isFinite(evidence.sample_n) ? evidence.sample_n : 0;
+  let sampleAdequacy = clamp01(sampleN / COMPOSITE_TARGET_N);
+  // The inferred-hypothesis ceiling must be DURABLE: upsertInsight recomputes
+  // confidence from confidence_factors alone (it ignores the `confidence` field
+  // we set). In honest mode (factors_measured:false, recency>=1) calcConfidence
+  // returns ~min(1, sample_adequacy), so capping sample_adequacy itself is what
+  // makes the ceiling stick through the recompute — not just the local value.
+  if (causality_level === 'inferred_hypothesis') {
+    sampleAdequacy = Math.min(sampleAdequacy, INFERRED_CONFIDENCE_CEILING);
+  }
+
+  // Composites never carry genuine per-round dispersion: flag the static
+  // recency/variance as unmeasured so calcConfidence does the honest thing.
+  const confidence_factors = {
+    ...evidence.confidence_factors,
+    sample_adequacy: sampleAdequacy,
+    factors_measured: false as const,
+  };
+
+  // Honest base confidence (honest mode → ~min(1, sample_adequacy)). The cap is
+  // already baked into sample_adequacy above so this matches the upsert recompute.
+  const confidence = calcConfidence({ confidence_factors });
+
+  // Copy source windows only into empty slots — never clobber a window a rule
+  // actually set.
+  const window_start =
+    evidence.window_start && evidence.window_start.length > 0
+      ? evidence.window_start
+      : sourceWindow?.window_start ?? evidence.window_start;
+  const window_end =
+    evidence.window_end && evidence.window_end.length > 0
+      ? evidence.window_end
+      : sourceWindow?.window_end ?? evidence.window_end;
+
+  return {
+    ...evidence,
+    confidence_factors,
+    confidence,
+    causality_level,
+    window_start,
+    window_end,
+  };
 }
 
 /**
@@ -261,9 +387,15 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         impactBySourceId,
         Math.abs(Number(composed.evidence.strokes_impact ?? 0)),
       );
+      // P0-06: calibrate the composite's confidence down to its real evidence
+      // (honest sample-adequacy + inferred-hypothesis ceiling) and copy the
+      // source insight windows in. Must run on the evidence we actually upsert.
+      const calibrated = normalizeCompositeEvidence(
+        { ...composed.evidence, strokes_impact: strokesImpact },
+        sourceWindowSpan(match.source_insight_ids, insights),
+      );
       const evidence = {
-        ...composed.evidence,
-        strokes_impact: strokesImpact,
+        ...calibrated,
         composite_rule_id: rule.id,
         source_insight_ids: match.source_insight_ids,
       };

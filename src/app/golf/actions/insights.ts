@@ -3210,8 +3210,11 @@ export async function dismissComposedInsight(
  */
 export async function triggerPlayerInsightsAfterRound(
   playerId: string
-): Promise<{ success: boolean; insights_created?: number; error?: string }> {
+): Promise<{ success: boolean; insights_created?: number; error?: string; partial?: boolean }> {
   const startTime = Date.now();
+  // P0-04: track whether any mandatory generator failed so the caller
+  // (postRoundTrigger) can mark the round PARTIAL rather than fully clean.
+  let hadGeneratorFailures = false;
 
   try {
     const admin = createAdminClient();
@@ -3343,6 +3346,7 @@ export async function triggerPlayerInsightsAfterRound(
     // generators succeeded. Log the failures for observability, continue with
     // whatever the orchestrator did emit.
     if (analysis.generatorSummary?.failures?.length) {
+      hadGeneratorFailures = true;
       const failedGenerators = analysis.generatorSummary.failures
         .map((failure) => `${failure.generator}: ${failure.reason}`)
         .join('; ');
@@ -3529,7 +3533,7 @@ export async function triggerPlayerInsightsAfterRound(
     // after the server action response has been sent, which is outside the allowed
     // context for revalidation. The caller (submitGolfRoundComprehensive) already
     // revalidates all relevant paths before invoking this.
-    return { success: true, insights_created: newInsights.length };
+    return { success: true, insights_created: newInsights.length, partial: hadGeneratorFailures };
   } catch (error) {
     await logServerError(
       `CoachHelm post-round trigger failed: ${error instanceof Error ? error.message : String(error)}`,

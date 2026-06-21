@@ -140,33 +140,164 @@ export interface ValidationPersistResult {
   direction: ValidationResult['direction'];
 }
 
+/** Minimal shape of a completed round row used to resolve an actual outcome. */
+export interface RoundOutcomeRow {
+  score_to_par: number | null;
+  total_putts: number | null;
+  total_fairways_hit: number | null;
+  total_fairways: number | null;
+  total_gir: number | null;
+  total_gir_possible: number | null;
+  created_at: string | null;
+}
+
 /**
- * Resolves the actual value for a prediction by averaging the same metric
- * across the player's completed rounds inside the prediction window
- * (created_at .. due_date). Returns null if no round lands in the window.
+ * Extract the value for a prediction's metric from a single completed round.
+ * Pure + exported so the matching logic is unit-testable. Returns null when the
+ * round lacks the inputs needed for that metric.
+ */
+export function extractMetricValue(
+  metric: string,
+  r: RoundOutcomeRow,
+): number | null {
+  switch (metric) {
+    case 'scoreToPar':
+    case 'score_to_par':
+      return r.score_to_par ?? null;
+    case 'putts':
+    case 'total_putts':
+      return r.total_putts ?? null;
+    case 'fairwayPct':
+    case 'fairway_pct':
+      return (r.total_fairways ?? 0) > 0
+        ? ((r.total_fairways_hit ?? 0) / (r.total_fairways ?? 1)) * 100
+        : null;
+    case 'girPct':
+    case 'gir_pct':
+      return (r.total_gir_possible ?? 0) > 0
+        ? ((r.total_gir ?? 0) / (r.total_gir_possible ?? 1)) * 100
+        : null;
+    default:
+      return null;
+  }
+}
+
+/**
+ * A prediction can only validate against a round PLAYED AFTER it was created.
+ * Returns true when the prediction's horizon is valid (its due date is on a
+ * strictly later day than its creation day).
  *
- * Filters on `golf_rounds.created_at` (the round's actual submission
- * timestamp) rather than `round_date` (DATE only, truncated to midnight).
- * Using round_date silently excluded same-day rounds whenever the
- * prediction was created after 00:00 UTC of that day, because Postgres
- * coerces the date to midnight when comparing against a timestamp.
+ * Root cause of P0-02: legacy predictions were created with `due_date = today`,
+ * so the validation window `[created_at, due_date]` was same-day (and often
+ * inverted once due_date is coerced to midnight). Such rows can never be
+ * validated honestly and must be excluded from rollups, not matched against a
+ * pre-prediction round.
+ */
+export function hasValidHorizon(
+  createdAt: string | null,
+  dueDate: string | null,
+): boolean {
+  if (!createdAt || !dueDate) return false;
+  const created = new Date(createdAt);
+  const due = endOfDueDate(dueDate);
+  if (!Number.isFinite(created.getTime()) || due === null) return false;
+  // Due day must be strictly after the creation day.
+  const createdDay = createdAt.slice(0, 10);
+  return dueDate.slice(0, 10) > createdDay && due.getTime() > created.getTime();
+}
+
+/**
+ * End-of-day (23:59:59.999 UTC) for a YYYY-MM-DD due date. The due date is a
+ * DATE, so "due by D" means any round through the END of day D, not midnight at
+ * its start. Using the start-of-day (the old `new Date(due).toISOString()`)
+ * silently excluded same-day rounds.
+ */
+export function endOfDueDate(dueDate: string): Date | null {
+  const day = dueDate.slice(0, 10);
+  const d = new Date(`${day}T23:59:59.999Z`);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+/**
+ * Pick the FIRST completed round strictly after `createdAt` and no later than
+ * the end of `dueDate`. This is the outcome a prediction should be graded
+ * against — not an average over a window that can include rounds played before
+ * the prediction existed.
+ */
+export function selectValidationRound<T extends RoundOutcomeRow>(
+  rounds: T[],
+  createdAt: string,
+  dueDate: string,
+): T | null {
+  const createdMs = new Date(createdAt).getTime();
+  const end = endOfDueDate(dueDate);
+  if (!Number.isFinite(createdMs) || end === null) return null;
+  const endMs = end.getTime();
+
+  const eligible = rounds
+    .filter((r) => {
+      if (!r.created_at) return false;
+      const ms = new Date(r.created_at).getTime();
+      return Number.isFinite(ms) && ms > createdMs && ms <= endMs;
+    })
+    .sort((a, b) => new Date(a.created_at!).getTime() - new Date(b.created_at!).getTime());
+
+  return eligible[0] ?? null;
+}
+
+/**
+ * Sentinel returned by `resolveActualValue` to distinguish "outcome not yet
+ * resolvable" from "this prediction can never validate".
+ *
+ * - `{ kind: 'pending' }`     — horizon valid, no eligible round yet; leave ripe.
+ * - `{ kind: 'invalid' }`     — same-day/inverted horizon; retire, do not grade.
+ * - `{ kind: 'resolved', .. }`— graded against the first eligible round.
+ */
+export type ActualOutcome =
+  | { kind: 'pending' }
+  | { kind: 'invalid' }
+  | { kind: 'resolved'; value: number; roundId: string | null; roundCreatedAt: string | null };
+
+/**
+ * Resolves the actual value for a prediction by grading it against the FIRST
+ * completed round played strictly after `created_at` and no later than the end
+ * of `due_date`. Returns:
+ *
+ * - `invalid`  when the prediction has a same-day/inverted horizon (legacy rows
+ *   that can never validate honestly — see P0-02). These are retired, not
+ *   matched against a pre-prediction round.
+ * - `pending`  when the horizon is valid but no eligible round exists yet.
+ * - `resolved` with the metric value from the first eligible round.
+ *
+ * Filters on `golf_rounds.created_at` (the round's actual submission timestamp)
+ * rather than `round_date` (DATE only, truncated to midnight). The window upper
+ * bound is the END of the due date, so a round submitted at any time on the due
+ * day still counts.
  */
 async function resolveActualValue(
   supabase: AdminSupabase,
   prediction: RipePrediction,
-): Promise<number | null> {
-  if (!prediction.created_at || !prediction.due_date) return null;
+): Promise<ActualOutcome> {
+  if (!prediction.created_at || !prediction.due_date) return { kind: 'invalid' };
+
+  // A prediction can only be graded against a round played AFTER it was made.
+  // Same-day/inverted horizons can never validate honestly — retire them.
+  if (!hasValidHorizon(prediction.created_at, prediction.due_date)) {
+    return { kind: 'invalid' };
+  }
 
   const start = new Date(prediction.created_at).toISOString();
-  const end = new Date(prediction.due_date).toISOString();
+  const end = endOfDueDate(prediction.due_date);
+  if (end === null) return { kind: 'invalid' };
 
   const { data: rounds, error } = await supabase
     .from('golf_rounds')
-    .select('score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, created_at')
+    .select('id, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, created_at')
     .eq('player_id', prediction.player_id)
     .eq('status', 'completed')
-    .gte('created_at', start)
-    .lte('created_at', end);
+    .gt('created_at', start)
+    .lte('created_at', end.toISOString())
+    .order('created_at', { ascending: true });
 
   if (error) {
     await logServerError(
@@ -178,39 +309,28 @@ async function resolveActualValue(
       },
       'warning',
     );
-    return null;
+    return { kind: 'pending' };
   }
 
-  if (!rounds || rounds.length === 0) return null;
+  if (!rounds || rounds.length === 0) return { kind: 'pending' };
 
-  // Map metric name to an extractor on the round row. Names kept loose
-  // (matches what the predictor writes today).
-  const extract = (r: (typeof rounds)[number]): number | null => {
-    switch (prediction.metric) {
-      case 'scoreToPar':
-      case 'score_to_par':
-        return r.score_to_par ?? null;
-      case 'putts':
-      case 'total_putts':
-        return r.total_putts ?? null;
-      case 'fairwayPct':
-      case 'fairway_pct':
-        return (r.total_fairways ?? 0) > 0
-          ? ((r.total_fairways_hit ?? 0) / (r.total_fairways ?? 1)) * 100
-          : null;
-      case 'girPct':
-      case 'gir_pct':
-        return (r.total_gir_possible ?? 0) > 0
-          ? ((r.total_gir ?? 0) / (r.total_gir_possible ?? 1)) * 100
-          : null;
-      default:
-        return null;
-    }
+  // Grade against the FIRST completed round after the prediction was created.
+  const round = selectValidationRound(
+    rounds as Array<RoundOutcomeRow & { id: string }>,
+    prediction.created_at,
+    prediction.due_date,
+  );
+  if (!round) return { kind: 'pending' };
+
+  const value = extractMetricValue(prediction.metric, round);
+  if (value === null || !Number.isFinite(value)) return { kind: 'pending' };
+
+  return {
+    kind: 'resolved',
+    value,
+    roundId: round.id ?? null,
+    roundCreatedAt: round.created_at,
   };
-
-  const values = rounds.map(extract).filter((v): v is number => v !== null && Number.isFinite(v));
-  if (values.length === 0) return null;
-  return values.reduce((s, v) => s + v, 0) / values.length;
 }
 
 /**
@@ -218,15 +338,31 @@ async function resolveActualValue(
  * result to `golf_prediction_validations`, and denormalizes the outcome onto
  * `golf_predictions` (validated_at, actual_value, was_accurate).
  *
- * Returns null if the actual outcome cannot be resolved yet (no rounds inside
- * the window) — caller should leave the prediction ripe for the next cron.
+ * The outcome is the FIRST completed round played strictly after `created_at`
+ * (P0-02), not an average over a window that could include pre-prediction
+ * rounds.
+ *
+ * Returns null when the actual outcome cannot be resolved yet (no eligible round
+ * yet — leave ripe) OR when the prediction is retired for an invalid horizon.
  */
 export async function validatePredictionAgainstOutcome(
   supabase: AdminSupabase,
   prediction: RipePrediction,
 ): Promise<ValidationPersistResult | null> {
-  const actual = await resolveActualValue(supabase, prediction);
-  if (actual === null) return null;
+  const outcome = await resolveActualValue(supabase, prediction);
+
+  // Same-day / inverted horizon: this prediction can never validate honestly.
+  // Retire it so it is excluded from accuracy rollups and stops being re-fetched
+  // by the cron (validated_at IS NULL filter), without recording a bogus result.
+  if (outcome.kind === 'invalid') {
+    await retireInvalidHorizon(supabase, prediction);
+    return null;
+  }
+
+  // Horizon valid but no eligible round yet — leave ripe for the next cron.
+  if (outcome.kind === 'pending') return null;
+
+  const actual = outcome.value;
 
   const low = prediction.predicted_low ?? prediction.confidence_interval_low ?? prediction.predicted_value;
   const high = prediction.predicted_high ?? prediction.confidence_interval_high ?? prediction.predicted_value;
@@ -270,6 +406,8 @@ export async function validatePredictionAgainstOutcome(
       validated_at: nowIso,
       actual_value: actual,
       was_accurate: base.direction === 'accurate' || base.withinInterval,
+      // Trace which round graded this prediction (first round after created_at).
+      related_round_id: outcome.roundId ?? prediction.related_round_id,
     })
     .eq('id', prediction.id);
 
@@ -293,4 +431,41 @@ export async function validatePredictionAgainstOutcome(
     withinInterval: base.withinInterval,
     direction: base.direction,
   };
+}
+
+/** Sentinel category stamped on retired same-day/invalid-horizon predictions. */
+export const INVALID_HORIZON_CATEGORY = 'invalid_horizon';
+
+/**
+ * Retire a prediction that can never validate honestly (same-day/inverted
+ * horizon). Stamps `validated_at` so the hourly cron stops re-fetching it, marks
+ * `was_accurate = null` and `error_category = 'invalid_horizon'` so accuracy
+ * rollups can exclude it. No validation row is written and no bogus outcome is
+ * recorded.
+ */
+async function retireInvalidHorizon(
+  supabase: AdminSupabase,
+  prediction: RipePrediction,
+): Promise<void> {
+  const { error } = await supabase
+    .from('golf_predictions')
+    .update({
+      validated_at: new Date().toISOString(),
+      actual_value: null,
+      was_accurate: null,
+      error_category: INVALID_HORIZON_CATEGORY,
+    })
+    .eq('id', prediction.id);
+
+  if (error) {
+    await logServerError(
+      `Failed to retire invalid-horizon prediction ${prediction.id}: ${error.message}`,
+      {
+        action: 'outcomeValidator.retireInvalidHorizon',
+        featureArea: 'coachhelm',
+        extra: { predictionId: prediction.id },
+      },
+      'warning',
+    );
+  }
 }

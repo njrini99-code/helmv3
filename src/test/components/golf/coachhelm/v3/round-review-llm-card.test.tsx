@@ -79,11 +79,12 @@ describe('RoundReviewLlmCard', () => {
     expect(screen.getByTestId('round-review-llm-card')).toBeInTheDocument();
   });
 
-  it('swaps in the LLM prose when the action resolves with used_llm=true', async () => {
+  it('swaps in the LLM prose only when used_llm AND citations_verified (P0-03)', async () => {
     generateLlmRoundReviewMock.mockResolvedValue({
       ok: true,
       text: 'Sharp round at Lakewood — your iron play held the scorecard together. Lean into approach reps Tuesday.',
       used_llm: true,
+      citations_verified: true,
     });
     render(
       <RoundReviewLlmCard
@@ -97,6 +98,30 @@ describe('RoundReviewLlmCard', () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByTestId('round-review-llm-card').dataset.usedLlm).toBe('true');
+  });
+
+  it('keeps the fallback when used_llm=true but citations are UNVERIFIED (P0-03: no unsupported claims as fact)', async () => {
+    generateLlmRoundReviewMock.mockResolvedValue({
+      ok: true,
+      text: 'You gained 4.2 strokes putting and birdied the back nine.',
+      used_llm: true,
+      citations_verified: false,
+    });
+    render(
+      <RoundReviewLlmCard
+        roundId="round-1"
+        fallbackText="You shot 76 (+4) at Lakewood. Solid round."
+      />,
+    );
+    await waitFor(() => {
+      expect(generateLlmRoundReviewMock).toHaveBeenCalled();
+    });
+    // Unverified LLM prose must NOT render; the deterministic fallback stays.
+    expect(screen.queryByText(/gained 4\.2 strokes putting/)).toBeNull();
+    expect(
+      screen.getByText(/You shot 76 \(\+4\) at Lakewood\. Solid round\./),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('round-review-llm-card').dataset.usedLlm).toBe('false');
   });
 
   it('keeps the fallback text when the action returns ok=false (failure-silent)', async () => {

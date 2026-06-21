@@ -108,10 +108,10 @@ const rule: CompositeRule = {
       signature: 'lag_distance_3putt',
       evidence: {
         metric: 'three_putt_chain',
-        metric_label: 'Expected 3-putt rate (15+ ft)',
+        metric_label: 'Estimated 3-putt rate (15+ ft)',
         unit: 'percent',
         your_value: threePuttPct,
-        your_value_display: `${threePuttPct}% expected 3-putts`,
+        your_value_display: `~${threePuttPct}% est. 3-putts`,
         comparison_value: 3,
         comparison_label: 'Tour ~3% 3-putt rate',
         comparison_source: 'pga_baseline',
@@ -122,7 +122,23 @@ const rule: CompositeRule = {
         strokes_impact: 0,
         strokes_impact_method: 'peer_delta',
         confidence: 0.7,
-        confidence_factors: { sample_adequacy: 0.8, recency: 1.0, variance: 0.5 },
+        // P0-06: these are STATIC placeholders, not per-round dispersion, so
+        // flag them unmeasured. `calcConfidence` (called in upsert) then drops
+        // the fabricated recency/variance blend and the synthesis runner's
+        // composite normalization calibrates the final score down for an
+        // inferred chain. Never the legacy 0.77 over-confident blend.
+        confidence_factors: {
+          sample_adequacy: 0.8,
+          recency: 1.0,
+          variance: 0.5,
+          factors_measured: false,
+        },
+        // P0-06: the 3-putt rate is a projection from two independent make-%
+        // standings — never a directly measured stat. The cascade itself is a
+        // coach HYPOTHESIS (no shot sequence proves lag→comebacker→miss on the
+        // same hole), so this is an inferred chain, not an observed one.
+        estimated: true,
+        causality_level: 'inferred_hypothesis',
       },
     };
   },

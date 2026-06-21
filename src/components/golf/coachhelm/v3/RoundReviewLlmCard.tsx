@@ -8,9 +8,11 @@
  * Mirrors HeroNarrativeCard exactly:
  *   - Renders `fallbackText` on mount so the surface is never empty.
  *   - Fires `generateLlmRoundReview(roundId, fallbackText)` once on mount.
- *   - On success, swaps in the LLM prose; on failure (ok=false) or
- *     budget-gate fallback (used_llm=false), keeps the deterministic
- *     fallback verbatim.
+ *   - Swaps in the LLM prose ONLY when used_llm && citations_verified;
+ *     on failure (ok=false), budget-gate fallback (used_llm=false), or
+ *     unverified/discarded citations (citations_verified=false), keeps
+ *     the deterministic fallback verbatim. Unsupported claims never
+ *     render as fact (P0-03).
  *   - Never renders error / empty UI — failure-silent like the hero
  *     narrative card. The W30 budget gate is currently set to 0 today
  *     so this card MUST render the fallback gracefully.
@@ -53,14 +55,17 @@ export function RoundReviewLlmCard(props: RoundReviewLlmCardProps) {
       try {
         const r = await generateLlmRoundReview(props.roundId, props.fallbackText);
         if (cancelled) return;
-        // Failure-silent: only swap text in when the action returned a
-        // string. ok=false (auth/round-not-found) leaves the fallback
-        // visible. used_llm=false (budget-gated) returns the same
-        // fallback string from compose() so the surface still updates
-        // consistently but the AI badge stays hidden.
-        if (r.ok && typeof r.text === 'string' && r.text.length > 0) {
+        // Failure-silent + grounding gate (P0-03): ONLY swap in the LLM
+        // prose when the model went through the LLM path AND every
+        // numeric claim it made was verified against the supplied
+        // evidence. ok=false (auth/round-not-found), used_llm=false
+        // (budget gate / error / discarded-unverified-text), or
+        // citations_verified=false all leave the deterministic fallback
+        // visible. Unsupported claims must never render as fact.
+        const verified = r.ok && !!r.used_llm && !!r.citations_verified;
+        if (verified && typeof r.text === 'string' && r.text.length > 0) {
           setText(r.text);
-          setUsedLlm(!!r.used_llm);
+          setUsedLlm(true);
         }
       } catch {
         // Failure-silent. Server action already routed errors through
