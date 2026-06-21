@@ -13,6 +13,12 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      # `next build --webpack` peaks just above Node's ~4GB default heap on the
+      # CI runner and OOMs (exit 134) — nondeterministically on main too. The
+      # standard GitHub Linux runner has 16GB RAM, so raise the V8 old-space
+      # ceiling well clear of the peak. CI-only: Vercel/local builds are
+      # untouched (they already have ample headroom).
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - name: Checkout
         uses: actions/checkout@v6

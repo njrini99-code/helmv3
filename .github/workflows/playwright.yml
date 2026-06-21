@@ -32,6 +32,12 @@ env:
   E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
   E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
   COMMIT_SHA: ${{ github.sha }}
+  # The `npm run build` step (both jobs) OOMs at Node's ~4GB default heap on
+  # the CI runner — the same OOM that fails the `build` check. The standard
+  # GitHub Linux runner has 16GB RAM; raise the V8 old-space ceiling clear of
+  # the build peak. A ceiling (not an allocation) — safe for the dev server +
+  # Playwright runner that follow.
+  NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
   e2e:
