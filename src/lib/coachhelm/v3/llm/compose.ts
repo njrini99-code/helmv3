@@ -11,14 +11,25 @@
  *      caller-supplied fallback text (used_llm=false).
  *   3. generateText via Vercel AI Gateway using MODEL_FOR_TASK[task].
  *   4. verifyCitations() against the evidence the caller supplied.
- *   5. INSERT a row into golf_coachhelm_llm_calls with token counts +
+ *   5. If verification fails, retry ONCE with the unmatched tokens fed
+ *      back to the model. If the retry still fails citation
+ *      verification, DISCARD the LLM text and fall back to the
+ *      caller-supplied template — unverified claims must never reach a
+ *      player surface as fact (P0-03).
+ *   6. INSERT a row into golf_coachhelm_llm_calls with token counts +
  *      computed cost + verification status.
- *   6. recordSpend() updates the per-day budget row.
- *   7. Return ComposeResult with text + flags.
+ *   7. recordSpend() updates the per-day budget row.
+ *   8. Return ComposeResult with text + flags.
  *
  * On generateText error → fall back to template, log a 0-cost row
  * with fallback_to_template=true, and return used_llm=false. The
  * round-review composer's template path is the safety net per Part XI.
+ *
+ * On unrecoverable citation-verification failure → same template
+ * fallback, but the log row records `verified=false`,
+ * `fallback_to_template=true`, and `citations.reason='verification_failed'`
+ * along with the offending unmatched tokens, so the call log keeps the
+ * fabricated-cite evidence even though the player never sees the text.
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -95,29 +106,64 @@ export async function compose(
     }
   }
 
-  // --- 2. LLM call ---
-  let text: string;
-  let prompt_tokens: number;
-  let completion_tokens: number;
+  // --- 2. LLM call (with one citation-grounded retry) ---
+  // First attempt uses the caller's prompt. If the verifier flags
+  // fabricated cites, retry ONCE with the offending tokens fed back so
+  // the model can correct itself. Tokens accumulate across attempts so
+  // the budget reflects real spend.
+  let total_prompt_tokens = 0;
+  let total_completion_tokens = 0;
+
+  let attempt: LlmAttempt;
   try {
-    const res = await generateText({
-      model: model_id,
-      prompt: req.prompt,
-      maxOutputTokens: req.max_completion_tokens * 2,
-    });
-    text = res.text;
-    // `usage` is `LanguageModelUsage` with optional inputTokens/outputTokens
-    // numbers; widen the inference TS sees on the gateway-string path.
-    const usage = res.usage as { inputTokens?: number; outputTokens?: number } | undefined;
-    prompt_tokens = usage?.inputTokens ?? promptTokensEstimate;
-    completion_tokens = usage?.outputTokens ?? Math.ceil(text.length / 4);
+    attempt = await runLlmAttempt(req, model_id, promptTokensEstimate);
   } catch (err) {
-    // LLM call failed but we have a deterministic fallback ready below —
-    // user-facing UX is unaffected. Log as warning (not error) so this
-    // shows up in dashboards as observability data rather than as a
-    // page-failing exception. Covers rate-limit/budget cases too.
+    return await fallbackFromLlmError(supabase, req, fallbackText, {
+      prompt_hash,
+      model_id,
+      err,
+    });
+  }
+  total_prompt_tokens += attempt.prompt_tokens;
+  total_completion_tokens += attempt.completion_tokens;
+
+  // --- 3. Verify citations (retry once on failure) ---
+  if (!attempt.verification.verified) {
+    const retryPrompt = buildRetryPrompt(req.prompt, attempt.verification.unmatched_tokens);
+    try {
+      const retry = await runLlmAttempt(
+        { ...req, prompt: retryPrompt },
+        model_id,
+        estimatePromptTokens(retryPrompt),
+      );
+      total_prompt_tokens += retry.prompt_tokens;
+      total_completion_tokens += retry.completion_tokens;
+      attempt = retry;
+    } catch (err) {
+      // Retry crashed — count what we already spent on attempt 1 and
+      // fall back to the deterministic template.
+      return await fallbackFromLlmError(supabase, req, fallbackText, {
+        prompt_hash,
+        model_id,
+        err,
+        prompt_tokens: total_prompt_tokens,
+        completion_tokens: total_completion_tokens,
+      });
+    }
+  }
+
+  const cost_usd = estimateCostUsd(model_id, total_prompt_tokens, total_completion_tokens);
+
+  // --- 4a. Unrecoverable verification failure → DISCARD LLM text ---
+  // The model emitted at least one numeric claim absent from the
+  // supplied evidence even after a corrective retry. Surfacing it would
+  // show a fabricated number to a player as fact (P0-03), so we throw
+  // the LLM text away and return the caller's deterministic fallback.
+  // We still bill for the (wasted) tokens and keep the unmatched-token
+  // evidence in the call log.
+  if (!attempt.verification.verified) {
     await logServerEvent(
-      `compose() LLM call failed for task=${req.task}: ${err instanceof Error ? err.message : String(err)}`,
+      `compose() discarded unverified LLM text for task=${req.task}: unmatched=${attempt.verification.unmatched_tokens.join(',')}`,
       { action: 'v3.llm.compose' },
       'warning',
     );
@@ -127,38 +173,40 @@ export async function compose(
       player_id: req.player_id,
       prompt_hash,
       model_id,
-      prompt_tokens: 0,
-      completion_tokens: 0,
-      cost_usd: 0,
-      citations: { reason: 'llm_error' },
+      prompt_tokens: total_prompt_tokens,
+      completion_tokens: total_completion_tokens,
+      cost_usd,
+      citations: {
+        reason: 'verification_failed',
+        unmatched_tokens: attempt.verification.unmatched_tokens,
+      },
       verified: false,
       fallback_to_template: true,
     });
+    if (req.coach_id) {
+      await recordSpend(supabase, { coach_id: req.coach_id, task: req.task, cost_usd });
+    }
     return {
       text: fallbackText,
       used_llm: false,
       citations_verified: false,
       call_log_id: fallbackId,
-      cost_usd: 0,
+      cost_usd,
     };
   }
 
-  // --- 3. Verify citations ---
-  const verification = verifyCitations(text, req.evidence);
-  const cost_usd = estimateCostUsd(model_id, prompt_tokens, completion_tokens);
-
-  // --- 4. Log + record spend ---
+  // --- 4b. Verified → log, record spend, return the LLM prose ---
   const callLogId = await logCall(supabase, {
     task: req.task,
     coach_id: req.coach_id,
     player_id: req.player_id,
     prompt_hash,
     model_id,
-    prompt_tokens,
-    completion_tokens,
+    prompt_tokens: total_prompt_tokens,
+    completion_tokens: total_completion_tokens,
     cost_usd,
-    citations: { unmatched_tokens: verification.unmatched_tokens },
-    verified: verification.verified,
+    citations: { unmatched_tokens: attempt.verification.unmatched_tokens },
+    verified: true,
     fallback_to_template: false,
   });
 
@@ -171,10 +219,110 @@ export async function compose(
   }
 
   return {
-    text,
+    text: attempt.text,
     used_llm: true,
-    citations_verified: verification.verified,
+    citations_verified: true,
     call_log_id: callLogId,
+    cost_usd,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Internal: one generate-and-verify pass.
+// ---------------------------------------------------------------------------
+
+interface LlmAttempt {
+  text: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  verification: ReturnType<typeof verifyCitations>;
+}
+
+async function runLlmAttempt(
+  req: ComposeRequest,
+  model_id: string,
+  promptTokensEstimate: number,
+): Promise<LlmAttempt> {
+  const res = await generateText({
+    model: model_id,
+    prompt: req.prompt,
+    maxOutputTokens: req.max_completion_tokens * 2,
+  });
+  const text = res.text;
+  // `usage` is `LanguageModelUsage` with optional inputTokens/outputTokens
+  // numbers; widen the inference TS sees on the gateway-string path.
+  const usage = res.usage as { inputTokens?: number; outputTokens?: number } | undefined;
+  const prompt_tokens = usage?.inputTokens ?? promptTokensEstimate;
+  const completion_tokens = usage?.outputTokens ?? Math.ceil(text.length / 4);
+  return {
+    text,
+    prompt_tokens,
+    completion_tokens,
+    verification: verifyCitations(text, req.evidence),
+  };
+}
+
+/**
+ * Append corrective feedback naming the unmatched tokens so the retry
+ * attempt can drop or fix the fabricated numbers.
+ */
+function buildRetryPrompt(prompt: string, unmatchedTokens: string[]): string {
+  const tokenList = unmatchedTokens.join(', ');
+  return (
+    `${prompt}\n\n` +
+    `IMPORTANT CORRECTION: a previous draft included numbers that are NOT ` +
+    `supported by the provided data: ${tokenList}. Rewrite the response and ` +
+    `do NOT mention any number unless it appears in the supplied evidence. ` +
+    `Use directional words ("up", "down", "improved") instead of inventing figures.`
+  );
+}
+
+/**
+ * Shared fallback path when generateText throws (rate limit, gateway
+ * error, etc.). Logs a warning + a 0-or-partial-cost row and returns the
+ * deterministic template, never surfacing the failure to the player.
+ */
+async function fallbackFromLlmError(
+  supabase: ReturnType<typeof createAdminClient>,
+  req: ComposeRequest,
+  fallbackText: string,
+  ctx: {
+    prompt_hash: string;
+    model_id: string;
+    err: unknown;
+    prompt_tokens?: number;
+    completion_tokens?: number;
+  },
+): Promise<ComposeResult> {
+  await logServerEvent(
+    `compose() LLM call failed for task=${req.task}: ${ctx.err instanceof Error ? ctx.err.message : String(ctx.err)}`,
+    { action: 'v3.llm.compose' },
+    'warning',
+  );
+  const prompt_tokens = ctx.prompt_tokens ?? 0;
+  const completion_tokens = ctx.completion_tokens ?? 0;
+  const cost_usd = estimateCostUsd(ctx.model_id, prompt_tokens, completion_tokens);
+  const fallbackId = await logCall(supabase, {
+    task: req.task,
+    coach_id: req.coach_id,
+    player_id: req.player_id,
+    prompt_hash: ctx.prompt_hash,
+    model_id: ctx.model_id,
+    prompt_tokens,
+    completion_tokens,
+    cost_usd,
+    citations: { reason: 'llm_error' },
+    verified: false,
+    fallback_to_template: true,
+  });
+  if (req.coach_id && cost_usd > 0) {
+    await recordSpend(supabase, { coach_id: req.coach_id, task: req.task, cost_usd });
+  }
+  return {
+    text: fallbackText,
+    used_llm: false,
+    citations_verified: false,
+    call_log_id: fallbackId,
     cost_usd,
   };
 }

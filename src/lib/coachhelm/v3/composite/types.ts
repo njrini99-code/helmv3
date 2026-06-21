@@ -13,6 +13,15 @@
 
 import type { InsightCategory, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
+// P0-05: the structured-diagnosis types are defined alongside InsightEvidence
+// (its canonical home) to avoid an import cycle, and re-exported here so v3
+// composite + generator code keeps a single import surface for them.
+export type {
+  CausalityLevel,
+  DiagnosisDriver,
+  Diagnosis,
+} from '@/lib/coachhelm/v2/insights/types';
+
 /**
  * Tier-1 insight as the composite layer sees it. Loaded from
  * golf_coach_insights and projected for rule consumption.

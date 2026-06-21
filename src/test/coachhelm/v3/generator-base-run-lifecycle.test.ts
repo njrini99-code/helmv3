@@ -212,7 +212,7 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
 
     // Toggle-off now sweeps the scope (regrade NEW-P3); TestGenerator has no
     // scope so the sweep is a 0-count no-op, but the field is reported.
-    expect(res).toEqual({ id: null, gated: true, retracted: 0 });
+    expect(res).toEqual({ id: null, gated: true, status: 'gated', retracted: 0 });
     // Order proof: isEnabled ran, aggregate did NOT.
     expect(callLog).toEqual(['isEnabled']);
     expect(loadStandingForMetricMock).not.toHaveBeenCalled();
@@ -226,7 +226,7 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     // retracted:0 — the stale-scope sweep ran on this dequalify exit, but the
     // TestGenerator declares no signatureScope (see generator-base-retraction
     // tests for the scoped behavior).
-    expect(res).toEqual({ id: null, gated: false, retracted: 0 });
+    expect(res).toEqual({ id: null, gated: false, status: 'no_data', retracted: 0 });
     expect(callLog).toEqual(['isEnabled', 'aggregate']);
     expect(loadStandingForMetricMock).not.toHaveBeenCalled();
     expect(upsertInsightV3Mock).not.toHaveBeenCalled();
@@ -238,7 +238,7 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: null, gated: false, retracted: 0 });
+    expect(res).toEqual({ id: null, gated: false, status: 'no_data', retracted: 0 });
     expect(callLog).toEqual(['isEnabled', 'aggregate']);
     expect(callLog).not.toContain('composeContent');
     expect(loadStandingForMetricMock).not.toHaveBeenCalled();
@@ -250,7 +250,7 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     const gen = new TestGenerator('player-1', { requiresStanding: true });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: null, gated: false });
+    expect(res).toEqual({ id: null, gated: false, status: 'standing_lag' });
     // standing was looked up, but compose/upsert never ran.
     expect(loadStandingForMetricMock).toHaveBeenCalledWith('player-1', 'sg_putting');
     expect(callLog).not.toContain('composeContent');
@@ -261,7 +261,7 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     const gen = new TestGenerator('player-1', { requiresStanding: false });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: 'row-id-1', gated: false, retracted: 0 });
+    expect(res).toEqual({ id: 'row-id-1', gated: false, status: 'generated', retracted: 0 });
     // Diagnostic path never touches the standing loader or the counterfactual.
     expect(loadStandingForMetricMock).not.toHaveBeenCalled();
     expect(computeCounterfactualMock).not.toHaveBeenCalled();
@@ -295,7 +295,7 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: 'row-id-1', gated: false, retracted: 0 });
+    expect(res).toEqual({ id: 'row-id-1', gated: false, status: 'generated', retracted: 0 });
     expect(callLog).toEqual(['isEnabled', 'aggregate', 'composeContent']);
 
     const input = lastUpsertInput();
@@ -333,15 +333,18 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
     const gen = new TestGenerator('player-1', { requiresStanding: false });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: null, gated: true });
+    expect(res).toEqual({ id: null, gated: true, status: 'gated' });
   });
 
-  it('swallows a thrown error, logs it, and returns gated:false (cron stays alive)', async () => {
+  it('swallows a thrown error, logs it, and returns status:failed (cron stays alive)', async () => {
     upsertInsightV3Mock.mockRejectedValue(new Error('db exploded'));
     const gen = new TestGenerator('player-1', { requiresStanding: false });
     const res = await gen.run();
 
-    expect(res).toEqual({ id: null, gated: false });
+    // P0-04: a thrown generator now resolves with an explicit failed receipt
+    // (NOT the old { gated:false } that was indistinguishable from no-data), so
+    // the orchestrator can route it into generatorSummary.failures.
+    expect(res).toEqual({ id: null, gated: false, status: 'failed' });
     expect(logServerErrorMock).toHaveBeenCalledTimes(1);
     expect(lastLogMessage()).toContain('test-generator run() failed');
   });

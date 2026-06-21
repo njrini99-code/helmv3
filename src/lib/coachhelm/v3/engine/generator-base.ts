@@ -37,6 +37,8 @@ import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config'
 import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
 
+import type { Diagnosis, DiagnosisDriver, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -220,6 +222,83 @@ export function enforcePriorityConfidenceGate(
   return priority;
 }
 
+/**
+ * P0-05: plain-language confidence reason from the confidence factors. Lets a
+ * downstream surface explain WHY a number is trusted (or not) without re-running
+ * the blend. Pure + exported.
+ */
+export function buildConfidenceReason(
+  evidence: Pick<InsightEvidence, 'sample_n' | 'confidence_factors'>,
+): string {
+  const f = evidence.confidence_factors;
+  const parts: string[] = [`${evidence.sample_n} observations`];
+  if (f.factors_measured === true) {
+    parts.push(`recency measured ${f.recency.toFixed(2)}`);
+    parts.push(`variance measured ${f.variance.toFixed(2)}`);
+  } else if (f.factors_measured === false) {
+    parts.push('recency/variance not measured (sample-adequacy only)');
+  }
+  parts.push(
+    f.sample_adequacy >= 1
+      ? 'sample adequate'
+      : `sample ${(f.sample_adequacy * 100).toFixed(0)}% of target`,
+  );
+  return parts.join('; ');
+}
+
+/**
+ * P0-05: synthesize the typed {@link Diagnosis} for a single-metric V3 insight
+ * from data the base class already has. Nothing is invented: the symptom states
+ * the measured value vs its benchmark, the driver cites that same metric/sample,
+ * and the confidence reason is derived from the confidence factors.
+ *
+ * `causality_level` is always `inferred_hypothesis` here — a single-metric
+ * generator reasons over an aggregated statistic, it never replays a measured
+ * shot sequence (that level is reserved for composites that prove the sequence).
+ * So the diagnosis must render as a coach hypothesis, never as observed fact.
+ *
+ * The root_cause + recommended_action default to honest, non-fabricated text
+ * derived from the metric label; a generator that has a sharper, data-grounded
+ * driver sentence (e.g. approach-miss's dominant-axis driver) should pass it via
+ * `composed.evidence.diagnosis` and the base preserves it (see run()).
+ *
+ * Pure + exported for direct unit testing.
+ */
+export function buildDiagnosis(
+  metricId: string,
+  evidence: Pick<
+    InsightEvidence,
+    | 'metric'
+    | 'metric_label'
+    | 'unit'
+    | 'your_value'
+    | 'your_value_display'
+    | 'comparison_value'
+    | 'comparison_label'
+    | 'sample_n'
+    | 'confidence_factors'
+  >,
+): Diagnosis {
+  const driver: DiagnosisDriver = {
+    metric: evidence.metric || metricId,
+    value: evidence.your_value,
+    unit: evidence.unit,
+    sample_n: evidence.sample_n,
+    source: 'golf_player_stats_cache',
+  };
+  const symptom =
+    `${evidence.metric_label}: ${evidence.your_value_display} ` +
+    `vs ${evidence.comparison_label} ${evidence.comparison_value}`;
+  return {
+    symptom,
+    root_cause: `${evidence.metric_label} is off its benchmark — likely cause inferred from the aggregate, not a measured shot sequence`,
+    causality_level: 'inferred_hypothesis',
+    drivers: [driver],
+    recommended_action: `Target ${evidence.metric_label.toLowerCase()} in the next practice block`,
+    confidence_reason: buildConfidenceReason(evidence),
+  };
+}
+
 export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggregate> {
   // Generator identity — concrete classes override
   abstract readonly name: string;
@@ -384,7 +463,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         // NEW-P3). Sweep the full scope; resurrection restores them the
         // moment the toggle comes back on and the generator re-emits.
         const retracted = await this.retractStaleInScope(null);
-        return { id: null, gated: true, retracted };
+        return { id: null, gated: true, status: 'gated', retracted };
       }
 
       const agg = await this.aggregate();
@@ -392,12 +471,12 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         // True dequalification — no data in the window. Retract any rows
         // this scope still has active so they don't outlive their evidence.
         const retracted = await this.retractStaleInScope(null);
-        return { id: null, gated: false, retracted };
+        return { id: null, gated: false, status: 'no_data', retracted };
       }
       if (agg.sampleN < this.minSampleN) {
         // Fell below the sample gate (audit P2's named case) — retract.
         const retracted = await this.retractStaleInScope(null);
-        return { id: null, gated: false, retracted };
+        return { id: null, gated: false, status: 'no_data', retracted };
       }
 
       const standing = this.requiresStanding
@@ -410,7 +489,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         // Deliberately NO retraction here — this is infrastructure lag,
         // not dequalification; archiving would flap rows and reset their
         // lifecycle history every time the standing cron falls behind.
-        return { id: null, gated: false };
+        return { id: null, gated: false, status: 'standing_lag' };
       }
 
       const composed = this.composeContent(agg);
@@ -517,6 +596,26 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         evidence.confidence,
       );
 
+      // P0-05: stamp a typed, machine-readable diagnosis on EVERY v3 row so the
+      // root cause is filterable/auditable instead of buried in prose. The base
+      // synthesizes an honest default from the cited metric; a generator that
+      // already composed a sharper, data-grounded diagnosis (its driver+action
+      // sentence promoted to a structure) is preserved verbatim. The confidence
+      // reason is always recomputed from the FINAL confidence factors so it can
+      // never disagree with the value the row ships. Never an observed sequence
+      // — a single-metric verdict is an inferred hypothesis, framed as such.
+      const baseDiagnosis = buildDiagnosis(this.metricId, evidence);
+      const diagnosis: Diagnosis = {
+        ...baseDiagnosis,
+        ...(evidence.diagnosis ?? {}),
+        // Single-metric generators never replay a measured sequence: pin the
+        // honesty level even if a generator forgot to.
+        causality_level: 'inferred_hypothesis',
+        // Always reflect the row's actual confidence factors.
+        confidence_reason: baseDiagnosis.confidence_reason,
+      };
+      evidence = { ...evidence, diagnosis } as typeof composed.evidence;
+
       const supabase = createAdminClient();
       const result = await upsertInsightV3(supabase, {
         player_id: this.playerId,
@@ -532,20 +631,26 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       if (result === GATED_OUT) {
         // Philosophy gate suppressed the write — a product decision to not
         // ADD a row, not evidence the old rows are stale. No retraction.
-        return { id: null, gated: true };
+        return { id: null, gated: true, status: 'gated' };
       }
       // Fresh row written — retract siblings in scope it superseded (e.g.
       // a data-derived signature suffix moved: old band/pattern row goes).
       const retracted = await this.retractStaleInScope(
         `${V3_SIGNATURE_PREFIX}${composed.signature}`,
       );
-      return { id: result, gated: false, retracted };
+      return { id: result, gated: false, status: 'generated', retracted };
     } catch (err) {
+      // P0-04: a thrown generator MUST NOT be reported as a clean no-data exit.
+      // The legacy `{ id: null, gated: false }` here was indistinguishable from
+      // a legit dequalify, so the orchestrator (which only sees a REJECTED
+      // promise, never this resolved value) counted the crash as a success and
+      // the round was marked fully analyzed. `status:'failed'` makes the failure
+      // machine-readable so the orchestrator routes it into generatorSummary.
       await logServerError(
         `${this.name} run() failed for player=${this.playerId}: ${err instanceof Error ? err.message : String(err)}`,
         { action: `v3.generator.${this.name}` },
       );
-      return { id: null, gated: false };
+      return { id: null, gated: false, status: 'failed' };
     }
   }
 }

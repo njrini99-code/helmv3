@@ -436,9 +436,14 @@ describe('causality-attribute cron P3: null-lift does not upsert coach weights',
         target_metric_id: 'sg_total',
         baseline_value: 0,
         post_value: 1,
+        // P0-01: the route reads raw_delta (DB delta) + improvement_lift (DB
+        // lift, direction-corrected). Mirror the real AttributionRow shape;
+        // `delta`/`lift` aliases kept for backwards compat.
+        raw_delta: 1,
         delta: 1,
         n_rounds_before: 3,
         n_rounds_after: 3,
+        improvement_lift: lift,
         lift,
       },
     };
@@ -487,9 +492,11 @@ describe('causality-attribute cron P3: coach-weight upsert error is captured', (
         target_metric_id: 'sg_total',
         baseline_value: 0,
         post_value: 1,
+        raw_delta: 1,
         delta: 1,
         n_rounds_before: 3,
         n_rounds_after: 3,
+        improvement_lift: 0.5,
         lift: 0.5,
       },
     });

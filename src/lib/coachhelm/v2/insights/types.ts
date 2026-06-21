@@ -149,6 +149,79 @@ export interface InsightEvidence {
   // (e.g. par-type standing rows) — the scoreInsight / leveragePriorityFloor
   // logic in generator-base must skip these rather than boosting them.
   feed_exempt?: boolean;
+
+  // P0-06 composite honesty. Composite insights synthesize a cause from
+  // multiple Tier-1 signals; most are HYPOTHESES, not measured sequences.
+  // `causality_level` records whether the cascade was actually observed in a
+  // shot sequence (`observed_sequence`) or inferred by combining standings
+  // (`inferred_hypothesis`). `estimated` marks a metric whose value is a
+  // computed projection (e.g. an expected 3-putt rate derived from two make-%s),
+  // not a directly measured stat — the UI surfaces it as "estimated". Both are
+  // optional + additive so every existing single-metric generator is unchanged.
+  causality_level?: CausalityLevel;
+  estimated?: boolean;
+
+  // P0-05 structured root cause. Single-metric V3 generators and composites
+  // both stamp a machine-readable diagnosis here so downstream surfaces can
+  // filter/compare/audit/learn from the root cause instead of parsing prose
+  // out of `content`. Optional + additive — every legacy v2 row is unchanged.
+  diagnosis?: Diagnosis;
+}
+
+/**
+ * P0-06 — how a composite insight knows its cause is real.
+ *
+ * - `observed_sequence`: the cascade was measured in an actual shot/hole
+ *   sequence (e.g. a recorded long approach → 3-putt on the SAME hole). Only
+ *   this level may be presented to the coach as fact.
+ * - `inferred_hypothesis`: the cause is a coach hypothesis formed by combining
+ *   independent standings (e.g. a weak lag standing + a weak short-putt
+ *   standing → "likely 3-putt cascade"). Must be framed as a hypothesis and
+ *   carries a calibrated-down confidence. Single-metric V3 generators (P0-05)
+ *   also use this level: a per-metric root cause is inferred from the statistic,
+ *   never replayed from a measured shot sequence.
+ */
+export type CausalityLevel = 'observed_sequence' | 'inferred_hypothesis';
+
+/**
+ * One quantified driver behind a {@link Diagnosis} (P0-05). Every field is
+ * sourced from data the generator already cited — nothing is fabricated. Lets
+ * downstream surfaces filter/compare/learn from root causes instead of parsing
+ * prose.
+ */
+export interface DiagnosisDriver {
+  /** Canonical metric id this driver reads (e.g. 'putts_made_3_5ft_pct'). */
+  metric: string;
+  /** The measured value of that metric. */
+  value: number;
+  /** Unit of `value`. */
+  unit: InsightUnit;
+  /** Observations the value is computed over. */
+  sample_n: number;
+  /** Where the value came from (table.column or a short provenance string). */
+  source: string;
+}
+
+/**
+ * Structured root-cause diagnosis attached to every V3 insight's evidence
+ * (P0-05). Production had 322 V3 rows with the diagnosis embedded only in prose
+ * — 0 had a machine-readable root cause, drivers, or confidence reason. This is
+ * the typed replacement; the prose `content` still renders for humans, but the
+ * structure is what downstream surfaces filter, compare, audit, and learn from.
+ */
+export interface Diagnosis {
+  /** The OBSERVED problem, plainly stated (the measured fact / symptom). */
+  symptom: string;
+  /** The inferred (or measured) cause. Render per `causality_level`. */
+  root_cause: string;
+  /** How firmly the cause is supported — never render a hypothesis as fact. */
+  causality_level: CausalityLevel;
+  /** Quantified drivers behind the diagnosis (sourced from cited data). */
+  drivers: DiagnosisDriver[];
+  /** The specific coachable action that follows from the root cause. */
+  recommended_action: string;
+  /** Plain-language reason for the confidence value (sample/recency/variance). */
+  confidence_reason: string;
 }
 
 export interface InsightMovement {
