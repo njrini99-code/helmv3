@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/anchor-is-valid, helm/no-raw-button -- thin test stand-ins for next/link and the design-system Button, not user-facing UI */
 /**
  * FairwayEventDetailDrawer — RSVP gating + cancelled rendering + coach
  * attendance mount (audit findings #16, #19/#10-cancelled, AttendancePanel

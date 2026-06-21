@@ -93,7 +93,6 @@ export function CourseDetailDrawer({
   useEffect(() => {
     if (!open || !courseId) return;
     loadDetail(courseId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, courseId]);
 
   const afterMutation = async () => {
