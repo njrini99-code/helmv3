@@ -111,9 +111,16 @@ const TABS: readonly TabDef[] = [
 
 /**
  * The player tab set — the single CoachHelm home: Overview · Development ·
- * Standing. Brief ("Overview") points at the player front door; Development and
- * Standing fold the former standalone /my-development and /my-standing routes
- * into the same shell so a player has ONE AI surface instead of scattered routes.
+ * Game Profile · Standing. Brief ("Overview") points at the player front door;
+ * Development, Game Profile and Standing fold the former standalone
+ * /my-development, /my-game-profile and /my-standing routes into the same shell
+ * so a player has ONE AI surface instead of scattered routes.
+ *
+ * Game Profile reuses the coach-only `'effectiveness'` slot as its internal tab
+ * key purely so it has a distinct identity in the player set without widening the
+ * shared `CoachHelmTab` union (the coach `'effectiveness'` tab never appears in
+ * the player set, so there is no collision) — its visible label + route are the
+ * player's genome view (/my-game-profile).
  */
 const PLAYER_TABS: readonly TabDef[] = [
   {
@@ -129,6 +136,12 @@ const PLAYER_TABS: readonly TabDef[] = [
     label: 'Development',
     href: '/golf/dashboard/my-development',
     matchPrefixes: ['/golf/dashboard/my-development'],
+  },
+  {
+    tab: 'effectiveness',
+    label: 'Game Profile',
+    href: '/golf/dashboard/my-game-profile',
+    matchPrefixes: ['/golf/dashboard/my-game-profile'],
   },
   {
     tab: 'standing',

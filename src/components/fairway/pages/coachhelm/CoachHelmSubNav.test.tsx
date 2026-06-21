@@ -25,21 +25,24 @@ import { CoachHelmSubNav } from './CoachHelmSubNav';
 // path we assert here (the pre-hydration paint).
 
 describe('CoachHelmSubNav — player consolidation', () => {
-  it('renders the three consolidated player tabs with their canonical routes', () => {
+  it('renders the four consolidated player tabs with their canonical routes', () => {
     render(<CoachHelmSubNav active="brief" role="player" />);
 
     const overview = screen.getByRole('link', { name: 'Overview' });
     const development = screen.getByRole('link', { name: 'Development' });
+    const gameProfile = screen.getByRole('link', { name: 'Game Profile' });
     const standing = screen.getByRole('link', { name: 'Standing' });
 
     expect(overview.getAttribute('href')).toBe('/golf/dashboard/coachhelm');
     expect(development.getAttribute('href')).toBe('/golf/dashboard/my-development');
+    expect(gameProfile.getAttribute('href')).toBe('/golf/dashboard/my-game-profile');
     expect(standing.getAttribute('href')).toBe('/golf/dashboard/my-standing');
 
-    // Exactly three player tabs — the scattered coach-only surfaces
-    // (Signals / Effectiveness / Ask) must NOT leak into the player nav.
+    // Exactly four player tabs (Overview · Development · Game Profile · Standing)
+    // — the scattered coach-only surfaces (Signals / Effectiveness / Ask) must
+    // NOT leak into the player nav.
     const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
-    expect(within(nav).getAllByRole('link')).toHaveLength(3);
+    expect(within(nav).getAllByRole('link')).toHaveLength(4);
     expect(screen.queryByRole('link', { name: 'Signals' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Effectiveness' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Ask' })).toBeNull();

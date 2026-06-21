@@ -113,7 +113,9 @@ describe('updateFocusAreaProgress — ownership guard', () => {
           }),
         }),
         update: () => ({
-          eq: async () => ({ error: null }),
+          eq: () => ({
+            select: async () => ({ data: [{ id: 'fa-1' }], error: null }),
+          }),
         }),
       }),
     });
@@ -135,7 +137,9 @@ describe('updateFocusAreaProgress — ownership guard', () => {
           }),
         }),
         update: () => ({
-          eq: async () => ({ error: null }),
+          eq: () => ({
+            select: async () => ({ data: [{ id: 'fa-1' }], error: null }),
+          }),
         }),
       }),
     });

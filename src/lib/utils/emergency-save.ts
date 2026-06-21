@@ -128,8 +128,13 @@ export function loadEmergencySave(roundId?: string | null): EmergencySaveData | 
 export function clearEmergencySave(roundId?: string | null): void {
   try {
     if (roundId) {
+      // Clear ONLY this round's key. Do NOT touch the `_new` draft — that may be
+      // a separate in-progress new round, and removing it here would wipe it
+      // (cross-draft data loss).
       localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_${roundId}`);
+      return;
     }
+    // No roundId → we're clearing the new-round draft.
     localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_new`);
   } catch {
     // Ignore

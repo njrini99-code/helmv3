@@ -884,10 +884,13 @@ function buildTrend(
 
 function toPct(v: number | null | undefined): number | null {
   if (v == null || !Number.isFinite(v)) return null;
-  // Stats cache sometimes stores a fraction (0-1), sometimes a percent (0-100).
-  // Treat anything <= 1.5 as a fraction, otherwise a percent.
-  if (v <= 1.5) return Math.round(v * 100);
-  return Math.round(v);
+  // The canonical writer (refresh_player_stats_cache / full-refresh writer)
+  // stores every *_percentage and *_pct column as (numerator/denominator) * 100
+  // into numeric(5,2) — i.e. already a 0-100 percent. The old fraction-vs-percent
+  // magnitude guess (v <= 1.5 ⇒ treat as fraction, ×100) turned a real 1.0%
+  // (e.g. a low one-putt % or 20+ ft make %) into 100%. Treat the stored value
+  // as a percent and clamp to the valid 0-100 range.
+  return clamp(Math.round(v), 0, 100);
 }
 
 function formatSigned(v: number, decimals = 1): string {

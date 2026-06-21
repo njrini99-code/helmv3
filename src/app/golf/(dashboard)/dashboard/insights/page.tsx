@@ -41,11 +41,33 @@ interface InsightsPageProps {
     lifecycle?: string;
     /** Comma-separated canonical insight categories for the triage chip strip. */
     categoryChips?: string;
+    /**
+     * Single canonical category token from a deep-link (e.g. FairwayBrief's
+     * `/golf/dashboard/insights?category=tee`). Folded into `categoryChips`
+     * below so the existing triage-chip filter consumes it.
+     */
+    category?: string;
   }>;
 }
 
 export default async function InsightsPage({ searchParams }: InsightsPageProps) {
-  const params = await searchParams;
+  const rawParams = await searchParams;
+  // Fold a single `?category=` deep-link token into the comma-separated
+  // `categoryChips` filter the page content already parses, deduping if both
+  // are present. Without this, the FairwayBrief deep-link is silently dropped.
+  const { category, ...restParams } = rawParams;
+  const params = category
+    ? {
+        ...restParams,
+        categoryChips: Array.from(
+          new Set(
+            [...(restParams.categoryChips?.split(',') ?? []), category]
+              .map((c) => c.trim())
+              .filter((c) => c.length > 0),
+          ),
+        ).join(','),
+      }
+    : restParams;
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 

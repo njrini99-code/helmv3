@@ -257,9 +257,18 @@ export default function ContinueRoundClient({
 
   // Save data when user leaves the page (phone lock, app switch, tab close)
   useEffect(() => {
+    // Warn before closing tab/navigating away only when there's unsaved progress
+    // that could be lost (mirrors new-round-client's gate). No data → no warning,
+    // and never warn while the round is mid-submit.
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = '';
+      if (isSubmittingRef.current) return;
+      const hasUnsavedChanges =
+        completedHoleStatsRef.current.some((s) => s != null) ||
+        Object.keys(inProgressShotsByHoleRef.current).length > 0;
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
     };
 
     // Trigger SYNCHRONOUS localStorage save + async server save when app goes to background

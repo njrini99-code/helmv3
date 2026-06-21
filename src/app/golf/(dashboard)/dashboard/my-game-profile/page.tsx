@@ -87,6 +87,16 @@ export default async function MyGameProfilePage() {
     );
   }
 
+  // Gate the radar render: a genome row can exist with rounds_basis=0 / an
+  // all-null vector (the orchestrator upserts a stub before there's data).
+  // Require ≥3 non-null dimension components OR ≥8 rounds basis so an empty
+  // genome shows the warming-up state instead of a fake radar.
+  const nonNullComponents = genome
+    ? Object.values(genome.vector).filter((r) => r != null && r.value != null).length
+    : 0;
+  const genomeReady =
+    genome != null && (nonNullComponents >= 3 || genome.rounds_basis >= 8);
+
   return (
     <AnimatedPage className="min-h-full bg-transparent">
       <AnimatedItem>
@@ -110,7 +120,7 @@ export default async function MyGameProfilePage() {
             <h2 className="text-3xl font-medium text-warm-900 tracking-tight">
               {firstName}&apos;s genome
             </h2>
-            {genome && (
+            {genomeReady && genome && (
               <p className="mt-2 text-sm text-warm-600">
                 {genome.rounds_basis} rounds in your window.
               </p>
@@ -118,7 +128,7 @@ export default async function MyGameProfilePage() {
           </header>
         </Reveal>
 
-        {genome && persona ? (
+        {genomeReady && genome && persona ? (
           <>
             <Reveal staggerIndex={1}>
               <section className="surface-stone rounded-3xl p-5 md:p-7 mb-6 flex items-center justify-center">

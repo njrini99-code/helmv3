@@ -75,6 +75,11 @@ export async function revalidateCoachingPhilosophyPaths(): Promise<void> {
 /**
  * Upsert a coach's philosophy row. Verifies the current user owns the
  * `coach_id` (maps to golf_coaches.user_id === auth.uid()).
+ *
+ * NOTE: Not currently wired into a runtime caller — the settings UI saves
+ * via the `useCoachPhilosophy` hook's own update path. Kept (and exercised
+ * by src/test/golf/actions/coaching-philosophy.test.ts) as the hardened,
+ * server-side save path; do not delete without migrating the hook first.
  */
 export async function saveCoachingPhilosophy(
   coachId: string,

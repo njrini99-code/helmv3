@@ -173,23 +173,33 @@ export async function updateFocusArea(
     return { success: false, error: 'Not authorized to update focus areas' };
   }
 
-  // Verify the focus area belongs to this coach
-  const { error } = await supabase
+  // Verify the focus area belongs to this coach. Select the updated row back so
+  // a scope mismatch (0 rows matched by .eq('coach_id', ...)) surfaces as a
+  // failure instead of a false {success:true} — a PostgREST UPDATE matching no
+  // rows returns error:null.
+  const { data: updated, error } = await supabase
     .from('golf_player_focus_areas')
     .update({
       ...data,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    .eq('coach_id', coach.id);
+    .eq('coach_id', coach.id)
+    .select('id');
 
   if (error) {
     await logServerError(`Failed to update focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.updateFocusArea' });
     return { success: false, error: 'Failed to update focus area. Please try again.' };
   }
 
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Focus area not found or not permitted' };
+  }
+
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/analytics/coachhelm');
 
   return { success: true };
 }
@@ -311,17 +321,27 @@ export async function updateFocusAreaProgress(
     updatePayload.progress_notes = next;
   }
 
-  const { error } = await fromUntyped(supabase, 'golf_player_focus_areas')
+  // Select the updated row back so a scope/id mismatch (0 rows matched) surfaces
+  // as a failure rather than a false {success:true} — a PostgREST UPDATE
+  // matching no rows returns error:null.
+  const { data: updated, error } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .update(updatePayload)
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
 
   if (error) {
     await logServerError(`Failed to update focus area progress: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.updateFocusAreaProgress' });
     return { success: false, error: 'Failed to update progress. Please try again.' };
   }
 
+  if (!Array.isArray(updated) || updated.length === 0) {
+    return { success: false, error: 'Focus area not found or not permitted' };
+  }
+
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/analytics/coachhelm');
 
   return { success: true };
 }
@@ -357,22 +377,32 @@ export async function completeFocusArea(
   }
 
   const nowIso = new Date().toISOString();
-  const { error } = await supabase
+  // Select the updated row back so a 0-row update (id mismatch) surfaces as a
+  // failure rather than a false {success:true} — a PostgREST UPDATE matching no
+  // rows returns error:null.
+  const { data: updated, error } = await supabase
     .from('golf_player_focus_areas')
     .update({
       status: 'completed',
       completed_at: nowIso,
       updated_at: nowIso,
     })
-    .eq('id', focusAreaId);
+    .eq('id', focusAreaId)
+    .select('id');
 
   if (error) {
     await logServerError(`Failed to complete focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.completeFocusArea' });
     return { success: false, error: 'Failed to mark complete. Please try again.' };
   }
 
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Focus area not found or not permitted' };
+  }
+
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/analytics/coachhelm');
 
   return { success: true };
 }
