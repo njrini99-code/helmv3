@@ -404,7 +404,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             ? 'Tournament travel itineraries & expenses'
             : (() => {
                 const now = new Date();
-                const upcoming = itineraries.filter(i => new Date(i.departure_date) > now).length;
+                const upcoming = itineraries.filter(i => parseDateLocal(i.departure_date) > now).length;
                 const past = itineraries.length - upcoming;
                 return `${upcoming} upcoming trip${upcoming !== 1 ? 's' : ''}${past > 0 ? ` \u00b7 ${past} completed` : ''}`;
               })()
@@ -442,7 +442,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                     : 'Travel details will appear here as your coach posts them.'
                   : (() => {
                       const now = new Date();
-                      const upcoming = itineraries.filter(i => new Date(i.departure_date) > now).length;
+                      const upcoming = itineraries.filter(i => parseDateLocal(i.departure_date) > now).length;
                       const past = itineraries.length - upcoming;
                       return `${upcoming} upcoming · ${past} past.`;
                     })()

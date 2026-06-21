@@ -342,6 +342,10 @@ export async function signupAction(
   // Log signup event (fire-and-forget)
   logSignup(data.user.id, normalizedEmail, role, { ip }).catch(() => {});
 
+  // Auth state changed (session established) — revalidate dashboard like loginAction
+  // so server components re-read the new authenticated session.
+  revalidatePath('/golf/dashboard');
+
   // Redirect based on role - coaches go to coach onboarding, players go to player onboarding
   const redirectTo = role === 'coach'
     ? '/golf/coach'

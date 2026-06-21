@@ -29,18 +29,25 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users, FileText, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
   GolfConversationWithMeta,
   MessageWithReadStatus,
 } from '@/hooks/golf/use-golf-messages';
+import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
+import { formatFileSize } from '@/lib/storage/attachments';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { Inset } from '@/components/fairway/surfaces/surface';
+
+/** One resolved (signed) attachment for an open thread message. */
+type ResolvedAttachment = NonNullable<
+  Awaited<ReturnType<typeof getGolfMessageAttachments>>['attachments']
+>[number];
 
 export interface MessageThreadPaneProps {
   /** The open conversation (page-owned selection), or null on desktop no-select. */
@@ -122,6 +129,105 @@ function TypingIndicator() {
   );
 }
 
+/**
+ * Per-message attachment gallery — images render inline (signed URL), every
+ * other file type renders as a download chip. Only mounted for messages whose
+ * attachments have resolved (signed) successfully; renders nothing otherwise so
+ * the bubble stays honest-empty until real data lands.
+ */
+function MessageAttachments({
+  attachments,
+  isOwn,
+}: {
+  attachments: ResolvedAttachment[];
+  isOwn: boolean;
+}) {
+  if (!attachments.length) return null;
+  return (
+    <div className="mt-1.5 flex flex-col gap-1.5">
+      {attachments.map((att) => {
+        const isImage = att.fileType === 'image' && !!att.url;
+        if (isImage) {
+          return (
+            <a
+              key={att.id}
+              href={att.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block overflow-hidden rounded-fw-md outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1"
+              aria-label={`Open image ${att.fileName}`}
+            >
+              <img
+                src={att.url}
+                alt={att.fileName}
+                width={att.width ?? undefined}
+                height={att.height ?? undefined}
+                loading="lazy"
+                className="max-h-64 w-full max-w-[260px] object-cover"
+              />
+            </a>
+          );
+        }
+        // Non-image (or unsigned image) → download chip.
+        const chip = (
+          <span
+            className={cn(
+              'inline-flex max-w-[260px] items-center gap-2 rounded-fw-md px-2.5 py-2',
+              isOwn ? 'bg-text-on-accent/15' : 'bg-surface',
+            )}
+          >
+            <FileText
+              size={16}
+              aria-hidden="true"
+              className={cn('flex-shrink-0', isOwn ? 'text-text-on-accent/80' : 'text-text-tertiary')}
+            />
+            <span className="min-w-0 flex-1">
+              <span
+                className={cn(
+                  'block truncate font-fw-sans text-eyebrow font-medium',
+                  isOwn ? 'text-text-on-accent' : 'text-text-primary',
+                )}
+              >
+                {att.fileName}
+              </span>
+              <span
+                className={cn(
+                  'block font-fw-mono text-eyebrow tabular-nums',
+                  isOwn ? 'text-text-on-accent/70' : 'text-text-tertiary',
+                )}
+              >
+                {formatFileSize(att.fileSize)}
+              </span>
+            </span>
+            {att.url ? (
+              <Download
+                size={14}
+                aria-hidden="true"
+                className={cn('flex-shrink-0', isOwn ? 'text-text-on-accent/80' : 'text-text-tertiary')}
+              />
+            ) : null}
+          </span>
+        );
+        return att.url ? (
+          <a
+            key={att.id}
+            href={att.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            download={att.fileName}
+            className="block outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1 rounded-fw-md"
+            aria-label={`Download ${att.fileName}`}
+          >
+            {chip}
+          </a>
+        ) : (
+          <span key={att.id}>{chip}</span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function MessageThreadPane({
   conversation,
   messages,
@@ -150,6 +256,55 @@ export function MessageThreadPane({
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
+
+  // Resolved (signed) attachments keyed by message id. Populated lazily for the
+  // visible messages that carry attachments; signed URLs from
+  // getGolfMessageAttachments expire after ~1h, so we re-fetch when the set of
+  // attachment-bearing messages changes.
+  const [attachmentsByMessage, setAttachmentsByMessage] = React.useState<
+    Record<string, ResolvedAttachment[]>
+  >({});
+
+  // Stable key of the visible attachment-bearing message ids (ordered) so the
+  // batch fetch re-runs only when that set actually changes.
+  const attachmentMessageKey = React.useMemo(
+    () =>
+      messages
+        .filter((m) => (m as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments)
+        .map((m) => m.id)
+        .join(','),
+    [messages],
+  );
+
+  // Batch-fetch + sign attachments for every visible message that has them.
+  // getGolfMessageAttachments is a server action that returns rows WITH signed
+  // URLs (golf-attachments bucket, 1h TTL); we fan it out over the visible
+  // attachment-bearing messages in parallel.
+  React.useEffect(() => {
+    const ids = attachmentMessageKey ? attachmentMessageKey.split(',') : [];
+    if (ids.length === 0) {
+      setAttachmentsByMessage((prev) => (Object.keys(prev).length ? {} : prev));
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const entries = await Promise.all(
+        ids.map(async (messageId) => {
+          const res = await getGolfMessageAttachments(messageId);
+          return [messageId, res.attachments ?? []] as const;
+        }),
+      );
+      if (cancelled) return;
+      const next: Record<string, ResolvedAttachment[]> = {};
+      for (const [messageId, atts] of entries) {
+        if (atts.length) next[messageId] = atts;
+      }
+      setAttachmentsByMessage(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [attachmentMessageKey]);
 
   // Auto-scroll to bottom on new messages — ONLY when near the bottom.
   // PRESERVES the legacy near-bottom check (scrollTop + clientHeight >= scrollHeight - 100).
@@ -281,6 +436,7 @@ export function MessageThreadPane({
 
               const editedAt = (msg as MessageWithReadStatus & { edited_at?: string | null }).edited_at;
               const hasAttachments = (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments;
+              const resolvedAttachments = attachmentsByMessage[msg.id] ?? [];
 
               // Bug fix #1 — resolve the real sender name + avatar for this message.
               // For group convs: look up in groupParticipants map (user_id → name/avatar).
@@ -419,15 +575,24 @@ export function MessageThreadPane({
                           !isFirstInGroup && !isLastInGroup && 'rounded-fw-md',
                         )}
                       >
-                        <p className="whitespace-pre-wrap break-words font-fw-sans text-body-sm leading-relaxed">
-                          {decodeMessageContent(msg.content)}
-                        </p>
-                        {/* Attachment affordance — DORMANT unless has_attachments. */}
+                        {msg.content ? (
+                          <p className="whitespace-pre-wrap break-words font-fw-sans text-body-sm leading-relaxed">
+                            {decodeMessageContent(msg.content)}
+                          </p>
+                        ) : null}
+                        {/* Attachments — DORMANT unless has_attachments. Renders
+                            the resolved (signed) gallery once it loads; falls
+                            back to a quiet "Attachment" placeholder while the
+                            signed URLs are still in flight. */}
                         {hasAttachments ? (
-                          <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-text-on-accent/80' : 'text-text-tertiary')}>
-                            <Paperclip size={12} aria-hidden="true" />
-                            Attachment
-                          </span>
+                          resolvedAttachments.length ? (
+                            <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} />
+                          ) : (
+                            <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-text-on-accent/80' : 'text-text-tertiary')}>
+                              <Paperclip size={12} aria-hidden="true" />
+                              Attachment
+                            </span>
+                          )
                         ) : null}
                         {/* Edited badge — DORMANT unless edited_at. */}
                         {editedAt ? (

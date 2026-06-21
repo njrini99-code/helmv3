@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useId } from 'react';
+import { useState, useId, useEffect } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
@@ -147,34 +147,48 @@ function detectConflicts(
   return conflicts;
 }
 
+function emptyClassForm(): ClassFormData {
+  return {
+    course_code: '',
+    course_name: '',
+    instructor: '',
+    days: [],
+    start_time: '',
+    end_time: '',
+    location: '',
+    building: '',
+    room: '',
+    credits: null,
+    semester: detectSemester(''),
+    color: generateClassColor(),
+    notes: '',
+  };
+}
+
 export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingClasses = [] }: AddClassModalProps) {
   const uid = useId();
   const [loading, setLoading] = useState(false);
   const [conflicts, setConflicts] = useState<ClassConflict[]>([]);
   const [showConflictWarning, setShowConflictWarning] = useState(false);
-  const [formData, setFormData] = useState<ClassFormData>(() =>
-    editingClass || {
-      course_code: '',
-      course_name: '',
-      instructor: '',
-      days: [],
-      start_time: '',
-      end_time: '',
-      location: '',
-      building: '',
-      room: '',
-      credits: null,
-      semester: detectSemester(''),
-      color: generateClassColor(),
-      notes: '',
-    }
-  );
+  const [formData, setFormData] = useState<ClassFormData>(() => editingClass ?? emptyClassForm());
 
   // Reset conflicts when modal closes or form changes significantly
   const resetConflictState = () => {
     setConflicts([]);
     setShowConflictWarning(false);
   };
+
+  // The Drawer (vaul) keeps this modal mounted even while closed, so the lazy
+  // useState initializer above only ever captures the FIRST editingClass value
+  // (null at first paint). Sync formData whenever the modal opens or the target
+  // class changes — otherwise editing always shows a blank form. Also clear any
+  // stale conflict warning so a prior session's conflicts don't carry over.
+  useEffect(() => {
+    if (!isOpen) return;
+    setFormData(editingClass ? { ...editingClass } : emptyClassForm());
+    setConflicts([]);
+    setShowConflictWarning(false);
+  }, [isOpen, editingClass]);
 
   const handleDayToggle = (day: string) => {
     setFormData(prev => ({

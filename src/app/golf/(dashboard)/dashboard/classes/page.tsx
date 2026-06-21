@@ -17,7 +17,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
+import { formatTimeDisplay, formatDaysDisplay, generateClassColor, detectSemester, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayGolfClasses } from '@/components/fairway/pages/player-game';
@@ -126,7 +126,11 @@ export default function GolfClassesPage() {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Surface the failure (the modal swallows the throw to keep its state).
+      showToast('Failed to add class. Please try again.', 'error');
+      throw error;
+    }
 
     // Sync to calendar (timezoneOffset so class times store as local wall-time,
     // matching the event timestamp convention — not UTC wall-time)
@@ -167,7 +171,11 @@ export default function GolfClassesPage() {
       .eq('id', formData.id)
       .eq('player_id', playerId);
 
-    if (error) throw error;
+    if (error) {
+      // Surface the failure (the modal swallows the throw to keep its state).
+      showToast('Failed to update class. Please try again.', 'error');
+      throw error;
+    }
 
     // Re-sync to calendar (diff-upserts the series)
     await syncClassToCalendar(
@@ -194,7 +202,11 @@ export default function GolfClassesPage() {
       .eq('id', selectedClass.id)
       .eq('player_id', playerId as string);
 
-    if (error) throw error;
+    if (error) {
+      // Surface the failure (the detail modal swallows the throw to stay open).
+      showToast('Failed to delete class. Please try again.', 'error');
+      throw error;
+    }
 
     await fetchClasses();
     setShowDetailModal(false);
@@ -315,7 +327,10 @@ export default function GolfClassesPage() {
       building: selectedClass.building || '',
       room: selectedClass.room || '',
       credits: selectedClass.credits,
-      semester: '', // Not stored in DB
+      // semester is not persisted on golf_player_classes. Default to the current
+      // term so the edit re-sync produces valid semester dates — an empty string
+      // makes parseSemesterDates() return null and the calendar sync silently fails.
+      semester: detectSemester(''),
       color: selectedClass.color || 'var(--color-primary-600)',
       notes: selectedClass.notes || '',
     });

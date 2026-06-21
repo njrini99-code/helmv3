@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
-import { createClient } from '@/lib/supabase/client';
+import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,6 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,13 +23,12 @@ export default function ForgotPasswordPage() {
     setError('');
 
     try {
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/golf/reset-password`,
-      });
+      // Route through the hardened server action: it enforces rate limiting and
+      // always returns a generic message to prevent email enumeration.
+      const result = await requestPasswordResetAction(email);
 
-      if (resetError) {
-        setError(resetError.message);
+      if (!result.success) {
+        setError(result.error ?? 'An unexpected error occurred. Please try again.');
         setLoading(false);
         return;
       }

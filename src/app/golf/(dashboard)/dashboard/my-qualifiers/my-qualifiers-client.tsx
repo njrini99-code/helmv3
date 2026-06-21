@@ -18,17 +18,18 @@ interface MyQualifiersClientProps {
 export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProps) {
   const router = useRouter();
 
-  const getStatusBadge = (status: string, roundsCompleted: number, numRounds: number) => {
-    if (roundsCompleted >= numRounds) {
-      return { label: 'Complete', className: 'bg-primary-100 text-primary-700' };
-    }
+  // numRounds is an INFERRED target, not a real one (golf_qualifiers no longer
+  // stores num_rounds), so "Complete" is driven by the qualifier's actual status
+  // rather than a roundsCompleted >= numRounds comparison that can never be true
+  // for an active qualifier (where numRounds === roundsCompleted by inference).
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'upcoming':
         return { label: 'Upcoming', className: 'bg-warm-100 text-warm-700' };
       case 'in_progress':
         return { label: 'In Progress', className: 'bg-amber-100 text-amber-700' };
       case 'completed':
-        return { label: 'Ended', className: 'bg-warm-100 text-warm-600' };
+        return { label: 'Complete', className: 'bg-primary-100 text-primary-700' };
       default:
         return { label: status, className: 'bg-warm-100 text-warm-600' };
     }
@@ -103,8 +104,10 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
         ) : (
           <div className="space-y-4 mobile-stagger">
             {qualifiers.map(qualifier => {
-              const statusBadge = getStatusBadge(qualifier.status, qualifier.roundsCompleted, qualifier.numRounds);
-              const canEnterRounds = qualifier.status !== 'completed' && qualifier.roundsCompleted < qualifier.numRounds;
+              const statusBadge = getStatusBadge(qualifier.status);
+              // A player can post a qualifying round whenever the qualifier is not
+              // completed — there is no real round cap to gate against.
+              const canEnterRounds = qualifier.status !== 'completed';
 
               return (
                 <Link
@@ -149,7 +152,12 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                           <div>
                             <p className="text-xs text-warm-500 uppercase font-medium mb-1">Rounds</p>
                             <p className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
-                              {qualifier.roundsCompleted} / {qualifier.numRounds}
+                              {/* numRounds is an inferred target, not a real cap —
+                                  show posted-round count, not a fake "X / N". */}
+                              {qualifier.roundsCompleted}
+                              {qualifier.status === 'completed'
+                                ? qualifier.roundsCompleted === 1 ? ' round' : ' rounds'
+                                : ' posted'}
                             </p>
                           </div>
                           {qualifier.totalScore !== null && (

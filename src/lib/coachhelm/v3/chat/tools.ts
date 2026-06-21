@@ -11,17 +11,20 @@
  * endpoint (route.ts) authenticates the coach + uses a team-scoped
  * client so RLS guards what data the agent can read.
  *
- * Only one tool mutates: `create_goal_for_player`. Per Part XII.2 the
- * UI surfaces a Confirm/Edit/Cancel dialog BEFORE this tool is allowed
- * to run; the agent is instructed never to call it without explicit
- * coach approval.
+ * NO chat tool writes to the database. The one would-be mutating tool,
+ * `create_goal_for_player`, is PROPOSE-ONLY: it returns a structured
+ * `GoalProposal` (no insert) so the chat UI can render a Confirm/Cancel
+ * card. Only an explicit coach "Confirm" click runs the real `createGoal`
+ * server action (auth-checked + RLS-gated) from the UI. The system prompt
+ * is a soft fence; the UI confirmation is the load-bearing gate, so a model
+ * misfire or prompt-injected "yes" can never create a goal row on its own.
  */
 
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import type { GoalProposal } from './types';
 
 type Sb = SupabaseClient<Database>;
 
@@ -324,10 +327,16 @@ export async function get_goal_details(sb: Sb, input: GetGoalDetailsInput) {
 }
 
 // ===========================================================================
-// 10. create_goal_for_player — the one mutating tool. Requires
-//     coach UI confirmation BEFORE the agent is allowed to call this.
-//     Agent contract enforced in instructions (agent.ts); UI gating is
-//     the load-bearing check.
+// 10. create_goal_for_player — PROPOSE-ONLY. This tool performs NO database
+//     write. It returns a structured `GoalProposal` (kind: 'create_goal')
+//     so the chat UI can render a Confirm/Cancel card. The real insert only
+//     happens when the coach clicks "Confirm", which calls the auth-checked,
+//     RLS-gated `createGoal` server action from the UI (NOT inside this tool
+//     loop). This is the load-bearing gate: a model misfire or a
+//     prompt-injected "yes" can surface a proposal card but can never create
+//     a goal row on its own. Returning a proposal is read-only + side-effect
+//     free; we still validate that the player is on the coach's active team so
+//     we never surface a card that the confirm step would just reject.
 // ===========================================================================
 
 export const CreateGoalForPlayerInput = z.object({
@@ -340,15 +349,30 @@ export const CreateGoalForPlayerInput = z.object({
 });
 export type CreateGoalForPlayerInput = z.infer<typeof CreateGoalForPlayerInput>;
 
+/** Result of the propose-only goal tool: either a proposal card or an error. */
+export type CreateGoalForPlayerResult =
+  | { proposal: GoalProposal }
+  | { error: string };
+
 export async function create_goal_for_player(
   sb: Sb,
   input: CreateGoalForPlayerInput,
-  authedUserId: string,
-  coachId: string,
-) {
-  // Resolve the player's active team so RLS (`is_team_coach(team_id)` on
-  // goals_coach_create) can authorise the insert. Without team_id the
-  // policy denies and the tool silently fails.
+): Promise<CreateGoalForPlayerResult> {
+  // Side-effect free: confirm the player exists + is on an active team (so the
+  // confirm step won't fail RLS), grab the display name, then return a
+  // PROPOSAL. We never insert here — the UI's explicit Confirm click does.
+  const { data: player, error: playerError } = await sb
+    .from('golf_players')
+    .select('id, first_name, last_name')
+    .eq('id', input.player_id)
+    .maybeSingle();
+  if (playerError) {
+    return { error: `player lookup failed: ${playerError.message}` };
+  }
+  if (!player) {
+    return { error: 'Player not found' };
+  }
+
   const { data: membership, error: membershipError } = await sb
     .from('golf_team_members')
     .select('team_id')
@@ -357,40 +381,25 @@ export async function create_goal_for_player(
     .limit(1)
     .maybeSingle();
   if (membershipError) {
-    return { error: `team lookup failed: ${membershipError.message}` } as const;
+    return { error: `team lookup failed: ${membershipError.message}` };
   }
   if (!membership?.team_id) {
-    return { error: 'Player is not on an active team' } as const;
+    return { error: 'Player is not on an active team' };
   }
 
-  const now = new Date();
-  const endsAt = new Date(now.getTime() + input.window_days * 86400_000);
+  const playerName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim();
 
-  // window_days is a GENERATED ALWAYS column (ends_at - started_at) — never insert it.
-  // origin must satisfy golf_goals_origin_check: manual | engine_suggested | from_insight.
-  // Coach-via-chat is closest to 'manual' (not engine-driven, no source insight).
-  const { data, error } = await fromUntyped(sb, 'golf_goals')
-    .insert({
+  return {
+    proposal: {
+      kind: 'create_goal',
       player_id: input.player_id,
       team_id: membership.team_id,
+      player_name: playerName || null,
       metric_id: input.metric_id,
       title: input.title,
       target_value: input.target_value,
+      window_days: input.window_days,
       coach_assignment_mode: input.coach_assignment_mode,
-      coach_id_if_assigned: coachId,
-      creator_role: 'coach',
-      created_by_user_id: authedUserId,
-      origin: 'manual',
-      state: 'active',
-      started_at: now.toISOString(),
-      ends_at: endsAt.toISOString(),
-      category: 'general',
-      snapshots: [],
-      shared_with_coach: true,
-    })
-    .select('id')
-    .maybeSingle() as { data: { id: string } | null; error: { message: string } | null };
-
-  if (error || !data) return { error: error?.message ?? 'Insert failed' } as const;
-  return { goal_id: data.id };
+    },
+  };
 }

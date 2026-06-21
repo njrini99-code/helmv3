@@ -6,10 +6,13 @@
  * (the only LLM task not on Haiku — coach chat's multi-step tool
  * calls need the better reasoning).
  *
- * IMPORTANT: `create_goal_for_player` is the only mutating tool. The
- * model is instructed never to call it without explicit coach
- * "Confirm" via the UI dialog (Part XII.2). The UI is the real gate;
- * the instructions are the soft fence.
+ * IMPORTANT: NO tool here writes to the database. `create_goal_for_player`
+ * is PROPOSE-ONLY — it returns a structured goal proposal (no insert) that
+ * the chat UI renders as a Confirm/Cancel card. The real goal insert only
+ * runs when the coach clicks "Confirm" (the `createGoal` server action,
+ * auth-checked + RLS-gated, fired from the UI — not from this tool loop).
+ * The instructions below are the soft fence; the UI confirmation is the
+ * load-bearing gate, so a model misfire can never create a goal on its own.
  */
 
 import { ToolLoopAgent, tool } from 'ai';
@@ -42,12 +45,12 @@ When the coach asks "why is <player> worse?", call get_player_insights
 numbers from the tool responses.
 
 For goals: list_player_goals + get_goal_details for inspection.
-create_goal_for_player is the ONLY mutating tool. NEVER call
-create_goal_for_player without the coach saying "yes" / "confirm" / "go
-ahead" in the immediately preceding message. If a goal seems warranted,
-propose it in prose with the proposed parameters and wait for explicit
-confirmation. The UI will surface a Confirm/Edit/Cancel dialog if you
-propose one.
+create_goal_for_player does NOT create a goal — it returns a PROPOSAL that
+the UI renders as a Confirm/Cancel card. Nothing is saved until the coach
+clicks Confirm. When a goal seems warranted, briefly describe it in prose
+(player, metric, target, window), then call create_goal_for_player so the
+coach sees the confirmation card. Do not claim the goal was created — say
+you've drafted it and the coach can confirm it below.
 
 Keep replies concise — 2-4 short paragraphs or a list. The coach is
 busy.
@@ -92,10 +95,16 @@ async function resolveCoachTeamContext(
  */
 export async function buildCoachChatAgent(args: {
   sb: SupabaseClient<Database>;
+  /**
+   * Kept in the signature for the caller's contract, but no longer consumed:
+   * the only formerly-mutating tool is now propose-only, so the agent never
+   * needs the authed user id to write. The real insert (createGoal) resolves
+   * its own auth from the session at confirm time.
+   */
   authed_user_id: string;
   coach_id: string;
 }) {
-  const { sb, authed_user_id, coach_id } = args;
+  const { sb, coach_id } = args;
   // Tailor the agent to the logged-in coach's team(s) so it never asks for a team ID.
   const teamContext = await resolveCoachTeamContext(sb, coach_id);
   // When the coach's own Anthropic key is present (ANTHROPIC_API_KEY), call Anthropic
@@ -155,10 +164,10 @@ export async function buildCoachChatAgent(args: {
       }),
       create_goal_for_player: tool({
         description:
-          'Create a new goal for a player. MUST only be called after the coach has explicitly confirmed in the previous message. The UI will gate this call.',
+          'PROPOSE a new goal for a player. This does NOT create the goal — it returns a proposal that the UI shows as a Confirm/Cancel card. The goal is only saved when the coach clicks Confirm. Safe to call when a goal is warranted; it never writes data.',
         inputSchema: CreateGoalForPlayerInput,
         execute: (input: CreateGoalForPlayerInput) =>
-          create_goal_for_player(sb, input, authed_user_id, coach_id),
+          create_goal_for_player(sb, input),
       }),
     },
   });

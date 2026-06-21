@@ -35,12 +35,19 @@ function handleError(error: unknown): string {
   return 'An unexpected error occurred';
 }
 
-// Verify the authenticated user belongs to the team that owns the document
-async function verifyTeamAccess(
+// Resolve how the authenticated user relates to the team that owns a document.
+// Returns 'coach' when the user is a coach STAFFED on the team (full read of
+// coach-only docs), 'player' when the user is an active member of the team
+// (public docs only), or 'none' when the user has no access at all. Read paths
+// use the role to filter is_public for non-coach callers (defense-in-depth on
+// top of RLS); mutation paths only care about coach-vs-none.
+type TeamRole = 'coach' | 'player' | 'none';
+
+async function resolveTeamRole(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   teamId: string
-): Promise<boolean> {
+): Promise<TeamRole> {
   // Check coach path: a coach may access a team's documents iff they are STAFFED
   // on that team (golf_team_coach_staff). Previously this authorized ANY team
   // sharing the coach's org, which leaked the other team's documents in a
@@ -55,7 +62,7 @@ async function verifyTeamAccess(
     .maybeSingle();
 
   if (coach) {
-    if (await validateCoachTeamAccess(supabase, coach.id, teamId, coach.organization_id)) return true;
+    if (await validateCoachTeamAccess(supabase, coach.id, teamId, coach.organization_id)) return 'coach';
   }
 
   // Check player path: player is an active member of the team
@@ -73,10 +80,20 @@ async function verifyTeamAccess(
       .eq('team_id', teamId)
       .eq('status', 'active')
       .maybeSingle();
-    if (membership) return true;
+    if (membership) return 'player';
   }
 
-  return false;
+  return 'none';
+}
+
+// Verify the authenticated user belongs to the team that owns the document.
+// Thin wrapper over resolveTeamRole for callers that only need a boolean.
+async function verifyTeamAccess(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  teamId: string
+): Promise<boolean> {
+  return (await resolveTeamRole(supabase, userId, teamId)) !== 'none';
 }
 
 // ============================================
@@ -91,10 +108,10 @@ export async function getDocuments(teamId: string): Promise<{ data: GolfDocument
     if (!user) return { data: null, error: 'Unauthorized' };
 
     // Verify user belongs to this team
-    const hasAccess = await verifyTeamAccess(supabase, user.id, teamId);
-    if (!hasAccess) return { data: null, error: 'Not authorized to access this team\'s documents' };
+    const role = await resolveTeamRole(supabase, user.id, teamId);
+    if (role === 'none') return { data: null, error: 'Not authorized to access this team\'s documents' };
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('golf_documents')
       .select(`
         *,
@@ -105,6 +122,14 @@ export async function getDocuments(teamId: string): Promise<{ data: GolfDocument
       `)
       .eq('team_id', teamId)
       .order('updated_at', { ascending: false });
+
+    // Players only ever see public documents — never coach-only files. This
+    // mirrors the page-level filter and the RLS policy (defense-in-depth).
+    if (role !== 'coach') {
+      query = query.eq('is_public', true);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -128,14 +153,20 @@ export async function getDocument(documentId: string): Promise<{ data: GolfDocum
     // Verify user has access to this document's team
     const { data: docCheck, error: docCheckError } = await supabase
       .from('golf_documents')
-      .select('team_id')
+      .select('team_id, is_public')
       .eq('id', documentId)
       .single();
 
     if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
 
-    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
-    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
+    const role = await resolveTeamRole(supabase, user.id, docCheck.team_id);
+    if (role === 'none') return { data: null, error: 'Not authorized to access this document' };
+
+    // A player can never read a coach-only document, even by id. RLS now blocks
+    // this at the DB; the action filters too (defense-in-depth + honest error).
+    if (role !== 'coach' && docCheck.is_public !== true) {
+      return { data: null, error: 'Not authorized to access this document' };
+    }
 
     const { data, error } = await (supabase as any)
       .from('golf_documents')

@@ -14,7 +14,6 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 // Category vocabulary lives in a plain module — a 'use server' file may only
 // export async functions, so the const array cannot be exported from here.
@@ -215,7 +214,9 @@ export async function uploadRecruitDocument(
       };
     }
 
-    revalidatePath('/golf/dashboard/recruiting');
+    // No revalidatePath: the only consumer is a client panel
+    // (FairwayRecruitDocuments) that re-fetches via getRecruitDocuments after
+    // each mutation, so there is no server-rendered route to invalidate.
     return { success: true, data: { id: row.id } };
   } catch (err) {
     await logServerError(
@@ -276,7 +277,7 @@ export async function deleteRecruitDocument(documentId: string): Promise<ActionR
       }
     }
 
-    revalidatePath('/golf/dashboard/recruiting');
+    // No revalidatePath: see uploadRecruitDocument — the client panel re-fetches.
     return { success: true };
   } catch (err) {
     await logServerError(

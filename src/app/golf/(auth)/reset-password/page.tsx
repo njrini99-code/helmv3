@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -11,6 +11,8 @@ import { PasswordStrengthIndicator } from '@/components/auth/password-strength-i
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
 
+type RecoveryState = 'verifying' | 'ready' | 'invalid';
+
 export default function ResetPasswordPage() {
   const prefersReducedMotion = useReducedMotion();
   const isNative = isNativeApp();
@@ -18,11 +20,72 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [recoveryState, setRecoveryState] = useState<RecoveryState>('verifying');
   const router = useRouter();
-  const supabase = createClient();
+  // `createClient()` returns a fresh browser client per call — memoize so the
+  // recovery-session effect below isn't re-run on every render.
+  const supabase = useMemo(() => createClient(), []);
+
+  // Establish the recovery session BEFORE allowing updateUser. Supabase delivers
+  // the reset link as either a PKCE `?code=` query param (exchangeCodeForSession)
+  // or a `?token_hash=&type=recovery` param (verifyOtp). Without an explicit
+  // recovery session, updateUser would silently target the wrong (or no) user.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function establishRecoverySession() {
+      try {
+        // If a recovery session is already present (e.g. detectSessionInUrl
+        // already processed a hash fragment), trust it.
+        const { data: existing } = await supabase.auth.getSession();
+        if (existing.session) {
+          if (!cancelled) setRecoveryState('ready');
+          return;
+        }
+
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get('code');
+        const tokenHash = url.searchParams.get('token_hash');
+        const type = url.searchParams.get('type');
+
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (!cancelled) setRecoveryState(exchangeError ? 'invalid' : 'ready');
+          return;
+        }
+
+        if (tokenHash && type === 'recovery') {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            type: 'recovery',
+            token_hash: tokenHash,
+          });
+          if (!cancelled) setRecoveryState(verifyError ? 'invalid' : 'ready');
+          return;
+        }
+
+        // No recoverable credentials in the URL and no existing session.
+        if (!cancelled) setRecoveryState('invalid');
+      } catch {
+        if (!cancelled) setRecoveryState('invalid');
+      }
+    }
+
+    establishRecoverySession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Refuse to mutate until a verified recovery session exists.
+    if (recoveryState !== 'ready') {
+      setError('This reset link is invalid or has expired. Please request a new one.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -171,10 +234,14 @@ export default function ResetPasswordPage() {
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
           >
             <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
-              Reset your password
+              {recoveryState === 'invalid' ? 'Link expired' : 'Reset your password'}
             </h2>
             <p className="text-warm-500 text-sm sm:text-base">
-              Enter your new password below
+              {recoveryState === 'verifying'
+                ? 'Verifying your reset link…'
+                : recoveryState === 'invalid'
+                  ? 'This password reset link is invalid or has expired.'
+                  : 'Enter your new password below'}
             </p>
           </m.div>
 
@@ -184,6 +251,40 @@ export default function ResetPasswordPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5 })}
           >
+            {recoveryState === 'verifying' ? (
+              <div className="flex justify-center py-6" role="status" aria-label="Verifying reset link">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                </span>
+              </div>
+            ) : recoveryState === 'invalid' ? (
+              <div className="space-y-4 sm:space-y-5">
+                <div
+                  className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
+                  role="alert"
+                >
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>Your reset link is invalid or has expired. Please request a new one.</span>
+                </div>
+                <Link
+                  href="/golf/forgot-password"
+                  className="
+                    block w-full py-2.5 sm:py-3
+                    bg-primary-600 text-white
+                    font-semibold text-sm text-center
+                    rounded-xl
+                    shadow-lg shadow-primary-600/25
+                    transition-all duration-200
+                    hover:bg-primary-700 hover:shadow-primary-600/30
+                    active:scale-[0.98]
+                  "
+                >
+                  Request a new reset link
+                </Link>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
               {error && (
                 <div
@@ -271,7 +372,7 @@ export default function ResetPasswordPage() {
 
               <Button variant="primary"
                 type="submit"
-                disabled={loading || !password || !confirmPassword}
+                disabled={loading || !password || !confirmPassword || recoveryState !== 'ready'}
                 className="
                   w-full py-2.5 sm:py-3
                   bg-primary-600 text-white
@@ -297,6 +398,7 @@ export default function ResetPasswordPage() {
                 )}
               </Button>
             </form>
+            )}
           </m.div>
         </m.div>
 

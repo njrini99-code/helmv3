@@ -16,7 +16,6 @@ export { GoalImpactCard } from './GoalImpactCard';
 export { ReviewScorecard } from './ReviewScorecard';
 export { HighlightsSection } from './HighlightsSection';
 export { AreasToReviewSection } from './AreasToReviewSection';
-export { StrokesGainedSection } from './StrokesGainedSection';
 export { ReviewSummary } from './ReviewSummary';
 
 // Hero takeaway (new — replaces V2CausalInsights/Patterns/Prediction on the round-review page).

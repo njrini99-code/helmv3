@@ -111,8 +111,19 @@ export type SignalGroupBy = 'none' | 'player' | 'category';
 
 /** The default-filter preset a route passes in (the only per-route variance). */
 export interface SignalsDefaultFilter {
-  /** Pre-selected severity (priority) values, e.g. ['urgent','high']. */
+  /**
+   * Pre-selected severity values for the CLIENT filter, expressed in the MAPPED
+   * row-tone vocabulary (e.g. ['critical','high']) — insight `urgent` is mapped
+   * to row `critical` in INSIGHT_PRIORITY_MAP, so seeding ['urgent',…] here
+   * would never match a row and would hide every urgent signal by default.
+   */
   severity?: string[];
+  /**
+   * Raw insight priorities for the SERVER read (`getInsightsForCoach`), e.g.
+   * ['urgent','high']. Kept separate from `severity` because the DB enum
+   * ('urgent') differs from the mapped client tone ('critical').
+   */
+  fetchPriorities?: Array<'low' | 'medium' | 'high' | 'urgent'>;
   /** Pre-selected status value(s) the surface opens at. */
   status?: string;
   /** Which signal types this route shows. */
@@ -361,9 +372,9 @@ export function FairwayCoachHelmSignals({
       try {
         const rows = await getInsightsForCoach(coachId, {
           limit: 100,
-          priorities: defaultFilter?.severity as
-            | Array<'low' | 'medium' | 'high' | 'urgent'>
-            | undefined,
+          // The DB read uses the raw insight priorities, NOT the mapped
+          // client-tone `severity` set (which holds 'critical', not 'urgent').
+          priorities: defaultFilter?.fetchPriorities,
         });
         setInsights(rows);
       } catch {
@@ -372,7 +383,7 @@ export function FairwayCoachHelmSignals({
         setLoading(false);
       }
     },
-    [coachId, defaultFilter?.severity],
+    [coachId, defaultFilter?.fetchPriorities],
   );
 
   const loadPatterns = useCallback(
@@ -719,12 +730,21 @@ export function FairwayCoachHelmSignals({
   /* ── applied-filter recall chips ───────────────────────────────────────── */
   const appliedChips: AppliedFilterChip[] = useMemo(() => {
     const chips: AppliedFilterChip[] = [];
-    for (const s of severitySet)
+    for (const s of severitySet) {
+      // Label from the canonical mapped-tone options so the chip reads the SAME
+      // word as the toolbar (e.g. 'critical' → "Critical", never the raw DB enum
+      // 'Urgent'); fall back to a capitalized value for any unknown. The chip
+      // label must be a string, so only adopt the option label when it is one.
+      const optionLabel = SEVERITY_OPTIONS.find((o) => o.value === s)?.label;
       chips.push({
         key: `sev-${s}`,
-        label: s.charAt(0).toUpperCase() + s.slice(1),
+        label:
+          typeof optionLabel === 'string'
+            ? optionLabel
+            : s.charAt(0).toUpperCase() + s.slice(1),
         onRemove: () => onToggleSeverity(s),
       });
+    }
     for (const s of statusSet)
       chips.push({ key: `st-${s}`, label: s, onRemove: () => onToggleStatus(s) });
     for (const c of categorySet)

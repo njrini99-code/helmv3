@@ -15,10 +15,15 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 type CoachInsightInsert = Database['public']['Tables']['golf_coach_insights']['Insert'];
 
 // ============================================================================
-// GET COACH ALERTS
+// GET COACH ALERTS (internal — consumed only by generateAlerts below)
+// ----------------------------------------------------------------------------
+// Not exported: the live triage path reads insights via insight-delivery.ts /
+// insights.ts (acknowledgeInsight), so this is no longer a public server
+// action. It stays as a private helper because generateAlerts re-fetches the
+// current list through it.
 // ============================================================================
 
-export async function getCoachAlerts(
+async function getCoachAlerts(
   coachId: string,
   _teamId: string,  // Reserved for future use
   options?: {
@@ -212,125 +217,6 @@ export async function getAlertCounts(
       action: 'getAlertCounts',
       featureArea: 'alerts',
       extra: { coachId },
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
-// ============================================================================
-// DISMISS ALERT
-// ============================================================================
-
-export async function dismissAlert(
-  alertId: string
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  // Auth check: verify user owns the alert
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
-  // Check that alert belongs to a coach owned by this user
-  const { data: alert } = await supabase
-    .from('golf_coach_insights')
-    .select('id, coach_id, coach:golf_coaches!inner(user_id)')
-    .eq('id', alertId)
-    .single();
-
-  if (!alert || (alert.coach as { user_id: string })?.user_id !== user.id) {
-    return { success: false, error: 'Not authorized to dismiss this alert' };
-  }
-
-  try {
-    const { error } = await supabase
-      .from('golf_coach_insights')
-      .update({
-        dismissed: true,
-        dismissed_at: new Date().toISOString(),
-        status: 'dismissed',
-      })
-      .eq('id', alertId);
-
-    if (error) {
-      await logServerError(`dismissAlert failed: ${error.message}`, {
-        action: 'dismissAlert',
-        featureArea: 'alerts',
-        extra: { alertId, errorCode: error.code },
-      });
-      return { success: false, error: 'Failed to dismiss alert' };
-    }
-
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/alerts');
-    revalidatePath('/golf/dashboard/intelligence');
-    revalidatePath('/golf/dashboard/insights');
-    return { success: true };
-  } catch (error) {
-    await logServerError(`dismissAlert failed: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'dismissAlert',
-      featureArea: 'alerts',
-      extra: { alertId },
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
-// ============================================================================
-// ACKNOWLEDGE ALERT (Mark as read but keep visible)
-// ============================================================================
-
-export async function acknowledgeAlert(
-  alertId: string
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  // Auth check: verify user owns the alert
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
-  // Check that alert belongs to a coach owned by this user
-  const { data: alert } = await supabase
-    .from('golf_coach_insights')
-    .select('id, coach_id, coach:golf_coaches!inner(user_id)')
-    .eq('id', alertId)
-    .single();
-
-  if (!alert || (alert.coach as { user_id: string })?.user_id !== user.id) {
-    return { success: false, error: 'Not authorized to acknowledge this alert' };
-  }
-
-  try {
-    const { error } = await supabase
-      .from('golf_coach_insights')
-      .update({
-        acknowledged_at: new Date().toISOString(),
-        status: 'acknowledged',
-      })
-      .eq('id', alertId);
-
-    if (error) {
-      await logServerError(`acknowledgeAlert failed: ${error.message}`, {
-        action: 'acknowledgeAlert',
-        featureArea: 'alerts',
-        extra: { alertId, errorCode: error.code },
-      });
-      return { success: false, error: 'Failed to acknowledge alert' };
-    }
-
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/alerts');
-    revalidatePath('/golf/dashboard/intelligence');
-    revalidatePath('/golf/dashboard/insights');
-    return { success: true };
-  } catch (error) {
-    await logServerError(`acknowledgeAlert failed: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'acknowledgeAlert',
-      featureArea: 'alerts',
-      extra: { alertId },
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
@@ -535,119 +421,6 @@ export async function generateAlerts(
       action: 'generateAlerts',
       featureArea: 'alerts',
       extra: { coachId, teamId },
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
-// ============================================================================
-// BULK ACTIONS
-// ============================================================================
-
-export async function dismissAllAlerts(
-  coachId: string,
-  options?: { level?: string }
-): Promise<{ success: boolean; dismissed?: number; error?: string }> {
-  const supabase = await createClient();
-
-  // Auth check: verify user owns this coach record
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id')
-    .eq('id', coachId)
-    .eq('user_id', user.id)
-    .single();
-
-  if (!coach) {
-    return { success: false, error: 'Not authorized' };
-  }
-
-  try {
-    let query = supabase
-      .from('golf_coach_insights')
-      .update({
-        dismissed: true,
-        dismissed_at: new Date().toISOString(),
-        status: 'dismissed',
-      })
-      .eq('coach_id', coachId)
-      .eq('dismissed', false);
-
-    if (options?.level) {
-      const priorityValue = options.level === 'critical' ? 'high' : options.level;
-      query = query.eq('priority', priorityValue);
-    }
-
-    const { data, error } = await query.select('id');
-
-    if (error) {
-      return { success: false, error: 'Failed to dismiss alerts' };
-    }
-
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/alerts');
-
-    return { success: true, dismissed: data?.length || 0 };
-  } catch (error) {
-    await logServerError(`dismissAllAlerts failed: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'dismissAllAlerts',
-      featureArea: 'alerts',
-      extra: { coachId },
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
-export async function acknowledgeAllAlerts(
-  coachId: string
-): Promise<{ success: boolean; acknowledged?: number; error?: string }> {
-  const supabase = await createClient();
-
-  // Auth check: verify user owns this coach record
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id')
-    .eq('id', coachId)
-    .eq('user_id', user.id)
-    .single();
-
-  if (!coach) {
-    return { success: false, error: 'Not authorized' };
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('golf_coach_insights')
-      .update({
-        acknowledged_at: new Date().toISOString(),
-      })
-      .eq('coach_id', coachId)
-      .eq('dismissed', false)
-      .is('acknowledged_at', null)
-      .select('id');
-
-    if (error) {
-      return { success: false, error: 'Failed to acknowledge alerts' };
-    }
-
-    revalidatePath('/golf/dashboard');
-
-    return { success: true, acknowledged: data?.length || 0 };
-  } catch (error) {
-    await logServerError(`acknowledgeAllAlerts failed: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'acknowledgeAllAlerts',
-      featureArea: 'alerts',
-      extra: { coachId },
     });
     return { success: false, error: 'An unexpected error occurred' };
   }

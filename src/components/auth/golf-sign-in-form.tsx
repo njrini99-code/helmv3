@@ -92,10 +92,20 @@ export function GolfSignInForm() {
         return (path.startsWith('/golf/') || path.startsWith('/baseball/')) && !path.includes('//');
       };
 
-      // Only use returnTo if the user is fully onboarded (redirectTo = dashboard).
-      // If they still need onboarding, send them there first — the join page will
-      // redirect to onboarding with the joinCode anyway.
+      // Only use returnTo verbatim if the user is fully onboarded (redirectTo =
+      // dashboard). If they still need onboarding, send them there first — but
+      // we must preserve the join code so they auto-join the inviting team after
+      // onboarding (the onboarding page reads ?joinCode). Player onboarding wires
+      // the code through; coach onboarding ignores it (a coach can't join as a
+      // player), so forwarding it is harmless there.
       const needsOnboarding = result.redirectTo === '/golf/coach' || result.redirectTo === '/golf/player';
+
+      // Extract a join code from a returnTo that points at the invite route,
+      // e.g. /golf/join/ABC123 → "ABC123" (strip any query/hash).
+      const extractJoinCode = (path: string): string | null => {
+        const match = path.match(/^\/golf\/join\/([^/?#]+)/);
+        return match?.[1] ? decodeURIComponent(match[1]) : null;
+      };
 
       // Clear ref regardless of path — it's been forwarded to the server already
       sessionStorage.removeItem('golf_login_ref');
@@ -104,6 +114,13 @@ export function GolfSignInForm() {
       if (storedReturnTo && !needsOnboarding && isValidReturnTo(storedReturnTo)) {
         sessionStorage.removeItem('golf_login_returnTo');
         destination = storedReturnTo;
+      } else if (storedReturnTo && needsOnboarding && isValidReturnTo(storedReturnTo)) {
+        // Heading into onboarding — carry the join code forward so the new
+        // player auto-joins the inviting team on completion.
+        const joinCode = extractJoinCode(storedReturnTo);
+        sessionStorage.removeItem('golf_login_returnTo');
+        const base = result.redirectTo || '/golf/dashboard';
+        destination = joinCode ? `${base}?joinCode=${encodeURIComponent(joinCode)}` : base;
       } else {
         // Clear stale returnTo if present — onboarding takes priority
         if (storedReturnTo) sessionStorage.removeItem('golf_login_returnTo');

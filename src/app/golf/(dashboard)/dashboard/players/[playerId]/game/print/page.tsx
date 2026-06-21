@@ -11,7 +11,9 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import { notFound, redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import { FINGERPRINT_SECTION_ORDER } from '@/app/golf/actions/player-fingerprint-types';
 import { cn } from '@/lib/utils';
@@ -32,7 +34,28 @@ export default async function PlayerGamePrintPage({
 
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
-  if (!session.coach) redirect('/golf/dashboard');
+  const { coach } = session;
+  if (!coach) redirect('/golf/dashboard');
+
+  // Scope to the coach's ACTIVE team (cookie-resolved), matching the base
+  // `/players/[playerId]` page and the `/game` route. Without this gate,
+  // getPlayerFingerprint's any-staffed-team access would let a coach print the
+  // scouting report for a player on a non-active team.
+  const supabase = await createClient();
+  const teamId = await resolveCoachTeamIdWithCookie(
+    supabase,
+    coach.organization_id,
+    coach.id,
+  );
+  if (!teamId) redirect('/golf/dashboard/roster');
+
+  const { data: membership } = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', teamId)
+    .eq('player_id', playerId)
+    .maybeSingle();
+  if (!membership) notFound();
 
   const fingerprint = await getPlayerFingerprint(playerId);
   if (!fingerprint) notFound();
