@@ -185,6 +185,24 @@ export default function GolfCoachOnboarding() {
         return;
       }
 
+      // F024: a logged-in player must not be funnelled through the coach wizard.
+      // Completing it would insert a stray golf_coaches row for a player account
+      // (the users upsert uses ignoreDuplicates so role stays 'player'), leaving
+      // the account half-coach/half-player. If this user is already a player,
+      // send them to their dashboard instead of showing the coach onboarding.
+      if (!coach) {
+        const { data: existingPlayer } = await supabase
+          .from('golf_players')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (existingPlayer) {
+          router.replace('/golf/dashboard');
+          return;
+        }
+      }
+
       // Pre-fill name from auth metadata if available — but never clobber a
       // value the user already typed (and which a resumed draft restored).
       const meta = user.user_metadata;
