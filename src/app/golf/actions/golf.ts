@@ -522,14 +522,32 @@ async function getPlayerTeamId(
   supabase: SupabaseClient,
   playerId: string
 ): Promise<string | null> {
-  const { data: membership } = await supabase
+  // Prefer the active membership.
+  const { data: active } = await supabase
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', playerId)
     .eq('status', 'active')
     .maybeSingle();
+  if (active?.team_id) return active.team_id;
 
-  return membership?.team_id ?? null;
+  // F147: an injured/redshirt/inactive member still belongs to a team. If we
+  // returned null here, the round would be saved with team_id = NULL and become
+  // invisible to the coach — the golf_rounds coach SELECT RLS is keyed on
+  // `team_id IS NOT NULL AND is_golf_team_coach(team_id)`, and the roster query
+  // asks for the round by player_id expecting to see it. Fall back to the
+  // player's most recent membership so the round stays coach-visible. This does
+  // NOT loosen RLS (no cross-team leak): the round only carries the player's own
+  // real team_id, which only that team's coach can read.
+  const { data: anyMembership } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return anyMembership?.team_id ?? null;
 }
 
 // ============================================================================
