@@ -13,7 +13,7 @@ import {
 } from '@/app/golf/actions/coachhelm-analytics';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
-import { FairwayEffectiveness } from '@/components/fairway';
+import { FairwayEffectiveness, InlineNotice } from '@/components/fairway';
 import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 
@@ -81,6 +81,30 @@ export default async function CoachHelmAnalyticsPage() {
     getPredictionPerformance(teamId),
     getPatternImpact(teamId),
   ]);
+
+  // ── Loader failure surfacing (ADDITIVE) ────────────────────────────────────
+  // A failed server query returns { success: false, error } (a genuinely empty
+  // result still returns success:true with zeroed aggregates). Previously we
+  // unwrapped `.data` unconditionally, so a failed query rendered an empty panel
+  // as if it were "no data yet". Detect any failed loader and render an honest
+  // error state instead of masking the failure.
+  const loaderError =
+    (!overviewResult.success && overviewResult.error) ||
+    (!effectivenessResult.success && effectivenessResult.error) ||
+    (!performanceResult.success && performanceResult.error) ||
+    (!patternResult.success && patternResult.error) ||
+    null;
+
+  if (loaderError) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient p-6 font-fw-sans text-text-primary')}>
+        <InlineNotice tone="danger" title="Couldn’t load effectiveness analytics">
+          {loaderError}. Refresh the page to try again — if this keeps happening, the
+          analytics service may be temporarily unavailable.
+        </InlineNotice>
+      </div>
+    );
+  }
 
   // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
   // Flag ON → the warm "Effectiveness" surface (CoachHelmShell active=

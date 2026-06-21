@@ -11,7 +11,7 @@ import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamStats } from '@/components/fairway/pages/coachhelm/FairwayTeamStats';
 import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
-import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -153,19 +153,26 @@ export default async function TeamStatsPage() {
   // Fetch ALL holes for calculating GIR and fairway stats
   const roundIds = (allRounds || []).map(r => r.id);
 
-  // Paginated: PostgREST caps each request at 1000 rows. A team season exceeds
-  // 1000 golf_holes rows, which previously truncated the per-player putts / GIR%
-  // / fairway% aggregates below. Page through ALL holes with a stable order.
-  const allHoles: HoleData[] = roundIds.length > 0
-    ? ((await fetchAllRows((from, to) =>
-        supabase
-          .from('golf_holes')
-          .select('round_id, par, fairway_hit, gir, putts, score')
-          .in('round_id', roundIds)
-          .order('id', { ascending: true })
-          .range(from, to),
-      )) as HoleData[])
-    : [];
+  // Chunked + paginated. The round_id list is chunked (~300 per .in(...)) so the
+  // request URL stays well under the ~414 length limit at full-roster scale, and
+  // each chunk is itself paginated because PostgREST caps each request at 1000
+  // rows — a team season exceeds 1000 golf_holes rows, which previously
+  // truncated the per-player putts / GIR% / fairway% aggregates below. Page
+  // through ALL holes in every chunk with a stable order.
+  const HOLES_ROUND_BATCH = 300;
+  const allHoles: HoleData[] = [];
+  for (let i = 0; i < roundIds.length; i += HOLES_ROUND_BATCH) {
+    const roundIdBatch = roundIds.slice(i, i + HOLES_ROUND_BATCH);
+    const batchHoles = (await fetchAllRows((from, to) =>
+      supabase
+        .from('golf_holes')
+        .select('round_id, par, fairway_hit, gir, putts, score')
+        .in('round_id', roundIdBatch)
+        .order('id', { ascending: true })
+        .range(from, to),
+    )) as HoleData[];
+    allHoles.push(...batchHoles);
+  }
 
   // Define types for the grouped data
   type RoundData = { id: string; player_id: string; total_score: number | null; round_date: string; holes_played: number | null };
@@ -264,6 +271,7 @@ export default async function TeamStatsPage() {
     let totalGirHits = 0;
     let totalGirOpps = 0;
     let totalPutts = 0;
+    let totalHolesWithPutts = 0;
     let totalBirdies = 0;
     let totalHolesWithScore = 0;
 
@@ -285,9 +293,12 @@ export default async function TeamStatsPage() {
           totalGirOpps++;
           if (hole.gir) totalGirHits++;
         }
-        // Putts
+        // Putts — track the holes that actually carry a putts value so the
+        // per-round denominator matches the numerator (some holes lack putts;
+        // counting them in the denominator understated putts/round).
         if (hole.putts !== null && hole.putts > 0) {
           totalPutts += hole.putts;
+          totalHolesWithPutts++;
         }
         // Birdies (score exactly par - 1 — eagles are NOT birdies; matches
         // the canonical cache definition of birdies_per_round)
@@ -304,10 +315,13 @@ export default async function TeamStatsPage() {
     const girPct = totalGirOpps > 0
       ? (totalGirHits / totalGirOpps) * 100
       : null;
-    // Normalize putts to 18-hole equivalent
-    const totalPlayerHoles = scoredRounds.reduce((sum, r) => sum + (r.holes_played ?? 18), 0);
-    const puttsPerRound = totalPlayerHoles > 0 && totalPutts > 0
-      ? (totalPutts / totalPlayerHoles) * 18
+    // Normalize putts to 18-hole equivalent. Denominator = holes that actually
+    // carry a putts value (totalHolesWithPutts), NOT every scored hole — the
+    // numerator only summed holes with a non-null putts, so dividing by all
+    // scored holes (Σ holes_played) understated putts/round whenever some holes
+    // lacked a recorded putt count.
+    const puttsPerRound = totalHolesWithPutts > 0 && totalPutts > 0
+      ? (totalPutts / totalHolesWithPutts) * 18
       : null;
 
     // Birdies per round: normalize to 18-hole equivalent
@@ -364,13 +378,11 @@ export default async function TeamStatsPage() {
           ]),
         )
       : {};
-    const [leakRes, standingEntries] = await Promise.all([
+    // Batched: ONE chunked .in('player_id', ...) read for every roster player
+    // instead of N admin queries (one per player).
+    const [leakRes, standingByPlayer] = await Promise.all([
       getTeamLeakMaps(teamId),
-      Promise.all(
-        playersWithStats.map(
-          async (p) => [p.id, await loadPlayerStandingMap(p.id)] as const,
-        ),
-      ),
+      loadPlayersStandingMap(playersWithStats.map((p) => p.id)),
     ]);
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
@@ -379,7 +391,7 @@ export default async function TeamStatsPage() {
           players={playersWithStats}
           intelligenceByPlayer={intelligenceByPlayer}
           leakMaps={leakRes.success ? leakRes.data ?? null : null}
-          standingByPlayer={new Map(standingEntries)}
+          standingByPlayer={standingByPlayer}
         />
       </div>
     );

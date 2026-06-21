@@ -35,7 +35,7 @@
  * cinematic motion via the primitives' own reveal (honors reduced motion).
  * ========================================================================== */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -55,6 +55,7 @@ import {
   OnboardingStep,
   OnboardingSteps,
   TrendChart,
+  Sparkline,
   type ColumnDef,
   type TrendPoint,
 } from '@/components/fairway';
@@ -70,13 +71,26 @@ import {
   IconTarget,
   IconSparkles,
   IconArrowRight,
+  IconClock,
+  IconMapPin,
+  IconBell,
+  IconClipboardList,
+  IconAlertCircle,
 } from '@/components/icons';
-import { Users as LucideUsers, Flag as LucideFlag } from 'lucide-react';
+import { formatTimeInTz } from '@/lib/utils/timezone';
+import {
+  Users as LucideUsers,
+  Flag as LucideFlag,
+  Calendar as LucideCalendar,
+  CheckCircle2 as LucideCheckCircle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { JoinRequestAlert } from '@/components/golf/roster/JoinRequestAlert';
 import type {
   CoachDashboardPayload,
   DashboardDateRange,
+  TodayEvent,
+  ActionItem,
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/CoachDashboard';
 import { deriveCoachSignal } from './coach-signal';
@@ -136,6 +150,20 @@ function shortDate(iso: string): string {
   // server and the client to avoid a hydration mismatch (React #418) and an
   // off-by-one day for clients west of UTC.
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
+/** Honest first→last delta over a sparkline series (oldest → newest), or null
+ *  when there are fewer than two finite points to compare. This is the only
+ *  numeric movement the dashboard payload supports — the payload's `trend` is a
+ *  qualitative direction, not a magnitude — so the MetricCard delta chip is
+ *  sourced from the series the same way the Sparkline classifies its color. */
+function seriesDelta(series: number[] | undefined): number | null {
+  if (!series) return null;
+  const finite = series.filter((v) => Number.isFinite(v));
+  if (finite.length < 2) return null;
+  const first = finite[0] as number;
+  const last = finite[finite.length - 1] as number;
+  return last - first;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -241,6 +269,16 @@ export function FairwayCoachDashboard({
   const scoringAvg = enhancedData?.sparklines.scoringAvg.value ?? stats.teamScoringAverage;
   const girValue = enhancedData?.sparklines.girPct.value ?? null;
   const puttsValue = enhancedData?.sparklines.puttsPerRound.value ?? null;
+
+  // KPI micro-trends (F045/F046): the payload already holds a per-metric series
+  // (oldest → newest) + a qualitative direction. Render the series as a quiet
+  // Sparkline and the honest first→last movement as the MetricCard delta chip.
+  const scoringSeries = enhancedData?.sparklines.scoringAvg.sparkline ?? [];
+  const girSeries = enhancedData?.sparklines.girPct.sparkline ?? [];
+  const puttsSeries = enhancedData?.sparklines.puttsPerRound.sparkline ?? [];
+  const scoringDelta = seriesDelta(scoringSeries);
+  const girDelta = seriesDelta(girSeries);
+  const puttsDelta = seriesDelta(puttsSeries);
 
   const hasTrend = !!teamScoringTrend && teamScoringTrend.length >= 2;
   const trendPoints: TrendPoint[] = hasTrend
@@ -389,6 +427,12 @@ export function FairwayCoachDashboard({
         {signal.body}
       </InsightCard>
 
+      {/* ── 3.5 · TODAY — schedule timeline (matte, calm) ──────────────────── */}
+      <TodayPanel
+        events={enhancedData?.todayEvents ?? []}
+        timezone={enhancedData?.timezone}
+      />
+
       {/* ── 4 · TEAM KPIs — matte MetricCards, honest insufficient-data ────── */}
       <section aria-label="Team performance" className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -399,6 +443,16 @@ export function FairwayCoachDashboard({
               decimals={1}
               icon={<IconChartBar size={18} />}
               goodDirection="down"
+              delta={
+                scoringDelta != null
+                  ? { value: Number(scoringDelta.toFixed(1)), label: 'over window' }
+                  : undefined
+              }
+              sparkline={
+                scoringSeries.length >= 2 ? (
+                  <Sparkline data={scoringSeries} goodDirection="down" label="Scoring average" />
+                ) : undefined
+              }
               footnote={`${roundsLogged} ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
             />
           ) : (
@@ -417,6 +471,16 @@ export function FairwayCoachDashboard({
               suffix="%"
               icon={<IconTarget size={18} />}
               goodDirection="up"
+              delta={
+                girDelta != null
+                  ? { value: Number(girDelta.toFixed(0)), suffix: '%', label: 'over window' }
+                  : undefined
+              }
+              sparkline={
+                girSeries.length >= 2 ? (
+                  <Sparkline data={girSeries} goodDirection="up" label="Greens in regulation" />
+                ) : undefined
+              }
             />
           ) : (
             <Surface elevation="border" padding="sm">
@@ -432,6 +496,16 @@ export function FairwayCoachDashboard({
               decimals={1}
               icon={<IconGolf size={18} />}
               goodDirection="down"
+              delta={
+                puttsDelta != null
+                  ? { value: Number(puttsDelta.toFixed(1)), label: 'over window' }
+                  : undefined
+              }
+              sparkline={
+                puttsSeries.length >= 2 ? (
+                  <Sparkline data={puttsSeries} goodDirection="down" label="Putts per round" />
+                ) : undefined
+              }
             />
           ) : (
             <Surface elevation="border" padding="sm">
@@ -515,6 +589,9 @@ export function FairwayCoachDashboard({
           />
         )}
       </section>
+
+      {/* ── 5.5 · ACTION ITEMS — tasks / updates / deadlines waiting ────────── */}
+      <ActionItemsPanel items={enhancedData?.actionItems ?? []} />
 
       {/* ── 6 · TEAM region — Trend + Pulse + Top Performers (matte) ────────── */}
       <section aria-label="Team" className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -692,5 +769,257 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
         </Inset>
       ) : null}
     </Surface>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Today — schedule region (F104). A calm matte list of the day's events,
+ * ported from the legacy TodayTimeline presentation in Fairway style. Reads
+ * ONLY the already-computed `enhancedData.todayEvents`; no refetch. Time labels
+ * are deferred to the client (resolved timezone) to avoid a hydration mismatch
+ * between server and browser timezones (the legacy timeline does the same).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const EVENT_TONE: Record<string, 'accent' | 'warning' | 'neutral' | 'info'> = {
+  practice: 'info',
+  tournament: 'warning',
+  qualifier: 'accent',
+  meeting: 'neutral',
+  travel: 'info',
+  workout: 'warning',
+  game: 'accent',
+  scrimmage: 'accent',
+  class: 'info',
+  other: 'neutral',
+};
+
+const EVENT_LABEL: Record<string, string> = {
+  practice: 'Practice',
+  tournament: 'Tournament',
+  qualifier: 'Qualifier',
+  meeting: 'Meeting',
+  travel: 'Travel',
+  workout: 'Workout',
+  game: 'Match',
+  scrimmage: 'Scrimmage',
+  class: 'Class',
+  other: 'Event',
+};
+
+function TodayPanel({ events, timezone }: { events: TodayEvent[]; timezone?: string }) {
+  // Resolve the display timezone on the client (Intl may differ between server
+  // and browser); render time labels only after mount to avoid React #418.
+  const [tz, setTz] = useState<string | null>(null);
+  useEffect(() => {
+    setTz(timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }, [timezone]);
+
+  return (
+    <section aria-label="Today's schedule" className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Today</h2>
+          {events.length > 0 ? (
+            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+              {events.length}
+            </span>
+          ) : null}
+        </div>
+        <Link
+          href="/golf/dashboard/calendar"
+          className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+        >
+          Calendar
+          <IconArrowRight size={14} />
+        </Link>
+      </div>
+
+      {events.length === 0 ? (
+        <Surface elevation="border" padding="md">
+          <EmptyState
+            variant="subtle"
+            icon={LucideCalendar}
+            title="Clear schedule today"
+            description="No events on the books — a good window for practice or recovery."
+          />
+        </Surface>
+      ) : (
+        <Surface elevation="border" padding="sm">
+          <ul className="flex flex-col gap-2">
+            {events.map((event) => {
+              const tone = EVENT_TONE[event.event_type] ?? 'neutral';
+              const typeLabel = EVENT_LABEL[event.event_type] ?? 'Event';
+              return (
+                <li key={event.id}>
+                  <Inset padding="sm" className="flex flex-col gap-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="min-w-0 truncate font-fw-sans text-body font-medium text-text-primary">
+                        {event.title}
+                      </span>
+                      <StatusPill tone={tone} dot={false} size="sm">
+                        {typeLabel}
+                      </StatusPill>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-fw-sans text-caption text-text-tertiary">
+                      <span className="inline-flex items-center gap-1 tabular-nums" suppressHydrationWarning>
+                        <IconClock size={12} />
+                        {tz ? (
+                          <>
+                            {formatTimeInTz(event.start_time, tz)}
+                            {event.end_time ? ` – ${formatTimeInTz(event.end_time, tz)}` : ''}
+                          </>
+                        ) : null}
+                      </span>
+                      {event.location ? (
+                        <span className="inline-flex min-w-0 items-center gap-1">
+                          <IconMapPin size={12} />
+                          <span className="truncate">{event.location}</span>
+                        </span>
+                      ) : null}
+                      {event.rsvp_total !== undefined ? (
+                        <span className="tabular-nums">
+                          {event.rsvp_yes ?? 0}/{event.rsvp_total} confirmed
+                        </span>
+                      ) : null}
+                    </div>
+                  </Inset>
+                </li>
+              );
+            })}
+          </ul>
+        </Surface>
+      )}
+    </section>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Action Items — tasks / updates / deadlines waiting (F104). Ported from the
+ * legacy ActionItemsCard in Fairway style. Reads ONLY the already-computed
+ * `enhancedData.actionItems`; no refetch. Relative dates are deferred to the
+ * client to avoid a hydration mismatch (server vs browser clock).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function actionItemHref(item: ActionItem): string {
+  if (item.type === 'task' || item.type === 'deadline') return '/golf/dashboard/tasks';
+  if (item.type === 'announcement') return '/golf/dashboard/announcements';
+  return '/golf/dashboard';
+}
+
+function formatRelativeDate(dateStr: string, now: Date): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
+  if (diffDays < 0) {
+    const future = Math.abs(diffDays);
+    if (future === 1) return 'Tomorrow';
+    if (future < 7) return `In ${future}d`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function ActionItemsPanel({ items }: { items: ActionItem[] }) {
+  // Defer relative-date computation to the client to avoid a hydration mismatch.
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
+
+  return (
+    <section aria-label="Action items" className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Action Items</h2>
+          {items.length > 0 ? (
+            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+              {items.length}
+            </span>
+          ) : null}
+        </div>
+        <Link
+          href="/golf/dashboard/tasks"
+          className="inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+        >
+          Tasks
+          <IconArrowRight size={14} />
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <Surface elevation="border" padding="md">
+          <EmptyState
+            variant="subtle"
+            icon={LucideCheckCircle}
+            title="All caught up"
+            description="No tasks, updates or deadlines waiting right now."
+          />
+        </Surface>
+      ) : (
+        <Surface elevation="border" padding="sm">
+          <ul className="flex flex-col gap-2">
+            {items.slice(0, 6).map((item) => {
+              const isUrgent = item.priority === 'high' || item.priority === 'urgent';
+              return (
+                <li key={item.id}>
+                  <Link
+                    href={actionItemHref(item)}
+                    className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                  >
+                    <Inset
+                      padding="sm"
+                      className="flex items-start gap-3 transition-colors hover:bg-surface-hover"
+                    >
+                      <span className="mt-0.5 shrink-0">
+                        {item.overdue ? (
+                          <IconAlertCircle size={16} className="text-fw-danger" />
+                        ) : item.type === 'announcement' ? (
+                          <IconBell size={16} className="text-text-tertiary" />
+                        ) : isUrgent ? (
+                          <IconAlertCircle size={16} className="text-fw-warning" />
+                        ) : (
+                          <IconClipboardList size={16} className="text-text-tertiary" />
+                        )}
+                      </span>
+                      <span className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span
+                          className={cn(
+                            'truncate font-fw-sans text-body font-medium',
+                            item.overdue ? 'text-fw-danger' : 'text-text-primary',
+                          )}
+                        >
+                          {item.title}
+                        </span>
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span
+                            className="font-fw-sans text-caption text-text-tertiary"
+                            suppressHydrationWarning
+                          >
+                            {now ? formatRelativeDate(item.date, now) : ''}
+                          </span>
+                          {item.overdue ? (
+                            <StatusPill tone="danger" dot={false} size="sm">
+                              Overdue
+                            </StatusPill>
+                          ) : isUrgent ? (
+                            <StatusPill tone="warning" dot={false} size="sm">
+                              {item.priority === 'urgent' ? 'Urgent' : 'High'}
+                            </StatusPill>
+                          ) : null}
+                        </span>
+                      </span>
+                    </Inset>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Surface>
+      )}
+    </section>
   );
 }

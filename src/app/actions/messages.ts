@@ -321,7 +321,10 @@ export async function markMessagesAsRead({
     throw new Error('Unauthorized');
   }
 
-  // Update last_read_at for this participant
+  // Update last_read_at for this participant. This is the primary read marker:
+  // group-chat unread badges are computed app-side from last_read_at, and writing
+  // it fires the realtime golf_conversation_participants UPDATE that re-runs the
+  // conversation rail's refetch — clearing the viewer's unread badge on open (F124).
   const participantsTable = sport === 'golf' ? 'golf_conversation_participants' : 'baseball_conversation_participants';
   const { error: participantError } = await supabase
     .from(participantsTable as any)
@@ -334,7 +337,12 @@ export async function markMessagesAsRead({
     throw new Error('Failed to mark messages as read');
   }
 
-  // Mark all messages in this conversation as read
+  // Flip read=true on messages from OTHERS (never the viewer's own — that would
+  // forge a read receipt for the sender). The 1:1 unread_count basis in
+  // get_*_conversations_with_details counts `read = FALSE AND sender_id != viewer`,
+  // so this write is what clears the 1:1 badge and stays reconciled with that count.
+  // last_read_at already committed above, so a failure here is non-fatal: log it but
+  // still revalidate + report success so the badge isn't stuck on a transient error.
   const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
   const { error: messagesError } = await supabase
     .from(messagesTable as any)
@@ -344,7 +352,6 @@ export async function markMessagesAsRead({
 
   if (messagesError) {
     await logServerError(`[Messages] Failed to mark messages as read: ${messagesError instanceof Error ? messagesError.message : String(messagesError)}`, { action: 'messages.markMessagesAsRead' });
-    throw new Error('Failed to mark messages as read');
   }
 
   revalidatePath(`/${sport}/dashboard/messages/${conversationId}`);
@@ -390,25 +397,28 @@ export async function sendGolfMessage(conversationId: string, content: string) {
           .neq('user_id', user.id) as { data: { user_id: string }[] | null };
 
         if (otherParticipants && otherParticipants.length > 0) {
-          // Get sender name (try coach profile first, then player)
-          const [{ data: senderCoach }, { data: senderPlayer }] = await Promise.all([
+          const recipientUserIds = otherParticipants.map(p => p.user_id);
+
+          // Batch every lookup into ONE round-trip of parallel queries: sender name
+          // (coach → player → email fallback) and all recipient emails via a single
+          // .in() instead of sequential per-recipient fetches.
+          const [
+            { data: senderCoach },
+            { data: senderPlayer },
+            { data: senderUser },
+            { data: recipientProfiles },
+          ] = await Promise.all([
             supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle(),
             supabase.from('golf_players').select('first_name, last_name').eq('user_id', user.id).maybeSingle(),
+            supabase.from('users').select('email').eq('id', user.id).maybeSingle(),
+            supabase.from('users').select('id, email').in('id', recipientUserIds),
           ]);
-          const { data: senderUser } = await supabase.from('users').select('email').eq('id', user.id).single();
 
           const senderName = senderCoach?.full_name
             || (senderPlayer ? `${senderPlayer.first_name || ''} ${senderPlayer.last_name || ''}`.trim() : '')
             || senderUser?.email
             || 'Someone';
           const preview = content.length > 80 ? content.substring(0, 80) + '…' : content;
-
-          // Get recipient emails
-          const recipientUserIds = otherParticipants.map(p => p.user_id);
-          const { data: recipientProfiles } = await supabase
-            .from('users')
-            .select('id, email')
-            .in('id', recipientUserIds);
 
           if (recipientProfiles) {
             // Email notifications
