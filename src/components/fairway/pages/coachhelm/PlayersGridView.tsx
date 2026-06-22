@@ -59,6 +59,7 @@ import {
   getAreaType,
   getProgressPercent,
   getAreaAutoFill,
+  getMetricCurrentValue,
   type AreaAutoFillStats,
 } from './areaTypes';
 import { Inset } from '@/components/fairway/surfaces';
@@ -80,6 +81,7 @@ import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Badge } from '@/components/fairway/controls/badge';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
+import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import {
   FormSection,
@@ -135,6 +137,19 @@ export interface PlayersGridStats {
   recent_trend: 'improving' | 'declining' | 'stable' | null;
   /** Optional recent scoring series (oldest→newest) for the inline Sparkline. */
   score_series?: number[] | null;
+  // ── Extended autofill sources (route widens the cache select; optional so
+  //    existing callers stay valid). Consumed by getMetricCurrentValue so the
+  //    create-focus-area form can autofill the current value for any metric. ──
+  driving_distance?: number | null;
+  proximity_to_hole?: number | null;
+  scrambling_pct?: number | null;
+  up_and_down_pct?: number | null;
+  sand_save_pct?: number | null;
+  one_putt_pct?: number | null;
+  three_putt_pct?: number | null;
+  par3_avg?: number | null;
+  par4_avg?: number | null;
+  par5_avg?: number | null;
 }
 
 export interface PlayersGridViewProps {
@@ -470,6 +485,20 @@ export function PlayersGridView({
         current_value: autoCurrentValue,
       };
     });
+  }
+
+  // Metric change → re-derive the current value from the CHOSEN stat against the
+  // selected player's real stats (the core "pick the stat → its current value
+  // autofills" behavior). Only overwrite when we actually resolved a value, so
+  // picking a custom/untracked metric leaves a manually-typed value intact.
+  function onMetricChange(metric: string) {
+    const stats = playerStats[form.player_id] as AreaAutoFillStats | undefined;
+    const resolved = getMetricCurrentValue(metric, stats);
+    setForm((prev) => ({
+      ...prev,
+      target_metric: metric,
+      current_value: resolved !== '' ? resolved : prev.current_value,
+    }));
   }
 
   async function handleSave() {
@@ -958,6 +987,7 @@ export function PlayersGridView({
         playerStats={playerStats}
         onAreaTypeChange={onAreaTypeChange}
         onPlayerChange={onPlayerChange}
+        onMetricChange={onMetricChange}
         onSave={handleSave}
         saving={saving}
       />
@@ -1409,6 +1439,7 @@ function FocusAreaModal({
   playerStats,
   onAreaTypeChange,
   onPlayerChange,
+  onMetricChange,
   onSave,
   saving,
 }: {
@@ -1422,6 +1453,8 @@ function FocusAreaModal({
   onAreaTypeChange: (areaType: string) => void;
   /** Player change → re-run auto-fill for the current area vs the new player. */
   onPlayerChange: (playerId: string) => void;
+  /** Metric change → re-derive the current value from the chosen stat. */
+  onMetricChange: (metric: string) => void;
   onSave: () => void;
   saving: boolean;
 }) {
@@ -1433,6 +1466,18 @@ function FocusAreaModal({
   const stats = form.player_id ? playerStats[form.player_id] : undefined;
   const area = getAreaType(form.area_type);
   const canSave = Boolean(form.player_id && form.title.trim());
+
+  // Pickable stat chips for the selected area ('Custom Metric' is a placeholder,
+  // not a real stat, so it never becomes a chip — the free-text input covers it).
+  const metricChips = area.suggestedMetrics.filter(
+    (m) => m.toLowerCase() !== 'custom metric',
+  );
+
+  // The current value was auto-derived when it equals what the chosen metric
+  // resolves to from this player's stats (and is non-empty) — drives the hint.
+  const isAutofilled =
+    form.current_value !== '' &&
+    form.current_value === getMetricCurrentValue(form.target_metric, stats as AreaAutoFillStats | undefined);
 
   /* ---- unsaved-changes guard (Nielsen #5 error prevention / #3 user control)
      Snapshot the form when the modal opens; a close attempt (Cancel, Esc, scrim,
@@ -1604,11 +1649,30 @@ function FocusAreaModal({
             description="Pick a metric and target so progress is trackable (golf metrics like putts/score are lower-is-better)."
           >
             <FormField label="Target metric" showOptional>
-              <Input
-                value={form.target_metric}
-                onChange={(e) => setForm((prev) => ({ ...prev, target_metric: e.target.value }))}
-                placeholder={area.suggestedMetrics[0] ?? 'e.g. Fairways Hit %'}
-              />
+              <div className="space-y-2">
+                {/* Pick the stat to address — clicking a chip autofills the
+                    current value from this player's real stats. Free-text input
+                    remains for a custom metric. */}
+                {metricChips.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {metricChips.map((m) => (
+                      <SelectablePill
+                        key={m}
+                        shape="round"
+                        active={form.target_metric === m}
+                        onClick={() => onMetricChange(m)}
+                      >
+                        {m}
+                      </SelectablePill>
+                    ))}
+                  </div>
+                ) : null}
+                <Input
+                  value={form.target_metric}
+                  onChange={(e) => onMetricChange(e.target.value)}
+                  placeholder={area.suggestedMetrics[0] ?? 'e.g. Fairways Hit %'}
+                />
+              </div>
             </FormField>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1619,6 +1683,11 @@ function FocusAreaModal({
                     setForm((prev) => ({ ...prev, current_value: v == null ? '' : String(v) }))
                   }
                 />
+                {isAutofilled ? (
+                  <p className="mt-1 font-fw-sans text-eyebrow text-text-tertiary">
+                    Auto-filled from recent rounds — edit if needed.
+                  </p>
+                ) : null}
               </FormField>
               <FormField label="Target value" showOptional>
                 <NumberField

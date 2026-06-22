@@ -154,9 +154,12 @@ export function suggestedMetrics(value: string | null | undefined): string[] {
  * ------------------------------------------------------------------------- */
 
 /**
- * Minimal player-stats shape the auto-fill reads. Mirrors the legacy
- * `PlayerStats` fields the create-modal consults (rounds_played gate + the four
- * per-area sources). Kept narrow so callers can pass any compatible stats row.
+ * Player-stats shape the auto-fill reads. The five core fields (rounds_played +
+ * the four legacy per-area sources) are always present; the rest are OPTIONAL so
+ * any compatible stats row still satisfies the type, while a route that widens
+ * its `golf_player_stats_cache` select unlocks autofill for every metric below.
+ * Keys are the friendly names the Fairway grid already uses (avg_score, not
+ * scoring_average) so callers pass their existing stats object unchanged.
  */
 export interface AreaAutoFillStats {
   rounds_played: number;
@@ -164,6 +167,18 @@ export interface AreaAutoFillStats {
   avg_putts: number | null;
   fairway_pct: number | null;
   gir_pct: number | null;
+  // ── Extended sources (present when the route widens the cache select) ──
+  best_score?: number | null;
+  driving_distance?: number | null;
+  proximity_to_hole?: number | null;
+  scrambling_pct?: number | null;
+  up_and_down_pct?: number | null;
+  sand_save_pct?: number | null;
+  one_putt_pct?: number | null;
+  three_putt_pct?: number | null;
+  par3_avg?: number | null;
+  par4_avg?: number | null;
+  par5_avg?: number | null;
 }
 
 /** Result of an area-type change: the suggested metric + an auto-filled current value. */
@@ -175,14 +190,72 @@ export interface AreaAutoFill {
 }
 
 /**
- * Compute the auto-fill for a focus-area form when the area type changes.
- * VERBATIM port of development-client.tsx `handleAreaTypeChange` (the
- * suggested-metric pick + the per-area stat mapping):
- *   putting           → avg_putts
- *   driving           → fairway_pct
- *   iron_play         → gir_pct
- *   course_management → avg_score
- * The stat is only used when the player has at least one recorded round.
+ * Resolve a focus-area's CURRENT value from the player's real stats, keyed by
+ * the chosen TARGET METRIC (not the area type). This is what makes "pick the
+ * stat → its current value autofills" work: every metric maps to the matching
+ * cached stat, so changing the metric re-derives the starting value.
+ *
+ * Returns '' (never a fabricated number) when:
+ *   - the player has no recorded rounds, or
+ *   - the metric is unknown / custom, or
+ *   - the matching stat is null (not tracked yet).
+ *
+ * Match order is most-specific-first because the labels share keywords
+ * ("Putts Per Round" vs "1-Putt %" vs "3-Putt Avoidance %" all contain "putt").
+ */
+export function getMetricCurrentValue(
+  metric: string | null | undefined,
+  stats: AreaAutoFillStats | null | undefined,
+): string {
+  if (!stats || !(stats.rounds_played > 0)) return '';
+  const m = (metric ?? '').toLowerCase().trim();
+  if (!m) return '';
+
+  const v = (n: number | null | undefined): string => (n == null ? '' : String(n));
+
+  // Driving
+  if (m.includes('distance')) return v(stats.driving_distance);
+  if (m.includes('fairway') || m.includes('driving accuracy')) return v(stats.fairway_pct);
+  // Approach / irons
+  if (m.includes('proximity')) return v(stats.proximity_to_hole);
+  if (m.includes('gir') || m.includes('greens in regulation')) return v(stats.gir_pct);
+  // Short game
+  if (m.includes('scrambl')) return v(stats.scrambling_pct);
+  if (m.includes('up') && m.includes('down')) return v(stats.up_and_down_pct);
+  if (m.includes('sand')) return v(stats.sand_save_pct);
+  // Putting — specific buckets before the generic "putts per round"
+  if (m.includes('1-putt') || m.includes('one putt') || m.includes('one-putt')) {
+    return v(stats.one_putt_pct);
+  }
+  if (m.includes('3-putt') || m.includes('three putt') || m.includes('three-putt')) {
+    // The cache exposes the 3-putt RATE; "avoidance" is its inverse, so filling
+    // it with the rate would mislead — leave blank for the coach to set.
+    if (m.includes('avoid')) return '';
+    return v(stats.three_putt_pct);
+  }
+  // Generic putts-per-round ONLY — never a make-rate like "Pressure Putts Made %"
+  // (we don't cache that, so leave it blank rather than mislabel putts/round).
+  if (m.includes('putts per round') || (m.includes('putt') && m.includes('round'))) {
+    return v(stats.avg_putts);
+  }
+  // Scoring / course management
+  if (m.includes('par 3') || m.includes('par3')) return v(stats.par3_avg);
+  if (m.includes('par 4') || m.includes('par4')) return v(stats.par4_avg);
+  if (m.includes('par 5') || m.includes('par5')) return v(stats.par5_avg);
+  if (m.includes('best')) return v(stats.best_score);
+  if (m.includes('scoring') || m.includes('score')) return v(stats.avg_score);
+
+  return '';
+}
+
+/**
+ * Compute the auto-fill for a focus-area form when the area type (or player)
+ * changes: pick the area's first suggested metric, then derive its current
+ * value from that metric via {@link getMetricCurrentValue}. Deriving the value
+ * FROM the metric keeps the two consistent (the legacy port mislabeled driving
+ * as "Driving Distance" while filling the fairway %); broadening the source map
+ * also lets short-game / scoring metrics autofill, which the legacy four-case
+ * mapping never did.
  */
 export function getAreaAutoFill(
   areaType: string,
@@ -190,22 +263,7 @@ export function getAreaAutoFill(
 ): AreaAutoFill {
   const at = getAreaType(areaType);
   const suggestedMetric = at.suggestedMetrics[0] || '';
-
-  // Auto-populate current value from stats if available (rounds_played gate).
-  let autoCurrentValue = '';
-  if (stats && stats.rounds_played > 0) {
-    if (areaType === 'putting' && stats.avg_putts != null) {
-      autoCurrentValue = String(stats.avg_putts);
-    } else if (areaType === 'driving' && stats.fairway_pct != null) {
-      autoCurrentValue = String(stats.fairway_pct);
-    } else if (areaType === 'iron_play' && stats.gir_pct != null) {
-      autoCurrentValue = String(stats.gir_pct);
-    } else if (areaType === 'course_management' && stats.avg_score != null) {
-      autoCurrentValue = String(stats.avg_score);
-    }
-  }
-
-  return { suggestedMetric, autoCurrentValue };
+  return { suggestedMetric, autoCurrentValue: getMetricCurrentValue(suggestedMetric, stats) };
 }
 
 /* ---------------------------------------------------------------------------
