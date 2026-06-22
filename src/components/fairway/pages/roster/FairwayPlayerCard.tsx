@@ -9,6 +9,7 @@ import { Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
+import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import { FairwayYearBadge } from './FairwayYearBadge';
 import { FairwayPlayerStatusBadge } from './FairwayPlayerStatusBadge';
@@ -69,19 +70,22 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
             />
           </div>
 
-          {/* Info */}
+          {/* Info — identity routed through the shared PlayerIdentity (name +
+              year badge addon + hometown meta). The card keeps its signature
+              large tinted avatar above (showAvatar=false here), and its own
+              status/intent controls below, via the surrounding layout. The card
+              headline keeps its display-face emphasis via nameClassName. */}
           <div className="min-w-0 flex-1 pt-0.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate font-fw-display text-body-lg font-semibold tracking-[-0.01em] text-text-primary">
-                {name}
-              </h3>
-              <FairwayYearBadge year={player.graduation_year} />
-            </div>
-            {player.hometown && player.state ? (
-              <p className="mt-1 font-fw-sans text-caption text-text-tertiary">
-                {player.hometown}, {player.state}
-              </p>
-            ) : null}
+            <PlayerIdentity
+              name={name}
+              showAvatar={false}
+              size="md"
+              nameClassName="font-fw-display text-body-lg font-semibold tracking-[-0.01em]"
+              nameAddon={<FairwayYearBadge year={player.graduation_year} />}
+              meta={
+                player.hometown && player.state ? `${player.hometown}, ${player.state}` : undefined
+              }
+            />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <FairwayPlayerStatusBadge playerId={player.id} currentStatus={player.status} size="sm" />
               <FairwayIntentControl

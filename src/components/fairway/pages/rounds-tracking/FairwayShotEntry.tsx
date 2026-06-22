@@ -456,8 +456,12 @@ export function FairwayShotEntry({
         </InlineNotice>
       )}
 
-      {/* ── Sticky action bar (thumb zone) ──────────────────────────────────── */}
-      <div className="sticky bottom-0 z-10 -mx-4 mt-1 border-t border-border-subtle bg-canvas px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:-mx-6 sm:px-6">
+      {/* ── Sticky action bar (thumb zone) ──────────────────────────────────────
+          On mobile it spans the full content width (negative margins) and pins
+          to the bottom of the viewport — the natural thumb zone. On desktop the
+          two-pane layout makes a viewport-pinned bar feel detached, so it sits
+          inline within the entry pane (no negative margins, not sticky). */}
+      <div className="sticky bottom-0 z-10 -mx-4 mt-1 border-t border-border-subtle bg-canvas px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:rounded-fw-md lg:border lg:bg-surface lg:px-4 lg:pb-3">
         {/* Visibility of system status (Nielsen #1): name the missing requirement
             instead of leaving the primary action silently disabled. */}
         {nextShotBlocker && (

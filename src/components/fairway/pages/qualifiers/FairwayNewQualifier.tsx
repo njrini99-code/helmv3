@@ -39,6 +39,7 @@ import {
   TextArea,
   NumberField,
   Checkbox,
+  PlayerIdentity,
 } from '@/components/fairway';
 import { Users, Flag, MapPin } from 'lucide-react';
 import { createGolfQualifier } from '@/app/golf/actions/golf';
@@ -485,14 +486,15 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                     )}
                   >
                     <Checkbox checked={isSel} onCheckedChange={() => toggle(p.id)} />
-                    <span
-                      className={cn(
-                        'font-fw-sans text-body font-medium',
-                        isSel ? 'text-accent-700' : 'text-text-primary',
-                      )}
-                    >
-                      {p.first_name} {p.last_name}
-                    </span>
+                    {/* Shared identity (avatar falls back to initials — this
+                        roster has no avatar_url) so an entered player reads the
+                        same here as on the roster/messages/CoachHelm surfaces;
+                        the checkbox stays the selection affordance. */}
+                    <PlayerIdentity
+                      name={`${p.first_name} ${p.last_name}`.trim() || 'Player'}
+                      size="sm"
+                      nameClassName={isSel ? 'text-accent-700' : undefined}
+                    />
                   </label>
                 );
               })}

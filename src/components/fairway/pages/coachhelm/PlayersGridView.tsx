@@ -75,7 +75,7 @@ import {
   DataTable,
   type ColumnDef,
 } from '@/components/fairway/data-table';
-import { Avatar } from '@/components/fairway/controls/avatar';
+import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Badge } from '@/components/fairway/controls/badge';
@@ -624,21 +624,22 @@ export function PlayersGridView({
         header: 'Player',
         cell: ({ row }) => {
           const p = row.original.player;
+          // Same identity treatment as every other surface; the year · HCP meta
+          // is the column's page-specific detail.
+          const metaText =
+            `${p.graduation_year ? `'${String(p.graduation_year).slice(-2)}` : ''}` +
+            `${
+              p.handicap != null
+                ? `${p.graduation_year ? ' · ' : ''}${p.handicap < 0 ? '+' : ''}${Math.abs(p.handicap)} HCP`
+                : ''
+            }`;
           return (
-            <div className="flex items-center gap-3">
-              <Avatar src={p.avatar_url} name={playerName(p)} size="sm" />
-              <div className="min-w-0">
-                <p className="truncate font-fw-sans font-medium text-text-primary">
-                  {playerName(p)}
-                </p>
-                <p className="font-fw-sans text-eyebrow text-text-tertiary">
-                  {p.graduation_year ? `'${String(p.graduation_year).slice(-2)}` : ''}
-                  {p.handicap != null
-                    ? `${p.graduation_year ? ' · ' : ''}${p.handicap < 0 ? '+' : ''}${Math.abs(p.handicap)} HCP`
-                    : ''}
-                </p>
-              </div>
-            </div>
+            <PlayerIdentity
+              name={playerName(p)}
+              avatarUrl={p.avatar_url}
+              size="sm"
+              meta={metaText || undefined}
+            />
           );
         },
         meta: { noWrap: true },
@@ -1255,23 +1256,32 @@ function RosterHealthHeader({
             {needs.slice(0, 5).map(({ row, reason }) => (
               <li
                 key={row.player.id}
-                className="flex items-center gap-3 border-t border-border-subtle py-2.5 first:border-t-0"
+                className="border-t border-border-subtle py-2.5 first:border-t-0"
               >
-                <Avatar src={row.player.avatar_url} name={playerName(row.player)} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                    {playerName(row.player)}
-                  </p>
-                  <p className="font-fw-sans text-caption font-medium text-fw-warning">{reason}</p>
-                </div>
-                {row.stats?.avg_score != null ? (
-                  <span className="hidden font-fw-mono text-caption tabular-nums text-text-tertiary sm:inline">
-                    {row.stats.avg_score} avg
-                  </span>
-                ) : null}
-                <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>
-                  Add focus area
-                </Button>
+                {/* Shared identity; the warning reason is this surface's meta and
+                    the avg stat + "Add focus area" are its trailing affordances. */}
+                <PlayerIdentity
+                  name={playerName(row.player)}
+                  avatarUrl={row.player.avatar_url}
+                  size="sm"
+                  meta={
+                    <span className="font-fw-sans text-caption font-medium text-fw-warning">
+                      {reason}
+                    </span>
+                  }
+                  trailing={
+                    <div className="flex items-center gap-1.5">
+                      {row.stats?.avg_score != null ? (
+                        <span className="hidden font-fw-mono text-caption tabular-nums text-text-tertiary sm:inline">
+                          {row.stats.avg_score} avg
+                        </span>
+                      ) : null}
+                      <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>
+                        Add focus area
+                      </Button>
+                    </div>
+                  }
+                />
               </li>
             ))}
           </ul>

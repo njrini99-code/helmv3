@@ -423,8 +423,11 @@ export default function FairwayShotTracking({
         onNavigateToHole={onNavigateToHole ? handleNavigateToHole : undefined}
       />
 
-      {/* MAIN CONTENT — single focused column (hole viz lives in the hero) */}
-      <div className="mx-auto w-full min-w-0 max-w-2xl space-y-4 px-4 pb-6 pt-4 sm:px-6">
+      {/* MAIN CONTENT — full-width column that opens into a calm two-pane layout
+          on desktop (hole context left, live shot entry right) so the card no
+          longer floats mid-screen with big wasted side margins. The shot pills
+          stay full-bleed-sticky at the top of the content column. */}
+      <div className="mx-auto w-full min-w-0 max-w-5xl px-4 pb-6 pt-4 sm:px-6">
           <FairwayShotPills
             currentShot={currentShot}
             recordedShotCount={shotHistory.length}
@@ -432,24 +435,31 @@ export default function FairwayShotTracking({
             onSelectShot={handleSelectShot}
           />
 
-          <FairwayHoleHero
-            currentHole={currentHole}
-            isHoleComplete={isHoleComplete}
-            shotHistory={shotHistory}
-            shotHistoryLength={shotHistory.length}
-            puttCount={puttCount}
-            holeScore={holeScore}
-            currentShot={currentShot}
-            shotTypeLabel={shotTypeLabel}
-            currentLie={currentLie}
-            missDirection={missDirection}
-            distanceToHole={distanceToHole}
-            distanceUnit={distanceUnit}
-            progressPercent={progressPercent}
-            displayDistance={displayDistance}
-            displayUnit={displayUnit}
-          />
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start">
+            {/* Hole context — flyover + readouts. Sticks alongside the entry on
+                desktop so the live panel can scroll without losing context. */}
+            <div className="lg:sticky lg:top-[calc(var(--scorecard-height,105px)+5.5rem)]">
+              <FairwayHoleHero
+                currentHole={currentHole}
+                isHoleComplete={isHoleComplete}
+                shotHistory={shotHistory}
+                shotHistoryLength={shotHistory.length}
+                puttCount={puttCount}
+                holeScore={holeScore}
+                currentShot={currentShot}
+                shotTypeLabel={shotTypeLabel}
+                currentLie={currentLie}
+                missDirection={missDirection}
+                distanceToHole={distanceToHole}
+                distanceUnit={distanceUnit}
+                progressPercent={progressPercent}
+                displayDistance={displayDistance}
+                displayUnit={displayUnit}
+              />
+            </div>
 
+            {/* Live entry / completed review */}
+            <div className="min-w-0">
           {isHoleComplete ? (
             <FairwayCompletedHole
               shotHistory={shotHistory}
@@ -490,6 +500,8 @@ export default function FairwayShotTracking({
               onUndoLastShot={handleUndoLastShot}
             />
           )}
+            </div>
+          </div>
       </div>
 
       {/* Unsaved Input Warning Modal (Issue #18) */}

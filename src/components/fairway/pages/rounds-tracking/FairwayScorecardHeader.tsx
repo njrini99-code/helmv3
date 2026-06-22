@@ -8,14 +8,20 @@
  * VERBATIM from src/components/golf/ShotTrackingComprehensive.tsx — only the
  * JSX + Fairway tokens change.
  *
+ * REDESIGN (light): the old near-black `on-dark` cockpit band fought the light
+ * Fairway body and read as a clipped, cut-off strip. It is now a cohesive LIGHT
+ * scorecard chrome — a sticky warm-cream `bg-elevated` bar with a hairline
+ * bottom border, score-to-par tone using the Fairway success/warning/danger
+ * tokens, and the current hole marked by an accent-tinted column (accent text +
+ * an accent top rule), NOT a dark fill. Calm, legible, full-bleed (not a clipped
+ * dark band), readable on the cream canvas.
+ *
  * RISKY BEHAVIOR PRESERVED: this component measures itself and publishes the
  * `--scorecard-height` CSS var (via getBoundingClientRect + resize listener),
  * EXACTLY like the legacy. The ShotPills strip + the desktop sidebar's sticky
  * offsets read this var; if it is not published, those stick to the wrong top.
- *
- * On-dark "cockpit" band (bg-nav-bg + .on-dark) carries the scorecard strip and
- * the desktop exit header. Autosave status renders as Fairway dots / StatusPill.
- * Exit = Button variant="danger".
+ * The `fw-hole-N` ids, scrollHoleIntoView, navigation gating, autosave-status
+ * logic and is9Hole/totals math are all untouched.
  * ========================================================================== */
 
 import { memo, useRef, useCallback, useEffect } from 'react';
@@ -58,6 +64,55 @@ function SavingDots() {
   );
 }
 
+/** Autosave status chip — shared by the mobile row + desktop band. Light tokens. */
+function AutoSaveChip({
+  status,
+  compact = false,
+}: {
+  status: 'idle' | 'saving' | 'saved' | 'error';
+  compact?: boolean;
+}) {
+  if (status === 'idle') return null;
+  return (
+    <span
+      role="status"
+      aria-live="polite"
+      aria-label={
+        status === 'saving' ? 'Saving round' : status === 'saved' ? 'Round saved' : 'Save failed'
+      }
+      className={cn(
+        'flex items-center gap-1.5 rounded-fw-sm px-2 py-1 font-fw-sans text-caption font-medium transition-colors',
+        status === 'saving' && 'bg-fw-warning-bg text-fw-warning',
+        status === 'saved' && 'bg-accent-50 text-accent-700',
+        status === 'error' && 'bg-fw-danger-bg text-fw-danger',
+      )}
+    >
+      {status === 'saving' && (
+        <>
+          <SavingDots />
+          {!compact && 'Saving…'}
+        </>
+      )}
+      {status === 'saved' && (
+        <>
+          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          {!compact && 'Saved'}
+        </>
+      )}
+      {status === 'error' && (
+        <>
+          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          {!compact && 'Save failed'}
+        </>
+      )}
+    </span>
+  );
+}
+
 interface FairwayDesktopExitHeaderProps {
   currentHoleNumber: number;
   totalHoles: number;
@@ -68,8 +123,8 @@ interface FairwayDesktopExitHeaderProps {
 }
 
 /**
- * The desktop-only "Round in Progress" exit band (legacy lines ~611-665).
- * On-dark Fairway band; exit = Button variant="danger".
+ * The desktop-only "Round in progress" exit band. LIGHT Fairway chrome — a warm
+ * surface-tint strip with a hairline bottom border (was an on-dark band).
  */
 export function FairwayDesktopExitHeader({
   currentHoleNumber,
@@ -80,50 +135,20 @@ export function FairwayDesktopExitHeader({
   onExit,
 }: FairwayDesktopExitHeaderProps) {
   return (
-    <div className="on-dark hidden items-center justify-between border-b border-white/10 bg-nav-bg px-6 py-3 text-nav-text lg:flex">
+    <div className="hidden items-center justify-between border-b border-border-subtle bg-surface-tint px-6 py-3 lg:flex">
       <div className="flex items-center gap-4">
-        <span className="font-fw-sans text-sm font-medium text-nav-text-dim">Round in Progress</span>
-        <span className="font-fw-sans text-xs text-white/45">
-          Hole {currentHoleNumber} of {totalHoles} • {shotCount + 1} shot{shotCount !== 0 ? 's' : ''}
+        <span className="inline-flex items-center gap-2 font-fw-sans text-body-sm font-semibold text-text-primary">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent-500" aria-hidden="true" />
+          Round in progress
         </span>
-        {showAutoSaveStatus && autoSaveStatus !== 'idle' && (
-          <span
-            role="status"
-            aria-live="polite"
-            className={cn(
-              'flex items-center gap-2 rounded-fw-sm px-2 py-1 font-fw-sans text-xs font-medium transition-colors',
-              autoSaveStatus === 'saving' && 'bg-fw-warning/15 text-fw-warning',
-              autoSaveStatus === 'saved' && 'bg-accent-500/15 text-accent-300',
-              autoSaveStatus === 'error' && 'bg-fw-danger/15 text-fw-danger',
-            )}
-          >
-            {autoSaveStatus === 'saving' && (
-              <>
-                <SavingDots />
-                Saving...
-              </>
-            )}
-            {autoSaveStatus === 'saved' && (
-              <>
-                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Saved
-              </>
-            )}
-            {autoSaveStatus === 'error' && (
-              <>
-                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                Save failed
-              </>
-            )}
-          </span>
-        )}
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Hole {currentHoleNumber} of {totalHoles} · {shotCount + 1} shot{shotCount !== 0 ? 's' : ''}
+        </span>
+        {showAutoSaveStatus && <AutoSaveChip status={autoSaveStatus} />}
       </div>
       <Button
         variant="danger"
+        size="sm"
         onClick={onExit}
         leftIcon={
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -131,7 +156,7 @@ export function FairwayDesktopExitHeader({
           </svg>
         }
       >
-        Save &amp; Exit
+        Save &amp; exit
       </Button>
     </div>
   );
@@ -176,13 +201,12 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
     const scoreToPar = hasScore ? (hole.score || 0) - hole.par : 0;
     const canNavigate = onNavigateToHole && (hasScore || holeIndex < currentHoleIndex);
 
-    // Score-to-par color ramp → Fairway on-dark tones. Same thresholds as legacy.
+    // Score-to-par color ramp → Fairway LIGHT tones. Same thresholds as legacy.
     const scoreColor = (() => {
-      if (isCurrent) return 'text-nav-text';
-      if (!hasScore) return 'text-white/35';
-      if (scoreToPar <= -2) return 'text-accent-300';
-      if (scoreToPar === -1) return 'text-accent-400';
-      if (scoreToPar === 0) return 'text-nav-text';
+      if (isCurrent) return 'text-accent-700';
+      if (!hasScore) return 'text-text-tertiary/50';
+      if (scoreToPar <= -1) return 'text-fw-success';
+      if (scoreToPar === 0) return 'text-text-primary';
       if (scoreToPar === 1) return 'text-fw-warning';
       return 'text-fw-danger';
     })();
@@ -196,52 +220,75 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         onClick={() => canNavigate && onNavigateToHole?.(holeIndex)}
         disabled={!canNavigate}
         className={cn(
-          'min-w-[75px] rounded-none border-r border-white/10 px-2 py-3 text-center transition-colors [&>span]:block [&>span]:w-full',
-          'outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-inset',
+          'relative min-w-[72px] rounded-none border-r border-border-subtle px-2 py-2.5 text-center transition-colors [&>span]:block [&>span]:w-full',
+          'outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
           isCurrent
-            ? 'bg-accent-600'
+            ? 'bg-accent-50'
             : hasScore
               ? canNavigate
-                ? 'cursor-pointer bg-nav-surface/40 hover:bg-nav-surface/70'
-                : 'cursor-default bg-nav-surface/40'
+                ? 'cursor-pointer bg-surface-sunken/60 hover:bg-surface-tint'
+                : 'cursor-default bg-surface-sunken/60'
               : canNavigate
-                ? 'cursor-pointer hover:bg-nav-surface/70'
+                ? 'cursor-pointer hover:bg-surface-tint'
                 : 'cursor-default',
         )}
       >
-        <div className={cn('font-fw-sans text-xs font-medium', isCurrent ? 'text-nav-text' : 'text-nav-text-dim')}>
-          Hole {hole.number}
+        {/* accent top rule marks the current hole (not a dark fill) */}
+        {isCurrent && <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-accent-500" />}
+        <div className={cn('font-fw-sans text-microlabel font-semibold', isCurrent ? 'text-accent-700' : 'text-text-secondary')}>
+          {hole.number}
         </div>
-        <div className={cn('font-fw-sans text-xs', isCurrent ? 'text-white/80' : 'text-white/45')}>Par {hole.par}</div>
-        <div className={cn('font-fw-sans text-xs', isCurrent ? 'text-white/70' : 'text-white/35')}>{hole.yardage} yds</div>
-        <div className={cn('mt-1 font-fw-display text-body-lg font-medium tabular-nums', scoreColor)}>
-          {hasScore ? hole.score : '-'}
+        <div className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
+        <div className="font-fw-sans text-microbadge text-text-tertiary/80">{hole.yardage} yds</div>
+        <div className={cn('mt-1 font-fw-display text-body-lg font-semibold tabular-nums', scoreColor)}>
+          {hasScore ? hole.score : '–'}
         </div>
         {hasScore && !isCurrent && (
-          <div className="mt-0.5 text-eyebrow text-accent-400">
+          <div className="mt-0.5 text-eyebrow text-fw-success">
             <svg className="mx-auto h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
           </div>
         )}
         {canNavigate && !isCurrent && !hasScore && (
-          <div className="mt-0.5 font-fw-sans text-xs text-white/45">✎ Edit</div>
+          <div className="mt-0.5 font-fw-sans text-microbadge text-text-tertiary">Edit</div>
         )}
       </Button>
     );
   };
 
+  /** A nine / total summary column (Out / In / Total). Light tinted band. */
+  const renderTotalColumn = (
+    label: string,
+    par: number,
+    yards: number,
+    score: number,
+    hasScores: boolean,
+    emphasis: boolean,
+  ) => (
+    <div
+      className={cn(
+        'min-w-[78px] border-r border-border-strong px-2 py-2.5 text-center',
+        emphasis ? 'bg-surface-tint' : 'bg-surface-sunken',
+      )}
+    >
+      <div className="font-fw-sans text-microlabel font-semibold uppercase tracking-wide text-text-secondary">{label}</div>
+      <div className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {par}</div>
+      <div className="font-fw-sans text-microbadge text-text-tertiary/80">{yards}</div>
+      <div className="mt-1 font-fw-display text-body-lg font-semibold tabular-nums text-text-primary">{hasScores ? score : '–'}</div>
+    </div>
+  );
+
   return (
-    <div ref={headerRef} className="on-dark sticky top-0 z-50 bg-nav-bg text-nav-text">
+    <div ref={headerRef} className="sticky top-0 z-50 bg-elevated text-text-primary shadow-flat">
       {/* Mobile control row */}
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2 lg:hidden">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 border-b border-border-subtle px-3 py-2 lg:hidden">
+        <div className="flex items-center gap-1.5">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => scrollHoleIntoView(Math.max(1, currentHoleNumber - 1))}
             disabled={currentHoleIndex === 0}
-            className="text-nav-text hover:bg-nav-surface hover:text-nav-text"
           >
             ← Prev
           </Button>
@@ -252,33 +299,9 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {autoSaveStatus !== 'idle' && (
-            <span
-              role="status"
-              aria-live="polite"
-              aria-label={
-                autoSaveStatus === 'saving' ? 'Saving round'
-                  : autoSaveStatus === 'saved' ? 'Round saved'
-                    : 'Save failed'
-              }
-              className={cn(
-                'flex items-center gap-1 rounded-fw-sm px-1.5 py-0.5 font-fw-sans text-xs font-medium transition-colors',
-                autoSaveStatus === 'saving' && 'bg-fw-warning/15 text-fw-warning',
-                autoSaveStatus === 'saved' && 'bg-accent-500/15 text-accent-300',
-                autoSaveStatus === 'error' && 'bg-fw-danger/15 text-fw-danger',
-              )}
-            >
-              {autoSaveStatus === 'saving' && <SavingDots />}
-              {autoSaveStatus === 'saved' && (
-                <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-              {autoSaveStatus === 'error' && '!'}
-            </span>
-          )}
-          <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-nav-accent">
-            Hole {currentHoleNumber} of {holes.length}
+          <AutoSaveChip status={autoSaveStatus} compact />
+          <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-accent-700">
+            Hole {currentHoleNumber} / {holes.length}
           </span>
         </div>
         <Button
@@ -286,7 +309,6 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           size="sm"
           onClick={() => scrollHoleIntoView(Math.min(holes.length, currentHoleNumber + 1))}
           disabled={currentHoleIndex === holes.length - 1}
-          className="text-nav-text hover:bg-nav-surface hover:text-nav-text"
         >
           Next →
         </Button>
@@ -302,29 +324,33 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
       >
         <div className="inline-flex min-w-full">
           {front9.map((hole, index) => renderHoleButton(hole, index))}
-          <div className="min-w-[75px] border-r-2 border-white/20 bg-nav-surface/60 px-2 py-3 text-center">
-            <div className="font-fw-sans text-xs font-medium text-fw-warning">{is9Hole ? 'TOTAL' : 'OUT'}</div>
-            <div className="font-fw-sans text-xs text-white/45">Par {front9.reduce((sum, hole) => sum + hole.par, 0)}</div>
-            <div className="font-fw-sans text-xs text-white/35">{front9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
-            <div className="mt-1 font-fw-display text-body-lg font-medium tabular-nums text-fw-warning">{front9HasScores ? front9Score : '-'}</div>
-          </div>
+          {renderTotalColumn(
+            is9Hole ? 'Total' : 'Out',
+            front9.reduce((sum, hole) => sum + hole.par, 0),
+            front9.reduce((sum, hole) => sum + hole.yardage, 0),
+            front9Score,
+            front9HasScores,
+            is9Hole,
+          )}
           {!is9Hole && back9.map((hole, index) => renderHoleButton(hole, index + 9))}
-          {!is9Hole && (
-            <div className="min-w-[75px] border-r-2 border-white/20 bg-nav-surface/60 px-2 py-3 text-center">
-              <div className="font-fw-sans text-xs font-medium text-fw-warning">IN</div>
-              <div className="font-fw-sans text-xs text-white/45">Par {back9.reduce((sum, hole) => sum + hole.par, 0)}</div>
-              <div className="font-fw-sans text-xs text-white/35">{back9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
-              <div className="mt-1 font-fw-display text-body-lg font-medium tabular-nums text-fw-warning">{back9HasScores ? back9Score : '-'}</div>
-            </div>
-          )}
-          {!is9Hole && (
-            <div className="min-w-[85px] bg-nav-surface/80 px-2 py-3 text-center">
-              <div className="font-fw-sans text-xs font-medium text-nav-text">TOTAL</div>
-              <div className="font-fw-sans text-xs text-white/45">Par {totalPar}</div>
-              <div className="font-fw-sans text-xs text-white/35">{holes.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
-              <div className="mt-1 font-fw-display text-body-lg font-medium tabular-nums text-nav-text">{(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}</div>
-            </div>
-          )}
+          {!is9Hole &&
+            renderTotalColumn(
+              'In',
+              back9.reduce((sum, hole) => sum + hole.par, 0),
+              back9.reduce((sum, hole) => sum + hole.yardage, 0),
+              back9Score,
+              back9HasScores,
+              false,
+            )}
+          {!is9Hole &&
+            renderTotalColumn(
+              'Total',
+              totalPar,
+              holes.reduce((sum, hole) => sum + hole.yardage, 0),
+              front9Score + back9Score,
+              front9HasScores || back9HasScores,
+              true,
+            )}
         </div>
       </div>
     </div>
