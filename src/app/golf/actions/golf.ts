@@ -2965,6 +2965,12 @@ export async function getQualifierRoundCourses(
   try {
     const supabase = await createClient();
 
+    // Auth gate (project hard rule: every exported action checks auth before a
+    // DB call). RLS would silently return [] for an anonymous caller, which is
+    // indistinguishable from "no courses assigned" — fail fast instead.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
     const { data, error } = await fromUntyped(supabase, 'golf_qualifier_round_courses')
       .select('round_number, course_id, course_name, tee_id')
       .eq('qualifier_id', qualifierId)
