@@ -132,13 +132,23 @@ function dedupeAndRank(rows: RawCausalRow[]): CausalRelationshipRow[] {
 async function fetchPlayerRowsDeduped(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
+  includeInactive = false,
 ): Promise<CausalRelationshipRow[]> {
-  const { data, error } = await supabase
-    // Table is not in the generated types yet.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .from('golf_causal_relationships' as any)
+  // Table is not in the generated types yet.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase.from('golf_causal_relationships' as any) as any)
     .select(SELECT_COLUMNS)
-    .eq('player_id', playerId)
+    .eq('player_id', playerId);
+
+  // Default to ACTIVE rows only. A relationship the engine stops detecting is
+  // soft-superseded (is_active=false) by CausalEngine.saveRelationships; without
+  // this default the panel showed those stale rows forever (the "old stuff"
+  // bug). Analytics callers can opt back in via includeInactive.
+  if (!includeInactive) {
+    query = query.eq('is_active', true);
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .limit(FETCH_LIMIT);
 
@@ -162,6 +172,7 @@ async function fetchPlayerRowsDeduped(
  */
 export async function getPlayerCausalRelationships(
   playerId: string,
+  opts?: { includeInactive?: boolean },
 ): Promise<CausalRelationshipRow[]> {
   if (!playerId) return [];
 
@@ -175,7 +186,7 @@ export async function getPlayerCausalRelationships(
   const access = await verifyPlayerAccess(playerId, user.id, supabase);
   if (!access.allowed) return [];
 
-  return fetchPlayerRowsDeduped(supabase, playerId);
+  return fetchPlayerRowsDeduped(supabase, playerId, opts?.includeInactive ?? false);
 }
 
 /**
@@ -187,6 +198,7 @@ export async function getPlayerCausalRelationships(
  */
 export async function getTeamCausalRelationships(
   teamId: string,
+  opts?: { includeInactive?: boolean },
 ): Promise<Record<string, CausalRelationshipRow[]>> {
   if (!teamId) return {};
 
@@ -225,7 +237,7 @@ export async function getTeamCausalRelationships(
   const byPlayer: Record<string, CausalRelationshipRow[]> = {};
   await Promise.all(
     playerIds.map(async (pid) => {
-      const rows = await fetchPlayerRowsDeduped(supabase, pid);
+      const rows = await fetchPlayerRowsDeduped(supabase, pid, opts?.includeInactive ?? false);
       // Only include players who actually have relationships (honest-empty:
       // players with zero rows — e.g. Tyler Passmore — are absent from the map,
       // and the panel renders its calm empty state via `?? []`).
