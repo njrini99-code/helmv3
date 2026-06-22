@@ -226,6 +226,7 @@ export function FairwayHoleConfig({
                   {[3, 4, 5].map((par) => {
                     const selected = hole.par === par;
                     return (
+                      // eslint-disable-next-line helm/no-raw-button -- custom par-selector chip (aria-pressed segmented control), not a design-system Button
                       <button
                         key={par}
                         type="button"
