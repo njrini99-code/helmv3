@@ -49,14 +49,16 @@ export default async function DevelopmentPlansPage({
 
   const activePlayerIds = (teamMembers || []).map(tm => tm.player_id);
 
-  // Fetch player profiles for active team members
-  const { data: players } = activePlayerIds.length > 0
+  // Fetch player profiles for active team members. Capture `error` so a failed
+  // query surfaces an honest error state instead of a fake-empty roster (P099 —
+  // a cheerful "no players" empty must never mask a load failure).
+  const { data: players, error: playersError } = activePlayerIds.length > 0
     ? await supabase
         .from('golf_players')
         .select('id, first_name, last_name, avatar_url, graduation_year, handicap, hometown, state')
         .in('id', activePlayerIds)
         .order('last_name')
-    : { data: [] };
+    : { data: [], error: null };
 
   const playerIds = (players || []).map(p => p.id);
 
@@ -65,7 +67,7 @@ export default async function DevelopmentPlansPage({
   // FocusAreaCard SourceChip), and progress_notes (drives the per-area
   // Sparkline). outcome_status is NOT a column on this table — it lives on the
   // source insight (golf_coach_insights) and is joined in below by from_insight_id.
-  const { data: focusAreas } = playerIds.length > 0
+  const { data: focusAreas, error: focusAreasError } = playerIds.length > 0
     ? await supabase
         .from('golf_player_focus_areas')
         .select(`
@@ -90,7 +92,15 @@ export default async function DevelopmentPlansPage({
         `)
         .in('player_id', playerIds)
         .order('created_at', { ascending: false })
-    : { data: [] };
+    : { data: [], error: null };
+
+  // P099 — derive a single honest load-error message from the critical queries
+  // (the roster + its focus areas). If either failed, the redesign grid shows an
+  // InlineNotice danger state instead of a fake-empty "No players" roster.
+  const loadError =
+    playersError || focusAreasError
+      ? 'We couldn’t load your development data. Please try again.'
+      : null;
 
   // Fetch round stats per player for prepopulation
   const { data: allRounds } = playerIds.length > 0
@@ -298,6 +308,11 @@ export default async function DevelopmentPlansPage({
       }
     }
 
+    // Shell Signals badge. getAlertCounts buckets BOTH 'urgent' AND 'high'
+    // priority into `counts.critical` (see alerts.ts) — so this value is the
+    // "urgent or high open signals" count the sub-nav badge's aria-label
+    // promises. The bucket is named `critical` for historic reasons; the number
+    // and its accessible description denote the same set (urgent + high).
     const countsRes = await getAlertCounts(coach.id);
     const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
 
@@ -344,6 +359,7 @@ export default async function DevelopmentPlansPage({
           playerNameById={playerNameById}
           causalByPlayer={causalByPlayer}
           initialSelectedPlayerId={initialSelectedPlayerId}
+          loadError={loadError}
         />
       </div>
     );

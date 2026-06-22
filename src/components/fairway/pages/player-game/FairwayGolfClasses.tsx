@@ -72,6 +72,12 @@ export interface FairwayPlayerClass {
 export interface FairwayGolfClassesProps {
   classes: FairwayPlayerClass[];
   loading: boolean;
+  /**
+   * True when the signed-in user is NOT a player (Classes is a player-only
+   * feature — a coach landing here gets an honest "wrong feature" state rather
+   * than an empty schedule with CTAs that silently no-op).
+   */
+  isWrongRole?: boolean;
   /** True when the player has no team yet (join-a-team state). */
   hasTeam: boolean;
   /** Day → classes map, already grouped + time-sorted by the legacy page. */
@@ -105,6 +111,7 @@ const DAY_NAMES: Record<string, string> = {
 export function FairwayGolfClasses({
   classes,
   loading,
+  isWrongRole = false,
   hasTeam,
   classesByDay,
   totalCredits,
@@ -123,6 +130,27 @@ export function FairwayGolfClasses({
   const buildingCount = new Set(
     classes.map((c) => c.building).filter((b): b is string => Boolean(b)),
   ).size;
+
+  // ── Wrong-role gate — Classes is player-only. A coach (no playerId) would
+  // otherwise see an empty schedule with Add/Import CTAs that silently no-op. ──
+  if (isWrongRole) {
+    return (
+      <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6">
+        <Surface elevation="border" padding="lg">
+          <EmptyState
+            icon={BookOpen}
+            title="Classes are a player feature"
+            description="Class schedules belong to individual players so coaches can plan practices around their academics. Head back to your dashboard to manage your team."
+            action={
+              <Button asChild variant="primary">
+                <a href="/golf/dashboard">Back to dashboard</a>
+              </Button>
+            }
+          />
+        </Surface>
+      </div>
+    );
+  }
 
   // ── No-team gate — honest, with the join CTA (mirrors legacy behavior) ──────
   if (!hasTeam) {

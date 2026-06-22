@@ -92,6 +92,10 @@ const TABS: readonly TabDef[] = [
     matchPrefixes: [
       '/golf/dashboard/development',
       '/golf/dashboard/coachhelm/genome',
+      // The coach player-detail surfaces (AI Insight + its /game fingerprint leaf)
+      // live under /players/[id]; they are the Players-tab leaves, so they must
+      // light the Players tab to read as part of the CoachHelm cluster (P410).
+      '/golf/dashboard/players',
       '/golf/dashboard/my-development',
     ],
   },
@@ -197,6 +201,14 @@ export interface CoachHelmSubNavProps {
   /**
    * Unread urgent/high open-signal count for the Signals tab badge. `null` /
    * `0` / undefined → no badge (honest: never a fake "0"). Coach only.
+   *
+   * P414 — ONE SOURCE contract: this is the SAME number as the sidebar
+   * "CoachHelm AI" cluster badge (FairwayDashboardShell badges.coachhelm). Both
+   * derive from getAlertCounts().counts.critical (open urgent+high insights), so
+   * the two never contradict when both are visible on a CoachHelm screen. The
+   * only intentional divergence: the insights page passes `null` here to defer
+   * to its on-page "Urgent + high" tile (the sidebar badge stays as the rail
+   * cue). Callers MUST keep seeding this from getAlertCounts().counts.critical.
    */
   signalCount?: number | null;
   /** Accessible label for the nav landmark. Default "CoachHelm sections". */
@@ -272,12 +284,18 @@ export function CoachHelmSubNav({
       data-role={role}
       className={cn('w-full border-b border-border-subtle', className)}
     >
-      <ul role="tablist" className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* A real navigation list of route links — NOT a tablist. Each item is a
+          Next <Link> that navigates to a route, with aria-current="page" on the
+          active one; a role="tablist" of non-tab links is an invalid ARIA
+          pattern (WCAG 2.2 4.1.2). The <nav aria-label> landmark supplies the
+          accessible grouping; roving tabindex + arrow keys remain as a keyboard
+          enhancement over the link list. */}
+      <ul className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((t, i) => {
           const isActive = t.tab === resolved;
           const isSignals = t.tab === 'signals';
           return (
-            <li key={t.tab} role="presentation" className="relative">
+            <li key={t.tab} className="relative">
               <Link
                 href={t.href}
                 ref={(node) => {

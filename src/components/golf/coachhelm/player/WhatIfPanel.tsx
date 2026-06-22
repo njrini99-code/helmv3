@@ -100,7 +100,7 @@ export function WhatIfPanel({
 
         {/* Current prediction */}
         <m.div
-          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/40 border border-white/20"
+          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-sunken border border-border-subtle"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}
@@ -151,7 +151,7 @@ export function WhatIfPanel({
             return (
               <m.div
                 key={item.metric}
-                className="p-3 rounded-xl bg-white/40 border border-white/20"
+                className="p-3 rounded-xl bg-surface-sunken border border-border-subtle"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 + i * 0.08 })}

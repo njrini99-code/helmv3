@@ -174,6 +174,8 @@ interface ClientOpts {
   attributedIds?: string[];
   /** Insert error for the attribution row. */
   insertError?: { message: string };
+  /** Insert error for the effectiveness-ledger outcome row (P1-12). */
+  outcomeInsertError?: { message: string };
 }
 
 function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
@@ -209,15 +211,28 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
       return Promise.resolve({ error: opts.weightUpsertError ?? null });
     }),
   };
+  // P1-12: the route mirrors every attributed outcome onto the effectiveness
+  // event ledger (golf_insight_outcome) via a failure-silent fire-and-forget
+  // write. The table exists in prod, so model a succeeding insert here — without
+  // it the ledger writer would catch a "missing table" throw and log a spurious
+  // 2nd error, polluting the coach-weight error-count assertions below.
+  const outcomeCalls: { inserts: unknown[] } = { inserts: [] };
+  const outcomeBuilder = {
+    insert: vi.fn((row: unknown) => {
+      outcomeCalls.inserts.push(row);
+      return Promise.resolve({ error: opts.outcomeInsertError ?? null });
+    }),
+  };
   const client = {
     from: vi.fn((table: string) => {
       if (table === 'golf_coach_insights') return builder;
       if (table === 'golf_insight_outcome_attribution') return attributionBuilder;
       if (table === 'golf_coachhelm_coach_weights') return weightBuilder;
+      if (table === 'golf_insight_outcome') return outcomeBuilder;
       throw new Error(`Unexpected table: ${table}`);
     }),
   } as unknown as ReturnType<typeof createAdminClient>;
-  return { client, calls, weightCalls, attributionBuilder };
+  return { client, calls, weightCalls, attributionBuilder, outcomeCalls };
 }
 
 function authedRequest(): NextRequest {
@@ -436,9 +451,14 @@ describe('causality-attribute cron P3: null-lift does not upsert coach weights',
         target_metric_id: 'sg_total',
         baseline_value: 0,
         post_value: 1,
+        // P0-01: the route reads raw_delta (DB delta) + improvement_lift (DB
+        // lift, direction-corrected). Mirror the real AttributionRow shape;
+        // `delta`/`lift` aliases kept for backwards compat.
+        raw_delta: 1,
         delta: 1,
         n_rounds_before: 3,
         n_rounds_after: 3,
+        improvement_lift: lift,
         lift,
       },
     };
@@ -487,9 +507,11 @@ describe('causality-attribute cron P3: coach-weight upsert error is captured', (
         target_metric_id: 'sg_total',
         baseline_value: 0,
         post_value: 1,
+        raw_delta: 1,
         delta: 1,
         n_rounds_before: 3,
         n_rounds_after: 3,
+        improvement_lift: 0.5,
         lift: 0.5,
       },
     });

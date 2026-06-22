@@ -16,6 +16,7 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeAttribution, nextWeight } from '@/lib/coachhelm/v3/causality/attribute';
 import { lookupMetricSource } from '@/lib/coachhelm/v3/causality/metric-sources';
+import { recordInsightOutcome } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import {
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
@@ -27,6 +28,13 @@ export const dynamic = 'force-dynamic';
 
 const LIMIT = 50;
 const MIN_AGE_DAYS = 21;
+/**
+ * Post-surface measurement window the attribution computes its `post_value`
+ * over. Mirrors `POST_WINDOW_DAYS` in `causality/attribute.ts` (private there);
+ * recorded onto the effectiveness-ledger outcome row as `window_days` so the
+ * trust rollup and the attribution share the same measured window.
+ */
+const OUTCOME_WINDOW_DAYS = 21;
 /**
  * Page size for the paginated candidate fetch. The eligible-candidate set is
  * dominated by rows that never produce an attribution row (intentional-null
@@ -237,10 +245,13 @@ async function handle(): Promise<NextResponse> {
           target_metric_id: row.target_metric_id,
           baseline_value: row.baseline_value,
           post_value: row.post_value,
-          delta: row.delta,
+          // P0-01: `delta` stores the direction-AGNOSTIC raw change; `lift`
+          // stores the direction-CORRECTED improvement signal. Only `lift`
+          // (improvement_lift) is ever fed to the weight update below.
+          delta: row.raw_delta,
           n_rounds_before: row.n_rounds_before,
           n_rounds_after: row.n_rounds_after,
-          lift: row.lift,
+          lift: row.improvement_lift,
         });
       if (insErr) {
         // Postgres 23503 = foreign_key_violation. As of migration
@@ -267,17 +278,38 @@ async function handle(): Promise<NextResponse> {
         summary.errors += 1;
         continue;
       }
+      // P1-12: mirror this computed attribution onto the effectiveness EVENT
+      // LEDGER so analytics + learning read ONE source. `improvement` carries
+      // the direction-CORRECTED lift (positive == it worked) — the SAME signal
+      // that drives the weight EMA below, so the trust rollup's "worked" count
+      // and the learning loop agree by construction. Failure-silent: the writer
+      // swallows + logs its own errors and never throws into the cron loop.
+      void recordInsightOutcome({
+        insight_id: row.insight_id,
+        player_id: c.player_id,
+        metric: row.target_metric_id,
+        baseline_value: row.baseline_value,
+        outcome_value: row.post_value,
+        improvement: row.improvement_lift ?? undefined,
+        window_days: OUTCOME_WINDOW_DAYS,
+        related_round_id: null,
+      });
+
       // Update coach weight EMA for (coach, insight_type, intent='general').
-      // Skip entirely when lift is null: nextWeight no-ops on null (returns
-      // prev unchanged), so the upsert would only re-write the unchanged base
-      // {weight:1.0, sample_n:0} row — repopulating the freshly-wiped weights
-      // table with zero-evidence baseline rows that LOOK like learned state,
-      // and touching updated_at on real rows without any weight movement.
-      if (c.coach_id && row.lift !== null) {
+      // P0-01: learning is driven by `improvement_lift` — the direction-CORRECTED
+      // signal — never the raw delta. A drop in a lower-is-better metric is a
+      // positive improvement_lift and so correctly RAISES the weight.
+      // Skip entirely when improvement_lift is null: nextWeight no-ops on null
+      // (returns prev unchanged), so the upsert would only re-write the
+      // unchanged base {weight:1.0, sample_n:0} row — repopulating the
+      // freshly-wiped weights table with zero-evidence baseline rows that LOOK
+      // like learned state, and touching updated_at on real rows without any
+      // weight movement.
+      if (c.coach_id && row.improvement_lift !== null) {
         const weightErr = await updateCoachWeight(sb, {
           coach_id: c.coach_id,
           insight_type: c.insight_type,
-          lift: row.lift,
+          lift: row.improvement_lift,
         });
         if (weightErr) {
           await logServerError(

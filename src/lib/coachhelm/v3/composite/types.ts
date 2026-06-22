@@ -13,6 +13,15 @@
 
 import type { InsightCategory, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
+// P0-05: the structured-diagnosis types are defined alongside InsightEvidence
+// (its canonical home) to avoid an import cycle, and re-exported here so v3
+// composite + generator code keeps a single import surface for them.
+export type {
+  CausalityLevel,
+  DiagnosisDriver,
+  Diagnosis,
+} from '@/lib/coachhelm/v2/insights/types';
+
 /**
  * Tier-1 insight as the composite layer sees it. Loaded from
  * golf_coach_insights and projected for rule consumption.
@@ -94,7 +103,10 @@ export interface ShortGameShot {
   round_id: string;
   hole_number: number | null;
   lie_before: string;
-  distance_to_hole_before: number; // yards
+  distance_to_hole_before: number; // yards (see distance_unit_before)
+  /** Unit of distance_to_hole_before ('feet'|'yards'); the loader normalizes to
+   *  yards before the "within 40 yd" gate (CANON: UNITS). */
+  distance_unit_before?: string | null;
   distance_to_hole_after: number;
   /** Unit of distance_to_hole_after ('feet'|'yards'); the short-side-scrambling
    *  composite converts yards→feet before the proximity gate (CANON: UNITS). */

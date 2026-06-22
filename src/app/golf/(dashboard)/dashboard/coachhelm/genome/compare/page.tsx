@@ -20,6 +20,7 @@ import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Reveal } from '@/components/ui/reveal';
 import type { Metadata } from 'next';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { GenomeCompareView, type CompareSeries } from '@/components/fairway';
 
@@ -42,10 +43,19 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
 
   const sb = await createClient();
 
-  // Player roster picker source — all active players the coach can see.
+  // Scope the roster picker to the coach's ACTIVE team (cookie-resolved),
+  // matching `/players/[playerId]` and the genome detail page. RLS prevents
+  // cross-org IDOR, but without the team filter a multi-team coach would see
+  // (and could compare) players across ALL their teams regardless of the
+  // active-team toggle that Insight/Game honor.
+  const teamId = await resolveCoachTeamIdWithCookie(sb, session.coach.organization_id, session.coach.id);
+  if (!teamId) redirect('/golf/dashboard/roster');
+
+  // Player roster picker source — active players on the coach's ACTIVE team.
   const { data: rosterRows } = await sb
     .from('golf_team_members')
     .select('player_id, player:golf_players(id, first_name, last_name)')
+    .eq('team_id', teamId)
     .eq('status', 'active');
   const roster = (rosterRows ?? [])
     .filter((r) => r.player && typeof r.player === 'object' && 'first_name' in r.player)

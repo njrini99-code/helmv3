@@ -30,7 +30,12 @@ import {
   lookupMetricSource,
   type MetricSourceDef,
 } from '@/lib/coachhelm/v3/causality/metric-sources';
-import { METRIC_IDS } from '@/lib/coachhelm/v3/metrics/registry';
+import {
+  METRIC_IDS,
+  getMetricDirection,
+  improvementSign,
+} from '@/lib/coachhelm/v3/metrics/registry';
+import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 
 describe('nextWeight (EMA over signed lifts)', () => {
   it('returns unchanged when lift is null (no signal)', () => {
@@ -105,6 +110,40 @@ describe('nextWeight (EMA over signed lifts)', () => {
     const prev = { weight: 1.0, sample_n: 5 };
     expect(nextWeight(prev, Number.NaN)).toEqual(prev);
     expect(nextWeight(prev, Number.POSITIVE_INFINITY)).toEqual(prev);
+  });
+});
+
+describe('P0-01: metric direction resolver (registry)', () => {
+  it('every canonical metric direction matches the standing render-config direction', () => {
+    // Registry direction is the source of truth for attribution; metric-config
+    // is the render-side mirror. They MUST agree or a bar would draw "up" while
+    // attribution learns "down". Catch drift between the two TS maps.
+    for (const id of METRIC_IDS) {
+      expect(getMetricDirection(id)).toBe(METRIC_RENDER_CONFIG[id].direction);
+    }
+  });
+
+  it('improvementSign is -1 for lower-is-better, +1 for higher-is-better', () => {
+    expect(improvementSign('scoring_par_4')).toBe(-1);
+    expect(improvementSign('penalty_rate_per_round')).toBe(-1);
+    expect(improvementSign('big_number_rate')).toBe(-1);
+    expect(improvementSign('sg_total')).toBe(1);
+    expect(improvementSign('gir_pct')).toBe(1);
+  });
+
+  it('resolves the score_to_par alias as lower-is-better', () => {
+    expect(getMetricDirection('score_to_par')).toBe('lower_better');
+    expect(improvementSign('score_to_par')).toBe(-1);
+  });
+
+  it('resolves the fairways_hit_pct alias as higher-is-better', () => {
+    expect(getMetricDirection('fairways_hit_pct')).toBe('higher_better');
+    expect(improvementSign('fairways_hit_pct')).toBe(1);
+  });
+
+  it('defaults unknown metrics to higher-is-better (sign +1)', () => {
+    expect(getMetricDirection('totally_made_up_metric_xyz')).toBe('higher_better');
+    expect(improvementSign('totally_made_up_metric_xyz')).toBe(1);
   });
 });
 
@@ -909,5 +948,118 @@ describe('P2: surfaced-day window exclusion', () => {
     expect(result.row.post_value).toBeCloseTo(2, 5);
     expect(result.row.baseline_value).toBeCloseTo(0, 5);
     expect(result.row.delta).toBeCloseTo(2, 5);
+  });
+});
+
+/**
+ * P0-01 — attribution must learn in the metric's IMPROVEMENT direction.
+ *
+ * Before the fix, lift was the raw `post − baseline` delta minus ambient drift,
+ * direction-agnostic. For a lower-is-better metric (score_to_par, penalties,
+ * scoring) a real improvement makes the value DROP, so the raw delta went
+ * NEGATIVE and the weight update treated a success as a regression. The fix
+ * multiplies the ambient-adjusted lift by the metric's improvement sign so a
+ * positive `improvement_lift` ALWAYS means the player got better.
+ */
+describe('P0-01: improvement direction for lower-is-better metrics', () => {
+  it('a DROP in score_to_par (lower is better) yields a POSITIVE improvement_lift', async () => {
+    // score_to_par baseline = +6 (over par), post = +3 (improved by 3 strokes).
+    // raw_delta = post − base = -3 (a drop, the desired outcome). Ambient flat.
+    // With the fix: improvement_lift = sign(lower_better=-1) × (-3) = +3.
+    const surfaced = '2026-04-01T00:00:00.000Z';
+    const surfacedTs = new Date(surfaced).getTime();
+    const postStart = new Date(surfacedTs + 1).toISOString().slice(0, 10);
+    const preStartDate = new Date(surfacedTs - 14 * 86400_000)
+      .toISOString()
+      .slice(0, 10);
+    const { sb } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      if (s >= postStart) return [{ score_to_par: 3 }, { score_to_par: 3 }]; // improved
+      if (s >= preStartDate && s < surfaced.slice(0, 10)) {
+        return [{ score_to_par: 6 }, { score_to_par: 6 }]; // baseline
+      }
+      return [{ score_to_par: 6 }, { score_to_par: 6 }]; // ambient: flat at baseline
+    });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-stp',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'score_to_par',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+
+    // raw_delta is direction-agnostic and NEGATIVE for this real improvement.
+    expect(result.row.raw_delta).toBeCloseTo(-3, 5);
+    expect(result.row.delta).toBeCloseTo(-3, 5); // alias of raw_delta
+
+    // improvement_lift is direction-corrected and POSITIVE — the player improved.
+    expect(result.row.improvement_lift).not.toBeNull();
+    expect(result.row.improvement_lift!).toBeCloseTo(3, 5);
+    expect(result.row.lift!).toBeCloseTo(3, 5); // alias of improvement_lift
+
+    // And that positive lift RAISES the coach weight (learning rewards success).
+    const updated = nextWeight({ weight: 1.0, sample_n: 0 }, result.row.lift);
+    expect(updated.weight).toBeGreaterThan(1.0);
+  });
+
+  it('identical real-world improvements produce the same positive lift regardless of direction', async () => {
+    const surfaced = '2026-04-01T00:00:00.000Z';
+    const surfacedTs = new Date(surfaced).getTime();
+    const postStart = new Date(surfacedTs + 1).toISOString().slice(0, 10);
+
+    // Higher-is-better: sg_total rises 0 → +2 (a 2-unit improvement).
+    const { sb: sbHigher } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      if (s >= postStart) return [{ strokes_gained_total: 2 }, { strokes_gained_total: 2 }];
+      return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
+    });
+    const higher = await computeAttribution(sbHigher, {
+      insight_id: 'i-hi',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'sg_total',
+    });
+
+    // Lower-is-better: penalties drop 2 → 0 (also a 2-unit improvement).
+    const { sb: sbLower } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      if (s >= postStart) return [{ penalty_strokes: 0 }, { penalty_strokes: 0 }];
+      return [{ penalty_strokes: 2 }, { penalty_strokes: 2 }];
+    });
+    const lower = await computeAttribution(sbLower, {
+      insight_id: 'i-lo',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'penalty_rate_per_round',
+    });
+
+    if (!higher.ok || !lower.ok) throw new Error('expected ok: true');
+
+    // Raw deltas have OPPOSITE signs (the metrics move in opposite directions),
+    // but both improvements net to the SAME positive direction-corrected lift.
+    expect(higher.row.raw_delta).toBeCloseTo(2, 5);
+    expect(lower.row.raw_delta).toBeCloseTo(-2, 5);
+    expect(higher.row.improvement_lift!).toBeCloseTo(2, 5);
+    expect(lower.row.improvement_lift!).toBeCloseTo(2, 5);
+    expect(lower.row.improvement_lift!).toBeCloseTo(higher.row.improvement_lift!, 5);
+
+    // A REGRESSION in a lower-is-better metric must learn as negative.
+    const { sb: sbWorse } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      if (s >= postStart) return [{ penalty_strokes: 3 }, { penalty_strokes: 3 }]; // worse
+      return [{ penalty_strokes: 1 }, { penalty_strokes: 1 }];
+    });
+    const worse = await computeAttribution(sbWorse, {
+      insight_id: 'i-worse',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'penalty_rate_per_round',
+    });
+    if (!worse.ok) throw new Error('expected ok: true');
+    expect(worse.row.raw_delta).toBeCloseTo(2, 5); // value went UP (more penalties)
+    expect(worse.row.improvement_lift!).toBeCloseTo(-2, 5); // ...which is a regression
+    expect(
+      nextWeight({ weight: 1.0, sample_n: 0 }, worse.row.lift).weight,
+    ).toBeLessThan(1.0);
   });
 });

@@ -14,14 +14,15 @@
  * tertiary, on layered frosted-glass instrument panels that float above the
  * canvas wash:
  *
- *   PRIMARY (focal, raised glass) — a sweeping RadialGauge of overall prediction
- *     ACCURACY (climbing toward ~70%) with the huge mono readout + the coin-flip
- *     benchmark tick, PAIRED below with the accuracy RIBBON (the bold filled
- *     30-day rising trend) inside the same raised panel. The cockpit centerpiece.
+ *   PRIMARY (focal, raised glass) — a flat, clean hero of overall prediction
+ *     ACCURACY (climbing toward ~70%) rendered as the huge mono Readout (size
+ *     "hero") with a Climbing/Holding delta chip, PAIRED below with the accuracy
+ *     RIBBON (the bold filled rising trend, with its own coin-flip benchmark
+ *     tick) inside the same raised panel. The cockpit centerpiece.
  *   SECONDARY rail — the OUTCOMES instrument (a chunky SegmentBar of improved /
  *     no-change / worsened with the improvement-rate called out big — the now-
- *     REAL "is CoachHelm helping" payoff), and a small calibration Dial paired
- *     with a resolved-count Readout.
+ *     REAL "is CoachHelm helping" payoff), and a small calibration Readout
+ *     paired with a resolved-count Readout.
  *   TERTIARY foot row — micro Readouts: insights surfaced, mean abs error,
  *     patterns resolved.
  *
@@ -32,7 +33,7 @@
  * ── PRESERVED LOGIC (imported + called UNCHANGED) ───────────────────────────
  * The interaction core hits the SAME four server actions with the SAME shapes:
  *   • handleRefresh — re-fetches all four over the active range
- *   • handleRange   — re-fetches the three range-scoped reads
+ *   • handleRange   — re-fetches all four over the newly-selected range
  * No data fetching, score weighting, or label maps change — those live in
  * coachhelm-analytics.ts and are consumed as-is. This is a PRESENTATION rebuild.
  *
@@ -47,7 +48,13 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import {
+  ArrowRight,
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ── Shell (the route mounts THIS body inside it). ────────────────────────────
@@ -60,12 +67,21 @@ import {
   getInsightEffectiveness,
   getPredictionPerformance,
   getPatternImpact,
+  // P1-12 — unified effectiveness LEDGER rollup. Real exposure/action/outcome
+  // counts per insight id, gated by team access. Returns a plain record map.
+  getInsightTrustSignals,
   type CoachHelmOverviewData,
   type InsightEffectivenessData,
   type PredictionPerformanceData,
   type PatternImpactData,
   type ConfidenceBucket,
 } from '@/app/golf/actions/coachhelm-analytics';
+// The ledger's shared trust-signal shape (status ladder + recent trend).
+import type { TrustSignal, TrustStatus } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
+// Recent insights (id + title + type) to feed the per-insight trust table — the
+// ledger rollup is keyed by REAL insight id, so we resolve a short window here.
+import { searchInsights } from '@/app/golf/actions/insight-management';
+import type { InsightWithPlayer } from '@/lib/coachhelm/insight-types';
 
 // ── Fairway kit — the INSTRUMENT cockpit pieces + the supporting primitives. ──
 import {
@@ -87,7 +103,10 @@ import {
   EmptyState,
   InlineNotice,
   SkeletonCard,
+  SkeletonText,
   Surface,
+  Badge,
+  fairwayToast,
   formatPercent,
   type RibbonPoint,
   type SegmentBarPart,
@@ -104,6 +123,165 @@ import {
 const BUCKET_MIN_RESOLVED = 5;
 const GLOBAL_LOW_CONFIDENCE_RESOLVED = 50;
 const GAUGE_MIN_RESOLVED = 2;
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * P1-12 — INSIGHT TRUST LAYER (unified event-ledger rollup)
+ * ----------------------------------------------------------------------------
+ * Everything below reads ONLY from the ledger rollup (getInsightTrustSignals →
+ * getInsightEffectivenessSignals). A signal is shown/acted/worked/measured by
+ * COUNT of real rows; absence of evidence reads as `new_hypothesis`, never as a
+ * fake success. The chip, the KPI band, and the per-insight table all derive
+ * from the SAME TrustSignal shape — one accent (helm green) for positive, amber
+ * for caution, fw-danger for regression.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/** Maximum number of recent insights we resolve for the per-insight trust table. */
+const TRUST_TABLE_LIMIT = 24;
+
+/** A premium, restrained presentation contract per trust status. */
+interface TrustChipSpec {
+  /** Fairway status family the Badge primitive maps to its token fill. */
+  tone: 'accent' | 'success' | 'warning' | 'neutral' | 'danger';
+  /** The tiny leading dot color (token class, never hex). */
+  dot: string;
+  /** Short editorial label used when no per-signal count is available. */
+  shortLabel: string;
+  /** Human-readable status name for tooltips + a11y. */
+  fullLabel: string;
+}
+
+const TRUST_SPECS: Record<TrustStatus, TrustChipSpec> = {
+  proven: {
+    tone: 'accent',
+    dot: 'bg-accent-600',
+    shortLabel: 'Worked',
+    fullLabel: 'Proven',
+  },
+  promising: {
+    tone: 'success',
+    dot: 'bg-accent-500',
+    shortLabel: 'Working',
+    fullLabel: 'Promising',
+  },
+  needs_validation: {
+    tone: 'warning',
+    dot: 'bg-warm-500',
+    shortLabel: 'Needs validation',
+    fullLabel: 'Needs validation',
+  },
+  new_hypothesis: {
+    tone: 'neutral',
+    dot: 'bg-text-tertiary',
+    shortLabel: 'New hypothesis',
+    fullLabel: 'New hypothesis',
+  },
+  underperforming: {
+    tone: 'danger',
+    dot: 'bg-fw-danger',
+    shortLabel: 'Last 3 worsened',
+    fullLabel: 'Underperforming',
+  },
+};
+
+/**
+ * The chip COPY is honesty-first. Proven/promising read as a worked/measured
+ * ratio ("Worked 7/11"); the thin states read as their status word; the
+ * underperforming state names the regression. Always returns a short, scannable
+ * string under ~16 chars where possible.
+ */
+function trustChipLabel(signal: TrustSignal): string {
+  const spec = TRUST_SPECS[signal.status];
+  if ((signal.status === 'proven' || signal.status === 'promising') && signal.measured > 0) {
+    return `${spec.shortLabel} ${signal.worked}/${signal.measured}`;
+  }
+  return spec.shortLabel;
+}
+
+/** A descriptive title/aria string — the full story for tooltip + screen reader. */
+function trustChipTitle(signal: TrustSignal): string {
+  const spec = TRUST_SPECS[signal.status];
+  const parts = [`${spec.fullLabel}.`];
+  if (signal.measured > 0) {
+    parts.push(`Worked ${signal.worked} of ${signal.measured} measured outcome${signal.measured === 1 ? '' : 's'}.`);
+  } else {
+    parts.push('No outcomes measured yet.');
+  }
+  parts.push(`Shown ${signal.shown} · Acted ${signal.acted}.`);
+  if (signal.recentTrend) {
+    parts.push(
+      signal.recentTrend === 'up'
+        ? 'Recent outcomes trending up.'
+        : signal.recentTrend === 'down'
+          ? 'Recent outcomes trending down.'
+          : 'Recent outcomes flat.',
+    );
+  }
+  return parts.join(' ');
+}
+
+/**
+ * The TRUST CHIP — a small rounded pill (Badge primitive, tone-mapped) with a
+ * tiny status dot, plus a muted `Shown N · Acted M` micro-stat. Wraps
+ * gracefully, never overflows, carries a title tooltip + aria-label.
+ */
+function InsightTrustChip({ signal }: { signal: TrustSignal }) {
+  const spec = TRUST_SPECS[signal.status];
+  const label = trustChipLabel(signal);
+  const title = trustChipTitle(signal);
+  return (
+    <span className="inline-flex flex-wrap items-center justify-end gap-x-2 gap-y-1" title={title}>
+      <Badge
+        tone={spec.tone}
+        size="sm"
+        aria-label={title}
+        leadingIcon={
+          <span className={cn('inline-block h-1.5 w-1.5 rounded-full', spec.dot)} aria-hidden />
+        }
+        // Badge size="sm" already sets the 11px mono-ish chip type; we only add
+        // the mono face + tight tracking + tabular figures on top.
+        className="font-fw-mono tracking-tight tabular-nums"
+      >
+        {label}
+      </Badge>
+      <span className="font-fw-mono text-caption font-normal tabular-nums text-text-tertiary whitespace-nowrap">
+        Shown {signal.shown} · Acted {signal.acted}
+      </span>
+    </span>
+  );
+}
+
+/** A compact, single-glyph recent-trend marker for the table (token color). */
+function TrustTrendGlyph({ trend }: { trend: TrustSignal['recentTrend'] }) {
+  if (trend === 'up') {
+    return (
+      <span className="inline-flex items-center gap-1 text-accent-700" title="Recent outcomes trending up">
+        <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+        <span className="sr-only">Trending up</span>
+      </span>
+    );
+  }
+  if (trend === 'down') {
+    return (
+      <span className="inline-flex items-center gap-1 text-fw-danger" title="Recent outcomes trending down">
+        <TrendingDown className="h-3.5 w-3.5" aria-hidden />
+        <span className="sr-only">Trending down</span>
+      </span>
+    );
+  }
+  if (trend === 'flat') {
+    return (
+      <span className="inline-flex items-center gap-1 text-text-tertiary" title="Recent outcomes flat">
+        <Minus className="h-3.5 w-3.5" aria-hidden />
+        <span className="sr-only">Flat</span>
+      </span>
+    );
+  }
+  return (
+    <span className="text-text-tertiary" title="No measured trend yet" aria-label="No measured trend yet">
+      —
+    </span>
+  );
+}
 
 /** The page LEADS with the cockpit; the rest are quiet secondary drill-downs. */
 type ViewType = 'cockpit' | 'predictions' | 'insights' | 'patterns';
@@ -127,6 +305,17 @@ const DATE_RANGES: ReadonlyArray<{ id: DateRangeType; label: string; days: numbe
 const rangeDays = (id: DateRangeType): number =>
   DATE_RANGES.find((r) => r.id === id)?.days ?? 30;
 
+/** Compact "just now / Nm ago / Nh ago" for the refresh freshness line. */
+const RELATIVE_TIME = new Intl.RelativeTimeFormat('en', { numeric: 'auto', style: 'short' });
+function formatFreshness(at: Date | null): string {
+  if (!at) return '';
+  const seconds = Math.round((Date.now() - at.getTime()) / 1000);
+  if (seconds < 45) return 'Updated just now';
+  if (seconds < 3600) return `Updated ${RELATIVE_TIME.format(-Math.round(seconds / 60), 'minute')}`;
+  if (seconds < 86400) return `Updated ${RELATIVE_TIME.format(-Math.round(seconds / 3600), 'hour')}`;
+  return `Updated ${RELATIVE_TIME.format(-Math.round(seconds / 86400), 'day')}`;
+}
+
 export interface FairwayEffectivenessProps {
   /** Team scope for the four re-fetches (the SAME teamId the SSR fetch used). */
   teamId: string;
@@ -149,7 +338,9 @@ export interface FairwayEffectivenessProps {
 
 export function FairwayEffectiveness({
   teamId,
-  // coachId is preserved for parity with the legacy component; not consumed.
+  // coachId now feeds the P1-12 trust layer (resolves this coach's recent
+  // insights for the per-insight ledger rollup). Underscore-prefixed for parity
+  // with the legacy prop name; it is consumed by useInsightTrust below.
   coachId: _coachId,
   initialOverview,
   initialEffectiveness,
@@ -169,6 +360,18 @@ export function FairwayEffectiveness({
   const [performance, setPerformance] = React.useState(initialPerformance);
   const [patternImpact, setPatternImpact] = React.useState(initialPatternImpact);
   const [loadError, setLoadError] = React.useState<string | null>(null);
+  // Refresh freshness — when the instruments last took on new data. Seeded from
+  // the SSR overview snapshot, advanced on every successful re-fetch so the
+  // "Updated …" line gives visible completion feedback even when numbers match.
+  const [lastRefreshedAt, setLastRefreshedAt] = React.useState<Date | null>(() =>
+    initialOverview?.lastUpdated ? new Date(initialOverview.lastUpdated) : null,
+  );
+  // Tick once a minute so the relative "Updated …" label stays honest.
+  const [, forceFreshnessTick] = React.useState(0);
+  React.useEffect(() => {
+    const id = window.setInterval(() => forceFreshnessTick((n) => n + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // ── PRESERVED interaction core — same calls as CoachHelmAnalyticsDashboard ──
   // handleRefresh re-fetches ALL four over the active range.
@@ -181,7 +384,7 @@ export function FairwayEffectiveness({
 
       const [overviewResult, effectivenessResult, performanceResult, patternResult] =
         await Promise.all([
-          getCoachHelmOverview(teamId),
+          getCoachHelmOverview(teamId, { start, end }),
           getInsightEffectiveness(teamId, { start, end }),
           getPredictionPerformance(teamId, { start, end }),
           getPatternImpact(teamId, { start, end }),
@@ -198,11 +401,21 @@ export function FairwayEffectiveness({
         (!performanceResult.success && performanceResult.error) ||
         (!patternResult.success && patternResult.error) ||
         null;
-      if (firstError) setLoadError(firstError);
+      if (firstError) {
+        setLoadError(firstError);
+      } else {
+        // Visible completion feedback — confirms the refresh landed even when
+        // the figures are identical (Nielsen #1 visibility of system status).
+        setLastRefreshedAt(new Date());
+        fairwayToast.success('Instruments refreshed', {
+          description: `Latest accuracy and outcomes over the last ${rangeDays(selectedRange)} days.`,
+        });
+      }
     });
   }, [selectedRange, teamId]);
 
-  // handleRange re-fetches the three range-scoped reads.
+  // handleRange re-fetches the range-scoped reads (overview included, so the
+  // "Insights surfaced" tertiary readout always matches the active window).
   const handleRange = React.useCallback(
     (range: DateRangeType) => {
       setSelectedRange(range);
@@ -212,22 +425,30 @@ export function FairwayEffectiveness({
         const end = new Date();
         const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
 
-        const [effectivenessResult, performanceResult, patternResult] = await Promise.all([
-          getInsightEffectiveness(teamId, { start, end }),
-          getPredictionPerformance(teamId, { start, end }),
-          getPatternImpact(teamId, { start, end }),
-        ]);
+        const [overviewResult, effectivenessResult, performanceResult, patternResult] =
+          await Promise.all([
+            getCoachHelmOverview(teamId, { start, end }),
+            getInsightEffectiveness(teamId, { start, end }),
+            getPredictionPerformance(teamId, { start, end }),
+            getPatternImpact(teamId, { start, end }),
+          ]);
 
+        if (overviewResult.success) setOverview(overviewResult.data);
         if (effectivenessResult.success) setEffectiveness(effectivenessResult.data);
         if (performanceResult.success) setPerformance(performanceResult.data);
         if (patternResult.success) setPatternImpact(patternResult.data);
 
         const firstError =
+          (!overviewResult.success && overviewResult.error) ||
           (!effectivenessResult.success && effectivenessResult.error) ||
           (!performanceResult.success && performanceResult.error) ||
           (!patternResult.success && patternResult.error) ||
           null;
-        if (firstError) setLoadError(firstError);
+        if (firstError) {
+          setLoadError(firstError);
+        } else {
+          setLastRefreshedAt(new Date());
+        }
       });
     },
     [teamId],
@@ -235,9 +456,25 @@ export function FairwayEffectiveness({
 
   const days = rangeDays(selectedRange);
 
+  // ── P1-12 trust layer — resolve recent insights for this coach, then roll up
+  //    their ledger trust signals (shown/acted/worked/measured). Failure-soft:
+  //    any error degrades to an honest "couldn't load trust" notice, never a
+  //    fabricated signal. Loaded lazily when the Insights drill-down is opened
+  //    (and on first mount if it's the initial view) so the cockpit stays fast.
+  const trust = useInsightTrust(_coachId, activeView === 'insights');
+
   // ── Shell action cluster: range Segmented + Refresh (NO infinite spinner) ──
+  const freshness = formatFreshness(lastRefreshedAt);
   const actions = (
     <div className="flex items-center gap-3">
+      {freshness ? (
+        <span
+          className="hidden font-fw-sans text-caption text-text-tertiary sm:inline"
+          aria-live="polite"
+        >
+          {freshness}
+        </span>
+      ) : null}
       <Segmented<DateRangeType>
         options={DATE_RANGES.map((r) => ({ value: r.id, label: r.label }))}
         value={selectedRange}
@@ -286,12 +523,13 @@ export function FairwayEffectiveness({
             effectiveness={effectiveness}
             performance={performance}
             patternImpact={patternImpact}
+            days={days}
             onDrillIn={setActiveView}
           />
         ) : activeView === 'predictions' ? (
           <PredictionsSection data={performance} />
         ) : activeView === 'insights' ? (
-          <InsightEffectivenessSection data={effectiveness} />
+          <InsightEffectivenessSection data={effectiveness} trust={trust} />
         ) : (
           <PatternsSection data={patternImpact} />
         )}
@@ -326,32 +564,52 @@ function CockpitView({
   effectiveness,
   performance,
   patternImpact,
+  days,
   onDrillIn,
 }: {
   overview?: CoachHelmOverviewData;
   effectiveness?: InsightEffectivenessData;
   performance?: PredictionPerformanceData;
   patternImpact?: PatternImpactData;
+  days: number;
   onDrillIn: (v: ViewType) => void;
 }) {
-  if (!overview && !effectiveness && !performance && !patternImpact) {
+  // Genuinely-empty first-run: the loaders return success with ZEROED objects
+  // (not undefined) for a brand-new team, so derive emptiness from the real
+  // aggregates rather than prop presence — otherwise this branch is dead and a
+  // first-run coach sees a grid of dim "awaiting" gauges instead of a clear
+  // "no signal yet, here's how to start" moment.
+  const insightsSurfaced =
+    effectiveness?.overall.totalGenerated ?? overview?.totalInsights ?? 0;
+  const predictionsResolved = performance?.summary.validatedPredictions ?? 0;
+  const patternsDetected = patternImpact?.patternsDetected ?? 0;
+  const noSignalYet =
+    insightsSurfaced === 0 && predictionsResolved === 0 && patternsDetected === 0;
+
+  if (noSignalYet) {
     return (
       <EmptyState
+        icon={Sparkles}
         title="No effectiveness signal yet"
         description="As CoachHelm surfaces insights and predictions resolve, these instruments power up. Until outcomes are recorded, effectiveness reads as ‘awaiting signal,’ never 0%."
+        action={
+          <Button asChild rightIcon={<ArrowRight className="h-4 w-4" />}>
+            <Link href="/golf/dashboard/development">Set up player focus areas</Link>
+          </Button>
+        }
       />
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* The cockpit cluster: focal gauge+ribbon, flanking outcomes + calibration
+      {/* The cockpit cluster: focal hero+ribbon, flanking outcomes + calibration
           rail, foot row of micro-readouts. */}
       <InstrumentCluster
         ariaLabel="CoachHelm effectiveness instrument cluster"
         balance="focal"
         tertiaryColumns={3}
-        primary={<PrimaryInstrument data={performance} />}
+        primary={<PrimaryInstrument data={performance} days={days} />}
         secondary={[
           <OutcomesInstrument
             key="outcomes"
@@ -376,12 +634,13 @@ function CockpitView({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * PRIMARY INSTRUMENT — the cockpit centerpiece. A sweeping RadialGauge of
- * overall prediction ACCURACY (vs the coin-flip benchmark) on a RAISED glass
- * panel, PAIRED below with the accuracy RIBBON (the bold filled rising trend)
- * inset into the same panel's lower band. Live from getPredictionPerformance.
+ * PRIMARY INSTRUMENT — the cockpit centerpiece. A flat, clean hero of overall
+ * prediction ACCURACY rendered as the huge mono Readout (size "hero"), with a
+ * Climbing/Holding delta chip, on a RAISED glass panel — PAIRED below with the
+ * accuracy RIBBON (the bold filled rising trend, with its coin-flip benchmark
+ * tick) inset into the same panel's lower band. Live from getPredictionPerformance.
  * ─────────────────────────────────────────────────────────────────────────── */
-function PrimaryInstrument({ data }: { data?: PredictionPerformanceData }) {
+function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; days: number }) {
   const resolved = data?.summary.validatedPredictions ?? 0;
   const accuracy = data?.summary.overallAccuracy ?? 0;
 
@@ -409,15 +668,20 @@ function PrimaryInstrument({ data }: { data?: PredictionPerformanceData }) {
 
   return (
     <InstrumentPanel depth="raised" padding="lg" header="Prediction accuracy" as="section" className="flex flex-col gap-6">
-      {/* Flat, clean hero — a big SF/mono number, NOT a gauge. */}
+      {/* Flat, clean hero — the focal mono readout via the design-system
+          primitive (size="hero" = 72px, on-scale), with its own live/awaiting
+          honesty contract instead of a bespoke `live ? … : —`. */}
       <div className="flex flex-col gap-2">
-        <span className="font-fw-sans text-caption uppercase tracking-[0.1em] text-text-tertiary">
-          Validated predictions · last 30 days
-        </span>
         <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-          <span className="font-fw-mono text-[64px] font-semibold leading-none tabular-nums text-text-primary">
-            {live ? formatPercent(accuracy, 0) : '—'}
-          </span>
+          <Readout
+            label={`Validated predictions · last ${days} days`}
+            value={accuracy}
+            display={formatPercent(accuracy, 0)}
+            size="hero"
+            state={live ? 'live' : 'awaiting'}
+            samples={live ? undefined : { have: resolved, need: GAUGE_MIN_RESOLVED }}
+            awaitingLabel="Awaiting predictions"
+          />
           {live && typeof climbDelta === 'number' ? (
             <span
               className={cn(
@@ -431,11 +695,11 @@ function PrimaryInstrument({ data }: { data?: PredictionPerformanceData }) {
             </span>
           ) : null}
         </div>
-        <span className="font-fw-sans text-body-sm text-text-secondary">
-          {live
-            ? `of ${resolved} resolved predictions proved accurate — well above a 50% coin flip.`
-            : `Awaiting resolved predictions — ${resolved} of ${GAUGE_MIN_RESOLVED}.`}
-        </span>
+        {live ? (
+          <span className="font-fw-sans text-body-sm text-text-secondary">
+            of {resolved} resolved predictions proved accurate — well above a 50% coin flip.
+          </span>
+        ) : null}
       </div>
 
       {/* Accuracy over time — a clean flat line (no bezel, no nested card). */}
@@ -548,10 +812,10 @@ function OutcomesInstrument({
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * CALIBRATION INSTRUMENT (secondary) — a small calibration Dial paired with a
- * resolved-count Readout, on a base glass panel. The Dial reads "does a 70% call
- * land 70% of the time" (the summary calibrationScore); it dims to calibrating
- * while no confidence band has enough resolved predictions.
+ * CALIBRATION INSTRUMENT (secondary) — a small calibration Readout paired with a
+ * resolved-count Readout, on a base glass panel. The Readout reads "does a 70%
+ * call land 70% of the time" (the summary calibrationScore); it dims to
+ * calibrating while no confidence band has enough resolved predictions.
  * ─────────────────────────────────────────────────────────────────────────── */
 function CalibrationInstrument({ data }: { data?: PredictionPerformanceData }) {
   const resolved = data?.summary.validatedPredictions ?? 0;
@@ -935,49 +1199,17 @@ function PredictionsCalibrationFull({
   );
 }
 
-/* INSIGHTS — per-type effectiveness drill-down. Real once outcomes exist. */
-function InsightEffectivenessSection({ data }: { data?: InsightEffectivenessData }) {
+/* INSIGHTS — the TRUST drill-down. Leads with the ledger-backed trust band +
+   per-insight table (P1-12), then the by-type effectiveness chart. */
+function InsightEffectivenessSection({
+  data,
+  trust,
+}: {
+  data?: InsightEffectivenessData;
+  trust: InsightTrustState;
+}) {
   const outcomesMeasured = data?.overall.totalWithOutcome ?? 0;
   const generated = data?.overall.totalGenerated ?? 0;
-
-  if (outcomesMeasured === 0) {
-    return (
-      <div className="flex flex-col gap-6">
-        <ChartCard
-          title="Insight effectiveness"
-          subtitle="How well insights translate into recorded outcomes"
-          state="insufficient-data"
-          stateMessage="Outcome tracking not yet enabled — record focus-area outcomes to measure effectiveness."
-          height={200}
-        />
-        <Surface padding="md">
-          <div className="flex flex-col gap-3">
-            <InsufficientData
-              title="Effectiveness is not measured yet"
-              description={
-                generated > 0
-                  ? `${generated} insights have surfaced, but none has a recorded outcome yet. Effectiveness becomes meaningful once coaches mark focus areas improved / no change / worsened.`
-                  : 'No insights have surfaced in this window yet.'
-              }
-              unit="recorded outcomes"
-              current={0}
-              required={1}
-            />
-            <div className="flex justify-center">
-              <Button
-                variant="secondary"
-                size="sm"
-                asChild
-                rightIcon={<ArrowRight className="h-4 w-4" />}
-              >
-                <Link href="/golf/dashboard/development">Go to Players to record outcomes</Link>
-              </Button>
-            </div>
-          </div>
-        </Surface>
-      </div>
-    );
-  }
 
   const bars: BarCompareDatum[] = (data?.byType ?? []).map((m) => ({
     label: m.insightType,
@@ -985,14 +1217,368 @@ function InsightEffectivenessSection({ data }: { data?: InsightEffectivenessData
   }));
 
   return (
-    <BarCompare
-      title="Effectiveness by insight type"
-      subtitle="Effectiveness score = action rate × 0.3 + improvement rate × 0.7"
-      takeaway="Higher bars are insight types that translate into recorded improvement."
-      data={bars}
-      valueFormatter={(v) => formatPercent(v, 0)}
-      height={Math.max(220, bars.length * 44)}
-    />
+    <div className="flex flex-col gap-6">
+      {/* ── The ledger-backed trust layer — KPI band + per-insight table. ── */}
+      <InsightTrustBand trust={trust} />
+      <InsightTrustTable trust={trust} />
+
+      {/* ── By-type effectiveness — honest until outcomes exist. ── */}
+      {outcomesMeasured === 0 ? (
+        <div className="flex flex-col gap-6">
+          <ChartCard
+            title="Insight effectiveness"
+            subtitle="How well insights translate into recorded outcomes"
+            state="insufficient-data"
+            stateMessage="Outcome tracking not yet enabled — record focus-area outcomes to measure effectiveness."
+            height={200}
+          />
+          <Surface padding="md">
+            <div className="flex flex-col gap-3">
+              <InsufficientData
+                title="Effectiveness is not measured yet"
+                description={
+                  generated > 0
+                    ? `${generated} insights have surfaced, but none has a recorded outcome yet. Effectiveness becomes meaningful once coaches mark focus areas improved / no change / worsened.`
+                    : 'No insights have surfaced in this window yet.'
+                }
+                unit="recorded outcomes"
+                current={0}
+                required={1}
+              />
+              <div className="flex justify-center">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  asChild
+                  rightIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  <Link href="/golf/dashboard/development">Go to Players to record outcomes</Link>
+                </Button>
+              </div>
+            </div>
+          </Surface>
+        </div>
+      ) : (
+        <BarCompare
+          title="Effectiveness by insight type"
+          subtitle="Effectiveness score = action rate × 0.3 + improvement rate × 0.7"
+          takeaway="Higher bars are insight types that translate into recorded improvement."
+          data={bars}
+          valueFormatter={(v) => formatPercent(v, 0)}
+          height={Math.max(220, bars.length * 44)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * P1-12 — TRUST DATA HOOK + the band + the per-insight table
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/** A resolved insight row paired with its ledger trust signal. */
+interface InsightTrustRow {
+  id: string;
+  title: string;
+  typeLabel: string;
+  playerName: string | null;
+  signal: TrustSignal;
+}
+
+interface InsightTrustState {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  rows: InsightTrustRow[];
+  error: string | null;
+}
+
+/** Title-case a snake_cased insight type for display ("scoring_decline" → "Scoring decline"). */
+function humanizeInsightType(type: string): string {
+  if (!type) return 'Insight';
+  const spaced = type.replace(/_/g, ' ').trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/**
+ * Resolve a short window of this coach's recent insights, then roll up their
+ * trust signals from the unified ledger. Both fetches are failure-soft; the map
+ * always covers every requested id (zero-evidence → new_hypothesis), so rows
+ * never go signal-less. Runs only once `enabled` flips true (lazy — keeps the
+ * cockpit's first paint fast), and once per coach.
+ */
+function useInsightTrust(coachId: string | undefined, enabled: boolean): InsightTrustState {
+  const [state, setState] = React.useState<InsightTrustState>({
+    status: 'idle',
+    rows: [],
+    error: null,
+  });
+  // Guard against re-fetching the same coach on every Insights re-open.
+  const loadedForRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (!enabled || !coachId) return;
+    if (loadedForRef.current === coachId) return;
+    loadedForRef.current = coachId;
+
+    let cancelled = false;
+    setState({ status: 'loading', rows: [], error: null });
+
+    (async () => {
+      try {
+        const search = await searchInsights({
+          coachId,
+          page: 1,
+          pageSize: TRUST_TABLE_LIMIT,
+          sortBy: 'created_at',
+          sortOrder: 'desc',
+        });
+        if (cancelled) return;
+        if (!search.success) {
+          setState({ status: 'error', rows: [], error: search.error ?? 'Failed to load insights' });
+          return;
+        }
+
+        const insights: InsightWithPlayer[] = search.insights ?? [];
+        const ids = insights.map((i) => i.id).filter((id): id is string => !!id);
+        if (ids.length === 0) {
+          setState({ status: 'ready', rows: [], error: null });
+          return;
+        }
+
+        const trustRes = await getInsightTrustSignals(ids);
+        if (cancelled) return;
+        if (!trustRes.success) {
+          setState({ status: 'error', rows: [], error: trustRes.error ?? 'Failed to load trust signals' });
+          return;
+        }
+
+        const rows: InsightTrustRow[] = insights
+          .map((i) => {
+            const signal = trustRes.signals[i.id];
+            if (!signal) return null;
+            const playerName = i.player
+              ? `${i.player.first_name ?? ''} ${i.player.last_name ?? ''}`.trim() || null
+              : null;
+            return {
+              id: i.id,
+              title: i.title || 'Untitled insight',
+              typeLabel: humanizeInsightType(i.insight_type),
+              playerName,
+              signal,
+            } satisfies InsightTrustRow;
+          })
+          .filter((r): r is InsightTrustRow => r !== null);
+
+        setState({ status: 'ready', rows, error: null });
+      } catch (err) {
+        if (cancelled) return;
+        setState({
+          status: 'error',
+          rows: [],
+          error: err instanceof Error ? err.message : 'Failed to load insight trust',
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [coachId, enabled]);
+
+  return state;
+}
+
+/** Roll the per-row signals into the four headline KPIs for the band. */
+function summarizeTrust(rows: InsightTrustRow[]) {
+  let shown = 0;
+  let acted = 0;
+  let proven = 0;
+  let needsValidation = 0;
+  for (const r of rows) {
+    shown += r.signal.shown;
+    acted += r.signal.acted;
+    if (r.signal.status === 'proven') proven += 1;
+    if (r.signal.status === 'needs_validation') needsValidation += 1;
+  }
+  return { shown, acted, proven, needsValidation, tracked: rows.length };
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * TRUST BAND — a clean KPI row (Shown · Acted · Proven · Needs validation).
+ * One accent, restrained, editorial. Honest loading / error / empty states.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
+  if (trust.status === 'loading' || trust.status === 'idle') {
+    return (
+      <Surface padding="md" aria-busy="true">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <SkeletonText lines={1} className="w-24" />
+              <SkeletonText lines={1} className="w-16" />
+            </div>
+          ))}
+        </div>
+      </Surface>
+    );
+  }
+
+  if (trust.status === 'error') {
+    return (
+      <InlineNotice tone="warning" title="Couldn’t load insight trust">
+        {trust.error ?? 'The trust ledger didn’t respond.'} The effectiveness chart below still
+        reflects recorded outcomes.
+      </InlineNotice>
+    );
+  }
+
+  if (trust.rows.length === 0) {
+    return (
+      <Surface padding="md">
+        <InsufficientData
+          title="No tracked insights yet"
+          description="Once CoachHelm surfaces insights, their trust signals — how often each was shown, acted on, and actually worked — roll up here from the unified ledger."
+          unit="surfaced insights"
+          current={0}
+          required={1}
+        />
+      </Surface>
+    );
+  }
+
+  const k = summarizeTrust(trust.rows);
+  const kpis: ReadonlyArray<{ label: string; value: number; hint: string; accent?: boolean }> = [
+    { label: 'Insights shown', value: k.shown, hint: `across ${k.tracked} tracked` },
+    { label: 'Acted on', value: k.acted, hint: 'coach or player taps' },
+    { label: 'Proven', value: k.proven, hint: 'worked ≥60% of ≥3 measured', accent: true },
+    { label: 'Needs validation', value: k.needsValidation, hint: 'too few outcomes yet' },
+  ];
+
+  return (
+    <Surface padding="md">
+      <div className="mb-4 flex flex-col gap-0.5">
+        <span className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+          Trust ledger
+        </span>
+        <h3 className="font-fw-display text-h3 text-text-primary">Are these insights earning trust?</h3>
+        <p className="font-fw-sans text-caption text-text-tertiary">
+          Counts come only from real exposure, action, and outcome rows — absence reads as a new
+          hypothesis, never as success.
+        </p>
+      </div>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
+        {kpis.map((kpi) => (
+          <div key={kpi.label} className="flex flex-col gap-1">
+            <dt className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+              {kpi.label}
+            </dt>
+            <dd
+              className={cn(
+                'font-fw-mono text-h2 tabular-nums leading-none',
+                kpi.accent ? 'text-accent-700' : 'text-text-primary',
+              )}
+            >
+              {kpi.value}
+            </dd>
+            <span className="font-fw-sans text-caption text-text-tertiary">{kpi.hint}</span>
+          </div>
+        ))}
+      </dl>
+    </Surface>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * TRUST TABLE — one row per recent insight, each carrying its trust chip.
+ * Token-only, wraps gracefully, keyboard-friendly, honest empty/loading/error.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function InsightTrustTable({ trust }: { trust: InsightTrustState }) {
+  if (trust.status === 'loading' || trust.status === 'idle') {
+    return (
+      <Surface padding="md" aria-busy="true">
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <SkeletonText lines={1} className="w-1/2" />
+              <SkeletonText lines={1} className="w-28" />
+            </div>
+          ))}
+        </div>
+      </Surface>
+    );
+  }
+
+  // Error + empty are already messaged by the band above; stay quiet here to
+  // avoid double notices.
+  if (trust.status === 'error' || trust.rows.length === 0) {
+    return null;
+  }
+
+  return (
+    <Surface padding="none">
+      <div className="border-b border-border-subtle px-5 py-4">
+        <h3 className="font-fw-display text-h3 text-text-primary">Insight by insight</h3>
+        <p className="font-fw-sans text-caption text-text-tertiary">
+          Each insight’s standing in the trust ledger — what it claimed, and whether it has held up.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-left">
+          <caption className="sr-only">
+            Recent insights with their trust status, recent outcome trend, and exposure counts.
+          </caption>
+          <thead>
+            <tr className="border-b border-border-subtle">
+              <th
+                scope="col"
+                className="px-5 py-3 font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary"
+              >
+                Insight
+              </th>
+              <th
+                scope="col"
+                className="px-5 py-3 text-center font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary"
+              >
+                Trend
+              </th>
+              <th
+                scope="col"
+                className="px-5 py-3 text-right font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary"
+              >
+                Trust
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {trust.rows.map((row) => (
+              <tr
+                key={row.id}
+                className="border-b border-border-subtle/70 align-top last:border-b-0 hover:bg-surface-sunken/40"
+              >
+                <td className="px-5 py-3.5">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-fw-sans text-body-sm font-medium text-text-primary">
+                      {row.title}
+                    </span>
+                    <span className="font-fw-sans text-caption text-text-tertiary">
+                      {row.typeLabel}
+                      {row.playerName ? <> · {row.playerName}</> : null}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-5 py-3.5 text-center align-middle">
+                  <TrustTrendGlyph trend={row.signal.recentTrend} />
+                </td>
+                <td className="px-5 py-3.5">
+                  <div className="flex justify-end">
+                    <InsightTrustChip signal={row.signal} />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Surface>
   );
 }
 

@@ -29,7 +29,8 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users, FileText, Download } from 'lucide-react';
+import { useReducedMotion } from 'framer-motion';
+import { ArrowLeft, Pencil, Trash2, Check, X, MoreVertical, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type {
@@ -55,6 +56,14 @@ export interface MessageThreadPaneProps {
   /** Messages from the unchanged useGolfMessages() hook. */
   messages: MessageWithReadStatus[];
   loading: boolean;
+  /**
+   * True when the thread fetch FAILED (distinct from a truly-empty thread).
+   * Renders a recoverable error state with Retry instead of the honest-empty
+   * "No messages yet" state (P258).
+   */
+  error?: boolean;
+  /** Re-runs the thread fetch (the hook's refetch). Wired to the Retry CTA. */
+  onRetry?: () => void;
   /** Session user id for own-message attribution (msg.sender_id === user). */
   userId: string;
   /** Hook's resolved user id — same own-message check, both roles. */
@@ -90,6 +99,14 @@ export interface MessageThreadPaneProps {
    * 1:1 conversations — the component falls back to other_participant for those.
    */
   groupParticipants?: Map<string, { name: string; avatar: string | null }>;
+
+  /**
+   * P259: a message id to scroll to once the thread loads (set when the user
+   * opens a cross-conversation search hit). Cleared via onScrolledToMessage.
+   */
+  scrollToMessageId?: string | null;
+  /** P259: called after scrollToMessageId has been scrolled into view. */
+  onScrolledToMessage?: () => void;
 
   className?: string;
 }
@@ -232,6 +249,8 @@ export function MessageThreadPane({
   conversation,
   messages,
   loading,
+  error,
+  onRetry,
   userId,
   currentUserId,
   isOtherTyping,
@@ -251,11 +270,16 @@ export function MessageThreadPane({
   onCancelDelete,
   onSetMobileActions,
   groupParticipants,
+  scrollToMessageId,
+  onScrolledToMessage,
   children,
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
+  const reduceMotion = useReducedMotion() ?? false;
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
+  // P259: per-message anchors so a search hit can scroll its bubble into view.
+  const messageRefs = React.useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   // Resolved (signed) attachments keyed by message id. Populated lazily for the
   // visible messages that carry attachments; signed URLs from
@@ -264,6 +288,12 @@ export function MessageThreadPane({
   const [attachmentsByMessage, setAttachmentsByMessage] = React.useState<
     Record<string, ResolvedAttachment[]>
   >({});
+  // P266: message ids whose attachment fetch FAILED (signed-URL / RLS error).
+  // Used to render a quiet "Couldn’t load — tap to retry" chip instead of an
+  // eternal pending placeholder.
+  const [attachmentErrors, setAttachmentErrors] = React.useState<Set<string>>(new Set());
+  // Bumped to force a re-run of the batch fetch (manual retry from the chip).
+  const [attachmentRetryNonce, setAttachmentRetryNonce] = React.useState(0);
 
   // Stable key of the visible attachment-bearing message ids (ordered) so the
   // batch fetch re-runs only when that set actually changes.
@@ -279,11 +309,13 @@ export function MessageThreadPane({
   // Batch-fetch + sign attachments for every visible message that has them.
   // getGolfMessageAttachments is a server action that returns rows WITH signed
   // URLs (golf-attachments bucket, 1h TTL); we fan it out over the visible
-  // attachment-bearing messages in parallel.
+  // attachment-bearing messages in parallel. P266: a per-message { error } is
+  // recorded so the bubble shows a retry chip rather than hanging on "loading".
   React.useEffect(() => {
     const ids = attachmentMessageKey ? attachmentMessageKey.split(',') : [];
     if (ids.length === 0) {
       setAttachmentsByMessage((prev) => (Object.keys(prev).length ? {} : prev));
+      setAttachmentErrors((prev) => (prev.size ? new Set() : prev));
       return;
     }
     let cancelled = false;
@@ -291,34 +323,60 @@ export function MessageThreadPane({
       const entries = await Promise.all(
         ids.map(async (messageId) => {
           const res = await getGolfMessageAttachments(messageId);
-          return [messageId, res.attachments ?? []] as const;
+          return [messageId, res] as const;
         }),
       );
       if (cancelled) return;
       const next: Record<string, ResolvedAttachment[]> = {};
-      for (const [messageId, atts] of entries) {
-        if (atts.length) next[messageId] = atts;
+      const errored = new Set<string>();
+      for (const [messageId, res] of entries) {
+        if ('error' in res) {
+          errored.add(messageId);
+        } else if (res.attachments?.length) {
+          next[messageId] = res.attachments;
+        }
       }
       setAttachmentsByMessage(next);
+      setAttachmentErrors(errored);
     })();
     return () => {
       cancelled = true;
     };
-  }, [attachmentMessageKey]);
+  }, [attachmentMessageKey, attachmentRetryNonce]);
+
+  const retryAttachments = React.useCallback(() => {
+    setAttachmentRetryNonce((n) => n + 1);
+  }, []);
 
   // Auto-scroll to bottom on new messages — ONLY when near the bottom.
   // PRESERVES the legacy near-bottom check (scrollTop + clientHeight >= scrollHeight - 100).
+  // P265: honor prefers-reduced-motion — reduced-motion users get an instant jump
+  // instead of a smooth animated scroll (consistent with the rest of the file).
   React.useEffect(() => {
+    const behavior: ScrollBehavior = reduceMotion ? 'auto' : 'smooth';
     const container = messagesContainerRef.current;
     if (!container) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior });
       return;
     }
     const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
     if (isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior });
     }
-  }, [messages]);
+  }, [messages, reduceMotion]);
+
+  // P259: scroll a search-hit message into view once the thread has loaded it.
+  React.useEffect(() => {
+    if (!scrollToMessageId) return;
+    if (loading) return;
+    const node = messageRefs.current.get(scrollToMessageId);
+    if (node) {
+      node.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    }
+    // Consume the request whether or not the node is present (e.g. the matched
+    // message scrolled off the fetched window) so it doesn't re-fire on refetch.
+    onScrolledToMessage?.();
+  }, [scrollToMessageId, loading, messages, reduceMotion, onScrolledToMessage]);
 
   // HONEST-EMPTY (c): no thread selected (desktop) → dim prompt.
   if (!conversation) {
@@ -342,7 +400,7 @@ export function MessageThreadPane({
                 onClick={onNewMessage}
                 className={cn(
                   'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
-                  'bg-accent-500 font-fw-sans text-[13px] font-medium text-text-on-accent shadow-flat',
+                  'bg-accent-500 font-fw-sans text-body-sm font-medium text-text-on-accent shadow-flat',
                   'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
                   'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                 )}
@@ -415,6 +473,31 @@ export function MessageThreadPane({
             <div className="h-4 w-1/2 rounded bg-surface-sunken" />
             <div className="h-4 w-2/3 rounded bg-surface-sunken" />
           </div>
+        ) : error ? (
+          // P258: the fetch FAILED — render a recoverable error state with Retry,
+          // NEVER the success-styled "No messages yet" empty state.
+          <EmptyState
+            variant="subtle"
+            icon={AlertTriangle}
+            title="Couldn’t load this conversation"
+            description="Something went wrong loading these messages. Check your connection and try again."
+            action={
+              onRetry ? (
+                <button
+                  type="button"
+                  onClick={onRetry}
+                  className={cn(
+                    'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
+                    'bg-accent-500 font-fw-sans text-body-sm font-medium text-text-on-accent shadow-flat',
+                    'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
+                    'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                  )}
+                >
+                  Try again
+                </button>
+              ) : undefined
+            }
+          />
         ) : !messages || messages.length === 0 ? (
           // HONEST-EMPTY (b): selected thread, zero messages.
           <EmptyState
@@ -437,6 +520,7 @@ export function MessageThreadPane({
               const editedAt = (msg as MessageWithReadStatus & { edited_at?: string | null }).edited_at;
               const hasAttachments = (msg as MessageWithReadStatus & { has_attachments?: boolean | null }).has_attachments;
               const resolvedAttachments = attachmentsByMessage[msg.id] ?? [];
+              const hasAttachmentError = attachmentErrors.has(msg.id);
 
               // Bug fix #1 — resolve the real sender name + avatar for this message.
               // For group convs: look up in groupParticipants map (user_id → name/avatar).
@@ -453,6 +537,11 @@ export function MessageThreadPane({
               return (
                 <div
                   key={msg.id}
+                  ref={(node) => {
+                    // P259: register/unregister this message's scroll anchor.
+                    if (node) messageRefs.current.set(msg.id, node);
+                    else messageRefs.current.delete(msg.id);
+                  }}
                   className={cn(
                     'flex items-end gap-2',
                     isOwn ? 'justify-end' : 'justify-start',
@@ -583,10 +672,28 @@ export function MessageThreadPane({
                         {/* Attachments — DORMANT unless has_attachments. Renders
                             the resolved (signed) gallery once it loads; falls
                             back to a quiet "Attachment" placeholder while the
-                            signed URLs are still in flight. */}
+                            signed URLs are still in flight. P266: on a failed
+                            fetch, show a tap-to-retry chip instead of hanging on
+                            the placeholder forever. */}
                         {hasAttachments ? (
                           resolvedAttachments.length ? (
                             <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} />
+                          ) : hasAttachmentError ? (
+                            <button
+                              type="button"
+                              onClick={retryAttachments}
+                              aria-label="Couldn’t load attachment — tap to retry"
+                              className={cn(
+                                'mt-1 inline-flex items-center gap-1 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow',
+                                'outline-none transition-colors focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1',
+                                isOwn
+                                  ? 'text-text-on-accent/90 hover:bg-text-on-accent/15 focus-visible:ring-offset-accent-500'
+                                  : 'text-text-secondary hover:bg-surface focus-visible:ring-offset-surface-sunken',
+                              )}
+                            >
+                              <RotateCw size={12} aria-hidden="true" />
+                              Couldn’t load attachment — tap to retry
+                            </button>
                           ) : (
                             <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-text-on-accent/80' : 'text-text-tertiary')}>
                               <Paperclip size={12} aria-hidden="true" />
@@ -610,7 +717,13 @@ export function MessageThreadPane({
                       <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
                         {formatTime(msg.created_at)}
                       </span>
-                      {isOwn && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
+                      {/* P264 no-data-lies: per-message "Read" is only honest in a
+                          1:1 thread. In a group the hook can only see ONE arbitrary
+                          other participant's last_read_at, so "Read" would imply the
+                          whole group has read when a single (random) member has.
+                          Suppress the receipt in groups rather than imply group-read
+                          off one member. */}
+                      {isOwn && !isGroup && <ReadReceipt isRead={(msg as MessageWithReadStatus).isRead} />}
                     </div>
                   )}
                 </div>

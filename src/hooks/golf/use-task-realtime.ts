@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 /**
  * Task priority levels (based on golf_tasks.priority)
@@ -250,12 +251,20 @@ export function useTaskRealtime(
         const taskIds = taskList.map((t) => t.id);
 
         // Fetch all assignment rows for these tasks (joined with player names).
+        // Paginated past the PostgREST 1000-row cap: a team with many tasks x
+        // players (e.g. 50 tasks x 25 players = 1250 rows) would otherwise
+        // silently truncate, under-reporting N-of-M completion + overdue stats.
         const assignmentsByTask = new Map<string, TaskAssignment[]>();
         if (taskIds.length > 0) {
-          const { data: assignRows, error: assignError } = await supabase
-            .from('golf_task_assignments')
-            .select('id, task_id, player_id, status, completed_at, player:golf_players!golf_task_assignments_player_id_fkey(id, first_name, last_name)')
-            .in('task_id', taskIds);
+          const { data: assignRows, error: assignError } = await fetchAllRowsResult(
+            (from, to) =>
+              supabase
+                .from('golf_task_assignments')
+                .select('id, task_id, player_id, status, completed_at, player:golf_players!golf_task_assignments_player_id_fkey(id, first_name, last_name)')
+                .in('task_id', taskIds)
+                .order('id', { ascending: true })
+                .range(from, to)
+          );
 
           if (assignError) throw assignError;
 

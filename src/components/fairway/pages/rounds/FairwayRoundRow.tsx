@@ -112,6 +112,30 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
           {city && <span className="truncate">{city}</span>}
           <span className="flex-shrink-0 tabular-nums">· {holesPlayed}h</span>
         </div>
+
+        {/* Mobile-only condensed stat line — the quick stats are hidden on phones
+            (the md:flex cluster below), so surface them here as a single caption
+            row to keep mobile parity (the snapshot the cards hid). Honest: each
+            stat shows only when its real value is present. */}
+        {hasAnyMicroStat && (
+          <div className="mt-1 flex flex-wrap items-center gap-x-1.5 font-fw-mono text-caption tabular-nums text-text-secondary md:hidden">
+            {putts !== null && <span>P{putts}</span>}
+            {fir !== null && (
+              <>
+                {putts !== null && <span aria-hidden="true" className="text-text-tertiary">·</span>}
+                <span>FIR {fir}%</span>
+              </>
+            )}
+            {gir !== null && (
+              <>
+                {(putts !== null || fir !== null) && (
+                  <span aria-hidden="true" className="text-text-tertiary">·</span>
+                )}
+                <span>GIR {gir}%</span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Quick stats — always visible (the snapshot the cards hid). Honest empty. */}

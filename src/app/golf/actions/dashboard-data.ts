@@ -86,6 +86,12 @@ interface ScoringTrend {
 
 export interface CoachDashboardPayload {
     todayEvents: TodayEvent[];
+    /**
+     * True when the get_coach_today_schedule RPC failed. Distinguishes a
+     * degraded/unloadable schedule from a genuinely empty day so the UI can
+     * surface a "couldn't load" notice instead of the cheerful empty state.
+     */
+    todayScheduleError: boolean;
     stats: {
         rosterSize: number;
         upcomingEvents: number;
@@ -328,7 +334,11 @@ export async function getCoachDashboardData(
     const activeQualifiers = qualifiersCountResult.count || 0;
 
     // Today events + RSVP counts are now delivered fully-shaped by the
-    // get_coach_today_schedule RPC above.
+    // get_coach_today_schedule RPC above. Capture the RPC error explicitly: a
+    // failed call also yields `data == null` → []`, which must NOT be rendered as
+    // the cheerful "clear schedule" empty state. The flag lets the UI surface a
+    // distinct degraded notice instead (same honesty rule as the page catch).
+    const todayScheduleError = todayEventsResult.error != null;
     const todayEvents: TodayEvent[] = (todayEventsResult.data as TodayEvent[] | null) ?? [];
 
     // Extract players
@@ -684,6 +694,7 @@ export async function getCoachDashboardData(
 
     return {
         todayEvents,
+        todayScheduleError,
         stats: {
             rosterSize,
             upcomingEvents,

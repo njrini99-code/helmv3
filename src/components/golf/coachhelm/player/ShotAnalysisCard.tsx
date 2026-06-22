@@ -244,7 +244,7 @@ export function ShotAnalysisCard({
               {topWeaknesses.map((weakness, i) => (
                 <m.div
                   key={i}
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/40 border border-white/20"
+                  className="flex items-center justify-between p-3 rounded-xl bg-surface-sunken border border-border-subtle"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 + i * 0.1 })}
@@ -277,11 +277,11 @@ export function ShotAnalysisCard({
 
         {/* Bottom row: Resilience + Scramble */}
         {(safeResilience != null || resolvedScrambleRate != null) && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border-subtle">
             {/* Resilience */}
             {safeResilience != null && (
               <m.div
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-white/20"
+                className="flex items-center gap-3 p-3 rounded-xl bg-surface-sunken border border-border-subtle"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6 })}
@@ -327,7 +327,7 @@ export function ShotAnalysisCard({
             {/* Scramble rate */}
             {resolvedScrambleRate != null && (
               <m.div
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-white/20"
+                className="flex items-center gap-3 p-3 rounded-xl bg-surface-sunken border border-border-subtle"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.7 })}

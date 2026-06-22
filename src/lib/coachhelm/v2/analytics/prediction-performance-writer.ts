@@ -21,6 +21,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { logServerError } from '@/lib/server-error-logger';
+import { INVALID_HORIZON_CATEGORY } from '@/lib/coachhelm/v2/learning/outcome-validator';
 
 const ROLLING_WINDOW_DAYS = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -178,6 +179,10 @@ export async function rollupPredictionPerformanceRolling30d(
 
   for (const p of predictions) {
     if (!p.player_id || !p.metric) continue;
+    // Retired same-day/invalid-horizon predictions can never validate honestly
+    // (P0-02) — exclude them from rollups entirely so they don't depress the
+    // validated count or accuracy rate.
+    if (p.error_category === INVALID_HORIZON_CATEGORY) continue;
     const teams = playerToTeams.get(p.player_id) ?? [];
     if (teams.length === 0) continue;
 

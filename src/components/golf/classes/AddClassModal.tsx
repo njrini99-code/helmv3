@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useId, useEffect } from 'react';
+import { useState, useId, useEffect, useMemo, useRef } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
@@ -147,6 +147,38 @@ function detectConflicts(
   return conflicts;
 }
 
+/**
+ * Build the semester <option> list dynamically from `now` so the current term is
+ * ALWAYS selectable and pre-selected — a hard-coded year list silently goes stale
+ * and detaches the <select> from formData.semester (which drives the calendar
+ * sync date range). Returns the previous term, the current term, and the next
+ * three terms in chronological Spring → Summer → Fall order.
+ *
+ * Exported for deterministic unit testing.
+ */
+export function generateSemesterOptions(now: Date = new Date()): string[] {
+  // Academic term ordering within a calendar year.
+  const TERMS = ['Spring', 'Summer', 'Fall'] as const;
+  const month = now.getMonth();
+  const year = now.getFullYear();
+
+  // Current term index, mirroring detectSemester()'s month buckets:
+  // Jan–May → Spring, Jun–Jul → Summer, Aug–Dec → Fall.
+  const currentTermIndex = month <= 4 ? 0 : month <= 7 ? 1 : 2;
+
+  // Absolute term position = year * 3 + termIndex. Walk from one term before the
+  // current term through three terms after it (5 terms total).
+  const currentAbsolute = year * TERMS.length + currentTermIndex;
+  const options: string[] = [];
+  for (let offset = -1; offset <= 3; offset++) {
+    const absolute = currentAbsolute + offset;
+    const termYear = Math.floor(absolute / TERMS.length);
+    const term = TERMS[((absolute % TERMS.length) + TERMS.length) % TERMS.length];
+    options.push(`${term} ${termYear}`);
+  }
+  return options;
+}
+
 function emptyClassForm(): ClassFormData {
   return {
     course_code: '',
@@ -171,6 +203,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
   const [conflicts, setConflicts] = useState<ClassConflict[]>([]);
   const [showConflictWarning, setShowConflictWarning] = useState(false);
   const [formData, setFormData] = useState<ClassFormData>(() => editingClass ?? emptyClassForm());
+  const conflictPanelRef = useRef<HTMLDivElement>(null);
 
   // Reset conflicts when modal closes or form changes significantly
   const resetConflictState = () => {
@@ -189,6 +222,16 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
     setConflicts([]);
     setShowConflictWarning(false);
   }, [isOpen, editingClass]);
+
+  // a11y: when the conflict panel appears, move focus to it so screen-reader and
+  // keyboard users land on the alert (the Submit button is now offscreen above
+  // the injected panel). role="alert" on the container also triggers an AT
+  // announcement; focusing makes the warning + its actions immediately reachable.
+  useEffect(() => {
+    if (showConflictWarning && conflicts.length > 0) {
+      conflictPanelRef.current?.focus();
+    }
+  }, [showConflictWarning, conflicts.length]);
 
   const handleDayToggle = (day: string) => {
     setFormData(prev => ({
@@ -267,6 +310,18 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
   // Check if any conflict is an exact duplicate (should be blocked)
   const hasExactDuplicate = conflicts.some(c => c.isExactDuplicate);
 
+  // Dynamic term list (prev / current / next-3) so the current semester is always
+  // selectable + pre-selected. When editing a class whose stored term falls
+  // outside that window, splice it in so the <select> never renders blank or
+  // silently re-binds to the wrong term (which would misplace synced events).
+  const semesterOptions = useMemo(() => {
+    const options = generateSemesterOptions();
+    if (formData.semester && !options.includes(formData.semester)) {
+      options.push(formData.semester);
+    }
+    return options;
+  }, [formData.semester]);
+
   return (
     <Drawer
       open={isOpen}
@@ -279,14 +334,14 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         aria-labelledby="add-class-title"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-          <DrawerTitle id="add-class-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+          <DrawerTitle id="add-class-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
             {editingClass ? 'Edit Class' : 'Add Class'}
           </DrawerTitle>
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
-            className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
+            className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
           >
             <IconX size={20} />
           </IconButton>
@@ -297,8 +352,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Course Code & Name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-              <label htmlFor={`${uid}-course-code`} className="block text-sm font-medium text-warm-700 mb-1.5">
-                Course ID <span className="text-red-500">*</span>
+              <label htmlFor={`${uid}-course-code`} className="block text-sm font-medium text-text-secondary mb-1.5">
+                Course ID <span className="text-fw-danger">*</span>
               </label>
               <Input
                 id={`${uid}-course-code`}
@@ -309,8 +364,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div className="col-span-2">
-              <label htmlFor={`${uid}-course-name`} className="block text-sm font-medium text-warm-700 mb-1.5">
-                Course Name <span className="text-red-500">*</span>
+              <label htmlFor={`${uid}-course-name`} className="block text-sm font-medium text-text-secondary mb-1.5">
+                Course Name <span className="text-fw-danger">*</span>
               </label>
               <Input
                 id={`${uid}-course-name`}
@@ -324,7 +379,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
 
           {/* Days */}
           <div>
-            <p className="block text-sm font-medium text-warm-700 mb-2">
+            <p className="block text-sm font-medium text-text-secondary mb-2">
               Days
             </p>
             <div className="flex items-center gap-2 mb-2">
@@ -336,8 +391,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'w-10 h-10 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                      ? 'bg-accent-500 text-text-on-accent'
+                      : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
                   )}
                 >
                   {day.label}
@@ -353,8 +408,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'px-3 py-1 text-xs font-medium rounded-full transition-all',
                     JSON.stringify(formData.days) === JSON.stringify(pattern.days)
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
+                      ? 'bg-accent-500/15 text-accent-800'
+                      : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
                   )}
                 >
                   {pattern.label}
@@ -366,7 +421,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor={`${uid}-start-time`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-start-time`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Start Time
               </label>
               <Input
@@ -377,7 +432,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div>
-              <label htmlFor={`${uid}-end-time`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-end-time`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 End Time
               </label>
               <Input
@@ -392,7 +447,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Location */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor={`${uid}-building`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-building`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Building
               </label>
               <Input
@@ -403,7 +458,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div>
-              <label htmlFor={`${uid}-room`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-room`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Room
               </label>
               <Input
@@ -418,7 +473,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Instructor & Credits */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="col-span-2">
-              <label htmlFor={`${uid}-professor`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-professor`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Professor
               </label>
               <Input
@@ -429,7 +484,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               />
             </div>
             <div>
-              <label htmlFor={`${uid}-credits`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-credits`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Credits
               </label>
               <Input
@@ -455,7 +510,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           {/* Semester & Color */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor={`${uid}-semester`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-semester`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Semester
               </label>
               <select
@@ -463,16 +518,17 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                 value={formData.semester}
                 onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
                 aria-label="Semester"
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-base lg:text-sm min-h-[44px] bg-white focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
+                className="w-full px-3 py-2 border border-border-subtle rounded-lg text-base lg:text-sm min-h-[44px] bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30"
               >
-                <option value="Spring 2025">Spring 2025</option>
-                <option value="Summer 2025">Summer 2025</option>
-                <option value="Fall 2025">Fall 2025</option>
-                <option value="Spring 2026">Spring 2026</option>
+                {semesterOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label htmlFor={`${uid}-color`} className="block text-sm font-medium text-warm-700 mb-1.5">
+              <label htmlFor={`${uid}-color`} className="block text-sm font-medium text-text-secondary mb-1.5">
                 Color
               </label>
               <div className="flex items-center gap-2">
@@ -481,16 +537,16 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
+                  className="w-10 h-10 rounded-lg border border-border-subtle cursor-pointer"
                 />
-                <span className="text-sm text-warm-500">Calendar color</span>
+                <span className="text-sm text-text-tertiary">Calendar color</span>
               </div>
             </div>
           </div>
 
           {/* Notes */}
           <div>
-            <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-warm-700 mb-1.5">
+            <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-text-secondary mb-1.5">
               Notes
             </label>
             <textarea
@@ -502,14 +558,20 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               aria-label="Notes"
               autoCapitalize="sentences"
               autoCorrect="on"
-              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-base lg:text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 resize-none"
+              className="w-full px-3 py-2 border border-border-subtle rounded-lg text-base lg:text-sm bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 resize-none"
             />
           </div>
         </form>
 
         {/* Conflict Warning */}
         {showConflictWarning && conflicts.length > 0 && (
-          <div className="mx-6 mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50">
+          <div
+            ref={conflictPanelRef}
+            role="alert"
+            aria-live="assertive"
+            tabIndex={-1}
+            className="mx-6 mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2"
+          >
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
                 <IconWarning size={18} className="text-amber-600" />
@@ -530,7 +592,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                       className="text-sm text-amber-800 bg-amber-100/50 rounded-lg px-3 py-2"
                     >
                       <span className="font-medium">{conflict.existingClass.class_name}</span>
-                      <span className="text-amber-600 ml-2">
+                      <span className="text-amber-800 ml-2">
                         ({conflict.conflictingDays.join(', ')} at {conflict.existingClass.start_time} - {conflict.existingClass.end_time})
                       </span>
                     </li>
@@ -550,7 +612,9 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                       type="button"
                       size="sm"
                       onClick={handleConfirmWithConflicts}
-                      className="bg-amber-600 hover:bg-amber-700 transition-colors"
+                      // amber-800 (#92400E) on white text ≈ 6.4:1 — clears WCAG AA
+                      // 4.5:1 (the old amber-600 fill was ~2.8:1 and failed).
+                      className="bg-amber-800 text-white hover:bg-amber-900 transition-colors"
                     >
                       Add Anyway
                     </Button>
@@ -572,7 +636,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-subtle bg-surface-sunken">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>

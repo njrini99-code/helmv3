@@ -125,6 +125,8 @@ export {
   type StatusPillProps,
   FilterPill,
   type FilterPillProps,
+  SelectablePill,
+  type SelectablePillProps,
   Badge,
   Chip,
   type BadgeProps,

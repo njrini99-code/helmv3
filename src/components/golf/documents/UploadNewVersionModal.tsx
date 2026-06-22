@@ -108,19 +108,19 @@ export function UploadNewVersionModal({
         className="sm:max-w-lg sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
         aria-labelledby="upload-version-title"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
+        {/* Header — P306: Fairway tokens (warm-matte) only. */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div>
-            <DrawerTitle id="upload-version-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
+            <DrawerTitle id="upload-version-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
               Upload New Version
             </DrawerTitle>
-            <p className="text-sm text-warm-500 mt-0.5">{documentTitle}</p>
+            <p className="text-sm text-text-tertiary mt-0.5">{documentTitle}</p>
           </div>
           <IconButton variant="default"
             onClick={handleClose}
             disabled={uploading}
             aria-label="Close"
-            className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-surface-tint active:bg-surface-sunken rounded-lg transition-colors disabled:opacity-50"
           >
             <IconX size={20} />
           </IconButton>
@@ -130,17 +130,17 @@ export function UploadNewVersionModal({
         <div className="p-6 space-y-4">
           {/* Error */}
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+            <div className="p-3 bg-fw-danger-bg border border-fw-danger/30 rounded-lg text-sm text-fw-danger">
               {error}
             </div>
           )}
 
           {/* File type hint */}
           {currentFileType && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-              Current file type: <strong>{currentFileType}</strong>
+            <div className="p-3 bg-surface-tint border border-border-subtle rounded-lg text-sm text-text-secondary">
+              Current file type: <strong className="text-text-primary">{currentFileType}</strong>
               <br />
-              <span className="text-blue-600">
+              <span className="text-text-tertiary">
                 Tip: For best compatibility, upload the same file type.
               </span>
             </div>
@@ -155,10 +155,10 @@ export function UploadNewVersionModal({
             className={`
               relative border-2 border-dashed rounded-xl p-8 text-center transition-all
               ${dragOver
-                ? 'border-primary-400 bg-primary-50'
+                ? 'border-accent-400 bg-accent-50'
                 : selectedFile
-                  ? 'border-primary-500 bg-primary-50/50'
-                  : 'border-warm-200 hover:border-warm-300'
+                  ? 'border-accent-500 bg-accent-50/50'
+                  : 'border-border-subtle hover:border-border-strong'
               }
             `}
           >
@@ -171,11 +171,11 @@ export function UploadNewVersionModal({
 
             {selectedFile ? (
               <div>
-                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <IconFile size={24} className="text-primary-600" />
+                <div className="w-12 h-12 bg-accent-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <IconFile size={24} className="text-accent-600" />
                 </div>
-                <p className="font-medium text-warm-900">{selectedFile.name}</p>
-                <p className="text-sm text-warm-500 mt-1">
+                <p className="font-medium text-text-primary">{selectedFile.name}</p>
+                <p className="text-sm text-text-tertiary mt-1">
                   {formatFileSize(selectedFile.size)}
                 </p>
                 <Button variant="ghost"
@@ -183,21 +183,24 @@ export function UploadNewVersionModal({
                     e.stopPropagation();
                     setSelectedFile(null);
                   }}
-                  className="mt-3 text-sm text-warm-500 hover:text-warm-700 underline"
+                  className="mt-3 text-sm text-text-tertiary hover:text-text-secondary underline"
                 >
                   Choose different file
                 </Button>
               </div>
             ) : (
               <div>
-                <div className="w-12 h-12 bg-warm-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <IconUpload size={24} className="text-warm-400" />
+                <div className="w-12 h-12 bg-surface-sunken rounded-full flex items-center justify-center mx-auto mb-3">
+                  <IconUpload size={24} className="text-text-tertiary" />
                 </div>
-                <p className="font-medium text-warm-700">
+                <p className="font-medium text-text-secondary">
                   Drop file here or click to browse
                 </p>
-                <p className="text-sm text-warm-400 mt-1">
-                  PDF, images, Office documents, videos (max 2MB)
+                {/* P306 — the "max 2MB" cap was inaccurate (no such limit is
+                    enforced and the page advertises no cap). Reconciled to the
+                    accepted-types guidance the Fairway page shows. */}
+                <p className="text-sm text-text-tertiary mt-1">
+                  PDF, images, Office documents, and videos
                 </p>
               </div>
             )}
@@ -205,7 +208,7 @@ export function UploadNewVersionModal({
 
           {/* Change notes */}
           <div>
-            <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-warm-700 mb-2">
+            <label htmlFor={`${uid}-notes`} className="block text-sm font-medium text-text-secondary mb-2">
               Change Notes (optional)
             </label>
             <textarea
@@ -217,31 +220,31 @@ export function UploadNewVersionModal({
               aria-label="Change notes"
               autoCapitalize="sentences"
               autoCorrect="on"
-              className="w-full px-4 py-2.5 border border-warm-200 rounded-lg text-base lg:text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 text-warm-900 placeholder:text-warm-400 resize-none"
+              className="w-full px-4 py-2.5 border border-border-subtle rounded-lg text-base lg:text-sm focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-border-focus/30 text-text-primary placeholder:text-text-tertiary resize-none bg-surface"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-200 bg-warm-50 rounded-b-2xl">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-subtle bg-surface-tint rounded-b-2xl">
           <Button variant="ghost"
             onClick={handleClose}
             disabled={uploading}
-            className="px-4 py-2 text-warm-700 font-medium hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-text-secondary font-medium hover:bg-surface-tint active:bg-surface-sunken rounded-lg transition-colors disabled:opacity-50"
           >
             Cancel
           </Button>
           <Button variant="primary"
             onClick={handleSubmit}
             disabled={!selectedFile || uploading}
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-accent-500 hover:bg-accent-600 text-text-on-accent font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {uploading ? (
               <>
                 <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-text-on-accent skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-text-on-accent skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-text-on-accent skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                 </span>
                 Uploading...
               </>

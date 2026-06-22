@@ -86,6 +86,38 @@ export const DEFAULT_SUGGESTED_WINDOW_DAYS = 30;
 export const DEFAULT_SUGGESTION_TTL_DAYS = 14;
 
 /**
+ * Direction-aware severity for one standing row: how far BELOW the PGA
+ * baseline the player is, signed so "worse" is always positive. Returns the
+ * positive severity, or `null` when the row is ineligible (not worse than
+ * baseline, or no finite PGA baseline to aim at).
+ */
+export function rowSeverity(row: StandingRowWithDirection): number | null {
+  if (!Number.isFinite(row.pga_value)) return null;
+  const rawDelta = row.pga_delta ?? row.player_value - row.pga_value;
+  const severity = row.direction === 'higher_better' ? -rawDelta : rawDelta;
+  return severity > 0 ? severity : null;
+}
+
+/**
+ * Eligible severity for a metric_id from a player's standing rows, applying
+ * the same filters as {@link selectSuggestionsForPlayer} (canonical metric,
+ * drill coverage, worse-than-baseline). Returns `null` when the metric is no
+ * longer a valid improvement target — which marks any pending suggestion on it
+ * as stale and eligible for expiry (P1-08).
+ */
+export function severityForMetric(
+  standings: StandingRowWithDirection[],
+  metricId: string,
+  metricsWithDrillCoverage: ReadonlySet<string>,
+): number | null {
+  if (!isMetricId(metricId)) return null;
+  if (!metricsWithDrillCoverage.has(metricId)) return null;
+  const row = standings.find((s) => s.metric_id === metricId);
+  if (!row) return null;
+  return rowSeverity(row);
+}
+
+/**
  * Pure selector. Given everything the writer knows about a player,
  * returns up to {@link SelectionInput.maxSuggestions} drafts ordered
  * worst-first.
@@ -102,15 +134,10 @@ export function selectSuggestionsForPlayer(input: SelectionInput): SuggestionDra
     if (!input.metricsWithDrillCoverage.has(row.metric_id)) continue;
 
     // Severity = how far below the PGA baseline the player is, signed
-    // for direction so "worse" is always positive.
-    const rawDelta = row.pga_delta ?? row.player_value - row.pga_value;
-    const severity = row.direction === 'higher_better' ? -rawDelta : rawDelta;
-
-    // Only suggest if the player is actually worse than baseline.
-    if (severity <= 0) continue;
-
-    // Skip degenerate rows (no PGA baseline to aim at).
-    if (!Number.isFinite(row.pga_value)) continue;
+    // for direction so "worse" is always positive. `null` ⇒ ineligible
+    // (not worse than baseline, or no finite PGA baseline to aim at).
+    const severity = rowSeverity(row);
+    if (severity == null) continue;
 
     drafts.push({
       player_id: row.player_id,
@@ -143,6 +170,129 @@ export function computeTargetValue(args: { playerValue: number; pgaValue: number
 }
 
 // ---------------------------------------------------------------------------
+// Reconciliation (P1-08) — keep at most TWO active pending suggestions per
+// player, replacing stale lower-value ones with higher-value candidates.
+// ---------------------------------------------------------------------------
+
+/** Hard ceiling on simultaneously-active pending suggestions per player. */
+export const MAX_ACTIVE_PENDING_PER_PLAYER = 2;
+
+/** An existing pending suggestion as the writer needs to reconcile it. */
+export interface ExistingPendingSuggestion {
+  id: string;
+  metric_id: string;
+}
+
+export interface ReconcileInput {
+  /** Pending (non-expired) suggestions already in the DB for this player. */
+  existing: ExistingPendingSuggestion[];
+  /**
+   * Freshly-ranked candidate drafts for this player (worst-first), already
+   * filtered to exclude metrics with an active goal. May include metrics that
+   * are ALSO currently pending — those are de-duped here, not at selection time.
+   */
+  candidates: SuggestionDraft[];
+  /** Severity for each currently-pending metric, derived from live standings. */
+  severityByExistingMetric: ReadonlyMap<string, number>;
+  /** Defaults to {@link MAX_ACTIVE_PENDING_PER_PLAYER}. */
+  cap?: number;
+}
+
+export interface ReconcilePlan {
+  /** New suggestion drafts to insert. */
+  toInsert: SuggestionDraft[];
+  /** Ids of existing pending suggestions to expire (replaced or over-cap). */
+  toExpireIds: string[];
+}
+
+/**
+ * Decide the minimal set of inserts + expirations so that, after the writer
+ * runs, the player holds at most `cap` active pending suggestions — and those
+ * are the highest-severity ones available across {existing ∪ candidates}.
+ *
+ * Rules (deterministic):
+ *  - An existing pending suggestion whose metric no longer appears in live
+ *    standings (no severity) is treated as stale → eligible for expiry.
+ *  - Across the union of (existing-with-severity, candidate), the top `cap`
+ *    by severity are kept. Existing rows already in the keep-set stay; the
+ *    rest are expired. Candidates in the keep-set are inserted (skipping any
+ *    metric already held by a kept existing row — never double-suggest a
+ *    metric).
+ *  - Ties broken by metric_id ascending (matches selectSuggestionsForPlayer).
+ *
+ * Re-running with no standings change is idempotent: the kept existing rows
+ * already satisfy the cap, so `toInsert` is empty and `toExpireIds` is empty.
+ */
+export function reconcileSuggestionsForPlayer(input: ReconcileInput): ReconcilePlan {
+  const cap = input.cap ?? MAX_ACTIVE_PENDING_PER_PLAYER;
+  if (cap <= 0) {
+    return { toInsert: [], toExpireIds: input.existing.map((e) => e.id) };
+  }
+
+  // Build a unified, ranked pool. Each entry knows whether it's an existing
+  // row (carry its id) or a new candidate (carry its draft).
+  type PoolEntry = {
+    metric_id: string;
+    severity: number;
+    existingId: string | null;
+    draft: SuggestionDraft | null;
+  };
+
+  const pool = new Map<string, PoolEntry>();
+
+  // Existing rows first — they win the metric slot so we never expire a row
+  // only to re-insert the same metric.
+  for (const e of input.existing) {
+    const severity = input.severityByExistingMetric.get(e.metric_id);
+    pool.set(e.metric_id, {
+      metric_id: e.metric_id,
+      // No live standing → stale; severity -Infinity sinks it to expiry.
+      severity: severity ?? Number.NEGATIVE_INFINITY,
+      existingId: e.id,
+      draft: null,
+    });
+  }
+
+  // Candidates fill metrics not already pending.
+  for (const c of input.candidates) {
+    if (pool.has(c.metric_id)) continue;
+    pool.set(c.metric_id, {
+      metric_id: c.metric_id,
+      severity: c.severity,
+      existingId: null,
+      draft: c,
+    });
+  }
+
+  // Rank worst-first; deterministic tiebreak by metric_id.
+  const ranked = Array.from(pool.values()).sort((a, b) => {
+    if (b.severity !== a.severity) return b.severity - a.severity;
+    return a.metric_id.localeCompare(b.metric_id);
+  });
+
+  // A stale existing row (severity -Infinity) is never "kept" even if it lands
+  // inside the cap window — it must be expired.
+  const keep = ranked
+    .filter((e) => Number.isFinite(e.severity))
+    .slice(0, cap);
+  const keepSet = new Set(keep.map((e) => e.metric_id));
+
+  const toInsert: SuggestionDraft[] = [];
+  const toExpireIds: string[] = [];
+
+  for (const entry of ranked) {
+    const kept = keepSet.has(entry.metric_id);
+    if (entry.existingId) {
+      if (!kept) toExpireIds.push(entry.existingId);
+    } else if (kept && entry.draft) {
+      toInsert.push(entry.draft);
+    }
+  }
+
+  return { toInsert, toExpireIds };
+}
+
+// ---------------------------------------------------------------------------
 // Live writer
 // ---------------------------------------------------------------------------
 
@@ -150,6 +300,8 @@ export interface WriterResult {
   players_considered: number;
   players_with_standings: number;
   suggestions_inserted: number;
+  /** Stale lower-value pending suggestions expired during reconciliation (P1-08). */
+  suggestions_expired: number;
   per_player: Array<{ player_id: string; inserted: number; metric_ids: string[] }>;
   duration_ms: number;
   error?: string;
@@ -168,6 +320,7 @@ export async function runSuggestionWriter(
     players_considered: 0,
     players_with_standings: 0,
     suggestions_inserted: 0,
+    suggestions_expired: 0,
     per_player: [],
     duration_ms: 0,
   };
@@ -261,7 +414,7 @@ export async function runSuggestionWriter(
   const nowIso = new Date().toISOString();
   const { data: pendingSugs, error: sugsErr } = await supabase
     .from('golf_goal_suggestions')
-    .select('player_id, metric_id, state, expires_at')
+    .select('id, player_id, metric_id, state, expires_at')
     .in('player_id', playerIds)
     .in('state', ['pending', 'snoozed'])
     .gt('expires_at', nowIso);
@@ -270,14 +423,18 @@ export async function runSuggestionWriter(
     result.duration_ms = Date.now() - startedAt;
     return result;
   }
-  const pendingByPlayer = new Map<string, Set<string>>();
+  // Keep the full pending rows per player (id + metric_id) so we can reconcile
+  // (replace stale lower-value rows) — not just dedupe by metric (P1-08).
+  const pendingByPlayer = new Map<string, ExistingPendingSuggestion[]>();
   for (const s of pendingSugs ?? []) {
-    const set = pendingByPlayer.get(s.player_id) ?? new Set<string>();
-    set.add(s.metric_id);
-    pendingByPlayer.set(s.player_id, set);
+    const list = pendingByPlayer.get(s.player_id) ?? [];
+    list.push({ id: s.id, metric_id: s.metric_id });
+    pendingByPlayer.set(s.player_id, list);
   }
 
-  // 5. Build inserts per player.
+  // 5. Reconcile per player (P1-08): keep at most two active pending
+  //    suggestions, replacing stale lower-value ones with higher-value
+  //    candidates. Collect inserts + the ids of rows to expire.
   const inserts: Array<{
     player_id: string;
     metric_id: string;
@@ -285,24 +442,41 @@ export async function runSuggestionWriter(
     suggested_window_days: number;
     expires_at: string;
   }> = [];
+  const expireIds: string[] = [];
   const expiresAtIso = new Date(
     Date.now() + DEFAULT_SUGGESTION_TTL_DAYS * 86_400_000,
   ).toISOString();
 
   for (const playerId of playerIds) {
     const standings = standingsByPlayer.get(playerId) ?? [];
-    const drafts = selectSuggestionsForPlayer({
+    const existing = pendingByPlayer.get(playerId) ?? [];
+
+    // Candidate pool: do NOT pre-exclude pending metrics (reconcile de-dupes),
+    // and widen the pool past the cap so a stronger candidate can replace a
+    // weaker pending row. Active-goal metrics are still excluded at source.
+    const candidates = selectSuggestionsForPlayer({
       player_id: playerId,
       standings,
       metricsWithDrillCoverage,
       activeGoalMetrics: activeGoalsByPlayer.get(playerId) ?? new Set(),
-      pendingSuggestionMetrics: pendingByPlayer.get(playerId) ?? new Set(),
+      pendingSuggestionMetrics: new Set(),
+      maxSuggestions: MAX_ACTIVE_PENDING_PER_PLAYER * 2,
     });
-    if (drafts.length === 0) {
-      result.per_player.push({ player_id: playerId, inserted: 0, metric_ids: [] });
-      continue;
+
+    // Live severity for each currently-pending metric (absent ⇒ stale).
+    const severityByExistingMetric = new Map<string, number>();
+    for (const e of existing) {
+      const sev = severityForMetric(standings, e.metric_id, metricsWithDrillCoverage);
+      if (sev != null) severityByExistingMetric.set(e.metric_id, sev);
     }
-    for (const d of drafts) {
+
+    const plan = reconcileSuggestionsForPlayer({
+      existing,
+      candidates,
+      severityByExistingMetric,
+    });
+
+    for (const d of plan.toInsert) {
       inserts.push({
         player_id: d.player_id,
         metric_id: d.metric_id,
@@ -311,11 +485,28 @@ export async function runSuggestionWriter(
         expires_at: expiresAtIso,
       });
     }
+    expireIds.push(...plan.toExpireIds);
+
     result.per_player.push({
       player_id: playerId,
-      inserted: drafts.length,
-      metric_ids: drafts.map((d) => d.metric_id),
+      inserted: plan.toInsert.length,
+      metric_ids: plan.toInsert.map((d) => d.metric_id),
     });
+  }
+
+  // 6a. Expire stale/replaced pending rows first so the cap holds even if the
+  //     insert below fails midway.
+  if (expireIds.length > 0) {
+    const { error: expireErr } = await supabase
+      .from('golf_goal_suggestions')
+      .update({ state: 'expired', acted_at: new Date().toISOString() })
+      .in('id', expireIds);
+    if (expireErr) {
+      result.error = `expire: ${expireErr.message}`;
+      result.duration_ms = Date.now() - startedAt;
+      return result;
+    }
+    result.suggestions_expired = expireIds.length;
   }
 
   if (inserts.length === 0) {
@@ -323,7 +514,7 @@ export async function runSuggestionWriter(
     return result;
   }
 
-  // 6. Batch-insert. state defaults to 'pending', suggested_at defaults to now().
+  // 6b. Batch-insert. state defaults to 'pending', suggested_at defaults to now().
   const { error: insertErr, count } = await supabase
     .from('golf_goal_suggestions')
     .insert(inserts, { count: 'exact' });

@@ -34,7 +34,7 @@ const toneStyles: Record<FwStatusTone, { pill: string; dot: string }> = {
   success: { pill: 'bg-fw-success-bg text-accent-700 border-accent-200', dot: 'bg-fw-success' },
   warning: { pill: 'bg-fw-warning-bg text-warm-800 border-warm-300', dot: 'bg-fw-warning' },
   danger: { pill: 'bg-fw-danger-bg text-fw-danger border-fw-danger/25', dot: 'bg-fw-danger' },
-  info: { pill: 'bg-surface-sunken text-text-secondary border-border-subtle', dot: 'bg-text-secondary' },
+  info: { pill: 'bg-surface-sunken text-text-primary border-border-strong', dot: 'bg-text-primary' },
 };
 
 const sizeStyles: Record<'sm' | 'md', string> = {

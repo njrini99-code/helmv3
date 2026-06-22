@@ -49,6 +49,45 @@ export function isStale(daysSinceMostRecent: number): boolean {
 }
 
 /**
+ * Default forecast horizon. A prediction must be due on a FUTURE day so it can
+ * ever validate against a round played after it was created. When no explicit
+ * future target round/event date is supplied, `due_date` is set to
+ * `created_at + PREDICTION_WINDOW_DAYS`.
+ *
+ * Root cause of P0-02: predictions defaulted to `due_date = today`, so the
+ * validation window `[created_at, due_date]` was same-day (often inverted),
+ * leaving ~all predictions structurally impossible to validate.
+ */
+export const PREDICTION_WINDOW_DAYS = 14;
+
+const MS_PER_DAY = 86_400_000;
+
+/**
+ * Resolve the prediction's `due_date` (a YYYY-MM-DD string) from the caller's
+ * requested target date relative to creation time.
+ *
+ * Invariant: the returned due date is ALWAYS at least one full day after
+ * `createdAt` so a subsequent round can validate it. A caller may request a
+ * later target (a known future event); a same-day or past target is ignored in
+ * favor of the default `PREDICTION_WINDOW_DAYS` horizon.
+ */
+export function resolveDueDate(
+  targetDate: Date,
+  createdAt: Date = new Date(),
+  windowDays = PREDICTION_WINDOW_DAYS,
+): string {
+  const minDue = new Date(createdAt.getTime() + Math.max(1, windowDays) * MS_PER_DAY);
+  // Honor an explicitly-requested future target only if it is genuinely after
+  // creation; otherwise fall back to the default future horizon so the
+  // prediction is validatable.
+  const due =
+    Number.isFinite(targetDate.getTime()) && targetDate.getTime() > createdAt.getTime()
+      ? targetDate
+      : minDue;
+  return due.toISOString().split('T')[0] ?? '';
+}
+
+/**
  * CI multiplier for an ~80% two-sided interval. Asymptotic value 1.28 (normal);
  * small samples need widening so nominal-80% covers ~80%. t-style inflation.
  */
@@ -131,10 +170,14 @@ export class PerformancePredictor {
    * @param context - Optional context (course, event type, etc.)
    */
   async predictPerformance(
-    targetDate: Date = new Date(),
+    targetDate?: Date,
     context?: Partial<PredictionContext>
   ): Promise<PerformancePrediction | null> {
     const supabase = createAdminClient();
+    // Creation time anchors the validation horizon. A prediction is only
+    // validatable against a round played AFTER it is created, so the due date
+    // must be a future day (see resolveDueDate / P0-02).
+    const createdAt = new Date();
 
     // Load features and baseline
     this.features = await extractAllFeatures(this.playerId);
@@ -202,7 +245,11 @@ export class PerformancePredictor {
         eventType: context?.eventType,
         ...context,
       },
-      dueDate: targetDate.toISOString().split('T')[0] ?? '',
+      // Due on a FUTURE day relative to creation so the prediction can ever be
+      // matched against a round played after it. resolveDueDate ignores a
+      // same-day/past target in favor of the default PREDICTION_WINDOW_DAYS
+      // horizon (P0-02 fix).
+      dueDate: resolveDueDate(targetDate ?? createdAt, createdAt),
     };
 
     // Save prediction for later validation

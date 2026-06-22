@@ -89,12 +89,11 @@ export const EMPTY_ITINERARY_FORM: ItineraryFormData = {
 
 /** Map a legacy itinerary row → editable form values (verbatim prefill). */
 export function itineraryToForm(itinerary: TravelItinerary): ItineraryFormData {
-  // event_id isn't part of the TravelItinerary prop shape (the page mapper drops
-  // it), so prefill it defensively from the row when present; otherwise start the
-  // picker empty. Re-linking still saves either way.
-  const linkedEventId = (itinerary as { event_id?: string | null }).event_id;
+  // event_id is round-tripped on the TravelItinerary prop (the page mapper joins
+  // it), so the picker prefills from the saved link on re-edit. Null/absent =
+  // start the picker empty ("No linked event").
   return {
-    event_id: linkedEventId ?? undefined,
+    event_id: itinerary.event_id ?? undefined,
     event_name: itinerary.event_name,
     destination: itinerary.destination,
     transportation_type: itinerary.transportation_type,
@@ -432,6 +431,7 @@ export function FairwayItineraryModal({
               <Input
                 id="trip-hotel-phone"
                 type="tel"
+                inputMode="tel"
                 value={formData.hotel_phone}
                 onChange={(e) => set('hotel_phone', e.target.value)}
                 disabled={saving}
@@ -443,6 +443,7 @@ export function FairwayItineraryModal({
               <Input
                 id="trip-hotel-conf"
                 type="text"
+                inputMode="numeric"
                 value={formData.hotel_confirmation}
                 onChange={(e) => set('hotel_confirmation', e.target.value)}
                 disabled={saving}

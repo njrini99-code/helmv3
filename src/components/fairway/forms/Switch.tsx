@@ -35,6 +35,11 @@ export interface SwitchProps
 const trackBase = cn(
   "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5",
   "bg-surface-sunken border border-border-strong",
+  // 44px tap target (Layer 3 / iOS): the visible track stays 24px tall, but a
+  // transparent overlay extends the hit area to 44px×44px without affecting
+  // layout. -inset-y-[0.625rem] adds 10px above+below (24+20=44); the width pad
+  // keeps the slim track comfortably tappable on the tight notifications matrix.
+  "before:absolute before:-inset-y-[0.625rem] before:inset-x-0 before:content-['']",
   "transition-[background-color,border-color] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
   "data-[checked]:border-accent-500 data-[checked]:bg-accent-500",
   "outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",

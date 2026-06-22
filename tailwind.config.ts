@@ -262,6 +262,16 @@ const config: Config = {
         'caption':   ['12px', { lineHeight: '18px', letterSpacing: '0.006em', fontWeight: '500' }],
         'eyebrow':   ['11px', { lineHeight: '16px', letterSpacing: '0.06em', fontWeight: '600' }],
 
+        // ── Fairway cockpit stat + chrome steps (P403) ──────────────────────
+        // Two hero-stat steps for the big mono Readout-style figures, plus two
+        // micro chrome steps for 9–11px badges/labels — so the cockpit and
+        // calendar/message chrome resolve to NAMED tokens instead of bypassing
+        // the scale with arbitrary text-[Npx]. Closes the type system.
+        'stat-xl':    ['72px', { lineHeight: '76px', letterSpacing: '-0.02em', fontWeight: '600' }],
+        'stat-lg':    ['56px', { lineHeight: '60px', letterSpacing: '-0.018em', fontWeight: '600' }],
+        'microlabel': ['11px', { lineHeight: '14px', letterSpacing: '0.004em', fontWeight: '500' }],
+        'microbadge': ['9px',  { lineHeight: '12px', letterSpacing: '0.01em',  fontWeight: '700' }],
+
         // ═══════════════════════════════════════════════════════════════
         // iOS TYPE SCALE — Apple HIG (San Francisco)
         // Use these on mobile/native surfaces for authentic iOS feel
@@ -341,13 +351,21 @@ const config: Config = {
         '2xl':  '20px',     // modals
         '3xl':  '24px',     // hero plinths only
         'full': '9999px',
-        // ── Fairway design-system radii (ADDITIVE — token-backed) ──
-        // `card` (= 20px, THE Fairway card radius) is a new name; the rest are
-        // `fw-*` so they never clash with the canonical scale above.
-        'card':   'var(--fw-radius-card)',  // 20px — THE Fairway card radius
-        'fw-sm':  'var(--fw-radius-sm)',    // 10px — inputs, chips
-        'fw-md':  'var(--fw-radius-md)',    // 14px — list rows, insets
-        'fw-lg':  'var(--fw-radius-lg)',    // 28px — modals, sheets, hero plinths
+        // ── Fairway radius RAMP (ADDITIVE — token-backed; THE SYSTEM) ──
+        // A blessed, finite 4-step card-family ramp + a separate pill axis.
+        // This IS the radius system for the flag-on (Fairway) path: raw-Tailwind
+        // radii (rounded-2xl/xl/md/lg/sm, rounded-[Npx]) are FORBIDDEN there —
+        // every Fairway callsite maps to one step below. `card` (= 20px) is a new
+        // name; the rest are `fw-*` so they never clash with the canonical scale.
+        //   step 1  fw-sm  10px — chip / input
+        //   step 2  fw-md  14px — list row / inset / nested tile
+        //   step 3  card   20px — THE card (workhorse surface)
+        //   step 4  fw-lg  28px — sheet / modal / hero plinth / glass bar
+        //   (fw-)full      pill axis — avatars, primary CTAs only
+        'card':   'var(--fw-radius-card)',  // step 3 · 20px — THE Fairway card radius
+        'fw-sm':  'var(--fw-radius-sm)',    // step 1 · 10px — inputs, chips
+        'fw-md':  'var(--fw-radius-md)',    // step 2 · 14px — list rows, insets, nested tiles
+        'fw-lg':  'var(--fw-radius-lg)',    // step 4 · 28px — modals, sheets, hero plinths
       },
       zIndex: {
         // CANONICAL z-index tier (W0 — synthesis §5: replaces 17 ad-hoc

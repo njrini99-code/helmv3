@@ -12,15 +12,21 @@
  * ========================================================================== */
 
 /**
- * The Fairway focus-visible ring. A green (`accent-500`) 2px ring with 2px
- * offset — visible on cream surfaces; the design system's base layer brightens
- * it to `accent-400` + a cream halo inside the `.on-dark` (sidebar) scope, so
- * we use the `border-focus` token (= accent-500) and let the scope handle dark.
+ * The Fairway focus-visible ring. A green 2px ring with 2px offset — visible on
+ * cream surfaces; the design system's base layer brightens it to `accent-400` +
+ * a cream halo inside the `.on-dark` (sidebar) scope, which handles dark.
+ *
+ * P421: the ring color is `accent-600` (darker green), NOT the `border-focus`
+ * token (= accent-500). Solid accent-500 vs the warm canvas is only ~3.1:1 and
+ * the OKLCH-rendered green measures ~2.67:1 (FAILS WCAG 2.2 non-text 3:1).
+ * accent-600 (≈4:1+ vs canvas) clears 3:1 with margin across canvas/surface/
+ * sunken/elevated and the OKLCH render path. The brand green stays accent-500
+ * for fills/markers; only the focus indicator is darkened here.
  *
  * Uses `ring-offset-canvas` so the offset gap matches the warm page beneath.
  */
 export const fwFocusRing =
-  'outline-none focus-visible:ring-2 focus-visible:ring-border-focus ' +
+  'outline-none focus-visible:ring-2 focus-visible:ring-accent-600 ' +
   'focus-visible:ring-offset-2 focus-visible:ring-offset-canvas';
 
 /**

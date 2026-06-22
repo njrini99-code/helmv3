@@ -150,6 +150,46 @@ export async function listCourses(opts: ListCoursesOptions = {}): Promise<GolfCo
 }
 
 /**
+ * Strict variant of {@link listCourses} for the library PAGE load: it THROWS on
+ * a hard DB error instead of masking it as an empty list. The lenient
+ * `listCourses` (returns [] on error) stays for incidental callers; the page
+ * needs failure to be distinguishable from genuinely-empty so the route
+ * error boundary engages with a real "couldn't load — retry" state rather than
+ * the cheerful "No courses yet" empty state (premium-scrub B3). (P339)
+ */
+export async function listCoursesStrict(opts: ListCoursesOptions = {}): Promise<GolfCourse[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
+  const offset = Math.max(opts.offset ?? 0, 0);
+
+  let q = supabase
+    .from('golf_courses')
+    .select('*')
+    .is('deleted_at', null)
+    .order('name')
+    .range(offset, offset + limit - 1);
+
+  const query = opts.query?.trim();
+  if (query) {
+    const safe = (s: string) => s.replace(/[,()%*\\]/g, ' ').trim();
+    const safeQuery = safe(query);
+    const safeNorm = safe(normalizeName(query));
+    if (safeQuery) {
+      q = q.or(`name.ilike.%${safeQuery}%,normalized_name.ilike.%${safeNorm}%`);
+    }
+  }
+
+  const { data, error } = await q;
+  if (error) {
+    throw new Error(`listCourses failed: ${error.message}`);
+  }
+  return (data ?? []).map(mapCourseRow);
+}
+
+/**
  * Cloud courses the current player has recently played, most-recent first.
  * Derived from golf_rounds.course_id (populated when a round starts from a
  * library tee or is grown from a save). Rounds without a cloud course_id
@@ -235,6 +275,36 @@ export async function getCourseTeeCounts(courseIds: string[]): Promise<Record<st
       .order('id', { ascending: true })
       .range(from, to),
   );
+  const counts: Record<string, number> = {};
+  for (const r of data ?? []) {
+    const cid = r.course_id;
+    counts[cid] = (counts[cid] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/**
+ * Strict variant of {@link getCourseTeeCounts} for the page load — THROWS on a
+ * hard DB error instead of returning a silently-undercounted map, so a failed
+ * read surfaces as a real error state rather than a misleadingly-empty page. (P339)
+ */
+export async function getCourseTeeCountsStrict(courseIds: string[]): Promise<Record<string, number>> {
+  if (courseIds.length === 0) return {};
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return {};
+  const { data, error } = await fetchAllRowsResult<{ id: string; course_id: string }>((from, to) =>
+    supabase
+      .from('golf_course_tees')
+      .select('id, course_id')
+      .is('deleted_at', null)
+      .in('course_id', courseIds)
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
+  if (error) {
+    throw new Error(`getCourseTeeCounts failed: ${error.message}`);
+  }
   const counts: Record<string, number> = {};
   for (const r of data ?? []) {
     const cid = r.course_id;
@@ -424,6 +494,77 @@ async function loadTeamSaved(
     .map((row) => {
       const course = courseById.get(row.course_id as string);
       if (!course) return null; // course soft- or hard-deleted out from under the save
+      return {
+        ...mapSavedRow(row),
+        course,
+        default_tee: row.default_tee_id ? teeById.get(row.default_tee_id as string) ?? null : null,
+      } as GolfTeamSavedCourseWithCourse;
+    })
+    .filter((x): x is GolfTeamSavedCourseWithCourse => x !== null);
+}
+
+/**
+ * Strict variant of {@link getTeamSavedCourses} for the page load — THROWS on a
+ * hard DB error reading the saved-courses table so a failure can't masquerade as
+ * "this team has saved nothing yet". Resolution of the active team mirrors the
+ * lenient reader exactly (coach team, else player membership). (P339)
+ */
+export async function getTeamSavedCoursesStrict(): Promise<GolfTeamSavedCourseWithCourse[]> {
+  const supabase = await createClient();
+  const ctx = await getCoachTeam(supabase);
+  if ('error' in ctx) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!player) return [];
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', player.id)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (!membership?.team_id) return [];
+    return loadTeamSavedStrict(supabase, membership.team_id as string);
+  }
+  return loadTeamSavedStrict(supabase, ctx.teamId);
+}
+
+async function loadTeamSavedStrict(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  teamId: string,
+): Promise<GolfTeamSavedCourseWithCourse[]> {
+  const { data: savedRows, error } = await supabase
+    .from('golf_team_saved_courses')
+    .select('*')
+    .eq('team_id', teamId)
+    .order('pinned', { ascending: false })
+    .order('last_played_at', { ascending: false, nullsFirst: false });
+  if (error) {
+    throw new Error(`getTeamSavedCourses failed: ${error.message}`);
+  }
+  if (!savedRows || savedRows.length === 0) return [];
+
+  const courseIds = [...new Set(savedRows.map((r) => r.course_id as string))];
+  const teeIds = savedRows.map((r) => r.default_tee_id as string | null).filter(Boolean) as string[];
+
+  const [{ data: courseRows }, teeRes] = await Promise.all([
+    supabase.from('golf_courses').select('*').in('id', courseIds).is('deleted_at', null),
+    teeIds.length
+      ? supabase.from('golf_course_tees').select('*').in('id', teeIds).is('deleted_at', null)
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+  ]);
+
+  const courseById = new Map((courseRows ?? []).map((c) => [c.id as string, mapCourseRow(c)]));
+  const teeById = new Map((teeRes.data ?? []).map((t) => [t.id as string, mapTeeRow(t)]));
+
+  return savedRows
+    .map((row) => {
+      const course = courseById.get(row.course_id as string);
+      if (!course) return null;
       return {
         ...mapSavedRow(row),
         course,

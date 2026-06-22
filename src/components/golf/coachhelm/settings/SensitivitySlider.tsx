@@ -36,10 +36,10 @@ export function SensitivitySlider({ value, onChange }: SensitivitySliderProps) {
     return (
         <div className="space-y-3">
             {/* Track with sliding indicator */}
-            <div className="relative h-11 bg-warm-100 rounded-full p-1">
+            <div className="relative h-11 bg-surface-sunken rounded-full p-1">
                 {/* Sliding background */}
                 <div
-                    className="absolute top-1 bottom-1 bg-white rounded-full shadow-sm transition-all duration-200 ease-out"
+                    className="absolute top-1 bottom-1 bg-surface rounded-full shadow-soft transition-all duration-200 ease-out"
                     style={{
                         width: 'calc(33.333% - 4px)',
                         left: `calc(${safeIndex * 33.333}% + 2px)`,
@@ -54,7 +54,7 @@ export function SensitivitySlider({ value, onChange }: SensitivitySliderProps) {
                             onClick={() => onChange(option.value)}
                             className={cn(
                                 'flex-1 flex items-center justify-center rounded-full text-sm font-medium transition-colors duration-150 z-10',
-                                value === option.value ? 'text-warm-900' : 'text-warm-500 hover:text-warm-700'
+                                value === option.value ? 'text-text-primary' : 'text-text-tertiary hover:text-text-secondary'
                             )}
                         >
                             {option.label}
@@ -64,7 +64,7 @@ export function SensitivitySlider({ value, onChange }: SensitivitySliderProps) {
             </div>
 
             {/* Description */}
-            <p className="text-sm text-warm-500 text-center min-h-[20px]">
+            <p className="text-sm text-text-secondary text-center min-h-[20px]">
                 {OPTIONS[safeIndex]?.description ?? ''}
             </p>
         </div>

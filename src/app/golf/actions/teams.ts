@@ -432,7 +432,15 @@ export async function updateTeam(
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString()
   };
-  if (updates.name !== undefined) updateData.name = updates.name.trim();
+  if (updates.name !== undefined) {
+    // Defense-in-depth (P359): reject empty/whitespace-only names so a cleared
+    // field can never persist a blank team name (which renders verbatim app-wide).
+    const trimmedName = updates.name.trim();
+    if (!trimmedName) {
+      return { success: false, error: 'Team name is required' };
+    }
+    updateData.name = trimmedName;
+  }
   if (updates.season !== undefined) updateData.season = updates.season;
 
   // Update team

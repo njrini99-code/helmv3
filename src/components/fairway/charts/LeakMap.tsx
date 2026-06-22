@@ -65,6 +65,8 @@ export interface LeakMapProps {
   height?: number;
   /** Explicit state override for honest empties. Auto-derived when omitted. */
   state?: ChartFrameState;
+  /** Optional copy overriding the default empty/insufficient/error message. */
+  stateMessage?: string;
   /** Right-aligned action cluster forwarded to ChartFrame. */
   actions?: React.ReactNode;
   className?: string;

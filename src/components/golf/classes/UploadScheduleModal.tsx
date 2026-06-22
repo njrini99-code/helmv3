@@ -24,34 +24,56 @@ interface UploadScheduleModalProps {
   onParsed: (classes: ParsedClass[]) => void;
 }
 
-// Load PDF.js from CDN (avoids Vercel native dependency issues)
-const loadPdfJs = async () => {
+// Distinct sentinel so the caller can tell a CDN/library *load* failure apart
+// from a *parse* failure and show the right message (P225). A load failure is
+// recoverable by switching to TXT/paste; a parse failure usually means a
+// scanned/image-only PDF.
+const PDFJS_LOAD_ERROR = 'pdfjs-load-failed';
+
+// Load PDF.js from CDN (avoids Vercel native dependency issues). The runtime
+// pdfjs-dist in node_modules is a transitive *dev* dependency on a different
+// major (5.x) with an incompatible ESM API, so we pin the 3.x CDN build that
+// matches this code — but with a Subresource Integrity (SRI) hash so a
+// tampered/poisoned CDN response is rejected by the browser instead of
+// executed. (P225) Hashes are the official cdnjs SRI for pdf.js 3.11.174.
+const loadPdfJs = async (): Promise<PdfJsLib> => {
   const PDFJS_VERSION = '3.11.174';
   const PDFJS_CDN = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}`;
-  
+  // sha512 SRI from https://api.cdnjs.com/libraries/pdf.js/3.11.174?fields=sri
+  const PDFJS_MAIN_SRI =
+    'sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==';
+
   // Check if already loaded
   const pdfWindow = window as Window & { pdfjsLib?: PdfJsLib };
   if (pdfWindow.pdfjsLib) {
     return pdfWindow.pdfjsLib;
   }
-  
-  // Load the main library
-  await new Promise<void>((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = `${PDFJS_CDN}/pdf.min.js`;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load PDF.js'));
-    document.head.appendChild(script);
-  });
-  
+
+  // Load the main library with SRI + CORS (required for the browser to verify
+  // the integrity hash on a cross-origin script).
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = `${PDFJS_CDN}/pdf.min.js`;
+      script.integrity = PDFJS_MAIN_SRI;
+      script.crossOrigin = 'anonymous';
+      script.onload = () => resolve();
+      // Fires for network failure, CSP/offline block, AND SRI mismatch.
+      script.onerror = () => reject(new Error(PDFJS_LOAD_ERROR));
+      document.head.appendChild(script);
+    });
+  } catch {
+    throw new Error(PDFJS_LOAD_ERROR);
+  }
+
   const pdfjsLib = pdfWindow.pdfjsLib;
   if (!pdfjsLib) {
-    throw new Error('PDF.js failed to load.');
+    throw new Error(PDFJS_LOAD_ERROR);
   }
   // Type assertion needed because TypeScript can't infer the type after dynamic script load
   const typedPdfjsLib = pdfjsLib as PdfJsLib;
   typedPdfjsLib.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN}/pdf.worker.min.js`;
-  
+
   return typedPdfjsLib;
 };
 
@@ -133,8 +155,16 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
       }
 
       return fullText;
-    } catch {
-      throw new Error('Failed to extract text from PDF. Try using TXT or paste text instead.');
+    } catch (err) {
+      // Distinguish a library *load* failure (CDN blocked by CSP/offline/
+      // ad-block, or an SRI mismatch) from an actual *parse* failure, so the
+      // player gets an actionable message instead of one catch-all. (P225)
+      if (err instanceof Error && err.message === PDFJS_LOAD_ERROR) {
+        throw new Error(
+          'PDF import is unavailable right now (the PDF reader could not be loaded — this can happen offline or on a restricted network). Please use a TXT file or paste your schedule text instead.',
+        );
+      }
+      throw new Error('Failed to read this PDF. It may be a scanned/image-only file. Try using TXT or paste text instead.');
     }
   };
 
@@ -225,22 +255,22 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         aria-labelledby="upload-schedule-title"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-              <IconSparkles size={20} className="text-primary-600" />
+            <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center">
+              <IconSparkles size={20} className="text-accent-700" />
             </div>
             <div>
-              <DrawerTitle id="upload-schedule-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
+              <DrawerTitle id="upload-schedule-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
                 Import Schedule
               </DrawerTitle>
-              <p className="text-sm text-warm-500">Upload or paste your class schedule</p>
+              <p className="text-sm text-text-tertiary">Upload or paste your class schedule</p>
             </div>
           </div>
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
+            className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
           >
             <IconX size={20} />
           </IconButton>
@@ -253,9 +283,9 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             <Button variant="primary"
               onClick={() => setPasteMode(false)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                !pasteMode 
-                  ? 'bg-primary-600 text-white' 
-                  : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                !pasteMode
+                  ? 'bg-accent-500 text-text-on-accent'
+                  : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
               }`}
             >
               Upload File
@@ -263,9 +293,9 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             <Button variant="primary"
               onClick={() => setPasteMode(true)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                pasteMode 
-                  ? 'bg-primary-600 text-white' 
-                  : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                pasteMode
+                  ? 'bg-accent-500 text-text-on-accent'
+                  : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
               }`}
             >
               Paste Text
@@ -273,19 +303,32 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           </div>
 
           {!pasteMode ? (
-            /* Upload Area */
-            // eslint-disable-next-line jsx-a11y/no-static-element-interactions,jsx-a11y/click-events-have-key-events
+            /* Upload Area — keyboard-operable dropzone (P224). role="button" +
+               tabIndex + Enter/Space handler + a visible focus ring make it a
+               real, focusable control so keyboard-only users can open the file
+               picker. Drag/drop stays on the same surface. */
             <div
+              role="button"
+              tabIndex={0}
+              aria-label="Upload a PDF or TXT schedule file. Press Enter or Space to browse files, or drop a file here."
+              aria-disabled={loading || undefined}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
               className={`
                 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
-                ${dragActive 
-                  ? 'border-primary-500 bg-primary-50' 
-                  : 'border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-surface
+                ${dragActive
+                  ? 'border-accent-500 bg-accent-500/10'
+                  : 'border-border-subtle hover:border-border-strong hover:bg-surface-sunken active:bg-surface-sunken'
                 }
               `}
             >
@@ -297,26 +340,26 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 className="hidden"
               />
 
-              <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-2xl bg-surface-sunken flex items-center justify-center mx-auto mb-4">
                 {loading ? (
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                    <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                    <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                    <span className="w-2 h-2 rounded-full bg-accent-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 rounded-full bg-accent-500 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 rounded-full bg-accent-500 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                   </span>
                 ) : (
-                  <IconUpload size={28} className="text-warm-400" />
+                  <IconUpload size={28} className="text-text-tertiary" />
                 )}
               </div>
 
-              <p className="text-warm-900 font-medium mb-1">
+              <p className="text-text-primary font-medium mb-1">
                 {loading ? 'Processing...' : 'Drop your PDF or TXT file here'}
               </p>
-              <p className="text-sm text-warm-500 mb-4">
+              <p className="text-sm text-text-tertiary mb-4">
                 or click to browse files
               </p>
 
-              <div className="flex items-center justify-center gap-4 text-xs text-warm-400">
+              <div className="flex items-center justify-center gap-4 text-xs text-text-tertiary">
                 <span className="flex items-center gap-1">
                   <IconFileText size={14} />
                   PDF & TXT supported
@@ -335,7 +378,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-base lg:text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 resize-none font-mono"
+                className="w-full px-4 py-3 border border-border-subtle rounded-xl text-base lg:text-sm bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 resize-none font-mono"
               />
               
               <Button
@@ -350,15 +393,15 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           )}
 
           {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+            <div className="mt-4 bg-fw-danger-bg border border-fw-danger/30 text-fw-danger px-4 py-3 rounded-lg text-sm" role="alert">
               {error}
             </div>
           )}
 
           {/* Tips */}
-          <div className="mt-6 p-4 bg-warm-50 rounded-xl">
-            <p className="text-sm font-medium text-warm-700 mb-2">Tips for best results:</p>
-            <ul className="text-xs text-warm-500 space-y-1">
+          <div className="mt-6 p-4 bg-surface-sunken rounded-xl">
+            <p className="text-sm font-medium text-text-secondary mb-2">Tips for best results:</p>
+            <ul className="text-xs text-text-tertiary space-y-1">
               <li>• Export your schedule from your university portal as PDF or TXT</li>
               <li>• Include course codes like "BUAD 123" or "MATH201"</li>
               <li>• Days can be formatted as MWF, TTh, MW, etc.</li>

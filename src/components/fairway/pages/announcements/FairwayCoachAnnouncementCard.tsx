@@ -152,6 +152,7 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
         type="button"
         onClick={handleExpand}
         aria-expanded={expanded}
+        aria-controls={`announcement-detail-${ann.id}`}
         className={cn(
           'flex w-full items-start gap-3 px-5 py-4 text-left',
           'transition-colors duration-fast hover:bg-surface-sunken/40',
@@ -189,7 +190,8 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
               {ann.recipient_count > 0 ? `${ann.recipient_count} players` : 'All team'}
             </span>
 
-            {/* Ack progress + avatar stack */}
+            {/* Ack progress + avatar stack — honest: only with a real
+                denominator, else an em-dash (P273), matching the task counter. */}
             {ann.requires_acknowledgement && (
               <span className="inline-flex items-center gap-1.5">
                 {ann.acknowledged_players && ann.acknowledged_players.length > 0 && (
@@ -210,7 +212,9 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
                     ackComplete ? 'text-accent-700' : 'text-text-tertiary',
                   )}
                 >
-                  {ann.acknowledged_count}/{ann.total_recipients}
+                  {ann.total_recipients > 0
+                    ? `${ann.acknowledged_count}/${ann.total_recipients}`
+                    : '—'}
                 </span>
               </span>
             )}
@@ -252,7 +256,12 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
 
       {/* ── Expanded detail ────────────────────────────────────────────────── */}
       {expanded && (
-        <div className="border-t border-border-subtle px-5 pb-5 pt-4">
+        <div
+          id={`announcement-detail-${ann.id}`}
+          role="region"
+          aria-label={`Details for ${ann.title}`}
+          className="border-t border-border-subtle px-5 pb-5 pt-4"
+        >
           {loadingDetail ? (
             <div className="flex flex-col gap-3">
               <Skeleton className="h-4 w-full" />
@@ -381,12 +390,16 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
                     <span
                       className={cn(
                         'font-fw-mono text-caption tabular-nums',
-                        detail.acknowledged_count >= detail.total_recipients
+                        detail.total_recipients > 0 &&
+                          detail.acknowledged_count >= detail.total_recipients
                           ? 'text-accent-700'
                           : 'text-text-secondary',
                       )}
                     >
-                      {detail.acknowledged_count}/{detail.total_recipients}
+                      {/* Honest: no recipients → em-dash, never a fake 0/0 (P273). */}
+                      {detail.total_recipients > 0
+                        ? `${detail.acknowledged_count}/${detail.total_recipients}`
+                        : '—'}
                     </span>
                   </div>
                   <ProgressTrack
@@ -395,7 +408,10 @@ export function FairwayCoachAnnouncementCard({ announcement: ann }: { announceme
                         ? (detail.acknowledged_count / detail.total_recipients) * 100
                         : 0
                     }
-                    complete={detail.acknowledged_count >= detail.total_recipients}
+                    complete={
+                      detail.total_recipients > 0 &&
+                      detail.acknowledged_count >= detail.total_recipients
+                    }
                   />
                   {detail.acknowledgements && detail.acknowledgements.length > 0 && (
                     <div className="flex flex-col gap-0.5">

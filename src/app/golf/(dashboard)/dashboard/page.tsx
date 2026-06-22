@@ -101,22 +101,15 @@ export default async function GolfDashboardPage({
         }
 
         if (teamId) {
-            let payload;
-            try {
-                payload = await getCachedCoachDashboardData(coach.id, userId, teamId, dateRange);
-            } catch {
-                // Network/DB failure — render empty state so the page doesn't crash
-                const emptyData: CoachDashboardData = {
-                    coach: { id: coach.id, user_id: userId, organization_id: coach.organization_id || null, full_name: coach.full_name, avatar_url: coach.avatar_url || null, created_at: '' } as GolfCoach,
-                    team: { id: teamId, name: '', season: null, join_code: null, created_at: '' } as unknown as GolfTeam,
-                    stats: { rosterSize: 0, upcomingEvents: 0, activeQualifiers: 0, teamScoringAverage: null, previousAverage: null },
-                    recentRounds: [],
-                    topPlayers: [],
-                    calendarEvents: [],
-                    teamScoringTrend: undefined,
-                };
-                return renderCoachDashboard({ data: emptyData, dateRange });
-            }
+            // P002/P426: a real DB/network outage must SURFACE — the route
+            // error.tsx (RouteErrorBoundary) offers a retry. Previously this caught
+            // the failure and rendered a zeroed dashboard indistinguishable from a
+            // healthy empty team (roster 0, "No rounds logged yet"), hiding the
+            // outage AND bypassing the already-wired retry boundary. A genuine new
+            // team returns empty arrays/zero counts WITHOUT throwing (see
+            // getCoachDashboardData), so letting this throw only fires on a true
+            // failure.
+            const payload = await getCachedCoachDashboardData(coach.id, userId, teamId, dateRange);
 
             const data: CoachDashboardData = {
                 coach: {

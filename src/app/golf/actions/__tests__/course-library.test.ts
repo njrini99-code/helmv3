@@ -13,7 +13,7 @@ vi.mock('@/lib/golf/resolve-team-server', () => ({
 let currentClient: unknown = null;
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => currentClient }));
 
-import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse, contributeCourseFromRound } from '../course-library';
+import { createCourse, listCourses, saveTeamCourse, updateTee, getTeeRoundDefaults, getTeamSavedCourses, updateCourse, restoreCourse, contributeCourseFromRound, listCoursesStrict, getCourseTeeCountsStrict, getTeamSavedCoursesStrict } from '../course-library';
 
 // ── A scriptable, chainable Supabase query-builder mock ──────────────────────
 type Scripted = { maybeSingle?: unknown; single?: unknown; resolve?: unknown };
@@ -274,6 +274,45 @@ describe('contributeCourseFromRound — grow the cloud catalog from a saved roun
     const res = await contributeCourseFromRound({ courseName: '   ', holes: [] });
     expect(res).toEqual({ success: false, error: 'Course name is required' });
     expect(courses._calls.insert).toBeUndefined();
+  });
+});
+
+describe('strict page-load readers — failure is distinguishable from empty (P339)', () => {
+  it('listCoursesStrict THROWS on a hard DB error (so error.tsx engages, not the empty state)', async () => {
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_courses: tableBuilder({ resolve: { data: null, error: { message: 'connection reset' } } }),
+    });
+    await expect(listCoursesStrict({ limit: 200 })).rejects.toThrow(/listCourses failed/);
+  });
+
+  it('listCoursesStrict returns [] when the library is GENUINELY empty (no error)', async () => {
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_courses: tableBuilder({ resolve: { data: [], error: null } }),
+    });
+    await expect(listCoursesStrict({ limit: 200 })).resolves.toEqual([]);
+  });
+
+  it('getCourseTeeCountsStrict THROWS on a hard DB error rather than undercounting', async () => {
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_course_tees: tableBuilder({ resolve: { data: null, error: { message: 'timeout' } } }),
+    });
+    await expect(getCourseTeeCountsStrict(['c1'])).rejects.toThrow(/getCourseTeeCounts failed/);
+  });
+
+  it('getTeamSavedCoursesStrict THROWS on a hard DB error (failure ≠ "saved nothing yet")', async () => {
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: { id: 'co1', organization_id: 'org1' }, error: null } }),
+      golf_team_saved_courses: tableBuilder({ resolve: { data: null, error: { message: 'permission denied' } } }),
+    });
+    await expect(getTeamSavedCoursesStrict()).rejects.toThrow(/getTeamSavedCourses failed/);
+  });
+
+  it('getTeamSavedCoursesStrict returns [] for a team with no saves (no error)', async () => {
+    currentClient = makeClient({ id: 'u1' }, {
+      golf_coaches: tableBuilder({ maybeSingle: { data: { id: 'co1', organization_id: 'org1' }, error: null } }),
+      golf_team_saved_courses: tableBuilder({ resolve: { data: [], error: null } }),
+    });
+    await expect(getTeamSavedCoursesStrict()).resolves.toEqual([]);
   });
 });
 

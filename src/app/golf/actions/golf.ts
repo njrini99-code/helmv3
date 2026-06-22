@@ -484,7 +484,18 @@ const golfQualifierSchema = z
       d.selectionSlotsCoachPick === undefined ||
       d.selectionSlotsCoachPick <= d.selectionSlotsTotal,
     { message: 'Coach picks cannot exceed the total travel-squad size', path: ['selectionSlotsCoachPick'] },
-  );
+  )
+  // The qualifier window must be coherent: the end date cannot precede the start.
+  .refine((d) => !d.endDate || d.endDate >= d.startDate, {
+    message: 'End date cannot be before the start date',
+    path: ['endDate'],
+  })
+  // Players must confirm in before play opens: the entry deadline cannot fall
+  // after the qualifier has already started.
+  .refine((d) => !d.entryDeadline || d.entryDeadline <= d.startDate, {
+    message: 'Entry deadline must be on or before the start date',
+    path: ['entryDeadline'],
+  });
 
 const announcementSchema = z.object({
   title: z.string().min(1).max(200),

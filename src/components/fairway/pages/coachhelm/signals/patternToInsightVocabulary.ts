@@ -29,6 +29,7 @@ import type {
   ExtendedPattern,
   PatternLifecycleState,
 } from '@/app/golf/actions/pattern-management';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type { InsightPriority } from '@/components/fairway/cards-insight/InsightCard';
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -209,9 +210,74 @@ const PATTERN_STATUS_LABEL: Record<PatternLifecycleState, string> = {
  * INSIGHT → SignalRow
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * Project the insight's structured `evidence` JSON into the SAME humanized
+ * evidence lines a pattern produces, so an insight card on /alerts carries the
+ * same evidence depth as a pattern card (the surface is literally named for it).
+ * Nothing is fabricated — every line is gated on a value being present on the
+ * row. Mirrors the pattern adapter's "demote the statistician fields into an
+ * evidence Inset" contract.
+ */
+function insightEvidenceLines(ev: InsightEvidence | null | undefined): SignalEvidenceLine[] {
+  if (!ev || typeof ev !== 'object') return [];
+  const lines: SignalEvidenceLine[] = [];
+
+  // The measured metric: prefer the human display string, gloss with the label.
+  if (typeof ev.your_value_display === 'string' && ev.your_value_display.length > 0) {
+    lines.push({
+      label: ev.metric_label || 'Your value',
+      value: ev.your_value_display,
+    });
+  }
+
+  // The comparison tick (typically team avg / Tour benchmark) — only when both
+  // a label and a usable value are present.
+  if (
+    typeof ev.comparison_label === 'string' &&
+    ev.comparison_label.length > 0 &&
+    typeof ev.comparison_value === 'number' &&
+    Number.isFinite(ev.comparison_value)
+  ) {
+    lines.push({
+      label: ev.comparison_label,
+      value: formatComparisonValue(ev.comparison_value),
+    });
+  }
+
+  // Stroke impact — preserve the sign (gained vs lost), same convention as the
+  // pattern adapter, so the two sources read identically.
+  if (typeof ev.strokes_impact === 'number' && Number.isFinite(ev.strokes_impact)) {
+    const impact = ev.strokes_impact;
+    const magnitude = Math.abs(impact);
+    const signed = `${impact > 0 ? '+' : ''}${impact.toFixed(2)}`;
+    const tier = magnitude >= 1.5 ? 'meaningful' : magnitude >= 0.8 ? 'moderate' : 'small';
+    lines.push({
+      label: 'Stroke impact',
+      value: `${signed}/round`,
+      gloss: `${tier} · ${impact > 0 ? 'gained' : impact < 0 ? 'lost' : 'neutral'}`,
+    });
+  }
+
+  // Sample size — the honesty anchor behind the confidence word.
+  if (typeof ev.sample_n === 'number' && Number.isFinite(ev.sample_n) && ev.sample_n > 0) {
+    lines.push({
+      label: 'Sample',
+      value: `${ev.sample_n} round${ev.sample_n === 1 ? '' : 's'}`,
+    });
+  }
+
+  return lines;
+}
+
+/** Format a numeric comparison value without over-claiming precision. */
+function formatComparisonValue(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
 /** Project a single evidence insight into the shared row shape. */
 export function insightToSignalRow(insight: EvidenceInsight): SignalRow {
   const categoryLabel = titleCaseToken(insight.category) || 'Signal';
+  const ev = insight.evidence;
   return {
     id: insight.id,
     source: 'insights',
@@ -224,8 +290,13 @@ export function insightToSignalRow(insight: EvidenceInsight): SignalRow {
     category: insight.category,
     status: insight.status,
     createdAt: insight.created_at,
-    confidenceWord: null,
-    evidence: [],
+    // Translate the insight's confidence (0..1) into a coach-readable word using
+    // the SAME translator + low-N rule the pattern adapter uses, so a coach never
+    // sees a bare 0.83 and a high confidence on a tiny sample reads "Early signal".
+    confidenceWord: ev
+      ? translateConfidence(ev.confidence, ev.sample_n)
+      : null,
+    evidence: insightEvidenceLines(ev),
     raw: insight,
   };
 }

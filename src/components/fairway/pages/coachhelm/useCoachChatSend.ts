@@ -113,6 +113,13 @@ export function useCoachChatSend(
 
     setPending(true);
     setError(null);
+    // P1-11 — one stable idempotency key per exchange. If the send is retried
+    // (flaky network / double-tap) the route dedupes on this id instead of
+    // creating a duplicate turn. Generated once here so a retry reuses it.
+    const clientTurnId =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${PENDING_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2)}`;
     // Optimistic: stub the user bubble so the UI feels immediate.
     applyMessages((prev) => [
       ...prev,
@@ -125,6 +132,8 @@ export function useCoachChatSend(
         tool_results: null,
         cost_usd: null,
         created_at: new Date().toISOString(),
+        client_turn_id: clientTurnId,
+        status: null,
       },
     ]);
     try {
@@ -134,6 +143,7 @@ export function useCoachChatSend(
         body: JSON.stringify({
           conversation_id: convId ?? undefined,
           user_message: text,
+          client_turn_id: clientTurnId,
         }),
       });
       const json = (await res.json()) as ChatSendResponse & { error?: string };

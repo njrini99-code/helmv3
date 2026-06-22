@@ -56,7 +56,14 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+  const [receiptStatus, setReceiptStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  function openReceipt(url: string | null) {
+    if (!url) return;
+    setReceiptStatus('loading');
+    setViewingReceipt(url);
+  }
 
   function handleDelete(id: string) {
     setPendingDeleteId(id);
@@ -203,7 +210,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                           <Button variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setViewingReceipt(expense.receipt_url);
+                              openReceipt(expense.receipt_url);
                             }}
                             className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
                           >
@@ -296,18 +303,49 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
               </IconButton>
             </div>
             <div className="p-4 max-h-[60vh] overflow-auto">
-              {viewingReceipt.endsWith('.pdf') ? (
-                <iframe
-                  src={viewingReceipt}
-                  className="w-full h-96 border-0"
-                  title="Receipt PDF"
-                />
+              {receiptStatus === 'error' ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                  <p className="text-warm-700 text-sm font-medium">Couldn&apos;t load receipt</p>
+                  <p className="text-warm-500 text-xs">
+                    The file may have moved or expired.
+                  </p>
+                  <a
+                    href={viewingReceipt}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-700 text-sm font-medium underline underline-offset-2"
+                  >
+                    Open in new tab
+                  </a>
+                </div>
               ) : (
-                <img
-                  src={viewingReceipt}
-                  alt="Receipt"
-                  className="w-full h-auto rounded-lg"
-                />
+                <div className="relative">
+                  {receiptStatus === 'loading' && (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center rounded-lg bg-warm-100 animate-pulse"
+                      aria-hidden="true"
+                    >
+                      <span className="text-warm-500 text-xs">Loading receipt…</span>
+                    </div>
+                  )}
+                  {viewingReceipt.endsWith('.pdf') ? (
+                    <iframe
+                      src={viewingReceipt}
+                      className="w-full h-96 border-0"
+                      title="Receipt PDF"
+                      onLoad={() => setReceiptStatus('loaded')}
+                      onError={() => setReceiptStatus('error')}
+                    />
+                  ) : (
+                    <img
+                      src={viewingReceipt}
+                      alt="Receipt"
+                      className="w-full h-auto rounded-lg"
+                      onLoad={() => setReceiptStatus('loaded')}
+                      onError={() => setReceiptStatus('error')}
+                    />
+                  )}
+                </div>
               )}
             </div>
           </motion.div>

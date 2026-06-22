@@ -58,6 +58,9 @@ export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
   /** Render as another element/component (e.g. `'button'`, `'a'`, Next `Link`).
    *  Defaults to `div`. Used together with `interactive` for clickable tiles. */
   as?: ElementType;
+  /** Destination when rendered as an anchor / Next `Link` via `as`. Ignored by
+   *  the default `div`. Enables `<Surface as={Link} href=…>` clickable tiles. */
+  href?: string;
 }
 
 /**

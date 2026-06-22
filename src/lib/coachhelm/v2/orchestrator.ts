@@ -370,9 +370,31 @@ class CoachHelmIntelligence {
           playerId,
           extra: { generator, reason },
         });
-      } else {
-        tier1Successes.push(generator);
+        continue;
       }
+      // P0-04: a v3 generator catches its OWN throw and RESOLVES with
+      // `{ status: 'failed' }` — so Promise.allSettled never sees a rejection.
+      // The legacy code counted that resolved value as a success, masking the
+      // crash and letting postRoundTrigger mark the round fully analyzed. Inspect
+      // the receipt: a 'failed' status is a real failure even though the promise
+      // fulfilled. (Other statuses — generated/gated/no_data/standing_lag — and
+      // the v2 generators that don't return a receipt are all genuine successes.)
+      const value = (result as PromiseFulfilledResult<unknown>).value as
+        | { status?: string }
+        | null
+        | undefined;
+      if (value && typeof value === 'object' && value.status === 'failed') {
+        const reason = 'generator threw internally (status=failed)';
+        tier1Failures.push({ generator, reason });
+        await logServerError(`tier-1 generator '${generator}' reported status=failed`, {
+          action: 'analyzePlayer.tier1Generator',
+          featureArea: 'coachhelm',
+          playerId,
+          extra: { generator, reason },
+        });
+        continue;
+      }
+      tier1Successes.push(generator);
     }
     // generatorSummary is attached to the analyzePlayer return below so the
     // post-round trigger and analyze-player route can surface partial failures.

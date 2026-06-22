@@ -58,10 +58,14 @@ const base = cn(
 
 const variantStyles: Record<FwButtonVariant, string> = {
   // Green CTA — the plant in the room. Cream text on green, no border.
+  // Fill is accent-700 (not 500): cream text on accent-500 measures only
+  // ~3.0:1, below WCAG 1.4.3's 4.5:1 for normal text. accent-700 clears it at
+  // ~5.9:1 while staying a deep, premium helm green. accent-500 stays the
+  // active-marker / focus-ring colour, never a text-bearing fill.
   primary: cn(
-    'border-transparent bg-accent-500 text-text-on-accent shadow-flat',
-    'hover:bg-accent-600 hover:shadow-soft hover:-translate-y-px',
-    'active:bg-accent-600 active:shadow-flat active:-translate-y-0',
+    'border-transparent bg-accent-700 text-text-on-accent shadow-flat',
+    'hover:bg-accent-800 hover:shadow-soft hover:-translate-y-px',
+    'active:bg-accent-800 active:shadow-flat active:-translate-y-0',
   ),
   // Matte surface with a warm hairline (border OR shadow at rest — border here).
   secondary: cn(
@@ -84,7 +88,11 @@ const variantStyles: Record<FwButtonVariant, string> = {
 };
 
 const sizeStyles: Record<FwButtonSize, string> = {
-  sm: 'min-h-[36px] px-3.5 py-1.5 text-[13px] leading-4',
+  // `sm` is dense (36px) on fine pointers (mouse/trackpad), but expands to the
+  // WCAG 2.2 / DoD-required >=44px touch target on coarse pointers (touch). This
+  // keeps the compact triage/toolbar density on desktop while every primary
+  // action stays tappable on mobile without a layout rewrite.
+  sm: 'min-h-[36px] [@media(pointer:coarse)]:min-h-[44px] px-3.5 py-1.5 text-[13px] leading-4',
   md: 'min-h-[44px] px-5 py-2.5 text-[15px] leading-6',
   lg: 'min-h-[48px] px-6 py-3 text-[15px] leading-6',
 };
@@ -200,9 +208,11 @@ const iconBase = cn(
 );
 
 const iconVariantStyles: Record<FwIconButtonVariant, string> = {
+  // Matches Button primary: accent-700 fill so the cream-on-green icon/label
+  // clears WCAG 4.5:1 (accent-500 fill is only ~3.0:1).
   primary: cn(
-    'border-transparent bg-accent-500 text-text-on-accent',
-    'hover:bg-accent-600 hover:shadow-soft',
+    'border-transparent bg-accent-700 text-text-on-accent',
+    'hover:bg-accent-800 hover:shadow-soft',
   ),
   secondary: cn(
     'border-border-subtle bg-surface text-text-primary',
@@ -218,9 +228,10 @@ const iconVariantStyles: Record<FwIconButtonVariant, string> = {
   ),
 };
 
-// All sizes meet the WCAG 2.2 >=24px (and the spec's preferred 40px+) touch target.
+// All sizes clear the WCAG 2.2 >=24px minimum; on coarse pointers `sm` expands
+// to the DoD-preferred >=44px touch target (md/lg already exceed it).
 const iconSizeStyles: Record<FwIconButtonSize, string> = {
-  sm: 'h-9 w-9 [&_svg]:h-4 [&_svg]:w-4',
+  sm: 'h-9 w-9 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11 [&_svg]:h-4 [&_svg]:w-4',
   md: 'h-11 w-11 [&_svg]:h-5 [&_svg]:w-5',
   lg: 'h-12 w-12 [&_svg]:h-5 [&_svg]:w-5',
 };

@@ -63,6 +63,7 @@ export default async function GolfDocumentsPage() {
     category: string | null;
     is_public: boolean | null;
     created_at: string | null;
+    updated_at: string | null;
     uploaded_by: string | null;
     current_version_id: string | null;
     version_count: number | null;
@@ -83,6 +84,7 @@ export default async function GolfDocumentsPage() {
       category,
       is_public,
       created_at,
+      updated_at,
       uploaded_by,
       current_version_id,
       version_count,

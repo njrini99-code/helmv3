@@ -136,8 +136,12 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
       />
       {!collapsed && <span className="min-w-0 flex-1 truncate whitespace-nowrap">{item.label}</span>}
       {/* Badge: inline pill expanded, dot when collapsed. */}
+      {/* A11y (P423): cream digits on accent-500 fill is only ~3.0:1 — below the
+          4.5:1 needed for this small numeric text. accent-700 fill lifts the same
+          cream text to ~5.9:1 (matches the primary-button fix). The collapsed
+          DOT below stays accent-500 — it's a non-text indicator (3:1 large is fine). */}
       {typeof item.badge === 'number' && item.badge > 0 && !collapsed && (
-        <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-500 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
+        <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-700 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
           {item.badge > 99 ? '99+' : item.badge}
         </span>
       )}
@@ -290,7 +294,15 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
                 <SidebarRow
                   key={item.href + item.label}
                   item={item}
-                  active={item.active ?? matchActive(item.href, pathname)}
+                  active={
+                    item.active ??
+                    // `activeMatch` (when present) broadens the match to a route
+                    // cluster so the global rail stays lit across sibling routes
+                    // (e.g. CoachHelm AI on alerts/insights/patterns/…). Falls
+                    // back to the default segment-boundary href match.
+                    ((item.activeMatch && pathname ? item.activeMatch(pathname) : false) ||
+                      matchActive(item.href, pathname))
+                  }
                   collapsed={isCollapsed}
                   Link={Link}
                   onNavigate={onNavigate}

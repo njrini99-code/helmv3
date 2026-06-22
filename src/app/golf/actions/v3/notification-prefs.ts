@@ -115,6 +115,65 @@ export async function setCategoryChannel(
   }
 }
 
+/**
+ * Atomically replace the ENTIRE per-category prefs object in one
+ * read-modify-write. Use this for bulk operations (reset defaults,
+ * mute a whole channel) instead of firing N parallel setCategoryChannel
+ * calls — those each read the same stale snapshot and clobber each
+ * other (last-write-wins) against the shared `prefs` JSONB column.
+ */
+export async function setAllChannels(
+  prefs: PrefsByCategory,
+): Promise<PrefsActionResult> {
+  try {
+    const sb = await createClient();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return { ok: false, error: 'Unauthorized' };
+
+    const { data: player } = await sb
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!player) return { ok: false, error: 'Not a player' };
+
+    const { data: row } = await sb
+      .from('golf_player_notification_state')
+      .select('quiet_mode')
+      .eq('player_id', player.id)
+      .maybeSingle();
+
+    if (row) {
+      const { error } = await sb
+        .from('golf_player_notification_state')
+        .update({
+          prefs: prefs as unknown as Json,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('player_id', player.id);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from('golf_player_notification_state').insert({
+        player_id: player.id,
+        prefs: prefs as unknown as Json,
+      });
+      if (error) throw error;
+    }
+
+    revalidatePath('/golf/dashboard/settings/notifications');
+    return {
+      ok: true,
+      prefs: { prefs, quiet_mode: row?.quiet_mode ?? false },
+    };
+  } catch (err) {
+    await logServerError(
+      `setAllChannels failed: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'v3.notifications.setAllChannels' },
+    );
+    return { ok: false, error: 'Internal error' };
+  }
+}
+
 export async function setQuietMode(enabled: boolean): Promise<PrefsActionResult> {
   try {
     const sb = await createClient();

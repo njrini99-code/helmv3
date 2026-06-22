@@ -36,6 +36,7 @@ import {
   type RoundStatsCacheComputedSource,
   type HoleLevelAvgSource,
 } from '@/lib/coachhelm/v3/causality/metric-sources';
+import { improvementSign } from '@/lib/coachhelm/v3/metrics/registry';
 
 type Sb = SupabaseClient<Database>;
 
@@ -54,9 +55,35 @@ export interface AttributionRow {
   target_metric_id: string;
   baseline_value: number;
   post_value: number;
+  /**
+   * Direction-AGNOSTIC raw change in the metric over the window
+   * (`post_value − baseline_value`). Persisted as the DB `delta` column.
+   * This is signed in the metric's own units — for a lower-is-better metric a
+   * negative `raw_delta` is an IMPROVEMENT. Never feed this into learning; use
+   * {@link improvement_lift}.
+   */
+  raw_delta: number;
+  /**
+   * Alias of {@link raw_delta} retained for backwards compatibility with
+   * existing consumers/tests that read `.delta`. Same value, same DB column.
+   */
   delta: number;
   n_rounds_before: number;
   n_rounds_after: number;
+  /**
+   * Direction-CORRECTED, ambient-adjusted improvement signal: the raw
+   * ambient-adjusted lift multiplied by the metric's improvement sign (+1 for
+   * higher-is-better, −1 for lower-is-better). Positive ALWAYS means the player
+   * got better. This is the ONLY value that may drive `nextWeight`. `null` when
+   * the ambient sample is too thin to net out drift. Persisted as DB `lift`.
+   */
+  improvement_lift: number | null;
+  /**
+   * Alias of {@link improvement_lift} retained for backwards compatibility
+   * with existing consumers/tests that read `.lift`. Same value, same DB
+   * column. Always direction-corrected — a drop in a lower-is-better metric
+   * yields a positive value here.
+   */
   lift: number | null;
 }
 
@@ -371,7 +398,8 @@ export async function computeAttribution(
     return { ok: false, reason: 'no-data' };
   }
 
-  const delta = post.avg - base.avg;
+  // Direction-AGNOSTIC raw change in the metric's own units. Stored as `delta`.
+  const rawDelta = post.avg - base.avg;
 
   // Ambient counterfactual: the player's level over the 90 days of history
   // BEFORE the pre-window — strictly OUTSIDE [preStart, postEnd]. A window that
@@ -395,10 +423,21 @@ export async function computeAttribution(
   // Min-rounds gate: a thin ambient sample is noise, not a trend. Below the
   // gate we record delta but leave lift null (nextWeight no-ops on null, so the
   // attribution row is still logged for observability without moving weights).
-  const lift =
+  const rawLift =
     ambient.ok && ambient.n >= MIN_AMBIENT_ROUNDS
-      ? delta - (ambient.avg - base.avg)
+      ? rawDelta - (ambient.avg - base.avg)
       : null;
+
+  // P0-01: turn the raw, direction-AGNOSTIC ambient-adjusted lift into a
+  // direction-CORRECTED *improvement* signal. For a lower-is-better metric a
+  // drop in value (negative rawLift) is an improvement, so we flip the sign;
+  // for higher-is-better the sign is unchanged. After this, a positive
+  // improvement_lift ALWAYS means the player got better, regardless of metric
+  // polarity, and that is the only value that may move coach weights. Without
+  // this flip, a successful putts/penalties/scoring drop would be learned as a
+  // regression and could REDUCE the weight of an insight that worked.
+  const sign = improvementSign(input.target_metric_id);
+  const improvementLift = rawLift === null ? null : sign * rawLift;
 
   return {
     ok: true,
@@ -408,10 +447,14 @@ export async function computeAttribution(
       target_metric_id: input.target_metric_id,
       baseline_value: base.avg,
       post_value: post.avg,
-      delta,
+      // Direction-agnostic raw change (DB `delta` column). `delta` is an alias.
+      raw_delta: rawDelta,
+      delta: rawDelta,
       n_rounds_before: base.n,
       n_rounds_after: post.n,
-      lift,
+      // Direction-corrected improvement (DB `lift` column). `lift` is an alias.
+      improvement_lift: improvementLift,
+      lift: improvementLift,
     },
   };
 }

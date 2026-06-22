@@ -36,9 +36,10 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Activity, Target, Sparkles } from 'lucide-react';
+import { Activity, Target, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { CoachHelmShell } from './CoachHelmShell';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
@@ -46,7 +47,14 @@ import type { FwStatusTone } from '@/components/fairway/controls';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
-import { IconMessage, IconTarget, IconChartBar, IconEye } from '@/components/icons';
+import {
+  IconMessage,
+  IconTarget,
+  IconChartBar,
+  IconCalendar,
+  IconChartRadar,
+  IconLayers,
+} from '@/components/icons';
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
 
 // Reused logic widgets (warm-palette, action-bearing) — embedded as-is.
@@ -172,6 +180,12 @@ export interface FairwayPlayerInsightProps {
    * section C. Degrades to `[]` (route already null-guards the fetch).
    */
   themes: ThemeNode[];
+  /**
+   * SSR-known urgent/high open-signal count for the CoachHelm shell's Signals-tab
+   * badge (P410 — this surface is now an in-cluster Players leaf). `null`/0 → no
+   * badge (honest, never a fake "0"). Mirrors GenomeDetailView.
+   */
+  signalCount?: number | null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -337,10 +351,30 @@ function CompositeRatingCircle({ rating }: { rating: number }) {
   );
 }
 
-function CategoryBar({ label, value }: { label: string; value: number }) {
+function CategoryBar({
+  label,
+  value,
+  estimated,
+}: {
+  label: string;
+  value: number;
+  /** Marks a derived/proxy metric — surfaces an "Est." qualifier so the bar is
+   *  never presented as a directly-measured category (data honesty). */
+  estimated?: boolean;
+}) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-28 flex-shrink-0 font-fw-sans text-body-sm text-text-secondary">{label}</span>
+      <span className="flex w-28 flex-shrink-0 items-baseline gap-1 font-fw-sans text-body-sm text-text-secondary">
+        {label}
+        {estimated ? (
+          <span
+            className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-text-tertiary"
+            title="Estimated — averaged from tee, approach, and putting (no direct short-game data yet)."
+          >
+            Est.
+          </span>
+        ) : null}
+      </span>
       <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface">
         <div
           className={cn('h-full rounded-full transition-all duration-700', categoryBarTone(value))}
@@ -368,6 +402,7 @@ export function FairwayPlayerInsight({
   focusAreas,
   predictions,
   themes,
+  signalCount,
 }: FairwayPlayerInsightProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
@@ -375,6 +410,12 @@ export function FairwayPlayerInsight({
   const coachId = golfUser.coachId ?? null;
   const playerName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
   const tint = tintFor(player.id);
+
+  // Avatar load-failure guard: an expired/broken avatar_url must degrade to the
+  // tinted initials (the same fallback shown when avatar_url is absent), never a
+  // broken-image glyph.
+  const [avatarErrored, setAvatarErrored] = useState(false);
+  const showAvatarImage = Boolean(player.avatar_url) && !avatarErrored;
 
   const [insights, setInsights] = useState<EvidenceInsight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -549,6 +590,14 @@ export function FairwayPlayerInsight({
   const heroInsight = displayInsights[0];
   const secondInsight = displayInsights[1];
 
+  // ── Zero-data honesty guard (P104) ───────────────────────────────────────
+  // The route's computeCompositeRating / computeCategoryBreakdown default to a
+  // synthetic "50" (and Stable) when a player has NEVER recorded a round. Never
+  // render a fabricated rating, all-50 bars, or a confident verdict on no data —
+  // surface an honest "awaiting first round" state instead. Sections C–G below
+  // already null-guard their own inputs (insights/plan/focus areas/predictions).
+  const hasRounds = rounds.length > 0;
+
   const verdict = buildVerdict(playerStatus, compositeRating, categoryBreakdown, heroInsight?.title ?? null);
   const lastRound = rounds[0] ?? null;
   const metaLine = [
@@ -559,71 +608,130 @@ export function FairwayPlayerInsight({
     .filter(Boolean)
     .join(' · ');
 
-  return (
-    <div className="mx-auto w-full max-w-[860px] px-4 py-6 md:px-6 md:py-8">
-      {/* ── Back ── */}
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        leftIcon={<ArrowLeft className="h-4 w-4" />}
-        className="mb-6 -ml-2 text-text-tertiary"
-      >
-        <Link href={`/golf/dashboard/roster/${player.id}`}>Player</Link>
+  // Sibling cross-links (P107) — Game fingerprint + Genome — now ride in the
+  // CoachHelm shell's header action cluster (mirrors GenomeDetailView), so the
+  // page reads as a Players-tab leaf instead of an orphan with its own back link.
+  // The shell's "Players > {name}" breadcrumb supplies the canonical back path.
+  const headerActions = (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Button asChild variant="ghost" size="sm" leftIcon={<IconChartRadar size={15} />}>
+        <Link href={`/golf/dashboard/players/${player.id}/game`}>Game fingerprint</Link>
       </Button>
+      <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
+        <Link href={`/golf/dashboard/coachhelm/genome/${player.id}`}>Genome</Link>
+      </Button>
+    </div>
+  );
 
-      <div className="space-y-12">
+  return (
+    <CoachHelmShell
+      active="players"
+      // eslint-disable-next-line jsx-a11y/aria-role
+      role="coach"
+      signalCount={signalCount}
+      title="Player Insight"
+      breadcrumbs={[
+        { label: 'Players', href: '/golf/dashboard/development' },
+        { label: playerName },
+      ]}
+      actions={headerActions}
+    >
+      {/* This page is a narrative coaching STORY read top-to-bottom, so its body
+          keeps the tighter ~860px reading column inside the shell's wider gutter
+          rather than the shell's default 1200px instrument width. */}
+      <div className="mx-auto w-full max-w-[860px] space-y-12">
         {/* ════════ A · WHO + VERDICT ════════ */}
         <Surface elevation="shadow" padding="lg">
           <div className="flex items-start gap-5">
             <span
               className="grid h-16 w-16 flex-shrink-0 place-items-center overflow-hidden rounded-2xl font-fw-display text-h3 font-semibold ring-1 ring-border-subtle md:h-20 md:w-20"
-              style={player.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
+              style={showAvatarImage ? undefined : { backgroundColor: tint.bg, color: tint.text }}
             >
-              {player.avatar_url ? (
-                <img src={player.avatar_url} alt="" className="h-full w-full object-cover" />
+              {showAvatarImage ? (
+                <img
+                  src={player.avatar_url!}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  onError={() => setAvatarErrored(true)}
+                />
               ) : (
                 `${player.first_name?.[0] ?? ''}${player.last_name?.[0] ?? ''}`.toUpperCase() || '—'
               )}
             </span>
 
             <div className="min-w-0 flex-1">
-              <Eyebrow className="text-accent-700">Player Insight</Eyebrow>
+              {/* Section eyebrow names the BLOCK (the 30-second coaching read);
+                  the surface name "Player Insight" already lives in the shell
+                  masthead above, so we avoid echoing it literally here (P410). */}
+              <Eyebrow className="text-accent-700">Coaching read</Eyebrow>
               <h1 className="mt-1 truncate font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
                 {playerName}
               </h1>
               <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">{metaLine}</p>
-              <div className="mt-2.5">
-                <StatusPill tone={statusTone(playerStatus)} size="sm" dot>
-                  {playerStatus}
-                </StatusPill>
-              </div>
+              {hasRounds ? (
+                <div className="mt-2.5">
+                  <StatusPill tone={statusTone(playerStatus)} size="sm" dot>
+                    {playerStatus}
+                  </StatusPill>
+                </div>
+              ) : (
+                <div className="mt-2.5">
+                  <StatusPill tone="neutral" size="sm" dot>
+                    Awaiting first round
+                  </StatusPill>
+                </div>
+              )}
             </div>
 
-            <CompositeRatingCircle rating={compositeRating} />
+            {hasRounds ? <CompositeRatingCircle rating={compositeRating} /> : null}
           </div>
 
-          {/* Synthesized verdict — the 30-second read */}
-          <div
-            className={cn(
-              'mt-5 border-l-2 pl-4',
-              verdict.tone === 'good' ? 'border-accent-500' : 'border-fw-warning',
-            )}
-          >
-            <p className="max-w-prose font-fw-sans text-body text-text-secondary">{verdict.text}</p>
-          </div>
+          {/* Synthesized verdict — the 30-second read. Suppressed on zero data:
+              never emit a confident "Stable across the board" line for a player
+              who has never recorded a round (P104). */}
+          {hasRounds ? (
+            <div
+              className={cn(
+                'mt-5 border-l-2 pl-4',
+                verdict.tone === 'good' ? 'border-accent-500' : 'border-fw-warning',
+              )}
+            >
+              <p className="max-w-prose font-fw-sans text-body text-text-secondary">{verdict.text}</p>
+            </div>
+          ) : (
+            <div className="mt-5 border-l-2 border-border-subtle pl-4">
+              <p className="max-w-prose font-fw-sans text-body text-text-secondary">
+                No rounds recorded yet — there isn&rsquo;t enough data to rate {playerName} or call a
+                trend. Invite the player to log a round, then this profile fills in after the next run.
+              </p>
+            </div>
+          )}
         </Surface>
 
         {/* ════════ B · STANDING ════════ */}
+        {/* Bars are suppressed on zero data — five bars pinned at a synthetic 50
+            would read as a real (mediocre) standing for a player with no rounds
+            (P104). Show an honest awaiting state instead. */}
         <section>
           <Eyebrow>Standing</Eyebrow>
-          <div className="mt-3 flex flex-col gap-3 rounded-card bg-surface-sunken p-6">
-            <CategoryBar label="Tee Game" value={categoryBreakdown.teeGame} />
-            <CategoryBar label="Approach" value={categoryBreakdown.approach} />
-            <CategoryBar label="Short Game" value={categoryBreakdown.shortGame} />
-            <CategoryBar label="Putting" value={categoryBreakdown.putting} />
-            <CategoryBar label="Scoring" value={categoryBreakdown.scoring} />
-          </div>
+          {hasRounds ? (
+            <div className="mt-3 flex flex-col gap-3 rounded-card bg-surface-sunken p-6">
+              <CategoryBar label="Tee Game" value={categoryBreakdown.teeGame} />
+              <CategoryBar label="Approach" value={categoryBreakdown.approach} />
+              <CategoryBar label="Short Game" value={categoryBreakdown.shortGame} estimated />
+              <CategoryBar label="Putting" value={categoryBreakdown.putting} />
+              <CategoryBar label="Scoring" value={categoryBreakdown.scoring} />
+            </div>
+          ) : (
+            <div className="mt-3 rounded-card bg-surface-sunken p-6">
+              <EmptyState
+                icon={Activity}
+                variant="subtle"
+                title="No standing yet"
+                description="Tee game, approach, short game, putting, and scoring fill in once this player logs their first round."
+              />
+            </div>
+          )}
         </section>
 
         {/* ════════ C · WHERE TO FOCUS ════════ */}
@@ -858,12 +966,12 @@ export function FairwayPlayerInsight({
           <Button asChild variant="secondary" leftIcon={<IconTarget size={16} />}>
             <Link href={`/golf/dashboard/development?player=${player.id}`}>Create focus area</Link>
           </Button>
-          <Button asChild variant="ghost" leftIcon={<IconEye size={16} />}>
-            <Link href="/golf/dashboard/calendar">Schedule practice</Link>
+          <Button asChild variant="ghost" leftIcon={<IconCalendar size={16} />}>
+            <Link href="/golf/dashboard/calendar">Open calendar</Link>
           </Button>
         </div>
       </div>
-    </div>
+    </CoachHelmShell>
   );
 }
 

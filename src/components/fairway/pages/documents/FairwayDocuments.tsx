@@ -104,6 +104,8 @@ import {
   Select,
   Input,
   TextArea,
+  FormField,
+  Skeleton,
   ModalShell,
   fairwayToast,
 } from '@/components/fairway';
@@ -123,6 +125,7 @@ export interface FairwayDocument {
   category: string | null;
   is_public: boolean | null;
   created_at: string | null;
+  updated_at?: string | null;
   uploaded_by: string | null;
   current_version_id?: string | null;
   version_count?: number | null;
@@ -225,10 +228,14 @@ function timeAgo(dateStr: string | null): string {
 }
 
 /* ── pending-upload row shape (mirrors the legacy PendingFile) ─────────────── */
+type PendingFileStatus = 'queued' | 'uploading' | 'done' | 'failed';
+
 interface PendingFile {
   file: File;
   title: string;
   id: string;
+  status: PendingFileStatus;
+  error?: string;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -298,6 +305,8 @@ export function FairwayDocuments({
   const [versionHistoryDocument, setVersionHistoryDocument] = useState<FairwayDocument | null>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(false);
+  const [versionsError, setVersionsError] = useState<string | null>(null);
   const [uploadVersionDocument, setUploadVersionDocument] = useState<FairwayDocument | null>(null);
   const [showUploadVersionModal, setShowUploadVersionModal] = useState(false);
 
@@ -348,6 +357,11 @@ export function FairwayDocuments({
   }, [documents, searchQuery, categoryFilter, currentFolder, sortBy]);
 
   const inFolder = currentFolder !== null && currentFolder !== '';
+  // A folder is "unsaved" (a draft) until a document actually references it. We
+  // surface this honestly so a coach who creates an empty folder isn't surprised
+  // when it disappears on reload (folders persist via the file that lands in them).
+  const currentFolderIsUnsaved =
+    inFolder && !!currentFolder && !documents.some((d) => d.folder === currentFolder);
 
   // ── Drag & drop (coach only) ────────────────────────────────────────────--
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -368,7 +382,12 @@ export function FairwayDocuments({
     if (files.length > 0) {
       setPendingFiles((prev) => [
         ...prev,
-        ...files.map((file) => ({ file, title: file.name.replace(/\.[^/.]+$/, ''), id: crypto.randomUUID() })),
+        ...files.map((file) => ({
+          file,
+          title: file.name.replace(/\.[^/.]+$/, ''),
+          id: crypto.randomUUID(),
+          status: 'queued' as const,
+        })),
       ]);
       setShowUploadModal(true);
     }
@@ -380,7 +399,12 @@ export function FairwayDocuments({
     if (files.length > 0) {
       setPendingFiles((prev) => [
         ...prev,
-        ...files.map((file) => ({ file, title: file.name.replace(/\.[^/.]+$/, ''), id: crypto.randomUUID() })),
+        ...files.map((file) => ({
+          file,
+          title: file.name.replace(/\.[^/.]+$/, ''),
+          id: crypto.randomUUID(),
+          status: 'queued' as const,
+        })),
       ]);
       setShowUploadModal(true);
     }
@@ -388,7 +412,14 @@ export function FairwayDocuments({
   };
   const removePendingFile = (id: string) => setPendingFiles((prev) => prev.filter((f) => f.id !== id));
   const updatePendingTitle = (id: string, title: string) =>
-    setPendingFiles((prev) => prev.map((f) => (f.id === id ? { ...f, title } : f)));
+    setPendingFiles((prev) =>
+      prev.map((f) =>
+        f.id === id
+          ? // editing a failed file clears its error and re-queues it for retry
+            { ...f, title, ...(f.status === 'failed' ? { status: 'queued' as const, error: undefined } : null) }
+          : f,
+      ),
+    );
 
   const closeUploadModal = () => {
     if (uploading) return;
@@ -397,13 +428,22 @@ export function FairwayDocuments({
     setUploadError(null);
   };
 
+  const setFileStatus = (id: string, status: PendingFileStatus, error?: string) =>
+    setPendingFiles((prev) => prev.map((f) => (f.id === id ? { ...f, status, error } : f)));
+
   // ── Upload (multi-file) — reuses uploadGolfDocument + createGolfDocument ──--
+  // Per-file outcome tracking with partial-success recovery: a mid-batch failure
+  // does NOT abandon the rest, already-committed files stay 'done' and are
+  // skipped on a retry, and the result is messaged honestly ("3 of 5 uploaded").
   const handleUpload = async () => {
-    if (pendingFiles.length === 0) {
+    // Only files that haven't already landed need (re)uploading — this is what
+    // makes the same button a "retry failed only" once some succeeded.
+    const toProcess = pendingFiles.filter((f) => f.status !== 'done');
+    if (toProcess.length === 0) {
       setUploadError('Please select at least one file.');
       return;
     }
-    if (pendingFiles.some((f) => !f.title.trim())) {
+    if (toProcess.some((f) => !f.title.trim())) {
       setUploadError('All files must have a title.');
       return;
     }
@@ -412,51 +452,80 @@ export function FairwayDocuments({
     setUploadError(null);
     setUploadProgress(0);
 
+    const folderValue = uploadFolder || (inFolder && currentFolder ? currentFolder : undefined);
+    let succeeded = 0;
+    let failed = 0;
+
     try {
-      for (let i = 0; i < pendingFiles.length; i++) {
-        const pf = pendingFiles[i]!;
-        setUploadProgress(Math.round((i / pendingFiles.length) * 100));
+      for (let i = 0; i < toProcess.length; i++) {
+        const pf = toProcess[i]!;
+        setUploadProgress(Math.round((i / toProcess.length) * 100));
+        setFileStatus(pf.id, 'uploading');
 
-        const uploadResult = await uploadGolfDocument(pf.file, teamId);
-        if (!uploadResult.success) {
-          setUploadError(`Failed to upload "${pf.title}": ${uploadResult.error}`);
-          setUploading(false);
-          return;
-        }
+        try {
+          const uploadResult = await uploadGolfDocument(pf.file, teamId);
+          if (!uploadResult.success) {
+            setFileStatus(pf.id, 'failed', uploadResult.error || 'Upload failed');
+            failed += 1;
+            continue;
+          }
 
-        const folderValue = uploadFolder || (inFolder && currentFolder ? currentFolder : undefined);
-        const createResult = await createGolfDocument({
-          team_id: teamId,
-          title: pf.title,
-          file_url: uploadResult.file_url!,
-          file_type: pf.file.type,
-          file_size: pf.file.size,
-          category: uploadCategory || undefined,
-          player_visible: uploadIsPublic,
-          uploaded_by: coachId,
-          folder: folderValue,
-        });
-        if (!createResult.success) {
-          setUploadError(`Failed to create record for "${pf.title}": ${createResult.error}`);
-          setUploading(false);
-          return;
+          const createResult = await createGolfDocument({
+            team_id: teamId,
+            title: pf.title,
+            file_url: uploadResult.file_url!,
+            storage_path: uploadResult.storage_path,
+            file_type: pf.file.type,
+            file_size: pf.file.size,
+            category: uploadCategory || undefined,
+            player_visible: uploadIsPublic,
+            uploaded_by: coachId,
+            folder: folderValue,
+          });
+          if (!createResult.success) {
+            setFileStatus(pf.id, 'failed', createResult.error || 'Could not save document');
+            failed += 1;
+            continue;
+          }
+
+          setFileStatus(pf.id, 'done');
+          succeeded += 1;
+        } catch (err) {
+          setFileStatus(pf.id, 'failed', err instanceof Error ? err.message : 'Upload failed');
+          failed += 1;
         }
       }
 
       setUploadProgress(100);
-      const count = pendingFiles.length;
-      setPendingFiles([]);
-      setUploadCategory('');
-      setUploadFolder('');
-      setUploadIsPublic(true);
-      setShowUploadModal(false);
-      fairwayToast.success(`${count} file${count !== 1 ? 's' : ''} uploaded`);
-      router.refresh();
+
+      if (failed === 0) {
+        // Full success — reset and close.
+        setPendingFiles([]);
+        setUploadCategory('');
+        setUploadFolder('');
+        setUploadIsPublic(true);
+        setShowUploadModal(false);
+        fairwayToast.success(`${succeeded} file${succeeded !== 1 ? 's' : ''} uploaded`);
+      } else if (succeeded > 0) {
+        // Partial success — keep the modal open so failed files can be retried.
+        const total = succeeded + failed;
+        setUploadError(
+          `${succeeded} of ${total} uploaded. ${failed} failed — fix the file${failed !== 1 ? 's' : ''} below and retry.`,
+        );
+        fairwayToast.error(`${succeeded} of ${total} uploaded · ${failed} failed`);
+      } else {
+        setUploadError(`Upload failed for all ${failed} file${failed !== 1 ? 's' : ''}. Please retry.`);
+      }
+
+      // Refresh whenever anything landed so the grid reflects committed files.
+      if (succeeded > 0) router.refresh();
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'An error occurred during upload.');
     } finally {
       setUploading(false);
-      setUploadProgress(0);
+      // Only clear the progress track when nothing succeeded this pass; on a
+      // partial commit leave it filled so it doesn't read as "nothing happened".
+      if (succeeded === 0) setUploadProgress(0);
     }
   };
 
@@ -566,7 +635,10 @@ export function FairwayDocuments({
 
   // ── Download — `documents` bucket is private, so the stored file_url is a
   // dead public URL (→ 403). Fetch a short-lived SIGNED URL on demand via the
-  // same server path the preview uses, then trigger a programmatic download.
+  // same server path the preview uses. The signed URL is CROSS-ORIGIN, so the
+  // <a download> attribute is ignored by the browser (it would open in a tab
+  // with the wrong name). Instead fetch the bytes, build a same-origin object
+  // URL, and trigger a real save with the document's title as the filename.
   const handleDownload = useCallback(async (doc: FairwayDocument) => {
     try {
       const { data, error } = await getPreviewUrl(doc.id);
@@ -574,11 +646,25 @@ export function FairwayDocuments({
         fairwayToast.error(error || 'Could not generate a download link');
         return;
       }
+
+      // Preserve the real file extension (titles often omit it).
+      const extFromUrl = new URL(data.url).pathname.split('.').pop();
+      const hasExt = /\.[a-z0-9]{1,8}$/i.test(doc.title);
+      const filename = !hasExt && extFromUrl && extFromUrl.length <= 8
+        ? `${doc.title}.${extFromUrl}`
+        : doc.title;
+
+      const res = await fetch(data.url);
+      if (!res.ok) throw new Error('Could not retrieve the file');
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
       const link = window.document.createElement('a');
-      link.href = data.url;
-      link.download = doc.title;
+      link.href = objectUrl;
+      link.download = filename;
       link.rel = 'noopener';
       link.click();
+      // Revoke after the click has been dispatched.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
     } catch (err) {
       fairwayToast.error(err instanceof Error ? err.message : 'Download failed');
     }
@@ -597,13 +683,29 @@ export function FairwayDocuments({
   const openVersionHistory = useCallback(async (doc: FairwayDocument) => {
     setVersionHistoryDocument(doc);
     setShowVersionHistory(true);
-    const result = await getVersionHistory(doc.id);
-    setVersions(result.success && result.versions ? result.versions : []);
+    setVersionsLoading(true);
+    setVersionsError(null);
+    setVersions([]);
+    try {
+      const result = await getVersionHistory(doc.id);
+      if (!result.success) {
+        // Never collapse a fetch failure into the empty state — surface it.
+        setVersionsError(result.error || 'Could not load version history.');
+        return;
+      }
+      setVersions(result.versions ?? []);
+    } catch (err) {
+      setVersionsError(err instanceof Error ? err.message : 'Could not load version history.');
+    } finally {
+      setVersionsLoading(false);
+    }
   }, []);
   const closeVersionHistory = () => {
     setShowVersionHistory(false);
     setVersionHistoryDocument(null);
     setVersions([]);
+    setVersionsLoading(false);
+    setVersionsError(null);
   };
   const handlePreviewVersion = (version: DocumentVersion) => {
     if (!versionHistoryDocument || !version.file_url) return;
@@ -792,12 +894,9 @@ export function FairwayDocuments({
       {/* ── Search / filter / sort toolbar ─────────────────────────────────── */}
       {documents.length > 0 && (
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          {/* Search */}
-          <div className="relative flex-1">
-            <IconSearch
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary"
-            />
+          {/* Search — uses the Input primitive's leading/trailing adornment
+              slots (single source of truth for the surface + focus ring). */}
+          <div className="flex-1">
             <Input
               type="search"
               value={searchQuery}
@@ -806,24 +905,21 @@ export function FairwayDocuments({
               enterKeyHint="search"
               autoComplete="off"
               aria-label="Search documents"
-              className={cn(
-                'h-11 w-full rounded-fw-md border border-border-subtle bg-surface-sunken pl-9 pr-9',
-                'font-fw-sans text-body-sm text-text-primary placeholder:text-text-tertiary',
-                'outline-none transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)]',
-                'hover:border-border-strong focus-visible:border-border-focus focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
-              )}
+              leading={<IconSearch size={16} />}
+              trailing={
+                searchQuery ? (
+                  <IconButton
+                    aria-label="Clear search"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery('')}
+                    className="-mr-1 h-7 w-7"
+                  >
+                    <IconX size={15} />
+                  </IconButton>
+                ) : undefined
+              }
             />
-            {searchQuery && (
-              <IconButton
-                aria-label="Clear search"
-                variant="ghost"
-                size="sm"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-1.5 top-1/2 h-8 w-8 -translate-y-1/2"
-              >
-                <IconX size={15} />
-              </IconButton>
-            )}
           </div>
 
           {/* Category filter pills (only those with results in scope) */}
@@ -912,10 +1008,12 @@ export function FairwayDocuments({
               <EmptyState
                 variant="subtle"
                 icon={Folder}
-                title="This folder is empty"
+                title={currentFolderIsUnsaved && isCoach ? 'Draft folder — add a file to keep it' : 'This folder is empty'}
                 description={
                   isCoach
-                    ? 'Upload files to get started, or drag & drop them here.'
+                    ? currentFolderIsUnsaved
+                      ? `“${currentFolder}” won't be saved until you add a file to it. Upload one now, or drag & drop here — leaving it empty discards the folder.`
+                      : 'Upload files to get started, or drag & drop them here.'
                     : 'No files have been added to this folder yet.'
                 }
                 action={
@@ -983,32 +1081,28 @@ export function FairwayDocuments({
         description="Group related documents together. Folders save once a file lands in them."
       >
         <ModalShell.Body className="flex flex-col gap-2">
-          <label htmlFor="new-folder-name" className="font-fw-sans text-body-sm font-medium text-text-primary">
-            Folder name
-          </label>
-          <Input
-            id="new-folder-name"
-            ref={newFolderInputRef}
-            type="text"
-            value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newFolderName.trim() && !folders.includes(newFolderName.trim())) {
-                handleCreateFolder();
-              }
-            }}
-            placeholder="e.g. Practice Plans"
-            autoComplete="off"
-            className={cn(
-              'h-11 w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3',
-              'font-fw-sans text-body text-text-primary placeholder:text-text-tertiary',
-              'outline-none transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)]',
-              'hover:border-border-strong focus-visible:border-border-focus focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
-            )}
-          />
-          {newFolderName.trim() && folders.includes(newFolderName.trim()) && (
-            <p className="font-fw-sans text-caption text-fw-warning">A folder with this name already exists.</p>
-          )}
+          <FormField
+            label="Folder name"
+            error={
+              newFolderName.trim() && folders.includes(newFolderName.trim())
+                ? 'A folder with this name already exists.'
+                : undefined
+            }
+          >
+            <Input
+              ref={newFolderInputRef}
+              type="text"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newFolderName.trim() && !folders.includes(newFolderName.trim())) {
+                  handleCreateFolder();
+                }
+              }}
+              placeholder="e.g. Practice Plans"
+              autoComplete="off"
+            />
+          </FormField>
         </ModalShell.Body>
         <ModalShell.Footer>
           <Button
@@ -1081,6 +1175,7 @@ export function FairwayDocuments({
                       onChange={(e) => updatePendingTitle(pf.id, e.target.value)}
                       placeholder="Document title"
                       aria-label={`Title for ${pf.file.name}`}
+                      disabled={pf.status === 'done' || pf.status === 'uploading'}
                       className={cn(
                         '!min-h-0 w-full !rounded-none !border-0 !border-b !border-transparent !bg-transparent !px-0 !py-0.5',
                         'font-fw-sans text-body-sm font-medium text-text-primary placeholder:text-text-tertiary',
@@ -1090,12 +1185,30 @@ export function FairwayDocuments({
                     <p className="mt-0.5 truncate font-fw-sans text-caption text-text-tertiary">
                       {pf.file.name} · <span className="tabular-nums">{formatFileSize(pf.file.size)}</span>
                     </p>
+                    {pf.status === 'failed' && pf.error && (
+                      <p className="mt-0.5 truncate font-fw-sans text-caption text-fw-danger">{pf.error}</p>
+                    )}
                   </div>
+                  {/* Per-file outcome */}
+                  {pf.status === 'done' ? (
+                    <StatusPill size="sm" tone="success" dot={false}>
+                      Uploaded
+                    </StatusPill>
+                  ) : pf.status === 'failed' ? (
+                    <StatusPill size="sm" tone="danger" dot={false}>
+                      Failed
+                    </StatusPill>
+                  ) : pf.status === 'uploading' ? (
+                    <StatusPill size="sm" tone="neutral" dot>
+                      Uploading
+                    </StatusPill>
+                  ) : null}
                   <IconButton
                     aria-label={`Remove ${pf.title}`}
                     variant="ghost"
                     size="sm"
                     onClick={() => removePendingFile(pf.id)}
+                    disabled={pf.status === 'uploading'}
                   >
                     <IconX size={15} />
                   </IconButton>
@@ -1155,16 +1268,27 @@ export function FairwayDocuments({
           <Button variant="ghost" onClick={closeUploadModal} disabled={uploading}>
             Cancel
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleUpload}
-            busy={uploading}
-            disabled={pendingFiles.length === 0}
-          >
-            {uploading
-              ? `Uploading… ${uploadProgress}%`
-              : `Upload ${pendingFiles.length} file${pendingFiles.length !== 1 ? 's' : ''}`}
-          </Button>
+          {(() => {
+            const pending = pendingFiles.filter((f) => f.status !== 'done').length;
+            const anyDone = pendingFiles.some((f) => f.status === 'done');
+            const anyFailed = pendingFiles.some((f) => f.status === 'failed');
+            // After a partial commit, the same action retries only what's left.
+            const retryMode = anyDone && anyFailed;
+            return (
+              <Button
+                variant="primary"
+                onClick={handleUpload}
+                busy={uploading}
+                disabled={pending === 0}
+              >
+                {uploading
+                  ? `Uploading… ${uploadProgress}%`
+                  : retryMode
+                    ? `Retry ${pending} file${pending !== 1 ? 's' : ''}`
+                    : `Upload ${pending} file${pending !== 1 ? 's' : ''}`}
+              </Button>
+            );
+          })()}
         </ModalShell.Footer>
       </ModalShell>
 
@@ -1184,42 +1308,22 @@ export function FairwayDocuments({
             </InlineNotice>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="edit-document-title" className="font-fw-sans text-body-sm font-medium text-text-primary">
-              Title <span className="text-accent-600">*</span>
-            </label>
+          <FormField label="Title" required>
             <Input
-              id="edit-document-title"
               type="text"
               value={editForm.title}
               onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))}
-              className={cn(
-                'h-11 w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3',
-                'font-fw-sans text-body text-text-primary placeholder:text-text-tertiary',
-                'outline-none transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)]',
-                'hover:border-border-strong focus-visible:border-border-focus focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
-              )}
             />
-          </div>
+          </FormField>
 
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="edit-document-description" className="font-fw-sans text-body-sm font-medium text-text-primary">
-              Description
-            </label>
+          <FormField label="Description" showOptional>
             <TextArea
-              id="edit-document-description"
               value={editForm.description}
               onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
               rows={3}
               placeholder="Optional description"
-              className={cn(
-                'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2.5',
-                'font-fw-sans text-body-sm leading-relaxed text-text-primary placeholder:text-text-tertiary',
-                'resize-y outline-none transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)]',
-                'hover:border-border-strong focus-visible:border-border-focus focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
-              )}
             />
-          </div>
+          </FormField>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
@@ -1349,15 +1453,52 @@ export function FairwayDocuments({
         title="Version history"
       >
         <ModalShell.Body>
-          {versionHistoryDocument && (
-            <VersionHistory
-              document={versionHistoryDocument as GolfDocument}
-              versions={versions}
-              onPreviewVersion={handlePreviewVersion}
-              onReverted={() => {
-                if (versionHistoryDocument) void openVersionHistory(versionHistoryDocument);
-              }}
-            />
+          {versionsLoading ? (
+            // Distinct loading state — never let the modal open empty then pop.
+            <div className="flex flex-col gap-3" aria-busy="true" aria-live="polite">
+              <span className="sr-only">Loading version history…</span>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-3 rounded-fw-md bg-surface-sunken p-3">
+                  <Skeleton circle className="h-9 w-9" />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <Skeleton className="h-3.5 w-1/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : versionsError ? (
+            // Honest failure — NOT a cheerful "no versions" empty state.
+            <InlineNotice
+              tone="danger"
+              title="Couldn't load version history"
+              action={
+                versionHistoryDocument ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      if (versionHistoryDocument) void openVersionHistory(versionHistoryDocument);
+                    }}
+                  >
+                    Retry
+                  </Button>
+                ) : undefined
+              }
+            >
+              {versionsError}
+            </InlineNotice>
+          ) : (
+            versionHistoryDocument && (
+              <VersionHistory
+                document={versionHistoryDocument as GolfDocument}
+                versions={versions}
+                onPreviewVersion={handlePreviewVersion}
+                onReverted={() => {
+                  if (versionHistoryDocument) void openVersionHistory(versionHistoryDocument);
+                }}
+              />
+            )
           )}
         </ModalShell.Body>
       </ModalShell>
@@ -1424,13 +1565,36 @@ function DocumentCard({
   const tone = fileTypeTone(doc.file_type);
   const showFolderChip = !!doc.folder && currentFolder !== doc.folder;
   const versionCount = doc.version_count ?? 0;
+  // After "Upload new version" the file changes but created_at stays put, so a
+  // fresh doc reads as old. Show the last meaningful change (updated_at) labelled
+  // "Updated" only when there's been a real change (version_count>1 AND
+  // updated_at is observably after created_at) — never present an inferred value
+  // as fact for an untouched single-version file.
+  const wasUpdated =
+    versionCount > 1 &&
+    !!doc.updated_at &&
+    !!doc.created_at &&
+    new Date(doc.updated_at).getTime() - new Date(doc.created_at).getTime() > 60_000;
+  const dateLabel = wasUpdated ? `Updated ${timeAgo(doc.updated_at!)}` : timeAgo(doc.created_at);
 
   return (
     <Surface
       elevation="border"
       padding="none"
       interactive
+      role="button"
+      tabIndex={0}
+      aria-label={`Preview ${doc.title}`}
       onClick={onPreview}
+      onKeyDown={(e) => {
+        // Card behaves as a button: Enter/Space opens preview. Nested controls
+        // (menu, preview/download IconButtons) stop propagation, so this never
+        // double-fires from those.
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onPreview();
+        }
+      }}
       className="group flex flex-col"
     >
       <div className="flex flex-col gap-4 p-5">
@@ -1470,6 +1634,15 @@ function DocumentCard({
                     className="gap-3"
                   >
                     <IconEye size={18} className="text-text-tertiary" /> Preview
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      void triggerHaptic('light');
+                      onDownload();
+                    }}
+                    className="gap-3"
+                  >
+                    <IconDownload size={18} className="text-text-tertiary" /> Download
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => {
@@ -1563,13 +1736,24 @@ function DocumentCard({
         <div className="flex items-center gap-3 font-fw-sans text-caption text-text-tertiary">
           <span className="tabular-nums">{formatFileSize(doc.file_size)}</span>
           <span aria-hidden="true">·</span>
-          <span className="tabular-nums">{timeAgo(doc.created_at)}</span>
+          <span className="tabular-nums">{dateLabel}</span>
         </div>
-        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 motion-reduce:opacity-100">
+        {/* Preview/Download affordances. Always visible on touch / coarse
+            pointers and small screens (no hover to reveal them); at desktop they
+            quietly fade in on hover OR keyboard focus-within so there is always a
+            keyboard- and touch-operable path (WCAG 2.1.1 / 2.4.11). */}
+        <div
+          className={cn(
+            'flex items-center gap-1 opacity-100',
+            'sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100',
+            '[@media(hover:none)]:opacity-100 motion-reduce:opacity-100',
+          )}
+        >
           <IconButton
-            aria-label="Preview"
+            aria-label={`Preview ${doc.title}`}
             variant="ghost"
             size="sm"
+            title="Preview"
             onClick={(e) => {
               e.stopPropagation();
               onPreview();

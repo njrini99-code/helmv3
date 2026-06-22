@@ -88,6 +88,14 @@ export interface AppShellProps {
   mobileOpen?: boolean;
   onMobileOpenChange?: (next: boolean) => void;
 
+  /**
+   * P413: a persistent mobile bottom-tab bar (rendered `md:hidden`). Additive —
+   * when omitted the shell behaves exactly as before (hamburger drawer only).
+   * The shell adds bottom content padding on mobile when this is present so the
+   * bar never overlaps page content.
+   */
+  bottomNav?: React.ReactNode;
+
   /** The page content. */
   children: React.ReactNode;
   /** Disable the route-transition reveal (e.g. if a page owns its own motion). */
@@ -127,6 +135,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     collapsible = true,
     mobileOpen: mobileOpenProp,
     onMobileOpenChange,
+    bottomNav,
     children,
     disableRouteTransition = false,
     constrainContent = true,
@@ -351,6 +360,10 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
               // non-notched/desktop, so this is a no-op there) — KEPT in both
               // modes so home-indicator clearance never regresses.
               'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
+              // P413: when the mobile bottom-tab bar is mounted, add its height
+              // (~56px) to the mobile bottom pad so it never overlaps content.
+              // Desktop (md+) is unaffected — the bar is md:hidden.
+              bottomNav && 'pb-[calc(2rem+56px+env(safe-area-inset-bottom,0px))] md:pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
               // Generous gutters (§A: 48–56px page gutters) + premium reading
               // width — applied only when the shell owns the page frame. When
               // `contentPadding` is false, PAGES own their gutters + titles
@@ -367,6 +380,9 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
           </div>
         </main>
       </div>
+
+      {/* P413: persistent mobile bottom-tab bar (md:hidden, viewport-fixed). */}
+      {bottomNav}
     </div>
   );
 });

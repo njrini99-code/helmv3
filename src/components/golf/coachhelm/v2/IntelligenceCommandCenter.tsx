@@ -36,6 +36,8 @@ import {
 } from '@/components/icons';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import {
   generateTeamInsight,
   recordInteraction,
@@ -60,6 +62,17 @@ import type {
 type ICCVariant = 'widget' | 'page';
 
 interface IntelligenceCommandCenterProps {
+  /**
+   * The team rendered around this command center. NOTE: the Deep-Analysis run is
+   * intentionally SESSION-SCOPED, not driven by this prop — `handleAnalyze` calls
+   * `generateTeamInsight()` with no args and the server action re-resolves the
+   * coach's ACTIVE team via `resolveCoachTeamIdWithCookie` (cookie-aware, so it
+   * tracks the men's/women's active-team toggle). Passing `teamId` here would
+   * risk analyzing a team other than the one the coach has toggled to. The prop
+   * is retained for parity with the surrounding brief (which resolves the same
+   * active team server-side, so the displayed and analyzed teams are one source
+   * of truth) and for any future per-team display use.
+   */
   teamId: string;
   coachId: string;
   initialInsights?: ComposedInsight[];
@@ -75,6 +88,12 @@ type TabId = 'overview' | 'insights' | 'patterns' | 'predictions';
 // HELPER: Tone config
 // ============================================================================
 
+// Fairway-token tone vocabulary. The CoachHelm AI status palette is GREEN-
+// FORWARD (DESIGN-SYSTEM §1): success === the helm accent, warning is warm
+// amber, danger is the canonical red, and "info"/celebratory are quiet warm-
+// neutral chrome (the system has NO blue/violet). Every class resolves to a
+// `--fw-*` token (defined on :root) so the card reads as one cohesive warm
+// Fairway surface beneath the brief — solid surfaces for dense data, no glass.
 const TONE_CONFIG: Record<InsightTone, {
   bg: string;
   border: string;
@@ -85,48 +104,48 @@ const TONE_CONFIG: Record<InsightTone, {
   label: string;
 }> = {
   urgent: {
-    bg: 'bg-red-50/80',
-    border: 'border-red-200/60',
-    icon: 'text-red-600',
-    badge: 'bg-red-100 text-red-700',
+    bg: 'bg-fw-danger-bg',
+    border: 'border-fw-danger/30',
+    icon: 'text-fw-danger',
+    badge: 'bg-fw-danger-bg text-fw-danger',
     badgeText: 'Urgent',
-    accentBar: 'bg-gradient-to-r from-red-500 to-rose-500',
+    accentBar: 'bg-fw-danger',
     label: 'Needs immediate attention',
   },
   cautionary: {
-    bg: 'bg-amber-50/80',
-    border: 'border-amber-200/60',
-    icon: 'text-amber-600',
-    badge: 'bg-amber-100 text-amber-700',
+    bg: 'bg-fw-warning-bg',
+    border: 'border-fw-warning/30',
+    icon: 'text-fw-warning',
+    badge: 'bg-fw-warning-bg text-fw-warning',
     badgeText: 'Watch',
-    accentBar: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    accentBar: 'bg-fw-warning',
     label: 'Trending concern',
   },
   encouraging: {
-    bg: 'bg-primary-50/80',
-    border: 'border-primary-200/60',
-    icon: 'text-primary-600',
-    badge: 'bg-primary-100 text-primary-700',
+    bg: 'bg-fw-success-bg',
+    border: 'border-accent-200',
+    icon: 'text-fw-success',
+    badge: 'bg-fw-success-bg text-fw-success',
     badgeText: 'Positive',
-    accentBar: 'bg-gradient-to-r from-primary-500 to-primary-500',
+    accentBar: 'bg-accent-500',
     label: 'Good trend',
   },
   celebratory: {
-    bg: 'bg-violet-50/80',
-    border: 'border-violet-200/60',
-    icon: 'text-violet-600',
-    badge: 'bg-violet-100 text-violet-700',
+    bg: 'bg-fw-success-bg',
+    border: 'border-accent-200',
+    icon: 'text-fw-success',
+    badge: 'bg-fw-success-bg text-fw-success',
     badgeText: 'Standout',
-    accentBar: 'bg-gradient-to-r from-violet-500 to-purple-500',
+    accentBar: 'bg-accent-500',
     label: 'Notable achievement',
   },
   neutral: {
-    bg: 'bg-warm-50/80',
-    border: 'border-warm-200/60',
-    icon: 'text-warm-600',
-    badge: 'bg-warm-100 text-warm-600',
+    bg: 'bg-surface-sunken',
+    border: 'border-border-subtle',
+    icon: 'text-text-secondary',
+    badge: 'bg-surface-sunken text-text-secondary',
     badgeText: 'Info',
-    accentBar: 'bg-gradient-to-r from-warm-400 to-warm-500',
+    accentBar: 'bg-border-strong',
     label: 'Informational',
   },
 };
@@ -152,7 +171,13 @@ const OverviewSummary = memo(function OverviewSummary({
   const cautionCount = insights.filter(i => i.tone === 'cautionary').length;
   const positiveCount = insights.filter(i => i.tone === 'encouraging' || i.tone === 'celebratory').length;
   const highImpactPatterns = patterns.filter(p => Math.abs(p.strokeImpact) >= 0.5).length;
-  const healthScore = useMemo(() => {
+  // "Signal pressure" — how much attention THIS analysis surfaced, derived from
+  // the open insight/pattern load. Deliberately NOT a second "Team Health /100":
+  // the canonical team-health number lives in the brief's PulseStrip
+  // (getTeamCategoryInsights.teamHealth). Showing two divergent /100 "health"
+  // figures on one screen is a data lie (Nielsen #4 consistency, B4) — this is
+  // labelled and scaled as a distinct read so the two never compete.
+  const pressureScore = useMemo(() => {
     if (insights.length === 0 && patterns.length === 0) return null;
     let score = 70;
     score -= urgentCount * 15;
@@ -162,18 +187,19 @@ const OverviewSummary = memo(function OverviewSummary({
     return Math.max(0, Math.min(100, score));
   }, [urgentCount, cautionCount, positiveCount, highImpactPatterns, insights.length, patterns.length]);
 
-  if (!healthScore && insights.length === 0) return null;
+  if (!pressureScore && insights.length === 0) return null;
 
-  const getHealthColor = (score: number) => {
-    if (score >= 80) return 'text-primary-600';
-    if (score >= 60) return 'text-amber-600';
-    return 'text-red-600';
+  // Higher score = calmer (fewer/softer open signals); lower = more pressure.
+  const getPressureColor = (score: number) => {
+    if (score >= 80) return 'text-fw-success';
+    if (score >= 60) return 'text-fw-warning';
+    return 'text-fw-danger';
   };
 
-  const getHealthLabel = (score: number) => {
-    if (score >= 80) return 'Strong';
-    if (score >= 60) return 'Attention Needed';
-    return 'Concerns Detected';
+  const getPressureLabel = (score: number) => {
+    if (score >= 80) return 'Quiet';
+    if (score >= 60) return 'Some signals';
+    return 'High pressure';
   };
 
   return (
@@ -181,67 +207,67 @@ const OverviewSummary = memo(function OverviewSummary({
       'grid gap-2 mb-3',
       isPage ? 'grid-cols-2 md:grid-cols-4 gap-4 mb-6' : 'grid-cols-2'
     )}>
-      {/* Team Health Score */}
-      {healthScore !== null && (
+      {/* Signal Pressure — analysis-scoped read, NOT a second Team Health/100 */}
+      {pressureScore !== null && (
         <div className={cn(
-          'bg-cream-100/82 backdrop-blur-sm rounded-xl border border-warm-200/55 shadow-sm',
+          'bg-surface rounded-xl border border-border-subtle shadow-soft',
           isPage ? 'p-5 rounded-2xl' : 'p-3'
         )}>
           <div className={cn('flex items-center gap-2', isPage ? 'mb-3' : 'mb-1.5')}>
             <div className={cn(
-              'rounded-md bg-warm-100 flex items-center justify-center',
+              'rounded-md bg-surface-sunken flex items-center justify-center',
               isPage ? 'w-9 h-9 rounded-lg' : 'w-6 h-6'
             )}>
-              <IconUsers size={isPage ? 16 : 12} className="text-warm-500" />
+              <IconBell size={isPage ? 16 : 12} className="text-text-tertiary" />
             </div>
             <span className={cn(
-              'font-medium text-warm-400 uppercase tracking-wider',
+              'font-medium text-text-tertiary uppercase tracking-wider',
               isPage ? 'text-xs' : 'text-xs'
-            )}>Team Health</span>
+            )}>Signal Pressure</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={cn('font-medium tabular-nums', getHealthColor(healthScore), isPage ? 'text-4xl' : 'text-2xl')}>{healthScore}</span>
-            <span className={cn('text-warm-400', isPage ? 'text-sm' : 'text-xs')}>/100</span>
+            <span className={cn('font-medium tabular-nums', getPressureColor(pressureScore), isPage ? 'text-4xl' : 'text-2xl')}>{pressureScore}</span>
+            <span className={cn('text-text-tertiary', isPage ? 'text-sm' : 'text-xs')}>/100</span>
           </div>
-          <span className={cn('font-medium', getHealthColor(healthScore), isPage ? 'text-sm' : 'text-xs')}>
-            {getHealthLabel(healthScore)}
+          <span className={cn('font-medium', getPressureColor(pressureScore), isPage ? 'text-sm' : 'text-xs')}>
+            {getPressureLabel(pressureScore)}
           </span>
         </div>
       )}
 
       {/* Quick Counts */}
       <div className={cn(
-        'bg-cream-100/82 backdrop-blur-sm rounded-xl border border-warm-200/55 shadow-sm',
+        'bg-surface rounded-xl border border-border-subtle shadow-soft',
         isPage ? 'p-5 rounded-2xl' : 'p-3'
       )}>
         <div className={cn('flex items-center gap-2', isPage ? 'mb-3' : 'mb-1.5')}>
           <div className={cn(
-            'rounded-md bg-warm-100 flex items-center justify-center',
+            'rounded-md bg-surface-sunken flex items-center justify-center',
             isPage ? 'w-9 h-9 rounded-lg' : 'w-6 h-6'
           )}>
-            <IconSparkles size={isPage ? 16 : 12} className="text-warm-500" />
+            <IconSparkles size={isPage ? 16 : 12} className="text-text-tertiary" />
           </div>
           <span className={cn(
-            'font-medium text-warm-400 uppercase tracking-wider',
+            'font-medium text-text-tertiary uppercase tracking-wider',
             isPage ? 'text-xs' : 'text-xs'
           )}>AI Analysis</span>
         </div>
         <div className={cn('space-y-1', isPage && 'space-y-2')}>
           {urgentCount > 0 && (
             <div className="flex items-center gap-2">
-              <div className={cn('rounded-full bg-red-500', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
-              <span className={cn('text-red-600 font-medium', isPage ? 'text-sm' : 'text-xs')}>{urgentCount} urgent</span>
+              <div className={cn('rounded-full bg-fw-danger', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
+              <span className={cn('text-fw-danger font-medium', isPage ? 'text-sm' : 'text-xs')}>{urgentCount} urgent</span>
             </div>
           )}
           {cautionCount > 0 && (
             <div className="flex items-center gap-2">
-              <div className={cn('rounded-full bg-amber-500', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
-              <span className={cn('text-amber-600 font-medium', isPage ? 'text-sm' : 'text-xs')}>{cautionCount} watch</span>
+              <div className={cn('rounded-full bg-fw-warning', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
+              <span className={cn('text-fw-warning font-medium', isPage ? 'text-sm' : 'text-xs')}>{cautionCount} watch</span>
             </div>
           )}
           <div className="flex items-center gap-2">
-            <div className={cn('rounded-full bg-primary-500', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
-            <span className={cn('text-warm-500', isPage ? 'text-sm' : 'text-xs')}>{positiveCount} positive</span>
+            <div className={cn('rounded-full bg-accent-500', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
+            <span className={cn('text-text-secondary', isPage ? 'text-sm' : 'text-xs')}>{positiveCount} positive</span>
           </div>
         </div>
       </div>
@@ -249,31 +275,31 @@ const OverviewSummary = memo(function OverviewSummary({
       {/* Page-only: extra stat cards */}
       {isPage && (
         <>
-          <div className="bg-cream-100/82 backdrop-blur-sm rounded-2xl border border-warm-200/55 p-5 shadow-sm">
+          <div className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-soft">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-9 h-9 rounded-lg bg-warm-100 flex items-center justify-center">
-                <IconTrendingUp size={16} className="text-warm-500" />
+              <div className="w-9 h-9 rounded-lg bg-surface-sunken flex items-center justify-center">
+                <IconTrendingUp size={16} className="text-text-tertiary" />
               </div>
-              <span className="text-xs font-medium text-warm-400 uppercase tracking-wider">Patterns</span>
+              <span className="text-xs font-medium text-text-tertiary uppercase tracking-wider">Patterns</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-display font-light tabular-nums tracking-[-0.025em] text-warm-900">{patterns.length}</span>
+              <span className="text-display font-light tabular-nums tracking-[-0.025em] text-text-primary">{patterns.length}</span>
             </div>
-            <span className="text-sm text-warm-400">
+            <span className="text-sm text-text-tertiary">
               {highImpactPatterns} high-impact
             </span>
           </div>
-          <div className="bg-cream-100/82 backdrop-blur-sm rounded-2xl border border-warm-200/55 p-5 shadow-sm">
+          <div className="bg-surface rounded-2xl border border-border-subtle p-5 shadow-soft">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-9 h-9 rounded-lg bg-warm-100 flex items-center justify-center">
-                <IconTarget size={16} className="text-warm-500" />
+              <div className="w-9 h-9 rounded-lg bg-surface-sunken flex items-center justify-center">
+                <IconTarget size={16} className="text-text-tertiary" />
               </div>
-              <span className="text-xs font-medium text-warm-400 uppercase tracking-wider">Insights</span>
+              <span className="text-xs font-medium text-text-tertiary uppercase tracking-wider">Insights</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-display font-light tabular-nums tracking-[-0.025em] text-warm-900">{insights.length}</span>
+              <span className="text-display font-light tabular-nums tracking-[-0.025em] text-text-primary">{insights.length}</span>
             </div>
-            <span className="text-sm text-warm-400">total active</span>
+            <span className="text-sm text-text-tertiary">total active</span>
           </div>
         </>
       )}
@@ -339,7 +365,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
         {/* Tone icon */}
         <div className={cn(
           'flex-shrink-0 rounded-lg flex items-center justify-center',
-          'bg-cream-100/82 shadow-sm border border-warm-200/35',
+          'bg-surface shadow-soft border border-border-subtle',
           isPage ? 'w-10 h-10' : 'w-7 h-7'
         )}>
           <IconSparkles size={isPage ? 18 : 14} className={tone.icon} />
@@ -361,22 +387,22 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                 'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
                 isPage ? 'text-xs px-2 py-1' : 'text-eyebrow',
                 strokeImpact >= 1.0
-                  ? 'bg-red-100 text-red-700'
+                  ? 'bg-fw-danger-bg text-fw-danger'
                   : strokeImpact >= 0.5
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-warm-100 text-warm-600'
+                    ? 'bg-fw-warning-bg text-fw-warning'
+                    : 'bg-surface-sunken text-text-secondary'
               )}>
                 {strokeImpact >= 1.0 ? 'Major' : strokeImpact >= 0.5 ? 'Significant' : 'Minor'}: {strokeImpact.toFixed(1)} strokes/rd
               </span>
             )}
-            <span className={cn('text-warm-400', isPage ? 'text-xs' : 'text-xs')}>
+            <span className={cn('text-text-tertiary', isPage ? 'text-xs' : 'text-xs')}>
               {confidencePct}% confidence
             </span>
           </div>
 
           {/* Headline */}
           <h4 className={cn(
-            'font-medium text-warm-900 leading-snug mb-0.5',
+            'font-medium text-text-primary leading-snug mb-0.5',
             isPage ? 'text-base' : 'text-body-sm'
           )}>
             {insight.headline}
@@ -384,7 +410,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
 
           {/* Body preview */}
           <p className={cn(
-            'text-warm-500 line-clamp-2 leading-relaxed',
+            'text-text-secondary line-clamp-2 leading-relaxed',
             isPage ? 'text-sm' : 'text-xs'
           )}>
             {insight.body}
@@ -392,7 +418,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
         </div>
 
         {/* Expand chevron */}
-        <div className={cn('flex-shrink-0 mt-1 text-warm-300', expanded && 'rotate-180')}>
+        <div className={cn('flex-shrink-0 mt-1 text-text-tertiary', expanded && 'rotate-180')}>
           <IconChevronDown size={isPage ? 18 : 14} />
         </div>
       </Button>
@@ -402,7 +428,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
         <div className="overflow-hidden">
             <div className={cn('pt-0 space-y-2.5', isPage ? 'px-5 pb-5 space-y-4' : 'px-3 pb-3')}>
               {/* Full body */}
-              <p className={cn('text-warm-600 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
+              <p className={cn('text-text-secondary leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
                 {insight.body}
               </p>
 
@@ -410,7 +436,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {hasDirectEvidence && (
                 <div>
                   <h5 className={cn(
-                    'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
+                    'font-medium text-text-tertiary uppercase tracking-[0.12em]',
                     isPage ? 'text-xs mb-2' : 'text-eyebrow mb-1.5'
                   )}>
                     Evidence
@@ -425,18 +451,18 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                       <div
                         key={i}
                         className={cn(
-                          'bg-cream-100/68 rounded-lg border border-warm-200/35 text-center',
+                          'bg-surface-sunken rounded-lg border border-border-subtle text-center',
                           isPage ? 'p-3' : 'p-2'
                         )}
                       >
                         <div className={cn(
-                          'font-medium text-warm-800 tabular-nums',
+                          'font-medium text-text-primary tabular-nums',
                           isPage ? 'text-base' : 'text-sm'
                         )}>
                           {String(metric.value)}
                         </div>
                         <div className={cn(
-                          'text-warm-400 leading-tight mt-0.5',
+                          'text-text-tertiary leading-tight mt-0.5',
                           isPage ? 'text-xs' : 'text-eyebrow'
                         )}>
                           {metric.label}
@@ -445,7 +471,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                           <div className={cn(
                             'mt-1 font-medium',
                             isPage ? 'text-xs' : 'text-eyebrow',
-                            metric.belowBenchmark ? 'text-red-500' : 'text-primary-500'
+                            metric.belowBenchmark ? 'text-fw-danger' : 'text-fw-success'
                           )}>
                             vs {metric.benchmark}{String(metric.value).includes('%') ? '%' : ''}
                           </div>
@@ -454,9 +480,9 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                           <div className={cn(
                             'mt-0.5 font-medium',
                             isPage ? 'text-xs' : 'text-eyebrow',
-                            metric.trend === 'improving' ? 'text-primary-500' :
-                            metric.trend === 'declining' ? 'text-red-500' :
-                            'text-warm-400'
+                            metric.trend === 'improving' ? 'text-fw-success' :
+                            metric.trend === 'declining' ? 'text-fw-danger' :
+                            'text-text-tertiary'
                           )}>
                             {metric.trend === 'improving' ? '\u2191 Improving' : metric.trend === 'declining' ? '\u2193 Declining' : '\u2192 Stable'}
                           </div>
@@ -471,7 +497,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {!hasDirectEvidence && evidenceSteps.length > 0 && (
                 <div>
                   <h5 className={cn(
-                    'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
+                    'font-medium text-text-tertiary uppercase tracking-[0.12em]',
                     isPage ? 'text-xs mb-2' : 'text-eyebrow mb-1.5'
                   )}>
                     Evidence
@@ -486,18 +512,18 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                       <div
                         key={i}
                         className={cn(
-                          'bg-cream-100/68 rounded-lg border border-warm-200/35 text-center',
+                          'bg-surface-sunken rounded-lg border border-border-subtle text-center',
                           isPage ? 'p-3' : 'p-2'
                         )}
                       >
                         <div className={cn(
-                          'font-medium text-warm-800 tabular-nums',
+                          'font-medium text-text-primary tabular-nums',
                           isPage ? 'text-base' : 'text-sm'
                         )}>
                           {step.premise?.split(':').slice(1).join(':').trim() || step.premise}
                         </div>
                         <div className={cn(
-                          'text-warm-400 leading-tight mt-0.5',
+                          'text-text-tertiary leading-tight mt-0.5',
                           isPage ? 'text-xs' : 'text-eyebrow'
                         )}>
                           {step.premise?.split(':')[0]?.trim() || 'Metric'}
@@ -506,9 +532,9 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                           <div className={cn(
                             'mt-1 font-medium',
                             isPage ? 'text-xs' : 'text-eyebrow',
-                            step.conclusion?.includes('below') ? 'text-red-500' :
-                            step.conclusion?.includes('above') ? 'text-primary-500' :
-                            'text-warm-400'
+                            step.conclusion?.includes('below') ? 'text-fw-danger' :
+                            step.conclusion?.includes('above') ? 'text-fw-success' :
+                            'text-text-tertiary'
                           )}>
                             vs {step.inference.replace('Benchmark: ', '')}
                           </div>
@@ -522,12 +548,12 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {/* Stroke impact visual bar (if present) */}
               {strokeImpact !== null && strokeImpact > 0 && (
                 <div className={cn(
-                  'bg-cream-100/68 rounded-lg border border-warm-200/35',
+                  'bg-surface-sunken rounded-lg border border-border-subtle',
                   isPage ? 'p-3' : 'p-2'
                 )}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className={cn(
-                      'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
+                      'font-medium text-text-tertiary uppercase tracking-[0.12em]',
                       isPage ? 'text-xs' : 'text-eyebrow'
                     )}>
                       Stroke Impact
@@ -535,20 +561,20 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                     <span className={cn(
                       'font-medium tabular-nums',
                       isPage ? 'text-sm' : 'text-xs',
-                      strokeImpact >= 1.0 ? 'text-red-600' : strokeImpact >= 0.5 ? 'text-amber-600' : 'text-warm-600'
+                      strokeImpact >= 1.0 ? 'text-fw-danger' : strokeImpact >= 0.5 ? 'text-fw-warning' : 'text-text-secondary'
                     )}>
                       +{strokeImpact.toFixed(1)} strokes/round
                     </span>
                   </div>
-                  <div className={cn('bg-warm-100 rounded-full overflow-hidden', isPage ? 'h-2' : 'h-1.5')}>
+                  <div className={cn('bg-surface rounded-full overflow-hidden border border-border-subtle', isPage ? 'h-2' : 'h-1.5')}>
                     <div
                       className={cn(
                         'h-full rounded-full',
                         strokeImpact >= 1.0
-                          ? 'bg-gradient-to-r from-red-400 to-red-500'
+                          ? 'bg-fw-danger'
                           : strokeImpact >= 0.5
-                            ? 'bg-gradient-to-r from-amber-400 to-amber-500'
-                            : 'bg-gradient-to-r from-warm-300 to-warm-400'
+                            ? 'bg-fw-warning'
+                            : 'bg-border-strong'
                       )}
                       style={{ width: `${Math.min(100, (strokeImpact / 2) * 100)}%` }}
                     />
@@ -559,19 +585,19 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {/* Call to action / Recommendation */}
               {insight.callToAction && (
                 <div className={cn(
-                  'bg-cream-100/68 rounded-lg border border-warm-200/35',
+                  'bg-fw-success-bg rounded-lg border border-accent-200',
                   isPage ? 'p-4' : 'p-2.5'
                 )}>
                   <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1')}>
-                    <IconTarget size={isPage ? 14 : 12} className="text-primary-600" />
+                    <IconTarget size={isPage ? 14 : 12} className="text-fw-success" />
                     <span className={cn(
-                      'font-medium text-primary-700 uppercase tracking-[0.12em] opacity-90',
+                      'font-medium text-fw-success uppercase tracking-[0.12em]',
                       isPage ? 'text-xs' : 'text-eyebrow'
                     )}>
                       Coach Action Plan
                     </span>
                   </div>
-                  <p className={cn('text-warm-700 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
+                  <p className={cn('text-text-secondary leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
                     {insight.callToAction}
                   </p>
                 </div>
@@ -583,7 +609,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   <Button variant="primary"
                     onClick={(e) => { e.stopPropagation(); onAction('acknowledge'); }}
                     className={cn(
-                      'flex items-center gap-1 font-medium text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
+                      'flex items-center gap-1 font-medium text-fw-success bg-fw-success-bg hover:bg-accent-100 rounded-lg transition-colors',
                       isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                     )}
                   >
@@ -592,7 +618,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   <Button variant="ghost"
                     onClick={(e) => { e.stopPropagation(); onAction('dismiss'); }}
                     className={cn(
-                      'flex items-center gap-1 text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 rounded-lg transition-colors',
+                      'flex items-center gap-1 text-text-secondary hover:text-text-primary hover:bg-surface-sunken rounded-lg transition-colors',
                       isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                     )}
                   >
@@ -678,7 +704,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
         {/* Category icon */}
         <div className={cn(
           'flex-shrink-0 rounded-lg flex items-center justify-center',
-          'bg-cream-100/82 shadow-sm border border-warm-200/35',
+          'bg-surface shadow-soft border border-border-subtle',
           isPage ? 'w-10 h-10' : 'w-7 h-7'
         )}>
           <CategoryIcon size={isPage ? 18 : 14} className={tone.icon} />
@@ -695,7 +721,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {tone.badgeText}
             </span>
             <span className={cn(
-              'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-500',
+              'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-surface-sunken text-text-secondary',
               isPage ? 'text-xs px-2 py-1' : 'text-eyebrow'
             )}>
               {CATEGORY_LABELS[group.category]}
@@ -705,22 +731,22 @@ const InsightGroupCard = memo(function InsightGroupCard({
                 'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
                 isPage ? 'text-xs px-2 py-1' : 'text-eyebrow',
                 group.strokeImpact >= 1.0
-                  ? 'bg-red-100 text-red-700'
+                  ? 'bg-fw-danger-bg text-fw-danger'
                   : group.strokeImpact >= 0.5
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-warm-100 text-warm-600'
+                    ? 'bg-fw-warning-bg text-fw-warning'
+                    : 'bg-surface-sunken text-text-secondary'
               )}>
                 {group.strokeImpact >= 1.0 ? 'Major' : group.strokeImpact >= 0.5 ? 'Significant' : 'Minor'}: {group.strokeImpact.toFixed(1)} strokes/rd
               </span>
             )}
-            <span className={cn('text-warm-400', isPage ? 'text-xs' : 'text-xs')}>
+            <span className={cn('text-text-tertiary', isPage ? 'text-xs' : 'text-xs')}>
               {confidencePct}%
             </span>
           </div>
 
           {/* Headline */}
           <h4 className={cn(
-            'font-medium text-warm-900 leading-snug mb-1',
+            'font-medium text-text-primary leading-snug mb-1',
             isPage ? 'text-base' : 'text-body-sm'
           )}>
             {group.headline}
@@ -733,7 +759,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                 <span className={cn(
                   'inline-flex items-center gap-1 font-medium rounded-full border',
                   isPage ? 'text-xs px-2.5 py-0.5' : 'text-eyebrow px-2 py-0.5',
-                  'bg-primary-50 text-primary-700 border-primary-200/60'
+                  'bg-fw-success-bg text-fw-success border-accent-200'
                 )}>
                   <IconUsers size={isPage ? 12 : 10} />
                   Team-wide
@@ -745,7 +771,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                   className={cn(
                     'inline-flex items-center font-medium rounded-full border',
                     isPage ? 'text-xs px-2.5 py-0.5' : 'text-eyebrow px-2 py-0.5',
-                    'bg-cream-100/75 text-warm-600 border-warm-200/60'
+                    'bg-surface-sunken text-text-secondary border-border-subtle'
                   )}
                 >
                   {p.playerName}
@@ -753,7 +779,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               ))}
               {group.players.length > (isPage ? 8 : 4) && (
                 <span className={cn(
-                  'text-warm-400 font-medium',
+                  'text-text-tertiary font-medium',
                   isPage ? 'text-xs' : 'text-eyebrow'
                 )}>
                   +{group.players.length - (isPage ? 8 : 4)} more
@@ -764,7 +790,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
 
           {/* Body preview */}
           <p className={cn(
-            'text-warm-500 line-clamp-2 leading-relaxed',
+            'text-text-secondary line-clamp-2 leading-relaxed',
             isPage ? 'text-sm' : 'text-xs'
           )}>
             {group.body}
@@ -772,7 +798,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
         </div>
 
         {/* Expand chevron */}
-        <div className={cn('flex-shrink-0 mt-1 text-warm-300', expanded && 'rotate-180')}>
+        <div className={cn('flex-shrink-0 mt-1 text-text-tertiary', expanded && 'rotate-180')}>
           <IconChevronDown size={isPage ? 18 : 14} />
         </div>
       </Button>
@@ -782,7 +808,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
         <div className="overflow-hidden">
             <div className={cn('pt-0 space-y-2.5', isPage ? 'px-5 pb-5 space-y-4' : 'px-3 pb-3')}>
               {/* Full body */}
-              <p className={cn('text-warm-600 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
+              <p className={cn('text-text-secondary leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
                 {group.body}
               </p>
 
@@ -790,7 +816,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {group.memberInsights.length > 1 && (
                 <div>
                   <h5 className={cn(
-                    'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
+                    'font-medium text-text-tertiary uppercase tracking-[0.12em]',
                     isPage ? 'text-xs mb-2' : 'text-eyebrow mb-1.5'
                   )}>
                     Individual Details
@@ -800,25 +826,25 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       <div
                         key={i}
                         className={cn(
-                          'flex items-start gap-2 bg-cream-100/68 rounded-lg border border-warm-200/35',
+                          'flex items-start gap-2 bg-surface-sunken rounded-lg border border-border-subtle',
                           isPage ? 'text-sm p-3' : 'text-xs p-2'
                         )}
                       >
                         {mi.playerName && (
                           <span className={cn(
-                            'flex-shrink-0 inline-flex items-center font-medium rounded-full border bg-cream-100/82 text-warm-700 border-warm-200/60',
+                            'flex-shrink-0 inline-flex items-center font-medium rounded-full border bg-surface text-text-secondary border-border-subtle',
                             isPage ? 'text-xs px-2 py-0.5' : 'text-eyebrow px-1.5 py-0.5'
                           )}>
                             {mi.playerName}
                           </span>
                         )}
-                        <p className="text-warm-600 leading-relaxed min-w-0">
+                        <p className="text-text-secondary leading-relaxed min-w-0">
                           {mi.body || mi.headline}
                         </p>
                       </div>
                     ))}
                     {group.memberInsights.length > (isPage ? 6 : 3) && (
-                      <p className={cn('text-warm-400', isPage ? 'text-xs' : 'text-eyebrow')}>
+                      <p className={cn('text-text-tertiary', isPage ? 'text-xs' : 'text-eyebrow')}>
                         +{group.memberInsights.length - (isPage ? 6 : 3)} more insights
                       </p>
                     )}
@@ -829,19 +855,19 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {/* Call to action */}
               {group.callToAction && (
                 <div className={cn(
-                  'bg-cream-100/68 rounded-lg border border-warm-200/35',
+                  'bg-fw-success-bg rounded-lg border border-accent-200',
                   isPage ? 'p-4' : 'p-2.5'
                 )}>
                   <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1')}>
-                    <IconTarget size={isPage ? 14 : 12} className="text-primary-600" />
+                    <IconTarget size={isPage ? 14 : 12} className="text-fw-success" />
                     <span className={cn(
-                      'font-medium text-primary-700 uppercase tracking-[0.12em] opacity-90',
+                      'font-medium text-fw-success uppercase tracking-[0.12em]',
                       isPage ? 'text-xs' : 'text-eyebrow'
                     )}>
                       Coach Action Plan
                     </span>
                   </div>
-                  <p className={cn('text-warm-700 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
+                  <p className={cn('text-text-secondary leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
                     {group.callToAction}
                   </p>
                 </div>
@@ -854,7 +880,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                     <Button variant="primary"
                       onClick={(e) => { e.stopPropagation(); onAcknowledgeGroup(group); }}
                       className={cn(
-                        'flex items-center gap-1 font-medium text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
+                        'flex items-center gap-1 font-medium text-fw-success bg-fw-success-bg hover:bg-accent-100 rounded-lg transition-colors',
                         isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                       )}
                     >
@@ -865,7 +891,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                     <Button variant="ghost"
                       onClick={(e) => { e.stopPropagation(); onDismissGroup(group); }}
                       className={cn(
-                        'flex items-center gap-1 text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 rounded-lg transition-colors',
+                        'flex items-center gap-1 text-text-secondary hover:text-text-primary hover:bg-surface-sunken rounded-lg transition-colors',
                         isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                       )}
                     >
@@ -900,20 +926,20 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
 
   const getTypeIcon = () => {
     switch (pattern.patternType) {
-      case 'conditional': return <IconStar size={12} className="text-amber-500" />;
-      case 'compound': return <IconSparkles size={12} className="text-violet-500" />;
-      case 'anomaly': return <IconAlertCircle size={12} className="text-orange-500" />;
-      case 'temporal': return <IconTrendingUp size={12} className="text-blue-500" />;
-      default: return <IconStar size={12} className="text-warm-400" />;
+      case 'conditional': return <IconStar size={12} className="text-fw-warning" />;
+      case 'compound': return <IconSparkles size={12} className="text-fw-success" />;
+      case 'anomaly': return <IconAlertCircle size={12} className="text-fw-warning" />;
+      case 'temporal': return <IconTrendingUp size={12} className="text-text-secondary" />;
+      default: return <IconStar size={12} className="text-text-tertiary" />;
     }
   };
 
   return (
     <div
       className={cn(
-        'bg-cream-100/82 border border-warm-200/35 overflow-hidden',
+        'bg-surface border border-border-subtle overflow-hidden',
         isPage ? 'rounded-2xl' : 'rounded-xl',
-        'shadow-sm hover:shadow-md transition-shadow'
+        'shadow-soft hover:shadow-raise transition-shadow'
       )}
     >
       <Button variant="ghost"
@@ -924,25 +950,25 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
         <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1.5')}>
           {getTypeIcon()}
           <span className={cn(
-            'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
+            'font-medium text-text-tertiary uppercase tracking-[0.12em]',
             isPage ? 'text-xs' : 'text-eyebrow'
           )}>
             {pattern.patternType}
           </span>
           {pattern.trend === 'strengthening' && (
-            <IconTrendingUp size={10} className="text-red-400 ml-auto" />
+            <IconTrendingUp size={10} className="text-fw-danger ml-auto" />
           )}
           {pattern.trend === 'weakening' && (
-            <IconTrendingDown size={10} className="text-primary-400 ml-auto" />
+            <IconTrendingDown size={10} className="text-fw-success ml-auto" />
           )}
-          <div className={cn('text-warm-300 ml-auto', expanded && 'rotate-180')}>
+          <div className={cn('text-text-tertiary ml-auto', expanded && 'rotate-180')}>
             <IconChevronDown size={12} />
           </div>
         </div>
 
         {/* Description */}
         <p className={cn(
-          'font-medium text-warm-800 leading-snug mb-2 line-clamp-2',
+          'font-medium text-text-primary leading-snug mb-2 line-clamp-2',
           isPage ? 'text-sm' : 'text-caption'
         )}>
           {pattern.description || 'Pattern detected in performance data'}
@@ -954,21 +980,19 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
             <span className={cn(
               'font-medium tabular-nums',
               isPage ? 'text-sm' : 'text-xs',
-              isNegative ? 'text-red-600' : 'text-primary-600'
+              isNegative ? 'text-fw-danger' : 'text-fw-success'
             )}>
               {isNegative ? '+' : '-'}{impactAbs.toFixed(1)} strokes/round
             </span>
-            <span className={cn('text-warm-400', isPage ? 'text-xs' : 'text-xs')}>
+            <span className={cn('text-text-tertiary', isPage ? 'text-xs' : 'text-xs')}>
               {confidencePct}%
             </span>
           </div>
-          <div className={cn('bg-warm-100 rounded-full overflow-hidden', isPage ? 'h-2' : 'h-1.5')}>
+          <div className={cn('bg-surface-sunken rounded-full overflow-hidden border border-border-subtle', isPage ? 'h-2' : 'h-1.5')}>
             <div
               className={cn(
                 'h-full rounded-full',
-                isNegative
-                  ? 'bg-gradient-to-r from-red-400 to-red-500'
-                  : 'bg-gradient-to-r from-primary-400 to-primary-500'
+                isNegative ? 'bg-fw-danger' : 'bg-accent-500'
               )}
               style={{ width: `${impactWidth}%` }}
             />
@@ -979,16 +1003,16 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
       {/* Expanded */}
       {expanded && (
         <div className="overflow-hidden">
-            <div className="px-3 pb-3 space-y-2.5 border-t border-warm-100/80 pt-2.5">
+            <div className="px-3 pb-3 space-y-2.5 border-t border-border-subtle pt-2.5">
               {/* Conditions */}
               {pattern.conditions.length > 0 && (
                 <div>
-                  <span className="text-eyebrow font-medium text-warm-400 uppercase tracking-wider">
+                  <span className="text-eyebrow font-medium text-text-tertiary uppercase tracking-wider">
                     When
                   </span>
                   <div className="mt-1 space-y-1">
                     {pattern.conditions.map((c, i) => (
-                      <div key={i} className="text-xs text-warm-600 bg-warm-50/80 rounded-lg px-2.5 py-1.5">
+                      <div key={i} className="text-xs text-text-secondary bg-surface-sunken rounded-lg px-2.5 py-1.5">
                         {c.label || `${c.field} ${c.operator} ${c.value}`}
                       </div>
                     ))}
@@ -998,34 +1022,34 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
 
               {/* Stats grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                <div className="text-center bg-warm-50/80 rounded-lg py-2">
-                  <div className="text-body-sm font-medium text-warm-800 tabular-nums">
+                <div className="text-center bg-surface-sunken rounded-lg py-2">
+                  <div className="text-body-sm font-medium text-text-primary tabular-nums">
                     {Math.round(pattern.support * 100)}%
                   </div>
-                  <div className="text-eyebrow text-warm-400">Frequency</div>
+                  <div className="text-eyebrow text-text-tertiary">Frequency</div>
                 </div>
-                <div className="text-center bg-warm-50/80 rounded-lg py-2">
-                  <div className="text-body-sm font-medium text-warm-800 tabular-nums">
+                <div className="text-center bg-surface-sunken rounded-lg py-2">
+                  <div className="text-body-sm font-medium text-text-primary tabular-nums">
                     {pattern.lift.toFixed(1)}x
                   </div>
-                  <div className="text-eyebrow text-warm-400">Lift</div>
+                  <div className="text-eyebrow text-text-tertiary">Lift</div>
                 </div>
-                <div className="text-center bg-warm-50/80 rounded-lg py-2">
-                  <div className="text-body-sm font-medium text-warm-800 tabular-nums">
+                <div className="text-center bg-surface-sunken rounded-lg py-2">
+                  <div className="text-body-sm font-medium text-text-primary tabular-nums">
                     {pattern.sampleSize}
                   </div>
-                  <div className="text-eyebrow text-warm-400">Samples</div>
+                  <div className="text-eyebrow text-text-tertiary">Samples</div>
                 </div>
               </div>
 
               {/* Recommendation */}
               {pattern.recommendation && (
-                <div className="p-2.5 bg-primary-50/80 rounded-lg border border-primary-100/60">
+                <div className="p-2.5 bg-fw-success-bg rounded-lg border border-accent-200">
                   <div className="flex items-center gap-2 mb-1">
-                    <IconTarget size={10} className="text-primary-600" />
-                    <span className="text-eyebrow font-medium text-primary-700 uppercase">Recommendation</span>
+                    <IconTarget size={10} className="text-fw-success" />
+                    <span className="text-eyebrow font-medium text-fw-success uppercase">Recommendation</span>
                   </div>
-                  <p className="text-xs text-primary-800 leading-relaxed">
+                  <p className="text-xs text-text-secondary leading-relaxed">
                     {pattern.recommendation}
                   </p>
                 </div>
@@ -1068,7 +1092,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
   return (
     <div
       className={cn(
-        'bg-cream-100/82 border border-warm-200/35 shadow-sm hover:shadow-md transition-shadow',
+        'bg-surface border border-border-subtle shadow-soft hover:shadow-raise transition-shadow',
         isPage ? 'rounded-2xl p-5' : 'rounded-xl p-3'
       )}
     >
@@ -1076,28 +1100,28 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
       <div className={cn('flex items-center justify-between', isPage ? 'mb-4' : 'mb-2.5')}>
         <div className="flex items-center gap-2">
           <div className={cn(
-            'rounded-md bg-blue-50 flex items-center justify-center',
+            'rounded-md bg-surface-sunken flex items-center justify-center',
             isPage ? 'w-9 h-9 rounded-lg' : 'w-6 h-6'
           )}>
-            <IconTarget size={isPage ? 16 : 12} className="text-blue-600" />
+            <IconTarget size={isPage ? 16 : 12} className="text-text-secondary" />
           </div>
           <div>
             <span className={cn(
-              'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 block',
+              'font-medium text-text-tertiary uppercase tracking-[0.12em] block',
               isPage ? 'text-xs' : 'text-eyebrow'
             )}>
               Next Round
             </span>
             {name && (
-              <span className={cn('text-warm-600 font-medium', isPage ? 'text-sm' : 'text-xs')}>{name}</span>
+              <span className={cn('text-text-secondary font-medium', isPage ? 'text-sm' : 'text-xs')}>{name}</span>
             )}
           </div>
         </div>
         <span className={cn(
           'text-xs font-medium px-1.5 py-0.5 rounded-full',
-          prediction.trend === 'improving' ? 'bg-primary-100 text-primary-700' :
-          prediction.trend === 'declining' ? 'bg-red-100 text-red-700' :
-          'bg-warm-100 text-warm-600'
+          prediction.trend === 'improving' ? 'bg-fw-success-bg text-fw-success' :
+          prediction.trend === 'declining' ? 'bg-fw-danger-bg text-fw-danger' :
+          'bg-surface-sunken text-text-secondary'
         )}>
           {prediction.trend === 'improving' ? 'Improving' :
            prediction.trend === 'declining' ? 'Declining' : 'Steady'}
@@ -1109,23 +1133,23 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
         <span className={cn(
           'font-medium tabular-nums',
           isPage ? 'text-4xl' : 'text-2xl',
-          isNeutral ? 'text-warm-700' : isPositive ? 'text-primary-600' : 'text-red-600'
+          isNeutral ? 'text-text-secondary' : isPositive ? 'text-fw-success' : 'text-fw-danger'
         )}>
           {formatScore(prediction.predictedValue)}
         </span>
 
         {/* Mini confidence gauge */}
         <div className="flex-1">
-          <div className={cn('flex justify-between text-warm-400 mb-0.5', isPage ? 'text-xs' : 'text-eyebrow')}>
+          <div className={cn('flex justify-between text-text-tertiary mb-0.5', isPage ? 'text-xs' : 'text-eyebrow')}>
             <span>Confidence</span>
             <span className="font-medium">{confidencePct}%</span>
           </div>
-          <div className={cn('bg-warm-100 rounded-full overflow-hidden', isPage ? 'h-2' : 'h-1.5')}>
+          <div className={cn('bg-surface-sunken rounded-full overflow-hidden border border-border-subtle', isPage ? 'h-2' : 'h-1.5')}>
             <div
               className={cn(
                 'h-full rounded-full',
-                confidencePct >= 70 ? 'bg-primary-500' :
-                confidencePct >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                confidencePct >= 70 ? 'bg-accent-500' :
+                confidencePct >= 50 ? 'bg-fw-warning' : 'bg-fw-danger'
               )}
               style={{ width: `${confidencePct}%` }}
             />
@@ -1135,10 +1159,10 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
 
       {/* Range bar */}
       {hasRange && (
-        <div className="flex items-center justify-between text-xs text-warm-400 mb-2.5">
+        <div className="flex items-center justify-between text-xs text-text-tertiary mb-2.5">
           <span className="tabular-nums">{formatScore(rangeLow)}</span>
-          <div className="flex-1 mx-2 h-px bg-warm-200 relative">
-            <div className="absolute left-1/2 -translate-x-1/2 -top-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
+          <div className="flex-1 mx-2 h-px bg-border-strong relative">
+            <div className="absolute left-1/2 -translate-x-1/2 -top-0.5 w-1.5 h-1.5 rounded-full bg-accent-500" />
           </div>
           <span className="tabular-nums">{formatScore(rangeHigh)}</span>
         </div>
@@ -1149,10 +1173,10 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
         <div className="space-y-1">
           {factors.slice(0, 3).map((f: { name: string; contribution: number }, i: number) => (
             <div key={i} className="flex items-center justify-between text-xs">
-              <span className="text-warm-500">{f.name}</span>
+              <span className="text-text-secondary">{f.name}</span>
               <span className={cn(
                 'font-medium tabular-nums',
-                f.contribution > 0 ? 'text-red-500' : 'text-primary-500'
+                f.contribution > 0 ? 'text-fw-danger' : 'text-fw-success'
               )}>
                 {f.contribution > 0 ? '+' : ''}{f.contribution.toFixed(1)}
               </span>
@@ -1163,16 +1187,16 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
 
       {/* Tail risks */}
       {isTailRiskProbs(prediction.tailRisks) && (
-        <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-warm-100">
-          <div className="flex-1 text-center bg-red-50/60 rounded-lg py-1.5">
-            <div className="text-xs text-red-400">Blowup</div>
-            <div className="text-eyebrow font-medium text-red-600 tabular-nums">
+        <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border-subtle">
+          <div className="flex-1 text-center bg-fw-danger-bg rounded-lg py-1.5">
+            <div className="text-xs text-fw-danger">Blowup</div>
+            <div className="text-eyebrow font-medium text-fw-danger tabular-nums">
               {Math.round(prediction.tailRisks.blowupProbability * 100)}%
             </div>
           </div>
-          <div className="flex-1 text-center bg-primary-50/60 rounded-lg py-1.5">
-            <div className="text-xs text-primary-400">Great Round</div>
-            <div className="text-eyebrow font-medium text-primary-600 tabular-nums">
+          <div className="flex-1 text-center bg-fw-success-bg rounded-lg py-1.5">
+            <div className="text-xs text-fw-success">Great Round</div>
+            <div className="text-eyebrow font-medium text-fw-success tabular-nums">
               {Math.round(prediction.tailRisks.greatRoundProbability * 100)}%
             </div>
           </div>
@@ -1190,13 +1214,13 @@ function TabEmptyState({ icon, title, description, variant = 'widget' }: { icon:
   return (
     <div className={cn('flex flex-col items-center text-center', isPage ? 'py-16' : 'py-8')}>
       <div className={cn(
-        'rounded-xl bg-cream-100/82 shadow-sm flex items-center justify-center border border-warm-200/35',
+        'rounded-xl bg-surface shadow-soft flex items-center justify-center border border-border-subtle',
         isPage ? 'w-16 h-16 rounded-2xl mb-4' : 'w-10 h-10 mb-2.5'
       )}>
         {icon}
       </div>
-      <h4 className={cn('font-medium text-warm-700', isPage ? 'text-lg mb-1' : 'text-body-sm mb-0.5')}>{title}</h4>
-      <p className={cn('text-warm-400 leading-relaxed', isPage ? 'text-sm max-w-xs' : 'text-xs max-w-[200px]')}>{description}</p>
+      <h4 className={cn('font-medium text-text-primary', isPage ? 'text-lg mb-1' : 'text-body-sm mb-0.5')}>{title}</h4>
+      <p className={cn('text-text-tertiary leading-relaxed', isPage ? 'text-sm max-w-xs' : 'text-xs max-w-[200px]')}>{description}</p>
     </div>
   );
 }
@@ -1309,7 +1333,7 @@ const SurfaceHubGrid = memo(function SurfaceHubGrid({ variant = 'widget' }: { va
   return (
     <div>
       <h3 className={cn(
-        'font-medium text-warm-500 uppercase tracking-wider',
+        'font-medium text-text-tertiary uppercase tracking-wider',
         isPage ? 'text-body-sm mb-4' : 'text-eyebrow mb-2.5'
       )}>
         Explore CoachHelm
@@ -1322,36 +1346,37 @@ const SurfaceHubGrid = memo(function SurfaceHubGrid({ variant = 'widget' }: { va
               key={surface.href}
               href={surface.href}
               className={cn(
-                'group block bg-cream-100/82 backdrop-blur-sm border border-warm-200/55 shadow-sm hover:shadow-md transition-shadow',
-                isPage ? 'rounded-2xl p-5' : 'rounded-xl p-3.5'
+                'group block bg-surface border border-border-subtle shadow-soft hover:shadow-raise transition-shadow',
+                'rounded-fw-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                isPage ? 'rounded-2xl p-5' : 'p-3.5'
               )}
             >
               <div className={cn('flex items-center justify-between', isPage ? 'mb-3' : 'mb-2')}>
                 <div className={cn(
-                  'rounded-lg bg-primary-50 flex items-center justify-center',
+                  'rounded-lg bg-fw-success-bg flex items-center justify-center',
                   isPage ? 'w-10 h-10' : 'w-8 h-8'
                 )}>
-                  <SurfaceIcon size={isPage ? 18 : 15} className="text-primary-600" />
+                  <SurfaceIcon size={isPage ? 18 : 15} className="text-fw-success" />
                 </div>
                 <IconChevronRight
                   size={isPage ? 16 : 14}
-                  className="text-warm-300 transition-transform group-hover:translate-x-0.5"
+                  className="text-text-tertiary transition-transform group-hover:translate-x-0.5"
                 />
               </div>
               <span className={cn(
-                'block font-medium text-warm-400 uppercase tracking-wider',
+                'block font-medium text-text-tertiary uppercase tracking-wider',
                 isPage ? 'text-xs' : 'text-eyebrow'
               )}>
                 {surface.eyebrow}
               </span>
               <h4 className={cn(
-                'font-medium text-warm-900 leading-snug',
+                'font-medium text-text-primary leading-snug',
                 isPage ? 'text-base mt-0.5' : 'text-body-sm'
               )}>
                 {surface.title}
               </h4>
               <p className={cn(
-                'text-warm-500 leading-relaxed mt-0.5',
+                'text-text-secondary leading-relaxed mt-0.5',
                 isPage ? 'text-sm' : 'text-xs'
               )}>
                 {surface.description}
@@ -1359,6 +1384,55 @@ const SurfaceHubGrid = memo(function SurfaceHubGrid({ variant = 'widget' }: { va
             </Link>
           );
         })}
+      </div>
+    </div>
+  );
+});
+
+// ============================================================================
+// HELPER: Deep-analysis loading skeleton
+// ============================================================================
+
+/**
+ * Shape-matched loading state for the Deep Analysis run. Mirrors the
+ * insights/patterns/predictions card regions so results don't pop in from a
+ * blank "Ready to Analyze" block (and so re-analyze shows a shimmer rather than
+ * a hard snap-replace). Skeleton-not-spinner, per the premium states bar.
+ */
+const DeepAnalysisSkeleton = memo(function DeepAnalysisSkeleton({
+  isPage,
+}: {
+  isPage: boolean;
+}) {
+  const cardCount = isPage ? 4 : 2;
+  return (
+    <div
+      className={cn(isPage ? 'space-y-6' : 'space-y-2.5')}
+      aria-hidden="true"
+    >
+      <div className={cn(
+        'grid grid-cols-1 gap-4',
+        isPage ? 'lg:grid-cols-2' : ''
+      )}>
+        {Array.from({ length: cardCount }).map((_, i) => (
+          <div
+            key={i}
+            className="surface-matte rounded-2xl p-5 space-y-3"
+          >
+            <div className="flex items-start gap-3">
+              <Skeleton variant="circular" width={40} height={40} />
+              <div className="flex-1 space-y-2">
+                <Skeleton variant="text" width="65%" />
+                <Skeleton variant="text" width="40%" />
+              </div>
+            </div>
+            <Skeleton variant="rectangular" height={56} className="rounded-lg" />
+            <div className="flex gap-2">
+              <Skeleton variant="rectangular" width={72} height={24} className="rounded-full" />
+              <Skeleton variant="rectangular" width={72} height={24} className="rounded-full" />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1400,6 +1474,11 @@ export function IntelligenceCommandCenter({
     startTransition(async () => {
       setError(null);
       try {
+        // Session-scoped on purpose: generateTeamInsight() re-resolves the
+        // coach's ACTIVE team server-side (cookie-aware, honours the men's/
+        // women's toggle). We deliberately do NOT pass the `teamId` prop here —
+        // see the prop's doc comment for why (single source of truth = the
+        // active-team cookie, shared with the surrounding brief).
         const result = await generateTeamInsight();
         if (result.success) {
           setInsights(result.insights || []);
@@ -1472,12 +1551,12 @@ export function IntelligenceCommandCenter({
       <div className="surface-matte rounded-3xl p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-              <IconSparkles size={20} className="text-primary-600" />
+            <div className="w-10 h-10 rounded-xl bg-fw-success-bg flex items-center justify-center">
+              <IconSparkles size={20} className="text-fw-success" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-warm-900">Deep Analysis</h3>
-              <p className="text-xs text-warm-500">
+              <h3 className="text-sm font-medium text-text-primary">Deep Analysis</h3>
+              <p className="text-xs text-text-secondary">
                 {lastAnalyzed
                   ? `Last run ${lastAnalyzed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                   : 'Run full AI analysis on your team'
@@ -1488,10 +1567,10 @@ export function IntelligenceCommandCenter({
           <div className="flex items-center gap-2">
             <Link
               href="/golf/dashboard/settings/coaching-intelligence"
-              className="p-2 rounded-lg hover:bg-warm-50 transition-colors"
+              className="p-2 rounded-lg text-text-tertiary hover:bg-surface-sunken hover:text-text-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               aria-label="CoachHelm Settings"
             >
-              <IconSettings size={16} className="text-warm-400" />
+              <IconSettings size={16} aria-hidden />
             </Link>
             <Button variant="primary"
               onClick={handleAnalyze}
@@ -1499,8 +1578,8 @@ export function IntelligenceCommandCenter({
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all',
                 isPending
-                  ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
-                  : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-600/20 active:scale-[0.98]'
+                  ? 'bg-surface-sunken text-text-tertiary cursor-not-allowed'
+                  : 'bg-accent-600 text-text-on-accent hover:bg-accent-700 shadow-soft active:scale-[0.98]'
               )}
             >
               {isPending ? (
@@ -1519,15 +1598,39 @@ export function IntelligenceCommandCenter({
         </div>
       </div>
 
-      {/* Error */}
+      {/* Error — on-token Fairway InlineNotice with a plain-language message,
+          a tone icon + status bar (non-color channel), and a Retry action that
+          re-invokes the analysis (Nielsen #9). */}
       {error && (
-        <div className="rounded-lg border border-red-200/60 bg-red-50/80 px-3 py-2 text-xs text-red-600">
+        <InlineNotice
+          tone="danger"
+          title="Analysis didn't finish"
+          action={
+            <Button
+              variant="secondary"
+              onClick={handleAnalyze}
+              disabled={isPending}
+              className="flex items-center gap-1.5"
+            >
+              <IconRefresh size={14} className={cn(isPending && 'animate-spin')} />
+              {isPending ? 'Retrying...' : 'Retry'}
+            </Button>
+          }
+        >
           {error}
-        </div>
+        </InlineNotice>
       )}
 
-      {/* Tabs */}
+      {/* Tabs — on re-analyze, keep prior results visible but dimmed under
+          aria-busy rather than snap-replacing them (no jarring swap). */}
       {hasData && (
+        <div
+          aria-busy={isPending}
+          className={cn(
+            'transition-opacity duration-200',
+            isPending && 'pointer-events-none opacity-50'
+          )}
+        >
         <Tabs
           value={activeTab}
           onChange={(v) => setActiveTab(v as TabId)}
@@ -1550,7 +1653,7 @@ export function IntelligenceCommandCenter({
             /* Page: two-column layout for top items */
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h3 className="text-body-sm font-medium text-warm-500 uppercase tracking-wider">Top Insights</h3>
+                <h3 className="text-body-sm font-medium text-text-tertiary uppercase tracking-wider">Top Insights</h3>
                 {displayGroups ? (
                   insightGroups.slice(0, 2).map((group) => (
                     <InsightGroupCard
@@ -1589,13 +1692,13 @@ export function IntelligenceCommandCenter({
               <div className="space-y-4">
                 {sortedPatterns[0] && (
                   <>
-                    <h3 className="text-body-sm font-medium text-warm-500 uppercase tracking-wider">Top Pattern</h3>
+                    <h3 className="text-body-sm font-medium text-text-tertiary uppercase tracking-wider">Top Pattern</h3>
                     <EnhancedPatternCard pattern={sortedPatterns[0]} variant={variant} />
                   </>
                 )}
                 {predictions[0] && (
                   <>
-                    <h3 className="text-body-sm font-medium text-warm-500 uppercase tracking-wider mt-4">Next Round Forecast</h3>
+                    <h3 className="text-body-sm font-medium text-text-tertiary uppercase tracking-wider mt-4">Next Round Forecast</h3>
                     <EnhancedPredictionCard prediction={predictions[0]} variant={variant} />
                   </>
                 )}
@@ -1631,7 +1734,7 @@ export function IntelligenceCommandCenter({
               )}
               <Link
                 href="/golf/dashboard/intelligence"
-                className="flex items-center justify-center gap-2 py-2.5 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
+                className="flex items-center justify-center gap-2 py-2.5 text-xs font-medium text-fw-success hover:text-accent-700 transition-colors rounded-fw-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 View Full Intelligence Dashboard
                 <IconChevronRight size={14} />
@@ -1652,7 +1755,7 @@ export function IntelligenceCommandCenter({
           {displayGroups ? (
             <>
               {isPage && (
-                <h3 className="text-lg font-medium text-warm-800">
+                <h3 className="text-lg font-medium text-text-primary">
                   Insights ({insightGroups.length} {insightGroups.length === 1 ? 'group' : 'groups'})
                 </h3>
               )}
@@ -1682,7 +1785,7 @@ export function IntelligenceCommandCenter({
           ) : sortedInsights.length > 0 ? (
             <>
               {isPage && (
-                <h3 className="text-lg font-medium text-warm-800">All Insights ({sortedInsights.length})</h3>
+                <h3 className="text-lg font-medium text-text-primary">All Insights ({sortedInsights.length})</h3>
               )}
               {isPage ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1707,7 +1810,7 @@ export function IntelligenceCommandCenter({
             </>
           ) : (
             <TabEmptyState
-              icon={<IconSparkles size={isPage ? 28 : 20} className="text-warm-300" />}
+              icon={<IconSparkles size={isPage ? 28 : 20} className="text-text-tertiary" />}
               title="No insights yet"
               description="Click 'Analyze Team' to generate AI-powered coaching insights"
               variant={variant}
@@ -1719,7 +1822,7 @@ export function IntelligenceCommandCenter({
       <TabsContent value="patterns" className="mt-0">
         <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
           {isPage && (
-            <h3 className="text-lg font-medium text-warm-800">All Patterns ({sortedPatterns.length})</h3>
+            <h3 className="text-lg font-medium text-text-primary">All Patterns ({sortedPatterns.length})</h3>
           )}
           {sortedPatterns.length > 0 ? (
             isPage ? (
@@ -1735,7 +1838,7 @@ export function IntelligenceCommandCenter({
             )
           ) : (
             <TabEmptyState
-              icon={<IconStar size={isPage ? 28 : 20} className="text-warm-300" />}
+              icon={<IconStar size={isPage ? 28 : 20} className="text-text-tertiary" />}
               title="No patterns detected"
               description="Patterns emerge from analyzing recurring trends in player data"
               variant={variant}
@@ -1747,7 +1850,7 @@ export function IntelligenceCommandCenter({
       <TabsContent value="predictions" className="mt-0">
         <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
           {isPage && (
-            <h3 className="text-lg font-medium text-warm-800">All Forecasts ({predictions.length})</h3>
+            <h3 className="text-lg font-medium text-text-primary">All Forecasts ({predictions.length})</h3>
           )}
           {predictions.length > 0 ? (
             isPage ? (
@@ -1763,7 +1866,7 @@ export function IntelligenceCommandCenter({
             )
           ) : (
             <TabEmptyState
-              icon={<IconTarget size={isPage ? 28 : 20} className="text-warm-300" />}
+              icon={<IconTarget size={isPage ? 28 : 20} className="text-text-tertiary" />}
               title="No predictions yet"
               description="Predictions require sufficient round history to generate forecasts"
               variant={variant}
@@ -1772,29 +1875,36 @@ export function IntelligenceCommandCenter({
         </div>
       </TabsContent>
         </Tabs>
+        </div>
+      )}
+
+      {/* First-run loading — shape-matched skeleton instead of staring at the
+          marketing block until results pop in (no spinner-on-blank). */}
+      {!hasData && isPending && (
+        <DeepAnalysisSkeleton isPage={isPage} />
       )}
 
       {/* No data state */}
       {!hasData && !isPending && (
         <div className={cn(
-          'bg-cream-100/68 backdrop-blur-sm border border-warm-200/55',
+          'bg-surface border border-border-subtle shadow-soft',
           isPage ? 'rounded-2xl p-8 md:p-12' : 'rounded-xl p-4'
         )}>
           <div className="flex flex-col items-center text-center">
             <div className={cn(
-              'rounded-xl bg-gradient-to-br from-primary-50 to-primary-50 flex items-center justify-center shadow-sm',
+              'rounded-xl bg-fw-success-bg flex items-center justify-center shadow-soft',
               isPage ? 'w-20 h-20 rounded-2xl mb-5' : 'w-12 h-12 mb-3'
             )}>
-              <IconSparkles size={isPage ? 36 : 22} className="text-primary-500" />
+              <IconSparkles size={isPage ? 36 : 22} className="text-fw-success" />
             </div>
             <h4 className={cn(
-              'font-medium text-warm-800',
+              'font-medium text-text-primary',
               isPage ? 'text-xl mb-2' : 'text-body-sm mb-1'
             )}>
               Ready to Analyze
             </h4>
             <p className={cn(
-              'text-warm-400 leading-relaxed',
+              'text-text-secondary leading-relaxed',
               isPage ? 'text-base max-w-md mb-6' : 'text-xs max-w-[220px] mb-3'
             )}>
               CoachHelm AI will analyze every shot, cross-reference related stats, identify root causes of stroke leakage, and rank practice priorities by ROI.
@@ -1802,7 +1912,7 @@ export function IntelligenceCommandCenter({
             <div className={cn('flex flex-wrap justify-center', isPage ? 'gap-2' : 'gap-2')}>
               {['Root Cause Chains', 'Stroke Leakage ROI', 'Break Analysis', 'Par-Type Profiling', 'Predictions'].map(feature => (
                 <span key={feature} className={cn(
-                  'font-medium text-primary-600 bg-primary-50 rounded-full',
+                  'font-medium text-fw-success bg-fw-success-bg rounded-full',
                   isPage ? 'text-xs px-3 py-1' : 'text-eyebrow px-2 py-0.5'
                 )}>
                   {feature}

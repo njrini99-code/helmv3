@@ -39,36 +39,44 @@ const categoryLabels: Record<string, string> = {
   scoring: 'Scoring',
 };
 
+// P157 single-accent: this card renders inside the Fairway `.fairway-ds` premium
+// scope (FairwayPlayerCoachHelm Overview), which mandates ONE green. The two
+// former green tiers (emerald ≥80 + primary ≥60) were a second accent. Both now
+// resolve to the locked Fairway helm-green accent scale (a darker accent-600 for
+// the top tier, accent-500 below it — same hue, never a second green). amber/red
+// stay as honest warning/danger STATUS tones for the degraded tiers, not accents.
 function getRatingColor(value: number): string {
-  if (value >= 80) return 'text-emerald-500';
-  if (value >= 60) return 'text-primary-600';
+  if (value >= 80) return 'text-accent-600';
+  if (value >= 60) return 'text-accent-500';
   if (value >= 40) return 'text-amber-500';
   return 'text-red-500';
 }
 
 function getRingColor(value: number): string {
-  if (value >= 80) return 'stroke-emerald-500';
-  if (value >= 60) return 'stroke-primary-500';
+  if (value >= 80) return 'stroke-accent-600';
+  if (value >= 60) return 'stroke-accent-500';
   if (value >= 40) return 'stroke-amber-500';
   return 'stroke-red-500';
 }
 
 function getBarColor(value: number): string {
-  if (value >= 80) return 'bg-emerald-500';
-  if (value >= 60) return 'bg-primary-500';
+  if (value >= 80) return 'bg-accent-600';
+  if (value >= 60) return 'bg-accent-500';
   if (value >= 40) return 'bg-amber-500';
   return 'bg-red-500';
 }
 
 function getBarBgColor(value: number): string {
-  if (value >= 80) return 'bg-emerald-100';
-  if (value >= 60) return 'bg-primary-100';
+  if (value >= 80) return 'bg-accent-100';
+  if (value >= 60) return 'bg-accent-100';
   if (value >= 40) return 'bg-amber-100';
   return 'bg-red-100';
 }
 
 const trendConfig = {
-  improving: { icon: IconTrendingUp, color: 'text-primary-600', label: 'Improving' },
+  // P157 single-accent: "Improving" uses the locked Fairway accent (was a second
+  // green via primary-600). stable/declining stay neutral/danger status tones.
+  improving: { icon: IconTrendingUp, color: 'text-accent-600', label: 'Improving' },
   stable: { icon: IconMinus, color: 'text-warm-400', label: 'Stable' },
   declining: { icon: IconTrendingDown, color: 'text-red-500', label: 'Declining' },
 };
@@ -94,7 +102,7 @@ function CompositeRatingCardImpl({
   if (!hasData) {
     return (
       <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600" />
         <div className="flex flex-col items-center gap-2 py-6">
           <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
             Game Strength
@@ -117,7 +125,7 @@ function CompositeRatingCardImpl({
 
   return (
     <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-400 via-accent-500 to-accent-600" />
 
       <div className="flex flex-col items-center gap-6">
         {/* Header */}

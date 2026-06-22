@@ -35,6 +35,25 @@ function handleError(error: unknown): string {
   return 'An unexpected error occurred';
 }
 
+// Derive the in-bucket storage object path from a Supabase public URL, used only
+// as a fallback when an explicit storage_path was not supplied. A public URL is
+// shaped `.../storage/v1/object/public/{bucket}/{objectPath}`; the object path is
+// everything after the bucket segment ('documents'), e.g.
+// 'golf-documents/{teamId}/{fileName}'. The previous `slice(-2)` heuristic
+// silently dropped the 'golf-documents/' prefix and broke signed-URL resolution.
+function deriveStoragePathFromPublicUrl(fileUrl: string): string {
+  const marker = '/object/public/documents/';
+  const idx = fileUrl.indexOf(marker);
+  if (idx !== -1) {
+    return decodeURIComponent(fileUrl.slice(idx + marker.length).split('?')[0]!);
+  }
+  // Last-resort fallback for unexpected URL shapes: keep the trailing three
+  // segments ('golf-documents/{teamId}/{fileName}') rather than two, so the
+  // bucket-prefix segment survives.
+  const parts = fileUrl.split('?')[0]!.split('/');
+  return decodeURIComponent(parts.slice(-3).join('/'));
+}
+
 // Resolve how the authenticated user relates to the team that owns a document.
 // Returns 'coach' when the user is a coach STAFFED on the team (full read of
 // coach-only docs), 'player' when the user is an active member of the team
@@ -257,12 +276,15 @@ export async function createDocument(
 
     if (insertError) throw insertError;
 
-    // Create initial version record
+    // Create initial version record. file_url is NOT NULL in
+    // golf_document_versions, so it must be supplied here (omitting it throws a
+    // not-null violation). Reuse the public URL already derived for the document.
     const { error: versionError } = await supabase
       .from('golf_document_versions' as any)
       .insert({
         document_id: document.id,
         version_number: 1,
+        file_url: urlData.publicUrl,
         file_name: file.name,
         file_size: file.size,
         mime_type: file.type,
@@ -443,12 +465,16 @@ export async function uploadNewVersion(
       .from('documents')
       .getPublicUrl(storagePath);
 
-    // Create version record
+    // Create version record. file_url is NOT NULL in golf_document_versions,
+    // so it must be supplied here (omitting it throws a not-null violation and
+    // breaks "Upload new version" entirely). Derive it the same way
+    // createGolfDocument does, from the just-uploaded storage path.
     const { data: version, error: versionError } = await supabase
       .from('golf_document_versions' as any)
       .insert({
         document_id: documentId,
         version_number: newVersionNumber,
+        file_url: urlData.publicUrl,
         file_name: file.name,
         file_size: file.size,
         mime_type: file.type,
@@ -595,12 +621,16 @@ export async function revertToVersion(
       .from('documents')
       .getPublicUrl(version.storage_path);
 
-    // Create new version record (revert is a new version)
+    // Create new version record (revert is a new version). file_url is NOT NULL
+    // in golf_document_versions, so it must be supplied here (omitting it throws
+    // a not-null violation). Reuse the public URL derived from the reverted
+    // version's storage path.
     const { error: newVersionError } = await supabase
       .from('golf_document_versions' as any)
       .insert({
         document_id: documentId,
         version_number: newVersionNumber,
+        file_url: urlData.publicUrl,
         file_name: version.file_name,
         file_size: version.file_size,
         mime_type: version.mime_type,
@@ -798,7 +828,7 @@ export async function getPreviewUrl(
 export async function uploadGolfDocument(
   file: File,
   teamId: string
-): Promise<{ success: boolean; file_url?: string; error?: string }> {
+): Promise<{ success: boolean; file_url?: string; storage_path?: string; error?: string }> {
   try {
     const supabase = await createClient();
 
@@ -822,7 +852,10 @@ export async function uploadGolfDocument(
       .from('documents')
       .getPublicUrl(storagePath);
 
-    return { success: true, file_url: urlData.publicUrl };
+    // Return the real storage_path verbatim so createGolfDocument can persist it
+    // exactly. Reconstructing it from the public URL drops the 'golf-documents/'
+    // bucket-prefix segment, which then breaks createSignedUrl on preview/download.
+    return { success: true, file_url: urlData.publicUrl, storage_path: storagePath };
   } catch (error) {
     await logServerError(
       `Unexpected error in uploadGolfDocument: ${error instanceof Error ? error.message : String(error)}`,
@@ -847,6 +880,9 @@ export async function createGolfDocument(data: {
   player_visible: boolean;
   uploaded_by: string;
   folder?: string;
+  // Real storage object path (e.g. 'golf-documents/{teamId}/{fileName}') returned
+  // by uploadGolfDocument. Persisted verbatim so preview/download can sign it.
+  storage_path?: string;
 }): Promise<{ success: boolean; data?: GolfDocument; error?: string }> {
   try {
     const supabase = await createClient();
@@ -876,9 +912,13 @@ export async function createGolfDocument(data: {
 
     if (insertError) throw insertError;
 
-    // Extract storage path from file URL for version record
-    const urlParts = data.file_url.split('/');
-    const storagePath = urlParts.slice(-2).join('/');
+    // Resolve the storage object path for the version record. Prefer the real
+    // path passed from uploadGolfDocument. Only fall back to deriving it from the
+    // public URL when absent — and derive it correctly by taking everything after
+    // the bucket name ('documents'), which preserves the 'golf-documents/' prefix.
+    // The old `slice(-2)` dropped that prefix, so createSignedUrl(storage_path)
+    // later resolved to a non-existent object and preview/download silently failed.
+    const storagePath = data.storage_path ?? deriveStoragePathFromPublicUrl(data.file_url);
 
     // Create initial version record
     const { error: versionError } = await supabase

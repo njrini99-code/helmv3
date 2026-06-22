@@ -22,6 +22,18 @@ import type { FwStatusTone } from '@/components/fairway/controls';
  * ────────────────────────────────────────────────────────────────────────── */
 export interface TravelItinerary {
   id: string;
+  /**
+   * Optional link to a golf_events row. Round-tripped from the DB so the
+   * create/edit picker prefills on re-edit (no silent un-linking) and the
+   * detail panel can surface the linked event. Null = unlinked.
+   */
+  event_id: string | null;
+  /**
+   * Resolved title of the linked golf_events row, when available. Display-only —
+   * the page joins it so FairwayTripDetail can show "Linked to: <event>" without
+   * a second client fetch. Null when unlinked or the event was deleted.
+   */
+  event_title?: string | null;
   event_name: string;
   destination: string;
   transportation_type: 'bus' | 'van' | 'flight' | 'carpool';

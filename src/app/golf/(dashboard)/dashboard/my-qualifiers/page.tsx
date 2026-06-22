@@ -74,8 +74,23 @@ export default async function MyQualifiersPage() {
     `)
     .eq('player_id', player.id);
 
-  // If query error or no entries, return empty array
-  if (entriesError || !entries || entries.length === 0) {
+  // P182: distinguish a real fetch FAILURE from "player has no qualifiers".
+  // `entriesError` (or a null `entries`, which Supabase only returns on a failed
+  // request) is a DB error and must read as a recoverable error state, NOT the
+  // cheerful "No qualifiers yet" empty state. A genuine empty result is
+  // `entries.length === 0` with no error.
+  if (entriesError || !entries) {
+    if (isRedesignEnabled())
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <FairwayMyQualifiers qualifiers={[]} loadError />
+        </div>
+      );
+    return <MyQualifiersClient qualifiers={[]} />;
+  }
+
+  // Genuine empty — the player simply has no qualifier entries yet.
+  if (entries.length === 0) {
     if (isRedesignEnabled())
       return (
         <div className={fairwayScope('min-h-full bg-canvas')}>

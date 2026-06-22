@@ -222,7 +222,12 @@ export default async function WhatsNewPage() {
   if (isRedesignEnabled())
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayWhatsNew success={result.success} error={result.error} items={result.items} />
+        <FairwayWhatsNew
+          success={result.success}
+          error={result.error}
+          items={result.items}
+          truncated={result.truncated}
+        />
       </div>
     );
 

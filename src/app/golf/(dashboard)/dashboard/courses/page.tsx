@@ -3,9 +3,9 @@ import type { Metadata } from 'next';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { fairwayScope } from '@/lib/redesign/flag';
 import {
-  listCourses,
-  getCourseTeeCounts,
-  getTeamSavedCourses,
+  listCoursesStrict,
+  getCourseTeeCountsStrict,
+  getTeamSavedCoursesStrict,
 } from '@/app/golf/actions/course-library';
 import { CourseLibraryClient } from '@/components/golf/courses/CourseLibraryClient';
 
@@ -23,10 +23,13 @@ export default async function CoursesPage() {
   const { role: userRole } = session;
   if (!userRole) redirect('/golf/login');
 
-  const courses = await listCourses({ limit: 200 });
+  // Strict reads: a hard DB failure THROWS here so the route error boundary
+  // (error.tsx → "Failed to load courses · Try again") engages instead of the
+  // page rendering a misleading "No courses yet" empty state on a failed query.
+  const courses = await listCoursesStrict({ limit: 200 });
   const [teeCounts, savedCourses] = await Promise.all([
-    getCourseTeeCounts(courses.map((c) => c.id)),
-    getTeamSavedCourses(),
+    getCourseTeeCountsStrict(courses.map((c) => c.id)),
+    getTeamSavedCoursesStrict(),
   ]);
 
   return (

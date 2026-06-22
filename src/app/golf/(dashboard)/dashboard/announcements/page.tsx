@@ -35,60 +35,80 @@ export default async function GolfAnnouncementsPage() {
   // Supabase client only for team/data lookups
   const supabase = await createClient();
 
-  // Team lookup in parallel for coach and player paths
-  let teamId: string | null = null;
-  try {
-    const [coachTeamId, playerTeamResult] = await Promise.all([
-      orgId
-        ? resolveCoachTeamIdWithCookie(supabase, orgId, coach?.id ?? null)
-        : Promise.resolve(null),
-      playerId
-        ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
-    teamId = coachTeamId || playerTeamResult.data?.team_id || null;
-  } catch {
-    // Network failure — proceed with null teamId (empty state below)
+  // Team lookup in parallel for coach and player paths.
+  //
+  // A genuine "no team yet" resolves to `null` (no row) and is a legitimate
+  // empty state. A network/DB failure must NOT be swallowed into a null teamId —
+  // that would render the new-user empty state and make an outage look like a
+  // team with no announcements (P270). Supabase client queries do not throw on
+  // a DB error; they return `{ data: null, error }`, so we inspect the player
+  // lookup's `error` explicitly and throw to route to the sibling error.tsx
+  // (a recoverable "try again" boundary) instead of falling through to empty.
+  const [coachTeamId, playerTeamResult] = await Promise.all([
+    orgId
+      ? resolveCoachTeamIdWithCookie(supabase, orgId, coach?.id ?? null)
+      : Promise.resolve(null),
+    playerId
+      ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+  if (playerTeamResult.error) {
+    // Transient lookup failure (not a legitimately team-less player) — surface a
+    // recoverable error boundary rather than the misleading new-user empty state.
+    throw new Error('Failed to load your team');
   }
+  const teamId: string | null = coachTeamId || playerTeamResult.data?.team_id || null;
 
-  // Fetch announcements + coach data (roster + documents) in parallel
+  // Fetch announcements + coach data (roster + documents) in parallel.
+  //
+  // The announcements list is the PRIMARY content of this route, so a failed
+  // fetch must NOT be silently flattened to the empty state — that makes a real
+  // outage indistinguishable from a team that has simply posted nothing. We let
+  // it throw so Next.js routes to the sibling error.tsx (retryable error UI).
+  // Roster + documents are coach-only create-flow enhancements; a failure there
+  // is tolerated (the create flow degrades) rather than failing the whole page.
   let announcements: Awaited<ReturnType<typeof getAnnouncementsWithMeta>>['data'] = [];
   let players: { id: string; first_name: string; last_name: string }[] = [];
   let documents: { id: string; title: string; file_type: string; file_size: number }[] = [];
 
-  try {
-    const [announcementsResult, membersResult, docsResult] = await Promise.all([
-      teamId
-        ? getAnnouncementsWithMeta(teamId, userId, isCoach, playerId)
-        : Promise.resolve({ success: true as const, data: [] }),
-      isCoach && teamId
-        ? supabase
-            .from('golf_team_members')
-            .select('player_id, player:golf_players(id, first_name, last_name)')
-            .eq('team_id', teamId)
-            .eq('status', 'active')
-            .limit(100)
-        : Promise.resolve({ data: null }),
-      isCoach && teamId
-        ? supabase
-            .from('golf_documents')
-            .select('id, title, file_type, file_size')
-            .eq('team_id', teamId)
-            .order('created_at', { ascending: false })
-            .limit(200)
-        : Promise.resolve({ data: null }),
-    ]);
-
+  if (teamId) {
+    // Throws on failure → error.tsx. `success: false` is also surfaced as an
+    // error so a degraded action result isn't shown as "no announcements".
+    const announcementsResult = await getAnnouncementsWithMeta(teamId, userId, isCoach, playerId);
+    if (!announcementsResult.success) {
+      throw new Error('Failed to load announcements');
+    }
     announcements = announcementsResult.data ?? [];
+  }
+  // teamId === null is a legitimate empty state (no team yet) — not a failure.
 
-    players = (membersResult.data || [])
-      .map((m: any) => m.player) // eslint-disable-line @typescript-eslint/no-explicit-any
-      .filter(Boolean)
-      .map((p: any) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name })); // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (isCoach && teamId) {
+    try {
+      const [membersResult, docsResult] = await Promise.all([
+        supabase
+          .from('golf_team_members')
+          .select('player_id, player:golf_players(id, first_name, last_name)')
+          .eq('team_id', teamId)
+          .eq('status', 'active')
+          .limit(100),
+        supabase
+          .from('golf_documents')
+          .select('id, title, file_type, file_size')
+          .eq('team_id', teamId)
+          .order('created_at', { ascending: false })
+          .limit(200),
+      ]);
 
-    documents = ((docsResult.data || []) as Array<{ id: string; title: string; file_type: string; file_size: number }>);
-  } catch {
-    // Network failure — render empty state
+      players = (membersResult.data || [])
+        .map((m: any) => m.player) // eslint-disable-line @typescript-eslint/no-explicit-any
+        .filter(Boolean)
+        .map((p: any) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name })); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+      documents = ((docsResult.data || []) as Array<{ id: string; title: string; file_type: string; file_size: number }>);
+    } catch {
+      // Roster / documents are create-flow enhancements only — degrade quietly
+      // (the announcements feed itself already loaded above).
+    }
   }
 
   const recentCount = announcements.filter(a => {

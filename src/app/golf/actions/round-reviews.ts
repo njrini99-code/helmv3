@@ -578,9 +578,10 @@ export async function getReviewById(reviewId: string): Promise<{
   const supabase = await createClient();
 
   try {
-    const { data: review, error } = await supabase
-      .from('golf_round_reviews')
-      .select(`
+    // Select string widened to `string` so PostgREST stops deep type-parsing this
+    // 4-level embed — that recursive instantiation tipped over TS2589 once the
+    // schema grew (the new P1-12 ledger tables). Result is cast to the known shape.
+    const reviewDetailSelect: string = `
         *,
         round:golf_rounds!inner(
           *,
@@ -590,9 +591,13 @@ export async function getReviewById(reviewId: string): Promise<{
           ),
           course:golf_courses(*)
         )
-      `)
+      `;
+    const { data, error } = await supabase
+      .from('golf_round_reviews')
+      .select(reviewDetailSelect)
       .eq('id', reviewId)
       .single();
+    const review = data as unknown as RoundReviewWithDetails | null;
 
     if (error || !review) {
       return { success: false, error: 'Review not found' };
@@ -604,7 +609,7 @@ export async function getReviewById(reviewId: string): Promise<{
       return { success: false, error: 'Review not found or not accessible' };
     }
 
-    return { success: true, review: review as unknown as RoundReviewWithDetails };
+    return { success: true, review };
   } catch (error) {
     await logServerError(`getReviewById failed: ${error instanceof Error ? error.message : String(error)}`, {
       action: 'getReviewById',
@@ -910,9 +915,8 @@ export async function getTeamReviews(
       return { success: false, error: 'Team not found or not authorized' };
     }
 
-    const { data: reviews, error, count } = await supabase
-      .from('golf_round_reviews')
-      .select(`
+    // widened to `string` to avoid TS2589 deep-embed instantiation (see getReviewById)
+    const teamReviewSelect: string = `
         *,
         round:golf_rounds!inner(
           *,
@@ -922,7 +926,10 @@ export async function getTeamReviews(
           ),
           course:golf_courses(*)
         )
-      `, { count: 'exact' })
+      `;
+    const { data: reviews, error, count } = await supabase
+      .from('golf_round_reviews')
+      .select(teamReviewSelect, { count: 'exact' })
       .eq('round.team_id', teamId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -1013,9 +1020,8 @@ export async function getPendingCoachReviews(_coachId?: string): Promise<{
 
     const playerIds = teamMembers.map(m => m.player_id);
 
-    const { data: reviews, error } = await supabase
-      .from('golf_round_reviews')
-      .select(`
+    // widened to `string` to avoid TS2589 deep-embed instantiation (see getReviewById)
+    const pendingReviewSelect: string = `
         *,
         round:golf_rounds!inner(
           *,
@@ -1025,7 +1031,10 @@ export async function getPendingCoachReviews(_coachId?: string): Promise<{
           ),
           course:golf_courses(*)
         )
-      `)
+      `;
+    const { data: reviews, error } = await supabase
+      .from('golf_round_reviews')
+      .select(pendingReviewSelect)
       .in('player_id', playerIds)
       .order('created_at', { ascending: false });
 

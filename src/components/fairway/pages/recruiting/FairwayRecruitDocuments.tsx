@@ -21,7 +21,9 @@ import { Surface } from '@/components/fairway/surfaces/surface';
 import { Input } from '@/components/fairway/forms/Input';
 import { FormField } from '@/components/fairway/forms/FormField';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { openExternalUrl, isNativeApp } from '@/lib/utils/capacitor';
+import { cn } from '@/lib/utils';
 import {
   getRecruitDocuments,
   uploadRecruitDocument,
@@ -70,7 +72,15 @@ function categoryMeta(category: string) {
 export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
   const [docs, setDocs] = React.useState<RecruitDocument[]>([]);
   const [loading, setLoading] = React.useState(true);
+  // Post-mutation/manual refetch: keep the existing rows visible (dimmed +
+  // aria-busy) instead of blanking to the skeleton, so the shelf never flashes
+  // empty after an upload/delete (gate B3/D9).
+  const [refetching, setRefetching] = React.useState(false);
   const [loadError, setLoadError] = React.useState<string | null>(null);
+
+  // P122: category filter for the shelf — `null` = All. Keeps 10x document data
+  // navigable without pagination (the per-recruit set stays under the cap).
+  const [categoryFilter, setCategoryFilter] = React.useState<RecruitDocCategory | null>(null);
 
   // Add-document staging
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -82,17 +92,25 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [busyId, setBusyId] = React.useState<string | null>(null);
 
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    const res = await getRecruitDocuments(recruitId);
-    if (res.success) {
-      setDocs(res.data ?? []);
-      setLoadError(null);
-    } else {
-      setLoadError(res.error ?? 'Could not load documents');
-    }
-    setLoading(false);
-  }, [recruitId]);
+  const load = React.useCallback(
+    async (opts?: { refetch?: boolean }) => {
+      // First mount → skeleton (`loading`); a refetch after a mutation keeps the
+      // current rows on screen (`refetching`) so the list never blanks.
+      const isRefetch = opts?.refetch === true;
+      if (isRefetch) setRefetching(true);
+      else setLoading(true);
+      const res = await getRecruitDocuments(recruitId);
+      if (res.success) {
+        setDocs(res.data ?? []);
+        setLoadError(null);
+      } else {
+        setLoadError(res.error ?? 'Could not load documents');
+      }
+      if (isRefetch) setRefetching(false);
+      else setLoading(false);
+    },
+    [recruitId],
+  );
 
   React.useEffect(() => {
     void load();
@@ -122,7 +140,7 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
       if (!res.success) throw new Error(res.error);
       fairwayToast.success('Uploaded', { description: `${title || pendingFile.name} was added.` });
       cancelStaged();
-      await load();
+      await load({ refetch: true });
     } catch (err) {
       fairwayToast.error('Upload failed', {
         description: err instanceof Error ? err.message : 'Try again in a moment.',
@@ -167,7 +185,7 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
       if (!res.success) throw new Error(res.error);
       fairwayToast.success('Removed', { description: `${doc.title} was deleted.` });
       setConfirmDeleteId(null);
-      await load();
+      await load({ refetch: true });
     } catch (err) {
       fairwayToast.error('Delete failed', {
         description: err instanceof Error ? err.message : 'Try again in a moment.',
@@ -176,6 +194,30 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
       setBusyId(null);
     }
   };
+
+  // P122: which categories are actually present (in canonical order), and the
+  // category-filtered view. A filter row only appears once the shelf spans more
+  // than one category, so a small shelf stays uncluttered.
+  const presentCategories = React.useMemo(
+    () =>
+      RECRUIT_DOC_CATEGORIES.filter((c) =>
+        docs.some((d) => (d.category as RecruitDocCategory) === c),
+      ),
+    [docs],
+  );
+  const visibleDocs = React.useMemo(
+    () => (categoryFilter ? docs.filter((d) => d.category === categoryFilter) : docs),
+    [docs, categoryFilter],
+  );
+
+  // If the active filter's category is emptied (e.g. the last film file was
+  // deleted), fall back to All so the shelf never strands the coach on an empty
+  // filtered view with rows still present elsewhere.
+  React.useEffect(() => {
+    if (categoryFilter && !presentCategories.includes(categoryFilter)) {
+      setCategoryFilter(null);
+    }
+  }, [categoryFilter, presentCategories]);
 
   return (
     <div className="border-t border-border-subtle pt-5">
@@ -273,6 +315,31 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
         </Surface>
       ) : null}
 
+      {/* P122: category filter — only once the shelf spans >1 category. */}
+      {!loading && !loadError && presentCategories.length > 1 ? (
+        <div className="mb-3 flex flex-wrap gap-2">
+          <FilterPill
+            size="sm"
+            selected={categoryFilter === null}
+            onClick={() => setCategoryFilter(null)}
+            count={docs.length}
+          >
+            All
+          </FilterPill>
+          {presentCategories.map((c) => (
+            <FilterPill
+              key={c}
+              size="sm"
+              selected={categoryFilter === c}
+              onClick={() => setCategoryFilter(c)}
+              count={docs.filter((d) => d.category === c).length}
+            >
+              {CATEGORY_META[c].label}
+            </FilterPill>
+          ))}
+        </div>
+      ) : null}
+
       {/* List */}
       {loading ? (
         <div className="space-y-2" aria-busy="true">
@@ -281,14 +348,39 @@ export function FairwayRecruitDocuments({ recruitId }: { recruitId: string }) {
           ))}
         </div>
       ) : loadError ? (
-        <p className="font-fw-sans text-body-sm text-fw-danger">{loadError}</p>
+        // P121: actionable load error — retry re-runs load() instead of a dead-end.
+        <InlineNotice
+          tone="danger"
+          title="Couldn't load documents"
+          action={
+            <Button type="button" variant="secondary" size="sm" onClick={() => void load()}>
+              Try again
+            </Button>
+          }
+        >
+          {loadError}
+        </InlineNotice>
       ) : docs.length === 0 && !pendingFile ? (
         <p className="font-fw-sans text-body-sm text-text-tertiary">
           No documents yet. Upload notes, schedules, transcripts, or film for this prospect.
         </p>
+      ) : docs.length > 0 && visibleDocs.length === 0 ? (
+        // A filter is active but hides every row (the All fallback effect will
+        // also clear it if the category itself emptied).
+        <p className="font-fw-sans text-body-sm text-text-tertiary">
+          No documents in this category.
+        </p>
+      ) : visibleDocs.length === 0 ? (
+        // docs empty but a file is being staged → no list to show yet.
+        null
       ) : (
-        <ul className="space-y-2">
-          {docs.map((doc) => {
+        // P121: during a post-mutation refetch keep the rows on screen (dimmed +
+        // aria-busy) so the shelf never flashes empty.
+        <ul
+          className={cn('space-y-2 transition-opacity', refetching && 'opacity-60')}
+          aria-busy={refetching || undefined}
+        >
+          {visibleDocs.map((doc) => {
             const meta = categoryMeta(doc.category);
             const confirming = confirmDeleteId === doc.id;
             const rowBusy = busyId === doc.id;

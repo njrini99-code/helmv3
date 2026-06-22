@@ -5,6 +5,10 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import {
+  samplePerPlayerRounds,
+  computeTeamHealth,
+} from './team-category-insights-helpers';
 
 // ============================================================================
 // TYPES
@@ -337,7 +341,14 @@ export async function getTeamOverview(
       .eq('team_id', team.id)
       .eq('status', 'active');
 
-    if (membersError || !members || members.length === 0) {
+    // P017: a DB error must NOT be reported as a healthy-but-empty team (all
+    // categories a fake neutral 50). Surface the failure so the caller can render
+    // an error state; keep the neutral-empty overview only for a genuinely empty
+    // roster.
+    if (membersError) {
+      return { success: false, error: 'Failed to load team members' };
+    }
+    if (!members || members.length === 0) {
       return {
         success: true,
         data: {
@@ -492,13 +503,19 @@ export async function getTeamOverview(
     sinceDate.setDate(sinceDate.getDate() - 90);
     const sinceDateStr = sinceDate.toISOString().split('T')[0];
 
-    // Fetch round IDs for all team players in period
-    const { data: roundsData } = await supabase
+    // Fetch round IDs for all team players in period.
+    // Paginate past PostgREST's 1000-row default: a program with >1000
+    // completed rounds in 90 days would otherwise silently lose roundIds,
+    // truncating the downstream shot fetch, yardageCurve, deadZones, and the
+    // hero's "toughest band" read. Uses the same helper as the shot batch below.
+    const { data: roundsData } = await fetchAllRowsResult<{ id: string }>((from, to) => supabase
       .from('golf_rounds')
       .select('id')
       .in('player_id', playerIds)
       .eq('status', 'completed')
-      .gte('round_date', sinceDateStr);
+      .gte('round_date', sinceDateStr)
+      .order('id', { ascending: true })
+      .range(from, to));
 
     let yardageCurve: Array<{ rangeStart: number; rangeEnd: number; avgSG: number; shotCount: number }> = [];
     let deadZones: Array<{ rangeStart: number; rangeEnd: number; deficit: number }> = [];
@@ -694,6 +711,14 @@ export async function getTeamCategoryInsights(
 
     const playerIds = members.map((m) => m.player_id);
 
+    // Per-player trend window: every player's last `ROUNDS_PER_PLAYER` rounds.
+    const ROUNDS_PER_PLAYER = 10;
+    // Bound the scan to a recent window so a global fetch stays sane, while
+    // still being wide enough that each player can reach their last 10 rounds.
+    const trendSince = new Date();
+    trendSince.setDate(trendSince.getDate() - 365);
+    const trendSinceStr = trendSince.toISOString().split('T')[0];
+
     // 4. Fetch stats cache + player names + recent rounds in parallel
     const [statsResult, playersResult, roundsResult] = await Promise.all([
       supabase
@@ -706,13 +731,26 @@ export async function getTeamCategoryInsights(
         .from('golf_players')
         .select('id, first_name, last_name, avatar_url')
         .in('id', playerIds),
-      supabase
+      // Per-player sampling: fetch every completed round in the window
+      // (paginated past PostgREST's 1000-row cap), ordered most-recent-first,
+      // then cap to the last 10 PER player. A single global
+      // `.limit(playerIds.length * 10)` would let the most-active players
+      // consume all slots, leaving less-active players with zero rounds and a
+      // falsely "stable" trend (P448 / P2-17).
+      fetchAllRowsResult<Record<string, unknown>>((from, to) => supabase
         .from('golf_rounds')
         .select(ROUND_STAT_COLUMNS.join(', '))
         .in('player_id', playerIds)
         .eq('status', 'completed')
+        .gte('round_date', trendSinceStr)
         .order('round_date', { ascending: false })
-        .limit(playerIds.length * 10), // Up to 10 rounds per player
+        .order('id', { ascending: true })
+        // Dynamic string select widens the row type; cast the final builder to
+        // the helper's awaitable shape (same approach as the shot fetch above).
+        .range(from, to) as unknown as PromiseLike<{
+          data: Record<string, unknown>[] | null;
+          error: { message: string } | null;
+        }>),
     ]);
 
     if (statsResult.error) {
@@ -731,9 +769,14 @@ export async function getTeamCategoryInsights(
       playerInfoMap.set(p.id, { name, avatarUrl: p.avatar_url });
     }
 
-    // Group rounds by player, ordered most-recent-first
+    // Group rounds by player, ordered most-recent-first, capped per player so
+    // every player contributes at most their last `ROUNDS_PER_PLAYER` rounds.
+    const sampledRounds = samplePerPlayerRounds(
+      (roundsResult.data ?? []) as unknown as Array<Record<string, unknown> & { player_id: unknown }>,
+      ROUNDS_PER_PLAYER,
+    );
     const roundsByPlayer = new Map<string, Record<string, unknown>[]>();
-    for (const r of ((roundsResult.data ?? []) as unknown as Record<string, unknown>[])) {
+    for (const r of sampledRounds) {
       const pid = r.player_id as string;
       if (!roundsByPlayer.has(pid)) {
         roundsByPlayer.set(pid, []);
@@ -850,16 +893,9 @@ export async function getTeamCategoryInsights(
       });
     }
 
-    // 6. Team health score
-    const healthScores = categories.map((c) =>
-      c.players.length > 0 ? 1 - c.attentionCount / c.players.length : 1,
-    );
-    const teamHealth =
-      healthScores.length > 0
-        ? Math.round(
-            (healthScores.reduce((a, b) => a + b, 0) / healthScores.length) * 100,
-          )
-        : 0;
+    // 6. Team health score — only categories that actually have player data
+    // count (empty = insufficient data, not a perfect score). See P2-17.
+    const teamHealth = computeTeamHealth(categories);
 
     return {
       success: true,

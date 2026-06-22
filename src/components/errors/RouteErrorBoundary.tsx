@@ -271,12 +271,12 @@ export function RouteErrorBoundary({
   const defaultMessage = getDefaultMessage();
 
   return (
-    <div className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl border border-warm-200 shadow-lg p-8 max-w-md w-full text-center">
+    <div className="min-h-dvh bg-canvas flex items-center justify-center p-6 font-fw-sans">
+      <div className="bg-surface rounded-card border border-border-subtle shadow-soft p-8 max-w-md w-full text-center">
         {/* Error Icon */}
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-red-100 flex items-center justify-center mb-4">
+        <div className="w-16 h-16 mx-auto rounded-card bg-fw-danger-bg flex items-center justify-center mb-4">
           <svg
-            className="h-8 w-8 text-red-600"
+            className="h-8 w-8 text-fw-danger"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -292,22 +292,22 @@ export function RouteErrorBoundary({
         </div>
 
         {/* Error Title */}
-        <h2 className="text-xl font-semibold tracking-tight text-warm-900 mb-2">
+        <h2 className="font-fw-display text-h2 font-medium tracking-[-0.01em] text-text-primary mb-2">
           {title}
         </h2>
 
         {/* Error Message */}
-        <p className="text-sm leading-relaxed text-warm-600 mb-6">
+        <p className="text-body leading-6 text-text-secondary mb-6">
           {message || defaultMessage}
         </p>
 
         {/* Error Details (Development Only) */}
         {process.env.NODE_ENV === 'development' && (
           <details className="mb-6 text-left">
-            <summary className="text-xs font-medium text-warm-500 cursor-pointer hover:text-warm-700 mb-2">
+            <summary className="text-body-sm font-medium text-text-tertiary cursor-pointer hover:text-text-secondary mb-2">
               Error Details
             </summary>
-            <pre className="text-xs bg-warm-50 border border-warm-200 rounded-lg p-3 overflow-auto max-h-32 text-red-600">
+            <pre className="text-body-sm bg-surface-sunken border border-border-subtle rounded-fw-md p-3 overflow-auto max-h-32 text-fw-danger">
               {error.message}
               {error.stack && `\n\n${error.stack}`}
               {error.digest && `\n\nDigest: ${error.digest}`}
@@ -317,8 +317,8 @@ export function RouteErrorBoundary({
 
         {/* Retry indicator */}
         {isRetrying && (
-          <div className="mb-4 flex items-center justify-center gap-2 text-sm text-warm-500">
-            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <div className="mb-4 flex items-center justify-center gap-2 text-body-sm text-text-tertiary">
+            <svg className="w-4 h-4 animate-spin motion-reduce:animate-none" fill="none" viewBox="0 0 24 24" aria-hidden="true">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
@@ -328,7 +328,7 @@ export function RouteErrorBoundary({
 
         {/* Retry count indicator */}
         {retryCount > 0 && !isRetrying && (
-          <p className="text-xs text-warm-400 mb-4">
+          <p className="text-body-sm text-text-tertiary mb-4">
             {retryCount === 1 ? 'Retried once' : `Retried ${retryCount} times`}
           </p>
         )}
@@ -385,11 +385,11 @@ export function CompactRouteErrorBoundary({
   }, [error, route, component]);
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="flex flex-col items-center justify-center py-12 text-center font-fw-sans">
       {/* Error Icon */}
-      <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center mb-4">
+      <div className="w-12 h-12 rounded-card bg-fw-danger-bg flex items-center justify-center mb-4">
         <svg
-          className="h-6 w-6 text-red-600"
+          className="h-6 w-6 text-fw-danger"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -405,18 +405,18 @@ export function CompactRouteErrorBoundary({
       </div>
 
       {/* Error Title */}
-      <h3 className="text-lg font-semibold text-warm-900 mb-2">
+      <h3 className="font-fw-display text-body-lg font-medium text-text-primary mb-2">
         {title}
       </h3>
 
       {/* Error Message */}
-      <p className="text-sm leading-relaxed text-warm-500 mb-4 max-w-md">
+      <p className="text-body leading-6 text-text-secondary mb-4 max-w-md">
         {message || error.message || 'Please try again.'}
       </p>
 
       {/* Error Details (Development Only) */}
       {process.env.NODE_ENV === 'development' && (
-        <p className="text-xs text-red-600 mb-4 font-mono max-w-md break-words">
+        <p className="text-body-sm text-fw-danger mb-4 font-fw-mono max-w-md break-words">
           {error.message}
         </p>
       )}

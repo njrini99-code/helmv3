@@ -102,6 +102,21 @@ function Bubble({ message, prefersReducedMotion }: { message: ChatMessage; prefe
     );
   }
   if (message.role === 'assistant') {
+    // P1-11 — a failed turn renders a visible, distinct failure bubble (not an
+    // orphaned user turn). role="alert" so assistive tech announces it.
+    if (message.status === 'failed') {
+      return (
+        <m.div
+          role="alert"
+          initial={prefersReducedMotion ? false : { opacity: 0.6 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: DURATION.short, ease: EASE_TAP }}
+          className="max-w-[85%] rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 whitespace-pre-wrap leading-relaxed"
+        >
+          {message.content}
+        </m.div>
+      );
+    }
     return (
       <m.div
         initial={prefersReducedMotion ? false : { opacity: 0.6 }}

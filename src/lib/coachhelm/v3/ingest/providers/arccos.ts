@@ -176,64 +176,34 @@ const arccos: IngestAdapter = {
       try {
         const mapped = mapArccosRound(arccosRound, connection.player_id);
 
-        // Insert round
-        const { data: insertedRound, error: roundErr } = await sb
-          .from('golf_rounds')
-          .insert(mapped.round)
-          .select('id')
-          .single();
-
-        if (roundErr || !insertedRound) {
-          errorsCount += 1;
-          errorMessages.push(`Round ${arccosRound.id}: ${roundErr?.message ?? 'insert returned null'}`);
-          continue;
-        }
-
-        const roundId = insertedRound.id;
-
-        // Insert holes with real round_id, collect hole IDs
-        const holesWithRoundId = mapped.holes.map((h) => ({
-          ...h,
-          round_id: roundId,
-        }));
-
-        const { data: insertedHoles, error: holesErr } = await sb
-          .from('golf_holes')
-          .insert(holesWithRoundId)
-          .select('id, hole_number');
-
-        if (holesErr) {
-          errorsCount += 1;
-          errorMessages.push(`Holes for round ${arccosRound.id}: ${holesErr.message}`);
-          continue;
-        }
-
-        // Build hole_number → hole_id lookup
-        const holeIdMap = new Map(
-          (insertedHoles ?? []).map((h) => [h.hole_number, h.id]),
+        // TRANSACTIONAL insert (P2-22): round + holes + shots go through ONE
+        // SECURITY DEFINER RPC that Postgres runs as a single transaction. If a
+        // hole/shot insert fails, the round insert rolls back too — so a failed
+        // import can NEVER leave an orphaned "completed" partial round that a
+        // later dedup pass would skip forever (feeding CoachHelm bad data). The
+        // RPC sets the real round_id on holes/shots (mapper round_id is a
+        // placeholder), so we pass the mapped shapes straight through.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: rpcData, error: rpcErr } = await (sb as any).rpc(
+          'ingest_external_round_atomic',
+          {
+            p_round: mapped.round,
+            p_holes: mapped.holes,
+            p_shots: mapped.shots,
+          },
         );
 
-        // Insert shots with real round_id + hole_id FK
-        const shotsWithIds = mapped.shots.map((s) => ({
-          ...s,
-          round_id: roundId,
-          hole_id: holeIdMap.get(s.hole_number) ?? null,
-        }));
-
-        if (shotsWithIds.length > 0) {
-          const { error: shotsErr } = await sb
-            .from('golf_shots')
-            .insert(shotsWithIds);
-
-          if (shotsErr) {
-            errorsCount += 1;
-            errorMessages.push(`Shots for round ${arccosRound.id}: ${shotsErr.message}`);
-            continue;
-          }
-
-          shotsInserted += shotsWithIds.length;
+        if (rpcErr || !rpcData?.success) {
+          // The transaction rolled back — nothing was persisted for this round,
+          // so the next sync re-attempts it (it's still absent → not deduped).
+          errorsCount += 1;
+          errorMessages.push(
+            `Round ${arccosRound.id}: ${rpcErr?.message ?? 'ingest RPC returned no success'}`,
+          );
+          continue;
         }
 
+        shotsInserted += typeof rpcData.shots_inserted === 'number' ? rpcData.shots_inserted : mapped.shots.length;
         roundsInserted += 1;
       } catch (err) {
         errorsCount += 1;

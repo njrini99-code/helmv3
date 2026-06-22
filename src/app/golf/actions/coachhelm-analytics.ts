@@ -12,6 +12,7 @@
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { getInsightEffectivenessSignals, type TrustSignal } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 
@@ -400,16 +401,16 @@ export async function getPredictionPerformance(
       percentage: totalErrors > 0 ? (count / totalErrors) * 100 : 0,
     }));
 
-    // Average rate-style metrics across snapshots; pull totals from the latest
-    // snapshot so we don't double-count overlapping rolling windows.
+    // Average rate-style metrics across snapshots for the secondary
+    // (informational) error rates; pull totals from the latest snapshot so we
+    // don't double-count overlapping rolling windows.
     const rateTotals = performance.reduce(
-      (acc: { accuracy: number; mae: number; overconf: number; underconf: number }, p: Record<string, unknown>) => ({
-        accuracy: acc.accuracy + ((p.accuracy_rate as number) || 0),
+      (acc: { mae: number; overconf: number; underconf: number }, p: Record<string, unknown>) => ({
         mae: acc.mae + ((p.mean_absolute_error as number) || 0),
         overconf: acc.overconf + ((p.overconfidence_rate as number) || 0),
         underconf: acc.underconf + ((p.underconfidence_rate as number) || 0),
       }),
-      { accuracy: 0, mae: 0, overconf: 0, underconf: 0 }
+      { mae: 0, overconf: 0, underconf: 0 }
     );
 
     const count = performance.length || 1;
@@ -423,7 +424,12 @@ export async function getPredictionPerformance(
         summary: {
           totalPredictions: (latest?.predictions_made as number) || 0,
           validatedPredictions: (latest?.predictions_validated as number) || 0,
-          overallAccuracy: rateTotals.accuracy / count,
+          // overallAccuracy must share the SAME window as validatedPredictions
+          // so the hero sentence "X% of N resolved proved accurate" is
+          // arithmetically true. Both now describe the latest rolling snapshot
+          // rather than pairing an all-snapshot average rate with a
+          // single-snapshot count (two different denominators).
+          overallAccuracy: (latest?.accuracy_rate as number) || 0,
           meanAbsoluteError: rateTotals.mae / count,
           calibrationScore: (latest?.calibration_score as number) || 0,
           overconfidenceRate: rateTotals.overconf / count,
@@ -625,7 +631,8 @@ export async function getPatternImpact(
 // ============================================================================
 
 export async function getCoachHelmOverview(
-  teamId: string
+  teamId: string,
+  dateRange?: DateRange
 ): Promise<{ success: boolean; data?: CoachHelmOverviewData; error?: string }> {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -639,10 +646,19 @@ export async function getCoachHelmOverview(
   }
 
   try {
-    const now = new Date();
+    // The SELECTED window drives the headline counts (totalInsights, action /
+    // improvement rates, strokes-saved) so every cockpit figure matches the
+    // active range — no fixed-30d leak under a "Last 7 days" header. The default
+    // (no dateRange) stays 30 days, so existing callers are unchanged.
+    const end = dateRange?.end ?? new Date();
+    const windowStart = dateRange?.start ?? new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const now = end;
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    // The DB read must cover BOTH the selected window AND the fixed 7d/14d
+    // week-over-week buckets below, so fetch from whichever start is earlier.
+    const fetchStart = windowStart.getTime() < thirtyDaysAgo.getTime() ? windowStart : thirtyDaysAgo;
 
     // Get active team players (skip transferred / inactive members so they
     // do not inflate team analytics).
@@ -654,14 +670,13 @@ export async function getCoachHelmOverview(
 
     const playerIds = (teamMembers || []).map((m) => m.player_id);
 
-    // Single fetch over the broadest 30-day window covering all 6 prior count
-    // queries; bucket in memory to avoid 6 sequential round-trips. The select
-    // bound must be the widest in-memory bin (30 days) so totalInsights —
-    // which advertises a 30-day count — does not silently drop days 15–30.
+    // Single fetch over the broadest in-memory bin (the selected window OR the
+    // fixed 30-day week-over-week span, whichever is wider) covering all the
+    // count queries; bucket in memory to avoid sequential round-trips.
     // Visible-truth alignment (rescore partial #5): analytics counts must
     // match what the product actually surfaced — same shared contract as the
     // badge/feed, no hand-rolled predicate to drift.
-    // Paginate past the PostgREST 1000-row cap — a 30-day team window of
+    // Paginate past the PostgREST 1000-row cap — a wide team window of
     // insights easily exceeds 1000 rows and an unpaginated read would silently
     // under-count totalInsights / action / improvement rates.
     const { data: insightRows } = await fetchAllRowsResult((from, to) =>
@@ -671,12 +686,17 @@ export async function getCoachHelmOverview(
           .select('created_at, action_taken, outcome_status')
           .in('player_id', playerIds),
       )
-        .gte('created_at', thirtyDaysAgo.toISOString())
+        .gte('created_at', fetchStart.toISOString())
+        .lte('created_at', end.toISOString())
         .order('id', { ascending: true })
         .range(from, to),
     );
 
-    const thirtyMs = thirtyDaysAgo.getTime();
+    // Headline counts use the SELECTED window; the week-over-week deltas stay
+    // anchored to fixed 7d/14d-from-now buckets (a "this week" metric, which is
+    // range-independent by design).
+    const windowStartMs = windowStart.getTime();
+    const endMs = end.getTime();
     const sevenMs = sevenDaysAgo.getTime();
     const fourteenMs = fourteenDaysAgo.getTime();
 
@@ -692,7 +712,7 @@ export async function getCoachHelmOverview(
       outcome_status: string | null;
     }>) {
       const ts = row.created_at ? Date.parse(row.created_at) : 0;
-      if (ts >= thirtyMs) {
+      if (ts >= windowStartMs && ts <= endMs) {
         totalInsights++;
         if (row.action_taken) actedInsights++;
         if (row.outcome_status) outcomedInsights++;
@@ -709,14 +729,15 @@ export async function getCoachHelmOverview(
       .in('player_id', playerIds)
       .eq('is_active', true);
 
-    // Query resolved patterns for strokes saved. Live schema uses
-    // `stroke_impact` (singular); the old plural column is empty.
+    // Query resolved patterns for strokes saved over the SELECTED window. Live
+    // schema uses `stroke_impact` (singular); the old plural column is empty.
     const { data: resolvedPatterns } = await supabase
       .from('golf_patterns_v2')
       .select('stroke_impact')
       .in('player_id', playerIds)
       .eq('lifecycle_state', 'resolved')
-      .gte('resolved_at', thirtyDaysAgo.toISOString());
+      .gte('resolved_at', windowStart.toISOString())
+      .lte('resolved_at', end.toISOString());
 
     const strokesSavedEstimate = ((resolvedPatterns ?? []) as Array<{ stroke_impact: number | null }>).reduce(
       (sum, p) => sum + Math.abs(p.stroke_impact ?? 0),
@@ -1175,3 +1196,90 @@ function generateMockPredictionPerformance(start: Date, end: Date): PredictionPe
 
 // generateMockPatternImpact was removed — errors now surface as
 // { success: false, error } instead of silently masking as mock data.
+
+// ============================================================================
+// INSIGHT TRUST SIGNALS (P1-12 — effectiveness event ledger rollup)
+// ============================================================================
+
+/**
+ * Roll up trust signals for a set of insight ids for the analytics surface.
+ *
+ * Auth follows the verifyTeamAccess pattern used throughout this file: the
+ * caller must be authenticated, and must have team access to EVERY team that
+ * owns one of the requested insights. We resolve those owning teams from
+ * `golf_coach_insights.team_id` and gate on all of them — an insight whose team
+ * the caller cannot access (or an id that resolves to no insight) makes the
+ * whole request Forbidden, so trust data never leaks across teams.
+ *
+ * On success returns a plain `Record<insightId, TrustSignal>` (server-action
+ * boundaries serialize plain objects, not Maps).
+ */
+export async function getInsightTrustSignals(
+  insightIds: string[],
+): Promise<{ success: true; signals: Record<string, TrustSignal> } | { success: false; error: string }> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  // Dedupe + drop falsy ids before any DB work.
+  const ids = Array.from(new Set((insightIds ?? []).filter((id): id is string => !!id)));
+  if (ids.length === 0) {
+    return { success: true, signals: {} };
+  }
+
+  try {
+    // Resolve the owning team(s) for the requested insights.
+    const { data: rows, error: insightErr } = await supabase
+      .from('golf_coach_insights')
+      .select('id, team_id')
+      .in('id', ids);
+
+    if (insightErr) {
+      await logServerError(`getInsightTrustSignals insight lookup failed: ${insightErr.message}`, {
+        action: 'getInsightTrustSignals',
+        featureArea: 'coachhelm_analytics',
+        extra: { count: ids.length, errorCode: insightErr.code },
+      });
+      return { success: false, error: insightErr.message };
+    }
+
+    // Every requested id must resolve to a real insight with a team_id, and the
+    // caller must have access to each of those teams.
+    const foundIds = new Set((rows ?? []).map((r) => r.id));
+    if (ids.some((id) => !foundIds.has(id))) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    // An insight with no team_id can't be access-scoped → deny rather than leak.
+    if ((rows ?? []).some((r) => !r.team_id)) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const teamIds = Array.from(
+      new Set((rows ?? []).map((r) => r.team_id).filter((t): t is string => !!t)),
+    );
+    for (const teamId of teamIds) {
+      const access = await verifyTeamAccess(teamId, user.id, supabase);
+      if (!access.allowed) {
+        return { success: false, error: 'Forbidden' };
+      }
+    }
+
+    // Counts come ONLY from real ledger rows — this rollup cannot invent
+    // exposure/action/outcome that did not happen.
+    const signalMap = await getInsightEffectivenessSignals(ids);
+    const signals: Record<string, TrustSignal> = {};
+    for (const [id, signal] of signalMap) {
+      signals[id] = signal;
+    }
+    return { success: true, signals };
+  } catch (error) {
+    await logServerError(
+      `getInsightTrustSignals threw: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'getInsightTrustSignals', featureArea: 'coachhelm_analytics' },
+    );
+    return { success: false, error: 'Failed to fetch insight trust signals' };
+  }
+}

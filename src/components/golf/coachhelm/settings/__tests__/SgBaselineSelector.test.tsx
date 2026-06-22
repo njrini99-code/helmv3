@@ -62,6 +62,20 @@ describe('SgBaselineSelector', () => {
     });
   });
 
+  it('surfaces a recoverable error (not a silent empty Select) when the load fails', async () => {
+    // P085 — getTeamSgBaseline returns {success:false} when the team can't be
+    // resolved. The component must show the error, not a silent empty selector.
+    getTeamSgBaseline.mockResolvedValue({ success: false, error: 'No team assigned' });
+
+    render(<SgBaselineSelector />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('No team assigned');
+    });
+    // The empty Select trigger must NOT render on load failure.
+    expect(screen.queryByRole('button', { name: /baseline|PGA|Women|NCAA|Scratch/i })).toBeNull();
+  });
+
   it('surfaces the error message when the save fails', async () => {
     getTeamSgBaseline.mockResolvedValue({
       success: true,

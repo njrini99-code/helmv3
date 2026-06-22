@@ -21,6 +21,7 @@ import { formatTimeDisplay, formatDaysDisplay, generateClassColor, detectSemeste
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayGolfClasses } from '@/components/fairway/pages/player-game';
+import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 
 // PlayerClass interface matches the actual golf_player_classes table schema
 interface PlayerClass {
@@ -115,8 +116,11 @@ export default function GolfClassesPage() {
         class_name: className,
         instructor: formData.instructor || null,
         days: formData.days,
-        start_time: formData.start_time || '00:00',
-        end_time: formData.end_time || '00:00',
+        // Store NULL (not a fabricated '00:00') when no time is given, so the
+        // class reads as "no time set" everywhere instead of a phantom 12:00 AM
+        // meeting — and the calendar sync skips creating a midnight event.
+        start_time: formData.start_time || null,
+        end_time: formData.end_time || null,
         building: formData.building || null,
         room: formData.room || null,
         credits: formData.credits,
@@ -144,6 +148,7 @@ export default function GolfClassesPage() {
     await fetchClasses();
     setShowAddModal(false);
     setEditingClass(null);
+    fairwayToast.success('Class added', { description: 'Synced to your calendar.' });
   };
 
   const handleUpdateClass = async (formData: ClassFormData) => {
@@ -160,8 +165,9 @@ export default function GolfClassesPage() {
         class_name: className,
         instructor: formData.instructor || null,
         days: formData.days,
-        start_time: formData.start_time || '00:00',
-        end_time: formData.end_time || '00:00',
+        // Store NULL (not '00:00') when no time is given — see handleAddClass.
+        start_time: formData.start_time || null,
+        end_time: formData.end_time || null,
         building: formData.building || null,
         room: formData.room || null,
         credits: formData.credits,
@@ -187,6 +193,7 @@ export default function GolfClassesPage() {
     setShowAddModal(false);
     setEditingClass(null);
     setShowDetailModal(false);
+    fairwayToast.success('Class updated', { description: 'Your calendar has been re-synced.' });
   };
 
   const handleDeleteClass = async () => {
@@ -211,6 +218,7 @@ export default function GolfClassesPage() {
     await fetchClasses();
     setShowDetailModal(false);
     setSelectedClass(null);
+    fairwayToast.success('Class deleted', { description: 'Removed from your schedule and calendar.' });
   };
 
   const handleParsedClasses = (parsed: ParsedClass[]) => {
@@ -241,8 +249,9 @@ export default function GolfClassesPage() {
           class_name: className,
           instructor: cls.instructor || null,
           days: cls.days || [],
-          start_time: cls.start_time || '00:00',
-          end_time: cls.end_time || '00:00',
+          // Store NULL (not '00:00') when no time is given — see handleAddClass.
+          start_time: cls.start_time || null,
+          end_time: cls.end_time || null,
           building: cls.building || null,
           room: cls.room || null,
           credits: cls.credits || null,
@@ -290,9 +299,14 @@ export default function GolfClassesPage() {
         await Promise.all(syncPromises);
       }
 
+      const importedCount = data?.length ?? confirmed.length;
       await fetchClasses();
       setShowConfirmModal(false);
       setParsedClasses([]);
+      fairwayToast.success(
+        `${importedCount} ${importedCount === 1 ? 'class' : 'classes'} imported`,
+        { description: 'Synced to your calendar.' },
+      );
     } catch {
       // Error handled by alert above
     }
@@ -327,9 +341,13 @@ export default function GolfClassesPage() {
       building: selectedClass.building || '',
       room: selectedClass.room || '',
       credits: selectedClass.credits,
-      // semester is not persisted on golf_player_classes. Default to the current
-      // term so the edit re-sync produces valid semester dates — an empty string
-      // makes parseSemesterDates() return null and the calendar sync silently fails.
+      // semester is not persisted on golf_player_classes, so on edit we re-derive
+      // the CURRENT term. detectSemester('') always returns a valid term string,
+      // so the calendar re-sync produces valid dates. LATENT ISSUE (P231): a class
+      // originally created for a DIFFERENT term gets its calendar events re-dated
+      // to the current term on edit. The real fix requires persisting semester (or
+      // semesterStartDate) on golf_player_classes — tracked separately; today this
+      // is masked by most classes being current-term.
       semester: detectSemester(''),
       color: selectedClass.color || 'var(--color-primary-600)',
       notes: selectedClass.notes || '',
@@ -363,6 +381,7 @@ export default function GolfClassesPage() {
 
       await fetchClasses();
       setShowDeleteAllConfirm(false);
+      fairwayToast.success('All classes deleted', { description: 'Your schedule and calendar are clear.' });
     } catch (_err) {
       showToast('Error deleting classes. Please try again.', 'error');
     } finally {
@@ -431,6 +450,7 @@ export default function GolfClassesPage() {
         <FairwayGolfClasses
           classes={classes}
           loading={loading}
+          isWrongRole={golfUser.role !== 'player'}
           hasTeam={Boolean(teamId)}
           classesByDay={classesByDay}
           totalCredits={totalCredits}

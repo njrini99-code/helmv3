@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { FormField } from '@/components/fairway/forms/FormField';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { useToast } from '@/components/ui/sonner';
 import { IconX } from '@/components/icons';
 import { createCourse, updateCourse } from '@/app/golf/actions/course-library';
@@ -167,16 +167,16 @@ export function CourseFormDrawer({
             <DrawerTitle className="font-fw-display text-text-primary">
               {title}
             </DrawerTitle>
-            <Button
+            <IconButton
               type="button"
               variant="ghost"
-              size="icon-sm"
+              size="sm"
               aria-label="Close"
               onClick={() => onOpenChange(false)}
               className="-mr-2 -mt-1 shrink-0"
             >
               <IconX size={18} aria-hidden />
-            </Button>
+            </IconButton>
           </div>
 
           {/* Body */}
@@ -273,7 +273,7 @@ export function CourseFormDrawer({
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" isLoading={isSubmitting}>
+            <Button type="submit" variant="primary" busy={isSubmitting}>
               {mode === 'edit' ? 'Save changes' : 'Add course'}
             </Button>
           </div>

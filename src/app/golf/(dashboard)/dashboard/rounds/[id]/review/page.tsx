@@ -45,6 +45,15 @@ import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToF
 import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
 import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
 import { Button } from '@/components/ui/button';
+import {
+  ViewHeader as FwViewHeader,
+  Button as FwButton,
+  StatusPill as FwStatusPill,
+  InlineNotice as FwInlineNotice,
+  EmptyState as FwEmptyState,
+  Skeleton as FwSkeleton,
+} from '@/components/fairway';
+import { Flag as LucideFlag } from 'lucide-react';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
@@ -173,6 +182,14 @@ export default function RoundReviewPage() {
   const params = useParams();
   const { addToast } = useToast();
   const roundId = params.id as string;
+
+  // P203/P205/P216: when the Fairway redesign is ON, the whole review surface
+  // (chrome, loading, error, the round-body wrapper + bottom bar) renders in the
+  // Fairway design system inside `.fairway-ds` on bg-canvas — exactly as the
+  // sibling Detail/Library/Recover pages do — so the Detail page's "Open full
+  // review" CTA lands on a Fairway surface, not a legacy one. Flag OFF (default)
+  // → every branch returns the legacy markup byte-for-byte unchanged.
+  const redesign = isRedesignEnabled();
 
   // Layout-resolved user context (cookie-aware active team + all staffed
   // teams) — used to authorize coach access across every team they staff.
@@ -505,6 +522,79 @@ export default function RoundReviewPage() {
   const isLoading = loadingRound || loadingStoredReview || generatingReview;
   const isGenerating = generatingReview || v1Generating;
 
+  // P216: one standardized analysis-in-progress message (no V1/V2 split copy)
+  // for the redesigned surface. Reads "Analyzing your round…" while a review is
+  // being generated, "Loading review…" otherwise.
+  const fairwayStatusCopy = isGenerating ? 'Analyzing your round…' : 'Loading review…';
+
+  // ── Fairway loading surface (P203/P216) ──────────────────────────────────
+  if (isLoading && redesign) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <div className="mx-auto w-full max-w-2xl px-5 py-8 md:px-8 md:py-10">
+          <FwViewHeader
+            eyebrow="Round Review"
+            title={round?.course_name ?? 'Round Review'}
+            description="Your CoachHelm analysis for this round."
+            primaryAction={
+              <FwButton
+                variant="secondary"
+                size="sm"
+                onClick={() => generateReview()}
+                disabled={isGenerating}
+              >
+                <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />
+                <span>Refresh</span>
+              </FwButton>
+            }
+          />
+
+          <div
+            role="status"
+            aria-busy="true"
+            aria-live="polite"
+            className="mt-8 flex flex-col gap-6"
+          >
+            <span className="sr-only">{fairwayStatusCopy}</span>
+            <div className="rounded-card border border-border-subtle bg-surface p-6">
+              <div className="flex flex-col items-center gap-3">
+                <FwSkeleton className="h-12 w-12 rounded-fw-md" />
+                <FwSkeleton className="h-5 w-32" />
+                <FwSkeleton className="h-9 w-20" />
+              </div>
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center gap-2 rounded-fw-md bg-surface-sunken p-3"
+                  >
+                    <FwSkeleton className="h-6 w-10" />
+                    <FwSkeleton className="h-3 w-12" />
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 flex flex-col gap-3">
+                <FwSkeleton className="h-4 w-24" />
+                <FwSkeleton className="h-16 w-full rounded-fw-md" />
+                <FwSkeleton className="h-16 w-full rounded-fw-md" />
+              </div>
+            </div>
+            <p className="flex items-center justify-center gap-2 text-center font-fw-sans text-body-sm text-text-tertiary">
+              {isGenerating ? (
+                <FwStatusPill tone="accent" dot={false} size="sm">
+                  <IconSparkles size={14} />
+                  {fairwayStatusCopy}
+                </FwStatusPill>
+              ) : (
+                fairwayStatusCopy
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <m.div
@@ -589,6 +679,31 @@ export default function RoundReviewPage() {
     );
   }
 
+  // ── Fairway error surface (P205) ─────────────────────────────────────────
+  // A designed Fairway error state: InlineNotice (danger tone, text-fw-danger
+  // via the tone bar) with a clear retry Button, inside the .fairway-ds scope.
+  // Raw `text-red-500` + `bg-primary-600` are gone.
+  if (error && redesign) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
+          <FwInlineNotice
+            tone="danger"
+            title="We couldn't load this review"
+            action={
+              <FwButton variant="secondary" size="sm" onClick={() => generateReview()}>
+                <IconRefresh size={16} />
+                <span>Try again</span>
+              </FwButton>
+            }
+          >
+            {error}
+          </FwInlineNotice>
+        </div>
+      </div>
+    );
+  }
+
   // Error state
   if (error) {
     return (
@@ -602,6 +717,27 @@ export default function RoundReviewPage() {
             <IconRefresh size={16} />
             Try Again
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Fairway no-data surface (P203) ───────────────────────────────────────
+  if (!round && redesign) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <div className="mx-auto w-full max-w-2xl px-5 py-12 md:px-8">
+          <FwEmptyState
+            variant="default"
+            icon={LucideFlag}
+            title="Round not found"
+            description="This round may have been deleted, or you may not have access to it. Head back to your rounds list to try another."
+            action={
+              <FwButton variant="secondary" size="sm" asChild>
+                <Link href="/golf/dashboard/rounds">Back to Rounds</Link>
+              </FwButton>
+            }
+          />
         </div>
       </div>
     );
@@ -657,50 +793,13 @@ export default function RoundReviewPage() {
     return round.total_score - parSum;
   })();
 
-  return (
-    <m.div
-      variants={containerVariants}
-      initial={prefersReducedMotion ? false : "hidden"}
-      animate="visible"
-      className="pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
-    >
-      {/* Header */}
-      <MobileNavHeader
-        title="Round Review"
-        subtitle={round.course_name ?? undefined}
-        backHref="/golf/dashboard/rounds"
-        backLabel="Rounds"
-        breadcrumb={
-          <Breadcrumb
-            items={[
-              { label: 'Dashboard', href: '/golf/dashboard' },
-              { label: 'Rounds', href: '/golf/dashboard/rounds' },
-              { label: round.course_name ?? 'Round', href: `/golf/dashboard/rounds/${roundId}` },
-              { label: 'Review' },
-            ]}
-          />
-        }
-      >
-        {isV2Enabled && v2Review && (
-          <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
-            <IconSparkles size={12} />
-            CoachHelm AI
-          </span>
-        )}
-        <Button variant="ghost"
-          onClick={() => generateReview()}
-          disabled={isGenerating}
-          className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
-        >
-          <IconRefresh size={14} className={isGenerating ? 'animate-spin' : ''} />
-          Refresh
-        </Button>
-      </MobileNavHeader>
-
-      <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Content — 24px rhythm (space-y-6) to match the rest of the product
-          surfaces (IA audit 2026-05-28 normalized this from space-y-4). */}
-      <m.div variants={itemVariants} className="space-y-6">
+  // Shared round-review BODY — identical content in both the legacy chrome and
+  // the Fairway chrome (P203). Only the wrapping header / bottom-bar / scope
+  // differ between forks; the content blocks (LLM card, RoundReviewDisplay,
+  // stats comparison, standing band, takeaway, shot paths, V2 summary, promote
+  // CTA) are reused verbatim so behavior and data flow are unchanged.
+  const reviewBody = (
+    <m.div variants={itemVariants} className="space-y-6">
         {/* W30 LLM round-review prose. Renders the deterministic
             fallback on mount and swaps in Haiku-composed prose once
             the server action resolves. Failure-silent — when the
@@ -780,8 +879,12 @@ export default function RoundReviewPage() {
             })
             .filter((b): b is ReactElement => b !== null);
           if (bars.length === 0) return null; // band hidden entirely when no rows
+          // P204: no lone `fairwayScope` island — under the redesign this whole
+          // page is already wrapped in `.fairway-ds` (see the content return),
+          // so a nested scope here is redundant. This band only renders when the
+          // redesign is on, so the outer page scope always supplies the tokens.
           return (
-            <section className={fairwayScope('space-y-3')}>
+            <section className="space-y-3">
               <div>
                 <h2 className="text-base font-medium text-warm-900 tracking-[-0.012em]">
                   Where this sits
@@ -863,7 +966,107 @@ export default function RoundReviewPage() {
             </div>
           );
         })()}
-      </m.div>
+    </m.div>
+  );
+
+  // ── Fairway content surface (P203/P204/P216) ─────────────────────────────
+  // The whole page renders in the Fairway design system inside `.fairway-ds` on
+  // bg-canvas: a single ViewHeader (with the CoachHelm StatusPill + Refresh in
+  // the action cluster — no purple-blue gradient pill), the shared body, and a
+  // calm Fairway bottom action row. The standing band's lone scoped island is
+  // gone (P204) — the outer scope supplies the tokens now.
+  if (redesign) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <m.div
+          variants={containerVariants}
+          initial={prefersReducedMotion ? false : 'hidden'}
+          animate="visible"
+          className="mx-auto w-full max-w-2xl px-5 py-8 pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] md:px-8 md:py-10 lg:pb-10"
+        >
+          <FwViewHeader
+            eyebrow="Round Review"
+            title={round.course_name ?? 'Round Review'}
+            description="Your CoachHelm analysis for this round."
+            meta={
+              isV2Enabled && v2Review ? (
+                <FwStatusPill tone="accent" dot={false} size="sm">
+                  <IconSparkles size={14} />
+                  CoachHelm AI
+                </FwStatusPill>
+              ) : undefined
+            }
+            primaryAction={
+              <FwButton
+                variant="secondary"
+                size="sm"
+                onClick={() => generateReview()}
+                disabled={isGenerating}
+              >
+                <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />
+                <span>Refresh</span>
+              </FwButton>
+            }
+          />
+
+          <div className="mt-8">{reviewBody}</div>
+
+          {/* Bottom actions — calm Fairway row (Detail / All Stats) */}
+          <m.div variants={itemVariants} className="mt-8 flex gap-3">
+            <FwButton variant="secondary" className="flex-1" asChild>
+              <Link href={`/golf/dashboard/rounds/${roundId}`}>Round Detail</Link>
+            </FwButton>
+            <FwButton variant="primary" className="flex-1" asChild>
+              <Link href="/golf/dashboard/stats">All Stats</Link>
+            </FwButton>
+          </m.div>
+        </m.div>
+      </div>
+    );
+  }
+
+  return (
+    <m.div
+      variants={containerVariants}
+      initial={prefersReducedMotion ? false : "hidden"}
+      animate="visible"
+      className="pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
+    >
+      {/* Header */}
+      <MobileNavHeader
+        title="Round Review"
+        subtitle={round.course_name ?? undefined}
+        backHref="/golf/dashboard/rounds"
+        backLabel="Rounds"
+        breadcrumb={
+          <Breadcrumb
+            items={[
+              { label: 'Dashboard', href: '/golf/dashboard' },
+              { label: 'Rounds', href: '/golf/dashboard/rounds' },
+              { label: round.course_name ?? 'Round', href: `/golf/dashboard/rounds/${roundId}` },
+              { label: 'Review' },
+            ]}
+          />
+        }
+      >
+        {isV2Enabled && v2Review && (
+          <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
+            <IconSparkles size={12} />
+            CoachHelm AI
+          </span>
+        )}
+        <Button variant="ghost"
+          onClick={() => generateReview()}
+          disabled={isGenerating}
+          className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
+        >
+          <IconRefresh size={14} className={isGenerating ? 'animate-spin' : ''} />
+          Refresh
+        </Button>
+      </MobileNavHeader>
+
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        {reviewBody}
       </div>
 
       {/* Bottom actions */}

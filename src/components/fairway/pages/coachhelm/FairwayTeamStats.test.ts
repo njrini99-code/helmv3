@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { teamAvg, teamMeanFor } from './FairwayTeamStats';
+import {
+  teamAvg,
+  teamMeanFor,
+  applyFormat,
+  formatCounts,
+  rankPlayers,
+  buildTeamStatsCsv,
+} from './FairwayTeamStats';
 import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -164,5 +171,221 @@ describe('teamMeanFor', () => {
       { playerId: 'ghost', metric: 'sg_ott', value: -9.0 },
     ]);
     expect(teamMeanFor('sg_ott', standings, new Map([['a', 12]]))).toBeCloseTo(1.0, 10);
+  });
+});
+
+// ── applyFormat (P131) ─────────────────────────────────────────────────────────
+
+describe('applyFormat', () => {
+  const base = makePlayer({
+    rounds_played: 10,
+    scoring_average: 75,
+    best_round: 70,
+    rounds_played_18: 6,
+    scoring_average_18: 74,
+    best_round_18: 68,
+    rounds_played_9: 4,
+    scoring_average_9: 38,
+    best_round_9: 35,
+    // metrics WITHOUT a per-format split must survive untouched.
+    fairway_pct: 55,
+    gir_pct: 60,
+    putts_per_round: 31,
+    handicap: 2,
+  });
+
+  it("'all' returns the player untouched", () => {
+    expect(applyFormat(base, 'all')).toEqual(base);
+  });
+
+  it("'18' swaps rounds / scoring avg / best to the 18-hole columns", () => {
+    const out = applyFormat(base, '18');
+    expect(out.rounds_played).toBe(6);
+    expect(out.scoring_average).toBe(74);
+    expect(out.best_round).toBe(68);
+  });
+
+  it("'9' swaps rounds / scoring avg / best to the 9-hole columns", () => {
+    const out = applyFormat(base, '9');
+    expect(out.rounds_played).toBe(4);
+    expect(out.scoring_average).toBe(38);
+    expect(out.best_round).toBe(35);
+  });
+
+  it('never fabricates non-format-split metrics for a format', () => {
+    const out = applyFormat(base, '18');
+    expect(out.fairway_pct).toBe(55);
+    expect(out.gir_pct).toBe(60);
+    expect(out.putts_per_round).toBe(31);
+    expect(out.handicap).toBe(2);
+  });
+
+  it('carries null format columns through honestly (no fake 0)', () => {
+    const noNine = makePlayer({ rounds_played_9: 0, scoring_average_9: null, best_round_9: null });
+    const out = applyFormat(noNine, '9');
+    expect(out.rounds_played).toBe(0);
+    expect(out.scoring_average).toBeNull();
+    expect(out.best_round).toBeNull();
+  });
+});
+
+// ── formatCounts (P131) ─────────────────────────────────────────────────────────
+
+describe('formatCounts', () => {
+  it('sums each format across the roster', () => {
+    const players = [
+      makePlayer({ rounds_played: 10, rounds_played_18: 6, rounds_played_9: 4 }),
+      makePlayer({ rounds_played: 5, rounds_played_18: 2, rounds_played_9: 3 }),
+    ];
+    expect(formatCounts(players)).toEqual({ all: 15, h18: 8, h9: 7 });
+  });
+
+  it('is all-zero for an empty roster', () => {
+    expect(formatCounts([])).toEqual({ all: 0, h18: 0, h9: 0 });
+  });
+});
+
+// ── rankPlayers (P132) ──────────────────────────────────────────────────────────
+
+describe('rankPlayers', () => {
+  const noComposite = () => null;
+
+  it('ranks scoring average ascending (best/lowest first)', () => {
+    const players = [
+      makePlayer({ id: 'hi', scoring_average: 78 }),
+      makePlayer({ id: 'lo', scoring_average: 71 }),
+      makePlayer({ id: 'mid', scoring_average: 74 }),
+    ];
+    expect(rankPlayers(players, 'scoring_average', noComposite).map((p) => p.id)).toEqual([
+      'lo',
+      'mid',
+      'hi',
+    ]);
+  });
+
+  it('ranks fairway% descending (best/highest first)', () => {
+    const players = [
+      makePlayer({ id: 'a', fairway_pct: 40 }),
+      makePlayer({ id: 'b', fairway_pct: 70 }),
+    ];
+    expect(rankPlayers(players, 'fairway_pct', noComposite).map((p) => p.id)).toEqual(['b', 'a']);
+  });
+
+  it('ranks scoring_trend ascending (most negative = improving = first)', () => {
+    const players = [
+      makePlayer({ id: 'declining', scoring_trend: 1.2 }),
+      makePlayer({ id: 'improving', scoring_trend: -1.5 }),
+      makePlayer({ id: 'steady', scoring_trend: 0.1 }),
+    ];
+    expect(rankPlayers(players, 'scoring_trend', noComposite).map((p) => p.id)).toEqual([
+      'improving',
+      'steady',
+      'declining',
+    ]);
+  });
+
+  it('ranks composite descending via the lookup', () => {
+    const players = [makePlayer({ id: 'a' }), makePlayer({ id: 'b' }), makePlayer({ id: 'c' })];
+    const composite = (id: string) => ({ a: 50, b: 90, c: 70 })[id] ?? null;
+    expect(rankPlayers(players, 'composite', composite).map((p) => p.id)).toEqual(['b', 'c', 'a']);
+  });
+
+  it('sinks nulls to the bottom regardless of direction', () => {
+    const players = [
+      makePlayer({ id: 'has', scoring_average: 75 }),
+      makePlayer({ id: 'none', scoring_average: null }),
+      makePlayer({ id: 'better', scoring_average: 70 }),
+    ];
+    const ranked = rankPlayers(players, 'scoring_average', noComposite).map((p) => p.id);
+    expect(ranked).toEqual(['better', 'has', 'none']);
+  });
+
+  it('ranks by name (last, first) alphabetically', () => {
+    const players = [
+      makePlayer({ id: 'z', first_name: 'Aaron', last_name: 'Zimmer' }),
+      makePlayer({ id: 'a', first_name: 'Zoe', last_name: 'Adams' }),
+    ];
+    expect(rankPlayers(players, 'name', noComposite).map((p) => p.id)).toEqual(['a', 'z']);
+  });
+
+  it('does not mutate the input array', () => {
+    const players = [
+      makePlayer({ id: 'hi', scoring_average: 78 }),
+      makePlayer({ id: 'lo', scoring_average: 71 }),
+    ];
+    const before = players.map((p) => p.id);
+    rankPlayers(players, 'scoring_average', noComposite);
+    expect(players.map((p) => p.id)).toEqual(before);
+  });
+});
+
+// ── buildTeamStatsCsv (P141) ────────────────────────────────────────────────────
+
+describe('buildTeamStatsCsv', () => {
+  const composite = (id: string) => ({ p1: 64 })[id] ?? null;
+
+  it('emits a header, one row per player, and a team-average row', () => {
+    const players = [
+      makePlayer({
+        id: 'p1',
+        first_name: 'Jordan',
+        last_name: 'Lee',
+        graduation_year: 2027,
+        rounds_played: 10,
+        scoring_average: 74.4,
+        best_round: 69,
+        handicap: -1.2,
+        fairway_pct: 55.5,
+        gir_pct: 61.1,
+        putts_per_round: 30.2,
+        scoring_trend: -0.8,
+      }),
+    ];
+    const csv = buildTeamStatsCsv(players, 'all', composite);
+    const lines = csv.split('\r\n');
+    expect(lines).toHaveLength(3); // header + 1 player + team average
+    expect(lines[0]).toBe(
+      'Player,Class,Rounds,Scoring Avg,Best,Handicap,FW%,GIR%,Putts,Composite,Trend',
+    );
+    expect(lines[1]).toContain('Jordan Lee');
+    expect(lines[1]).toContain('Class of 2027');
+    expect(lines[1]).toContain('74.4');
+    expect(lines[1]).toContain('64'); // composite
+    expect(lines[1]).toContain('+1.2'); // plus-handicap sign convention
+    expect(lines[2]!.startsWith('Team average,')).toBe(true);
+  });
+
+  it('uses the selected format for the player rows', () => {
+    const players = [
+      makePlayer({
+        id: 'p1',
+        rounds_played: 10,
+        rounds_played_18: 6,
+        scoring_average_18: 73.0,
+        best_round_18: 68,
+      }),
+    ];
+    const csv18 = buildTeamStatsCsv(players, '18', () => null);
+    const row18 = csv18.split('\r\n')[1]!.split(',');
+    // Rounds (index 2) reflects the 18-hole count, scoring avg (3) the 18 figure.
+    expect(row18[2]).toBe('6');
+    expect(row18[3]).toBe('73.0');
+  });
+
+  it('writes empty cells (never a fake 0) for missing readings', () => {
+    const players = [
+      makePlayer({ id: 'p1', scoring_average: null, fairway_pct: null, putts_per_round: null }),
+    ];
+    const cells = buildTeamStatsCsv(players, 'all', () => null).split('\r\n')[1]!.split(',');
+    expect(cells[3]).toBe(''); // scoring avg
+    expect(cells[6]).toBe(''); // FW%
+    expect(cells[8]).toBe(''); // putts
+    expect(cells[9]).toBe(''); // composite (none)
+  });
+
+  it('quotes/escapes cells that contain commas or quotes', () => {
+    const players = [makePlayer({ id: 'p1', first_name: 'Bob', last_name: 'Smith, Jr.' })];
+    const csv = buildTeamStatsCsv(players, 'all', () => null);
+    expect(csv.split('\r\n')[1]).toContain('"Bob Smith, Jr."');
   });
 });

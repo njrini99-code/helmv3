@@ -43,9 +43,42 @@ export interface FairwayCreateTaskModalProps {
   onTaskCreated: () => void | Promise<void>;
   teamId: string;
   players: FairwayTaskPlayer[];
+  /**
+   * P292 — true when the roster fetch FAILED (vs a genuinely empty roster). Lets
+   * the modal show an honest "couldn't load the roster" notice instead of the
+   * misleading "No players on the roster yet", and avoids a silent 0-player create.
+   */
+  playersError?: boolean;
 }
 
 type AssignMode = 'all' | 'specific';
+
+/**
+ * P292 — pure error-prevention guard for the assignee selection. Returns an
+ * honest blocking message when the create would assign the task to nobody, and
+ * distinguishes a FAILED roster fetch from a genuinely empty roster. Returns
+ * null when the selection is valid. Exported for deterministic unit tests.
+ */
+export function assignGuardMessage(args: {
+  assignMode: AssignMode;
+  playerCount: number;
+  selectedCount: number;
+  playersError: boolean;
+}): string | null {
+  const { assignMode, playerCount, selectedCount, playersError } = args;
+  if (assignMode === 'specific') {
+    return selectedCount === 0
+      ? 'Select at least one player, or assign to everyone.'
+      : null;
+  }
+  // assignMode === 'all'
+  if (playerCount === 0) {
+    return playersError
+      ? "We couldn't load your roster, so this task can't be assigned yet. Try again in a moment."
+      : 'There are no players on the roster yet, so there is no one to assign this task to. Add players first.';
+  }
+  return null;
+}
 
 export function FairwayCreateTaskModal({
   open,
@@ -53,6 +86,7 @@ export function FairwayCreateTaskModal({
   onTaskCreated,
   teamId,
   players,
+  playersError = false,
 }: FairwayCreateTaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -93,8 +127,18 @@ export function FairwayCreateTaskModal({
       setError('Give the task a title.');
       return;
     }
-    if (assignMode === 'specific' && selectedPlayers.length === 0) {
-      setError('Select at least one player, or assign to everyone.');
+    // P292 — single honest assignee guard: blocks an empty "specific" selection
+    // AND an "all team members" create when the roster is empty (which would
+    // assign the task to nobody), distinguishing a failed roster fetch from a
+    // genuinely empty roster.
+    const guard = assignGuardMessage({
+      assignMode,
+      playerCount: players.length,
+      selectedCount: selectedPlayers.length,
+      playersError,
+    });
+    if (guard) {
+      setError(guard);
       return;
     }
 
@@ -212,7 +256,9 @@ export function FairwayCreateTaskModal({
               {
                 value: 'all',
                 label: 'All team members',
-                description: `${players.length} ${players.length === 1 ? 'player' : 'players'}`,
+                description: playersError
+                  ? "Couldn't load the roster"
+                  : `${players.length} ${players.length === 1 ? 'player' : 'players'}`,
               },
               {
                 value: 'specific',
@@ -228,9 +274,16 @@ export function FairwayCreateTaskModal({
 
         {assignMode === 'specific' &&
           (players.length === 0 ? (
-            <InlineNotice tone="info" title="No players on the roster yet">
-              Add players to your team first, then you can assign tasks to them.
-            </InlineNotice>
+            playersError ? (
+              // P292 — the roster fetch failed; do not pretend the team is empty.
+              <InlineNotice tone="danger" title="Couldn't load the roster">
+                We couldn't load your players right now. Close this and try again in a moment.
+              </InlineNotice>
+            ) : (
+              <InlineNotice tone="info" title="No players on the roster yet">
+                Add players to your team first, then you can assign tasks to them.
+              </InlineNotice>
+            )
           ) : (
             <div className="grid max-h-56 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
               {players.map((p) => {

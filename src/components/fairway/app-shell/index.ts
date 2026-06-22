@@ -9,6 +9,7 @@
 export { AppShell, type AppShellProps } from './AppShell';
 export { FairwaySidebar, type FairwaySidebarProps, SidebarCollapseContext, useSidebarCollapsed } from './FairwaySidebar';
 export { FairwayTopBar, type FairwayTopBarProps } from './FairwayTopBar';
+export { FairwayBottomNav, type FairwayBottomNavProps } from './FairwayBottomNav';
 export { RouteTransition, type RouteTransitionProps } from './RouteTransition';
 export type {
   NavItem,

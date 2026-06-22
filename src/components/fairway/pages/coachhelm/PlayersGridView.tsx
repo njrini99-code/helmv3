@@ -61,7 +61,7 @@ import {
   getAreaAutoFill,
   type AreaAutoFillStats,
 } from './areaTypes';
-import { Surface, Inset } from '@/components/fairway/surfaces';
+import { Inset } from '@/components/fairway/surfaces';
 import {
   // The instrument cockpit kit — the warm-glass hero header (matches
   // FairwayEffectiveness): ranked cluster, frosted bezels, honest big readouts.
@@ -98,6 +98,7 @@ import {
   createFocusArea,
   updateFocusArea,
   completeFocusArea,
+  deleteFocusArea,
   updateFocusAreaProgress,
   recordFocusAreaOutcome,
   type FocusAreaOutcome,
@@ -253,12 +254,17 @@ export function PlayersGridView({
 }: PlayersGridViewProps) {
   const router = useRouter();
 
-  // "grid" = roster table; "areas" = the flat focus-area board. Local view-state
-  // only (no data wiring change). Default "grid".
-  const [view, setView] = React.useState<'grid' | 'areas'>('grid');
   // F133: seed from the ?player= deep-link (route-validated) so a coach arriving
   // from a player's insight/genome card lands scoped to that player.
   const [selectedPlayerId, setSelectedPlayerId] = React.useState<string | null>(initialSelectedPlayerId);
+  // "grid" = roster table; "areas" = the flat focus-area board. Local view-state
+  // only (no data wiring change). Default "grid" — but when we arrive on a
+  // ?player= deep-link, open straight on the SCOPED "areas" view so the surface
+  // actually matches the "Showing <name>" chip (F133 contract); landing on the
+  // full roster while claiming a single player is a data lie.
+  const [view, setView] = React.useState<'grid' | 'areas'>(
+    initialSelectedPlayerId ? 'areas' : 'grid',
+  );
 
   // Modal + form state — same lifecycle as the legacy client, re-skinned chrome.
   const [createOpen, setCreateOpen] = React.useState(false);
@@ -272,7 +278,15 @@ export function PlayersGridView({
   // is unchanged; only the value-capture UI is re-skinned.
   const [logTarget, setLogTarget] = React.useState<FocusAreaCardData | null>(null);
   const [logValue, setLogValue] = React.useState<number | null>(null);
+  // Optional coach note on the bump — required for the progress_notes append that
+  // feeds the per-area Sparkline (updateFocusAreaProgress only appends with a note).
+  const [logNote, setLogNote] = React.useState('');
   const [logSaving, setLogSaving] = React.useState(false);
+
+  // Delete-focus-area dialog — a forced-choice destructive confirm (the action
+  // layer + legacy UI both have delete; the redesign restores the affordance).
+  const [deleteTarget, setDeleteTarget] = React.useState<FocusAreaCardData | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   /* ---- derived ---- */
 
@@ -419,6 +433,24 @@ export function PlayersGridView({
     }));
   }
 
+  // Player change → re-run the SAME auto-fill for the currently-selected area
+  // against the NEW player's stats. Without this, picking Area first then
+  // changing Player leaves current_value / target_metric stale for the prior
+  // player (the snapshot strip would also disagree with the numeric fields).
+  // Editing locks the player Select, so this only runs in the create flow.
+  function onPlayerChange(playerId: string) {
+    const stats = playerStats[playerId] as AreaAutoFillStats | undefined;
+    setForm((prev) => {
+      const { suggestedMetric, autoCurrentValue } = getAreaAutoFill(prev.area_type, stats);
+      return {
+        ...prev,
+        player_id: playerId,
+        target_metric: suggestedMetric,
+        current_value: autoCurrentValue,
+      };
+    });
+  }
+
   async function handleSave() {
     if (!form.player_id || !form.title.trim()) return;
     setSaving(true);
@@ -479,10 +511,14 @@ export function PlayersGridView({
   function handleLogProgress(fa: FocusAreaCardData) {
     setLogTarget(fa);
     setLogValue(fa.current_value ?? null);
+    setLogNote('');
   }
 
   // PRESERVED: identical updateFocusAreaProgress(id, value) call the native
-  // prompt fired — only the value now comes from the dialog's NumberField.
+  // prompt fired — now with the value from the dialog's NumberField PLUS an
+  // optional note. A note is what makes updateFocusAreaProgress append a
+  // progress_notes entry, which is the source the per-area Sparkline reads — so
+  // passing it here lets coach-logged progress actually populate the trend chart.
   async function submitLogProgress() {
     if (!logTarget || logSaving) return;
     if (logValue == null || !Number.isFinite(logValue)) {
@@ -491,10 +527,16 @@ export function PlayersGridView({
     }
     setLogSaving(true);
     try {
-      const res = await updateFocusAreaProgress(logTarget.id, logValue);
+      const trimmedNote = logNote.trim();
+      const res = await updateFocusAreaProgress(
+        logTarget.id,
+        logValue,
+        trimmedNote ? { note: trimmedNote } : undefined,
+      );
       if (res.success) {
         fairwayToast.success('Progress logged');
         setLogTarget(null);
+        setLogNote('');
         router.refresh();
       } else {
         fairwayToast.error(res.error ?? 'Could not log progress');
@@ -503,6 +545,31 @@ export function PlayersGridView({
       fairwayToast.error('Could not log progress');
     } finally {
       setLogSaving(false);
+    }
+  }
+
+  // Delete a focus area — arms the forced-choice confirm; the write runs in
+  // confirmDelete (mirrors the legacy ConfirmDialog + deleteFocusArea wiring).
+  function handleDelete(fa: FocusAreaCardData) {
+    setDeleteTarget(fa);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    try {
+      const res = await deleteFocusArea(deleteTarget.id);
+      if (res.success) {
+        fairwayToast.success('Focus area deleted');
+        setDeleteTarget(null);
+        router.refresh();
+      } else {
+        fairwayToast.error(res.error ?? 'Could not delete focus area');
+      }
+    } catch {
+      fairwayToast.error('Could not delete focus area');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -552,7 +619,14 @@ export function PlayersGridView({
             {row.original.stats?.rounds_played ?? 0}
           </span>
         ),
-        meta: { align: 'right', numeric: true },
+        // Lower-priority on phones — hidden < sm so the 6-col roster doesn't force
+        // a horizontal scroll on a 360px viewport (the high-signal columns stay).
+        meta: {
+          align: 'right',
+          numeric: true,
+          headerClassName: 'hidden sm:table-cell',
+          cellClassName: 'hidden sm:table-cell',
+        },
       },
       {
         id: 'avg_score',
@@ -634,7 +708,31 @@ export function PlayersGridView({
             </div>
           );
         },
-        meta: { align: 'right' },
+        // Lower-priority on phones — hidden < sm (see Rounds). Player / Avg score /
+        // Trend / Focus areas remain the phone-first roster snapshot.
+        meta: {
+          align: 'right',
+          headerClassName: 'hidden sm:table-cell',
+          cellClassName: 'hidden sm:table-cell',
+        },
+      },
+      {
+        // Per-row NAVIGATE affordance — a trailing chevron that signals the row
+        // itself opens the player's scoped focus-area view (recognition over
+        // recall, Nielsen #6). The whole row is the click target (DataTable
+        // onRowClick); this is the visible "what does clicking do" cue so the
+        // affordance isn't buried in the table caption. Not a separate button
+        // (the row owns the click) — aria-hidden, so screen readers get the
+        // row's role="button" + name, not a duplicate control.
+        id: 'view',
+        header: () => <span className="sr-only">Open scoped focus areas</span>,
+        enableSorting: false,
+        cell: () => (
+          <span className="flex items-center justify-end text-text-tertiary">
+            <IconChevronRight size={16} aria-hidden />
+          </span>
+        ),
+        meta: { align: 'right', cellClassName: 'w-8' },
       },
     ],
     [goalsByPlayer],
@@ -714,7 +812,10 @@ export function PlayersGridView({
                 Tap a player to scope their focus areas
               </p>
             </div>
-            <Surface padding="none" elevation="border" className="overflow-hidden">
+            {/* The DataTable owns its OWN bordered matte surface (rounded-card +
+                border-border-subtle + bg-surface). No outer Surface wrapper —
+                wrapping it would nest two bordered/rounded panels (a faint double
+                hairline). */}
             <DataTable<RosterRow>
               data={rosterRows}
               columns={columns}
@@ -740,14 +841,25 @@ export function PlayersGridView({
                 },
               ]}
               emptyState={
-                <EmptyState
-                  icon={LucideTarget}
-                  title="No players on the active roster"
-                  description="Add players to your team to assign development focus areas."
-                />
+                loadError ? (
+                  /* P099 — when the load failed, an empty roster is a SYMPTOM of
+                     the failure, not a real "no players" state. Show an honest
+                     error empty (the top-of-page InlineNotice carries the detail)
+                     instead of the cheerful add-players prompt that would mask it. */
+                  <EmptyState
+                    icon={LucideTarget}
+                    title="Couldn't load the roster"
+                    description="We hit an error loading your players. Try refreshing the page."
+                  />
+                ) : (
+                  <EmptyState
+                    icon={LucideTarget}
+                    title="No players on the active roster"
+                    description="Add players to your team to assign development focus areas."
+                  />
+                )
               }
             />
-            </Surface>
           </section>
         ) : (
           <div className="flex flex-col gap-6">
@@ -786,6 +898,7 @@ export function PlayersGridView({
               onEdit={openEdit}
               onComplete={handleComplete}
               onLogProgress={handleLogProgress}
+              onDelete={handleDelete}
               onRecordOutcome={handleRecordOutcome}
               onCreate={() => openCreate()}
               showPlayerName={!selectedPlayerId}
@@ -810,6 +923,7 @@ export function PlayersGridView({
         players={players}
         playerStats={playerStats}
         onAreaTypeChange={onAreaTypeChange}
+        onPlayerChange={onPlayerChange}
         onSave={handleSave}
         saving={saving}
       />
@@ -818,38 +932,65 @@ export function PlayersGridView({
       <ModalShell
         open={logTarget != null}
         onOpenChange={(o) => {
-          if (!o && !logSaving) setLogTarget(null);
+          if (!o && !logSaving) {
+            setLogTarget(null);
+            setLogNote('');
+          }
         }}
         size="sm"
         title="Log progress"
         description={logTarget?.title || 'Focus area'}
       >
         <ModalShell.Body>
-          <FormField
-            label={logTarget?.target_metric ? `New value (${logTarget.target_metric})` : 'New value'}
-            required
-          >
-            <NumberField value={logValue} onValueChange={(v) => setLogValue(v)} />
-          </FormField>
-          {logTarget?.current_value != null ? (
-            <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
-              Current{' '}
-              <span className="font-fw-mono tabular-nums text-text-secondary">
-                {logTarget.current_value}
-              </span>
-              {logTarget.target_value != null ? (
-                <>
-                  {' · target '}
-                  <span className="font-fw-mono tabular-nums text-text-secondary">
-                    {logTarget.target_value}
-                  </span>
-                </>
-              ) : null}
-            </p>
-          ) : null}
+          <div className="space-y-4">
+            <FormField
+              label={logTarget?.target_metric ? `New value (${logTarget.target_metric})` : 'New value'}
+              required
+            >
+              <NumberField value={logValue} onValueChange={(v) => setLogValue(v)} />
+            </FormField>
+            {logTarget?.current_value != null ? (
+              <p className="font-fw-sans text-caption text-text-tertiary">
+                Current{' '}
+                <span className="font-fw-mono tabular-nums text-text-secondary">
+                  {logTarget.current_value}
+                </span>
+                {logTarget.target_value != null ? (
+                  <>
+                    {' · target '}
+                    <span className="font-fw-mono tabular-nums text-text-secondary">
+                      {logTarget.target_value}
+                    </span>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+            {/* Optional note — a note is what makes the write append a
+                progress_notes entry, which is the per-area Sparkline's source.
+                The helper text makes that cause-and-effect honest. */}
+            <FormField
+              label="Note"
+              showOptional
+              help="Add a note to record this point on the progress trend."
+            >
+              <TextArea
+                value={logNote}
+                onChange={(e) => setLogNote(e.target.value)}
+                placeholder="e.g. Drilled dispersion on the range — tighter today."
+                rows={2}
+              />
+            </FormField>
+          </div>
         </ModalShell.Body>
         <ModalShell.Footer>
-          <Button variant="ghost" onClick={() => setLogTarget(null)} disabled={logSaving}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setLogTarget(null);
+              setLogNote('');
+            }}
+            disabled={logSaving}
+          >
             Cancel
           </Button>
           <Button
@@ -859,6 +1000,32 @@ export function PlayersGridView({
             onClick={submitLogProgress}
           >
             Save progress
+          </Button>
+        </ModalShell.Footer>
+      </ModalShell>
+
+      {/* ---- DELETE-FOCUS-AREA CONFIRM (forced-choice destructive) ---- */}
+      <ModalShell
+        open={deleteTarget != null}
+        onOpenChange={(o) => {
+          if (!o && !deleting) setDeleteTarget(null);
+        }}
+        size="sm"
+        title="Delete focus area?"
+        description={deleteTarget?.title || 'Focus area'}
+      >
+        <ModalShell.Body>
+          <InlineNotice tone="danger" title="This can’t be undone">
+            Deleting removes this focus area and its progress history for the
+            player. To keep the record, mark it complete instead.
+          </InlineNotice>
+        </ModalShell.Body>
+        <ModalShell.Footer>
+          <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+            Keep focus area
+          </Button>
+          <Button variant="danger" busy={deleting} onClick={confirmDelete}>
+            Delete focus area
           </Button>
         </ModalShell.Footer>
       </ModalShell>
@@ -877,6 +1044,7 @@ function FocusAreaBoard({
   onEdit,
   onComplete,
   onLogProgress,
+  onDelete,
   onRecordOutcome,
   onCreate,
   showPlayerName,
@@ -887,6 +1055,7 @@ function FocusAreaBoard({
   onEdit: (fa: FocusAreaCardData) => void;
   onComplete: (fa: FocusAreaCardData) => void;
   onLogProgress: (fa: FocusAreaCardData) => void;
+  onDelete: (fa: FocusAreaCardData) => void;
   onRecordOutcome: (
     fa: FocusAreaCardData,
     outcome: FocusAreaOutcome,
@@ -914,7 +1083,9 @@ function FocusAreaBoard({
           title="No focus areas yet"
           description="Assign a focus area to a player to start tracking measurable progress."
           action={
-            <Button variant="primary" size="sm" leftIcon={<IconPlus size={15} />} onClick={onCreate}>
+            // Secondary, not primary — the header already owns the single
+            // dominant "New focus area" primary (one obvious CTA per screen).
+            <Button variant="secondary" size="sm" leftIcon={<IconPlus size={15} />} onClick={onCreate}>
               New focus area
             </Button>
           }
@@ -955,6 +1126,7 @@ function FocusAreaBoard({
               onEdit={onEdit}
               onComplete={onComplete}
               onLogProgress={onLogProgress}
+              onDelete={onDelete}
               onRecordOutcome={onRecordOutcome}
               completing={completingId === fa.id}
             />
@@ -1039,7 +1211,7 @@ function RosterHealthHeader({
       {needs.length > 0 ? (
         <>
           <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-            <span className="font-fw-mono text-[56px] font-semibold leading-none tabular-nums text-text-primary">
+            <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
               {needs.length}
             </span>
             <span className="mb-2 font-fw-sans text-body-sm text-text-secondary">
@@ -1074,7 +1246,7 @@ function RosterHealthHeader({
         </>
       ) : (
         <div className="flex flex-col gap-2">
-          <span className="font-fw-mono text-[56px] font-semibold leading-none tabular-nums text-text-primary">
+          <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
             {totalPlayers > 0 ? '0' : '—'}
           </span>
           <span className="font-fw-sans text-body-sm text-text-secondary">
@@ -1193,6 +1365,7 @@ function FocusAreaModal({
   players,
   playerStats,
   onAreaTypeChange,
+  onPlayerChange,
   onSave,
   saving,
 }: {
@@ -1204,6 +1377,8 @@ function FocusAreaModal({
   players: PlayersGridPlayer[];
   playerStats: Record<string, PlayersGridStats>;
   onAreaTypeChange: (areaType: string) => void;
+  /** Player change → re-run auto-fill for the current area vs the new player. */
+  onPlayerChange: (playerId: string) => void;
   onSave: () => void;
   saving: boolean;
 }) {
@@ -1215,6 +1390,51 @@ function FocusAreaModal({
   const stats = form.player_id ? playerStats[form.player_id] : undefined;
   const area = getAreaType(form.area_type);
   const canSave = Boolean(form.player_id && form.title.trim());
+
+  /* ---- unsaved-changes guard (Nielsen #5 error prevention / #3 user control)
+     Snapshot the form when the modal opens; a close attempt (Cancel, Esc, scrim,
+     or the top-right close affordance — all route through onOpenChange/Cancel)
+     while the form differs from that baseline shows an in-modal "Discard
+     changes?" confirm instead of silently dropping the coach's input. ---- */
+  const baselineRef = React.useRef<FocusAreaForm>(form);
+  const [confirmingDiscard, setConfirmingDiscard] = React.useState(false);
+  const wasOpen = React.useRef(open);
+  React.useEffect(() => {
+    // On the closed→open transition, re-baseline to the form we opened with and
+    // clear any stale confirm. (Open→closed is owned by the parent's reset.)
+    if (open && !wasOpen.current) {
+      baselineRef.current = form;
+      setConfirmingDiscard(false);
+    }
+    wasOpen.current = open;
+  }, [open, form]);
+
+  const isDirty = React.useMemo(() => {
+    const b = baselineRef.current;
+    return (
+      form.player_id !== b.player_id ||
+      form.area_type !== b.area_type ||
+      form.title !== b.title ||
+      form.description !== b.description ||
+      form.target_metric !== b.target_metric ||
+      form.current_value !== b.current_value ||
+      form.target_value !== b.target_value
+    );
+  }, [form]);
+
+  // Single close gate: dirty → arm the discard confirm; clean → close for real.
+  const requestClose = React.useCallback(() => {
+    if (isDirty) {
+      setConfirmingDiscard(true);
+    } else {
+      onOpenChange(false);
+    }
+  }, [isDirty, onOpenChange]);
+
+  const discardAndClose = React.useCallback(() => {
+    setConfirmingDiscard(false);
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   // Honest preview of progress for the chosen target (no fabricated meter).
   const previewPct =
@@ -1229,7 +1449,12 @@ function FocusAreaModal({
   return (
     <ModalShell
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(o) => {
+        // Esc / scrim / close-button close requests pass through the guard.
+        // Re-opens (o === true) pass straight through to the parent.
+        if (o) onOpenChange(true);
+        else requestClose();
+      }}
       size="lg"
       title={editing ? 'Edit focus area' : 'New focus area'}
       description={
@@ -1247,7 +1472,7 @@ function FocusAreaModal({
                 placeholder="Select a player…"
                 options={playerOptions}
                 value={form.player_id || undefined}
-                onValueChange={(v) => setForm((prev) => ({ ...prev, player_id: v ?? '' }))}
+                onValueChange={(v) => onPlayerChange(v ?? '')}
                 disabled={editing}
               />
             </FormField>
@@ -1372,14 +1597,39 @@ function FocusAreaModal({
         </div>
       </ModalShell.Body>
 
-      <ModalShell.Footer>
-        <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
-          Cancel
-        </Button>
-        <Button variant="primary" busy={saving} disabled={!canSave} onClick={onSave}>
-          {editing ? 'Save changes' : 'Create focus area'}
-        </Button>
-      </ModalShell.Footer>
+      {confirmingDiscard ? (
+        <ModalShell.Footer>
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p
+              role="alert"
+              className="font-fw-sans text-body-sm font-medium text-text-primary"
+            >
+              Discard your unsaved changes?
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setConfirmingDiscard(false)}
+                disabled={saving}
+              >
+                Keep editing
+              </Button>
+              <Button variant="danger" onClick={discardAndClose} disabled={saving}>
+                Discard changes
+              </Button>
+            </div>
+          </div>
+        </ModalShell.Footer>
+      ) : (
+        <ModalShell.Footer>
+          <Button variant="ghost" onClick={requestClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="primary" busy={saving} disabled={!canSave} onClick={onSave}>
+            {editing ? 'Save changes' : 'Create focus area'}
+          </Button>
+        </ModalShell.Footer>
+      )}
     </ModalShell>
   );
 }

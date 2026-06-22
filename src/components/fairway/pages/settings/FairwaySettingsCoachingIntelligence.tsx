@@ -26,6 +26,7 @@
  * ========================================================================== */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 
 import { createClient } from '@/lib/supabase/client';
 import { useCoachPhilosophy } from '@/hooks/coachhelm/useCoachPhilosophy';
@@ -33,7 +34,6 @@ import {
   PriorityRanker,
   SensitivitySlider,
   ThresholdSlider,
-  WeightDistributor,
   AlertTypeToggles,
   SgBaselineSelector,
 } from '@/components/golf/coachhelm/settings';
@@ -41,13 +41,14 @@ import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import {
   getOrCreateTeamCoachHelmSettings,
+  getTeamCoachHelmAccess,
   updateTeamCoachHelmSettings,
   type TeamCoachHelmSettings,
 } from '@/app/golf/actions/insights';
 import { useGolfUser } from '@/contexts/golf-user-context';
 
-import { ViewHeader, Surface, Switch, InlineNotice } from '@/components/fairway';
-import { IconCheck } from '@/components/icons';
+import { ViewHeader, Surface, Switch, InlineNotice, EmptyState, Button } from '@/components/fairway';
+import { IconArrowLeft, IconCheck, IconRefresh, IconWarning } from '@/components/icons';
 
 type PriorityValues = Pick<
   CoachPhilosophy,
@@ -57,17 +58,47 @@ type PriorityValues = Pick<
   | 'priorityCourseManagement'
   | 'priorityMentalGame'
 >;
-type WeightValues = Pick<
-  CoachPhilosophy,
-  | 'weightHistorical'
-  | 'weightRecentForm'
-  | 'weightTournament'
-  | 'weightQualifying'
-  | 'weightSubjective'
->;
-type ThresholdKey = 'declineThreshold' | 'pressureGapThreshold' | 'bubbleZoneRange';
+// P078/P079 — bubbleZoneRange + the comparison weights are persisted by the CRUD
+// allowlist but their UI controls are HIDDEN until the engine consumes them, so
+// neither WeightValues nor a bubbleZoneRange threshold key is wired here.
+type ThresholdKey = 'declineThreshold' | 'pressureGapThreshold';
 type DisplayToggleKey = 'showStrokesGained' | 'showAdvancedStats';
 type DisplayKey = DisplayToggleKey | 'insightVerbosity';
+
+/** Shared page chrome wrapper so every state (loading / error / loaded) renders
+ *  inside the same centered column with the same ViewHeader. */
+function CoachingIntelligenceFrame({
+  meta,
+  children,
+}: {
+  meta?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
+      {/* P083 — explicit back affordance to the settings index (Nielsen #3
+          user-control/freedom + #4 consistency). The eyebrow "Settings" below is
+          decorative; this is the real escape on a deep sub-page. Present on every
+          state (loading / error / loaded) since it lives in the shared frame. */}
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        leftIcon={<IconArrowLeft size={16} aria-hidden />}
+        className="mb-4 -ml-2 text-text-tertiary"
+      >
+        <Link href="/golf/dashboard/settings">Settings</Link>
+      </Button>
+      <ViewHeader
+        eyebrow="Settings"
+        title="Coaching Intelligence"
+        description="Configure how CoachHelm analyzes your team. These settings control insight generation, alert sensitivity, and how players are ranked against your coaching priorities."
+        meta={meta}
+      />
+      {children}
+    </div>
+  );
+}
 
 export function FairwaySettingsCoachingIntelligence() {
   // ACTIVE team from the layout-resolved context (cookie-aware) — team-scoped
@@ -81,6 +112,14 @@ export function FairwaySettingsCoachingIntelligence() {
   const [teamSettings, setTeamSettings] = useState<TeamCoachHelmSettings | null>(null);
   const [teamSettingsSaving, setTeamSettingsSaving] = useState(false);
   const [teamSettingsError, setTeamSettingsError] = useState<string | null>(null);
+  // P084 — head-coach gate for the Team CoachHelm master switch. Resolved from
+  // the SAME server gate the write enforces; assistants get a disabled control.
+  // null = not yet resolved (treat as non-head until known).
+  const [isHeadCoach, setIsHeadCoach] = useState<boolean | null>(null);
+  // Bumping this key remounts the philosophy body, which re-runs the hook's
+  // coachId-keyed fetch effect from scratch — a clean retry without mutating
+  // the (verbatim-reused) hook.
+  const [reloadKey, setReloadKey] = useState(0);
   const supabase = createClient();
 
   useEffect(() => {
@@ -103,6 +142,9 @@ export function FairwaySettingsCoachingIntelligence() {
           if (result.success && result.settings) {
             setTeamSettings(result.settings);
           }
+          // P084 — resolve head-coach status so assistants see a disabled switch.
+          const access = await getTeamCoachHelmAccess(activeTeamId);
+          setIsHeadCoach(access.success ? access.isHeadCoach : false);
         }
       }
     }
@@ -130,7 +172,47 @@ export function FairwaySettingsCoachingIntelligence() {
     [teamId, teamSettings],
   );
 
-  const { philosophy, loading, saving, save } = useCoachPhilosophy(coachId);
+  return (
+    <CoachingIntelligenceBody
+      // Remount-on-retry: a fresh key tears down the hook state and re-runs the
+      // coachId-keyed fetch, so a failed load can recover without a full reload.
+      key={`philosophy-${coachId ?? 'pending'}-${reloadKey}`}
+      coachId={coachId}
+      teamId={teamId}
+      teamSettings={teamSettings}
+      teamSettingsSaving={teamSettingsSaving}
+      teamSettingsError={teamSettingsError}
+      isHeadCoach={isHeadCoach}
+      onTeamCoachHelmToggle={handleTeamCoachHelmToggle}
+      onRetry={() => setReloadKey((k) => k + 1)}
+    />
+  );
+}
+
+interface CoachingIntelligenceBodyProps {
+  coachId: string | null;
+  teamId: string | null;
+  teamSettings: TeamCoachHelmSettings | null;
+  teamSettingsSaving: boolean;
+  teamSettingsError: string | null;
+  /** P084 — null until resolved; only `true` enables the master switch. */
+  isHeadCoach: boolean | null;
+  onTeamCoachHelmToggle: (nextEnabled: boolean) => void;
+  onRetry: () => void;
+}
+
+function CoachingIntelligenceBody({
+  coachId,
+  teamId,
+  teamSettings,
+  teamSettingsSaving,
+  teamSettingsError,
+  isHeadCoach,
+  onTeamCoachHelmToggle,
+  onRetry,
+}: CoachingIntelligenceBodyProps) {
+  const handleTeamCoachHelmToggle = onTeamCoachHelmToggle;
+  const { philosophy, loading, saving, error, save } = useCoachPhilosophy(coachId);
 
   const [hasEverSaved, setHasEverSaved] = useState(false);
 
@@ -183,10 +265,6 @@ export function FairwaySettingsCoachingIntelligence() {
     void flushSave({ [key]: checked } as Partial<CoachPhilosophy>);
   };
 
-  const handleWeightChange = (newValues: WeightValues) => {
-    debouncedSave('weights', newValues);
-  };
-
   const handleDisplayChange = (
     key: DisplayKey,
     value: boolean | CoachPhilosophy['insightVerbosity'],
@@ -194,11 +272,36 @@ export function FairwaySettingsCoachingIntelligence() {
     void flushSave({ [key]: value } as Partial<CoachPhilosophy>);
   };
 
+  // Failed fetch/create: the hook sets `error`, clears `loading`, and leaves
+  // `philosophy` null. Without this branch the loading skeleton would render
+  // forever (P077). Show a designed, recoverable error state instead.
+  if (error && !loading && !philosophy) {
+    return (
+      <CoachingIntelligenceFrame>
+        <Surface elevation="border" padding="lg" className="mt-8">
+          <EmptyState
+            icon={IconWarning as unknown as React.ComponentProps<typeof EmptyState>['icon']}
+            title="Couldn’t load your coaching settings"
+            description="Something went wrong while loading your CoachHelm philosophy. Your saved settings are safe — try again."
+            action={
+              <Button
+                variant="secondary"
+                leftIcon={<IconRefresh size={16} aria-hidden />}
+                onClick={onRetry}
+              >
+                Retry
+              </Button>
+            }
+          />
+        </Surface>
+      </CoachingIntelligenceFrame>
+    );
+  }
+
   if (loading || !philosophy) {
     return (
-      <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
-        <ViewHeader eyebrow="Settings" title="Coaching Intelligence" />
-        <div className="mt-8 space-y-6">
+      <CoachingIntelligenceFrame>
+        <div className="mt-8 space-y-6" aria-busy="true" aria-live="polite">
           {[1, 2, 3, 4].map((i) => (
             <Surface key={i} elevation="border" padding="lg" className="space-y-4">
               <div className="h-5 w-40 rounded bg-surface-sunken" />
@@ -210,28 +313,23 @@ export function FairwaySettingsCoachingIntelligence() {
             </Surface>
           ))}
         </div>
-      </div>
+      </CoachingIntelligenceFrame>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
-      <ViewHeader
-        eyebrow="Settings"
-        title="Coaching Intelligence"
-        description="Configure how CoachHelm analyzes your team. These settings control insight generation, alert sensitivity, and how players are ranked against your coaching priorities."
-        meta={
-          saving ? (
-            <span className="text-text-tertiary">Saving…</span>
-          ) : hasEverSaved ? (
-            <span className="inline-flex items-center gap-1.5 text-fw-success">
-              <IconCheck size={13} aria-hidden />
-              Saved
-            </span>
-          ) : null
-        }
-      />
-
+    <CoachingIntelligenceFrame
+      meta={
+        saving ? (
+          <span className="text-text-tertiary">Saving…</span>
+        ) : hasEverSaved ? (
+          <span className="inline-flex items-center gap-1.5 text-fw-success">
+            <IconCheck size={13} aria-hidden />
+            Saved
+          </span>
+        ) : null
+      }
+    >
       <div className="mt-8 space-y-6">
         {/* Metric Priorities */}
         <Surface elevation="border" padding="lg">
@@ -294,37 +392,24 @@ export function FairwaySettingsCoachingIntelligence() {
               {...THRESHOLD_RANGES.pressureGapThreshold}
               unit="strokes"
             />
-            <div className="h-px bg-border-subtle" />
-            <ThresholdSlider
-              label="Bubble Zone"
-              description="Range from the cut line (in strokes) to consider a player 'on the bubble'."
-              value={philosophy.bubbleZoneRange}
-              onChange={(v) => handleThresholdChange('bubbleZoneRange', v)}
-              {...THRESHOLD_RANGES.bubbleZoneRange}
-              unit="strokes"
-            />
+            {/* P078 — the "Bubble Zone" threshold slider is HIDDEN. It persisted
+                golf_coach_philosophy.bubble_zone_range but had ZERO engine
+                consumers (the orchestrator reads the alert_bubble_player TOGGLE
+                but never this range), so dragging it changed nothing in the
+                product — a placebo control. Suppressed the same way
+                WeightDistributor was, until a bubble-player detector actually
+                consumes the range. The value is still persisted by the CRUD
+                allowlist, so no data is lost when it's restored. */}
           </div>
         </Surface>
 
-        {/* Comparison Weighting */}
-        <Surface elevation="border" padding="lg">
-          <div className="mb-5 flex flex-col gap-1">
-            <h2 className="font-fw-display text-h2 text-text-primary">Comparison Weighting</h2>
-            <p className="font-fw-sans text-body-sm text-text-secondary">
-              When comparing players for roster decisions, how much should each factor matter?
-            </p>
-          </div>
-          <WeightDistributor
-            values={{
-              weightHistorical: philosophy.weightHistorical,
-              weightRecentForm: philosophy.weightRecentForm,
-              weightTournament: philosophy.weightTournament,
-              weightQualifying: philosophy.weightQualifying,
-              weightSubjective: philosophy.weightSubjective,
-            }}
-            onChange={handleWeightChange}
-          />
-        </Surface>
+        {/* Comparison Weighting — P079: the entire section is HIDDEN. Its only
+            child (WeightDistributor) is a "coming soon" stub with zero engine
+            consumers, so a polished header + descriptive copy framed a
+            non-functional placeholder (misleading a power user that it's a real
+            feature). Restore the section AND the interactive distributor together
+            once the roster-comparison engine consumes
+            golf_coachhelm_coach_weights. */}
 
         {/* Active Alerts */}
         <Surface elevation="border" padding="lg">
@@ -355,11 +440,23 @@ export function FairwaySettingsCoachingIntelligence() {
               </div>
               <Switch
                 checked={teamSettings?.enabled ?? true}
-                disabled={!teamSettings || teamSettingsSaving}
+                // P084 — only the head coach can change this (server enforces it).
+                // Disable the control for assistants so they can't trigger a
+                // guaranteed-failing optimistic flip + revert (Nielsen #5). While
+                // head-coach status is still resolving (null) the switch stays
+                // disabled, then enables only when isHeadCoach === true.
+                disabled={
+                  !teamSettings || teamSettingsSaving || isHeadCoach !== true
+                }
                 onCheckedChange={(checked) => void handleTeamCoachHelmToggle(checked)}
                 aria-label="Team CoachHelm enabled"
               />
             </div>
+            {isHeadCoach === false ? (
+              <p className="font-fw-sans text-caption text-text-tertiary">
+                Only the head coach can change this.
+              </p>
+            ) : null}
             {teamSettingsError ? (
               <InlineNotice tone="danger">{teamSettingsError}</InlineNotice>
             ) : null}
@@ -438,7 +535,7 @@ export function FairwaySettingsCoachingIntelligence() {
           </div>
         </Surface>
       </div>
-    </div>
+    </CoachingIntelligenceFrame>
   );
 }
 

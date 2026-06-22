@@ -5,8 +5,12 @@ import { Metadata } from 'next';
 import { TravelClient } from './travel-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import Link from 'next/link';
+import { Plane } from 'lucide-react';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTravel } from '@/components/fairway/pages/travel';
+import { ViewHeader, Surface, EmptyState, Button } from '@/components/fairway';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 export const metadata: Metadata = {
   title: 'Travel | Helm Golf',
@@ -39,6 +43,38 @@ export default async function GolfTravelPage() {
   const teamId = coachTeamId || playerTeamId;
 
   if (!teamId) {
+    // Fairway redesign fork: keep the no-team edge case visually consistent with
+    // the rest of the flag-on travel surface (canvas + masthead + EmptyState) and
+    // give it a next action instead of a dead end (P320). Legacy fallback below
+    // is unchanged when the flag is off.
+    if (isRedesignEnabled()) {
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+          <div className="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6 md:py-8 pb-24">
+            <ViewHeader
+              eyebrow="Travel"
+              title="Trips on the calendar."
+              description="Travel itineraries live with your team — join one to see and manage trips."
+            />
+            <div className="mt-8">
+              <Surface elevation="shadow" padding="lg">
+                <EmptyState
+                  icon={Plane}
+                  title="You're not on a team yet"
+                  description="Travel itineraries are scoped to a team. Join your program to view and manage tournament trips, lodging, and expenses."
+                  action={
+                    <Button asChild variant="primary">
+                      <Link href="/golf/join">Join a team</Link>
+                    </Button>
+                  }
+                />
+              </Surface>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-full bg-transparent flex items-center justify-center">
         <div className="text-center">
@@ -49,17 +85,45 @@ export default async function GolfTravelPage() {
     );
   }
 
-  // Fetch travel itineraries
-  const { data: itinerariesRaw } = await supabase
-    .from('golf_travel_itineraries')
-    .select('*')
-    .eq('team_id', teamId)
-    .order('departure_date', { ascending: true })
-    .limit(100);
+  // Fetch travel itineraries. A program with a full multi-season history can
+  // exceed the previous hard .limit(100) (and PostgREST's 1000-row default cap),
+  // which silently truncated the list and dropped older trips. Paginate past the
+  // cap so every trip is available to the client; the secondary `.order('id')`
+  // is a STABLE tiebreaker that keeps page boundaries deterministic without
+  // changing the primary departure_date-ascending order both forks expect.
+  const { data: itinerariesRaw } = await fetchAllRowsResult((from, to) =>
+    supabase
+      .from('golf_travel_itineraries')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('departure_date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
+
+  // Resolve titles for any linked golf_events so the Fairway detail panel can
+  // surface "Linked to: <event>" without a second client-side fetch. event_id is
+  // round-tripped below so the create/edit picker prefills on re-edit (it was
+  // previously dropped from the mapped object → the picker silently un-linked).
+  const linkedEventIds = Array.from(
+    new Set((itinerariesRaw || []).map((i) => i.event_id).filter((id): id is string => !!id)),
+  );
+  const eventTitleById = new Map<string, string>();
+  if (linkedEventIds.length > 0) {
+    const { data: linkedEvents } = await supabase
+      .from('golf_events')
+      .select('id, title')
+      .in('id', linkedEventIds);
+    for (const ev of linkedEvents || []) {
+      if (ev.id) eventTitleById.set(ev.id, ev.title || '');
+    }
+  }
 
   // Transform database data to match TravelItinerary interface expected by client component
   const itineraries = (itinerariesRaw || []).map(item => ({
     id: item.id,
+    event_id: item.event_id ?? null,
+    event_title: item.event_id ? (eventTitleById.get(item.event_id) ?? null) : null,
     event_name: item.event_name || '',
     destination: item.destination || '',
     transportation_type: (item.transportation_type as 'bus' | 'van' | 'flight' | 'carpool') || 'bus',
@@ -94,6 +158,7 @@ export default async function GolfTravelPage() {
           coachId={coach?.id || ''}
           teamId={teamId}
           isCoach={isCoach}
+          nowISO={new Date().toISOString().slice(0, 10)}
         />
       </div>
     );

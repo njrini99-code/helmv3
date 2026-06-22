@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/fairway';
 import { IconWarning, IconX } from '@/components/icons';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
@@ -44,22 +44,24 @@ export function ConfirmDialog({
     onConfirm();
   };
 
+  // Fairway-token recipes (DESIGN-SYSTEM §4): the destructive-account modal is
+  // the highest-stakes control on the settings screen and must match the
+  // redesign. fw-danger / accent are bridged onto :root so these resolve in
+  // every consumer (live Fairway + retiring legacy fork) with no warm/primary.
   const variantStyles = {
     danger: {
-      // Icon tint must read as destructive text on a light tile — the raw
-      // `destructive` token (#FF3B30) is ~3.7:1 on white and fails WCAG AA,
-      // so darken to #B91C1C (~6.8:1 on white) for the foreground glyph.
-      icon: 'bg-destructive/10 text-[#B91C1C]',
-      button: 'bg-destructive hover:bg-[#E0352B] text-white',
+      icon: 'bg-fw-danger-bg text-fw-danger',
+      button: 'bg-fw-danger hover:bg-fw-danger/90 text-text-on-accent',
     },
     warning: {
-      // Amber `warning` token (#F59E0B) — replaces the divergent SF Orange (#FF9500).
-      icon: 'bg-warning/10 text-warning',
-      button: 'bg-warning hover:bg-[#D97706] text-white',
+      // Canonical Fairway amber tokens (fw-warning) — tinted tile + solid fill,
+      // mirroring the danger recipe. No raw warning hex.
+      icon: 'bg-fw-warning-bg text-fw-warning',
+      button: 'bg-fw-warning hover:bg-fw-warning/90 text-text-on-accent',
     },
     default: {
-      icon: 'bg-warm-100 text-warm-600',
-      button: 'bg-primary-600 hover:bg-primary-700 text-white',
+      icon: 'bg-surface-sunken text-text-secondary',
+      button: 'bg-accent-700 hover:bg-accent-800 text-text-on-accent',
     },
   };
 
@@ -87,18 +89,16 @@ export function ConfirmDialog({
           onKeyDown={(e) => e.stopPropagation()}
         >
           {/* Sheet body: title + message + destructive action */}
-          <div className="overflow-hidden rounded-2xl bg-cream-50/95 backdrop-blur-xl shadow-xl">
-            <div className="px-5 pt-4 pb-3 text-center border-b border-warm-200/70">
-              <h2 className="text-[13px] font-semibold text-warm-900">{title}</h2>
-              <p className="mt-1 text-[12px] leading-snug text-warm-600">{message}</p>
+          <div className="overflow-hidden rounded-2xl bg-surface/95 backdrop-blur-xl shadow-fw-modal">
+            <div className="px-5 pt-4 pb-3 text-center border-b border-border-subtle">
+              <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">{title}</h2>
+              <p className="mt-1 font-fw-sans text-caption leading-snug text-text-secondary">{message}</p>
             </div>
             <button
               type="button"
               onClick={handleConfirm}
               disabled={isLoading}
-              // Destructive label on a light sheet — darkened from the
-              // #FF3B30 destructive token (fails AA) to #B91C1C (~6.8:1) for WCAG AA.
-              className="w-full px-5 py-3.5 text-[17px] font-semibold text-[#B91C1C] active:bg-warm-100/80 transition-colors disabled:opacity-50"
+              className="w-full px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-fw-danger transition-colors active:bg-surface-sunken disabled:opacity-50"
             >
               {isLoading ? 'Please wait…' : confirmLabel}
             </button>
@@ -108,7 +108,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="w-full rounded-2xl bg-cream-50/95 backdrop-blur-xl px-5 py-3.5 text-[17px] font-semibold text-warm-900 shadow-xl active:bg-warm-100/80 transition-colors disabled:opacity-50"
+            className="w-full rounded-2xl bg-surface/95 px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-text-primary shadow-fw-modal backdrop-blur-xl transition-colors active:bg-surface-sunken disabled:opacity-50"
           >
             {cancelLabel}
           </button>
@@ -130,41 +130,41 @@ export function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-fade-in"
+        className="w-full max-w-md overflow-hidden rounded-fw-lg bg-surface shadow-fw-modal animate-fade-in"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-border-subtle px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${styles.icon}`}>
-              <IconWarning size={20} />
+            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${styles.icon}`}>
+              <IconWarning size={20} aria-hidden />
             </div>
-            <h2 className="text-lg font-semibold text-warm-900">{title}</h2>
+            <h2 className="font-fw-display text-h2 font-semibold text-text-primary">{title}</h2>
           </div>
           <button
             onClick={onCancel}
-            className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+            className="rounded-fw-sm p-2 text-text-tertiary outline-none transition-colors hover:bg-surface-sunken hover:text-text-secondary focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
             aria-label="Close dialog"
           >
-            <IconX size={20} />
+            <IconX size={20} aria-hidden />
           </button>
         </div>
 
         {/* Body */}
         <div className="px-6 py-4">
-          <p className="text-sm leading-relaxed text-warm-600">{message}</p>
+          <p className="font-fw-sans text-body-sm leading-relaxed text-text-secondary">{message}</p>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-warm-200 flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-3 border-t border-border-subtle px-6 py-4">
           <Button variant="secondary" onClick={onCancel} disabled={isLoading}>
             {cancelLabel}
           </Button>
           <button
             onClick={handleConfirm}
             disabled={isLoading}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${styles.button}`}
+            className={`rounded-full px-4 py-2 font-fw-sans font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface disabled:opacity-50 ${styles.button}`}
           >
             {isLoading ? 'Please wait...' : confirmLabel}
           </button>

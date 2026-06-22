@@ -30,6 +30,7 @@ import {
   Surface,
   Button,
   IconButton,
+  Badge,
   Form,
   FormSection,
   FormField,
@@ -52,6 +53,7 @@ import {
   regenerateJoinCode,
   addSecondTeam,
 } from '@/app/golf/actions/teams';
+import { setActiveTeam } from '@/app/golf/actions/team-switcher';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
 /* ---------------------------------------------------------------------------
@@ -64,6 +66,12 @@ export interface FairwayTeamSettingsTeam {
   season: string | null;
   join_code: string | null;
   created_at: string;
+  /**
+   * Program type ('mens' | 'womens'). Optional/nullable so legacy callers that
+   * never selected it keep type-checking; the masthead only renders a gender
+   * chip when this is a recognised value. (P365)
+   */
+  gender?: string | null;
 }
 
 export interface FairwayTeamSettingsCoach {
@@ -104,12 +112,22 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
   // Form state for creating / editing the team (verbatim seeding from legacy).
   const [teamName, setTeamName] = useState(team?.name || '');
   const [season, setSeason] = useState(() => team?.season || defaultSeason());
+  // Gender for the FIRST team. createTeam defaults to 'mens' when omitted, so a
+  // women's-program head creating their first team here used to silently get a
+  // men's team (wrong gender propagates to theming + the men/women toggle — a B4
+  // data lie). The create form now exposes the same picker the add-second-team
+  // panel has. (P362)
+  const [firstTeamGender, setFirstTeamGender] = useState<'mens' | 'womens'>('mens');
 
   // Add-second-team panel state (only shown to coaches who already have a team)
   const [showAddTeam, setShowAddTeam] = useState(false);
   const [secondTeamName, setSecondTeamName] = useState('');
   const [secondTeamGender, setSecondTeamGender] = useState<'mens' | 'womens'>('womens');
   const [addTeamPending, startAddTeamTransition] = useTransition();
+  // The team the coach just created — drives an inline confirmation that closes
+  // the create→manage loop with a one-tap "Switch to {name}" action. (P370)
+  const [createdTeam, setCreatedTeam] = useState<{ id: string; name: string } | null>(null);
+  const [switchPending, startSwitchTransition] = useTransition();
 
   const handleAddSecondTeam = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -120,12 +138,35 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
     startAddTeamTransition(async () => {
       const result = await addSecondTeam(secondTeamName.trim(), secondTeamGender);
       if (result.success) {
+        void triggerHaptic('success');
         fairwayToast.success('Second team created successfully');
         setShowAddTeam(false);
         setSecondTeamName('');
+        // Surface which team was created + a direct switch affordance instead of
+        // making the coach hunt for the top-bar switcher. (P370)
+        if (result.data) {
+          setCreatedTeam({ id: result.data.id, name: result.data.name });
+        }
         router.refresh();
       } else {
+        void triggerHaptic('error');
         fairwayToast.error(result.error || 'Failed to create team');
+      }
+    });
+  };
+
+  const handleSwitchToCreatedTeam = () => {
+    if (!createdTeam) return;
+    startSwitchTransition(async () => {
+      const result = await setActiveTeam(createdTeam.id);
+      if (result.success) {
+        void triggerHaptic('success');
+        fairwayToast.success(`Switched to ${createdTeam.name}`);
+        setCreatedTeam(null);
+        router.refresh();
+      } else {
+        void triggerHaptic('error');
+        fairwayToast.error('Could not switch teams. Use the team switcher in the top bar.');
       }
     });
   };
@@ -137,7 +178,7 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
       return;
     }
     startTransition(async () => {
-      const result = await createTeam(teamName, season);
+      const result = await createTeam(teamName, season, firstTeamGender);
       if (result.success) {
         void triggerHaptic('success');
         fairwayToast.success('Team created');
@@ -152,6 +193,15 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
   const handleUpdateTeam = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!team) return;
+    // Error prevention (P359): never let an empty team name reach the server.
+    // The edit Input is not `required` (an existing name can be cleared), so
+    // guard here before mutating — a blank name would otherwise persist and
+    // render verbatim across the app.
+    if (!teamName.trim()) {
+      void triggerHaptic('error');
+      fairwayToast.error('Team name is required');
+      return;
+    }
     startTransition(async () => {
       const result = await updateTeam(team.id, {
         name: teamName.trim(),
@@ -217,20 +267,40 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
         <Form spacing="roomy" onSubmit={handleCreateTeam} className="mt-8">
           <FormSection
             title="Team details"
-            description="Name your program and set the current season."
+            description="Name your program, choose the program type, and set the current season."
           >
             <div className="flex flex-col gap-5">
+              {/* Gender picker — mirrors the add-second-team panel so the stored
+                  gender is correct on the very first team. (P362) */}
+              <FormField label="Program" required>
+                <div className="flex gap-2">
+                  {(['mens', 'womens'] as const).map((g) => (
+                    <Button
+                      key={g}
+                      type="button"
+                      variant={firstTeamGender === g ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => setFirstTeamGender(g)}
+                      disabled={isPending}
+                      aria-pressed={firstTeamGender === g}
+                      className="flex-1"
+                    >
+                      {g === 'mens' ? "Men's" : "Women's"}
+                    </Button>
+                  ))}
+                </div>
+              </FormField>
               <FormField label="Team name" required>
                 <Input
                   name="name"
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}
-                  placeholder="e.g. University Golf Team"
+                  placeholder={firstTeamGender === 'mens' ? "e.g. Men's Golf" : "e.g. Women's Golf"}
                   disabled={isPending}
                   required
                 />
               </FormField>
-              <FormField label="Season">
+              <FormField label="Season" help="Format: YYYY-YYYY">
                 <Input
                   name="season"
                   value={season}
@@ -272,6 +342,19 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
       })
     : EM_DASH;
 
+  // Dirty-state for the edit form (P359). Baseline = the values the form was
+  // seeded with (persisted name + persisted season, falling back to the
+  // auto-seeded default season exactly as the inputs were initialised).
+  const seededSeason = team.season || defaultSeason();
+  const isEditDirty =
+    teamName.trim() !== (team.name || '') || season !== seededSeason;
+
+  // Surface the program type so a head running both programs always knows which
+  // team they're editing (P365). Gender is set at creation and enforced by the
+  // one-team-per-program-per-gender DB guard, so it's shown read-only here.
+  const genderLabel =
+    team.gender === 'mens' ? "Men's" : team.gender === 'womens' ? "Women's" : null;
+
   return (
     <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
       <ViewHeader
@@ -280,6 +363,18 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
         description="Manage your program details and invite players to the roster."
         meta={
           <>
+            {genderLabel && (
+              <>
+                <Badge
+                  tone="accent"
+                  size="sm"
+                  title="Program type is set when the team is created and can't be changed."
+                >
+                  {genderLabel}
+                </Badge>
+                <span aria-hidden>·</span>
+              </>
+            )}
             <span className="inline-flex items-center gap-1.5">
               <IconCalendar size={13} aria-hidden />
               {team.season || 'Season not set'}
@@ -297,6 +392,18 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
           description="The program name and season shown across the app."
         >
           <div className="flex flex-col gap-5">
+            {genderLabel && (
+              <FormField
+                label="Program"
+                help="Set when the team is created — can't be changed."
+              >
+                <div className="flex min-h-[2.5rem] items-center">
+                  <Badge tone="accent" size="md">
+                    {genderLabel}
+                  </Badge>
+                </div>
+              </FormField>
+            )}
             <FormField label="Team name">
               <Input
                 name="name"
@@ -306,12 +413,12 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
                 disabled={isPending}
               />
             </FormField>
-            <FormField label="Season">
+            <FormField label="Season" help="Format: YYYY-YYYY">
               <Input
                 name="season"
                 value={season}
                 onChange={(e) => setSeason(e.target.value)}
-                placeholder="Season"
+                placeholder="e.g. 2024-2025"
                 disabled={isPending}
               />
             </FormField>
@@ -322,6 +429,10 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
               type="submit"
               variant="secondary"
               busy={isPending}
+              // Real dirty-state + error prevention (P359): disabled when the
+              // name is empty OR nothing changed vs the persisted team. Prevents
+              // saving a blank name and the "Save" no-op that implies an edit.
+              disabled={!teamName.trim() || !isEditDirty}
               leftIcon={<IconCheck size={16} />}
             >
               Save changes
@@ -362,7 +473,10 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
                   trailing={
                     <IconButton
                       variant="ghost"
-                      size="sm"
+                      // 44px touch target (P367) — `md` is h-11 w-11 so the
+                      // inline copy affordance clears the premium 44px minimum on
+                      // every pointer type, not just coarse pointers.
+                      size="md"
                       aria-label={copied ? 'Invite link copied' : 'Copy invite link'}
                       onClick={() => void handleCopyInviteLink()}
                     >
@@ -438,6 +552,31 @@ export function FairwayTeamSettings({ coach, team }: FairwayTeamSettingsProps) {
             </Button>
           )}
         </div>
+
+        {/* Inline create→manage confirmation (P370): names the team just made
+            and offers a one-tap switch so the program head can manage it without
+            hunting for the top-bar switcher. */}
+        {createdTeam && !showAddTeam && (
+          <div className="mb-5">
+            <InlineNotice
+              tone="success"
+              title={`${createdTeam.name} created`}
+              action={
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  busy={switchPending}
+                  onClick={handleSwitchToCreatedTeam}
+                >
+                  Switch to {createdTeam.name}
+                </Button>
+              }
+            >
+              You&rsquo;re still managing your current team. Switch over to set up{' '}
+              {createdTeam.name}.
+            </InlineNotice>
+          </div>
+        )}
 
         {showAddTeam && (
           <Surface elevation="border" padding="md">

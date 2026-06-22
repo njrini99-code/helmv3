@@ -16,6 +16,18 @@ export const metadata: Metadata = {
   description: 'Your personal action center — travel, tasks, and event RSVPs.',
 };
 
+/**
+ * SCOPE (P153): the Hub is intentionally a TRIAGE / action center — travel,
+ * tasks, and event RSVPs — NOT a stats dashboard. It deliberately renders no
+ * KPI row / sparklines. The premium player stat surface (headline KPIs +
+ * trend sparklines, fed by getPlayerDashboardData → FairwayPlayerDashboard)
+ * already lives at the main `/golf/dashboard` route; duplicating it here would
+ * split the same data across two screens. Per the audit's honest-completeness
+ * rule we do NOT fabricate zero-state KPIs on the Hub — a stat strip would only
+ * be added behind a real-data (InsufficientData) gate if the Hub's purpose is
+ * ever redefined to subsume the dashboard.
+ */
+
 interface RawAssignment {
   task_id: string;
   status: string;
@@ -79,7 +91,11 @@ export default async function PlayerHubPage() {
               description="Join a team to see your travel, tasks, and event RSVPs in one place."
               action={
                 <Button asChild variant="primary">
-                  <Link href="/golf/dashboard/settings">Enter team code</Link>
+                  {/* Route straight to the focused invite-code entry flow (a
+                      single auto-focused field) rather than the generic Settings
+                      page where the user would have to hunt for the code field.
+                      (P155 — empty-state CTA points at the action it promises.) */}
+                  <Link href="/golf/join">Enter team code</Link>
                 </Button>
               }
             />
@@ -102,13 +118,27 @@ export default async function PlayerHubPage() {
   // Fetch all hub data in parallel
   // Use raw SQL for tasks + completions since generated types may be outdated
   const eventSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  // P154: project ONLY the columns the trip transform/render reads (no
+  // select('*')), bound to a recent window, and cap the fetch. The Trips tab
+  // still shows recently-completed trips, so we keep a generous look-back
+  // (~120 days) rather than upcoming-only — but ancient itineraries are dropped
+  // so the PostgREST 1000-row cap can never silently truncate a long-lived team.
+  // Order stays departure_date ASC so the Overview "next trips" slice(0,2)
+  // honestly surfaces the 2 SOONEST upcoming trips.
+  const tripsSince = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
   const [tripsResult, tasksRaw, eventsResult, announcementsResult, topInsight] = await Promise.all([
-    // Travel itineraries for the team
+    // Travel itineraries for the team (recent + upcoming window only)
     supabase
       .from('golf_travel_itineraries')
-      .select('*')
+      .select(
+        'id, event_name, destination, transportation_type, departure_date, departure_time, departure_location, return_date, return_time, hotel_name, hotel_address, hotel_phone, hotel_confirmation, uniform_requirements, gear_list, room_assignments, notes, flight_info',
+      )
       .eq('team_id', teamId)
-      .order('departure_date', { ascending: true }),
+      .gte('departure_date', tripsSince)
+      .order('departure_date', { ascending: true })
+      .limit(100),
 
     // Tasks assigned to this player via golf_task_assignments
     // (createTask writes to golf_task_assignments, not golf_tasks.assigned_to)
@@ -225,7 +255,12 @@ export default async function PlayerHubPage() {
     maybe_count: e.maybe_count ?? 0,
   }));
 
+  // B3/B4: an error must never masquerade as an empty state. When the
+  // announcements fetch fails, we keep the list empty BUT flag the failure so the
+  // Hub renders an honest "couldn't load — retry" affordance instead of a silent
+  // (cheerful) "no announcements". (P147)
   const announcements = announcementsResult.success ? (announcementsResult.data ?? []) : [];
+  const announcementsLoadError = !announcementsResult.success;
 
   // ── Fairway fork (ADDITIVE): flag ON → the rebuilt Hub inside the `.fairway-ds`
   // scope on bg-canvas. The optimistic write paths (completeTask / respondToEvent)
@@ -249,6 +284,7 @@ export default async function PlayerHubPage() {
           tasks={tasks}
           events={events}
           announcements={announcements}
+          announcementsLoadError={announcementsLoadError}
           playerName={playerName}
           teamName={teamName}
           signalCard={<HubInsightSignalCard insight={topInsight} />}

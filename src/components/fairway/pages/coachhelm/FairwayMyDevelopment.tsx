@@ -53,6 +53,9 @@ import {
   InstrumentPanel,
   Readout,
   formatPercent,
+  FormField,
+  Input,
+  TextArea,
 } from '@/components/fairway';
 import { CoachHelmShell } from './CoachHelmShell';
 import {
@@ -71,6 +74,7 @@ import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import {
   updateFocusAreaProgress,
   completeFocusArea,
+  reactivateFocusArea,
 } from '@/app/golf/actions/development';
 import { useToast } from '@/components/ui/sonner';
 import {
@@ -80,8 +84,6 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from '@/components/ui/drawer';
-import { Input, Textarea } from '@/components/ui/input';
-import { Button as LegacyButton } from '@/components/ui/button';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — the PRE-COMPUTED partition the route page already builds.
@@ -141,6 +143,7 @@ function LogProgressDrawer({
   const fa = state?.focusArea;
   const [newValue, setNewValue] = useState('');
   const [note, setNote] = useState('');
+  const [valueError, setValueError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Sync the input default to the card's current value whenever a new card opens.
@@ -150,9 +153,23 @@ function LogProgressDrawer({
   const targetMetric = fa?.target_metric ?? null;
   const metricLabel = targetMetric || 'Progress';
 
+  // Largest plausible measurement for any tracked golf metric (scores, yards,
+  // putts, percentages). Anything beyond this is a fat-finger, not a real value.
+  const MAX_REASONABLE = 100_000;
+
+  // Contextual hint near the field — anchors the player to where they are vs
+  // their target so an out-of-place magnitude reads as obviously wrong.
+  const valueHint = (() => {
+    const parts: string[] = ['0 or higher'];
+    if (currentValue != null) parts.push(`current ${currentValue}`);
+    if (targetValue != null) parts.push(`target ${targetValue}`);
+    return parts.join(' · ');
+  })();
+
   function reset() {
     setNewValue('');
     setNote('');
+    setValueError(null);
     setSubmitting(false);
   }
 
@@ -168,14 +185,25 @@ function LogProgressDrawer({
 
     const trimmed = newValue.trim();
     if (trimmed === '') {
-      addToast({ type: 'error', title: 'Please enter a new value' });
+      setValueError('Enter a new value to log.');
       return;
     }
     const parsed = Number(trimmed);
     if (!Number.isFinite(parsed)) {
-      addToast({ type: 'error', title: 'New value must be a number' });
+      setValueError('Enter a number (e.g. 31.5).');
       return;
     }
+    // Range guard — reject negatives + absurd magnitudes before the round-trip
+    // so a fat-fingered -5 or 9999 never lands in current_value silently.
+    if (parsed < 0) {
+      setValueError('Value can’t be negative — enter 0 or higher.');
+      return;
+    }
+    if (parsed > MAX_REASONABLE) {
+      setValueError(`That looks too large — enter a value up to ${MAX_REASONABLE.toLocaleString()}.`);
+      return;
+    }
+    setValueError(null);
 
     setSubmitting(true);
     try {
@@ -206,7 +234,10 @@ function LogProgressDrawer({
         if (!next) handleClose();
       }}
     >
-      <DrawerContent>
+      {/* Desktop center-mode: the Drawer primitive defaults to a full-width
+          mobile bottom sheet; pass the documented sm:* centering utilities so it
+          reads as a centered modal on desktop (premium-scrub responsive gate). */}
+      <DrawerContent className="sm:max-w-md sm:mx-auto sm:rounded-3xl sm:bottom-1/2 sm:translate-y-1/2">
         <DrawerHeader>
           <DrawerTitle>Log progress</DrawerTitle>
           <DrawerDescription>{fa?.title || 'Focus area'}</DrawerDescription>
@@ -217,53 +248,67 @@ function LogProgressDrawer({
           style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
         >
           <div>
-            <p className="block text-sm font-medium text-warm-700 mb-1.5">
+            <p className="mb-1.5 block font-fw-sans text-body-sm font-medium text-text-secondary">
               Current value
             </p>
-            <div className="px-3 py-2.5 rounded-lg bg-warm-50 border border-warm-200 text-warm-700">
+            <div className="rounded-fw-sm border border-border-subtle bg-surface-sunken px-3 py-2.5 font-fw-sans text-text-primary">
               {currentValue ?? '—'}
               {targetValue != null && (
-                <span className="text-warm-400 font-normal"> / {targetValue}</span>
+                <span className="font-normal text-text-tertiary"> / {targetValue}</span>
               )}
               {targetMetric && (
-                <span className="ml-2 text-xs text-warm-500">{targetMetric}</span>
+                <span className="ml-2 font-fw-sans text-eyebrow text-text-tertiary">
+                  {targetMetric}
+                </span>
               )}
             </div>
           </div>
 
-          <Input
+          <FormField
             label={`New value (${metricLabel})`}
-            type="number"
-            inputMode="decimal"
-            step="any"
-            value={newValue}
-            onChange={(e) => setNewValue(e.target.value)}
-            placeholder="Enter your latest measurement"
             required
-            // eslint-disable-next-line jsx-a11y/no-autofocus
-            autoFocus
-          />
+            error={valueError ?? undefined}
+            help={valueHint}
+          >
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="any"
+              min={0}
+              value={newValue}
+              onChange={(e) => {
+                setNewValue(e.target.value);
+                if (valueError) setValueError(null);
+              }}
+              placeholder="Enter your latest measurement"
+              required
+              aria-invalid={valueError ? true : undefined}
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+            />
+          </FormField>
 
-          <Textarea
-            label="Note (optional)"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="How did it go? Any context for your coach…"
-            rows={3}
-          />
+          <FormField label="Note" showOptional>
+            <TextArea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="How did it go? Any context for your coach…"
+              rows={3}
+            />
+          </FormField>
 
           <div className="flex items-center justify-end gap-2 pt-2">
-            <LegacyButton
+            <Button
               type="button"
               variant="ghost"
               onClick={handleClose}
               disabled={submitting}
             >
               Cancel
-            </LegacyButton>
-            <LegacyButton type="submit" isLoading={submitting} disabled={submitting}>
+            </Button>
+            <Button type="submit" busy={submitting} disabled={submitting}>
               Save progress
-            </LegacyButton>
+            </Button>
           </div>
         </form>
       </DrawerContent>
@@ -291,6 +336,8 @@ export function FairwayMyDevelopment({
   const [logState, setLogState] = useState<LogProgressState | null>(null);
   // Which focus area is mid-complete (optimistic busy flag for the card button).
   const [completingId, setCompletingId] = useState<string | null>(null);
+  // Which completed area is mid-reopen (busy flag for the card "Reopen" button).
+  const [reopeningId, setReopeningId] = useState<string | null>(null);
 
   const total = activeAreas.length + completedAreas.length;
 
@@ -298,8 +345,41 @@ export function FairwayMyDevelopment({
     setLogState({ focusArea });
   }, []);
 
+  // Re-open a completed focus area (the inverse of complete). Powers BOTH the
+  // toast Undo on an accidental complete AND the "Reopen" button on completed
+  // cards (Nielsen #3 user control / #5 error prevention — an irreversible state
+  // change is now recoverable).
+  const handleReopen = useCallback(
+    (focusArea: FocusAreaCardData) => {
+      if (reopeningId) return;
+      setReopeningId(focusArea.id);
+      startTransition(async () => {
+        try {
+          const result = await reactivateFocusArea(focusArea.id);
+          if (!result.success) {
+            addToast({ type: 'error', title: result.error || 'Failed to reopen' });
+            setReopeningId(null);
+            return;
+          }
+          addToast({
+            type: 'success',
+            title: 'Reopened',
+            description: focusArea.title || 'Focus area',
+          });
+          setReopeningId(null);
+          router.refresh();
+        } catch {
+          addToast({ type: 'error', title: 'Failed to reopen' });
+          setReopeningId(null);
+        }
+      });
+    },
+    [addToast, reopeningId, router, startTransition],
+  );
+
   // PRESERVED: identical to the legacy MarkCompleteButton call — completeFocusArea
-  // + success toast + router.refresh(). Re-skinned trigger only.
+  // + success toast + router.refresh(). Re-skinned trigger; the success toast now
+  // carries an Undo that reactivates the area so an accidental tap is recoverable.
   const handleComplete = useCallback(
     (focusArea: FocusAreaCardData) => {
       if (completingId) return;
@@ -316,6 +396,7 @@ export function FairwayMyDevelopment({
             type: 'success',
             title: 'Marked complete',
             description: focusArea.title || 'Focus area',
+            action: { label: 'Undo', onClick: () => handleReopen(focusArea) },
           });
           setCompletingId(null);
           router.refresh();
@@ -325,14 +406,19 @@ export function FairwayMyDevelopment({
         }
       });
     },
-    [addToast, completingId, router, startTransition],
+    [addToast, completingId, handleReopen, router, startTransition],
   );
 
-  const headerActions = (
-    <Button asChild variant="secondary" size="sm">
-      <Link href="/golf/dashboard/messages">Message coach</Link>
-    </Button>
-  );
+  // Header "Message coach" is a SECONDARY helper alongside real content. When the
+  // surface is genuinely empty the empty-state's own primary "Message coach" CTA
+  // is the single obvious next action, so we drop the duplicate header affordance
+  // to keep one primary action per screen (squint test / single-primary rule).
+  const headerActions =
+    total > 0 ? (
+      <Button asChild variant="secondary" size="sm">
+        <Link href="/golf/dashboard/messages">Message coach</Link>
+      </Button>
+    ) : undefined;
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
@@ -463,6 +549,8 @@ export function FairwayMyDevelopment({
                             // eslint-disable-next-line jsx-a11y/aria-role
                             role="player"
                             index={i}
+                            onReopen={handleReopen}
+                            reopening={reopeningId === fa.id}
                           />
                         ))}
                       </div>

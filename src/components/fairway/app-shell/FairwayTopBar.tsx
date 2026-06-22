@@ -159,11 +159,25 @@ export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(functio
           </button>
         )}
 
-        {/* Breadcrumbs */}
+        {/* Location indicator.
+            - md+ : the full breadcrumb trail.
+            - <md : the current section only (last crumb) so the chrome always
+                    answers "where am I" without scrolling to the page title
+                    (Nielsen #1 visibility of system status / mobile parity). */}
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <div className="hidden min-w-0 flex-shrink md:block">
-            <BreadcrumbTrail breadcrumbs={breadcrumbs} Link={Link} />
-          </div>
+          <>
+            <div className="hidden min-w-0 flex-shrink md:block">
+              <BreadcrumbTrail breadcrumbs={breadcrumbs} Link={Link} />
+            </div>
+            <div className="min-w-0 flex-shrink md:hidden" aria-label="Breadcrumb">
+              <span
+                className="block truncate font-fw-sans text-body-sm font-medium text-text-primary"
+                aria-current="page"
+              >
+                {breadcrumbs[breadcrumbs.length - 1]!.label}
+              </span>
+            </div>
+          </>
         )}
 
         {/* Persistent search / command entry */}

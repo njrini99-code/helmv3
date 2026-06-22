@@ -27,9 +27,18 @@
  * for feedback (never legacy useToast). Renders inside the `.fairway-ds` scope.
  * ========================================================================== */
 
-import { useEffect, useState } from 'react';
-import { Bell } from 'lucide-react';
-import { ViewHeader, Surface, EmptyState, InlineNotice } from '@/components/fairway';
+import { useEffect, useMemo, useState } from 'react';
+import { Bell, AlertTriangle, CheckSquare, ClipboardList, CalendarClock } from 'lucide-react';
+import {
+  ViewHeader,
+  Surface,
+  EmptyState,
+  InlineNotice,
+  Toolbar,
+  SearchField,
+  FilterPill,
+  Button,
+} from '@/components/fairway';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { FairwayCoachAnnouncementCard } from './FairwayCoachAnnouncementCard';
 import {
@@ -37,6 +46,77 @@ import {
   isUnreadForPlayer,
 } from './FairwayPlayerAnnouncementCard';
 import { FairwayCreateAnnouncement } from './FairwayCreateAnnouncement';
+
+/* ─── Filter model (shared by both feeds) ─────────────────────────────────────
+ * A growing feed must be searchable / filterable to stay usable (P276). The
+ * view tab + filter pills + search box all narrow the SAME server list; no data
+ * is fetched or mutated here. */
+export type FeedView = 'all' | 'unread' | 'action';
+const HIGH_URGENCY = new Set(['high', 'urgent']);
+const WEEK_MS = 7 * 86400000;
+
+/** Recent = posted within the last 7 days. Time-independent at SSR (nowTs=0 →
+ * false), refined after mount; only used by the optional "This week" pill, never
+ * by the stable sort, so it can't cause a first-paint reshuffle (P282). */
+export function isRecent(ann: GolfAnnouncementMeta, nowTs: number): boolean {
+  return nowTs > 0 && !!ann.published_at && nowTs - new Date(ann.published_at).getTime() < WEEK_MS;
+}
+
+/** Action-needed = the viewer is asked to acknowledge and hasn't yet. This is
+ * ack-state only (time-independent), so it's stable across reloads. */
+export function needsAck(ann: GolfAnnouncementMeta): boolean {
+  return !!ann.requires_acknowledgement && !ann.has_player_acknowledged;
+}
+
+export interface AnnouncementFilterState {
+  query: string;
+  view: FeedView;
+  highOnly: boolean;
+  tasksOnly: boolean;
+  weekOnly: boolean;
+}
+
+/** Pure, deterministic search/filter over the server list (P276). No fetch, no
+ * mutation — just narrows the SAME announcements. Exported for unit tests. */
+export function filterAnnouncements(
+  announcements: GolfAnnouncementMeta[],
+  state: AnnouncementFilterState,
+  nowTs: number,
+): GolfAnnouncementMeta[] {
+  const q = state.query.trim().toLowerCase();
+  return announcements.filter((ann) => {
+    if (q) {
+      const haystack = `${ann.title ?? ''} ${ann.body ?? ''}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (state.highOnly && !HIGH_URGENCY.has((ann.urgency ?? 'normal').toLowerCase())) return false;
+    if (state.tasksOnly && !(ann.task_count > 0)) return false;
+    if (state.weekOnly && !isRecent(ann, nowTs)) return false;
+    if (state.view === 'action' && !needsAck(ann)) return false;
+    if (state.view === 'unread' && !isUnreadForPlayer(ann, nowTs)) return false;
+    return true;
+  });
+}
+
+/** Pure, STABLE unread-first ordering for the player feed (P282). Primary key is
+ * ack-needed (time-independent → identical at SSR and post-mount); the time-based
+ * recency is only a secondary tiebreaker among non-ack items. Given a server list
+ * that arrives date-descending, this produces NO post-hydration reshuffle.
+ * Exported for unit tests. */
+export function sortPlayerFeed(
+  announcements: GolfAnnouncementMeta[],
+  nowTs: number,
+): GolfAnnouncementMeta[] {
+  return [...announcements].sort((a, b) => {
+    const aAck = needsAck(a);
+    const bAck = needsAck(b);
+    if (aAck !== bAck) return aAck ? -1 : 1;
+    const aTime = !aAck && isUnreadForPlayer(a, nowTs);
+    const bTime = !bAck && isUnreadForPlayer(b, nowTs);
+    if (aTime !== bTime) return aTime ? -1 : 1;
+    return 0; // preserve server order (already date-sorted)
+  });
+}
 
 interface Player {
   id: string;
@@ -76,6 +156,42 @@ export function FairwayAnnouncements({
 }: FairwayAnnouncementsProps) {
   const total = announcements.length;
 
+  // Defer time-dependent state to the client (avoid hydration mismatch). nowTs=0
+  // on first paint → time-based predicates read false, then refine after mount.
+  const [nowTs, setNowTs] = useState(0);
+  useEffect(() => setNowTs(Date.now()), []);
+
+  // ── Triage state (P276) — narrows the SAME server list, never refetches. ────
+  const [query, setQuery] = useState('');
+  const [view, setView] = useState<FeedView>('all');
+  const [highOnly, setHighOnly] = useState(false);
+  const [tasksOnly, setTasksOnly] = useState(false);
+  const [weekOnly, setWeekOnly] = useState(false);
+
+  const anyFilterActive =
+    view !== 'all' || highOnly || tasksOnly || weekOnly || query.trim() !== '';
+
+  const filtered = useMemo(
+    () => filterAnnouncements(announcements, { query, view, highOnly, tasksOnly, weekOnly }, nowTs),
+    [announcements, query, view, highOnly, tasksOnly, weekOnly, nowTs],
+  );
+
+  // Honest tab counts — straight from the array (ack/action are time-independent;
+  // "unread" includes the time-based component once mounted).
+  const actionCount = useMemo(() => announcements.filter(needsAck).length, [announcements]);
+  const unreadCount = useMemo(
+    () => announcements.filter((a) => isUnreadForPlayer(a, nowTs)).length,
+    [announcements, nowTs],
+  );
+
+  function clearFilters() {
+    setQuery('');
+    setView('all');
+    setHighOnly(false);
+    setTasksOnly(false);
+    setWeekOnly(false);
+  }
+
   // ── Masthead description (mirrors the legacy subtitle logic) ───────────────
   const description =
     total === 0
@@ -102,6 +218,23 @@ export function FairwayAnnouncements({
     <FairwayCreateAnnouncement players={players} documents={documents} />
   ) : undefined;
 
+  // The view tab — player gets All / Unread / Action needed; coach gets
+  // All / Action needed (no "unread" concept for the author). Counts are honest.
+  const viewOptions = isCoach
+    ? ([
+        { value: 'all', label: 'All' },
+        { value: 'action', label: actionCount > 0 ? `Action needed · ${actionCount}` : 'Action needed' },
+      ] as const)
+    : ([
+        { value: 'all', label: 'All' },
+        { value: 'unread', label: unreadCount > 0 ? `Unread · ${unreadCount}` : 'Unread' },
+        { value: 'action', label: actionCount > 0 ? `Action needed · ${actionCount}` : 'Action needed' },
+      ] as const);
+
+  // Showing the toolbar only matters once there's more than a single card to
+  // triage; one card needs no search/filter row.
+  const showToolbar = total > 1 && (isCoach || !!playerId);
+
   return (
     <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
       <ViewHeader
@@ -111,6 +244,66 @@ export function FairwayAnnouncements({
         meta={meta}
         primaryAction={createCta}
       />
+
+      {showToolbar ? (
+        <div className="mt-6">
+          <Toolbar
+            aria-label="Filter announcements"
+            search={
+              <SearchField
+                size="sm"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onClear={() => setQuery('')}
+                placeholder="Search announcements"
+                aria-label="Search announcements by title or body"
+              />
+            }
+            filters={
+              <>
+                <FilterPill
+                  size="sm"
+                  selected={highOnly}
+                  showCheck={false}
+                  icon={<AlertTriangle className="h-3.5 w-3.5" aria-hidden />}
+                  onClick={() => setHighOnly((v) => !v)}
+                  aria-pressed={highOnly}
+                >
+                  Urgent
+                </FilterPill>
+                <FilterPill
+                  size="sm"
+                  selected={tasksOnly}
+                  showCheck={false}
+                  icon={<ClipboardList className="h-3.5 w-3.5" aria-hidden />}
+                  onClick={() => setTasksOnly((v) => !v)}
+                  aria-pressed={tasksOnly}
+                >
+                  Has tasks
+                </FilterPill>
+                <FilterPill
+                  size="sm"
+                  selected={weekOnly}
+                  showCheck={false}
+                  icon={<CalendarClock className="h-3.5 w-3.5" aria-hidden />}
+                  onClick={() => setWeekOnly((v) => !v)}
+                  aria-pressed={weekOnly}
+                >
+                  This week
+                </FilterPill>
+              </>
+            }
+            viewToggle={
+              <Toolbar.ViewToggle<FeedView>
+                aria-label="Filter by status"
+                options={viewOptions}
+                value={view}
+                onValueChange={setView}
+              />
+            }
+          />
+        </div>
+      ) : null}
 
       <div className="mt-8">
         {total === 0 ? (
@@ -126,15 +319,31 @@ export function FairwayAnnouncements({
               action={createCta}
             />
           </Surface>
-        ) : isCoach ? (
-          <CoachFeed announcements={announcements} />
-        ) : !playerId ? (
+        ) : !isCoach && !playerId ? (
           <InlineNotice tone="warning" title="Player profile not found">
             We couldn't load your player profile. Complete onboarding or contact support to see your
             team's announcements.
           </InlineNotice>
+        ) : filtered.length === 0 ? (
+          <Surface elevation="border" padding="lg">
+            <EmptyState
+              variant="search"
+              icon={CheckSquare}
+              title="No matching announcements"
+              description="No announcements match the current search and filters."
+              action={
+                anyFilterActive ? (
+                  <Button variant="secondary" size="sm" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                ) : undefined
+              }
+            />
+          </Surface>
+        ) : isCoach ? (
+          <CoachFeed announcements={filtered} />
         ) : (
-          <PlayerFeed announcements={announcements} playerId={playerId} />
+          <PlayerFeed announcements={filtered} playerId={playerId!} nowTs={nowTs} />
         )}
       </div>
     </div>
@@ -152,25 +361,23 @@ function CoachFeed({ announcements }: { announcements: GolfAnnouncementMeta[] })
   );
 }
 
-/* ─── Player feed (unread-first, mirrors the legacy sort) ──────────────────── */
+/* ─── Player feed (unread-first, STABLE across reloads) ─────────────────────────
+ * P282: the unread-first order must NOT reshuffle after hydration. The primary
+ * sort key is ack-needed (time-independent → identical at SSR and post-mount),
+ * which keeps "action needed" pinned to the top with no first-paint flash. The
+ * time-based recency component is folded in only as a SECONDARY tiebreaker among
+ * non-ack items, and because the server list already arrives date-descending,
+ * adding it does not move any item past the first stable paint. */
 function PlayerFeed({
   announcements,
   playerId,
+  nowTs,
 }: {
   announcements: GolfAnnouncementMeta[];
   playerId: string;
+  nowTs: number;
 }) {
-  // Defer time-dependent sort/state to the client (avoid hydration mismatch).
-  const [nowTs, setNowTs] = useState(0);
-  useEffect(() => setNowTs(Date.now()), []);
-
-  const sorted = [...announcements].sort((a, b) => {
-    const aUnread = isUnreadForPlayer(a, nowTs);
-    const bUnread = isUnreadForPlayer(b, nowTs);
-    if (aUnread && !bUnread) return -1;
-    if (!aUnread && bUnread) return 1;
-    return 0; // preserve server order (already date-sorted)
-  });
+  const sorted = useMemo(() => sortPlayerFeed(announcements, nowTs), [announcements, nowTs]);
 
   return (
     <div className="flex flex-col gap-3">

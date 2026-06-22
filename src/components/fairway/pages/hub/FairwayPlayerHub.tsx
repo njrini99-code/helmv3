@@ -42,12 +42,12 @@
 import { useCallback, useEffect, useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, ArrowRight, LayoutGrid } from 'lucide-react';
+import { ClipboardList, ArrowRight, LayoutGrid, TrendingUp, Trophy, Flag } from 'lucide-react';
 
 import { completeTask } from '@/app/golf/actions/tasks';
 import { respondToEvent } from '@/app/golf/actions/golf';
 
-import { ViewHeader, Button, InsightCard, Surface } from '@/components/fairway';
+import { ViewHeader, Button, InsightCard, Surface, fairwayToast } from '@/components/fairway';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 import {
@@ -68,6 +68,35 @@ const TEAM_HUB_TASKS = '/golf/dashboard/team-hub?tab=tasks';
 const TEAM_HUB_TRAVEL = '/golf/dashboard/team-hub?tab=travel';
 const CALENDAR = '/golf/dashboard/calendar';
 
+/** The player's personal-performance spine — the rest of the player app is built
+ *  around these. The triage hub links out to them (P442) so it's a true hub, not
+ *  a tasks-only island. */
+const PERFORMANCE_LINKS: {
+  href: string;
+  label: string;
+  description: string;
+  icon: typeof TrendingUp;
+}[] = [
+  {
+    href: '/golf/dashboard/rounds',
+    label: 'Rounds',
+    description: 'Post a round & review your scorecards',
+    icon: Flag,
+  },
+  {
+    href: '/golf/dashboard/stats',
+    label: 'Stats',
+    description: 'Your strokes-gained & trends',
+    icon: TrendingUp,
+  },
+  {
+    href: '/golf/dashboard/my-standing',
+    label: 'Standing',
+    description: 'Where you stack up on the team',
+    icon: Trophy,
+  },
+];
+
 /* ─────────────────────────────────────────────────────────────────────────
  * Props — IDENTICAL data + callbacks to the legacy PlayerHub, plus the
  * server-known first name + team name for the masthead (no extra fetch).
@@ -78,6 +107,9 @@ export interface FairwayPlayerHubProps {
   tasks: PlayerTask[];
   events: EventInvite[];
   announcements: GolfAnnouncementMeta[];
+  /** True when the announcements fetch FAILED (vs genuinely none) — surfaces an
+   *  honest "couldn't load — retry" affordance instead of a silent empty (P147). */
+  announcementsLoadError?: boolean;
   /** Full player name (e.g. "Nick Rini"); the masthead uses the first word. */
   playerName: string;
   /** Team name for the masthead eyebrow. */
@@ -96,6 +128,7 @@ export function FairwayPlayerHub({
   tasks,
   events,
   announcements,
+  announcementsLoadError = false,
   playerName,
   teamName,
   onCompleteTask,
@@ -125,7 +158,15 @@ export function FairwayPlayerHub({
   // Hub, and full events live in the Calendar. ───────────────────────────────
   const pendingTasks = tasks.filter((t) => t.status !== 'completed');
   const overdueTasks = tasks.filter((t) => t.status === 'overdue');
-  const pendingEvents = events.filter((e) => !e.rsvp_status || e.rsvp_status === 'pending');
+  // HONEST (P148): only un-RSVP'd events that are still actionable count as
+  // "needs your attention". A just-passed un-RSVP'd event is excluded — the
+  // RPC keeps events from the last 24h, but RSVPRow hides every action button
+  // once `start_time` is past, so counting one here would claim an action the
+  // row can't offer. Exclude past events so the urgent count matches what the
+  // player can actually act on.
+  const pendingEvents = events.filter(
+    (e) => (!e.rsvp_status || e.rsvp_status === 'pending') && new Date(e.start_time) >= now,
+  );
   // HONEST: only genuinely-upcoming trips qualify for the today glance. A past
   // trip (return-before-departure) is excluded here; the full history lives in
   // the Team Hub's Travel tab.
@@ -138,11 +179,17 @@ export function FairwayPlayerHub({
     setSheetOpen(true);
   };
 
-  // ── ONE primary action: contextual in the masthead ───────────────────────
+  // ── ONE primary action per view (P149 squint test) ───────────────────────
+  // When there ARE overdue tasks, the hero InsightCard owns the single solid
+  // primary CTA ("Open tasks" → TEAM_HUB_TASKS). The masthead must NOT render a
+  // second primary pointing at the same destination, so it demotes to a
+  // secondary "Review tasks" — affording the same jump without competing for the
+  // eye. With nothing overdue, there is no hero CTA, so the masthead's calm
+  // "View calendar" secondary stands alone.
   const primaryAction =
     overdueTasks.length > 0 ? (
       <Button
-        variant="primary"
+        variant="secondary"
         leftIcon={<ClipboardList className="h-4 w-4" />}
         onClick={() => router.push(TEAM_HUB_TASKS)}
       >
@@ -255,8 +302,9 @@ export function FairwayPlayerHub({
           </section>
         ) : null}
 
-        {/* Announcements — compact + self-acknowledging (renders nothing when none). */}
-        <AnnouncementsList announcements={announcements} />
+        {/* Announcements — compact + self-acknowledging (renders nothing when none,
+            an honest error affordance when the fetch failed — never a silent empty). */}
+        <AnnouncementsList announcements={announcements} loadError={announcementsLoadError} />
 
         {/* Next trips — a glance; the full Travel list lives in the Team Hub. */}
         {upcomingTrips.length > 0 ? (
@@ -275,10 +323,53 @@ export function FairwayPlayerHub({
           </section>
         ) : null}
 
-        {/* A calm doorway to everything else — the consolidated Team Hub. */}
-        <Link href="/golf/dashboard/team-hub" className="block rounded-card">
-          <Surface interactive padding="md" className="flex items-center justify-between gap-3">
-            <span className="flex min-w-0 items-center gap-3">
+        {/* Your game — the personal-performance spine (P442). The triage hub
+            links out to rounds / stats / standing so it connects to the
+            performance loop the rest of the player app is built around, instead
+            of being a tasks-only island. */}
+        <section>
+          <SectionTitle action={{ label: 'My qualifiers', onClick: () => router.push('/golf/dashboard/my-qualifiers') }}>
+            Your game
+          </SectionTitle>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {PERFORMANCE_LINKS.map(({ href, label, description, icon: Icon }) => (
+              <Surface
+                key={href}
+                as={Link}
+                href={href}
+                interactive
+                padding="md"
+                className="flex items-start gap-3"
+              >
+                <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
+                  <Icon className="h-4 w-4" aria-hidden />
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-fw-sans text-body font-medium text-text-primary">
+                    {label}
+                  </span>
+                  <span className="block font-fw-sans text-body-sm text-text-tertiary">
+                    {description}
+                  </span>
+                </span>
+              </Surface>
+            ))}
+          </div>
+        </section>
+
+        {/* A calm doorway to everything else — the consolidated Team Hub.
+            P151: render the Surface AS the Link so the focusable node and the
+            interactive affordance (hover lift + green focus-visible ring) are
+            the SAME element — Tab now lands a visible 2px ring on the tile
+            itself, not on an invisible wrapping <a>. */}
+        <Surface
+          as={Link}
+          href="/golf/dashboard/team-hub"
+          interactive
+          padding="md"
+          className="flex items-center justify-between gap-3"
+        >
+          <span className="flex min-w-0 items-center gap-3">
               <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
                 <LayoutGrid className="h-4 w-4" aria-hidden />
               </span>
@@ -292,8 +383,7 @@ export function FairwayPlayerHub({
               </span>
             </span>
             <ArrowRight className="h-4 w-4 flex-shrink-0 text-text-tertiary" aria-hidden />
-          </Surface>
-        </Link>
+        </Surface>
       </div>
 
       {/* Trip detail — Fairway Sheet (read of one trip), kept for the glance. */}
@@ -320,6 +410,7 @@ export interface FairwayPlayerHubWrapperProps {
   tasks: PlayerTask[];
   events: EventInvite[];
   announcements: GolfAnnouncementMeta[];
+  announcementsLoadError?: boolean;
   playerName: string;
   teamName: string;
   signalCard?: ReactNode;
@@ -330,6 +421,7 @@ export function FairwayPlayerHubWrapper({
   tasks: initialTasks,
   events: initialEvents,
   announcements,
+  announcementsLoadError = false,
   playerName,
   teamName,
   signalCard,
@@ -359,6 +451,10 @@ export function FairwayPlayerHubWrapper({
             t.id === taskId ? { ...t, status: 'pending' as const, completed_at: null } : t,
           ),
         );
+        // Nielsen #1/#9: the revert is invisible on its own (the checkbox just
+        // un-checks). Surface the plain-language reason so the player knows what
+        // happened and isn't left guessing why their tap "didn't stick".
+        fairwayToast.error(result.error ?? "Couldn't mark that task complete. Please try again.");
       }
 
       startTransition(() => {
@@ -383,6 +479,23 @@ export function FairwayPlayerHubWrapper({
       if (!result.success) {
         // Revert on failure
         setEvents(initialEvents);
+        // respondToEvent returns rich, typed reasons ("RSVP deadline has passed
+        // for this event.", "This event has been cancelled — RSVPs are closed.",
+        // "Only active members of this event's team can RSVP."). Previously these
+        // were thrown away and the player saw only a button flicker — a Nielsen #1
+        // (system status) + #9 (recover from errors) miss. Surface the real reason.
+        fairwayToast.error(result.error ?? "Couldn't save your RSVP. Please try again.");
+      } else {
+        // Nielsen #1: pair the error toast with an explicit success confirmation
+        // so a saved RSVP and a silently-failed one can NEVER look the same. The
+        // optimistic variant flip alone is too subtle to be unambiguous.
+        const confirmation =
+          status === 'accepted'
+            ? "RSVP saved — you're going"
+            : status === 'tentative'
+              ? 'RSVP saved — marked as maybe'
+              : "RSVP saved — you can't go";
+        fairwayToast.success(confirmation);
       }
 
       startTransition(() => {
@@ -398,6 +511,7 @@ export function FairwayPlayerHubWrapper({
       tasks={tasks}
       events={events}
       announcements={announcements}
+      announcementsLoadError={announcementsLoadError}
       playerName={playerName}
       teamName={teamName}
       onCompleteTask={handleCompleteTask}

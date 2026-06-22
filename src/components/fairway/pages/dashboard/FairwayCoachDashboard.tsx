@@ -16,8 +16,9 @@
  *   • ONE <h1> — a single ViewHeader (Fraunces greeting) replaces the stacked
  *     LargeTitleHeader + PageHeader plinth double-h1 (a11y mustFix).
  *   • Quick actions PROMOTED out of the page bottom into the ViewHeader action
- *     cluster (Add Player primary · Schedule / Create Qualifier secondary) as
- *     ONE shared Button vocabulary — no `.pill-soft`-on-Button, no bespoke Links.
+ *     cluster (Add Player primary · Schedule / Qualifiers secondary — verb/view
+ *     labels that match their list destinations) as ONE shared Button vocabulary
+ *     — no `.pill-soft`-on-Button, no bespoke Links.
  *   • Date range is a quiet Segmented control in a calm toolbar band (preserves
  *     the ?range router.push contract — logic unchanged).
  *   • NEW CoachHelm signal strip is the ONE glass-hero (InsightCard variant=hero)
@@ -77,7 +78,7 @@ import {
   IconClipboardList,
   IconAlertCircle,
 } from '@/components/icons';
-import { formatTimeInTz } from '@/lib/utils/timezone';
+import { formatTimeInTz, getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import {
   Users as LucideUsers,
   Flag as LucideFlag,
@@ -85,7 +86,7 @@ import {
   CheckCircle2 as LucideCheckCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { JoinRequestAlert } from '@/components/golf/roster/JoinRequestAlert';
+import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
 import type {
   CoachDashboardPayload,
   DashboardDateRange,
@@ -181,7 +182,38 @@ export function FairwayCoachDashboard({
   const [range, setRange] = useState<DashboardDateRange>(initialRange);
   const [copied, setCopied] = useState(false);
 
+  // P012: keep the Segmented's selected segment in lock-step with the URL/data.
+  // `?range` is a search param, so the route template (keyed by pathname) does
+  // NOT remount on Back/Forward — the server re-fetches with the new
+  // `initialRange` but local `range` would otherwise stay on the previously
+  // clicked value, leaving the highlighted segment disagreeing with the data.
+  // Re-seeding from the prop on every change resyncs the indicator.
+  useEffect(() => {
+    setRange(initialRange);
+  }, [initialRange]);
+
   const firstName = coach.full_name?.split(' ')[0] || 'Coach';
+
+  // Time-aware greeting (P008). The fixed "Good day" was subtly wrong all day.
+  // Resolve the hour in the team timezone (falling back to the browser's) on the
+  // CLIENT after mount — computing it during SSR would either pin to the server
+  // clock (wrong for the coach) or risk a hydration mismatch. Until then we show
+  // a time-neutral "Welcome back" that is never incorrect.
+  const tzForGreeting = enhancedData?.timezone;
+  const [greeting, setGreeting] = useState(`Welcome back, ${firstName}`);
+  useEffect(() => {
+    const tz = tzForGreeting || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    let part = 'day';
+    try {
+      const hour = getCurrentDecimalHourInTz(tz);
+      part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+    } catch {
+      // Intl/timezone unavailable — keep the time-neutral welcome.
+      setGreeting(`Welcome back, ${firstName}`);
+      return;
+    }
+    setGreeting(`Good ${part}, ${firstName}`);
+  }, [tzForGreeting, firstName]);
 
   // PRESERVED LOGIC: range change keeps the force-dynamic ?range re-fetch
   // contract (router.push). Presentation is calm; the contract is unchanged.
@@ -349,7 +381,7 @@ export function FairwayCoachDashboard({
       {/* ── 1 · MASTHEAD — single h1 + promoted action cluster ─────────────── */}
       <ViewHeader
         eyebrow="Coach Dashboard"
-        title={`Good day, ${firstName}`}
+        title={greeting}
         description={
           stats.rosterSize === 0
             ? 'Invite players to start tracking rounds, qualifiers and team performance.'
@@ -368,9 +400,12 @@ export function FairwayCoachDashboard({
               </Link>
             </Button>
             <Button variant="secondary" size="sm" asChild>
+              {/* P013: label matches the destination — this links to the
+                  qualifiers LIST, so the action reads as a view ("Qualifiers"),
+                  not the ambiguous bare noun that implied a create flow. */}
               <Link href="/golf/dashboard/qualifiers">
                 <IconFlag size={16} />
-                <span>Qualifier</span>
+                <span>Qualifiers</span>
               </Link>
             </Button>
           </>
@@ -398,8 +433,10 @@ export function FairwayCoachDashboard({
         />
       </div>
 
-      {/* Roster join-request approvals — preserved logic (roster.ts handlers) */}
-      <JoinRequestAlert />
+      {/* Roster join-request approvals — preserved logic (getTeamJoinRequests / roster.ts),
+          rendered through the Fairway warning InlineNotice so the dashboard stays one
+          calm matte surface (P003). Self-fetches on mount; parent owns the gap-8 rhythm. */}
+      <FairwayJoinRequestAlert />
 
       {/* ── 3 · THE ONE GLASS HERO — CoachHelm signal strip ────────────────── */}
       <InsightCard
@@ -430,6 +467,7 @@ export function FairwayCoachDashboard({
       {/* ── 3.5 · TODAY — schedule timeline (matte, calm) ──────────────────── */}
       <TodayPanel
         events={enhancedData?.todayEvents ?? []}
+        scheduleError={enhancedData?.todayScheduleError ?? false}
         timezone={enhancedData?.timezone}
       />
 
@@ -445,7 +483,7 @@ export function FairwayCoachDashboard({
               goodDirection="down"
               delta={
                 scoringDelta != null
-                  ? { value: Number(scoringDelta.toFixed(1)), label: 'over window' }
+                  ? { value: Number(scoringDelta.toFixed(1)), label: 'last 5 rounds' }
                   : undefined
               }
               sparkline={
@@ -456,12 +494,16 @@ export function FairwayCoachDashboard({
               footnote={`${roundsLogged} ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
             />
           ) : (
-            <Surface elevation="border" padding="sm">
-              <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
-                Scoring Avg
-              </span>
-              <InsufficientData compact unit="rounds" current={roundsLogged} required={3} className="mt-3" />
-            </Surface>
+            // Keep ONE tile silhouette across the KPI row (P010): the null metric
+            // recedes inside a MetricCard `empty` shell, not a different Surface shape.
+            <MetricCard
+              label="Scoring Avg"
+              value={0}
+              icon={<IconChartBar size={18} />}
+              empty
+              emptyMessage="Need 3+ rounds"
+              footnote={`${roundsLogged} of 3 rounds`}
+            />
           )}
 
           {girValue != null ? (
@@ -473,7 +515,7 @@ export function FairwayCoachDashboard({
               goodDirection="up"
               delta={
                 girDelta != null
-                  ? { value: Number(girDelta.toFixed(0)), suffix: '%', label: 'over window' }
+                  ? { value: Number(girDelta.toFixed(0)), suffix: '%', label: 'last 5 rounds' }
                   : undefined
               }
               sparkline={
@@ -483,10 +525,16 @@ export function FairwayCoachDashboard({
               }
             />
           ) : (
-            <Surface elevation="border" padding="sm">
-              <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">GIR %</span>
-              <InsufficientData compact unit="rounds" current={roundsLogged} required={3} className="mt-3" />
-            </Surface>
+            // Same MetricCard `empty` silhouette as the other null KPIs (P010) —
+            // one tile vocabulary across the row, never a different Surface shape.
+            <MetricCard
+              label="GIR %"
+              value={0}
+              icon={<IconTarget size={18} />}
+              empty
+              emptyMessage="Need 3+ rounds"
+              footnote={`${roundsLogged} of 3 rounds`}
+            />
           )}
 
           {puttsValue != null ? (
@@ -498,7 +546,7 @@ export function FairwayCoachDashboard({
               goodDirection="down"
               delta={
                 puttsDelta != null
-                  ? { value: Number(puttsDelta.toFixed(1)), label: 'over window' }
+                  ? { value: Number(puttsDelta.toFixed(1)), label: 'last 5 rounds' }
                   : undefined
               }
               sparkline={
@@ -508,12 +556,15 @@ export function FairwayCoachDashboard({
               }
             />
           ) : (
-            <Surface elevation="border" padding="sm">
-              <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
-                Putts / Rd
-              </span>
-              <InsufficientData compact unit="rounds" current={roundsLogged} required={3} className="mt-3" />
-            </Surface>
+            // Same MetricCard `empty` silhouette as the other null KPIs (P010).
+            <MetricCard
+              label="Putts / Rd"
+              value={0}
+              icon={<IconGolf size={18} />}
+              empty
+              emptyMessage="Need 3+ rounds"
+              footnote={`${roundsLogged} of 3 rounds`}
+            />
           )}
 
           {/* Roster is a real count (not a derived aggregate) — always honest. */}
@@ -586,6 +637,13 @@ export function FairwayCoachDashboard({
             ariaLabel="Recent team rounds"
             getRowId={(r) => r.id}
             density="comfortable"
+            // This is a "latest 8" digest with a "View all" link — sorting only
+            // the truncated slice would imply a team-wide ranking that isn't here
+            // (P006). Lock the order; the full sortable view lives at /rounds.
+            enableSorting={false}
+            // Every row is the obvious next action: open that round's detail (the
+            // route authorizes a coach for any team player's round) (P005).
+            onRowClick={(r) => router.push(`/golf/dashboard/rounds/${r.id}`)}
           />
         )}
       </section>
@@ -806,7 +864,15 @@ const EVENT_LABEL: Record<string, string> = {
   other: 'Event',
 };
 
-function TodayPanel({ events, timezone }: { events: TodayEvent[]; timezone?: string }) {
+function TodayPanel({
+  events,
+  scheduleError = false,
+  timezone,
+}: {
+  events: TodayEvent[];
+  scheduleError?: boolean;
+  timezone?: string;
+}) {
   // Resolve the display timezone on the client (Intl may differ between server
   // and browser); render time labels only after mount to avoid React #418.
   const [tz, setTz] = useState<string | null>(null);
@@ -819,7 +885,7 @@ function TodayPanel({ events, timezone }: { events: TodayEvent[]; timezone?: str
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Today</h2>
-          {events.length > 0 ? (
+          {!scheduleError && events.length > 0 ? (
             <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
               {events.length}
             </span>
@@ -834,7 +900,18 @@ function TodayPanel({ events, timezone }: { events: TodayEvent[]; timezone?: str
         </Link>
       </div>
 
-      {events.length === 0 ? (
+      {scheduleError ? (
+        // Degraded state — the schedule RPC failed. Surface a distinct, quiet
+        // "couldn't load" notice so a failed fetch is never mistaken for a
+        // genuinely empty day (P009 honesty rule).
+        <InlineNotice
+          tone="warning"
+          title="Couldn’t load today’s schedule"
+        >
+          We hit a snag fetching today’s events. Refresh to try again, or open the
+          calendar to see the full schedule.
+        </InlineNotice>
+      ) : events.length === 0 ? (
         <Surface elevation="border" padding="md">
           <EmptyState
             variant="subtle"
@@ -901,9 +978,19 @@ function TodayPanel({ events, timezone }: { events: TodayEvent[]; timezone?: str
  * ────────────────────────────────────────────────────────────────────────── */
 
 function actionItemHref(item: ActionItem): string {
-  if (item.type === 'task' || item.type === 'deadline') return '/golf/dashboard/tasks';
-  if (item.type === 'announcement') return '/golf/dashboard/announcements';
-  return '/golf/dashboard';
+  // P443: reference the SPECIFIC item, not just its containing list. The id is
+  // carried as `?highlight=<id>` so the destination list can scroll-to / open
+  // that item; the link never lands on the unfiltered list or a no-op self-link.
+  const id = encodeURIComponent(item.id);
+  if (item.type === 'task' || item.type === 'deadline') {
+    return `/golf/dashboard/tasks?highlight=${id}`;
+  }
+  if (item.type === 'announcement') {
+    return `/golf/dashboard/announcements?highlight=${id}`;
+  }
+  // Defensive fallback for any future item type — the tasks list is the most
+  // relevant landing, never the old `/dashboard` self-link no-op.
+  return '/golf/dashboard/tasks';
 }
 
 function formatRelativeDate(dateStr: string, now: Date): string {

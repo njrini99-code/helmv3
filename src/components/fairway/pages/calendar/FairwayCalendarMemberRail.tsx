@@ -121,7 +121,7 @@ export function FairwayCalendarMemberRail({
               {selected && color && (
                 <span
                   aria-hidden
-                  className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-canvas text-[9px] font-bold text-white"
+                  className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-canvas text-microbadge font-bold text-white"
                   style={{ backgroundColor: color.bg }}
                 >
                   {idx + 1}

@@ -23,6 +23,8 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
+import { FairwaySaveRoundModal } from '@/components/fairway/pages/rounds-new/FairwaySaveRoundModal';
+import { FairwayRoundSubmitOverlay } from '@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay';
 import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
@@ -76,6 +78,12 @@ export default function ContinueRoundClient({
   const router = useRouter();
   const { showToast } = useToast();
   const redesign = useRedesign();
+  // Flag-gated overlay swaps — mirror new-round-client so the resume flow shares
+  // the exact same exit-sheet + submit overlay as a fresh round. The Fairway
+  // versions share the legacy prop contracts exactly, so flag-off renders the
+  // legacy components byte-for-byte.
+  const ExitRoundModal = redesign ? FairwaySaveRoundModal : SaveRoundModal;
+  const SubmitOverlay = redesign ? FairwayRoundSubmitOverlay : RoundSubmitOverlay;
 
   // IndexedDB-based offline sync for shot-level persistence
   const [offlineSyncState, offlineSyncActions] = useOfflineSync({
@@ -876,37 +884,73 @@ export default function ContinueRoundClient({
   // ============================================================================
   return (
     <>
-      {/* Header Banner */}
-      <div className="bg-primary-50 border-b border-primary-200 px-4 py-3">
-        <div className="max-w-[720px] mx-auto flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-primary-900">
-              Continuing Round
-            </p>
-            <p className="text-xs text-primary-700">
-              {setupData.courseName} • Starting on hole {startHoleIndex + 1}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-medium text-primary-700">
-              {completedHoleStats.filter(s => s != null).length} of {holes.length} holes
-            </p>
+      {/* Header Banner — "Continuing Round" resume context.
+          FAIRWAY FORK (ADDITIVE): flag ON renders the same info on Fairway
+          tokens inside .fairway-ds so it matches the warm-black scorecard band
+          below it; flag OFF keeps the legacy cream banner byte-for-byte. */}
+      {redesign ? (
+        <div className={fairwayScope('bg-surface border-b border-border-subtle px-4 py-3')}>
+          <div className="max-w-[720px] mx-auto flex items-center gap-3">
+            <div className="w-8 h-8 rounded-fw-md bg-accent-500 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-text-on-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-fw-sans text-body-sm font-medium text-text-primary">
+                Continuing Round
+              </p>
+              <p className="font-fw-sans text-caption text-text-secondary">
+                {setupData.courseName} • Starting on hole {startHoleIndex + 1}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="font-fw-sans text-caption font-medium text-text-secondary">
+                {completedHoleStats.filter(s => s != null).length} of {holes.length} holes
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-primary-50 border-b border-primary-200 px-4 py-3">
+          <div className="max-w-[720px] mx-auto flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-primary-900">
+                Continuing Round
+              </p>
+              <p className="text-xs text-primary-700">
+                {setupData.courseName} • Starting on hole {startHoleIndex + 1}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-primary-700">
+                {completedHoleStats.filter(s => s != null).length} of {holes.length} holes
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Error Display */}
+      {/* Error Display — Fairway danger tokens on the redesign fork. */}
       {error && (
-        <div className="max-w-[720px] mx-auto px-4 py-4">
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-            {error}
+        redesign ? (
+          <div className={fairwayScope('max-w-[720px] mx-auto px-4 py-4')}>
+            <div role="alert" className="bg-fw-danger-bg border border-fw-danger/30 text-fw-danger px-4 py-3 rounded-fw-md font-fw-sans text-body-sm">
+              {error}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="max-w-[720px] mx-auto px-4 py-4">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          </div>
+        )
       )}
 
       {/* Offline Indicator Banner */}
@@ -925,17 +969,33 @@ export default function ContinueRoundClient({
         />
       </div>
 
-      {/* Submit banner — shown when all holes are done but finish confirm was dismissed */}
+      {/* Submit banner — shown when all holes are done but finish confirm was dismissed.
+          FAIRWAY FORK: flag ON renders an on-dark "cockpit" band on Fairway tokens
+          so it reads as one surface with the warm-black scorecard band; flag OFF
+          keeps the legacy cream-green banner byte-for-byte. */}
       {pendingFinalStats && !showFinishConfirm && !submitting && (
-        <div className="sticky top-[var(--golf-mobile-header-offset)] z-20 bg-primary-600 px-4 py-3 text-white lg:top-[49px] flex items-center justify-between gap-3">
-          <p className="text-sm font-medium">All holes completed — ready to submit!</p>
-          <Button variant="primary"
-            onClick={() => setShowFinishConfirm(true)}
-            className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
-          >
-            Submit Round
-          </Button>
-        </div>
+        redesign ? (
+          <div className={fairwayScope('on-dark sticky top-[var(--golf-mobile-header-offset)] z-20 bg-nav-bg px-4 py-3 text-nav-text lg:top-[49px] flex items-center justify-between gap-3')}>
+            <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes completed — ready to submit!</p>
+            <Button
+              variant="primary"
+              onClick={() => setShowFinishConfirm(true)}
+              className="flex-shrink-0 rounded-fw-md bg-accent-500 px-4 py-2 font-fw-sans text-body-sm font-medium text-text-on-accent transition-colors hover:bg-accent-600 active:bg-accent-700"
+            >
+              Submit Round
+            </Button>
+          </div>
+        ) : (
+          <div className="sticky top-[var(--golf-mobile-header-offset)] z-20 bg-primary-600 px-4 py-3 text-white lg:top-[49px] flex items-center justify-between gap-3">
+            <p className="text-sm font-medium">All holes completed — ready to submit!</p>
+            <Button variant="primary"
+              onClick={() => setShowFinishConfirm(true)}
+              className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
+            >
+              Submit Round
+            </Button>
+          </div>
+        )
       )}
 
       {/* Shot Tracking */}
@@ -976,8 +1036,8 @@ export default function ContinueRoundClient({
       />
       )}
 
-      {/* Save Round Modal */}
-      <SaveRoundModal
+      {/* Save Round Modal — flag-gated Fairway/legacy swap (matches new-round) */}
+      <ExitRoundModal
         isOpen={showExitModal}
         onClose={() => setShowExitModal(false)}
         onSaveForLater={handleSaveForLater}
@@ -1246,8 +1306,9 @@ export default function ContinueRoundClient({
         </AnimatePresence>
       </LazyMotion>
 
-      {/* Submit Overlay — shows during submission, success celebration, and errors */}
-      <RoundSubmitOverlay
+      {/* Submit Overlay — shows during submission, success celebration, and errors.
+          Flag-gated Fairway/legacy swap (matches new-round). */}
+      <SubmitOverlay
         isVisible={submitting}
         totalScore={submittingTotalScore}
         toPar={submittingToPar}

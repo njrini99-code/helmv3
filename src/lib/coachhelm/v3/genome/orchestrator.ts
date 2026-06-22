@@ -28,12 +28,27 @@ import type { Json } from '@/lib/types/database';
 
 const WINDOW_DAYS = 90;
 
+/**
+ * Why a null dimension is null — stored on the persisted vector so the slot is
+ * explicitly LABELLED rather than a bare null the UI has to guess at (P2-21
+ * "Label unavailable dimensions explicitly").
+ */
+const UNAVAILABLE_LABEL = 'Needs more rounds';
+
 export interface ComputeResult {
   player_id: string;
   dimensions_computed: number;
   dimensions_null: number;
   rounds_basis: number;
   errors: number;
+  /** Whether a vector was actually written. False when skipped (see below). */
+  persisted: boolean;
+  /**
+   * Why the upsert was skipped, if it was. Distinguishes the two guarded cases
+   * (P2-21): a zero-valid-dimension profile (would be an all-null vector) and a
+   * source-load failure (must NOT clobber the last good vector).
+   */
+  skipped_reason: 'none' | 'no_valid_dimensions' | 'source_failure';
 }
 
 export async function computeGenomeForPlayer(player_id: string): Promise<ComputeResult> {
@@ -44,16 +59,31 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
     dimensions_null: 0,
     rounds_basis: 0,
     errors: 0,
+    persisted: false,
+    skipped_reason: 'none',
   };
 
   // --- Load context ---
   const since = new Date(Date.now() - WINDOW_DAYS * 86400_000).toISOString().slice(0, 10);
-  const { data: rounds } = await supabase
+  const { data: rounds, error: roundsErr } = await supabase
     .from('golf_rounds')
     .select('id, round_date, round_type, total_score, score_to_par')
     .eq('player_id', player_id)
     .eq('status', 'completed')
     .gte('round_date', since);
+
+  // SOURCE FAILURE (rounds load) — never overwrite the last good vector with a
+  // vector computed from a partial/empty context. Abort before any upsert.
+  if (roundsErr) {
+    await logServerError(
+      `genome: rounds load failed for ${player_id}: ${roundsErr.message}`,
+      { action: 'v3.genome.compute' },
+    );
+    result.errors += 1;
+    result.skipped_reason = 'source_failure';
+    return result;
+  }
+
   const roundIds = (rounds ?? []).map((r) => r.id);
   const roundMetadata: GenomeRound[] = (rounds ?? []).map((r) => ({
     id: r.id,
@@ -68,7 +98,7 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
   let shots: GenomeShot[] = [];
 
   if (roundIds.length > 0) {
-    const [{ data: holes }, { data: shotRows }] = await Promise.all([
+    const [{ data: holes, error: holesErr }, { data: shotRows, error: shotsErr }] = await Promise.all([
       fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
         .select('round_id, hole_number, par, score')
@@ -84,6 +114,20 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
         .order('id', { ascending: true })
         .range(from, to) as unknown as PromiseLike<{ data: GenomeShot[] | null; error: { message: string } | null }>),
     ]);
+
+    // SOURCE FAILURE (hole/shot load) — same rule: a half-loaded context would
+    // make valid dims compute from missing data, so abort before the upsert and
+    // leave the last good vector intact (P2-21).
+    if (holesErr || shotsErr) {
+      await logServerError(
+        `genome: detail load failed for ${player_id}: ${holesErr?.message ?? shotsErr?.message ?? 'unknown'}`,
+        { action: 'v3.genome.compute' },
+      );
+      result.errors += 1;
+      result.skipped_reason = 'source_failure';
+      return result;
+    }
+
     hole_scores = (holes ?? [])
       .filter((h): h is { round_id: string; hole_number: number; par: number; score: number } =>
         h.score !== null && typeof h.par === 'number',
@@ -125,12 +169,26 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
       result.errors += 1;
       res = { value: null, confidence: null };
     }
-    vector[dim.id] = res;
-    if (res.value === null) result.dimensions_null += 1;
-    else result.dimensions_computed += 1;
+    if (res.value === null) {
+      // Label the empty slot explicitly so the stored vector self-documents why
+      // the dimension is unavailable, instead of a bare null (P2-21).
+      vector[dim.id] = { ...res, label: res.label ?? UNAVAILABLE_LABEL };
+      result.dimensions_null += 1;
+    } else {
+      vector[dim.id] = res;
+      result.dimensions_computed += 1;
+    }
   }
 
-  // --- Upsert ---
+  // NO VALID DIMENSIONS — persisting here would write an all-null vector (e.g. a
+  // zero-round player), which is exactly the trust-eroding state P2-21 calls out.
+  // Skip the upsert: leave any existing row untouched and create nothing new.
+  if (result.dimensions_computed === 0) {
+    result.skipped_reason = 'no_valid_dimensions';
+    return result;
+  }
+
+  // --- Upsert (only profiles with ≥1 valid dimension) ---
   const { error: upsertErr } = await supabase
     .from('golf_player_genome')
     .upsert(
@@ -147,7 +205,9 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
       action: 'v3.genome.upsert',
     });
     result.errors += 1;
+    return result;
   }
 
+  result.persisted = true;
   return result;
 }

@@ -30,6 +30,21 @@ import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 
+/* ─── Length limit — mirrors sendMessageSchema (action-schemas.ts:42,
+ *     content.max(5000)) so the field hard-prevents overflow (maxLength) and the
+ *     counter matches the server constraint exactly. The counter only surfaces
+ *     as the field nears its limit (Nielsen #5 error prevention). ─────────────── */
+const MESSAGE_MAX = 5000;
+/** Show the remaining-chars hint once the field is ≥90% of its max. */
+const COUNTER_THRESHOLD = 0.9;
+
+/** Subtle "N left" hint that only appears as the message nears its limit. */
+function charsLeftHelp(value: string, max: number): string | undefined {
+  if (value.length < max * COUNTER_THRESHOLD) return undefined;
+  const left = max - value.length;
+  return `${left.toLocaleString()} character${left === 1 ? '' : 's'} left`;
+}
+
 export interface MessageComposerProps {
   /** Send plain text (the unchanged useGolfMessages.sendMessage path). */
   onSend: (content: string) => Promise<boolean>;
@@ -159,6 +174,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
   };
 
   const canSend = (message.trim().length > 0 || pendingAttachments.length > 0) && !sending;
+  const charsLeft = charsLeftHelp(message, MESSAGE_MAX);
 
   return (
     // Sunken matte composer track — mirrors AskThreadPane's composer slot.
@@ -197,6 +213,7 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
           onKeyDown={handleKeyDown}
           placeholder="Type a message…"
           rows={1}
+          maxLength={MESSAGE_MAX}
           className={cn(
             'flex-1 resize-none bg-transparent px-2 py-2',
             'font-fw-sans text-base text-text-primary lg:text-body',
@@ -233,9 +250,19 @@ export function MessageComposer({ onSend, onSendWithAttachments, onTyping }: Mes
         </button>
       </div>
 
-      <p className="mt-1.5 px-2 font-fw-sans text-eyebrow text-text-tertiary">
-        Press Enter to send, Shift+Enter for a new line.
-      </p>
+      <div className="mt-1.5 flex items-center justify-between gap-2 px-2">
+        <p className="font-fw-sans text-eyebrow text-text-tertiary">
+          Press Enter to send, Shift+Enter for a new line.
+        </p>
+        {charsLeft && (
+          <span
+            className="flex-shrink-0 font-fw-sans text-eyebrow tabular-nums text-text-tertiary"
+            aria-live="polite"
+          >
+            {charsLeft}
+          </span>
+        )}
+      </div>
     </form>
   );
 }

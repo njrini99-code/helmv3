@@ -185,7 +185,7 @@ export function FairwayMonthGrid({
                       <span
                         key={o.id}
                         title={`${o.playerName} · ${o.title}`}
-                        className="flex items-center gap-1 truncate rounded-[6px] px-1.5 py-1 text-left font-fw-sans text-[11px] font-medium leading-tight text-text-primary"
+                        className="flex items-center gap-1 truncate rounded-[6px] px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight text-text-primary"
                         style={{ backgroundColor: o.color.light }}
                       >
                         <span
@@ -211,7 +211,7 @@ export function FairwayMonthGrid({
                       onClick={onEventClick ? () => onEventClick(e) : undefined}
                       title={e.title}
                       className={cn(
-                        'truncate rounded-[6px] px-1.5 py-1 text-left font-fw-sans text-[11px] font-medium leading-tight transition-colors',
+                        'truncate rounded-[6px] px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
                         TONE_CHIP[tone],
                       )}
                     >
@@ -229,7 +229,7 @@ export function FairwayMonthGrid({
                   <button
                     type="button"
                     onClick={onSelectDate ? () => onSelectDate(day) : undefined}
-                    className="px-1.5 text-left font-fw-sans text-[11px] font-medium text-text-tertiary transition-colors hover:text-text-secondary"
+                    className="px-1.5 text-left font-fw-sans text-microlabel font-medium text-text-tertiary transition-colors hover:text-text-secondary"
                   >
                     +{overflow} more
                   </button>

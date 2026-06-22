@@ -52,6 +52,7 @@ import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/rank
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { checkRateLimit } from '@/lib/auth/supabase-rate-limit';
+import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 // 2026-05-23: All user-callable CoachHelm engine entrypoints rate-limit at
 // 5/min/user — the engine runs are multi-second jobs that load shots, mine
@@ -1168,7 +1169,7 @@ export async function acknowledgeInsight(insightId: string) {
       })
       .eq('id', insightId)
       .eq('team_id', access.teamId)
-      .select('id');
+      .select('id, player_id');
 
     if (error) {
       await logServerError(`acknowledgeInsight failed: ${error.message}`, {
@@ -1181,6 +1182,20 @@ export async function acknowledgeInsight(insightId: string) {
 
     if (!data || data.length === 0) {
       return { success: false, error: 'Insight not found' };
+    }
+
+    // P1-12: record the ACK as a real insight action (failure-silent). Only a
+    // confirmed update of an authorized row reaches here, so "not-acted can't
+    // be acted" holds. player_id comes from the updated row.
+    const ackPlayerId = (data[0] as { player_id?: string | null } | undefined)?.player_id;
+    if (ackPlayerId) {
+      void recordInsightAction({
+        insight_id: insightId,
+        player_id: ackPlayerId,
+        actor_id: user.id,
+        actor_role: 'coach',
+        action_type: 'acknowledged',
+      });
     }
 
     revalidatePath('/golf/dashboard');
@@ -1228,7 +1243,7 @@ export async function dismissInsight(insightId: string) {
       })
       .eq('id', insightId)
       .eq('team_id', access.teamId)
-      .select('id');
+      .select('id, player_id');
 
     if (error) {
       await logServerError(`dismissInsight failed: ${error.message}`, {
@@ -1243,6 +1258,18 @@ export async function dismissInsight(insightId: string) {
       return { success: false, error: 'Insight not found' };
     }
 
+    // P1-12: record the DISMISS as a real insight action (failure-silent).
+    const dismissPlayerId = (data[0] as { player_id?: string | null } | undefined)?.player_id;
+    if (dismissPlayerId) {
+      void recordInsightAction({
+        insight_id: insightId,
+        player_id: dismissPlayerId,
+        actor_id: user.id,
+        actor_role: 'coach',
+        action_type: 'dismissed',
+      });
+    }
+
     revalidatePath('/golf/dashboard');
     // C2/F112 — revalidate the insights list route so the dismissed row drops.
     revalidatePath('/golf/dashboard/insights');
@@ -1250,6 +1277,81 @@ export async function dismissInsight(insightId: string) {
   } catch (error) {
     await logServerError(`dismissInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
       action: 'dismissInsight',
+      featureArea: 'insights',
+      extra: { insightId },
+    });
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// ============================================================================
+// REACTIVATE INSIGHT (undo for acknowledge / dismiss)
+// ============================================================================
+
+/**
+ * P030 — the truthful reverse of `acknowledgeInsight` / `dismissInsight`, so a
+ * per-row triage toast can offer a real Undo (Nielsen #3) that actually
+ * restores the row server-side, not just in the UI. Sets the coach axis back to
+ * `status='active'`, clears the acknowledge/dismiss stamps, and restores the
+ * engine lifecycle axis to the row's prior visible state (passed by the caller
+ * from its optimistic snapshot — defaults to 'detected', a visible state, so the
+ * row reappears in the canonical V3 feed). Same auth + ownership boundary as the
+ * forward actions. Additive — no existing action's contract changes.
+ */
+export async function reactivateInsight(
+  insightId: string,
+  priorLifecycleState?: 'detected' | 'matured' | 'addressed' | 'resolved',
+) {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const access = await verifyInsightAccess(insightId, user.id, supabase);
+    if (!access.allowed) {
+      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+    }
+
+    // Restore to a VISIBLE lifecycle state so the row returns to the feed; never
+    // leave it 'archived'/'tentative' (the visibility filter would hide it).
+    const lifecycle = priorLifecycleState ?? 'detected';
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('golf_coach_insights')
+      .update({
+        status: 'active',
+        acknowledged_at: null,
+        dismissed: false,
+        dismissed_at: null,
+        lifecycle_state: lifecycle,
+      })
+      .eq('id', insightId)
+      .eq('team_id', access.teamId)
+      .select('id');
+
+    if (error) {
+      await logServerError(`reactivateInsight failed: ${error.message}`, {
+        action: 'reactivateInsight',
+        featureArea: 'insights',
+        extra: { insightId, errorCode: error.code },
+      });
+      return { success: false, error: 'Operation failed. Please try again.' };
+    }
+
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Insight not found' };
+    }
+
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/insights');
+    return { success: true };
+  } catch (error) {
+    await logServerError(`reactivateInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'reactivateInsight',
       featureArea: 'insights',
       extra: { insightId },
     });
@@ -1286,7 +1388,7 @@ export async function resolveInsight(insightId: string) {
       })
       .eq('id', insightId)
       .eq('team_id', access.teamId)
-      .select('id');
+      .select('id, player_id');
 
     if (error) {
       await logServerError(`resolveInsight failed: ${error.message}`, {
@@ -1299,6 +1401,18 @@ export async function resolveInsight(insightId: string) {
 
     if (!data || data.length === 0) {
       return { success: false, error: 'Insight not found' };
+    }
+
+    // P1-12: record the RESOLVE as a real insight action (failure-silent).
+    const resolvePlayerId = (data[0] as { player_id?: string | null } | undefined)?.player_id;
+    if (resolvePlayerId) {
+      void recordInsightAction({
+        insight_id: insightId,
+        player_id: resolvePlayerId,
+        actor_id: user.id,
+        actor_role: 'coach',
+        action_type: 'resolved',
+      });
     }
 
     revalidatePath('/golf/dashboard');
@@ -2120,6 +2234,10 @@ export async function generatePracticeRecommendations(playerId: string): Promise
   focusAreas?: Array<{
     area: string;
     strokesGained: number;
+    /** Display magnitude in the row's native unit (defaults to strokesGained). */
+    value?: number;
+    /** Native unit for `value`. Only 'strokes/round' traces to strokes_impact. */
+    unit?: 'strokes/round' | 'yd from target' | 'opportunity';
     trend: 'improving' | 'stable' | 'declining';
     recommendation: string;
   }>;
@@ -2418,10 +2536,18 @@ export interface PlayerCoachHelmDashboardData {
   // Active insights
   insights: ComposedInsight[];
 
-  // Focus areas with strokes gained context
+  // Focus areas with strokes gained context.
+  // P2-18: `strokesGained` is kept as the internal ordering magnitude (back-compat
+  // contract), but ONLY stroke-impact-derived rows may be LABELLED strokes/round.
+  // `value` + `unit` carry each row's NATIVE quantity so the UI never presents a
+  // distance error or a causal effect-size as "strokes/round".
   focusAreas: Array<{
     area: string;
     strokesGained: number;
+    /** Display magnitude in the row's native unit (defaults to strokesGained). */
+    value?: number;
+    /** Native unit for `value`. Only 'strokes/round' traces to strokes_impact. */
+    unit?: 'strokes/round' | 'yd from target' | 'opportunity';
     trend: 'improving' | 'stable' | 'declining';
     recommendation: string;
   }>;
@@ -2674,6 +2800,9 @@ function buildFocusAreasFromAnalysis(analysis: PlayerAnalysis | null): PlayerCoa
     focusAreas.push({
       area: areaName,
       strokesGained: -pattern.strokeImpact, // Negative because it's costing strokes
+      // P2-18: pattern.strokeImpact IS a per-round stroke impact, so this row may
+      // honestly be labelled strokes/round.
+      unit: 'strokes/round',
       trend: pattern.trend === 'strengthening' ? 'declining' :
              pattern.trend === 'weakening' ? 'improving' : 'stable',
       recommendation: pattern.recommendation || 'Focus on improving this area.',
@@ -2689,7 +2818,13 @@ function buildFocusAreasFromAnalysis(analysis: PlayerAnalysis | null): PlayerCoa
 
       focusAreas.push({
         area: areaName,
-        strokesGained: -(shotPattern.avgDistanceError / 10), // Approximate strokes impact
+        // P2-18: avgDistanceError is YARDS from target, NOT strokes/round. The
+        // legacy `/10` was a fabricated stroke conversion. Keep a small negative
+        // strokesGained ONLY for internal ordering, but surface the row's NATIVE
+        // value+unit (yards) so the UI never mislabels it as strokes/round.
+        strokesGained: -(shotPattern.avgDistanceError / 10),
+        value: shotPattern.avgDistanceError,
+        unit: 'yd from target',
         trend: 'stable',
         recommendation: shotPattern.recommendation,
       });
@@ -2705,7 +2840,12 @@ function buildFocusAreasFromAnalysis(analysis: PlayerAnalysis | null): PlayerCoa
 
       focusAreas.push({
         area: areaName,
+        // P2-18: causal.strength is a unitless effect size (0-1), NOT strokes.
+        // Keep it negative for ordering, but mark it a qualitative opportunity so
+        // the UI shows an "opportunity" tier rather than a fake strokes/round value.
         strokesGained: -causal.strength,
+        value: causal.strength,
+        unit: 'opportunity',
         trend: 'stable',
         recommendation: `Improving ${causal.cause} could positively impact ${causal.effect}.`,
       });
@@ -3210,8 +3350,11 @@ export async function dismissComposedInsight(
  */
 export async function triggerPlayerInsightsAfterRound(
   playerId: string
-): Promise<{ success: boolean; insights_created?: number; error?: string }> {
+): Promise<{ success: boolean; insights_created?: number; error?: string; partial?: boolean }> {
   const startTime = Date.now();
+  // P0-04: track whether any mandatory generator failed so the caller
+  // (postRoundTrigger) can mark the round PARTIAL rather than fully clean.
+  let hadGeneratorFailures = false;
 
   try {
     const admin = createAdminClient();
@@ -3343,6 +3486,7 @@ export async function triggerPlayerInsightsAfterRound(
     // generators succeeded. Log the failures for observability, continue with
     // whatever the orchestrator did emit.
     if (analysis.generatorSummary?.failures?.length) {
+      hadGeneratorFailures = true;
       const failedGenerators = analysis.generatorSummary.failures
         .map((failure) => `${failure.generator}: ${failure.reason}`)
         .join('; ');
@@ -3529,7 +3673,7 @@ export async function triggerPlayerInsightsAfterRound(
     // after the server action response has been sent, which is outside the allowed
     // context for revalidation. The caller (submitGolfRoundComprehensive) already
     // revalidates all relevant paths before invoking this.
-    return { success: true, insights_created: newInsights.length };
+    return { success: true, insights_created: newInsights.length, partial: hadGeneratorFailures };
   } catch (error) {
     await logServerError(
       `CoachHelm post-round trigger failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -3674,6 +3818,25 @@ async function ensureCoachInTeamOrg(
   const isHeadCoach = isPrimaryRaw === true;
 
   return { ok: true, userId: user.id, coachId: coach.id, isHeadCoach };
+}
+
+/**
+ * P084 — resolve whether the current coach is the head coach for a team, using
+ * the SAME canonical gate (`ensureCoachInTeamOrg` → `is_golf_team_primary_coach`
+ * RPC) that `updateTeamCoachHelmSettings` enforces server-side. Settings pages
+ * call this so the Team CoachHelm master switch can be rendered DISABLED for
+ * assistant coaches (error prevention, Nielsen #5) instead of letting them flip
+ * it and watch it revert with a permission error.
+ */
+export async function getTeamCoachHelmAccess(
+  teamId: string,
+): Promise<{ success: boolean; isHeadCoach: boolean; error?: string }> {
+  if (!teamId) return { success: false, isHeadCoach: false, error: 'Team id required' };
+
+  const access = await ensureCoachInTeamOrg(teamId);
+  if (!access.ok) return { success: false, isHeadCoach: false, error: access.error };
+
+  return { success: true, isHeadCoach: access.isHeadCoach };
 }
 
 export async function getOrCreateTeamCoachHelmSettings(

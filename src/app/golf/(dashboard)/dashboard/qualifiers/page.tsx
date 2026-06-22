@@ -49,7 +49,13 @@ export default async function GolfQualifiersPage() {
       .from('golf_qualifiers')
       .select('*')
       .eq('team_id', teamId)
-      .order('start_date', { ascending: false });
+      .order('start_date', { ascending: false })
+      // P328: bound the fetch to the PostgREST hard server cap. A team's
+      // qualifier history grows unbounded across seasons; an explicit limit
+      // makes the ceiling intentional (newest-1000 by start_date) instead of
+      // silently truncated, and the Fairway list paginates the concluded
+      // bucket client-side so the page stays scannable.
+      .limit(1000);
 
     qualifiers = qualifiersData || [];
   }

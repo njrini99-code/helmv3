@@ -14,7 +14,10 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { normalizePlayerMetrics } from '@/lib/coachhelm/v2/stats';
-import { getInsightsForPlayer } from '@/app/golf/actions/insight-delivery';
+import {
+  getInsightsForPlayer,
+  getTopInsightsForPlayers,
+} from '@/app/golf/actions/insight-delivery';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { logServerError } from '@/lib/server-error-logger';
 
@@ -343,15 +346,15 @@ export async function getTeamStatsIntelligence(
     const byPlayer = new Map<string, (typeof normalized)[number]>();
     for (const n of normalized) byPlayer.set(n.playerId, n);
 
-    // Pull top insight per player from the feed (evidence-backed, non-archived).
-    // Done in parallel to keep coach-view roster fast.
-    const insightPairs = await Promise.all(
-      playerIds.map(async (pid) => {
-        const rows = await getInsightsForPlayer(pid, { limit: 1 });
-        return [pid, rows] as const;
-      }),
-    );
-    const insightMap = new Map<string, EvidenceInsight[]>(insightPairs);
+    // Pull the top insight per player from the feed (evidence-backed,
+    // non-archived). ONE batched query for the whole roster (P446): the old
+    // per-player `getInsightsForPlayer` fan-out re-ran auth.getUser +
+    // verifyPlayerAccess (a player query + an RPC) + the data query on EVERY
+    // call, so an N-player roster fired ~3-4N concurrent round-trips per render.
+    // `getTopInsightsForPlayers` authorizes once (the coach is already verified
+    // for this team above; RLS scopes the read) and groups in memory, so this
+    // is O(1) queries regardless of roster size.
+    const insightMap = await getTopInsightsForPlayers(playerIds);
 
     const players = playerIds.map((pid) => {
       const n = byPlayer.get(pid);

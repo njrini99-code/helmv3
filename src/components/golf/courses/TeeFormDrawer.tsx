@@ -24,7 +24,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { FormField } from '@/components/fairway/forms/FormField';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { useToast } from '@/components/ui/sonner';
 import { IconX, IconFlag } from '@/components/icons';
 import type { GolfCourseTeeWithHoles, GolfTeeCategory } from '@/lib/types/golf-course';
@@ -301,15 +301,15 @@ export function TeeFormDrawer({
               {holesCount}-hole tee · pars and yardages per hole
             </p>
           </div>
-          <Button
+          <IconButton
             type="button"
             variant="ghost"
-            size="icon-sm"
+            size="sm"
             aria-label="Close"
             onClick={() => onOpenChange(false)}
           >
             <IconX size={18} aria-hidden />
-          </Button>
+          </IconButton>
         </div>
 
         {/* Scrollable body — the hole editor can be tall */}
@@ -507,7 +507,7 @@ export function TeeFormDrawer({
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="button" variant="primary" onClick={handleSubmit} isLoading={submitting}>
+          <Button type="button" variant="primary" onClick={handleSubmit} busy={submitting}>
             {mode === 'create' ? 'Add tee' : 'Save changes'}
           </Button>
         </div>

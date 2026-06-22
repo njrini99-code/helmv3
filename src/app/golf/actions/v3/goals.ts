@@ -18,6 +18,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { ACTIVE_GOAL_SOFT_CAP } from '@/lib/coachhelm/v3/goals/types';
 import type {
   GoalCoachAssignmentMode,
+  GoalOrigin,
   GoalTargetSource,
 } from '@/lib/coachhelm/v3/goals/types';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
@@ -36,6 +37,11 @@ export interface CreateGoalInput {
   team_id?: string | null;
   player_id_if_coach_creating?: string;
   coach_assignment_mode?: GoalCoachAssignmentMode;
+  // Provenance — defaults to 'manual'. Engine-suggested acceptances pass
+  // 'engine_suggested' + the originating suggestion's insight id so the goal
+  // carries an auditable lineage (P1-07).
+  origin?: GoalOrigin;
+  origin_insight_id?: string | null;
 }
 
 export interface ActionResult {
@@ -135,7 +141,8 @@ export async function createGoal(input: CreateGoalInput): Promise<ActionResult> 
           : null,
       shared_with_coach: input.shared_with_coach ?? false,
       shared_at: input.shared_with_coach ? new Date().toISOString() : null,
-      origin: 'manual' as const,
+      origin: input.origin ?? ('manual' as const),
+      origin_insight_id: input.origin_insight_id ?? null,
     };
 
     const { data, error } = await supabase
@@ -245,7 +252,14 @@ export async function acceptGoalSuggestion(
       target_value: sug.suggested_target_value,
       target_source: 'midpoint',
       baseline_value: null,
+      // Provenance (P1-07): mark the goal engine-suggested and carry the
+      // suggestion's originating insight id so acceptance is auditable.
+      origin: 'engine_suggested',
+      origin_insight_id: sug.origin_insight_id ?? null,
     });
+    // Transactional discipline (P1-07): only mark the suggestion accepted if
+    // the goal row actually inserted. If createGoal failed, leave the suggestion
+    // pending so the player can retry — never report a phantom acceptance.
     if (!createResult.ok) return createResult;
 
     await supabase

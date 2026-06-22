@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 // ============================================================================
 // TYPES
@@ -408,6 +409,68 @@ export async function completeFocusArea(
 }
 
 /**
+ * Reactivate (re-open) a completed focus area.
+ *
+ * The inverse of `completeFocusArea` — used to recover from an accidental
+ * "Mark complete" tap (toast Undo) and to re-open a finished area from the
+ * completed list. Sets `status='active'` and clears `completed_at`. Mirrors the
+ * same auth + access checks and the select-back guard so a 0-row update (id
+ * mismatch / not permitted) surfaces as a failure rather than a false success.
+ */
+export async function reactivateFocusArea(
+  focusAreaId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data: focusArea } = await supabase
+    .from('golf_player_focus_areas')
+    .select('player_id, status')
+    .eq('id', focusAreaId)
+    .maybeSingle();
+
+  if (!focusArea?.player_id) {
+    return { success: false, error: 'Focus area not found' };
+  }
+
+  const access = await verifyPlayerAccess(focusArea.player_id, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  const nowIso = new Date().toISOString();
+  const { data: updated, error } = await supabase
+    .from('golf_player_focus_areas')
+    .update({
+      status: 'active',
+      completed_at: null,
+      updated_at: nowIso,
+    })
+    .eq('id', focusAreaId)
+    .select('id');
+
+  if (error) {
+    await logServerError(`Failed to reactivate focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.reactivateFocusArea' });
+    return { success: false, error: 'Failed to reopen. Please try again.' };
+  }
+
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Focus area not found or not permitted' };
+  }
+
+  revalidatePath('/golf/dashboard/development');
+  revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/analytics/coachhelm');
+
+  return { success: true };
+}
+
+/**
  * Resolve a player's current team + a coach to attribute a new focus area to.
  * Returns the first active team membership for the player.
  * `coach_id` falls back to whichever coach staffs that team (any one), or null.
@@ -572,6 +635,17 @@ export async function createFocusAreaFromInsightV2(
     );
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
+
+  // P1-12: creating a focus area FROM an insight is a real coach action on that
+  // insight — record it (failure-silent) so the effectiveness rollup counts it.
+  void recordInsightAction({
+    insight_id: args.insightId,
+    player_id: args.playerId,
+    actor_id: user.id,
+    actor_role: 'coach',
+    action_type: 'create_focus',
+    metadata: { focus_area_id: row.id },
+  });
 
   revalidatePath('/golf/dashboard/my-development');
   revalidatePath('/golf/dashboard/development');
@@ -765,6 +839,18 @@ export async function createFocusAreaFromInsight(
     })
     .eq('id', data.insight_id);
   await (insight?.team_id ? ackQuery.eq('team_id', insight.team_id) : ackQuery);
+
+  // P1-12: record the focus-area creation as a real action on the source
+  // insight (failure-silent). Only a confirmed insert of an authorized row
+  // reaches here, so a non-action can never be counted as one.
+  void recordInsightAction({
+    insight_id: data.insight_id,
+    player_id: data.player_id,
+    actor_id: user.id,
+    actor_role: 'coach',
+    action_type: 'create_focus',
+    metadata: { focus_area_id: focusArea.id },
+  });
 
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/development');

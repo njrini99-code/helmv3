@@ -27,9 +27,18 @@
  * warm or primary classes, no glass on content.
  * ========================================================================== */
 
-import { useCallback, useEffect, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Field } from '@base-ui-components/react/field';
 
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
@@ -79,10 +88,167 @@ import {
   Select,
   Switch,
   Avatar,
+  InlineNotice,
   fairwayToast,
 } from '@/components/fairway';
 
 const EM_DASH = '—';
+
+/* ── unsaved-changes plumbing (P379 dirty-tracking · P380 leave guard) ──────── */
+
+/**
+ * A tiny per-screen registry every Save-form panel reports its dirty state into,
+ * keyed by a stable panel id. The shell reads the aggregate to (a) warn before a
+ * full-tab close/refresh (`beforeunload`) and (b) intercept in-app navigation
+ * (sidebar links, the browser back gesture) so editing a field and leaving never
+ * silently discards the edit (P380, Nielsen #3 user control & freedom).
+ */
+interface DirtyRegistry {
+  setDirty: (id: string, dirty: boolean) => void;
+  clear: (id: string) => void;
+}
+
+const DirtyRegistryContext = createContext<DirtyRegistry | null>(null);
+
+/**
+ * Panel hook: report whether this panel currently has unsaved edits. A panel is
+ * dirty when its live values differ from the snapshot it loaded with. Disabling
+ * Save when pristine + skipping the no-op write/toast is owned by the panel; this
+ * hook only threads the flag up to the screen-level leave guard.
+ */
+function useReportDirty(id: string, dirty: boolean) {
+  const reg = useContext(DirtyRegistryContext);
+  useEffect(() => {
+    reg?.setDirty(id, dirty);
+  }, [reg, id, dirty]);
+  // On unmount (panel removed / role flip), stop counting this panel as dirty.
+  useEffect(() => {
+    return () => reg?.clear(id);
+  }, [reg, id]);
+}
+
+/**
+ * Screen-level guard. Tracks the set of dirty panel ids; while any panel is dirty
+ * it (1) arms the native `beforeunload` prompt (covers refresh / tab close /
+ * external nav) and (2) intercepts same-origin in-app link clicks + the back
+ * gesture, showing a "Discard unsaved changes?" confirm before allowing the
+ * navigation to proceed. Reduced-motion / token-safe (confirm is ConfirmDialog).
+ */
+function UnsavedChangesGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const dirtyIdsRef = useRef<Set<string>>(new Set());
+  const [anyDirty, setAnyDirty] = useState(false);
+  // The pending navigation captured while a confirm is shown.
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  const recompute = useCallback(() => {
+    setAnyDirty(dirtyIdsRef.current.size > 0);
+  }, []);
+
+  const registry = useMemo<DirtyRegistry>(
+    () => ({
+      setDirty: (id, dirty) => {
+        const set = dirtyIdsRef.current;
+        const had = set.has(id);
+        if (dirty && !had) set.add(id);
+        else if (!dirty && had) set.delete(id);
+        else return;
+        recompute();
+      },
+      clear: (id) => {
+        if (dirtyIdsRef.current.delete(id)) recompute();
+      },
+    }),
+    [recompute],
+  );
+
+  // (1) Native prompt for refresh / tab close / hard navigation.
+  useEffect(() => {
+    if (!anyDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Legacy browsers require returnValue to be set to trigger the prompt.
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [anyDirty]);
+
+  // (2a) Intercept in-app link clicks (sidebar / footer / inline links) so a
+  // soft navigation is gated by the same confirm. Capture phase so it runs
+  // before Next's Link handler; only same-tab, unmodified left-clicks to an
+  // in-app href are intercepted.
+  useEffect(() => {
+    if (!anyDirty) return;
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+      const anchor = (e.target as HTMLElement | null)?.closest('a');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      const target = anchor.getAttribute('target');
+      if (!href || href.startsWith('#') || (target && target !== '_self')) return;
+      // Only guard same-origin internal navigations that LEAVE settings.
+      let dest: URL;
+      try {
+        dest = new URL(href, window.location.href);
+      } catch {
+        return;
+      }
+      if (dest.origin !== window.location.origin) return;
+      if (dest.pathname === window.location.pathname) return; // same page (anchors)
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingHref(dest.pathname + dest.search + dest.hash);
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, [anyDirty]);
+
+  // (2b) Intercept the browser back/forward gesture.
+  useEffect(() => {
+    if (!anyDirty) return;
+    // Seed a history entry so the first back press fires popstate here.
+    window.history.pushState(null, '', window.location.href);
+    const onPopState = () => {
+      // Re-seed so we stay put until the user confirms.
+      window.history.pushState(null, '', window.location.href);
+      setPendingHref('__back__');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [anyDirty]);
+
+  const confirmLeave = useCallback(() => {
+    const href = pendingHref;
+    setPendingHref(null);
+    // Dropping the guard: edits are intentionally discarded.
+    dirtyIdsRef.current.clear();
+    setAnyDirty(false);
+    if (href === '__back__') {
+      router.back();
+    } else if (href) {
+      router.push(href);
+    }
+  }, [pendingHref, router]);
+
+  return (
+    <DirtyRegistryContext.Provider value={registry}>
+      {children}
+      <ConfirmDialog
+        open={pendingHref !== null}
+        title="Discard unsaved changes?"
+        message="You have unsaved edits on this screen. If you leave now, those changes will be lost."
+        confirmLabel="Discard & leave"
+        cancelLabel="Keep editing"
+        variant="danger"
+        onConfirm={confirmLeave}
+        onCancel={() => setPendingHref(null)}
+      />
+    </DirtyRegistryContext.Provider>
+  );
+}
 
 interface PlayerData {
   first_name: string | null;
@@ -120,11 +286,14 @@ function SectionCard({
   icon,
   title,
   description,
+  headerAction,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   description?: string;
+  /** Optional right-aligned header slot (e.g. the auto-save indicator, P384). */
+  headerAction?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -133,23 +302,91 @@ function SectionCard({
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-fw-sm bg-surface-sunken text-text-secondary">
           {icon}
         </span>
-        <div className="flex flex-col gap-0.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <h2 className="font-fw-display text-h2 text-text-primary">{title}</h2>
           {description ? (
             <p className="font-fw-sans text-body-sm text-text-secondary">{description}</p>
           ) : null}
         </div>
+        {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
       </div>
       {children}
     </Surface>
   );
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
+/**
+ * P384: the auto-save signal for panels that commit instantly on toggle/click
+ * (Appearance, Distance units, Notifications) — so users aren't left unsure
+ * whether a Save button was needed. Flashes "Saved" briefly after a change,
+ * resting on a quiet "Auto-saves" label otherwise. Tokens only; honest (only
+ * announces "Saved" when a change actually committed).
+ */
+function AutoSaveBadge({ savedAt }: { savedAt: number | null }) {
+  const [showSaved, setShowSaved] = useState(false);
+  useEffect(() => {
+    if (savedAt === null) return;
+    setShowSaved(true);
+    const t = setTimeout(() => setShowSaved(false), 1800);
+    return () => clearTimeout(t);
+  }, [savedAt]);
+
   return (
-    <span className="mb-1.5 block font-fw-sans text-body-sm font-medium text-text-secondary">
-      {children}
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-fw-sans text-caption font-medium',
+        showSaved ? 'bg-accent-50 text-accent-700' : 'bg-surface-sunken text-text-tertiary',
+      )}
+      role="status"
+      aria-live="polite"
+    >
+      {showSaved ? (
+        <>
+          <IconCheck size={12} aria-hidden />
+          Saved
+        </>
+      ) : (
+        'Auto-saves'
+      )}
     </span>
+  );
+}
+
+/** Shared visual recipe for every field label (input-bound or group/display). */
+const FIELD_LABEL_CLASS =
+  'mb-1.5 block font-fw-sans text-body-sm font-medium text-text-secondary';
+
+/**
+ * Visual-only label for non-control rows — button groups (display density, tees,
+ * benchmark…) and read-only display values (current email, invite code/link).
+ * These have no single focusable control to associate, so a plain <span> is the
+ * correct, honest markup. For real text inputs use `LabeledField` instead.
+ */
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <span className={FIELD_LABEL_CLASS}>{children}</span>;
+}
+
+/**
+ * A11y (P372): label↔control association for every text input. Wraps the control
+ * in Base UI's `Field` so the rendered <label> auto-wires `htmlFor` to the
+ * control's generated `id` (WCAG 1.3.1/3.3.2/4.1.2) — screen readers, voice
+ * control and click-to-focus all work, with no manual id bookkeeping. The
+ * Fairway `Input` registers itself as the field control when nested here.
+ */
+function LabeledField({
+  label,
+  children,
+  className,
+}: {
+  label: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <Field.Root className={className}>
+      <Field.Label className={FIELD_LABEL_CLASS}>{label}</Field.Label>
+      {children}
+    </Field.Root>
   );
 }
 
@@ -157,14 +394,17 @@ function SaveRow({
   onSave,
   busy,
   label = 'Save changes',
+  disabled = false,
 }: {
   onSave: () => void;
   busy: boolean;
   label?: string;
+  /** P379: disable Save when the form is pristine (no real changes to commit). */
+  disabled?: boolean;
 }) {
   return (
     <div className="mt-5 flex justify-end border-t border-border-subtle pt-4">
-      <Button variant="primary" size="sm" busy={busy} onClick={onSave}>
+      <Button variant="primary" size="sm" busy={busy} disabled={disabled} onClick={onSave}>
         {label}
       </Button>
     </div>
@@ -334,6 +574,7 @@ export function FairwaySettingsGeneral() {
   }
 
   return (
+    <UnsavedChangesGuard>
     <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6 md:py-8 pb-24">
       <ViewHeader
         eyebrow="Settings"
@@ -525,6 +766,7 @@ export function FairwaySettingsGeneral() {
         onCancel={() => setDeleteConfirmOpen(false)}
       />
     </div>
+    </UnsavedChangesGuard>
   );
 }
 
@@ -539,12 +781,26 @@ function PersonalInfoPanel({
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [firstName, setFirstName] = useState(profile.playerData?.first_name || '');
-  const [lastName, setLastName] = useState(profile.playerData?.last_name || '');
-  const [fullName, setFullName] = useState(profile.role === 'coach' ? profile.name : '');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatarUrl || null);
+  const initialFirstName = profile.playerData?.first_name || '';
+  const initialLastName = profile.playerData?.last_name || '';
+  const initialFullName = profile.role === 'coach' ? profile.name : '';
+  const initialAvatarUrl = profile.avatarUrl || null;
+  const [firstName, setFirstName] = useState(initialFirstName);
+  const [lastName, setLastName] = useState(initialLastName);
+  const [fullName, setFullName] = useState(initialFullName);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl);
+
+  // P379: dirty when any field differs from the loaded snapshot.
+  const isDirty =
+    profile.role === 'coach'
+      ? fullName !== initialFullName || avatarUrl !== initialAvatarUrl
+      : firstName !== initialFirstName ||
+        lastName !== initialLastName ||
+        avatarUrl !== initialAvatarUrl;
+  useReportDirty('personal-info', isDirty);
 
   const handleSave = async () => {
+    if (!isDirty) return; // P379: nothing changed — no write, no false toast.
     setSaving(true);
     const supabase = createClient();
     try {
@@ -589,36 +845,33 @@ function PersonalInfoPanel({
         </div>
 
         {profile.role === 'coach' ? (
-          <div>
-            <FieldLabel>Full name</FieldLabel>
+          <LabeledField label="Full name">
             <Input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Coach Smith"
             />
-          </div>
+          </LabeledField>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <FieldLabel>First name</FieldLabel>
+            <LabeledField label="First name">
               <Input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="John"
               />
-            </div>
-            <div>
-              <FieldLabel>Last name</FieldLabel>
+            </LabeledField>
+            <LabeledField label="Last name">
               <Input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Smith"
               />
-            </div>
+            </LabeledField>
           </div>
         )}
       </div>
-      <SaveRow onSave={handleSave} busy={saving} />
+      <SaveRow onSave={handleSave} busy={saving} disabled={!isDirty} />
     </SectionCard>
   );
 }
@@ -628,22 +881,34 @@ function PersonalInfoPanel({
 function EmailPanel({ currentEmail }: { currentEmail: string }) {
   const [saving, setSaving] = useState(false);
   const [newEmail, setNewEmail] = useState('');
+  // P383: the address the user has a confirmation pending for (Supabase confirm-
+  // email is async, so the current-email row keeps showing the OLD address until
+  // the link is clicked — surface that "change pending" state explicitly).
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+
+  // P379: dirty only when there's a real, different new address to submit. The
+  // field starts empty, so a no-op save is impossible — but we still gate the
+  // button + the leave guard on having typed something.
+  const trimmed = newEmail.trim();
+  const isDirty = trimmed.length > 0 && trimmed !== currentEmail;
+  useReportDirty('email', isDirty);
 
   const handleSave = async () => {
-    if (!newEmail.trim() || !newEmail.includes('@')) {
+    if (!trimmed || !trimmed.includes('@')) {
       fairwayToast.error('Please enter a valid email');
       return;
     }
-    if (newEmail === currentEmail) {
+    if (trimmed === currentEmail) {
       fairwayToast.error('Same as current email');
       return;
     }
     setSaving(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+      const { error } = await supabase.auth.updateUser({ email: trimmed });
       if (error) throw error;
       fairwayToast.success('Confirmation email sent. Check your inbox.');
+      setPendingEmail(trimmed);
       setNewEmail('');
     } catch (err) {
       fairwayToast.error(err instanceof Error ? err.message : 'Failed to update email');
@@ -660,21 +925,29 @@ function EmailPanel({ currentEmail }: { currentEmail: string }) {
           <div className="rounded-fw-sm border border-border-subtle bg-surface-sunken px-3 py-2 font-fw-sans text-body-sm text-text-secondary">
             {currentEmail || EM_DASH}
           </div>
+          {/* P383: visible "change pending" state so the still-showing old
+              address isn't read as the request having failed. */}
+          {pendingEmail ? (
+            <InlineNotice tone="info" className="mt-2">
+              Change pending — we sent a confirmation to{' '}
+              <span className="font-medium text-text-primary">{pendingEmail}</span>. Click the link
+              in that email to switch your address.
+            </InlineNotice>
+          ) : null}
         </div>
-        <div>
-          <FieldLabel>New email address</FieldLabel>
+        <LabeledField label="New email address">
           <Input
             type="email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
             placeholder="new@example.com"
           />
-        </div>
+        </LabeledField>
         <p className="font-fw-sans text-caption text-text-tertiary">
           We&rsquo;ll send a confirmation email to verify the change.
         </p>
       </div>
-      <SaveRow onSave={handleSave} busy={saving} label="Send confirmation" />
+      <SaveRow onSave={handleSave} busy={saving} label="Send confirmation" disabled={!isDirty} />
     </SectionCard>
   );
 }
@@ -685,6 +958,11 @@ function PasswordPanel() {
   const [saving, setSaving] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // P379: dirty once the user has typed into either field (no displayed value to
+  // diff against — an empty form has nothing to save).
+  const isDirty = newPassword.length > 0 || confirmPassword.length > 0;
+  useReportDirty('password', isDirty);
 
   const handleSave = async () => {
     if (newPassword.length < 8) {
@@ -713,29 +991,27 @@ function PasswordPanel() {
   return (
     <SectionCard icon={<IconShield size={18} aria-hidden />} title="Password & security">
       <div className="space-y-3">
-        <div>
-          <FieldLabel>New password</FieldLabel>
+        <LabeledField label="New password">
           <Input
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="••••••••"
           />
-        </div>
-        <div>
-          <FieldLabel>Confirm password</FieldLabel>
+        </LabeledField>
+        <LabeledField label="Confirm password">
           <Input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••"
           />
-        </div>
+        </LabeledField>
         <p className="font-fw-sans text-caption text-text-tertiary">
           At least 8 characters. Use a unique password.
         </p>
       </div>
-      <SaveRow onSave={handleSave} busy={saving} label="Update password" />
+      <SaveRow onSave={handleSave} busy={saving} label="Update password" disabled={!isDirty} />
     </SectionCard>
   );
 }
@@ -775,12 +1051,23 @@ function OptionTile({
 function AppearancePanel() {
   const { displayDensity, dateFormat, showAnimations, scoreDisplay, updatePreferences } =
     useAppearancePreferences();
+  // P384: signal that this panel auto-saves (no Save button) and flash "Saved"
+  // after each instant commit.
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const update: typeof updatePreferences = (patch) => {
+    updatePreferences(patch);
+    setSavedAt(Date.now());
+  };
 
   return (
     <SectionCard
       icon={<IconUser size={18} aria-hidden />}
       title="Appearance"
-      description="Changes apply instantly across the app."
+      // P382: be honest about scope — these prefs are saved on THIS device only
+      // (localStorage, no per-user DB column), so they don't follow you to
+      // another machine or browser.
+      description="Changes apply instantly across the app. Saved on this device only — they won't carry over to another computer or browser."
+      headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="space-y-5">
         <div>
@@ -790,7 +1077,7 @@ function AppearancePanel() {
               <OptionTile
                 key={opt}
                 active={displayDensity === opt}
-                onClick={() => updatePreferences({ displayDensity: opt })}
+                onClick={() => update({ displayDensity: opt })}
                 title={opt.charAt(0).toUpperCase() + opt.slice(1)}
                 hint={opt === 'comfortable' ? 'More spacing' : 'Denser layout'}
               />
@@ -810,7 +1097,7 @@ function AppearancePanel() {
                 key={val}
                 type="button"
                 aria-pressed={dateFormat === val}
-                onClick={() => updatePreferences({ dateFormat: val })}
+                onClick={() => update({ dateFormat: val })}
                 className={cn(
                   'flex min-h-[48px] items-center justify-between rounded-fw-sm border px-3 py-2.5 text-left transition-colors',
                   'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
@@ -833,13 +1120,13 @@ function AppearancePanel() {
           <div className="grid grid-cols-2 gap-2">
             <OptionTile
               active={scoreDisplay === 'to_par'}
-              onClick={() => updatePreferences({ scoreDisplay: 'to_par' })}
+              onClick={() => update({ scoreDisplay: 'to_par' })}
               title="Score to par"
               hint="E, +2, -1"
             />
             <OptionTile
               active={scoreDisplay === 'raw'}
-              onClick={() => updatePreferences({ scoreDisplay: 'raw' })}
+              onClick={() => update({ scoreDisplay: 'raw' })}
               title="Raw score"
               hint="72, 74, 71"
             />
@@ -855,7 +1142,7 @@ function AppearancePanel() {
           </div>
           <Switch
             checked={showAnimations}
-            onCheckedChange={() => updatePreferences({ showAnimations: !showAnimations })}
+            onCheckedChange={() => update({ showAnimations: !showAnimations })}
             aria-label="Animations"
           />
         </div>
@@ -869,6 +1156,8 @@ function AppearancePanel() {
 /** Restores the legacy yd/m display preference (localStorage-backed). */
 function DistanceUnitsPanel() {
   const { distancePref, setDistancePref } = useDistanceUnits();
+  // P384: auto-save signal (this panel commits instantly, no Save button).
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   const options: Array<{
     value: DistancePreference;
@@ -884,7 +1173,10 @@ function DistanceUnitsPanel() {
     <SectionCard
       icon={<IconRuler size={18} aria-hidden />}
       title="Distance units"
-      description="Only affects display — all data is stored in yards and feet."
+      // P382: honest scope — display-only AND device-local (localStorage, no
+      // per-user DB column), so it won't follow you to another machine.
+      description="Only affects display — all data is stored in yards and feet. Saved on this device only."
+      headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="grid grid-cols-2 gap-2">
         {options.map(({ value, label, desc, example }) => (
@@ -894,6 +1186,7 @@ function DistanceUnitsPanel() {
             onClick={() => {
               void triggerHaptic('light');
               setDistancePref(value);
+              setSavedAt(Date.now());
             }}
             title={label}
             hint={`${desc} · ${example}`}
@@ -917,6 +1210,8 @@ function NotificationsPanel() {
   const [prefs, setPrefs] = useState<DeliveryNotificationPreferences | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
+  // P384: auto-save signal (each toggle persists immediately, no Save button).
+  const [savedAt, setSavedAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoadFailed(false);
@@ -948,6 +1243,7 @@ function NotificationsPanel() {
         fairwayToast.error(res.error || 'Failed to save preference');
       } else {
         void triggerHaptic('light');
+        setSavedAt(Date.now()); // P384: flash the auto-save "Saved" signal.
       }
     },
     [prefs],
@@ -990,6 +1286,7 @@ function NotificationsPanel() {
       icon={<IconBell size={18} aria-hidden />}
       title="Notifications"
       description="Choose how each kind of update reaches you."
+      headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="space-y-1">
         {/* Quiet mode */}
@@ -1073,31 +1370,73 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   const supabase = createClient();
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // B3/B4: a failed read must surface a retryable error, NOT silently render
+  // the hard-coded defaults below as if they were the team's saved settings.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [scoringFormat, setScoringFormat] = useState('stroke_play');
   const [handicapSystem, setHandicapSystem] = useState('usga');
   const [defaultTees, setDefaultTees] = useState('blue');
   const [timezone, setTimezone] = useState('America/New_York');
   const [sgBenchmark, setSgBenchmark] = useState<BenchmarkLevel>('scratch');
+  // P379: snapshot of the loaded (or saved) values so a no-op save is skipped and
+  // Save disables while pristine. Seeded with the first-time-setup defaults so an
+  // untouched form (missing row) is correctly pristine.
+  const snapshotRef = useRef({
+    scoringFormat: 'stroke_play',
+    handicapSystem: 'usga',
+    defaultTees: 'blue',
+    timezone: 'America/New_York',
+    sgBenchmark: 'scratch' as BenchmarkLevel,
+  });
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await fromUntyped(supabase, 'golf_team_settings')
-        .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
-        .eq('team_id', teamId)
-        .maybeSingle();
+  const load = useCallback(async () => {
+    setLoadFailed(false);
+    const { data, error } = await fromUntyped(supabase, 'golf_team_settings')
+      .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
+      .eq('team_id', teamId)
+      .maybeSingle();
 
-      if (data) {
-        setScoringFormat(data.scoring_format || 'stroke_play');
-        setHandicapSystem(data.handicap_system || 'usga');
-        setDefaultTees(data.default_tees || 'blue');
-        setTimezone(data.timezone || 'America/New_York');
-        setSgBenchmark((data.sg_benchmark_level as BenchmarkLevel) || 'scratch');
-      }
+    // A missing row (no error, data === null) is legitimate — defaults stand in
+    // as the first-time setup state. A real query error is NOT — flag it.
+    if (error) {
+      setLoadFailed(true);
       setLoaded(true);
-    })();
+      return;
+    }
+
+    if (data) {
+      const next = {
+        scoringFormat: data.scoring_format || 'stroke_play',
+        handicapSystem: data.handicap_system || 'usga',
+        defaultTees: data.default_tees || 'blue',
+        timezone: data.timezone || 'America/New_York',
+        sgBenchmark: (data.sg_benchmark_level as BenchmarkLevel) || 'scratch',
+      };
+      setScoringFormat(next.scoringFormat);
+      setHandicapSystem(next.handicapSystem);
+      setDefaultTees(next.defaultTees);
+      setTimezone(next.timezone);
+      setSgBenchmark(next.sgBenchmark);
+      snapshotRef.current = next;
+    }
+    setLoaded(true);
   }, [teamId, supabase]);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const snap = snapshotRef.current;
+  const isDirty =
+    scoringFormat !== snap.scoringFormat ||
+    handicapSystem !== snap.handicapSystem ||
+    defaultTees !== snap.defaultTees ||
+    timezone !== snap.timezone ||
+    sgBenchmark !== snap.sgBenchmark;
+  useReportDirty('golf-scoring', isDirty);
+
   const handleSave = async () => {
+    if (!isDirty) return; // P379: no real changes — skip the write + false toast.
     setSaving(true);
     try {
       const { error } = await fromUntyped(supabase, 'golf_team_settings').upsert(
@@ -1113,6 +1452,14 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
         { onConflict: 'team_id' },
       );
       if (error) throw error;
+      // P379: persisted values are now the pristine baseline.
+      snapshotRef.current = {
+        scoringFormat,
+        handicapSystem,
+        defaultTees,
+        timezone,
+        sgBenchmark,
+      };
       fairwayToast.success('Golf settings updated');
     } catch (err) {
       fairwayToast.error(err instanceof Error ? err.message : 'Failed to save');
@@ -1125,6 +1472,26 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Scoring & format">
         <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+      </SectionCard>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <SectionCard icon={<IconUser size={18} aria-hidden />} title="Scoring & format">
+        <div className="flex flex-col items-start gap-3">
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            Couldn&rsquo;t load your scoring &amp; format settings.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconRefresh size={16} aria-hidden />}
+            onClick={() => void load()}
+          >
+            Retry
+          </Button>
+        </div>
       </SectionCard>
     );
   }
@@ -1154,14 +1521,13 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           </div>
         </div>
 
-        <div>
-          <FieldLabel>Handicap system</FieldLabel>
+        <LabeledField label="Handicap system">
           <Select value={handicapSystem} onValueChange={(v) => setHandicapSystem(v as string)}>
             <Select.Item value="usga">USGA Handicap</Select.Item>
             <Select.Item value="world">World Handicap System</Select.Item>
             <Select.Item value="none">No Handicap</Select.Item>
           </Select>
-        </div>
+        </LabeledField>
 
         <div>
           <FieldLabel>Default tees</FieldLabel>
@@ -1186,8 +1552,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           </div>
         </div>
 
-        <div>
-          <FieldLabel>Timezone</FieldLabel>
+        <LabeledField label="Timezone">
           <Select value={timezone} onValueChange={(v) => setTimezone(v as string)}>
             <Select.Item value="America/New_York">Eastern (ET)</Select.Item>
             <Select.Item value="America/Chicago">Central (CT)</Select.Item>
@@ -1196,7 +1561,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
             <Select.Item value="America/Anchorage">Alaska (AKT)</Select.Item>
             <Select.Item value="Pacific/Honolulu">Hawaii (HT)</Select.Item>
           </Select>
-        </div>
+        </LabeledField>
 
         <div className="border-t border-border-subtle pt-4">
           <FieldLabel>Strokes gained benchmark</FieldLabel>
@@ -1237,7 +1602,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           </div>
         </div>
       </div>
-      <SaveRow onSave={handleSave} busy={saving} />
+      <SaveRow onSave={handleSave} busy={saving} disabled={!isDirty} />
     </SectionCard>
   );
 }
@@ -1254,14 +1619,33 @@ function PlayerGolfDetailsPanel({
   onUpdate: () => void;
 }) {
   const [saving, setSaving] = useState(false);
-  const [handicap, setHandicap] = useState(playerData?.handicap?.toString() || '');
-  const [handicapIndex, setHandicapIndex] = useState(playerData?.handicap_index?.toString() || '');
-  const [gradYear, setGradYear] = useState(playerData?.graduation_year?.toString() || '');
-  const [hometown, setHometown] = useState(playerData?.hometown || '');
-  const [homeState, setHomeState] = useState(playerData?.state || '');
-  const [phone, setPhone] = useState(playerData?.phone || '');
+  const initial = {
+    handicap: playerData?.handicap?.toString() || '',
+    handicapIndex: playerData?.handicap_index?.toString() || '',
+    gradYear: playerData?.graduation_year?.toString() || '',
+    hometown: playerData?.hometown || '',
+    homeState: playerData?.state || '',
+    phone: playerData?.phone || '',
+  };
+  const [handicap, setHandicap] = useState(initial.handicap);
+  const [handicapIndex, setHandicapIndex] = useState(initial.handicapIndex);
+  const [gradYear, setGradYear] = useState(initial.gradYear);
+  const [hometown, setHometown] = useState(initial.hometown);
+  const [homeState, setHomeState] = useState(initial.homeState);
+  const [phone, setPhone] = useState(initial.phone);
+
+  // P379: dirty when any field differs from the loaded snapshot.
+  const isDirty =
+    handicap !== initial.handicap ||
+    handicapIndex !== initial.handicapIndex ||
+    gradYear !== initial.gradYear ||
+    hometown !== initial.hometown ||
+    homeState !== initial.homeState ||
+    phone !== initial.phone;
+  useReportDirty('player-golf-details', isDirty);
 
   const handleSave = async () => {
+    if (!isDirty) return; // P379: nothing changed — no write, no false toast.
     setSaving(true);
     const supabase = createClient();
     try {
@@ -1299,40 +1683,34 @@ function PlayerGolfDetailsPanel({
     >
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <FieldLabel>Handicap</FieldLabel>
+          <LabeledField label="Handicap">
             <Input type="number" value={handicap} onChange={(e) => setHandicap(e.target.value)} placeholder="5.2" />
-          </div>
-          <div>
-            <FieldLabel>Handicap index</FieldLabel>
+          </LabeledField>
+          <LabeledField label="Handicap index">
             <Input
               type="number"
               value={handicapIndex}
               onChange={(e) => setHandicapIndex(e.target.value)}
               placeholder="4.8"
             />
-          </div>
+          </LabeledField>
         </div>
-        <div>
-          <FieldLabel>Graduation year</FieldLabel>
+        <LabeledField label="Graduation year">
           <Input type="number" value={gradYear} onChange={(e) => setGradYear(e.target.value)} placeholder="2027" />
-        </div>
+        </LabeledField>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <FieldLabel>Hometown</FieldLabel>
+          <LabeledField label="Hometown">
             <Input value={hometown} onChange={(e) => setHometown(e.target.value)} placeholder="Austin" />
-          </div>
-          <div>
-            <FieldLabel>State</FieldLabel>
+          </LabeledField>
+          <LabeledField label="State">
             <Input value={homeState} onChange={(e) => setHomeState(e.target.value)} placeholder="TX" maxLength={2} />
-          </div>
+          </LabeledField>
         </div>
-        <div>
-          <FieldLabel>Phone</FieldLabel>
+        <LabeledField label="Phone">
           <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" />
-        </div>
+        </LabeledField>
       </div>
-      <SaveRow onSave={handleSave} busy={saving} />
+      <SaveRow onSave={handleSave} busy={saving} disabled={!isDirty} />
     </SectionCard>
   );
 }
@@ -1349,6 +1727,9 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
   const activeTeamId = golfUser.teamId ?? null;
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // B3/B4: a failed team/org read must surface a retryable error, never empty
+  // inputs that masquerade as a team with no name/season/organization.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
   const [teamName, setTeamName] = useState('');
   const [season, setSeason] = useState('');
@@ -1358,51 +1739,101 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
   const [state, setState] = useState('');
   const [division, setDivision] = useState('');
   const [conference, setConference] = useState('');
+  // P379: snapshot of the loaded (or last-saved) values to gate Save + the leave
+  // guard. Empty baseline until load() resolves; an unloaded panel is pristine.
+  const snapshotRef = useRef({
+    teamName: '',
+    season: '',
+    orgName: '',
+    city: '',
+    state: '',
+    division: '',
+    conference: '',
+  });
 
-  useEffect(() => {
-    (async () => {
-      if (!activeTeamId) {
-        setLoaded(true);
-        return;
-      }
+  const load = useCallback(async () => {
+    setLoadFailed(false);
+    if (!activeTeamId) {
+      setLoaded(true);
+      return;
+    }
 
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id, name, season, organization_id')
-        .eq('id', activeTeamId)
-        .maybeSingle();
+    const { data: team, error: teamError } = await supabase
+      .from('golf_teams')
+      .select('id, name, season, organization_id')
+      .eq('id', activeTeamId)
+      .maybeSingle();
 
-      if (team) {
-        setTeamId(team.id);
-        setTeamName(team.name || '');
-        setSeason(team.season || '');
-        setOrganizationId(team.organization_id);
+    if (teamError) {
+      setLoadFailed(true);
+      setLoaded(true);
+      return;
+    }
 
-        if (team.organization_id) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: org } = await (supabase as any)
-            .from('organizations')
-            .select('name, location_city, location_state, division, conference')
-            .eq('id', team.organization_id)
-            .maybeSingle();
-          if (org) {
-            setOrgName(org.name || '');
-            setCity(org.location_city || '');
-            setState(org.location_state || '');
-            setDivision(org.division || '');
-            setConference(org.conference || '');
-          }
+    if (team) {
+      setTeamId(team.id);
+      setTeamName(team.name || '');
+      setSeason(team.season || '');
+      setOrganizationId(team.organization_id);
+      snapshotRef.current = {
+        ...snapshotRef.current,
+        teamName: team.name || '',
+        season: team.season || '',
+      };
+
+      if (team.organization_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: org, error: orgError } = await (supabase as any)
+          .from('organizations')
+          .select('name, location_city, location_state, division, conference')
+          .eq('id', team.organization_id)
+          .maybeSingle();
+        if (orgError) {
+          setLoadFailed(true);
+          setLoaded(true);
+          return;
+        }
+        if (org) {
+          setOrgName(org.name || '');
+          setCity(org.location_city || '');
+          setState(org.location_state || '');
+          setDivision(org.division || '');
+          setConference(org.conference || '');
+          snapshotRef.current = {
+            ...snapshotRef.current,
+            orgName: org.name || '',
+            city: org.location_city || '',
+            state: org.location_state || '',
+            division: org.division || '',
+            conference: org.conference || '',
+          };
         }
       }
-      setLoaded(true);
-    })();
+    }
+    setLoaded(true);
   }, [supabase, activeTeamId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const snap = snapshotRef.current;
+  const isDirty =
+    teamName !== snap.teamName ||
+    season !== snap.season ||
+    orgName !== snap.orgName ||
+    city !== snap.city ||
+    state !== snap.state ||
+    division !== snap.division ||
+    conference !== snap.conference;
+  useReportDirty('team-settings', isDirty);
 
   const handleSave = async () => {
     if (!teamId || !teamName.trim()) {
       fairwayToast.error('Team name required');
       return;
     }
+    if (!isDirty) return; // P379: nothing changed — skip the write + false toast.
     setSaving(true);
     try {
       // B16/F150: the org update spans a DIFFERENT table (organizations, shared
@@ -1431,6 +1862,16 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
         .eq('id', teamId);
       if (teamError) throw teamError;
 
+      // P379: persisted values are now the pristine baseline.
+      snapshotRef.current = {
+        teamName,
+        season,
+        orgName,
+        city,
+        state,
+        division,
+        conference,
+      };
       fairwayToast.success('Team settings updated');
       onUpdate();
     } catch (err) {
@@ -1448,6 +1889,26 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
     );
   }
 
+  if (loadFailed) {
+    return (
+      <SectionCard icon={<IconUser size={18} aria-hidden />} title="Team settings">
+        <div className="flex flex-col items-start gap-3">
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            Couldn&rsquo;t load your team settings.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconRefresh size={16} aria-hidden />}
+            onClick={() => void load()}
+          >
+            Retry
+          </Button>
+        </div>
+      </SectionCard>
+    );
+  }
+
   return (
     <SectionCard
       icon={<IconUser size={18} aria-hidden />}
@@ -1455,48 +1916,41 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
       description="Program name, season and organization details."
     >
       <div className="space-y-4">
-        <div>
-          <FieldLabel>Team name</FieldLabel>
+        <LabeledField label="Team name">
           <Input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Men's Golf Team" />
-        </div>
-        <div>
-          <FieldLabel>Season</FieldLabel>
+        </LabeledField>
+        <LabeledField label="Season">
           <Input value={season} onChange={(e) => setSeason(e.target.value)} placeholder="2025-2026" />
-        </div>
+        </LabeledField>
 
         {organizationId ? (
           <div className="space-y-4 border-t border-border-subtle pt-4">
             <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
               Organization
             </p>
-            <div>
-              <FieldLabel>School name</FieldLabel>
+            <LabeledField label="School name">
               <Input value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="University" />
-            </div>
+            </LabeledField>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>City</FieldLabel>
+              <LabeledField label="City">
                 <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Los Angeles" />
-              </div>
-              <div>
-                <FieldLabel>State</FieldLabel>
+              </LabeledField>
+              <LabeledField label="State">
                 <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="CA" maxLength={2} />
-              </div>
+              </LabeledField>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>Division</FieldLabel>
+              <LabeledField label="Division">
                 <Input value={division} onChange={(e) => setDivision(e.target.value)} placeholder="Division I" />
-              </div>
-              <div>
-                <FieldLabel>Conference</FieldLabel>
+              </LabeledField>
+              <LabeledField label="Conference">
                 <Input value={conference} onChange={(e) => setConference(e.target.value)} placeholder="Pac-12" />
-              </div>
+              </LabeledField>
             </div>
           </div>
         ) : null}
       </div>
-      <SaveRow onSave={handleSave} busy={saving} />
+      <SaveRow onSave={handleSave} busy={saving} disabled={!isDirty} />
     </SectionCard>
   );
 }
@@ -1512,30 +1966,42 @@ export function InviteSettingsPanel() {
   const activeTeamId = golfUser.teamId ?? null;
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // B3/B4: a failed read must surface a retryable error, never an empty
+  // em-dash code that reads as "this team has no invite code".
+  const [loadFailed, setLoadFailed] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
   const [teamId, setTeamId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      if (!activeTeamId) {
-        setLoaded(true);
-        return;
-      }
-
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id, join_code')
-        .eq('id', activeTeamId)
-        .maybeSingle();
-
-      if (team) {
-        setTeamId(team.id);
-        setInviteCode(team.join_code || '');
-      }
+  const load = useCallback(async () => {
+    setLoadFailed(false);
+    if (!activeTeamId) {
       setLoaded(true);
-    })();
+      return;
+    }
+
+    const { data: team, error } = await supabase
+      .from('golf_teams')
+      .select('id, join_code')
+      .eq('id', activeTeamId)
+      .maybeSingle();
+
+    if (error) {
+      setLoadFailed(true);
+      setLoaded(true);
+      return;
+    }
+
+    if (team) {
+      setTeamId(team.id);
+      setInviteCode(team.join_code || '');
+    }
+    setLoaded(true);
   }, [supabase, activeTeamId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const generateNewCode = async () => {
     if (!teamId) return;
@@ -1572,6 +2038,26 @@ export function InviteSettingsPanel() {
     return (
       <SectionCard icon={<IconUser size={18} aria-hidden />} title="Invite settings">
         <div className="h-8 w-full rounded-fw-sm bg-surface-sunken" />
+      </SectionCard>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <SectionCard icon={<IconUser size={18} aria-hidden />} title="Invite settings">
+        <div className="flex flex-col items-start gap-3">
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            Couldn&rsquo;t load your invite settings.
+          </p>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<IconRefresh size={16} aria-hidden />}
+            onClick={() => void load()}
+          >
+            Retry
+          </Button>
+        </div>
       </SectionCard>
     );
   }
