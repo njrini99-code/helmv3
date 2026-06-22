@@ -11,6 +11,7 @@
 
 import { useState, useTransition, useMemo, useCallback, memo } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   IconSparkles,
@@ -1330,6 +1331,15 @@ const COACHHELM_SURFACES: {
  */
 const SurfaceHubGrid = memo(function SurfaceHubGrid({ variant = 'widget' }: { variant?: ICCVariant }) {
   const isPage = variant === 'page';
+  // The grid lives ON one of these surfaces (today: the Command/Intelligence
+  // brief at /golf/dashboard/intelligence). The tile whose href IS the current
+  // route must NOT render as a Link — a self-link looks broken ("Command
+  // Intelligence button doesn't work"). Render it as a non-interactive
+  // "You're here" card instead. Route-agnostic: works wherever the grid mounts.
+  const pathname = usePathname();
+  const isCurrent = (href: string) =>
+    pathname === href || pathname === `${href}/`;
+
   return (
     <div>
       <h3 className={cn(
@@ -1341,16 +1351,10 @@ const SurfaceHubGrid = memo(function SurfaceHubGrid({ variant = 'widget' }: { va
       <div className={cn('grid grid-cols-1 md:grid-cols-3', isPage ? 'gap-4' : 'gap-2.5')}>
         {COACHHELM_SURFACES.map((surface) => {
           const SurfaceIcon = surface.icon;
-          return (
-            <Link
-              key={surface.href}
-              href={surface.href}
-              className={cn(
-                'group block bg-surface border border-border-subtle shadow-soft hover:shadow-raise transition-shadow',
-                'rounded-fw-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                isPage ? 'rounded-2xl p-5' : 'p-3.5'
-              )}
-            >
+          const current = isCurrent(surface.href);
+
+          const cardInner = (
+            <>
               <div className={cn('flex items-center justify-between', isPage ? 'mb-3' : 'mb-2')}>
                 <div className={cn(
                   'rounded-lg bg-fw-success-bg flex items-center justify-center',
@@ -1358,10 +1362,16 @@ const SurfaceHubGrid = memo(function SurfaceHubGrid({ variant = 'widget' }: { va
                 )}>
                   <SurfaceIcon size={isPage ? 18 : 15} className="text-fw-success" />
                 </div>
-                <IconChevronRight
-                  size={isPage ? 16 : 14}
-                  className="text-text-tertiary transition-transform group-hover:translate-x-0.5"
-                />
+                {current ? (
+                  <span className="text-eyebrow font-medium text-fw-success uppercase tracking-wider">
+                    You&apos;re here
+                  </span>
+                ) : (
+                  <IconChevronRight
+                    size={isPage ? 16 : 14}
+                    className="text-text-tertiary transition-transform group-hover:translate-x-0.5"
+                  />
+                )}
               </div>
               <span className={cn(
                 'block font-medium text-text-tertiary uppercase tracking-wider',
@@ -1381,6 +1391,37 @@ const SurfaceHubGrid = memo(function SurfaceHubGrid({ variant = 'widget' }: { va
               )}>
                 {surface.description}
               </p>
+            </>
+          );
+
+          // Current surface → static, non-clickable card (no dead self-link).
+          if (current) {
+            return (
+              <div
+                key={surface.href}
+                aria-current="page"
+                className={cn(
+                  'block bg-surface-sunken border border-border-subtle shadow-soft',
+                  'rounded-fw-md cursor-default',
+                  isPage ? 'rounded-2xl p-5' : 'p-3.5'
+                )}
+              >
+                {cardInner}
+              </div>
+            );
+          }
+
+          return (
+            <Link
+              key={surface.href}
+              href={surface.href}
+              className={cn(
+                'group block bg-surface border border-border-subtle shadow-soft hover:shadow-raise transition-shadow',
+                'rounded-fw-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                isPage ? 'rounded-2xl p-5' : 'p-3.5'
+              )}
+            >
+              {cardInner}
             </Link>
           );
         })}
@@ -1450,6 +1491,12 @@ export function IntelligenceCommandCenter({
   variant = 'widget',
 }: IntelligenceCommandCenterProps) {
   const isPage = variant === 'page';
+  // When this widget is mounted ON the intelligence dashboard itself (the
+  // Fairway brief renders it at /golf/dashboard/intelligence), the
+  // "View Full Intelligence Dashboard" link below would be a dead self-link —
+  // hide it there. It stays useful when the widget is embedded elsewhere.
+  const pathname = usePathname();
+  const onIntelligencePage = pathname === '/golf/dashboard/intelligence';
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [insights, setInsights] = useState<ComposedInsight[]>(initialInsights);
@@ -1732,13 +1779,15 @@ export function IntelligenceCommandCenter({
               {predictions[0] && (
                 <EnhancedPredictionCard prediction={predictions[0]} />
               )}
-              <Link
-                href="/golf/dashboard/intelligence"
-                className="flex items-center justify-center gap-2 py-2.5 text-xs font-medium text-fw-success hover:text-accent-700 transition-colors rounded-fw-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-              >
-                View Full Intelligence Dashboard
-                <IconChevronRight size={14} />
-              </Link>
+              {!onIntelligencePage && (
+                <Link
+                  href="/golf/dashboard/intelligence"
+                  className="flex items-center justify-center gap-2 py-2.5 text-xs font-medium text-fw-success hover:text-accent-700 transition-colors rounded-fw-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                >
+                  View Full Intelligence Dashboard
+                  <IconChevronRight size={14} />
+                </Link>
+              )}
             </>
           )}
 
