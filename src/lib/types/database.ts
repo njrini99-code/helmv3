@@ -5177,6 +5177,7 @@ export type Database = {
           evidence: Json
           id: string
           intervention_potential: number
+          is_active: boolean
           mechanism: string
           player_id: string | null
           relationship_type: string
@@ -5197,6 +5198,7 @@ export type Database = {
           evidence?: Json
           id?: string
           intervention_potential?: number
+          is_active?: boolean
           mechanism: string
           player_id?: string | null
           relationship_type: string
@@ -5217,6 +5219,7 @@ export type Database = {
           evidence?: Json
           id?: string
           intervention_potential?: number
+          is_active?: boolean
           mechanism?: string
           player_id?: string | null
           relationship_type?: string
