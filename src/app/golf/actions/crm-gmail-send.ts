@@ -39,10 +39,10 @@ const jitterGapMs = () => SEND_GAP_MIN_MS + Math.floor(Math.random() * (SEND_GAP
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Auto warm-up ramp: a brand-new sending mailbox must not blast its full cap on
-// day one (the classic outbound-spam trip). The effective daily cap ramps from 5
-// to the configured ceiling over ~3 weeks, keyed off the FIRST Gmail-API send in
-// the log — so warm-up is enforced automatically instead of relying on someone
-// lowering GMAIL_DAILY_CAP by hand each week.
+// day one (the classic outbound-spam trip). A short 2-day micro-warm-up
+// (5 → 10) then opens to the configured cap, keyed off the FIRST Gmail-API send
+// in the log — so a fresh mailbox still eases in, but an already-warm mailbox
+// runs at the full cap (default 50/day).
 async function effectiveDailyCap(client: AnySupabase): Promise<number> {
   let ramp = DEFAULT_DAILY_CAP;
   try {
@@ -57,9 +57,9 @@ async function effectiveDailyCap(client: AnySupabase): Promise<number> {
       ramp = 5; // day 0 — never sent before
     } else {
       const days = Math.floor((Date.now() - Date.parse(data.contact_date)) / 864e5);
-      if (days < 7) ramp = 5;
-      else if (days < 14) ramp = 15;
-      else if (days < 21) ramp = 30;
+      if (days < 1) ramp = 5; // first day
+      else if (days < 2) ramp = 10; // second day
+      // day 2+ → full configured cap (ramp stays DEFAULT_DAILY_CAP)
     }
   } catch {
     /* on error, fall back to the configured ceiling (no extra restriction) */

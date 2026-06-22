@@ -126,10 +126,9 @@ the first Gmail send in the log:
 
 | Mailbox age | Effective daily cap |
 |---|---|
-| Week 1 (days 0–6) | `5` |
-| Week 2 (days 7–13) | `15` |
-| Week 3 (days 14–20) | `30` |
-| Week 4+ | your `GMAIL_DAILY_CAP` (default `50`) |
+| Day 0 (first day) | `5` |
+| Day 1 | `10` |
+| Day 2+ | your `GMAIL_DAILY_CAP` (default `50`) |
 
 You don't have to touch the env var weekly — the cap auto-ramps and never exceeds
 `GMAIL_DAILY_CAP`. (You can still lower `GMAIL_DAILY_CAP` to be *more*
