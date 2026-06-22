@@ -58,11 +58,12 @@ export interface HoleShotPathProps {
   shots: ShotInput[];
   /**
    * Visual size variant.
-   *   - 'strip' : ~28×112 px — for the 18-hole at-a-glance grid
-   *   - 'card'  : ~140×320 px — inline per-hole in round review
-   *   - 'hero'  : ~280×560 px — detail view when a strip is tapped
+   *   - 'strip'      : ~28×112 px — for the 18-hole at-a-glance grid
+   *   - 'card'       : ~140×320 px — fixed-size inline per-hole card
+   *   - 'reviewCard' : fluid (w-full, 140:320 aspect) — the framed round-review grid
+   *   - 'hero'       : ~280×560 px — detail view when a strip is tapped
    */
-  size?: 'strip' | 'card' | 'hero';
+  size?: 'strip' | 'card' | 'reviewCard' | 'hero';
   /** Optional click handler — strip variant uses this to expand to hero. */
   onClick?: () => void;
   /** Tone of the score chip vs par. */

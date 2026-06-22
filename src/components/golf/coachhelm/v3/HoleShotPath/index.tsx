@@ -61,6 +61,18 @@ const SIZES = {
     showFlag: true,
     interactive: true,
   },
+  reviewCard: {
+    /** Fluid round-review card — fills its framed grid cell (capped by the
+     *  parent's max-width) instead of a fixed 140px strip, so holes read as
+     *  distinct, well-spaced cards rather than a butted-together dark wall.
+     *  Aspect mirrors the fixed card (140:320). */
+    className: 'w-full aspect-[140/320]',
+    showShotNumbers: true,
+    showScore: true,
+    showHeader: true,
+    showFlag: true,
+    interactive: true,
+  },
   hero: {
     /** ~280×560 — primary visual on a hole-detail page. Fluid on narrow
      *  screens (w-full) but capped at 280px so it never overflows a
