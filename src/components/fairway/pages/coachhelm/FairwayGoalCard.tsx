@@ -54,6 +54,7 @@ import {
 } from '@/components/fairway';
 import { useToast } from '@/components/ui/sonner';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import { isWindowedMetric } from '@/lib/coachhelm/v3/goals/window-metric-ids';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import { pauseGoal, abandonGoal } from '@/app/golf/actions/v3/goals';
 import type { Goal, GoalState } from '@/lib/coachhelm/v3/goals/types';
@@ -187,6 +188,10 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
     Math.abs(goal.current_value - goal.baseline_value) < 1e-6;
 
   const showStanding = standing != null && cfg != null;
+  // Windowed metrics track goal-period form, while the standing strip is the
+  // all-time career rank — different timeframes, so we caption the strip to
+  // avoid an apples-to-oranges read of "Now" vs the strip's "you" marker.
+  const windowed = isWindowedMetric(goal.metric_id);
 
   // Trajectory from the persisted snapshots (evaluateAndPersistGoals appends a
   // dated reading per UTC day). <2 points → the Sparkline renders an honest "—".
@@ -347,6 +352,11 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
             size="inline"
             show_cohort_text={false}
           />
+          {windowed ? (
+            <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+              Career average vs team &amp; Tour — your progress above tracks rounds since you set this goal.
+            </p>
+          ) : null}
         </div>
       ) : null}
 

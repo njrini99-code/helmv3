@@ -31,6 +31,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { isWindowedMetric } from './window-metric-ids';
+
+// Re-export so existing importers (goal-progress) keep their import path; the
+// pure source lives in window-metric-ids.ts (client-safe, no Supabase).
+export { isWindowedMetric };
 
 /** One completed round in the window, with the per-round stats we aggregate. */
 export interface WindowRound {
@@ -55,19 +60,6 @@ const SG_COLUMN: Partial<Record<MetricId, keyof WindowRound>> = {
   sg_approach: 'strokes_gained_approach',
   sg_around_green: 'strokes_gained_around_green',
 };
-
-/** Metrics this module can window from golf_round_stats_cache. */
-const WINDOWED_METRICS = new Set<MetricId>([
-  ...(Object.keys(SG_COLUMN) as MetricId[]),
-  'gir_pct',
-  'scrambling_pct_sand',
-  'penalty_rate_per_round',
-]);
-
-/** True when {@link aggregateWindowMetric} can compute this metric. */
-export function isWindowedMetric(metricId: MetricId): boolean {
-  return WINDOWED_METRICS.has(metricId);
-}
 
 const SELECT_FIELDS =
   'round_id, strokes_gained_total, strokes_gained_putting, strokes_gained_tee, ' +

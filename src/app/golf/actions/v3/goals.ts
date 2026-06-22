@@ -135,6 +135,12 @@ export async function createGoal(input: CreateGoalInput): Promise<ActionResult> 
       title: input.title,
       category: input.category,
       ends_at: input.ends_at,
+      // Span of the goal in days (started_at defaults to now() in the DB), so
+      // the card's "{window_days}-day window" sub-line is real, not "null-day".
+      window_days: Math.max(
+        1,
+        Math.round((new Date(input.ends_at).getTime() - Date.now()) / 86_400_000),
+      ),
       baseline_value: input.baseline_value,
       current_value: input.baseline_value, // start equal; cron updates
       target_value: input.target_value,
@@ -309,6 +315,11 @@ async function transitionGoal(
     if (newState === 'abandoned' && reason) {
       update.player_decline_reason = reason;
       update.player_declined_at = new Date().toISOString();
+    }
+    // Resuming to active clears any terminal outcome stamp so a previously
+    // achieved/paused goal doesn't keep flashing a stale "Hit [date]" banner.
+    if (newState === 'active') {
+      update.outcome_evaluated_at = null;
     }
 
     const { error } = await fromUntyped(supabase, 'golf_goals')
