@@ -462,6 +462,14 @@ const golfEventSchema = z.object({
   timezoneOffset: z.number().int().optional(),
 }).superRefine(refineEventEndAfterStart);
 
+// Feature G — one course assignment per qualifier round (coach-set).
+const qualifierRoundCourseSchema = z.object({
+  roundNumber: z.number().int().min(1).max(50),
+  courseId: z.string().uuid().optional().nullable(),
+  courseName: z.string().max(200).optional().nullable(),
+  teeId: z.string().uuid().optional().nullable(),
+});
+
 const golfQualifierSchema = z
   .object({
     name: z.string().min(1).max(200),
@@ -477,6 +485,11 @@ const golfQualifierSchema = z
     // Travel-squad selection model (omit → DB defaults 5 total / 1 coach-pick).
     selectionSlotsTotal: z.number().int().min(1).max(50).optional(),
     selectionSlotsCoachPick: z.number().int().min(0).max(50).optional(),
+    // Feature G — number of rounds + per-round course assignments. Both optional
+    // (omit → DB default num_rounds = 1, no per-round courses) so the legacy
+    // single-round create path stays byte-identical.
+    numRounds: z.number().int().min(1).max(50).optional(),
+    roundCourses: z.array(qualifierRoundCourseSchema).max(50).optional(),
   })
   .refine(
     (d) =>
@@ -664,6 +677,26 @@ interface GolfQualifierInput {
   selectionSlotsTotal?: number;
   /** Coach's discretionary picks within the squad (omit → DB default 1). */
   selectionSlotsCoachPick?: number;
+  /** Feature G — how many rounds the qualifier runs (omit → DB default 1). */
+  numRounds?: number;
+  /** Feature G — the course assigned to each round (omit → none). */
+  roundCourses?: QualifierRoundCourseInput[];
+}
+
+/** Feature G — a single round's course assignment within a qualifier. */
+export interface QualifierRoundCourseInput {
+  roundNumber: number;
+  courseId?: string | null;
+  courseName?: string | null;
+  teeId?: string | null;
+}
+
+/** Feature G — a round's course assignment as read back from the DB. */
+export interface QualifierRoundCourse {
+  roundNumber: number;
+  courseId: string | null;
+  courseName: string | null;
+  teeId: string | null;
 }
 
 // deriveLieAfterFromResult, deriveLieAfter imported from '@/lib/utils/shot-helpers'
@@ -2792,6 +2825,57 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
       return { success: false, error: 'Failed to create qualifier. Please try again.' };
     }
 
+    // Feature G — set num_rounds when the coach split the qualifier across
+    // multiple rounds. Done as a follow-up update through fromUntyped because the
+    // column is not yet in the generated Database types (migration unapplied);
+    // omitting it leaves the DB default (num_rounds = 1) so the legacy
+    // single-round create path stays byte-identical.
+    if (validatedData.numRounds !== undefined && validatedData.numRounds !== 1) {
+      const { error: numRoundsError } = await fromUntyped(supabase, 'golf_qualifiers')
+        .update({ num_rounds: validatedData.numRounds })
+        .eq('id', qualifier.id);
+
+      if (numRoundsError) {
+        await logServerError(
+          `createGolfQualifier num_rounds write failed: ${numRoundsError.message}`,
+          { action: 'createGolfQualifier.numRounds', featureArea: 'qualifiers' },
+        );
+      }
+    }
+
+    // Feature G — persist the per-round course assignments. Best-effort write
+    // through fromUntyped (golf_qualifier_round_courses is not yet in the
+    // generated Database types; the migration is unapplied). A failure here must
+    // NOT roll back the qualifier the coach already created — surface it and move
+    // on so courses can be re-assigned via setQualifierRoundCourses().
+    if (validatedData.roundCourses && validatedData.roundCourses.length > 0) {
+      const numRounds = validatedData.numRounds ?? 1;
+      const rows = validatedData.roundCourses
+        // Defensive: never write a round beyond the declared count.
+        .filter((rc) => rc.roundNumber >= 1 && rc.roundNumber <= numRounds)
+        .map((rc) => ({
+          qualifier_id: qualifier.id,
+          round_number: rc.roundNumber,
+          course_id: rc.courseId ?? null,
+          course_name: rc.courseName ?? null,
+          tee_id: rc.teeId ?? null,
+        }));
+
+      if (rows.length > 0) {
+        const { error: roundCoursesError } = await fromUntyped(
+          supabase,
+          'golf_qualifier_round_courses',
+        ).insert(rows);
+
+        if (roundCoursesError) {
+          await logServerError(
+            `createGolfQualifier round-course write failed: ${roundCoursesError.message}`,
+            { action: 'createGolfQualifier.roundCourses', featureArea: 'qualifiers' },
+          );
+        }
+      }
+    }
+
     // Add player entries
     if (validatedData.playerIds.length > 0) {
       const entries = validatedData.playerIds.map(playerId => ({
@@ -2864,6 +2948,120 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid qualifier data. Please check your inputs.' };
     }
+    return formatSafeErrorResponse(error);
+  }
+}
+
+/**
+ * Feature G — read the per-round course assignments for a qualifier.
+ * Returns one entry per assigned round (ascending). RLS lets any team member
+ * (coach OR active player) read these, so this powers BOTH the coach edit view
+ * and the player detail view. Reads through fromUntyped because the table is not
+ * yet in the generated Database types (migration unapplied).
+ */
+export async function getQualifierRoundCourses(
+  qualifierId: string,
+): Promise<QualifierRoundCourse[]> {
+  try {
+    const supabase = await createClient();
+
+    const { data, error } = await fromUntyped(supabase, 'golf_qualifier_round_courses')
+      .select('round_number, course_id, course_name, tee_id')
+      .eq('qualifier_id', qualifierId)
+      .order('round_number', { ascending: true });
+
+    if (error || !Array.isArray(data)) return [];
+
+    return (data as Array<{
+      round_number: number;
+      course_id: string | null;
+      course_name: string | null;
+      tee_id: string | null;
+    }>).map((row) => ({
+      roundNumber: row.round_number,
+      courseId: row.course_id ?? null,
+      courseName: row.course_name ?? null,
+      teeId: row.tee_id ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Feature G — set (replace) the round count + per-round course assignments for an
+ * existing qualifier. Coach-only; RLS enforces team ownership on every write.
+ *
+ * Strategy: stage-and-swap by round_number via upsert on the
+ * (qualifier_id, round_number) unique key, then delete any rounds that fell
+ * outside the new num_rounds — never a blind delete-all-then-insert (that would
+ * destroy assignments on a transient failure). Reads/writes through fromUntyped
+ * because the table is not yet in the generated Database types.
+ */
+export async function setQualifierRoundCourses(
+  qualifierId: string,
+  numRounds: number,
+  roundCourses: QualifierRoundCourseInput[],
+): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in to edit a qualifier' };
+    }
+
+    const safeNumRounds = Math.min(Math.max(Math.trunc(numRounds), 1), 50);
+
+    // Keep golf_qualifiers.num_rounds in sync. RLS (coach-only UPDATE) gates this.
+    const { error: numRoundsError } = await fromUntyped(supabase, 'golf_qualifiers')
+      .update({ num_rounds: safeNumRounds })
+      .eq('id', qualifierId);
+
+    if (numRoundsError) {
+      return { success: false, error: 'Failed to update the round count. Please try again.' };
+    }
+
+    // Upsert the assignments that fall within the declared round count.
+    const rows = roundCourses
+      .filter((rc) => rc.roundNumber >= 1 && rc.roundNumber <= safeNumRounds)
+      .map((rc) => ({
+        qualifier_id: qualifierId,
+        round_number: rc.roundNumber,
+        course_id: rc.courseId ?? null,
+        course_name: rc.courseName ?? null,
+        tee_id: rc.teeId ?? null,
+      }));
+
+    if (rows.length > 0) {
+      const { error: upsertError } = await fromUntyped(supabase, 'golf_qualifier_round_courses')
+        .upsert(rows, { onConflict: 'qualifier_id,round_number' });
+
+      if (upsertError) {
+        return { success: false, error: 'Failed to save the round courses. Please try again.' };
+      }
+    }
+
+    // Prune any assignments left over above the new round count (e.g. the coach
+    // reduced num_rounds). Targeted delete, never delete-all.
+    const { error: pruneError } = await fromUntyped(supabase, 'golf_qualifier_round_courses')
+      .delete()
+      .eq('qualifier_id', qualifierId)
+      .gt('round_number', safeNumRounds);
+
+    if (pruneError) {
+      await logServerError(`setQualifierRoundCourses prune failed: ${pruneError.message}`, {
+        action: 'setQualifierRoundCourses.prune',
+        featureArea: 'qualifiers',
+      });
+    }
+
+    revalidatePath('/golf/dashboard/qualifiers');
+    revalidatePath(`/golf/dashboard/qualifiers/${qualifierId}`);
+    revalidatePath('/golf/dashboard/my-qualifiers');
+
+    return { success: true, data: undefined };
+  } catch (error) {
     return formatSafeErrorResponse(error);
   }
 }

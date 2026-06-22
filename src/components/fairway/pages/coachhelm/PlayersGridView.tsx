@@ -179,6 +179,14 @@ export interface PlayersGridViewProps {
  * Form state (verbatim shape from development-client.tsx)
  * ------------------------------------------------------------------------- */
 
+/**
+ * Timeframe choices for the measurable target (Feature F). 'none' is the local
+ * default (coach can skip a timeframe); 'date' / 'rounds' map to the DB
+ * target_kind enum. Kept on the form so the segmented control + matching input
+ * can round-trip an existing focus area's timeframe in the edit flow.
+ */
+type FocusAreaTimeframeKind = 'none' | 'date' | 'rounds';
+
 interface FocusAreaForm {
   player_id: string;
   area_type: string;
@@ -187,6 +195,12 @@ interface FocusAreaForm {
   target_metric: string;
   current_value: string;
   target_value: string;
+  /** 'none' | 'date' | 'rounds' — the measurable-target timeframe (Feature F). */
+  target_kind: FocusAreaTimeframeKind;
+  /** YYYY-MM-DD when target_kind === 'date' (else ''). */
+  target_date: string;
+  /** Round count (as a string for the input) when target_kind === 'rounds' (else ''). */
+  target_rounds: string;
 }
 
 const EMPTY_FORM: FocusAreaForm = {
@@ -197,6 +211,9 @@ const EMPTY_FORM: FocusAreaForm = {
   target_metric: '',
   current_value: '',
   target_value: '',
+  target_kind: 'none',
+  target_date: '',
+  target_rounds: '',
 };
 
 const AREA_OPTIONS = AREA_TYPES.map((a) => ({ value: a.value, label: a.label }));
@@ -416,6 +433,10 @@ export function PlayersGridView({
       target_metric: row.target_metric || '',
       current_value: row.current_value?.toString() || '',
       target_value: row.target_value?.toString() || '',
+      // Hydrate the timeframe (Feature F) — falls back to 'none' for legacy rows.
+      target_kind: row.target_kind === 'date' || row.target_kind === 'rounds' ? row.target_kind : 'none',
+      target_date: row.target_date || '',
+      target_rounds: row.target_rounds != null ? String(row.target_rounds) : '',
     });
     setCreateOpen(true);
   }
@@ -455,6 +476,17 @@ export function PlayersGridView({
     if (!form.player_id || !form.title.trim()) return;
     setSaving(true);
     try {
+      // Timeframe (Feature F): only a 'date' with a date, or 'rounds' with a
+      // positive round count, persists a real timeframe; otherwise it clears to
+      // null. The server action normalizes again, but we keep the wire clean.
+      const roundsNum = form.target_rounds ? parseInt(form.target_rounds, 10) : NaN;
+      const timeframe =
+        form.target_kind === 'date' && form.target_date
+          ? { target_kind: 'date' as const, target_date: form.target_date, target_rounds: null }
+          : form.target_kind === 'rounds' && Number.isFinite(roundsNum) && roundsNum > 0
+            ? { target_kind: 'rounds' as const, target_date: null, target_rounds: roundsNum }
+            : { target_kind: null, target_date: null, target_rounds: null };
+
       const payload = {
         area_type: form.area_type,
         title: form.title.trim(),
@@ -462,6 +494,7 @@ export function PlayersGridView({
         target_metric: form.target_metric.trim() || null,
         current_value: form.current_value ? parseFloat(form.current_value) : null,
         target_value: form.target_value ? parseFloat(form.target_value) : null,
+        ...timeframe,
       };
 
       const res = editing
@@ -1418,7 +1451,10 @@ function FocusAreaModal({
       form.description !== b.description ||
       form.target_metric !== b.target_metric ||
       form.current_value !== b.current_value ||
-      form.target_value !== b.target_value
+      form.target_value !== b.target_value ||
+      form.target_kind !== b.target_kind ||
+      form.target_date !== b.target_date ||
+      form.target_rounds !== b.target_rounds
     );
   }, [form]);
 
@@ -1583,6 +1619,55 @@ function FocusAreaModal({
                 />
               </FormField>
             </div>
+
+            {/* Timeframe (Feature F) — optionally bound the target by a date or a
+                round count. A segmented switch picks the kind; the matching input
+                appears beneath. 'No deadline' clears any timeframe. */}
+            <FormField label="Timeframe" showOptional>
+              <div className="space-y-3">
+                <Segmented<FocusAreaTimeframeKind>
+                  aria-label="Target timeframe"
+                  value={form.target_kind}
+                  onValueChange={(v) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      target_kind: v,
+                      // Clear the now-irrelevant input so a stale value never persists.
+                      ...(v === 'date' ? { target_rounds: '' } : {}),
+                      ...(v === 'rounds' ? { target_date: '' } : {}),
+                      ...(v === 'none' ? { target_date: '', target_rounds: '' } : {}),
+                    }))
+                  }
+                  options={[
+                    { value: 'none', label: 'No deadline' },
+                    { value: 'date', label: 'By date' },
+                    { value: 'rounds', label: 'In rounds' },
+                  ]}
+                />
+
+                {form.target_kind === 'date' ? (
+                  <Input
+                    type="date"
+                    aria-label="Target date"
+                    value={form.target_date}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, target_date: e.target.value }))
+                    }
+                  />
+                ) : null}
+
+                {form.target_kind === 'rounds' ? (
+                  <NumberField
+                    aria-label="Number of rounds"
+                    min={1}
+                    value={form.target_rounds === '' ? null : Number(form.target_rounds)}
+                    onValueChange={(v) =>
+                      setForm((prev) => ({ ...prev, target_rounds: v == null ? '' : String(v) }))
+                    }
+                  />
+                ) : null}
+              </div>
+            </FormField>
 
             {previewPct != null ? (
               <p className="font-fw-sans text-eyebrow text-text-tertiary">

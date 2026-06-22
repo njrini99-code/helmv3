@@ -290,30 +290,43 @@ export function GolfNewMessageModal({
             </div>
           ) : noTeamError ? null : results.length > 0 ? (
             <div className="divide-y divide-warm-100">
-              {results.map(result => (
-                <Button variant="primary"
-                  key={result.id}
-                  onClick={() => handleSelect(result)}
-                  className={cn(
-                    'w-full px-4 py-3 flex items-center gap-3 text-left transition-colors',
-                    'hover:bg-warm-50 active:bg-warm-100 rounded-lg -mx-4',
-                    selectedId === result.userId && 'bg-primary-50 hover:bg-primary-50 active:bg-primary-100'
-                  )}
-                >
-                  <Avatar name={result.name} src={result.avatar} size="md" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-warm-900 truncate">{result.name}</p>
-                    {result.subtitle && (
-                      <p className="text-sm text-warm-500 truncate">{result.subtitle}</p>
+              {results.map(result => {
+                const isSelected = selectedId === result.userId;
+                return (
+                  // Raw <button> (not the Button primitive): a recipient row must
+                  // render as a normal selectable row — transparent at rest,
+                  // tinted on hover/selected. The Button primitive's primary
+                  // variant forces a solid bg-primary-600, which painted every
+                  // row as a full-width solid-green bar.
+                  // eslint-disable-next-line helm/no-raw-button
+                  <button
+                    type="button"
+                    key={result.id}
+                    onClick={() => handleSelect(result)}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      'w-full px-4 py-3 flex items-center gap-3 text-left rounded-lg -mx-4 transition-colors',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+                      isSelected
+                        ? 'bg-primary-50 hover:bg-primary-50 active:bg-primary-100'
+                        : 'bg-transparent hover:bg-warm-50 active:bg-warm-100'
                     )}
-                  </div>
-                  {selectedId === result.userId && (
-                    <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
-                      <IconCheck size={14} className="text-white" />
+                  >
+                    <Avatar name={result.name} src={result.avatar} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-warm-900 truncate">{result.name}</p>
+                      {result.subtitle && (
+                        <p className="text-sm text-warm-500 truncate">{result.subtitle}</p>
+                      )}
                     </div>
-                  )}
-                </Button>
-              ))}
+                    {isSelected && (
+                      <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
+                        <IconCheck size={14} className="text-white" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <EmptyState

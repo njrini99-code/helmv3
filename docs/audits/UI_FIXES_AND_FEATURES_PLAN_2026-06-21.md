@@ -92,6 +92,36 @@ edit before the round**, and the post-pick screen redesigned ("looks like crap")
 
 ---
 
+---
+
+## QUALITY WAVE (added 2026-06-21 — cross-surface sloppiness the user flagged)
+Runs AFTER the Fixes+Features workflow finishes (the roster work collides with
+Feature F's `PlayersGridView` edits, so it must be sequenced, not concurrent).
+
+### Q1. Round-review hole flyovers overlap (screenshot 1.35.25) · QUALITY
+`FairwayHoleHero.tsx` (per-hole SVG, viewBox 320×104, wide aspect) is rendered in
+the `FairwayRoundDetail` hole grid squished into tall-narrow columns → trees, shot
+dots, and per-hole label text collide; dark/garish; no breathing room. Fix the
+grid layout + hero aspect/scaling so each hole reads cleanly (right aspect ratio,
+spacing, legible labels, no overlap), and calm the green.
+
+### Q2. In-round shot tracking looks unfinished (screenshot 1.33.33) · QUALITY
+`FairwayShotTracking.tsx` + `FairwayShotEntry.tsx` + `FairwayScorecardHeader.tsx`:
+dark cut-off scoreboard strip clashing with the light body, a floating mid-screen
+card, an unclear slider, wasted side margins. Redesign to premium Fairway: cohesive
+light surfaces, a legible scorecard header, clear shot-entry hierarchy, full-width
+use, consistent with the rest of the app. (Note: `FairwayHoleHero` is shared with
+Q1 — do Q1+Q2 in ONE bucket to avoid collisions.)
+
+### Q3. Roster/player rendering is inconsistent across pages · QUALITY
+`FairwayPlayerCard.tsx` is the canonical roster card, but CoachHelm
+(`PlayersGridView` — own DataTable + "who needs attention" rows), Messages (own
+rows), and Qualifiers (own card) each roll their own player treatment. Unify on a
+shared player-identity component (avatar + name + class/meta) so a player looks the
+SAME everywhere (roster, CoachHelm, messages, qualifiers, dev focus-area picker).
+Keep page-specific affordances (attention score, message button) but standardize
+the identity block + card chrome.
+
 ## Housekeeping (done)
 - `.gitignore` now excludes `.design-sync/ .ds-sync/ ds-bundle/ docs/redesign/`
   (the ~58MB of scratch that showed as `+39,028` in the working tree).

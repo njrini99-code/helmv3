@@ -980,7 +980,7 @@ export default function ContinueRoundClient({
             <Button
               variant="primary"
               onClick={() => setShowFinishConfirm(true)}
-              className="flex-shrink-0 rounded-fw-md bg-accent-500 px-4 py-2 font-fw-sans text-body-sm font-medium text-text-on-accent transition-colors hover:bg-accent-600 active:bg-accent-700"
+              className="flex-shrink-0 rounded-fw-md bg-accent-500 px-4 py-2 font-fw-sans text-body-sm font-medium text-text-on-accent transition-colors hover:bg-accent-600 active:bg-accent-600"
             >
               Submit Round
             </Button>

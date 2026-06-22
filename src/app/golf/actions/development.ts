@@ -19,7 +19,25 @@ export interface DevelopmentActionResult<T = void> {
   error?: string;
 }
 
-interface CreateFocusAreaData {
+/**
+ * The TIMEFRAME bound on a focus area's measurable target (Feature F).
+ * `date` → hit the target by `target_date`; `rounds` → within `target_rounds`.
+ * All three live in not-yet-propagated DB columns (migration
+ * 20260621230000_focus_areas_timeframe.sql) so writes route through
+ * `fromUntyped` until the generated Database types catch up.
+ */
+export type FocusAreaTargetKind = 'date' | 'rounds';
+
+interface FocusAreaTimeframeFields {
+  /** 'date' | 'rounds' | null (no timeframe). */
+  target_kind?: FocusAreaTargetKind | null;
+  /** ISO date (YYYY-MM-DD) when target_kind === 'date', else null. */
+  target_date?: string | null;
+  /** Round count when target_kind === 'rounds', else null. */
+  target_rounds?: number | null;
+}
+
+interface CreateFocusAreaData extends FocusAreaTimeframeFields {
   player_id: string;
   coach_id: string;
   area_type: string;
@@ -32,7 +50,7 @@ interface CreateFocusAreaData {
   from_insight_id?: string | null;
 }
 
-interface UpdateFocusAreaData {
+interface UpdateFocusAreaData extends FocusAreaTimeframeFields {
   area_type?: string;
   title?: string;
   description?: string | null;
@@ -41,6 +59,32 @@ interface UpdateFocusAreaData {
   current_value?: number | null;
   target_value?: number | null;
   completed_at?: string | null;
+}
+
+/**
+ * Normalize the three timeframe fields into a coherent insert/update fragment:
+ *  - target_kind === 'date'   → keep target_date, force target_rounds = null
+ *  - target_kind === 'rounds' → keep target_rounds, force target_date = null
+ *  - anything else            → clear all three (no timeframe)
+ * Returns an object suitable for spreading into an untyped insert/update payload.
+ */
+function normalizeTimeframe(
+  data: FocusAreaTimeframeFields,
+): { target_kind: FocusAreaTargetKind | null; target_date: string | null; target_rounds: number | null } {
+  if (data.target_kind === 'date') {
+    return { target_kind: 'date', target_date: data.target_date ?? null, target_rounds: null };
+  }
+  if (data.target_kind === 'rounds') {
+    return {
+      target_kind: 'rounds',
+      target_date: null,
+      target_rounds:
+        typeof data.target_rounds === 'number' && Number.isFinite(data.target_rounds)
+          ? data.target_rounds
+          : null,
+    };
+  }
+  return { target_kind: null, target_date: null, target_rounds: null };
 }
 
 // ============================================================================
@@ -94,7 +138,10 @@ export async function createFocusArea(
     }
   }
 
-  const { error } = await supabase.from('golf_player_focus_areas').insert({
+  // Timeframe columns (target_kind/target_date/target_rounds) are not yet in the
+  // generated Database types (migration 20260621230000), so route the insert
+  // through fromUntyped to persist them without an as-any cast scattered inline.
+  const { error } = await fromUntyped(supabase, 'golf_player_focus_areas').insert({
     player_id: data.player_id,
     coach_id: data.coach_id,
     area_type: data.area_type,
@@ -106,6 +153,7 @@ export async function createFocusArea(
     target_value: data.target_value,
     started_at: new Date().toISOString(),
     from_insight_id: data.from_insight_id ?? null,
+    ...normalizeTimeframe(data),
   });
 
   if (error) {
@@ -174,16 +222,27 @@ export async function updateFocusArea(
     return { success: false, error: 'Not authorized to update focus areas' };
   }
 
+  // Split the timeframe fields out so a partial update only touches them when the
+  // caller actually sent one (an absent target_kind means "leave timeframe as-is",
+  // not "clear it"). The remaining fields update as before.
+  const { target_kind, target_date, target_rounds, ...rest } = data;
+  const sentTimeframe =
+    'target_kind' in data || 'target_date' in data || 'target_rounds' in data;
+  const updatePayload: Record<string, unknown> = {
+    ...rest,
+    updated_at: new Date().toISOString(),
+  };
+  if (sentTimeframe) {
+    Object.assign(updatePayload, normalizeTimeframe({ target_kind, target_date, target_rounds }));
+  }
+
   // Verify the focus area belongs to this coach. Select the updated row back so
   // a scope mismatch (0 rows matched by .eq('coach_id', ...)) surfaces as a
   // failure instead of a false {success:true} — a PostgREST UPDATE matching no
-  // rows returns error:null.
-  const { data: updated, error } = await supabase
-    .from('golf_player_focus_areas')
-    .update({
-      ...data,
-      updated_at: new Date().toISOString(),
-    })
+  // rows returns error:null. Routed through fromUntyped because the timeframe
+  // columns are not yet in the generated Database types (migration 20260621230000).
+  const { data: updated, error } = await fromUntyped(supabase, 'golf_player_focus_areas')
+    .update(updatePayload)
     .eq('id', id)
     .eq('coach_id', coach.id)
     .select('id');

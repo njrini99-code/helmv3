@@ -8398,7 +8398,10 @@ export type Database = {
           review_context: string | null
           started_at: string | null
           status: string | null
+          target_date: string | null
+          target_kind: string | null
           target_metric: string | null
+          target_rounds: number | null
           target_value: number | null
           team_id: string | null
           title: string
@@ -8422,7 +8425,10 @@ export type Database = {
           review_context?: string | null
           started_at?: string | null
           status?: string | null
+          target_date?: string | null
+          target_kind?: string | null
           target_metric?: string | null
+          target_rounds?: number | null
           target_value?: number | null
           team_id?: string | null
           title: string
@@ -8446,7 +8452,10 @@ export type Database = {
           review_context?: string | null
           started_at?: string | null
           status?: string | null
+          target_date?: string | null
+          target_kind?: string | null
           target_metric?: string | null
+          target_rounds?: number | null
           target_value?: number | null
           team_id?: string | null
           title?: string
@@ -9294,6 +9303,51 @@ export type Database = {
           },
         ]
       }
+      golf_qualifier_round_courses: {
+        Row: {
+          course_id: string | null
+          course_name: string | null
+          created_at: string
+          id: string
+          qualifier_id: string
+          round_number: number
+          tee_id: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          course_name?: string | null
+          created_at?: string
+          id?: string
+          qualifier_id: string
+          round_number: number
+          tee_id?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          course_name?: string | null
+          created_at?: string
+          id?: string
+          qualifier_id?: string
+          round_number?: number
+          tee_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_qualifier_round_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "golf_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_qualifier_round_courses_qualifier_id_fkey"
+            columns: ["qualifier_id"]
+            isOneToOne: false
+            referencedRelation: "golf_qualifiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_qualifier_selections: {
         Row: {
           coach_reasoning: string | null
@@ -9354,6 +9408,7 @@ export type Database = {
           entry_deadline: string | null
           id: string
           name: string
+          num_rounds: number
           rules: string | null
           selection_slots_coach_pick: number
           selection_slots_total: number
@@ -9375,6 +9430,7 @@ export type Database = {
           entry_deadline?: string | null
           id?: string
           name: string
+          num_rounds?: number
           rules?: string | null
           selection_slots_coach_pick?: number
           selection_slots_total?: number
@@ -9396,6 +9452,7 @@ export type Database = {
           entry_deadline?: string | null
           id?: string
           name?: string
+          num_rounds?: number
           rules?: string | null
           selection_slots_coach_pick?: number
           selection_slots_total?: number

@@ -31,7 +31,7 @@
  * ========================================================================== */
 
 import Link from 'next/link';
-import { ChartNoAxesColumn, ListChecks } from 'lucide-react';
+import { ChartNoAxesColumn, ListChecks, Flag } from 'lucide-react';
 
 import {
   Surface,
@@ -44,6 +44,7 @@ import {
   type FwStatusTone,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
+import type { QualifierRoundCourse } from '@/app/golf/actions/golf';
 
 import { FairwayQualifierLeaderboard } from './FairwayQualifierLeaderboard';
 
@@ -90,6 +91,10 @@ export interface FairwayQualifierDetailProps {
   // ── Coach round-by-round (the [playerId, breakdown] tuples + max round seen) ─
   breakdown: [string, PlayerBreakdown][];
   maxRoundNumber: number;
+
+  // ── Feature G — multi-round model + the course assigned to each round ─────────
+  numRounds: number;
+  roundCourses: QualifierRoundCourse[];
 
   // ── Coach selections strip (W29 selection_state + count) ─────────────────────
   selectionState: string;
@@ -162,11 +167,21 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
     canPlayRound,
     breakdown,
     maxRoundNumber,
+    numRounds,
+    roundCourses,
     selectionState,
     selectionSlotsTotal,
     selectionSlotsCoachPick,
     selectionsCount,
   } = props;
+
+  // Feature G — only surface the per-round course list when the qualifier is
+  // actually split across multiple rounds AND at least one course is assigned.
+  const isMultiRound = numRounds > 1;
+  const hasRoundCourses = roundCourses.some(
+    (rc) => rc.courseName || rc.courseId,
+  );
+  const showRoundCourses = isMultiRound && hasRoundCourses;
 
   const sm = statusMeta(status);
   const backHref = isCoach
@@ -303,6 +318,11 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
             ) : null}
           </Surface.Body>
         </Surface>
+
+        {/* 2b · Feature G — the course assigned to each round (multi-round only) */}
+        {showRoundCourses ? (
+          <RoundCoursesSection numRounds={numRounds} roundCourses={roundCourses} />
+        ) : null}
 
         {/* 3 · HERO — the live Leaderboard (honest "awaiting first round" when 0 scored) */}
         <FairwayQualifierLeaderboard
@@ -483,6 +503,72 @@ function RoundBreakdownTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Feature G — per-round course assignment (the venue the coach set for each
+ * round). Read-only for both roles; players see WHERE each round is played.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+function RoundCoursesSection({
+  numRounds,
+  roundCourses,
+}: {
+  numRounds: number;
+  roundCourses: QualifierRoundCourse[];
+}) {
+  // Index assignments by round so we can render a row per declared round
+  // (an unassigned round shows an honest "Course not set yet").
+  const byRound = new Map<number, QualifierRoundCourse>();
+  for (const rc of roundCourses) byRound.set(rc.roundNumber, rc);
+  const rows = Array.from({ length: numRounds }, (_, i) => i + 1);
+
+  return (
+    <Surface aria-label="Course per round">
+      <Surface.Header
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Flag className="h-4 w-4 text-text-tertiary" aria-hidden="true" />
+            Course per round
+          </span>
+        }
+      />
+      <Surface.Body>
+        <ul className="divide-y divide-border-subtle">
+          {rows.map((roundNumber) => {
+            const assigned = byRound.get(roundNumber);
+            return (
+              <li
+                key={roundNumber}
+                className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+              >
+                <span
+                  aria-hidden="true"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-sunken font-fw-mono text-body-sm font-medium tabular-nums text-text-secondary"
+                >
+                  {roundNumber}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+                    Round {roundNumber}
+                  </p>
+                  {assigned?.courseName ? (
+                    <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+                      {assigned.courseName}
+                    </p>
+                  ) : (
+                    <p className="font-fw-sans text-body text-text-tertiary">
+                      Course not set yet
+                    </p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </Surface.Body>
+    </Surface>
   );
 }
 

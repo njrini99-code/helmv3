@@ -111,7 +111,7 @@ export function Segmented<T extends string = string>({
             aria-label={typeof opt.label === 'string' ? opt.label : undefined}
             data-slot="fw-segment"
             className={cn(
-              'relative isolate inline-flex items-center justify-center rounded-[7px]',
+              'relative isolate inline-flex min-w-0 items-center justify-center rounded-[7px]',
               'font-fw-sans font-medium',
               fwTransition,
               fwFocusRing,
@@ -135,7 +135,12 @@ export function Segmented<T extends string = string>({
               />
             )}
             {opt.icon && <span className="flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4">{opt.icon}</span>}
-            <span className="truncate">{opt.label}</span>
+            <span
+              className="min-w-0 truncate"
+              title={typeof opt.label === 'string' ? opt.label : undefined}
+            >
+              {opt.label}
+            </span>
           </ToggleGroup.Item>
         );
       })}

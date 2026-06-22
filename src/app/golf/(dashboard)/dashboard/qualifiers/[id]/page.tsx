@@ -15,6 +15,7 @@ import { QualifierLeaderboardRealtime } from '@/components/golf/qualifiers/Quali
 import { QualifierRoundBreakdown } from './QualifierRoundBreakdown';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifierDetail } from '@/components/fairway/pages/qualifiers/FairwayQualifierDetail';
+import { getQualifierRoundCourses } from '@/app/golf/actions/golf';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
   player: {
@@ -180,6 +181,9 @@ export default async function QualifierDetailPage({ params }: PageProps) {
       .select('*', { count: 'exact', head: true })
       .eq('qualifier_id', id);
 
+    // Feature G — the course the coach assigned to each round (if any).
+    const roundCourses = await getQualifierRoundCourses(id);
+
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
         <FairwayQualifierDetail
@@ -199,6 +203,14 @@ export default async function QualifierDetailPage({ params }: PageProps) {
           canPlayRound={canPlayRound}
           breakdown={sortedBreakdown}
           maxRoundNumber={maxRoundNumber}
+          numRounds={
+            // num_rounds is a Feature-G column not yet in the generated types
+            // (migration unapplied) — read it defensively.
+            typeof (qualifier as { num_rounds?: number }).num_rounds === 'number'
+              ? (qualifier as { num_rounds?: number }).num_rounds ?? 1
+              : 1
+          }
+          roundCourses={roundCourses}
           selectionState={qualifierData.selection_state ?? 'open'}
           selectionSlotsTotal={qualifierData.selection_slots_total ?? 0}
           selectionSlotsCoachPick={qualifierData.selection_slots_coach_pick ?? 0}
