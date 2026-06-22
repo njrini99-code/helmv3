@@ -10,6 +10,7 @@
 
 import { createHash } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import type {
   MinedPattern,
@@ -976,6 +977,34 @@ export class PatternMiner {
           action: 'pattern-miner.savePatterns',
           featureArea: 'coachhelm.mining',
           metadata: { dbError: result.value.error as unknown },
+        });
+      }
+    }
+
+    // 2. Soft-supersede stale patterns (the recurring "old stuff" bug). Every
+    //    mine covers a rolling 90-day window; a pattern that NO LONGER
+    //    reproduces in the current window is absent from this fresh batch, so
+    //    its prior row would otherwise linger as is_active=true forever and keep
+    //    showing on the Patterns tab. Flip those to is_active=false — scoped to
+    //    THIS run's player(s), never touching coach-set lifecycle states. This
+    //    is a non-destructive supersede (NO delete), safe in this sync path, and
+    //    idempotent: re-mining the same window converges (deterministic ids).
+    const playerIds = [...new Set(patterns.map((p) => p.playerId).filter(Boolean))];
+    if (ids.length > 0 && playerIds.length > 0) {
+      const idList = `(${ids.map((id) => `"${id}"`).join(',')})`;
+      const { error: supersedeError } = await fromUntyped(supabase, 'golf_patterns_v2')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .in('player_id', playerIds)
+        .eq('is_active', true)
+        .not('id', 'in', idList)
+        // Keep coach-curated patterns visible; only retire auto-detected ones
+        // (NULL or non-preserved lifecycle_state).
+        .or('lifecycle_state.is.null,lifecycle_state.not.in.(confirmed,addressed,resolved,dismissed)');
+      if (supersedeError) {
+        await logServerError('pattern-miner.savePatterns supersede stale', {
+          action: 'pattern-miner.savePatterns',
+          featureArea: 'coachhelm.mining',
+          metadata: { dbError: supersedeError as unknown },
         });
       }
     }
