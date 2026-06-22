@@ -91,11 +91,11 @@ export function HoleByHoleShotPaths({ roundId, holes }: Props) {
 
       <div className="surface-matte rounded-2xl p-4 md:p-6">
         {shots === null ? (
-          <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-9 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 max-w-[860px] mx-auto justify-items-center">
             {holes.map((h) => (
               <div
                 key={h.hole_number}
-                className="w-full aspect-[1/2.2] rounded-2xl bg-warm-100 animate-pulse"
+                className="w-full max-w-[240px] aspect-[140/320] rounded-2xl bg-warm-100 animate-pulse"
               />
             ))}
           </div>
@@ -110,8 +110,11 @@ export function HoleByHoleShotPaths({ roundId, holes }: Props) {
             {/* At-a-glance band — every hole as a tiny strip, both nines */}
             <RoundStripGrid holes={holes} shotsByHole={byHole} />
 
-            {/* Detail grid — full card per hole */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-x-3 gap-y-5 justify-items-center">
+            {/* Detail grid — one framed card per hole. A light surface-matte
+                frame + generous gaps make each flyover a distinct island
+                instead of a butted-together dark-green wall, and lift the
+                per-hole labels onto a readable light header. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 max-w-[860px] mx-auto justify-items-center">
               {holes.map((h) => {
                 const holeShots = byHole.get(h.hole_number) ?? [];
                 const par = (h.par === 3 || h.par === 4 || h.par === 5) ? h.par : undefined;
@@ -123,7 +126,8 @@ export function HoleByHoleShotPaths({ roundId, holes }: Props) {
                     yardage={h.yardage}
                     score={h.score}
                     shots={holeShots}
-                    size="card"
+                    size="reviewCard"
+                    className="w-full max-w-[240px] surface-matte rounded-2xl p-2.5 pb-3"
                   />
                 );
               })}

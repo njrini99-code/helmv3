@@ -88,14 +88,14 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
                 type="button"
                 onClick={() => onTap(c)}
                 aria-label={`Start new round at ${c.courseName}`}
-                className="group flex h-full w-[190px] flex-col gap-2 rounded-fw-md border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-accent-500 hover:bg-accent-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/30"
+                className="group flex h-full w-[190px] flex-col gap-2 rounded-fw-md border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-accent-500 hover:bg-accent-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-surface-sunken text-text-tertiary transition-colors group-hover:bg-accent-100 group-hover:text-accent-700">
                     <MapPin className="h-3.5 w-3.5" />
                   </span>
                   {c.roundCount > 0 && (
-                    <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary transition-colors group-hover:text-accent-700">
+                    <span className="truncate font-fw-mono text-eyebrow tabular-nums text-text-tertiary transition-colors group-hover:text-accent-700">
                       {c.roundCount} {c.roundCount === 1 ? 'round' : 'rounds'}
                     </span>
                   )}

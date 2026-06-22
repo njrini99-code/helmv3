@@ -23,6 +23,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { runGoalProgressForPlayers } from '@/app/golf/actions/v3/goal-progress';
 import {
   STANDING_REFRESH_METRIC_IDS,
   STANDING_REFRESH_DEFERRED_METRIC_IDS,
@@ -48,6 +49,10 @@ interface RefreshSummary {
   metrics_covered_zero_rows: string[];
   // SC1: stale/orphan standing rows removed for the refreshed teams' players.
   orphans_pruned: number;
+  // P1-07: active goals whose progress (current_value / snapshot / outcome)
+  // advanced now that this chunk's standings are fresh. Optional so the early
+  // returns (which run before the goal pass) need not set it.
+  goals_progressed?: number;
   // W7 pre-sweep: player caches fully refreshed BEFORE the standing RPCs
   // (is_stale flag or recent completed-round activity), so standing never
   // ranks players on stale shot-derived columns.
@@ -341,6 +346,28 @@ async function handle(): Promise<NextResponse> {
     );
   }
 
+  // P1-07 track-progress: now that this chunk's standings are fresh, advance
+  // the chunk players' active goals (current_value / snapshot / terminal
+  // outcome) so progress moves durably — a goal can be hit or lapse even if
+  // nobody opens the app. Failure-isolated — never fails the standing refresh.
+  let goalsProgressed = 0;
+  try {
+    const { data: goalMembers } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .in('team_id', teamIds)
+      .eq('status', 'active')
+      .limit(1000);
+    const goalPlayerIds = [...new Set((goalMembers ?? []).map((m) => m.player_id as string))];
+    const summary = await runGoalProgressForPlayers(goalPlayerIds);
+    goalsProgressed = summary.updated;
+  } catch (err) {
+    await logServerError(
+      `standing-refresh goal-progress: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'cron.v3.standing-refresh.goal-progress' },
+    );
+  }
+
   // SC2 assertion: surface any "covered" metric that upserted 0 rows across the
   // whole chunk — a silent-dead binding. Logged (warning) so the drift is loud.
   const coveredZeroRows = coveredMetricsWithZeroRows(
@@ -363,6 +390,7 @@ async function handle(): Promise<NextResponse> {
     metrics_covered_zero_rows: coveredZeroRows,
     orphans_pruned: orphansPruned,
     stale_caches_refreshed: staleCachesRefreshed,
+    goals_progressed: goalsProgressed,
     duration_ms: Date.now() - startedAt,
   } satisfies RefreshSummary);
 }

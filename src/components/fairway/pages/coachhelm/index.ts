@@ -73,6 +73,7 @@ export {
   getAreaType,
   suggestedMetrics,
   getAreaAutoFill,
+  getMetricCurrentValue,
   isLowerIsBetter,
   getProgressPercent,
   LOWER_IS_BETTER_KEYWORDS,

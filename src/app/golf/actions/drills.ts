@@ -5,9 +5,12 @@
  *
  * - `getDrillsForInsight(insightId)` joins `golf_insight_drill_attachments`
  *   back to `golf_drills` and returns up to 3 drills ordered by attachment
- *   rank. RLS on `golf_insight_drill_attachments` already constrains SELECT
- *   to rows whose parent insight the user can see, so we just need an auth
- *   check here — no hand-rolled authorization.
+ *   rank. The attachment RLS policy is EXISTS-only (it checks the parent
+ *   insight ROW exists, NOT that it is product-visible), so we FIRST resolve
+ *   the insight through `applyInsightVisibility` and only return drills when
+ *   the parent is currently surfaceable — otherwise drills of an
+ *   archived/dismissed/stale-v2 insight would linger on the page (the
+ *   recurring "old stuff" stale-data bug).
  *
  * - `recordDrillView(drillId)` logs an info-level event so we can measure
  *   drill engagement later without schema churn. We intentionally skip the
@@ -22,6 +25,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 export interface InsightDrill {
   id: string;
@@ -68,6 +72,22 @@ export async function getDrillsForInsight(
     // fetch failing shouldn't blank the page.
     return [];
   }
+
+  // Gate on the parent insight's product-visibility. The attachment RLS policy
+  // only checks the insight EXISTS, so without this an archived/dismissed/
+  // stale-v2 insight's drills would still surface (stale-data bug).
+  const { data: visibleInsight, error: visError } = await applyInsightVisibility(
+    supabase.from('golf_coach_insights').select('id').eq('id', insightId),
+  );
+  if (visError) {
+    await logServerError(`getDrillsForInsight visibility check failed: ${visError.message}`, {
+      action: 'drills.getDrillsForInsight',
+      featureArea: 'insights',
+      extra: { insightId, errorCode: visError.code },
+    });
+    return [];
+  }
+  if (!visibleInsight || visibleInsight.length === 0) return [];
 
   const { data, error } = await supabase
     .from('golf_insight_drill_attachments')
@@ -126,11 +146,14 @@ export async function getDrillsForInsight(
  * map. This lets a list of insight-sourced cards collapse what would be N
  * post-hydration client→server fetches (the P176 N+1 waterfall) into one.
  *
- * RLS on `golf_insight_drill_attachments` already constrains SELECT to rows the
- * user can see, so we only need the auth check — missing/inaccessible insights
- * simply yield an empty array for that key. Per-insight ordering + the top-3 cap
- * are applied client-side here because PostgREST can't window-per-group in one
- * query; the row volume (≤3 × #insights on a development page) is trivially small.
+ * The attachment RLS policy is EXISTS-only (parent insight row exists), NOT
+ * visibility-aware, so we FIRST resolve which of the requested insights are
+ * currently product-visible via `applyInsightVisibility` and only fetch drills
+ * for those — drills of an archived/dismissed/stale-v2 insight must not linger
+ * on the page (stale-data bug). Non-visible ids still get a `[]` entry so the
+ * returned map stays total. Per-insight ordering + the top-3 cap are applied
+ * client-side here because PostgREST can't window-per-group in one query; the
+ * row volume (≤3 × #insights on a development page) is trivially small.
  */
 export async function getDrillsForInsights(
   insightIds: string[],
@@ -145,6 +168,22 @@ export async function getDrillsForInsights(
     // (same honest-empty contract as the single-insight action).
     return Object.fromEntries(ids.map((id) => [id, []]));
   }
+
+  // Resolve the product-visible subset of the requested insights. Total map is
+  // seeded below with every requested id, so non-visible ones stay [].
+  const { data: visibleRows, error: visError } = await applyInsightVisibility(
+    supabase.from('golf_coach_insights').select('id').in('id', ids),
+  );
+  if (visError) {
+    await logServerError(`getDrillsForInsights visibility check failed: ${visError.message}`, {
+      action: 'drills.getDrillsForInsights',
+      featureArea: 'insights',
+      extra: { insightCount: ids.length, errorCode: visError.code },
+    });
+    return Object.fromEntries(ids.map((id) => [id, []]));
+  }
+  const visibleIds = (visibleRows ?? []).map((r) => r.id);
+  if (visibleIds.length === 0) return Object.fromEntries(ids.map((id) => [id, []]));
 
   const { data, error } = await supabase
     .from('golf_insight_drill_attachments')
@@ -165,7 +204,7 @@ export async function getDrillsForInsights(
       )
     `,
     )
-    .in('insight_id', ids)
+    .in('insight_id', visibleIds)
     .order('rank', { ascending: true });
 
   if (error) {

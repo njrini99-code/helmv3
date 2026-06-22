@@ -35,7 +35,6 @@ import {
   SensitivitySlider,
   ThresholdSlider,
   AlertTypeToggles,
-  SgBaselineSelector,
 } from '@/components/golf/coachhelm/settings';
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
@@ -477,7 +476,9 @@ function CoachingIntelligenceBody({
             <div className="mb-3 flex flex-col gap-1">
               <h2 className="font-fw-display text-h2 text-text-primary">Strokes Gained baseline</h2>
             </div>
-            <SgBaselineSelector />
+            <p className="text-body-sm text-text-secondary">
+              Set automatically from your team’s gender — PGA Tour for men’s teams, LPGA for women’s.
+            </p>
           </Surface>
         ) : null}
 

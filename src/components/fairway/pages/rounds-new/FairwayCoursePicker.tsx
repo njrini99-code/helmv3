@@ -253,7 +253,7 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
                     type="button"
                     onClick={backToCourses}
                     aria-label="Back to courses"
-                    className="-ml-1 mt-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+                    className="-ml-1 mt-1 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                   >
                     <IconChevronLeft size={20} aria-hidden />
                   </button>
@@ -403,8 +403,9 @@ function CoursesStage({
           <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
             Add it to the shared library so it’s there next time.
           </p>
-          <Button variant="primary" className="mt-5" onClick={onCreate}>
-            <IconPlus size={16} aria-hidden /> Add “{q}”
+          <Button variant="primary" className="mt-5 min-w-0" onClick={onCreate}>
+            <IconPlus size={16} aria-hidden />
+            <span className="truncate">Add “{q}”</span>
           </Button>
         </div>
       );
@@ -539,7 +540,7 @@ function CourseCarousel({
         className={cn(
           'flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto overscroll-x-contain scroll-smooth',
           'px-1 py-2',
-          'rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40',
+          'rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           '[scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden',
           'motion-reduce:scroll-auto',
         )}
@@ -586,6 +587,7 @@ function CarouselArrow({ side, show, onClick }: { side: 'left' | 'right'; show: 
       className={cn(
         'absolute top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full sm:flex',
         'border border-border-subtle bg-surface/90 text-text-secondary shadow-soft backdrop-blur',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'transition-[opacity,transform] [transition-duration:var(--fw-dur-fast)] hover:scale-105 hover:text-text-primary active:scale-95',
         'motion-reduce:transition-none motion-reduce:hover:scale-100',
         side === 'left' ? 'left-0' : 'right-0',
@@ -608,7 +610,7 @@ function CreateCourseTile({ onClick }: { onClick: () => void }) {
         'border-2 border-dashed border-border-strong bg-surface-sunken',
         'transition-[transform,border-color,background-color] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
         'hover:-translate-y-1.5 hover:border-accent-500 hover:bg-accent-50/60 active:-translate-y-0.5',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
       )}
     >

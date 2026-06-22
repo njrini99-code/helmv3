@@ -23,7 +23,7 @@
  * styling only). Restrained, reduced-motion-safe entrance.
  * ========================================================================== */
 
-import { type Dispatch, type SetStateAction } from 'react';
+import { type Dispatch, type SetStateAction, useState } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { MapPin, Check, BarChart3, Trophy, Search, ChevronLeft } from 'lucide-react';
 
@@ -137,6 +137,32 @@ function totalPar(configs: SavedCourseHoleConfig[]): number {
   return configs.reduce((s, h) => s + (h.par ?? 0), 0);
 }
 
+/**
+ * Build the editable baseline holes for the Hole-config editor from a picked
+ * course/tee's preloaded configs. Mirrors the parent's submit-time slicing so a
+ * 9-hole round off an 18-hole tee (front/back) seeds the right nine, renumbered
+ * 1..N. Returns undefined when there is nothing to seed (manual entry → the
+ * editor falls back to its standard template). Pure: never mutates the configs.
+ */
+function seedInitialHoles(
+  configs: SavedCourseHoleConfig[] | null,
+  holesPerRound: 9 | 18,
+  nineSelection: 'front' | 'back',
+): HoleConfig[] | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  let slice: SavedCourseHoleConfig[];
+  if (holesPerRound === 9 && configs.length >= 18 && nineSelection === 'back') {
+    slice = configs.slice(9, 18);
+  } else {
+    slice = configs.slice(0, holesPerRound);
+  }
+  return slice.map((h, idx) => ({
+    holeNumber: idx + 1, // renumber 1..N regardless of front/back
+    par: h.par,
+    yardage: h.yardage,
+  }));
+}
+
 function relTime(iso: string | null): string {
   if (!iso) return '';
   const then = new Date(iso).getTime();
@@ -242,6 +268,17 @@ function CockpitBand({
 export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   const { step } = props;
   const prefersReducedMotion = useReducedMotion();
+  // Internal "review holes" stage for a CLOUD / SAVED course pick. The parent's
+  // submit handler would otherwise skip the editor and jump straight to tracking
+  // for a usable preloaded config — but the cloud course is a BASELINE the player
+  // must be able to tune for today's round. When a baseline pick is active we keep
+  // the player on the setup screen, and the primary CTA opens this in-place editor
+  // (seeded from the picked tee) instead of submitting. Saving pipes the edited
+  // holes to onHolesSave, which the parent already routes into round creation
+  // (it never mutates the shared catalog for a cloud-tee pick). Manual entry is
+  // unaffected: with no preloaded config the CTA still submits via onSubmit and
+  // the parent advances to its own 'holes' step.
+  const [reviewingHoles, setReviewingHoles] = useState(false);
   const enter = (i: number) =>
     prefersReducedMotion
       ? {}
@@ -256,6 +293,11 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   // screen always renders the setup/holes flow directly.
 
   // ── Holes config step ─────────────────────────────────────────────────────
+  // Seeded from whatever course/tee was picked (cloud library, saved course, or
+  // a recent quick-pick). The configs are an editable baseline for THIS round —
+  // edits flow out via onHolesSave and never touch the shared catalog.
+  const seededHoles = seedInitialHoles(props.preloadedHoleConfigs, props.holesPerRound, props.nineSelection);
+  const baselineLabel = seededHoles ? (props.setupData.courseName || 'this course') : undefined;
   if (step === 'holes') {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
@@ -263,14 +305,46 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
           <CockpitBand
             step="holes"
             eyebrow={`New round${props.setupData.courseName ? ` · ${props.setupData.courseName}` : ''}`}
-            title="Configure the holes."
-            description="Set par and yardage for each hole, then start tracking."
+            title={seededHoles ? 'Review the scorecard.' : 'Configure the holes.'}
+            description={
+              seededHoles
+                ? 'These pars and yardages come from the course you picked — tweak any hole, then start tracking.'
+                : 'Set par and yardage for each hole, then start tracking.'
+            }
           />
         </m.div>
         <FairwayHoleConfig
           courseName={props.setupData.courseName}
+          initialHoles={seededHoles}
+          baselineLabel={baselineLabel}
           onSave={props.onHolesSave}
           onBack={props.onHolesBack}
+          holesPerRound={props.holesPerRound}
+        />
+      </div>
+    );
+  }
+
+  // ── In-place "review holes" stage for a cloud / saved baseline pick ─────────
+  // Reached from the setup screen's primary CTA when a preloaded config exists,
+  // so the editable scorecard appears BEFORE the parent's submit can skip it.
+  if (reviewingHoles && seededHoles) {
+    return (
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
+        <m.div {...enter(0)}>
+          <CockpitBand
+            step="holes"
+            eyebrow={`New round${props.setupData.courseName ? ` · ${props.setupData.courseName}` : ''}`}
+            title="Review the scorecard."
+            description="These pars and yardages come from the course you picked — tweak any hole, then start tracking."
+          />
+        </m.div>
+        <FairwayHoleConfig
+          courseName={props.setupData.courseName}
+          initialHoles={seededHoles}
+          baselineLabel={baselineLabel}
+          onSave={props.onHolesSave}
+          onBack={() => setReviewingHoles(false)}
           holesPerRound={props.holesPerRound}
         />
       </div>
@@ -302,6 +376,15 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
 
   const showSelector = !loadingSavedCourses && savedCourses.length > 0;
   let i = 0;
+
+  // A qualifier round still needs its qualifier + round number chosen before we
+  // can advance. The parent's onSubmit validates this and surfaces the error, so
+  // for an incomplete qualifier we route through the form (type=submit) rather
+  // than jumping into the in-place holes editor. For non-qualifier rounds (and
+  // fully-selected qualifiers) a baseline pick goes straight to the editor.
+  const qualifierIncomplete =
+    setupData.roundType === 'qualifier' && (!selectedQualifierId || !selectedRoundNumber);
+  const canReviewHoles = !!seededHoles && !qualifierIncomplete;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-10">
@@ -715,6 +798,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                   <span className={labelCls}>Holes</span>
                   <Segmented<'9' | '18'>
                     size="md"
+                    fullWidth
                     aria-label="Holes per round"
                     value={holesPerRound === 9 ? '9' : '18'}
                     onValueChange={(next) => props.setHolesPerRound(next === '9' ? 9 : 18)}
@@ -727,6 +811,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                     <div className="mt-2">
                       <Segmented<'front' | 'back'>
                         size="sm"
+                        fullWidth
                         aria-label="Nine selection"
                         value={nineSelection}
                         onValueChange={props.setNineSelection}
@@ -830,23 +915,41 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
           </m.div>
 
           {props.error && (
-            <p className="rounded-fw-md bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger">
+            <InlineNotice tone="danger" title="Unable to start round">
               {props.error}
-            </p>
+            </InlineNotice>
           )}
 
-          {/* ── Action dock ── */}
+          {/* ── Action dock ──
+              When a course/tee is picked we have an editable baseline scorecard
+              (`seededHoles`): the primary CTA opens the in-place review editor
+              (type=button) so the player always confirms/tunes the holes for THIS
+              round before tracking — the cloud course is a baseline, not a skip.
+              With no baseline (manual entry) the CTA submits and the parent sends
+              the player to its own hole-configuration step. */}
           <m.div {...enter(i++)} className="flex gap-3 pt-1">
             <Button variant="secondary" type="button" onClick={props.onCancel} disabled={props.isStartingRound} className="flex-1">
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={props.isStartingRound} className="flex-[2]">
-              {props.isStartingRound
-                ? 'Starting…'
-                : preloadedHoleConfigs && preloadedHoleConfigs.length > 0
-                  ? 'Start round →'
-                  : 'Next: configure holes →'}
-            </Button>
+            {canReviewHoles ? (
+              <Button
+                variant="primary"
+                type="button"
+                onClick={() => setReviewingHoles(true)}
+                disabled={props.isStartingRound}
+                className="flex-[2]"
+              >
+                Next: review holes →
+              </Button>
+            ) : (
+              <Button variant="primary" type="submit" disabled={props.isStartingRound} className="flex-[2]">
+                {props.isStartingRound
+                  ? 'Starting…'
+                  : seededHoles
+                    ? 'Start round →'
+                    : 'Next: configure holes →'}
+              </Button>
+            )}
           </m.div>
         </form>
       </div>

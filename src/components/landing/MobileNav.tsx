@@ -7,6 +7,7 @@ import { m, LazyMotion, domAnimation, AnimatePresence, useReducedMotion } from '
 import Link from 'next/link'
 import Image from 'next/image'
 import { submitDemoRequest } from '@/app/actions/demo-request'
+import { requestLoginTransition } from './login-transition'
 
 const navLinks = [
   { name: 'Home', href: '/' },
@@ -204,7 +205,12 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                       >
                         <Link
                           href={link.href}
-                          onClick={close}
+                          onClick={(e) => {
+                            // Log in plays the branded curtain (overlay lives in
+                            // the desktop Navigation, mounted on every landing page).
+                            if (link.href === '/golf/login') requestLoginTransition(e)
+                            close()
+                          }}
                           className="group flex items-center justify-between py-4
                                      active:opacity-60 transition-opacity duration-100"
                         >

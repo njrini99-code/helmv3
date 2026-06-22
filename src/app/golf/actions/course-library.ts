@@ -37,6 +37,7 @@ import {
   mapTeeHoleRow,
   mapSavedRow,
   isCourseImagePublicUrl,
+  normalizeWebsiteUrl,
 } from '@/lib/golf/course-library';
 import type {
   GolfCourse,
@@ -605,6 +606,14 @@ export async function createCourse(
   const name = input.name?.trim();
   if (!name) return { success: false, error: 'Course name is required' };
 
+  // P338 — scheme-normalize the website (prepend https:// when missing) and
+  // reject an obviously-invalid value so we never persist a bare token that
+  // would render as a broken relative link.
+  const websiteRes = normalizeWebsiteUrl(input.website);
+  if (!websiteRes.ok) {
+    return { success: false, error: 'Enter a valid website URL (e.g. example.com)' };
+  }
+
   const normalized = normalizeName(name);
 
   // Dedup: return the existing active course rather than minting a duplicate.
@@ -629,7 +638,7 @@ export async function createCourse(
       state: input.state ?? null,
       country: input.country ?? null,
       address: input.address ?? null,
-      website: input.website ?? null,
+      website: websiteRes.value,
       image_url: input.imageUrl ?? null,
       source: input.source ?? 'manual',
       created_by_user_id: actor.userId,
@@ -711,7 +720,14 @@ export async function updateCourse(
   if (patch.state !== undefined) update.state = patch.state;
   if (patch.country !== undefined) update.country = patch.country;
   if (patch.address !== undefined) update.address = patch.address;
-  if (patch.website !== undefined) update.website = patch.website;
+  if (patch.website !== undefined) {
+    // P338 — scheme-normalize + validate before persisting (see createCourse).
+    const websiteRes = normalizeWebsiteUrl(patch.website);
+    if (!websiteRes.ok) {
+      return { success: false, error: 'Enter a valid website URL (e.g. example.com)' };
+    }
+    update.website = websiteRes.value;
+  }
   if (patch.imageUrl !== undefined) update.image_url = patch.imageUrl;
 
   const { data: after, error } = await supabase

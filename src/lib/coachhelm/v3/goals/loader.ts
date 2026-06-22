@@ -39,6 +39,33 @@ export async function loadActiveGoals(playerId: string): Promise<Goal[]> {
 }
 
 /**
+ * Recently ACHIEVED goals — the validated-win surface. Goals whose terminal
+ * outcome resolved to 'achieved' within the last `withinDays`, newest win
+ * first. `loadActiveGoals` (active-only) drops these, so without this loader a
+ * hit goal would silently vanish; this keeps the win visible for a while.
+ */
+export async function loadRecentlyAchievedGoals(
+  playerId: string,
+  withinDays = 30,
+  limit = 6,
+): Promise<Goal[]> {
+  const supabase = createAdminClient();
+  const since = new Date(Date.now() - withinDays * 86_400_000).toISOString();
+  const { data, error } = await supabase
+    .from('golf_goals')
+    .select('*')
+    .eq('player_id', playerId)
+    .eq('state', 'achieved')
+    .gte('outcome_evaluated_at', since)
+    .order('outcome_evaluated_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    throw new Error(`loadRecentlyAchievedGoals(${playerId}): ${error.message}`);
+  }
+  return (data ?? []) as unknown as Goal[];
+}
+
+/**
  * Load pending suggestions for a player (state = 'pending' AND not expired).
  * Returns up to `limit` newest-first.
  */

@@ -4,6 +4,12 @@ node_modules/
 # Git worktrees
 .worktrees/
 
+# Design-sync / marketing scratch (large, regenerable — not source)
+.design-sync/
+.ds-sync/
+ds-bundle/
+docs/redesign/
+
 # Full-stack-feature planning files
 .full-stack-feature/
 .full-stack-feature-archived-*/

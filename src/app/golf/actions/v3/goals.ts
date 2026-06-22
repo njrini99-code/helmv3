@@ -23,6 +23,12 @@ import type {
 } from '@/lib/coachhelm/v3/goals/types';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
+import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import {
+  getMetricRenderConfig,
+  type MetricRenderConfig,
+} from '@/lib/coachhelm/v3/standing/metric-config';
 
 export interface CreateGoalInput {
   metric_id: MetricId;
@@ -129,6 +135,12 @@ export async function createGoal(input: CreateGoalInput): Promise<ActionResult> 
       title: input.title,
       category: input.category,
       ends_at: input.ends_at,
+      // Span of the goal in days (started_at defaults to now() in the DB), so
+      // the card's "{window_days}-day window" sub-line is real, not "null-day".
+      window_days: Math.max(
+        1,
+        Math.round((new Date(input.ends_at).getTime() - Date.now()) / 86_400_000),
+      ),
       baseline_value: input.baseline_value,
       current_value: input.baseline_value, // start equal; cron updates
       target_value: input.target_value,
@@ -170,6 +182,107 @@ export async function createGoal(input: CreateGoalInput): Promise<ActionResult> 
   }
 }
 
+/* ───────────────────────────────────────────────────────────────────────────
+ * Auto-fill engine — "choose a stat, the target fills in"
+ * ----------------------------------------------------------------------------
+ * The shared driver behind the create flow's auto-fill: given a metric, read
+ * the player's LIVE standing and propose a target that aims halfway from their
+ * current value to the Tour reference (computeTargetValue — the same midpoint
+ * heuristic the engine's suggestion-writer uses, so manual + suggested goals
+ * land on the same scale). Returns the baseline (current observed value) too,
+ * so the create flow can stamp `baseline_value` and the progress track has a
+ * real starting tick from day one.
+ *
+ * Honest: when the cron hasn't populated a standing row for the metric yet,
+ * `hasStanding` is false and target/baseline are null — the UI then asks for a
+ * manual target rather than inventing one. Player resolves their own standing;
+ * a coach may pass an explicit `playerId` (coach-gated) to pre-fill a goal they
+ * are assigning.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export interface GoalTargetSuggestion {
+  ok: boolean;
+  metric_id: MetricId;
+  display_label: string;
+  unit: MetricRenderConfig['unit'];
+  direction: MetricRenderConfig['direction'];
+  /** Whether a live standing reading exists to base a suggestion on. */
+  hasStanding: boolean;
+  /** The player's current observed value on this metric → the goal baseline. */
+  baseline: number | null;
+  /** The (gender-anchored) Tour reference for this metric. */
+  pga_value: number | null;
+  /** Midpoint-to-Tour suggested target, or null when no standing exists. */
+  suggested_target: number | null;
+}
+
+export async function suggestGoalTarget(
+  metricId: MetricId,
+  opts?: { playerId?: string },
+): Promise<GoalTargetSuggestion> {
+  const cfg = getMetricRenderConfig(metricId);
+  const base: GoalTargetSuggestion = {
+    ok: false,
+    metric_id: metricId,
+    display_label: cfg?.display_label ?? metricId,
+    unit: cfg?.unit ?? 'count',
+    direction: cfg?.direction ?? 'higher_better',
+    hasStanding: false,
+    baseline: null,
+    pga_value: null,
+    suggested_target: null,
+  };
+
+  if (!isMetricId(metricId) || !cfg) return base;
+
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return base;
+
+    // Resolve the target player. Self by default; a coach may pass an explicit
+    // playerId (coach-gated here; RLS still guards the eventual write).
+    let playerId = opts?.playerId ?? null;
+    if (!playerId) {
+      const { data: playerRow } = await supabase
+        .from('golf_players')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      playerId = playerRow?.id ?? null;
+    } else {
+      const { data: coachRow } = await supabase
+        .from('golf_coaches')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!coachRow) return base; // only a coach may pre-fill another player's target
+    }
+    if (!playerId) return base;
+
+    const standing = await loadStandingForMetric(playerId, metricId);
+    if (!standing) return { ...base, ok: true };
+
+    return {
+      ...base,
+      ok: true,
+      hasStanding: true,
+      baseline: standing.player_value,
+      pga_value: standing.pga_value,
+      suggested_target: computeTargetValue({
+        playerValue: standing.player_value,
+        pgaValue: standing.pga_value,
+      }),
+    };
+  } catch (err) {
+    await logServerError(
+      `suggestGoalTarget exception: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'v3.goals.suggestTarget' },
+    );
+    return base;
+  }
+}
+
 /** Pause an active goal. Only the player or assigning coach can call. */
 export async function pauseGoal(goalId: string): Promise<ActionResult> {
   return transitionGoal(goalId, 'paused');
@@ -202,6 +315,11 @@ async function transitionGoal(
     if (newState === 'abandoned' && reason) {
       update.player_decline_reason = reason;
       update.player_declined_at = new Date().toISOString();
+    }
+    // Resuming to active clears any terminal outcome stamp so a previously
+    // achieved/paused goal doesn't keep flashing a stale "Hit [date]" banner.
+    if (newState === 'active') {
+      update.outcome_evaluated_at = null;
     }
 
     const { error } = await fromUntyped(supabase, 'golf_goals')

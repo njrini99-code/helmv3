@@ -73,7 +73,7 @@ export function FairwayCompletedHole({
                 'flex w-full items-center gap-3 rounded-fw-md p-3 text-left transition-colors',
                 'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                 shot.isPenalty
-                  ? 'bg-fw-danger-bg ring-1 ring-fw-danger/25 hover:bg-fw-danger/10'
+                  ? 'bg-fw-danger-bg ring-1 ring-fw-danger/40 hover:bg-fw-danger/10'
                   : 'bg-surface ring-1 ring-border-subtle hover:bg-surface-tint hover:ring-border-strong',
               )}
             >
@@ -94,7 +94,7 @@ export function FairwayCompletedHole({
               {/* Shot info */}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-fw-sans text-sm font-medium capitalize text-text-primary">
+                  <span className="truncate font-fw-sans text-sm font-medium capitalize text-text-primary">
                     {shot.isPenalty ? `Penalty (${shot.penaltyType || 'unknown'})` : shot.shotType.replace('_', ' ')}
                   </span>
                   {!shot.isPenalty && (
@@ -103,7 +103,7 @@ export function FairwayCompletedHole({
                     </span>
                   )}
                 </div>
-                <div className="mt-0.5 font-fw-sans text-xs text-text-tertiary">
+                <div className="mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap font-fw-sans text-xs text-text-tertiary">
                   {shot.isPenalty ? `+1 stroke` : `${distLabel} → ${afterLabel}`}
                   {shot.missDirection && !shot.isPenalty && (
                     <span className="ml-1.5 text-text-tertiary">• Miss {shot.missDirection}</span>

@@ -5,29 +5,41 @@
  * Fairway · Rounds-new · FairwayHoleConfig — hole-by-hole par/yardage editor
  * ----------------------------------------------------------------------------
  * The Fairway re-skin of the legacy HoleConfigurationForm (the Holes step of
- * New Round). Logic is copied VERBATIM from the legacy component — same default
- * par/yardage seeds, same per-hole update, same validation (par 3-6, yardage>0),
- * same onSave/onBack contract — only the presentation changes.
+ * New Round). Validation + the onSave/onBack contract are kept VERBATIM (par
+ * 3-6, yardage>0); only presentation + seeding change.
  *
- * DESIGN: renders its own floating shadow cards on the canvas (the parent drops
- * its wrapping Surface so we never card-in-card), matching the Setup step:
- *   • a summary card (course name + Total Par / Yards / Holes stat tiles)
- *   • a grid card with a sunken Inset header bar + alternating hole rows + an
- *     OUT/IN/TOTAL footer
+ * SEEDING — a real BASELINE, not a blank form:
+ *   • `initialHoles` (a Cloud Course tee, a saved course, or any prior config)
+ *     is the editable baseline for THIS round. It is sliced/padded to the
+ *     requested `holesPerRound` so a 9-hole round off an 18-hole tee, or a tee
+ *     with missing holes, still seeds a complete, editable hole set.
+ *   • Only when there is NO baseline at all do we fall back to the standard
+ *     par/yardage template (verbatim from legacy).
+ *   • Edits are LOCAL to this component's state — they flow out via onSave into
+ *     the round only. The shared catalog course/tee is never mutated here.
+ *
+ * DESIGN: floating shadow cards on the canvas (the parent drops its wrapping
+ * Surface so we never card-in-card), matching the Setup step:
+ *   • a baseline banner (when seeded from a cloud/saved course) making it clear
+ *     these are starting values you can tune for today's round;
+ *   • a summary card (Total Par / Yards / Holes stat tiles);
+ *   • a grid card with a sunken Inset header bar + alternating hole rows + a
+ *     front/back Segmented (with live OUT/IN sub-totals) + OUT/IN/TOTAL footer;
  *   • a green-stamped par selector — the SELECTED par is accent-500 (green =
- *     active/selection, honoring green-as-structure; NOT a per-par-type color)
- *   • recessed yardage well, front/back Segmented, Back + Save action dock
+ *     active/selection, honoring green-as-structure; NOT a per-par-type color);
+ *   • recessed yardage well + Back + Save action dock.
  * Presentation only; flag-off path still uses the legacy HoleConfigurationForm.
  * ========================================================================== */
 
 import { useState } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Flag } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import type { HoleConfig } from '@/lib/types/golf-course';
 
 interface FairwayHoleConfigProps {
@@ -36,13 +48,34 @@ interface FairwayHoleConfigProps {
   onBack: () => void;
   courseName: string;
   holesPerRound?: 9 | 18;
+  /** When the initialHoles came from a Cloud Course / saved course tee, show a
+   *  short banner clarifying these are an editable baseline for this round. */
+  baselineLabel?: string;
 }
 
-// Default par distribution for a standard course (verbatim from legacy).
+// Default par/yardage template — ONLY used when there is no baseline to seed
+// from (verbatim from legacy).
 const DEFAULT_PARS = [4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 5];
 const DEFAULT_YARDAGES = [
   380, 420, 165, 520, 400, 385, 175, 410, 545, 395, 430, 155, 510, 375, 415, 185, 390, 535,
 ];
+
+/**
+ * Build the seeded, editable hole set for THIS round. A provided baseline is
+ * sliced/padded to `holesPerRound` (renumbered 1..N) so a partial cloud tee or
+ * a 9-off-18 selection always yields a complete set; otherwise fall back to the
+ * standard template. Pure — no mutation of the incoming baseline.
+ */
+function seedHoles(initialHoles: HoleConfig[] | undefined, holesPerRound: 9 | 18): HoleConfig[] {
+  return Array.from({ length: holesPerRound }, (_, i) => {
+    const seed = initialHoles?.[i];
+    return {
+      holeNumber: i + 1,
+      par: seed?.par && seed.par > 0 ? seed.par : DEFAULT_PARS[i]!,
+      yardage: seed?.yardage && seed.yardage > 0 ? seed.yardage : DEFAULT_YARDAGES[i]!,
+    };
+  });
+}
 
 export function FairwayHoleConfig({
   initialHoles,
@@ -50,6 +83,7 @@ export function FairwayHoleConfig({
   onBack,
   courseName,
   holesPerRound = 18,
+  baselineLabel,
 }: FairwayHoleConfigProps) {
   const prefersReducedMotion = useReducedMotion();
   const enter = (i: number) =>
@@ -61,16 +95,7 @@ export function FairwayHoleConfig({
           transition: { duration: 0.45, delay: 0.05 * i, ease: [0.16, 1, 0.3, 1] as const },
         };
 
-  const [holes, setHoles] = useState<HoleConfig[]>(() => {
-    if (initialHoles && initialHoles.length === holesPerRound) {
-      return initialHoles;
-    }
-    return Array.from({ length: holesPerRound }, (_, i) => ({
-      holeNumber: i + 1,
-      par: DEFAULT_PARS[i]!,
-      yardage: DEFAULT_YARDAGES[i]!,
-    }));
-  });
+  const [holes, setHoles] = useState<HoleConfig[]>(() => seedHoles(initialHoles, holesPerRound));
 
   const [activeTab, setActiveTab] = useState<'front' | 'back'>('front');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -88,6 +113,7 @@ export function FairwayHoleConfig({
 
   function updateHole(holeNumber: number, field: 'par' | 'yardage', value: number) {
     setHoles((prev) => prev.map((h) => (h.holeNumber === holeNumber ? { ...h, [field]: value } : h)));
+    if (validationError) setValidationError(null);
   }
 
   function handleSubmit() {
@@ -123,8 +149,24 @@ export function FairwayHoleConfig({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Baseline banner — only when we seeded from a real course/tee, so the
+          player knows these values are an editable starting point for today. */}
+      {baselineLabel && (
+        <m.div {...enter(0)}>
+          <div className="flex items-start gap-3 rounded-fw-md border border-accent-500/30 bg-accent-50 px-4 py-3">
+            <span className="mt-0.5 grid h-6 w-6 flex-shrink-0 place-items-center rounded-full bg-accent-500/15 text-accent-700">
+              <Flag className="h-3.5 w-3.5" aria-hidden />
+            </span>
+            <p className="font-fw-sans text-body-sm text-text-secondary">
+              <span className="font-medium text-text-primary">Baseline from {baselineLabel}.</span>{' '}
+              Tune any hole for the way it played today — your edits apply to this round only.
+            </p>
+          </div>
+        </m.div>
+      )}
+
       {/* Summary */}
-      <m.div {...enter(0)}>
+      <m.div {...enter(baselineLabel ? 1 : 0)}>
         <Surface elevation="shadow" padding="lg">
           <div
             className="grid grid-cols-3 gap-3"
@@ -138,7 +180,7 @@ export function FairwayHoleConfig({
       </m.div>
 
       {/* Hole grid */}
-      <m.div {...enter(1)}>
+      <m.div {...enter(baselineLabel ? 2 : 1)}>
         <Surface elevation="shadow" padding="lg" className="flex flex-col gap-4">
           {!is9Hole && (
             <Segmented<'front' | 'back'>
@@ -185,6 +227,7 @@ export function FairwayHoleConfig({
                   {[3, 4, 5].map((par) => {
                     const selected = hole.par === par;
                     return (
+                      // eslint-disable-next-line helm/no-raw-button -- custom par-selector chip (aria-pressed segmented control), not a design-system Button
                       <button
                         key={par}
                         type="button"
@@ -236,18 +279,18 @@ export function FairwayHoleConfig({
       </m.div>
 
       {validationError && (
-        <p className="rounded-fw-md bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger">
+        <InlineNotice tone="danger" title="Check your hole values">
           {validationError}
-        </p>
+        </InlineNotice>
       )}
 
       {/* Action dock */}
-      <m.div {...enter(2)} className="flex gap-3 pt-1">
+      <m.div {...enter(baselineLabel ? 3 : 2)} className="flex gap-3 pt-1">
         <Button variant="secondary" type="button" onClick={onBack} leftIcon={<ChevronLeft className="h-4 w-4" />} className="flex-1">
           Back
         </Button>
         <Button variant="primary" type="button" onClick={handleSubmit} className="flex-[2]">
-          Save course &amp; start round →
+          Start round →
         </Button>
       </m.div>
     </div>

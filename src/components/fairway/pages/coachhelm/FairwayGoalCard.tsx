@@ -42,6 +42,7 @@
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { CheckCircle2 } from 'lucide-react';
 
 import {
   Surface,
@@ -49,9 +50,11 @@ import {
   type StatusPillProps,
   Button,
   StandingStrip,
+  Sparkline,
 } from '@/components/fairway';
 import { useToast } from '@/components/ui/sonner';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import { isWindowedMetric } from '@/lib/coachhelm/v3/goals/window-metric-ids';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import { pauseGoal, abandonGoal } from '@/app/golf/actions/v3/goals';
 import type { Goal, GoalState } from '@/lib/coachhelm/v3/goals/types';
@@ -124,12 +127,34 @@ function goalDisplayTitle(goal: Goal, cfg: ReturnType<typeof getMetricRenderConf
   return cfg?.display_label ?? humanizeMetricKey(goal.metric_id);
 }
 
-function daysRemaining(endsAt: string): number {
+/** Self-resolving display label for a goal — used by the hero + the card. */
+export function goalDisplayLabel(goal: Goal): string {
+  return goalDisplayTitle(goal, getMetricRenderConfig(goal.metric_id));
+}
+
+export function daysRemaining(endsAt: string): number {
   const ms = new Date(endsAt).getTime() - Date.now();
   return Math.max(0, Math.ceil(ms / 86400_000));
 }
 
-function progressPct(g: Goal): number | null {
+/** Short, locale-aware date (e.g. "Jun 21") for the validated-win line. */
+function formatDateShort(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+/**
+ * Honest provenance — where this goal came from. Origin trumps creator role so
+ * an engine-suggested goal a player accepted reads "CoachHelm suggested", not
+ * "Self-set". Keeps the lineage the create flow / acceptGoalSuggestion stamps.
+ */
+export function provenanceLabel(goal: Goal): string {
+  if (goal.origin === 'engine_suggested') return 'CoachHelm suggested';
+  if (goal.origin === 'from_insight') return 'From a round insight';
+  if (goal.creator_role === 'coach') return 'Assigned by coach';
+  return 'Self-set';
+}
+
+export function progressPct(g: Goal): number | null {
   if (g.baseline_value === null || g.target_value === null || g.current_value === null) {
     return null;
   }
@@ -163,6 +188,31 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
     Math.abs(goal.current_value - goal.baseline_value) < 1e-6;
 
   const showStanding = standing != null && cfg != null;
+  // Windowed metrics track goal-period form, while the standing strip is the
+  // all-time career rank — different timeframes, so we caption the strip to
+  // avoid an apples-to-oranges read of "Now" vs the strip's "you" marker.
+  const windowed = isWindowedMetric(goal.metric_id);
+
+  // Trajectory from the persisted snapshots (evaluateAndPersistGoals appends a
+  // dated reading per UTC day). <2 points → the Sparkline renders an honest "—".
+  const trend = goal.snapshots.map((s) => s.value);
+  const goodDirection = cfg?.direction === 'lower_better' ? 'down' : 'up';
+
+  // Direction-agnostic distance still to cover — shown only on active goals.
+  const gapText =
+    cfg != null &&
+    goal.state === 'active' &&
+    !notStarted &&
+    goal.current_value !== null &&
+    goal.target_value !== null
+      ? formatValue(Math.abs(goal.target_value - goal.current_value), cfg.unit)
+      : null;
+
+  // The validated-win moment — a real terminal "achieved" with a date.
+  const achievedAt =
+    goal.state === 'achieved' && goal.outcome_evaluated_at
+      ? formatDateShort(goal.outcome_evaluated_at)
+      : null;
 
   function runTransition(
     fn: () => Promise<{ ok: boolean; error?: string }>,
@@ -200,9 +250,11 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
         </StatusPill>
       </div>
 
-      {/* Sub-line — metric · window · days-left (active only) */}
-      <p className="mb-4 font-fw-sans text-caption text-text-tertiary">
-        {cfg?.display_label ?? goal.metric_id} · {goal.window_days}-day window
+      {/* Sub-line — window · days-left (active only). The metric label already
+          leads the header, so it's not repeated here; one line, always, keeping
+          every card's vertical rhythm identical (even sparkline row). */}
+      <p className="mb-4 truncate font-fw-sans text-caption text-text-tertiary">
+        {goal.window_days}-day window
         {goal.state === 'active' && ` · ${days} day${days === 1 ? '' : 's'} left`}
       </p>
 
@@ -240,14 +292,44 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
             aria-label={`${goalDisplayTitle(goal, cfg)} progress`}
           >
             <div
-              className="absolute left-0 top-0 h-full rounded-full bg-accent-600"
+              className={`absolute left-0 top-0 h-full rounded-full ${
+                achievedAt ? 'bg-fw-success' : 'bg-accent-600'
+              }`}
               style={{ width: `${pct}%` }}
               aria-hidden="true"
             />
           </div>
-          <p className="mt-2 font-fw-sans text-eyebrow text-text-tertiary">
-            {notStarted ? 'Not started — baseline captured' : `${pct}% to target`}
-          </p>
+          {/* Fixed-height row + single-line caption so the sparkline sits at the
+              exact same spot on every card (even across the grid). */}
+          <div className="mt-2 flex h-5 items-center justify-between gap-3">
+            <p className="min-w-0 flex-1 truncate font-fw-sans text-eyebrow text-text-tertiary">
+              {achievedAt ? (
+                <span className="inline-flex items-center gap-1 font-medium text-fw-success">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Hit {achievedAt} · validated on rounds
+                </span>
+              ) : notStarted ? (
+                'Not started — baseline captured'
+              ) : (
+                <>
+                  {pct}% to target
+                  {gapText ? (
+                    <span className="text-text-tertiary"> · {gapText} to go</span>
+                  ) : null}
+                </>
+              )}
+            </p>
+            {trend.length >= 2 ? (
+              <Sparkline
+                data={trend}
+                goodDirection={goodDirection}
+                label={`${goalDisplayTitle(goal, cfg)} trajectory`}
+                width={72}
+                height={20}
+                className="shrink-0 translate-y-2"
+              />
+            ) : null}
+          </div>
         </>
       ) : null}
 
@@ -270,14 +352,19 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
             size="inline"
             show_cohort_text={false}
           />
+          {windowed ? (
+            <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+              Career average vs team &amp; Tour — your progress above tracks rounds since you set this goal.
+            </p>
+          ) : null}
         </div>
       ) : null}
 
       {/* Footer — provenance + coach controls */}
       <div className="mt-4 flex items-center justify-between gap-3">
         <p className="min-w-0 truncate font-fw-sans text-eyebrow text-text-tertiary">
-          {role === 'coach' && playerName ? `Assigned to ${playerName} · ` : ''}
-          {goal.creator_role === 'coach' ? 'Assigned by coach' : 'Self-set'}
+          {role === 'coach' && playerName ? `${playerName} · ` : ''}
+          {provenanceLabel(goal)}
           {goal.shared_with_coach && goal.creator_role === 'player' && ' · shared with coach'}
         </p>
 

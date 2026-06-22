@@ -119,6 +119,12 @@ export interface FairwayMyDevelopmentProps {
    * state. Defaults to [] so the route may omit it during incremental wiring.
    */
   causalRelationships?: CausalRelationshipRow[];
+  /**
+   * Recently achieved goals — the validated-win surface. `loadActiveGoals` is
+   * active-only, so a hit goal would vanish; the route loads these separately
+   * and GoalsSection renders a "Recent wins" block. Defaults to [].
+   */
+  achievedGoals?: FairwayGoalCardData[];
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -328,6 +334,7 @@ export function FairwayMyDevelopment({
   suggestions = [],
   standingByMetric = {},
   causalRelationships = [],
+  achievedGoals = [],
 }: FairwayMyDevelopmentProps) {
   const router = useRouter();
   const { addToast } = useToast();
@@ -464,6 +471,7 @@ export function FairwayMyDevelopment({
                 canCreate
                 activeGoals={goals ?? []}
                 suggestions={suggestions ?? []}
+                achievedGoals={achievedGoals ?? []}
               />
 
               {/* ── Why your scores move — the causal-engine layer, surfaced from

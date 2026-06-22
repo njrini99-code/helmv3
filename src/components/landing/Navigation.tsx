@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { MobileNav } from './MobileNav'
+import { LoginTransitionOverlay, requestLoginTransition } from './login-transition'
 
 const navLinks = [
   { name: 'Home', href: '/' },
@@ -16,6 +17,8 @@ export function Navigation() {
   const isHomePage = pathname === '/'
 
   return (
+    <>
+    <LoginTransitionOverlay />
     <nav className="relative z-modal pointer-events-auto pt-1.5 pb-1 md:pt-2 md:pb-1">
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr] md:gap-6">
         {/* Logo — scrolls away with page (relative, not fixed) */}
@@ -54,6 +57,7 @@ export function Navigation() {
         <div className="flex items-center gap-3 md:fixed md:top-4 md:right-6 md:z-toast justify-self-end">
           <Link
             href="/golf/login"
+            onClick={requestLoginTransition}
             className="hidden md:block px-4 py-2 rounded-full text-sm font-medium tracking-[-0.01em]
                        text-neutral-900 hover:bg-white/40 border border-white/40
                        backdrop-blur-xl bg-[rgba(237,232,221,0.55)]
@@ -65,5 +69,6 @@ export function Navigation() {
         </div>
       </div>
     </nav>
+    </>
   )
 }

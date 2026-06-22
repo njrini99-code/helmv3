@@ -346,9 +346,11 @@ export async function getTeamPatterns(
     if (filters?.severity) {
       query = query.eq('severity', filters.severity);
     }
-    if (filters?.isActive !== undefined) {
-      query = query.eq('is_active', filters.isActive);
-    }
+    // Default to ACTIVE patterns only. A pattern the miner stops reproducing in
+    // the current window is soft-superseded (is_active=false) by savePatterns;
+    // without this default the Patterns tab showed those stale rows forever
+    // (the recurring "old stuff" bug). An explicit filters.isActive still wins.
+    query = query.eq('is_active', filters?.isActive ?? true);
     if (suppressContextual) {
       query = query.neq('pattern_type', 'contextual');
     }
@@ -372,7 +374,7 @@ export async function getTeamPatterns(
       if (filters?.playerId) countQuery = countQuery.eq('player_id', filters.playerId);
       if (filters?.lifecycleState) countQuery = countQuery.eq('lifecycle_state', filters.lifecycleState);
       if (filters?.severity) countQuery = countQuery.eq('severity', filters.severity);
-      if (filters?.isActive !== undefined) countQuery = countQuery.eq('is_active', filters.isActive);
+      countQuery = countQuery.eq('is_active', filters?.isActive ?? true);
       const { count } = await countQuery;
       contextualHidden = count ?? 0;
     }

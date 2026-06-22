@@ -27,7 +27,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Input } from '@/components/fairway/forms/Input';
 import { Button } from '@/components/fairway/controls/button';
-import { Avatar } from '@/components/fairway/controls/avatar';
+import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
@@ -299,7 +299,7 @@ export function FairwayNewMessageSheet({
                     onClick={() => setSelectedId(result.userId)}
                     aria-pressed={isSelected}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-fw-md px-3 py-2.5 text-left',
+                      'block w-full rounded-fw-md px-3 py-2.5 text-left',
                       'transition-colors [transition-duration:var(--fw-dur-fast)]',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                       isSelected
@@ -307,22 +307,23 @@ export function FairwayNewMessageSheet({
                         : 'hover:bg-surface-sunken',
                     )}
                   >
-                    <Avatar name={result.name} src={result.avatar} size="md" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                        {result.name}
-                      </span>
-                      {result.subtitle ? (
-                        <span className="block truncate font-fw-sans text-caption text-text-tertiary">
-                          {result.subtitle}
-                        </span>
-                      ) : null}
-                    </span>
-                    {isSelected ? (
-                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-600 text-text-on-accent">
-                        <Check className="h-3.5 w-3.5" aria-hidden />
-                      </span>
-                    ) : null}
+                    {/* Shared identity (avatar + name + subtitle); the selection
+                        check is this surface's trailing affordance. The button
+                        wrapper keeps the transparent-rest / tinted-hover-selected
+                        contract intact. */}
+                    <PlayerIdentity
+                      name={result.name}
+                      avatarUrl={result.avatar}
+                      size="md"
+                      meta={result.subtitle || undefined}
+                      trailing={
+                        isSelected ? (
+                          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-600 text-text-on-accent">
+                            <Check className="h-3.5 w-3.5" aria-hidden />
+                          </span>
+                        ) : undefined
+                      }
+                    />
                   </button>
                 </li>
               );

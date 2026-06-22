@@ -20,6 +20,7 @@ import {
   softDeleteCourse, softDeleteTee,
 } from '@/app/golf/actions/course-library';
 import { uploadCourseImage } from '@/lib/golf/upload-course-image';
+import { safeCourseWebsiteUrl } from '@/lib/golf/course-library';
 import type {
   GolfCourse, GolfCourseTee, GolfCourseTeeWithHoles, GolfTeamSavedCourseWithCourse,
 } from '@/lib/types/golf-course';
@@ -349,22 +350,29 @@ export function CourseDetailDrawer({
                 )}
               </div>
 
-              {/* website / address */}
-              {(course?.website || course?.address) && (
-                <div className="space-y-1 text-body-sm text-text-secondary">
-                  {course?.address && <p>{course.address}</p>}
-                  {course?.website && (
-                    <a
-                      href={course.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-600 underline-offset-2 hover:underline"
-                    >
-                      {course.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  )}
-                </div>
-              )}
+              {/* website / address — P338: only render an anchor for a valid,
+                  scheme-normalized absolute URL (legacy rows may hold a bare
+                  "example.com" that would otherwise resolve to a broken relative
+                  href). safeCourseWebsiteUrl prepends https:// + validates. */}
+              {(() => {
+                const safeWebsite = safeCourseWebsiteUrl(course?.website);
+                if (!safeWebsite && !course?.address) return null;
+                return (
+                  <div className="space-y-1 text-body-sm text-text-secondary">
+                    {course?.address && <p>{course.address}</p>}
+                    {safeWebsite && (
+                      <a
+                        href={safeWebsite}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-600 underline-offset-2 hover:underline"
+                      >
+                        {safeWebsite.replace(/^https?:\/\//, '')}
+                      </a>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Tees */}
               <section>

@@ -58,14 +58,16 @@ const base = cn(
 
 const variantStyles: Record<FwButtonVariant, string> = {
   // Green CTA — the plant in the room. Cream text on green, no border.
-  // Fill is accent-700 (not 500): cream text on accent-500 measures only
-  // ~3.0:1, below WCAG 1.4.3's 4.5:1 for normal text. accent-700 clears it at
-  // ~5.9:1 while staying a deep, premium helm green. accent-500 stays the
-  // active-marker / focus-ring colour, never a text-bearing fill.
+  // Fill is the LIGHT brand green accent-500 (#16A34A), per CLAUDE.md's locked
+  // brand palette — an INTENTIONAL brand decision that takes precedence over a
+  // strict 4.5:1 normal-text reading on the CTA. The CTA label is a bold,
+  // >=14px control label, so it's judged against WCAG's 3:1 large-text /
+  // UI-component contrast bar (1.4.11 / large-text 1.4.3), which it clears.
+  // Do NOT re-darken this to accent-700 for WCAG — keep the brand green.
   primary: cn(
-    'border-transparent bg-accent-700 text-text-on-accent shadow-flat',
-    'hover:bg-accent-800 hover:shadow-soft hover:-translate-y-px',
-    'active:bg-accent-800 active:shadow-flat active:-translate-y-0',
+    'border-transparent bg-accent-500 text-text-on-accent shadow-flat',
+    'hover:bg-accent-600 hover:shadow-soft hover:-translate-y-px',
+    'active:bg-accent-600 active:shadow-flat active:-translate-y-0',
   ),
   // Matte surface with a warm hairline (border OR shadow at rest — border here).
   secondary: cn(
@@ -208,11 +210,14 @@ const iconBase = cn(
 );
 
 const iconVariantStyles: Record<FwIconButtonVariant, string> = {
-  // Matches Button primary: accent-700 fill so the cream-on-green icon/label
-  // clears WCAG 4.5:1 (accent-500 fill is only ~3.0:1).
+  // Matches Button primary: the LIGHT brand green accent-500 (#16A34A) fill,
+  // an INTENTIONAL brand decision (CLAUDE.md locked palette) over a strict
+  // 4.5:1 reading. The icon glyph is a bold >=24px UI element judged against
+  // WCAG's 3:1 UI-component bar (1.4.11), which it clears. Do NOT re-darken to
+  // accent-700 for WCAG — keep the brand green.
   primary: cn(
-    'border-transparent bg-accent-700 text-text-on-accent',
-    'hover:bg-accent-800 hover:shadow-soft',
+    'border-transparent bg-accent-500 text-text-on-accent',
+    'hover:bg-accent-600 hover:shadow-soft',
   ),
   secondary: cn(
     'border-border-subtle bg-surface text-text-primary',

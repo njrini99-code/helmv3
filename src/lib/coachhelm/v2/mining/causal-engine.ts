@@ -9,6 +9,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
 import type {
   CausalRelationship,
   CausalEvidence,
@@ -469,24 +470,38 @@ export class CausalEngine {
    * The natural key MUST stay consistent with the read action's JS dedupe key
    * (`player_id|cause|effect|relationship_type` — see
    * `src/app/golf/actions/causal-relationships.ts`).
+   *
+   * STALE-DATA RULE (same class as the golf_patterns_v2 / golf_coach_insights
+   * fixes): every fire re-tests the full hypothesis set over the player's last
+   * 100 rounds, so a relationship that STOPS passing is simply absent from
+   * `relationships`. Without retiring it, its prior row lingered as is_active
+   * forever and the read surfaced stale strength/confidence. After the upserts
+   * we soft-supersede this player's active rows that did NOT fire this run
+   * (is_active=false, NEVER delete — the GolfHelm no-destructive-write-in-a-
+   * save-path rule). This is the ONLY caller and it runs only after the
+   * rounds>=10 gate in discoverCausalRelationships, so reaching here means the
+   * analysis genuinely executed: an empty `relationships` is a real "no
+   * significant relationship" signal and SHOULD retire every active row.
    */
   private async saveRelationships(
     relationships: CausalRelationship[]
   ): Promise<void> {
-    if (relationships.length === 0) return;
-
     const supabase = createAdminClient();
 
     // Type assertion for new table not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = supabase.from('golf_causal_relationships' as any) as any;
 
-    for (const rel of relationships) {
-      const nowIso = new Date().toISOString();
+    const nowIso = new Date().toISOString();
+    // Ids that fired this run — the survivors the supersede pass must NOT touch.
+    const keptIds: string[] = [];
 
+    for (const rel of relationships) {
       // The mutable engine-output payload, shared by both the update and the
       // insert paths. `id`, `player_id`, and the natural-key columns are NOT in
       // here because they identify the row (set only on insert / matched on update).
+      // `is_active: true` reactivates a row that a prior run had superseded but
+      // that is firing again this run.
       const payload = {
         relationship_type: rel.relationshipType,
         strength: rel.strength,
@@ -497,6 +512,7 @@ export class CausalEngine {
         intervention_potential: rel.interventionPotential,
         evidence: rel.evidence,
         validation_count: rel.validationCount,
+        is_active: true,
         updated_at: nowIso,
       };
 
@@ -504,7 +520,6 @@ export class CausalEngine {
       // relationship_type). `relationship_type` is part of the key so a
       // direct→mediated reclassification of the same cause/effect remains its
       // own logical row rather than overwriting the other.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: existing, error: lookupError } = await table
         .select('id')
         .eq('player_id', rel.playerId)
@@ -522,6 +537,7 @@ export class CausalEngine {
 
       if (existing?.id) {
         // UPDATE in place — refresh the engine output, keep the existing id.
+        keptIds.push(existing.id);
         const { error: updateError } = await table
           .update(payload)
           .eq('id', existing.id);
@@ -533,6 +549,7 @@ export class CausalEngine {
         }
       } else {
         // INSERT a new row with the freshly-minted id + identity columns.
+        keptIds.push(rel.id);
         const { error: insertError } = await table.insert({
           id: rel.id,
           player_id: rel.playerId,
@@ -550,6 +567,30 @@ export class CausalEngine {
           );
         }
       }
+    }
+
+    // Soft-supersede: retire this player's active rows that did NOT fire this
+    // run. Scoped to this.playerId, non-destructive (no delete), idempotent.
+    // Runs even when `relationships` is empty (retire all) — a legitimate
+    // "no significant relationship anymore" outcome. Non-fatal: the core
+    // upserts already succeeded, so a cleanup failure must not abort the
+    // player's wider analysis batch (this runs inside the orchestrator's
+    // Promise.all); log and move on, the next fire converges.
+    let supersede = table
+      .update({ is_active: false, updated_at: nowIso })
+      .eq('player_id', this.playerId)
+      .eq('is_active', true);
+    if (keptIds.length > 0) {
+      const idList = `(${keptIds.map((id) => `"${id}"`).join(',')})`;
+      supersede = supersede.not('id', 'in', idList);
+    }
+    const { error: supersedeError } = await supersede;
+    if (supersedeError) {
+      await logServerError('causal-engine.saveRelationships supersede stale', {
+        action: 'causal-engine.saveRelationships',
+        featureArea: 'coachhelm.mining',
+        metadata: { dbError: supersedeError as unknown, playerId: this.playerId },
+      });
     }
   }
 }

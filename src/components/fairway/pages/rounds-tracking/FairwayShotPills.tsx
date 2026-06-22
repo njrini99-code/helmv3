@@ -31,11 +31,11 @@ export const FairwayShotPills = memo(function FairwayShotPills({
 }: FairwayShotPillsProps) {
   return (
     <div
-      className="sticky z-40 -mx-4 -mt-4 border-b border-border-subtle bg-canvas px-4 py-4 shadow-flat sm:-mx-6 sm:px-6"
+      className="sticky z-40 -mx-4 -mt-4 overflow-x-hidden border-b border-border-subtle bg-canvas px-4 py-4 shadow-flat sm:-mx-6 sm:px-6"
       style={{ top: 'var(--scorecard-height, 105px)' }}
     >
-      <div className="flex items-center gap-3">
-        <span className="shrink-0 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary">
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
           Shot
         </span>
         <div

@@ -66,6 +66,69 @@ export function isCourseImagePublicUrl(url: string, supabaseUrl: string): boolea
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Course website normalization (P338).
+// A course website was previously persisted only `.trim()`-ed, so a value like
+// "example.com" (no scheme) rendered as a RELATIVE href ("/golf/.../example.com")
+// — a broken link. These helpers fix that on BOTH sides:
+//   • normalizeWebsiteUrl — used on SAVE (create/edit): trims, prepends https://
+//     when no scheme is present, validates the result, and returns null for
+//     empty/blank, or an error for an obviously-invalid value.
+//   • safeCourseWebsiteUrl — used on RENDER: returns a guaranteed-absolute http(s)
+//     URL or null, so the UI only ever links a valid value (defense-in-depth for
+//     pre-existing rows persisted before this fix).
+// Pure (no I/O) — shared by the server action + the client detail drawer.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** True only for an absolute http(s) URL that the platform's `URL` parser
+ *  accepts AND that has a dotted host (so "https://x" / "https://localhost"
+ *  bare-token mistakes are rejected). */
+function isValidAbsoluteWebUrl(value: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+  // A real domain has a dot (e.g. "example.com"); reject "https://example" etc.
+  return parsed.hostname.includes('.');
+}
+
+/**
+ * Normalize a user-entered course website for persistence (SAVE path).
+ * - Empty / whitespace → `{ ok: true, value: null }` (clearing the field).
+ * - No scheme → prepend `https://` before validating.
+ * - Validates the result is an absolute http(s) URL with a dotted host;
+ *   otherwise `{ ok: false }` so the caller can reject the save.
+ */
+export function normalizeWebsiteUrl(
+  input: string | null | undefined,
+): { ok: true; value: string | null } | { ok: false } {
+  const trimmed = (input ?? '').trim();
+  if (!trimmed) return { ok: true, value: null };
+
+  // Prepend a scheme when the user omitted it ("example.com" → "https://…").
+  // Anything already carrying a scheme (http://, https://, or a bogus one) is
+  // left as-is so validation can catch a non-web scheme like "javascript:".
+  const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed);
+  const candidate = hasScheme ? trimmed : `https://${trimmed}`;
+
+  if (!isValidAbsoluteWebUrl(candidate)) return { ok: false };
+  return { ok: true, value: candidate };
+}
+
+/**
+ * Return a guaranteed-safe absolute http(s) URL for rendering an anchor, or null
+ * when the stored value is missing / relative / invalid (RENDER guard). Applies
+ * the same scheme-prepend as the save path so legacy rows persisted without a
+ * scheme still link correctly instead of producing a broken relative href.
+ */
+export function safeCourseWebsiteUrl(input: string | null | undefined): string | null {
+  const res = normalizeWebsiteUrl(input);
+  return res.ok ? res.value : null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tee completeness — an 18-hole tee with < 18 hole rows (or a 9-hole tee with
 // < 9) is a DRAFT: visible + editable, but not offered for official tracking.
 // ─────────────────────────────────────────────────────────────────────────────

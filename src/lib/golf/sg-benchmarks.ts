@@ -176,13 +176,10 @@ export function genderScaleFactor(gender: TeamGender | null | undefined): number
  * SG when changed (see sg_baseline_scale / sg_scale_for_player, migration
  * 20260607200000). KEEP THE SCALES IN SYNC WITH THE DB sg_baseline_scale().
  */
-export type SgBaselineKey =
-  | 'pga_tour'
-  | 'womens'
-  | 'scratch'
-  | 'ncaa_d1'
-  | 'ncaa_d2'
-  | 'ncaa_d3';
+// Strokes-gained baselines are PGA Tour (men) and LPGA (women) ONLY. NCAA
+// division (D1/D2/D3) and scratch scales were removed 2026-06-22 — every team's
+// SG anchors to its gender's Tour, chosen automatically (no coach selector).
+export type SgBaselineKey = 'pga_tour' | 'womens';
 
 export interface SgBaselineOption {
   key: SgBaselineKey;
@@ -192,12 +189,8 @@ export interface SgBaselineOption {
 }
 
 export const SG_BASELINE_OPTIONS: SgBaselineOption[] = [
-  { key: 'pga_tour', label: 'PGA Tour',    scale: 1.0,           description: 'Men’s professional (Broadie / ShotLink) — the strictest reference.' },
-  { key: 'womens',   label: 'Women’s',     scale: WOMENS_SG_SCALE, description: 'Women’s baseline — corrects the shorter-tee / longer-approach bias.' },
-  { key: 'scratch',  label: 'Scratch',     scale: 1.028,         description: 'Scratch amateur (~72 scoring).' },
-  { key: 'ncaa_d1',  label: 'NCAA D1',     scale: 1.057,         description: 'Division I college (~74 scoring).' },
-  { key: 'ncaa_d2',  label: 'NCAA D2',     scale: 1.100,         description: 'Division II college (~77 scoring).' },
-  { key: 'ncaa_d3',  label: 'NCAA D3',     scale: 1.143,         description: 'Division III college (~80 scoring).' },
+  { key: 'pga_tour', label: 'PGA Tour', scale: 1.0,            description: 'Men’s professional (Broadie / ShotLink) — the reference for men’s teams.' },
+  { key: 'womens',   label: 'LPGA',     scale: WOMENS_SG_SCALE, description: 'Women’s Tour baseline — the reference for women’s teams.' },
 ];
 
 const SG_BASELINE_SCALE_BY_KEY: Record<SgBaselineKey, number> = SG_BASELINE_OPTIONS.reduce(

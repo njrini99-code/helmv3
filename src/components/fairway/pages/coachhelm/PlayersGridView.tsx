@@ -59,6 +59,7 @@ import {
   getAreaType,
   getProgressPercent,
   getAreaAutoFill,
+  getMetricCurrentValue,
   type AreaAutoFillStats,
 } from './areaTypes';
 import { Inset } from '@/components/fairway/surfaces';
@@ -75,11 +76,12 @@ import {
   DataTable,
   type ColumnDef,
 } from '@/components/fairway/data-table';
-import { Avatar } from '@/components/fairway/controls/avatar';
+import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Badge } from '@/components/fairway/controls/badge';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
+import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import {
   FormSection,
@@ -135,6 +137,19 @@ export interface PlayersGridStats {
   recent_trend: 'improving' | 'declining' | 'stable' | null;
   /** Optional recent scoring series (oldest→newest) for the inline Sparkline. */
   score_series?: number[] | null;
+  // ── Extended autofill sources (route widens the cache select; optional so
+  //    existing callers stay valid). Consumed by getMetricCurrentValue so the
+  //    create-focus-area form can autofill the current value for any metric. ──
+  driving_distance?: number | null;
+  proximity_to_hole?: number | null;
+  scrambling_pct?: number | null;
+  up_and_down_pct?: number | null;
+  sand_save_pct?: number | null;
+  one_putt_pct?: number | null;
+  three_putt_pct?: number | null;
+  par3_avg?: number | null;
+  par4_avg?: number | null;
+  par5_avg?: number | null;
 }
 
 export interface PlayersGridViewProps {
@@ -179,6 +194,14 @@ export interface PlayersGridViewProps {
  * Form state (verbatim shape from development-client.tsx)
  * ------------------------------------------------------------------------- */
 
+/**
+ * Timeframe choices for the measurable target (Feature F). 'none' is the local
+ * default (coach can skip a timeframe); 'date' / 'rounds' map to the DB
+ * target_kind enum. Kept on the form so the segmented control + matching input
+ * can round-trip an existing focus area's timeframe in the edit flow.
+ */
+type FocusAreaTimeframeKind = 'none' | 'date' | 'rounds';
+
 interface FocusAreaForm {
   player_id: string;
   area_type: string;
@@ -187,6 +210,12 @@ interface FocusAreaForm {
   target_metric: string;
   current_value: string;
   target_value: string;
+  /** 'none' | 'date' | 'rounds' — the measurable-target timeframe (Feature F). */
+  target_kind: FocusAreaTimeframeKind;
+  /** YYYY-MM-DD when target_kind === 'date' (else ''). */
+  target_date: string;
+  /** Round count (as a string for the input) when target_kind === 'rounds' (else ''). */
+  target_rounds: string;
 }
 
 const EMPTY_FORM: FocusAreaForm = {
@@ -197,6 +226,9 @@ const EMPTY_FORM: FocusAreaForm = {
   target_metric: '',
   current_value: '',
   target_value: '',
+  target_kind: 'none',
+  target_date: '',
+  target_rounds: '',
 };
 
 const AREA_OPTIONS = AREA_TYPES.map((a) => ({ value: a.value, label: a.label }));
@@ -416,6 +448,10 @@ export function PlayersGridView({
       target_metric: row.target_metric || '',
       current_value: row.current_value?.toString() || '',
       target_value: row.target_value?.toString() || '',
+      // Hydrate the timeframe (Feature F) — falls back to 'none' for legacy rows.
+      target_kind: row.target_kind === 'date' || row.target_kind === 'rounds' ? row.target_kind : 'none',
+      target_date: row.target_date || '',
+      target_rounds: row.target_rounds != null ? String(row.target_rounds) : '',
     });
     setCreateOpen(true);
   }
@@ -451,10 +487,35 @@ export function PlayersGridView({
     });
   }
 
+  // Metric change → re-derive the current value from the CHOSEN stat against the
+  // selected player's real stats (the core "pick the stat → its current value
+  // autofills" behavior). Only overwrite when we actually resolved a value, so
+  // picking a custom/untracked metric leaves a manually-typed value intact.
+  function onMetricChange(metric: string) {
+    const stats = playerStats[form.player_id] as AreaAutoFillStats | undefined;
+    const resolved = getMetricCurrentValue(metric, stats);
+    setForm((prev) => ({
+      ...prev,
+      target_metric: metric,
+      current_value: resolved !== '' ? resolved : prev.current_value,
+    }));
+  }
+
   async function handleSave() {
     if (!form.player_id || !form.title.trim()) return;
     setSaving(true);
     try {
+      // Timeframe (Feature F): only a 'date' with a date, or 'rounds' with a
+      // positive round count, persists a real timeframe; otherwise it clears to
+      // null. The server action normalizes again, but we keep the wire clean.
+      const roundsNum = form.target_rounds ? parseInt(form.target_rounds, 10) : NaN;
+      const timeframe =
+        form.target_kind === 'date' && form.target_date
+          ? { target_kind: 'date' as const, target_date: form.target_date, target_rounds: null }
+          : form.target_kind === 'rounds' && Number.isFinite(roundsNum) && roundsNum > 0
+            ? { target_kind: 'rounds' as const, target_date: null, target_rounds: roundsNum }
+            : { target_kind: null, target_date: null, target_rounds: null };
+
       const payload = {
         area_type: form.area_type,
         title: form.title.trim(),
@@ -462,6 +523,7 @@ export function PlayersGridView({
         target_metric: form.target_metric.trim() || null,
         current_value: form.current_value ? parseFloat(form.current_value) : null,
         target_value: form.target_value ? parseFloat(form.target_value) : null,
+        ...timeframe,
       };
 
       const res = editing
@@ -591,21 +653,22 @@ export function PlayersGridView({
         header: 'Player',
         cell: ({ row }) => {
           const p = row.original.player;
+          // Same identity treatment as every other surface; the year · HCP meta
+          // is the column's page-specific detail.
+          const metaText =
+            `${p.graduation_year ? `'${String(p.graduation_year).slice(-2)}` : ''}` +
+            `${
+              p.handicap != null
+                ? `${p.graduation_year ? ' · ' : ''}${p.handicap < 0 ? '+' : ''}${Math.abs(p.handicap)} HCP`
+                : ''
+            }`;
           return (
-            <div className="flex items-center gap-3">
-              <Avatar src={p.avatar_url} name={playerName(p)} size="sm" />
-              <div className="min-w-0">
-                <p className="truncate font-fw-sans font-medium text-text-primary">
-                  {playerName(p)}
-                </p>
-                <p className="font-fw-sans text-eyebrow text-text-tertiary">
-                  {p.graduation_year ? `'${String(p.graduation_year).slice(-2)}` : ''}
-                  {p.handicap != null
-                    ? `${p.graduation_year ? ' · ' : ''}${p.handicap < 0 ? '+' : ''}${Math.abs(p.handicap)} HCP`
-                    : ''}
-                </p>
-              </div>
-            </div>
+            <PlayerIdentity
+              name={playerName(p)}
+              avatarUrl={p.avatar_url}
+              size="sm"
+              meta={metaText || undefined}
+            />
           );
         },
         meta: { noWrap: true },
@@ -924,6 +987,7 @@ export function PlayersGridView({
         playerStats={playerStats}
         onAreaTypeChange={onAreaTypeChange}
         onPlayerChange={onPlayerChange}
+        onMetricChange={onMetricChange}
         onSave={handleSave}
         saving={saving}
       />
@@ -1222,23 +1286,32 @@ function RosterHealthHeader({
             {needs.slice(0, 5).map(({ row, reason }) => (
               <li
                 key={row.player.id}
-                className="flex items-center gap-3 border-t border-border-subtle py-2.5 first:border-t-0"
+                className="border-t border-border-subtle py-2.5 first:border-t-0"
               >
-                <Avatar src={row.player.avatar_url} name={playerName(row.player)} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                    {playerName(row.player)}
-                  </p>
-                  <p className="font-fw-sans text-caption font-medium text-fw-warning">{reason}</p>
-                </div>
-                {row.stats?.avg_score != null ? (
-                  <span className="hidden font-fw-mono text-caption tabular-nums text-text-tertiary sm:inline">
-                    {row.stats.avg_score} avg
-                  </span>
-                ) : null}
-                <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>
-                  Add focus area
-                </Button>
+                {/* Shared identity; the warning reason is this surface's meta and
+                    the avg stat + "Add focus area" are its trailing affordances. */}
+                <PlayerIdentity
+                  name={playerName(row.player)}
+                  avatarUrl={row.player.avatar_url}
+                  size="sm"
+                  meta={
+                    <span className="font-fw-sans text-caption font-medium text-fw-warning">
+                      {reason}
+                    </span>
+                  }
+                  trailing={
+                    <div className="flex items-center gap-1.5">
+                      {row.stats?.avg_score != null ? (
+                        <span className="hidden font-fw-mono text-caption tabular-nums text-text-tertiary sm:inline">
+                          {row.stats.avg_score} avg
+                        </span>
+                      ) : null}
+                      <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>
+                        Add focus area
+                      </Button>
+                    </div>
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -1366,6 +1439,7 @@ function FocusAreaModal({
   playerStats,
   onAreaTypeChange,
   onPlayerChange,
+  onMetricChange,
   onSave,
   saving,
 }: {
@@ -1379,6 +1453,8 @@ function FocusAreaModal({
   onAreaTypeChange: (areaType: string) => void;
   /** Player change → re-run auto-fill for the current area vs the new player. */
   onPlayerChange: (playerId: string) => void;
+  /** Metric change → re-derive the current value from the chosen stat. */
+  onMetricChange: (metric: string) => void;
   onSave: () => void;
   saving: boolean;
 }) {
@@ -1390,6 +1466,18 @@ function FocusAreaModal({
   const stats = form.player_id ? playerStats[form.player_id] : undefined;
   const area = getAreaType(form.area_type);
   const canSave = Boolean(form.player_id && form.title.trim());
+
+  // Pickable stat chips for the selected area ('Custom Metric' is a placeholder,
+  // not a real stat, so it never becomes a chip — the free-text input covers it).
+  const metricChips = area.suggestedMetrics.filter(
+    (m) => m.toLowerCase() !== 'custom metric',
+  );
+
+  // The current value was auto-derived when it equals what the chosen metric
+  // resolves to from this player's stats (and is non-empty) — drives the hint.
+  const isAutofilled =
+    form.current_value !== '' &&
+    form.current_value === getMetricCurrentValue(form.target_metric, stats as AreaAutoFillStats | undefined);
 
   /* ---- unsaved-changes guard (Nielsen #5 error prevention / #3 user control)
      Snapshot the form when the modal opens; a close attempt (Cancel, Esc, scrim,
@@ -1418,7 +1506,10 @@ function FocusAreaModal({
       form.description !== b.description ||
       form.target_metric !== b.target_metric ||
       form.current_value !== b.current_value ||
-      form.target_value !== b.target_value
+      form.target_value !== b.target_value ||
+      form.target_kind !== b.target_kind ||
+      form.target_date !== b.target_date ||
+      form.target_rounds !== b.target_rounds
     );
   }, [form]);
 
@@ -1558,11 +1649,30 @@ function FocusAreaModal({
             description="Pick a metric and target so progress is trackable (golf metrics like putts/score are lower-is-better)."
           >
             <FormField label="Target metric" showOptional>
-              <Input
-                value={form.target_metric}
-                onChange={(e) => setForm((prev) => ({ ...prev, target_metric: e.target.value }))}
-                placeholder={area.suggestedMetrics[0] ?? 'e.g. Fairways Hit %'}
-              />
+              <div className="space-y-2">
+                {/* Pick the stat to address — clicking a chip autofills the
+                    current value from this player's real stats. Free-text input
+                    remains for a custom metric. */}
+                {metricChips.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {metricChips.map((m) => (
+                      <SelectablePill
+                        key={m}
+                        shape="round"
+                        active={form.target_metric === m}
+                        onClick={() => onMetricChange(m)}
+                      >
+                        {m}
+                      </SelectablePill>
+                    ))}
+                  </div>
+                ) : null}
+                <Input
+                  value={form.target_metric}
+                  onChange={(e) => onMetricChange(e.target.value)}
+                  placeholder={area.suggestedMetrics[0] ?? 'e.g. Fairways Hit %'}
+                />
+              </div>
             </FormField>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1573,6 +1683,11 @@ function FocusAreaModal({
                     setForm((prev) => ({ ...prev, current_value: v == null ? '' : String(v) }))
                   }
                 />
+                {isAutofilled ? (
+                  <p className="mt-1 font-fw-sans text-eyebrow text-text-tertiary">
+                    Auto-filled from recent rounds — edit if needed.
+                  </p>
+                ) : null}
               </FormField>
               <FormField label="Target value" showOptional>
                 <NumberField
@@ -1583,6 +1698,55 @@ function FocusAreaModal({
                 />
               </FormField>
             </div>
+
+            {/* Timeframe (Feature F) — optionally bound the target by a date or a
+                round count. A segmented switch picks the kind; the matching input
+                appears beneath. 'No deadline' clears any timeframe. */}
+            <FormField label="Timeframe" showOptional>
+              <div className="space-y-3">
+                <Segmented<FocusAreaTimeframeKind>
+                  aria-label="Target timeframe"
+                  value={form.target_kind}
+                  onValueChange={(v) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      target_kind: v,
+                      // Clear the now-irrelevant input so a stale value never persists.
+                      ...(v === 'date' ? { target_rounds: '' } : {}),
+                      ...(v === 'rounds' ? { target_date: '' } : {}),
+                      ...(v === 'none' ? { target_date: '', target_rounds: '' } : {}),
+                    }))
+                  }
+                  options={[
+                    { value: 'none', label: 'No deadline' },
+                    { value: 'date', label: 'By date' },
+                    { value: 'rounds', label: 'In rounds' },
+                  ]}
+                />
+
+                {form.target_kind === 'date' ? (
+                  <Input
+                    type="date"
+                    aria-label="Target date"
+                    value={form.target_date}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, target_date: e.target.value }))
+                    }
+                  />
+                ) : null}
+
+                {form.target_kind === 'rounds' ? (
+                  <NumberField
+                    aria-label="Number of rounds"
+                    min={1}
+                    value={form.target_rounds === '' ? null : Number(form.target_rounds)}
+                    onValueChange={(v) =>
+                      setForm((prev) => ({ ...prev, target_rounds: v == null ? '' : String(v) }))
+                    }
+                  />
+                ) : null}
+              </div>
+            </FormField>
 
             {previewPct != null ? (
               <p className="font-fw-sans text-eyebrow text-text-tertiary">

@@ -1,0 +1,151 @@
+'use client';
+
+/**
+ * ============================================================================
+ * LeakBoard — "where is the team bleeding strokes?" (redesign of the category view)
+ * ----------------------------------------------------------------------------
+ * The legacy TeamCategoryView is a tabbed skill view ranked by TEAM AVERAGE — it
+ * answers "what's our putting average" but not "where are we losing the most
+ * strokes." A coach with 12 players and 90 seconds needs the latter.
+ *
+ * The LeakBoard regroups live insights by skill category and makes the UNIT of
+ * every row the summed STROKE-IMPACT (−X.X str/rd), biggest bleed first — so the
+ * flood of insights collapses into a triage board read in one scan. Each row
+ * carries its leak count, the players affected, the worst severity, and a
+ * "high bleed" flag at ≥ 0.8 str/rd.
+ *
+ * Honesty: stroke-impact is the engine's own counterfactual magnitude (already
+ * confidence- and sample-gated upstream); the board sums what the engine
+ * surfaced, never invents a number. Decoupled shape — no server import.
+ * ========================================================================== */
+
+import { cn } from '@/lib/utils';
+import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
+
+type Priority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface LeakInsight {
+  id: string;
+  category: string | null;
+  title: string;
+  /** evidence.strokes_impact (sign-agnostic; we sum the magnitude). */
+  strokesImpact: number;
+  priority: Priority;
+  playerName?: string;
+}
+
+export interface LeakBoardProps {
+  insights: LeakInsight[];
+  /** str/rd at or above which a category is flagged a high bleed. */
+  flameThreshold?: number;
+  className?: string;
+}
+
+const CATEGORY_LABEL: Record<string, string> = {
+  putting: 'Putting',
+  approach: 'Approach',
+  short_game: 'Around the green',
+  tee: 'Off the tee',
+  driving: 'Off the tee',
+  course_management: 'Course management',
+  course_mgmt: 'Course management',
+  pressure: 'Pressure',
+  scoring: 'Scoring',
+};
+
+const PRIORITY_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2, urgent: 3 };
+
+const SEVERITY_BAR: Record<Priority, string> = {
+  urgent: 'bg-fw-danger',
+  high: 'bg-fw-danger',
+  medium: 'bg-fw-warning',
+  low: 'bg-text-tertiary',
+};
+
+interface LeakRow {
+  label: string;
+  total: number;
+  count: number;
+  worst: Priority;
+  players: Set<string>;
+}
+
+export function LeakBoard({ insights, flameThreshold = 0.8, className }: LeakBoardProps) {
+  const groups = new Map<string, LeakRow>();
+  for (const i of insights) {
+    const key = (i.category ?? 'other').toLowerCase();
+    const label = CATEGORY_LABEL[key] ?? 'Other';
+    const row = groups.get(label) ?? { label, total: 0, count: 0, worst: 'low', players: new Set<string>() };
+    row.total += Math.abs(i.strokesImpact || 0);
+    row.count += 1;
+    if (PRIORITY_RANK[i.priority] > PRIORITY_RANK[row.worst]) row.worst = i.priority;
+    if (i.playerName) row.players.add(i.playerName);
+    groups.set(label, row);
+  }
+
+  const rows = [...groups.values()].sort((a, b) => b.total - a.total);
+
+  if (rows.length === 0) {
+    return (
+      <InstrumentPanel depth="base" className={className} eyebrow="CoachHelm · team" header="Where the team is bleeding">
+        <p className="text-body-sm text-text-secondary">
+          No live leaks right now — analyze the team or log a few more rounds and the board fills in.
+        </p>
+      </InstrumentPanel>
+    );
+  }
+
+  const maxTotal = rows.reduce((m, r) => Math.max(m, r.total), 0) || 1;
+  const totalPlayers = new Set(insights.map((i) => i.playerName).filter(Boolean)).size;
+
+  return (
+    <InstrumentPanel
+      depth="base"
+      className={className}
+      eyebrow="CoachHelm · team"
+      header="Where the team is bleeding"
+    >
+      <div className="space-y-4">
+        <p className="text-body-sm text-text-secondary">
+          {insights.length} leak{insights.length !== 1 ? 's' : ''}
+          {totalPlayers > 0 ? <> across {totalPlayers} player{totalPlayers !== 1 ? 's' : ''}</> : null} —
+          biggest stroke-bleed first.
+        </p>
+
+        <div className="space-y-3">
+          {rows.map((r) => {
+            const hot = r.total >= flameThreshold;
+            return (
+              <div key={r.label} className="space-y-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-body-sm font-medium text-text-primary">{r.label}</span>
+                  <span className="shrink-0 font-fw-mono text-body-sm tabular-nums text-text-primary">
+                    −{r.total.toFixed(1)}
+                    <span className="ml-1 text-caption text-text-tertiary">str/rd</span>
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-surface-sunken">
+                  <div
+                    className={cn('h-full rounded-full', SEVERITY_BAR[r.worst])}
+                    style={{ width: `${((r.total / maxTotal) * 100).toFixed(1)}%` }}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-x-2 text-caption text-text-tertiary">
+                  <span>
+                    {r.count} leak{r.count !== 1 ? 's' : ''}
+                  </span>
+                  {r.players.size > 0 ? (
+                    <span>
+                      · {r.players.size} player{r.players.size !== 1 ? 's' : ''}
+                    </span>
+                  ) : null}
+                  {hot ? <span className="font-medium text-fw-danger">· high bleed</span> : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </InstrumentPanel>
+  );
+}

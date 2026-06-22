@@ -48,6 +48,9 @@ export type { BadgeProps, ChipProps } from './badge';
 export { Avatar, AvatarGroup } from './avatar';
 export type { AvatarProps, AvatarGroupProps, AvatarSize, AvatarStatus } from './avatar';
 
+export { PlayerIdentity } from './PlayerIdentity';
+export type { PlayerIdentityProps, PlayerIdentitySize } from './PlayerIdentity';
+
 export { Toolbar, ToolbarIconButton } from './Toolbar';
 export type {
   ToolbarProps,

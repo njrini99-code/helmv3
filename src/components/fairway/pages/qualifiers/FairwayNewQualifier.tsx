@@ -39,9 +39,22 @@ import {
   TextArea,
   NumberField,
   Checkbox,
+  PlayerIdentity,
 } from '@/components/fairway';
-import { Users } from 'lucide-react';
+import { Users, Flag, MapPin } from 'lucide-react';
 import { createGolfQualifier } from '@/app/golf/actions/golf';
+// Reuse the SAME cloud course catalog picker the new-round flow uses (Stage A
+// course shelves → Stage B tee). We only need the picked course/tee identity, so
+// we read courseId / courseName / teeId off the returned TeeRoundDefaults.
+import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/FairwayCoursePicker';
+
+/** One round's assigned course in the create form. */
+interface RoundCourseDraft {
+  roundNumber: number;
+  courseId: string | null;
+  courseName: string | null;
+  teeId: string | null;
+}
 
 interface Player {
   id: string;
@@ -70,6 +83,12 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
   const [coachPick, setCoachPick] = useState<number | null>(1);
   const [selected, setSelected] = useState<string[]>([]);
 
+  // Feature G — number of rounds + the course assigned to each.
+  const [numRounds, setNumRounds] = useState<number | null>(1);
+  const [roundCourses, setRoundCourses] = useState<RoundCourseDraft[]>([]);
+  // Which round's course-picker is open (null = closed).
+  const [pickerRound, setPickerRound] = useState<number | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +96,32 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
   const total = slotsTotal && slotsTotal > 0 ? slotsTotal : 5;
   const picks = Math.min(Math.max(coachPick ?? 0, 0), total);
   const autoQualify = total - picks;
+
+  // Feature G — coherent round count, and a per-round course list for it.
+  const rounds = numRounds && numRounds > 0 ? Math.min(numRounds, 50) : 1;
+  const isMultiRound = rounds > 1;
+  const courseFor = (roundNumber: number): RoundCourseDraft | undefined =>
+    roundCourses.find((rc) => rc.roundNumber === roundNumber);
+
+  // Apply a picked course (from the shared FairwayCoursePicker) to one round.
+  const assignRoundCourse = (
+    roundNumber: number,
+    course: { courseId: string; courseName: string; teeId: string },
+  ) => {
+    setRoundCourses((prev) => {
+      const next = prev.filter((rc) => rc.roundNumber !== roundNumber);
+      next.push({
+        roundNumber,
+        courseId: course.courseId,
+        courseName: course.courseName,
+        teeId: course.teeId,
+      });
+      return next.sort((a, b) => a.roundNumber - b.roundNumber);
+    });
+  };
+
+  const clearRoundCourse = (roundNumber: number) =>
+    setRoundCourses((prev) => prev.filter((rc) => rc.roundNumber !== roundNumber));
 
   // Cross-date validation (mirrors the Zod .refine in golfQualifierSchema).
   // The window must be coherent: end >= start, and players must confirm in
@@ -127,6 +172,21 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
         playerIds: selected,
         selectionSlotsTotal: total,
         selectionSlotsCoachPick: picks,
+        // Feature G — round count + per-round course assignments. For a
+        // single-round qualifier the legacy free-text "Course" field still
+        // carries the venue, so only attach the per-round courses when the
+        // coach has split the qualifier across multiple rounds.
+        numRounds: rounds,
+        roundCourses: isMultiRound
+          ? roundCourses
+              .filter((rc) => rc.roundNumber <= rounds)
+              .map((rc) => ({
+                roundNumber: rc.roundNumber,
+                courseId: rc.courseId,
+                courseName: rc.courseName,
+                teeId: rc.teeId,
+              }))
+          : undefined,
       });
 
       if (!result.success) {
@@ -233,14 +293,94 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
         {/* ── Course & rules ──────────────────────────────────────────────── */}
         <FormSection title="Course & rules" description="Where it's played and how it's scored.">
           <div className="flex flex-col gap-5">
-            <FormField label="Course" showOptional>
-              <Input
-                name="courseName"
-                value={courseName}
-                onChange={(e) => setCourseName(e.target.value)}
-                placeholder="e.g. Lions Municipal Golf Course"
-              />
-            </FormField>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <FormField
+                label="Rounds"
+                help="How many rounds count toward this qualifier."
+              >
+                <NumberField
+                  value={numRounds}
+                  onValueChange={setNumRounds}
+                  min={1}
+                  max={50}
+                  unit="rounds"
+                />
+              </FormField>
+              {/* Single-round qualifiers keep the simple free-text venue. */}
+              {!isMultiRound ? (
+                <FormField label="Course" showOptional>
+                  <Input
+                    name="courseName"
+                    value={courseName}
+                    onChange={(e) => setCourseName(e.target.value)}
+                    placeholder="e.g. Lions Municipal Golf Course"
+                  />
+                </FormField>
+              ) : null}
+            </div>
+
+            {/* Multi-round: assign a course to EACH round from the cloud catalog. */}
+            {isMultiRound ? (
+              <FormField
+                label="Course per round"
+                help="Pick the course each round is played at — players see it on the qualifier."
+              >
+                <div className="flex flex-col gap-2.5">
+                  {Array.from({ length: rounds }, (_, i) => i + 1).map((roundNumber) => {
+                    const assigned = courseFor(roundNumber);
+                    return (
+                      <div
+                        key={roundNumber}
+                        className="flex items-center gap-3 rounded-fw-md border border-border-subtle bg-surface px-3.5 py-3"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-sunken text-text-tertiary"
+                        >
+                          <Flag className="h-4 w-4" strokeWidth={1.75} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                            Round {roundNumber}
+                          </p>
+                          {assigned?.courseName ? (
+                            <p className="truncate font-fw-sans text-body font-medium text-text-primary">
+                              {assigned.courseName}
+                            </p>
+                          ) : (
+                            <p className="font-fw-sans text-body text-text-tertiary">
+                              No course assigned
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          {assigned ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => clearRoundCourse(roundNumber)}
+                            >
+                              Clear
+                            </Button>
+                          ) : null}
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setPickerRound(roundNumber)}
+                          >
+                            <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                            {assigned ? 'Change' : 'Pick course'}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </FormField>
+            ) : null}
+
             <FormField
               label="Scoring rules"
               showOptional
@@ -346,14 +486,15 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                     )}
                   >
                     <Checkbox checked={isSel} onCheckedChange={() => toggle(p.id)} />
-                    <span
-                      className={cn(
-                        'font-fw-sans text-body font-medium',
-                        isSel ? 'text-accent-700' : 'text-text-primary',
-                      )}
-                    >
-                      {p.first_name} {p.last_name}
-                    </span>
+                    {/* Shared identity (avatar falls back to initials — this
+                        roster has no avatar_url) so an entered player reads the
+                        same here as on the roster/messages/CoachHelm surfaces;
+                        the checkbox stays the selection affordance. */}
+                    <PlayerIdentity
+                      name={`${p.first_name} ${p.last_name}`.trim() || 'Player'}
+                      size="sm"
+                      nameClassName={isSel ? 'text-accent-700' : undefined}
+                    />
                   </label>
                 );
               })}
@@ -371,6 +512,23 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
           </Button>
         </div>
       </Form>
+
+      {/* The SAME cloud course catalog picker the new-round flow uses. We only
+          need the picked course/tee identity from the returned TeeRoundDefaults. */}
+      <FairwayCoursePicker
+        open={pickerRound !== null}
+        onOpenChange={(open) => { if (!open) setPickerRound(null); }}
+        onPick={(defaults) => {
+          if (pickerRound !== null) {
+            assignRoundCourse(pickerRound, {
+              courseId: defaults.courseId,
+              courseName: defaults.courseName,
+              teeId: defaults.teeId,
+            });
+          }
+          setPickerRound(null);
+        }}
+      />
     </div>
   );
 }

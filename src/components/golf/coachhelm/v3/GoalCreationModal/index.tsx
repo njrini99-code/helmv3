@@ -24,14 +24,20 @@
  * flips false.
  */
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { createGoal } from '@/app/golf/actions/v3/goals';
+import {
+  createGoal,
+  suggestGoalTarget,
+  type GoalTargetSuggestion,
+} from '@/app/golf/actions/v3/goals';
+import type { GoalTargetSource } from '@/lib/coachhelm/v3/goals/types';
 import {
   METRIC_IDS,
   type MetricId,
 } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
+import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import { Button } from '@/components/ui/button';
 import {
   drawerVariants,
@@ -55,6 +61,12 @@ const WINDOW_OPTIONS = [
   { label: '90 days', days: 90  },
 ];
 
+/** Tidy precision for the editable target input — 2dp for strokes, 1dp else. */
+function roundForInput(value: number, unit: GoalTargetSuggestion['unit']): string {
+  const dp = unit === 'strokes' ? 2 : 1;
+  return String(Number(value.toFixed(dp)));
+}
+
 export function GoalCreationModal({
   open,
   onClose,
@@ -68,15 +80,64 @@ export function GoalCreationModal({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  // Auto-fill: the player's live standing on the chosen metric drives a
+  // suggested target (midpoint to Tour) + a captured baseline. `userEdited`
+  // flips once they type, so we can stamp the right target_source on submit.
+  const [suggestion, setSuggestion] = useState<GoalTargetSuggestion | null>(null);
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+  const [userEdited, setUserEdited] = useState(false);
+
   const cfg = METRIC_RENDER_CONFIG[metricId];
+
+  // Fetch + auto-fill whenever the metric changes (or the modal opens). Picking
+  // a new stat always re-fills the suggested target; the player can then edit.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoadingSuggestion(true);
+    setSuggestion(null);
+    suggestGoalTarget(metricId)
+      .then((s) => {
+        if (cancelled) return;
+        setSuggestion(s);
+        setTargetValue(
+          s.hasStanding && s.suggested_target !== null
+            ? roundForInput(s.suggested_target, s.unit)
+            : '',
+        );
+        setUserEdited(false);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSuggestion(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [metricId, open]);
 
   function submit() {
     setError(null);
-    const target = targetValue.trim() === '' ? null : Number(targetValue);
-    if (target !== null && Number.isNaN(target)) {
-      setError('Target must be a number');
-      return;
+    const raw = targetValue.trim();
+    let target: number | null;
+    let target_source: GoalTargetSource | null;
+    if (raw === '') {
+      // Blank → fall back to the suggested target if we have one (honest null
+      // only when there's no standing to base a target on).
+      target = suggestion?.suggested_target ?? null;
+      target_source = target !== null ? 'midpoint' : null;
+    } else {
+      const n = Number(raw);
+      if (Number.isNaN(n)) {
+        setError('Target must be a number');
+        return;
+      }
+      target = n;
+      // Untouched auto-fill = midpoint; an edited value = manual.
+      target_source = !userEdited && suggestion?.hasStanding ? 'midpoint' : 'manual';
     }
+    // Capture the current value as the baseline so the progress track has a
+    // real starting tick from day one (cron moves `current` off it later).
+    const baseline = suggestion?.baseline ?? null;
     const endsAt = new Date(Date.now() + windowDays * 86400_000).toISOString();
     startTransition(async () => {
       const result = await createGoal({
@@ -85,8 +146,8 @@ export function GoalCreationModal({
         category: 'manual',
         ends_at: endsAt,
         target_value: target,
-        target_source: target !== null ? 'manual' : null,
-        baseline_value: null,
+        target_source,
+        baseline_value: baseline,
         shared_with_coach: shareWithCoach,
       });
       if (!result.ok) {
@@ -156,7 +217,7 @@ export function GoalCreationModal({
                 </select>
               </label>
 
-              {/* Target value */}
+              {/* Target value — auto-filled from the player's live standing */}
               <label className="block">
                 <span className="text-xs font-medium text-warm-700">
                   Target ({cfg.unit})
@@ -166,10 +227,30 @@ export function GoalCreationModal({
                   inputMode="decimal"
                   step="0.1"
                   value={targetValue}
-                  onChange={(e) => setTargetValue(e.target.value)}
-                  placeholder="Leave blank for auto-target"
+                  onChange={(e) => {
+                    setTargetValue(e.target.value);
+                    setUserEdited(true);
+                  }}
+                  placeholder={loadingSuggestion ? 'Finding your baseline…' : 'Enter a target'}
                   className="mt-1 block w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm focus:border-primary-600 focus:outline-none tabular-nums"
                 />
+                {loadingSuggestion ? (
+                  <span className="mt-1 block text-xs text-warm-500">Finding your baseline…</span>
+                ) : suggestion?.hasStanding &&
+                  suggestion.suggested_target !== null &&
+                  suggestion.baseline !== null &&
+                  suggestion.pga_value !== null ? (
+                  <span className="mt-1 block text-xs text-warm-500">
+                    {userEdited ? 'Suggested' : 'Auto-filled'}:{' '}
+                    {formatValue(suggestion.suggested_target, cfg.unit)} — halfway to Tour
+                    ({formatValue(suggestion.pga_value, cfg.unit)}) from your{' '}
+                    {formatValue(suggestion.baseline, cfg.unit)}
+                  </span>
+                ) : suggestion && !suggestion.hasStanding ? (
+                  <span className="mt-1 block text-xs text-warm-500">
+                    No baseline logged yet — set a target to aim for.
+                  </span>
+                ) : null}
               </label>
 
               {/* Share toggle */}

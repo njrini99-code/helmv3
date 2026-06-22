@@ -8,8 +8,7 @@ import {
     SensitivitySlider,
     ThresholdSlider,
     WeightDistributor,
-    AlertTypeToggles,
-    SgBaselineSelector
+    AlertTypeToggles
 } from '@/components/golf/coachhelm/settings';
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
@@ -413,7 +412,9 @@ function LegacyCoachingIntelligenceSettingsPage() {
                 {teamId ? (
                     <AnimatedItem><section className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-warm-900">
                         <h2 className="text-body font-medium text-warm-900 tracking-[-0.005em]">Strokes Gained baseline</h2>
-                        <SgBaselineSelector />
+                        <p className="text-sm text-warm-500 mt-1">
+                            Set automatically from your team’s gender — PGA Tour for men’s teams, LPGA for women’s.
+                        </p>
                     </section></AnimatedItem>
                 ) : null}
 

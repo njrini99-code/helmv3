@@ -120,6 +120,20 @@ export interface FocusAreaCardData {
   target_metric?: string | null;
   current_value?: number | null;
   target_value?: number | null;
+  /**
+   * Measurable-target TIMEFRAME (Feature F). 'date' → hit by `target_date`;
+   * 'rounds' → within `target_rounds`. null/absent → no timeframe (legacy rows).
+   * These map to not-yet-propagated DB columns (migration 20260621230000), so a
+   * loader only surfaces them once that migration is applied; until then they're
+   * simply absent and the timeframe line renders nothing (honest degrade).
+   * Typed as the raw DB string ('date' | 'rounds' are the meaningful values) so
+   * a Supabase row assigns directly; the render narrows via === checks.
+   */
+  target_kind?: string | null;
+  /** ISO date (YYYY-MM-DD) when target_kind === 'date'. */
+  target_date?: string | null;
+  /** Round count when target_kind === 'rounds'. */
+  target_rounds?: number | null;
   started_at?: string | null;
   completed_at?: string | null;
   /** Origin links — render REAL source chips, not teases. */
@@ -295,6 +309,34 @@ function SourceChip({
       ) : null}
     </div>
   );
+}
+
+/* ---------------------------------------------------------------------------
+ * Timeframe (Feature F) — a human line for the target's deadline / round budget
+ * ----------------------------------------------------------------------------
+ * Returns e.g. "by Apr 12" or "within 5 rounds", or null when the focus area
+ * carries no timeframe (legacy rows, or a coach who skipped it). Pairs with the
+ * target value so the card reads "Target: 28.5 by Apr 12".
+ * ------------------------------------------------------------------------- */
+
+function formatTimeframe(focusArea: FocusAreaCardData): string | null {
+  if (focusArea.target_kind === 'date' && focusArea.target_date) {
+    // Parse the YYYY-MM-DD as a local date (split avoids the UTC-midnight
+    // off-by-one that `new Date('2026-04-12')` causes in western timezones).
+    const [y, m, d] = focusArea.target_date.split('-').map((n) => parseInt(n, 10));
+    if (y && m && d) {
+      const dt = new Date(y, m - 1, d);
+      if (!Number.isNaN(dt.getTime())) {
+        return `by ${dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      }
+    }
+    return null;
+  }
+  if (focusArea.target_kind === 'rounds' && typeof focusArea.target_rounds === 'number') {
+    const n = focusArea.target_rounds;
+    return `within ${n} ${n === 1 ? 'round' : 'rounds'}`;
+  }
+  return null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -503,6 +545,10 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
     const hasTarget =
       focusArea.target_value != null && focusArea.target_value > 0;
 
+    // Measurable-target TIMEFRAME (Feature F) — "by Apr 12" / "within 5 rounds",
+    // or null when none is set. Rendered beside the target on the active card.
+    const timeframe = formatTimeframe(focusArea);
+
     // The per-area trend series (oldest→newest values). The Sparkline applies
     // the <2-points → em-dash honesty contract itself; we just pass the truth.
     const series = useMemo(
@@ -679,6 +725,22 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 reduced={reduced}
               />
 
+              {/* Timeframe (Feature F) — "Target: 28.5 by Apr 12" / "…within 5
+                  rounds". Renders only when the coach set a timeframe; absent
+                  otherwise (honest, no fabricated deadline). */}
+              {timeframe ? (
+                <p className="flex items-center gap-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+                  <IconClock size={12} className="text-accent-600" />
+                  <span>
+                    Target:{' '}
+                    <span className="font-fw-mono tabular-nums text-text-secondary">
+                      {focusArea.target_value}
+                    </span>{' '}
+                    {timeframe}
+                  </span>
+                </p>
+              ) : null}
+
               {/* Standing — you vs team vs PGA for this metric. Renders only when
                   a real standing snapshot exists AND the metric has a render
                   config; otherwise nothing (honest-empty, never a fake 0%). */}
@@ -707,13 +769,21 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             </Inset>
           ) : (
             // No target → no authoritative meter. Honest "set a target" prompt.
-            <Inset padding="sm">
+            <Inset padding="sm" className="space-y-2">
               <InsufficientData
                 compact
                 icon={null}
                 title="No target set yet"
                 description="Add a target metric to track progress on this focus area."
               />
+              {/* A coach can set a timeframe without a numeric target — surface it
+                  on its own so the deadline isn't silently dropped (Feature F). */}
+              {timeframe ? (
+                <p className="flex items-center gap-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+                  <IconClock size={12} className="text-accent-600" />
+                  <span>Due {timeframe}</span>
+                </p>
+              ) : null}
             </Inset>
           )}
 

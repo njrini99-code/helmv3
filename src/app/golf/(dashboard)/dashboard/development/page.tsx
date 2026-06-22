@@ -9,6 +9,7 @@ import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
+import { runGoalProgressForPlayers } from '@/app/golf/actions/v3/goal-progress';
 import { getTeamCausalRelationships } from '@/app/golf/actions/causal-relationships';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
@@ -81,6 +82,9 @@ export default async function DevelopmentPlansPage({
           target_metric,
           current_value,
           target_value,
+          target_kind,
+          target_date,
+          target_rounds,
           started_at,
           completed_at,
           created_at,
@@ -271,7 +275,11 @@ export default async function DevelopmentPlansPage({
       ? await supabase
           .from('golf_player_stats_cache')
           .select(
-            'player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction',
+            // Core grid stats + the extended per-metric sources the create-focus-
+            // area form reads to autofill the current value for the chosen stat
+            // (driving distance, proximity, scrambling, sand saves, putt buckets,
+            // par-N averages). All nullable — honest-empty when not tracked yet.
+            'player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
           )
           .in('player_id', playerIds)
       : { data: [] };
@@ -291,6 +299,17 @@ export default async function DevelopmentPlansPage({
         gir_pct: row.gir_percentage ?? null,
         best_score: row.best_round ?? null,
         recent_trend: trendOf(row.trend_direction),
+        // Extended autofill sources (friendly keys → getMetricCurrentValue).
+        driving_distance: row.driving_distance_average ?? null,
+        proximity_to_hole: row.approach_proximity_average ?? null,
+        scrambling_pct: row.scrambling_percentage ?? null,
+        up_and_down_pct: row.up_and_down_percentage ?? null,
+        sand_save_pct: row.sand_save_percentage ?? null,
+        one_putt_pct: row.one_putt_percentage ?? null,
+        three_putt_pct: row.three_putt_percentage ?? null,
+        par3_avg: row.par3_average ?? null,
+        par4_avg: row.par4_average ?? null,
+        par5_avg: row.par5_average ?? null,
       };
     }
     // Players without a cache row still render — honest empty stats, never fake 0s.
@@ -315,6 +334,18 @@ export default async function DevelopmentPlansPage({
     // and its accessible description denote the same set (urgent + high).
     const countsRes = await getAlertCounts(coach.id);
     const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+
+    // ── Track-progress refresh (P1-07) ───────────────────────────────────────
+    // Recompute progress for the whole roster's active goals from the latest
+    // standing BEFORE loading them, so the coach sees REAL movement instead of
+    // progress frozen at whatever the player last triggered. One batched pass
+    // (single goals query + chunked standing); best-effort so a hiccup never
+    // blanks the coach page.
+    try {
+      await runGoalProgressForPlayers(playerIds);
+    } catch {
+      /* progress refresh is best-effort; fall through to last-known goals */
+    }
 
     // ── v3 GOALS (read-only, redesign fork ONLY) ─────────────────────────────
     // Surface each player's assigned/shared ACTIVE goals on the coach surface:

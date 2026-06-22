@@ -108,7 +108,7 @@ import {
   FocusAreasGrid,
 } from '@/components/golf/coachhelm/player';
 import { CompositeRatingCard } from '@/components/golf/coachhelm/player/CompositeRatingCard';
-import { TrendDashboard } from '@/components/golf/coachhelm/player/TrendDashboard';
+import { FairwayTrendBrain } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
 import { ShotAnalysisCard } from '@/components/golf/coachhelm/player/ShotAnalysisCard';
 import { WhatIfPanel } from '@/components/golf/coachhelm/player/WhatIfPanel';
 
@@ -609,7 +609,7 @@ export function FairwayPlayerCoachHelm({
                   )}
 
                   {trendData != null ? (
-                    <TrendDashboard
+                    <FairwayTrendBrain
                       trendData={trendData}
                       playerState={data.playerState}
                     />
@@ -779,7 +779,7 @@ export function FairwayPlayerCoachHelm({
  * no Ask action here. No insight yet → an honest "awaiting standout signal"
  * panel (never a fake 0).
  * ══════════════════════════════════════════════════════════════════════════ */
-/** Staggered cinematic reveal for the dark spotlight hero's elements. */
+/** Staggered cinematic reveal for the light hero's elements. */
 const HERO_STAGGER = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.08, delayChildren: 0.04 } },
@@ -871,42 +871,47 @@ function EdgeInstrument({
   // "top N%" cue. Below that threshold we show no chip rather than overclaiming.
   const bestOnTeam = teamPct != null && teamPct >= 90;
 
-  // BESPOKE DARK SPOTLIGHT — this page's job is "here's the ONE thing to fix",
-  // so the focal hero is cut from the SAME black + glass as the sidebar rail:
-  // solid warm-black `bg-nav-bg` (#0C0A09), the `.on-dark` scope, nav text
-  // tokens, the green `nav-accent`, and the rail's glass-sheen recipe on its
-  // lifted sub-panel. The diagnosis blazes in green; the LLM read sits in light
-  // prose. Cinematic staggered reveal (HERO_STAGGER/HERO_ITEM), reduced-motion safe.
+  // FOCAL LIGHT HERO — this page's job is "here's the ONE thing to fix", so the
+  // hero is the proud focal instrument of the cockpit: the canonical light
+  // `InstrumentPanel` (frosted cream glass, depth="raised", tone="accent" green
+  // breath) on the bg-canvas page — NEVER a dark band (a hardcoded near-black
+  // `bg-nav-bg` + `.on-dark` scope here painted a solid black block on the light
+  // Fairway canvas). The diagnosis headline reads in deep helm green (accent-700)
+  // on cream; the LLM read sits in the light HeroNarrativeCard; the key number
+  // blazes in green; the feedback footer is a recessed inset sub-panel.
+  // Cinematic staggered reveal (HERO_STAGGER/HERO_ITEM), reduced-motion safe.
   return (
-    <m.section
+    <m.div
       initial={prefersReducedMotion ? false : 'hidden'}
       animate="visible"
       variants={HERO_STAGGER}
-      className="on-dark relative flex h-full flex-col gap-6 overflow-hidden rounded-card bg-nav-bg p-7 text-nav-text shadow-soft md:p-8"
+      className="h-full"
     >
-      {/* Same black + glass as the rail: solid warm-black, a faint green halo
-          behind the figure, and a specular top rim (the sidebar's sheen). */}
-      <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent-500/20 blur-[80px]" />
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
-
+    <InstrumentPanel
+      as="section"
+      depth="raised"
+      tone="accent"
+      padding="lg"
+      className="flex h-full flex-col gap-6"
+    >
       {/* Diagnosis headline — the eyebrow is the INSIGHT's own category overline
           (e.g. "Putting · Signal"), NOT a repeat of the shell page title ("Your
           edge this week"); repeating the page title in the focal area was dead
           duplicate copy within one viewport. */}
       <m.div variants={HERO_ITEM} className="relative">
-        <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-nav-accent">
+        <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-accent-700">
           {insightOverline(insight)}
         </p>
-        <h2 className="mt-2 font-fw-display text-h3 font-semibold leading-tight tracking-[-0.01em] text-nav-text">
+        <h2 className="mt-2 font-fw-display text-h3 font-semibold leading-tight tracking-[-0.01em] text-text-primary">
           {insight.title}
         </h2>
       </m.div>
 
       <div className="relative grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-        {/* Narrative body — inverted (luminous on dark), LLM grounding PRESERVED. */}
+        {/* Narrative body — the canonical LIGHT HeroNarrativeCard (matte raised
+            card, warm prose); LLM grounding PRESERVED. */}
         <m.div variants={HERO_ITEM} className="min-w-0">
           <HeroNarrativeCard
-            inverted
             playerId={playerId}
             metricLabel={ev.metric_label}
             yourValueDisplay={ev.your_value_display || String(ev.your_value ?? '')}
@@ -915,9 +920,9 @@ function EdgeInstrument({
           />
         </m.div>
 
-        {/* The key game read. A canonical standing snapshot → the StandingStrip
-            (a bright card on the dark band). Otherwise the big number BLAZES in
-            luminous green on near-black — the honest fallback. */}
+        {/* The key game read. A canonical standing snapshot → the StandingStrip.
+            Otherwise the big number reads in deep helm green on cream — the
+            honest fallback. */}
         <m.div variants={HERO_ITEM}>
           {st && cfg ? (
             <div className="w-full md:w-[320px]">
@@ -938,14 +943,14 @@ function EdgeInstrument({
             </div>
           ) : hasEdge ? (
             <div className="flex flex-col gap-2 md:items-end md:text-right">
-              <span className="font-fw-mono text-stat-xl font-bold leading-none tabular-nums text-nav-accent">
+              <span className="font-fw-mono text-stat-xl font-bold leading-none tabular-nums text-accent-700">
                 {edgeDisplay}
               </span>
-              <span className="font-fw-sans text-caption font-semibold uppercase tracking-[0.12em] text-nav-text-dim">
+              <span className="font-fw-sans text-caption font-semibold uppercase tracking-[0.12em] text-text-tertiary">
                 {edgeLabel}
               </span>
               {bestOnTeam && teamPct != null ? (
-                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-accent-500/15 px-2.5 py-1 font-fw-sans text-caption font-semibold text-nav-accent md:self-end">
+                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-accent-50 px-2.5 py-1 font-fw-sans text-caption font-semibold text-accent-700 md:self-end">
                   <span aria-hidden>↗</span>
                   Top {Math.max(1, 100 - teamPct)}% on the team
                 </span>
@@ -962,18 +967,22 @@ function EdgeInstrument({
         </m.div>
       ) : null}
 
-      {/* Feedback footer — the rail's glass-sheen recipe: a nav-surface lift with
-          an inset white top-hairline, so it reads as the same glass as the rail. */}
+      {/* Feedback footer — a recessed inset sub-panel (the cockpit's own glass
+          recipe) so it reads as a seated control strip on the light hero. */}
       {heroActions ? (
-        <m.div
-          variants={HERO_ITEM}
-          className="flex items-center justify-between gap-3 rounded-fw-md bg-nav-surface px-4 py-3 ring-1 ring-inset ring-white/[0.06] [box-shadow:inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-        >
-          <span className="font-fw-sans text-caption text-nav-text-dim">Was this useful?</span>
-          {heroActions}
+        <m.div variants={HERO_ITEM}>
+          <InstrumentPanel
+            depth="inset"
+            padding="sm"
+            className="flex items-center justify-between gap-3"
+          >
+            <span className="font-fw-sans text-caption text-text-tertiary">Was this useful?</span>
+            {heroActions}
+          </InstrumentPanel>
         </m.div>
       ) : null}
-    </m.section>
+    </InstrumentPanel>
+    </m.div>
   );
 }
 

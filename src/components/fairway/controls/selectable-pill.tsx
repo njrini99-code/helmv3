@@ -66,7 +66,10 @@ export const SelectablePill = forwardRef<HTMLButtonElement, SelectablePillProps>
         aria-pressed={selected}
         disabled={disabled}
         className={cn(
-          'flex h-10 min-w-[44px] items-center justify-center px-3 font-fw-sans text-sm font-medium tabular-nums',
+          // `min-w-[44px]` is a target FLOOR; the cell sizes up to its content
+          // (no fixed width that would clip a longer label). A too-long label
+          // truncates inside instead of overflowing the cell.
+          'flex h-10 min-w-[44px] max-w-full items-center justify-center px-3 font-fw-sans text-sm font-medium tabular-nums',
           shapeStyles[shape],
           fwTransition,
           fwFocusRing,
@@ -82,7 +85,12 @@ export const SelectablePill = forwardRef<HTMLButtonElement, SelectablePillProps>
         )}
         {...props}
       >
-        {children}
+        <span
+          className="min-w-0 truncate"
+          title={typeof children === 'string' ? children : undefined}
+        >
+          {children}
+        </span>
       </button>
     );
   },
