@@ -52,6 +52,23 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
 
   const confidencePercent = Math.round(pattern.confidence * 100);
   const supportPercent = Math.round(pattern.support * 100);
+  // Actionability (0-1) — how worth-acting-on a pattern is. Surfaced at a glance
+  // so coaches can triage without opening the detail modal.
+  const actionPercent = Math.round(pattern.actionability * 100);
+  const actionTone =
+    pattern.actionability >= 0.7
+      ? 'text-primary-700 bg-primary-50'
+      : pattern.actionability >= 0.4
+        ? 'text-amber-700 bg-amber-50'
+        : 'text-warm-500 bg-warm-100';
+  const trendLabel =
+    pattern.trend === 'strengthening'
+      ? 'Strengthening'
+      : pattern.trend === 'weakening'
+        ? 'Weakening'
+        : pattern.trend === 'new'
+          ? 'New'
+          : null;
 
   return (
     <motion.div
@@ -80,6 +97,9 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
               {pattern.patternType} Pattern
             </span>
             {getTrendIcon()}
+            {trendLabel ? (
+              <span className="text-xs text-warm-400">{trendLabel}</span>
+            ) : null}
           </div>
 
           <p className="text-sm text-warm-800 font-medium line-clamp-2">
@@ -93,6 +113,9 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
             </span>
             <span className="text-xs text-warm-400">
               {confidencePercent}% confidence
+            </span>
+            <span className={cn('text-xs font-medium px-1.5 py-0.5 rounded-full', actionTone)}>
+              {actionPercent}% actionable
             </span>
           </div>
         </div>
@@ -154,6 +177,18 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
                     {pattern.sampleSize}
                   </div>
                   <div className="text-xs text-warm-500">Samples</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-medium text-warm-800">
+                    {pattern.occurrenceCount}
+                  </div>
+                  <div className="text-xs text-warm-500">Occurrences</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-medium text-warm-800">
+                    {actionPercent}%
+                  </div>
+                  <div className="text-xs text-warm-500">Actionable</div>
                 </div>
               </div>
 

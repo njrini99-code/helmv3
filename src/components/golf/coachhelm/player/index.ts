@@ -3,7 +3,6 @@ export { PerformancePrediction } from './PerformancePrediction';
 // CoachHelm dashboard now composes HeroInsightCard + InsightCard (default)
 // from `@/components/golf/coachhelm/insight-card` instead.
 export { FocusAreasGrid } from './FocusAreasGrid';
-export { RecentRoundReviews } from './RecentRoundReviews';
 export { CompositeRatingCard } from './CompositeRatingCard';
 export { TrendDashboard } from './TrendDashboard';
 export { ShotAnalysisCard } from './ShotAnalysisCard';
