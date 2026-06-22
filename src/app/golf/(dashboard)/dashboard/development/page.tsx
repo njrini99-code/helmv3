@@ -9,6 +9,7 @@ import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
+import { runGoalProgressForPlayers } from '@/app/golf/actions/v3/goal-progress';
 import { getTeamCausalRelationships } from '@/app/golf/actions/causal-relationships';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
@@ -333,6 +334,18 @@ export default async function DevelopmentPlansPage({
     // and its accessible description denote the same set (urgent + high).
     const countsRes = await getAlertCounts(coach.id);
     const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+
+    // ── Track-progress refresh (P1-07) ───────────────────────────────────────
+    // Recompute progress for the whole roster's active goals from the latest
+    // standing BEFORE loading them, so the coach sees REAL movement instead of
+    // progress frozen at whatever the player last triggered. One batched pass
+    // (single goals query + chunked standing); best-effort so a hiccup never
+    // blanks the coach page.
+    try {
+      await runGoalProgressForPlayers(playerIds);
+    } catch {
+      /* progress refresh is best-effort; fall through to last-known goals */
+    }
 
     // ── v3 GOALS (read-only, redesign fork ONLY) ─────────────────────────────
     // Surface each player's assigned/shared ACTIVE goals on the coach surface:

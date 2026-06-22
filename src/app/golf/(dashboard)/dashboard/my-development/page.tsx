@@ -28,8 +28,10 @@ import { FairwayMyDevelopment, type FocusAreaCardData } from '@/components/fairw
 import {
   loadActiveGoals,
   loadPendingGoalSuggestions,
+  loadRecentlyAchievedGoals,
 } from '@/lib/coachhelm/v3/goals/loader';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { evaluateAndPersistGoals } from '@/app/golf/actions/v3/goal-progress';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import type { GoalSuggestionView } from '@/components/fairway/pages/coachhelm/GoalsSection';
@@ -175,15 +177,33 @@ export default async function MyDevelopmentPage() {
   // (updateFocusAreaProgress / completeFocusArea) are reused UNCHANGED. Flag OFF
   // (default) → the legacy AREA_TYPES/STATUS_CONFIG card markup renders as today.
   if (isRedesignEnabled()) {
+    // ── Track-progress wiring (P1-07) ──────────────────────────────────────
+    // Recompute each active goal's observed snapshot + state from the latest
+    // standing BEFORE loading them, so progress bars reflect REAL movement
+    // instead of a frozen baseline. Idempotent per UTC day (the evaluator
+    // dedupes same-day snapshots), so it's safe on every view; failures are
+    // swallowed so a standing hiccup never blanks the development page.
+    try {
+      await evaluateAndPersistGoals(player.id);
+    } catch {
+      /* progress refresh is best-effort; fall through to the last-known goals */
+    }
+
     // ── v3 data layers (Goals + Standing) — read ONLY inside the flag fork ──
     // The flag-OFF legacy branch below never touches these loaders.
-    const [activeGoals, suggestions, standingMap, causalRelationships] = await Promise.all([
-      loadActiveGoals(player.id),
-      loadPendingGoalSuggestions(player.id, 5),
-      loadPlayerStandingMap(player.id),
-      getPlayerCausalRelationships(player.id),
-    ]);
+    const [activeGoals, achievedGoals, suggestions, standingMap, causalRelationships] =
+      await Promise.all([
+        loadActiveGoals(player.id),
+        loadRecentlyAchievedGoals(player.id),
+        loadPendingGoalSuggestions(player.id, 5),
+        loadPlayerStandingMap(player.id),
+        getPlayerCausalRelationships(player.id),
+      ]);
     const goalCards: FairwayGoalCardData[] = activeGoals.map((g) => ({
+      goal: g,
+      standing: standingMap.get(g.metric_id) ?? null,
+    }));
+    const achievedCards: FairwayGoalCardData[] = achievedGoals.map((g) => ({
       goal: g,
       standing: standingMap.get(g.metric_id) ?? null,
     }));
@@ -210,6 +230,7 @@ export default async function MyDevelopmentPage() {
           suggestions={suggestionViews}
           standingByMetric={standingByMetric}
           causalRelationships={causalRelationships}
+          achievedGoals={achievedCards}
         />
       </div>
     );
