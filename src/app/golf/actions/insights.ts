@@ -2136,23 +2136,44 @@ export async function generateTeamInsight(): Promise<{
       };
     }
 
-    const statInsights = buildStatInsightsForTeam(
-      players as TeamPlayerRow[],
-      statsRows ?? [],
-      philosophy
-    );
-    if (statInsights.length > 0) {
-      allInsights.push(...statInsights);
+    // 5a-5d: Each team-level rollup is isolated in its own try/catch so a
+    // single rollup failure (e.g. a TDZ/circular-import surfacing on Vercel's
+    // minified bundle, seen 2026-06-22 in `generateAlerts`) cannot collapse the
+    // entire analysis to "An unexpected error occurred". A failed rollup is
+    // logged with the SPECIFIC call name and the analysis returns whatever did
+    // succeed — the coach still sees per-player insights even if team-level
+    // rollups are degraded.
+    try {
+      const statInsights = buildStatInsightsForTeam(
+        players as TeamPlayerRow[],
+        statsRows ?? [],
+        philosophy
+      );
+      if (statInsights.length > 0) {
+        allInsights.push(...statInsights);
+      }
+    } catch (statErr) {
+      await logServerError(
+        `generateTeamInsight.buildStatInsightsForTeam failed: ${statErr instanceof Error ? statErr.message : String(statErr)}`,
+        { action: 'generateTeamInsight.buildStatInsightsForTeam', featureArea: 'insights' },
+      );
     }
 
-    // 5. Generate team-level patterns and forecasts from stats cache
-    const teamPatterns = generateTeamPatterns(
-      players as Array<{ id: string; first_name: string; last_name: string }>,
-      statsRows ?? [],
-      allRoundsData ?? []
-    );
-    if (teamPatterns.length > 0) {
-      allPatterns.push(...teamPatterns);
+    // 5. Generate team-level patterns from stats cache
+    try {
+      const teamPatterns = generateTeamPatterns(
+        players as Array<{ id: string; first_name: string; last_name: string }>,
+        statsRows ?? [],
+        allRoundsData ?? []
+      );
+      if (teamPatterns.length > 0) {
+        allPatterns.push(...teamPatterns);
+      }
+    } catch (patternsErr) {
+      await logServerError(
+        `generateTeamInsight.generateTeamPatterns failed: ${patternsErr instanceof Error ? patternsErr.message : String(patternsErr)}`,
+        { action: 'generateTeamInsight.generateTeamPatterns', featureArea: 'insights' },
+      );
     }
 
     // TODO(engine): `generateTeamForecasts` is the sole remaining caller of
@@ -2162,45 +2183,76 @@ export async function generateTeamInsight(): Promise<{
     // surfaced on the intelligence dashboard. If the future workflow refactor
     // folds team-level forecasts into `coachHelmIntelligence.generatePredictions`,
     // delete this call and the module together.
-    const teamForecasts = generateTeamForecasts(
-      players as Array<{ id: string; first_name: string; last_name: string }>,
-      statsRows ?? [],
-      allRoundsData ?? []
-    );
-    if (teamForecasts.length > 0) {
-      allPredictions.push(...teamForecasts);
+    try {
+      const teamForecasts = generateTeamForecasts(
+        players as Array<{ id: string; first_name: string; last_name: string }>,
+        statsRows ?? [],
+        allRoundsData ?? []
+      );
+      if (teamForecasts.length > 0) {
+        allPredictions.push(...teamForecasts);
+      }
+    } catch (forecastsErr) {
+      await logServerError(
+        `generateTeamInsight.generateTeamForecasts failed: ${forecastsErr instanceof Error ? forecastsErr.message : String(forecastsErr)}`,
+        { action: 'generateTeamInsight.generateTeamForecasts', featureArea: 'insights' },
+      );
     }
 
     // 6. Generate team-level alerts — tag as team_trend
-    const teamAlerts = await coachHelmIntelligence.generateAlerts(coach.id, teamId);
-    if (teamAlerts.length > 0) {
-      for (const alert of teamAlerts) {
-        allInsights.push({
-          ...alert,
-          category: 'team_trend' as InsightCategory,
-        });
+    try {
+      const teamAlerts = await coachHelmIntelligence.generateAlerts(coach.id, teamId);
+      if (teamAlerts.length > 0) {
+        for (const alert of teamAlerts) {
+          allInsights.push({
+            ...alert,
+            category: 'team_trend' as InsightCategory,
+          });
+        }
       }
+    } catch (alertsErr) {
+      await logServerError(
+        `generateTeamInsight.generateAlerts failed: ${alertsErr instanceof Error ? alertsErr.message : String(alertsErr)}`,
+        { action: 'generateTeamInsight.generateAlerts', featureArea: 'insights' },
+      );
     }
 
-    // 6. Log generation
+    // 6. Log generation — failure-silent. A log write failing must NEVER
+    // collapse the response and turn a successful analysis into an error.
     const executionTime = Date.now() - startTime;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const logTable = supabase.from('golf_insight_generation_log' as any) as any;
-    const { error: logError } = await logTable.insert({
-      team_id: teamId,
-      insight_type: 'team_insight',
-      insights_generated: allInsights.length,
-      rounds_analyzed: playersAnalyzed,
-      engine_version: 'coachhelm',
-      duration_ms: executionTime,
-    });
-    if (logError && process.env.NODE_ENV === 'development') {
-      console.warn('Insight generation log skipped:', logError.message);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const logTable = supabase.from('golf_insight_generation_log' as any) as any;
+      const { error: logError } = await logTable.insert({
+        team_id: teamId,
+        insight_type: 'team_insight',
+        insights_generated: allInsights.length,
+        rounds_analyzed: playersAnalyzed,
+        engine_version: 'coachhelm',
+        duration_ms: executionTime,
+      });
+      if (logError && process.env.NODE_ENV === 'development') {
+        console.warn('Insight generation log skipped:', logError.message);
+      }
+    } catch (logExc) {
+      await logServerError(
+        `generateTeamInsight.logGeneration failed: ${logExc instanceof Error ? logExc.message : String(logExc)}`,
+        { action: 'generateTeamInsight.logGeneration', featureArea: 'insights' },
+      );
     }
 
-    // 7. Group and deduplicate insights
-    const insightGroups = groupAndDeduplicateInsights(allInsights, players.length);
+    // 7. Group and deduplicate insights — wrap so a grouping crash returns the
+    // ungrouped list rather than collapsing the whole response.
+    let insightGroups: InsightGroup[] = [];
+    try {
+      insightGroups = groupAndDeduplicateInsights(allInsights, players.length);
+    } catch (groupErr) {
+      await logServerError(
+        `generateTeamInsight.groupAndDeduplicateInsights failed: ${groupErr instanceof Error ? groupErr.message : String(groupErr)}`,
+        { action: 'generateTeamInsight.groupAndDeduplicateInsights', featureArea: 'insights' },
+      );
+      insightGroups = [];
+    }
 
     // 8. Revalidate dashboard
     revalidatePath('/golf/dashboard');
@@ -2216,9 +2268,18 @@ export async function generateTeamInsight(): Promise<{
       playersMissingData: playersMissingData.length > 0 ? playersMissingData : undefined,
     };
   } catch (error) {
-    await logServerError(`generateTeamInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+    // Capture the stack so the next failure tells us EXACTLY where it threw —
+    // the inner try/catch wrappers above isolate the rollup calls, so anything
+    // reaching here came from setup (auth/team-resolve/philosophy/load) or
+    // post-rollup glue. Logged with full stack via logServerError → Sentry.
+    const message = error instanceof Error ? error.message : String(error);
+    const stackHint = error instanceof Error && error.stack
+      ? error.stack.split('\n').slice(0, 3).join(' | ')
+      : 'no-stack';
+    await logServerError(`generateTeamInsight failed: ${message}`, {
       action: 'generateTeamInsight',
       featureArea: 'insights',
+      extra: { stackHint },
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
