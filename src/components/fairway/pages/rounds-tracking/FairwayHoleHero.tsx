@@ -33,11 +33,14 @@ import type { ShotRecord, RoundHole } from '@/lib/types/golf';
 
 const HELM_GREEN = '#16A34A';
 
-/** Ball/landing ring tint per lie. */
+/** Ball/landing ring tint per lie. Greens anchor to the LOCKED brand green
+ *  (HELM_GREEN) — fairway is the on-brand accent (was a too-light primary-400
+ *  that blended into the white ball halo); rough is a deeper, distinct green
+ *  (was an off-palette hunter/teal). */
 const LIE_RING: Record<string, string> = {
   tee: '#cbb892',
-  fairway: '#4ade80',
-  rough: '#3f8a63',
+  fairway: HELM_GREEN,
+  rough: '#0f5a36',
   sand: '#e8d9a6',
   green: '#34d17a',
   other: '#cfcac3',
@@ -215,14 +218,14 @@ export function FairwayHoleHero({
       <div className="flex items-start justify-between gap-4 px-5 pt-5">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="font-fw-display text-h2 font-semibold tracking-[-0.018em] text-text-primary">
+            <h2 className="font-fw-display text-h3 font-semibold tracking-[-0.018em] text-text-primary sm:text-h2">
               Hole {currentHole.number}
             </h2>
-            <span className="rounded-fw-sm bg-surface-sunken px-2 py-0.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-wider text-text-secondary">
+            <span className="flex-shrink-0 whitespace-nowrap rounded-fw-sm bg-surface-sunken px-2 py-0.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-wider text-text-secondary">
               Par {currentHole.par}
             </span>
           </div>
-          <p className="mt-1.5 truncate font-fw-sans text-body-sm text-text-tertiary">{subtitle}</p>
+          <p className="mt-1.5 line-clamp-2 font-fw-sans text-body-sm text-text-tertiary sm:truncate">{subtitle}</p>
         </div>
 
         <div className="flex-shrink-0 text-right">
@@ -244,7 +247,7 @@ export function FairwayHoleHero({
             corridor, dots and green never crush. Inset rounded so it reads as a
             contained instrument, not a full-bleed dark slab. ──────────────────── */}
       <div className="px-3 pb-3 pt-4">
-        <div className="aspect-[8/3] w-full overflow-hidden rounded-fw-md ring-1 ring-inset ring-black/10">
+        <div className="aspect-[8/3] w-full overflow-hidden rounded-fw-md ring-1 ring-inset ring-border-subtle">
           <HoleViz currentHole={currentHole} shotHistory={shotHistory} currentLie={currentLie} />
         </div>
       </div>

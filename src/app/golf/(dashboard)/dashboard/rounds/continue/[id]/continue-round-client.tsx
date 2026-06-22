@@ -25,6 +25,7 @@ import {
 import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
 import { FairwaySaveRoundModal } from '@/components/fairway/pages/rounds-new/FairwaySaveRoundModal';
 import { FairwayRoundSubmitOverlay } from '@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay';
+import { FairwayRoundSummarySheet } from '@/components/fairway/pages/rounds-new/FairwayRoundSummarySheet';
 import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
@@ -1116,7 +1117,26 @@ export default function ContinueRoundClient({
         </DrawerContent>
       </Drawer>
 
-      {/* Finish Round — Premium Round Summary */}
+      {/* Finish Round — Premium Round Summary. Flag-gated Fairway/legacy swap,
+          mirroring new-round-client: the redesign path mounts the shared
+          FairwayRoundSummarySheet (premium on-brand finish) instead of the
+          inline legacy drawer that used primary-/warm- tokens. */}
+      {redesign ? (
+        <FairwayRoundSummarySheet
+          open={Boolean(showFinishConfirm && pendingFinalStats)}
+          onOpenChange={(next) => {
+            if (!next) setShowFinishConfirm(false);
+          }}
+          finalStats={pendingFinalStats ?? []}
+          courseName={setupData.courseName}
+          onGoBack={() => setShowFinishConfirm(false)}
+          onSubmit={async () => {
+            if (!pendingFinalStats) return;
+            setShowFinishConfirm(false);
+            await handleRoundSubmit(pendingFinalStats);
+          }}
+        />
+      ) : (
       <LazyMotion features={domAnimation}>
         <AnimatePresence>
           {showFinishConfirm && pendingFinalStats && (() => {
@@ -1305,6 +1325,7 @@ export default function ContinueRoundClient({
           })()}
         </AnimatePresence>
       </LazyMotion>
+      )}
 
       {/* Submit Overlay — shows during submission, success celebration, and errors.
           Flag-gated Fairway/legacy swap (matches new-round). */}

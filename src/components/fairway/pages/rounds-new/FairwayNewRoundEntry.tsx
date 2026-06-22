@@ -798,6 +798,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                   <span className={labelCls}>Holes</span>
                   <Segmented<'9' | '18'>
                     size="md"
+                    fullWidth
                     aria-label="Holes per round"
                     value={holesPerRound === 9 ? '9' : '18'}
                     onValueChange={(next) => props.setHolesPerRound(next === '9' ? 9 : 18)}
@@ -810,6 +811,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                     <div className="mt-2">
                       <Segmented<'front' | 'back'>
                         size="sm"
+                        fullWidth
                         aria-label="Nine selection"
                         value={nineSelection}
                         onValueChange={props.setNineSelection}
@@ -913,9 +915,9 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
           </m.div>
 
           {props.error && (
-            <p className="rounded-fw-md bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger">
+            <InlineNotice tone="danger" title="Unable to start round">
               {props.error}
-            </p>
+            </InlineNotice>
           )}
 
           {/* ── Action dock ──

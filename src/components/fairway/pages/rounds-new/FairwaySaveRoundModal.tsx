@@ -91,11 +91,11 @@ export function FairwaySaveRoundModal({
     >
       <Sheet.Body className="flex flex-col gap-4">
         {/* Info banner */}
-        <div className="flex items-start gap-3 rounded-fw-md border border-warm-300 bg-fw-warning-bg p-4">
+        <div className="flex items-start gap-3 rounded-fw-md border border-border-subtle bg-fw-warning-bg p-4">
           <TriangleAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-fw-warning" aria-hidden />
           <div>
-            <p className="font-fw-sans text-body-sm font-medium text-warm-900">Round in progress</p>
-            <p className="mt-1 font-fw-sans text-caption text-warm-700">
+            <p className="font-fw-sans text-body-sm font-medium text-text-primary">Round in progress</p>
+            <p className="mt-1 font-fw-sans text-caption text-text-secondary">
               You&apos;re on hole {currentHole} of {totalHoles}. Choose how to proceed:
             </p>
           </div>
@@ -169,13 +169,14 @@ export function FairwaySaveRoundModal({
           </button>
 
           {confirmingDelete && (
-            <button
+            <Button
+              variant="ghost"
               type="button"
               onClick={() => setConfirmingDelete(false)}
-              className="py-1 font-fw-sans text-body-sm text-text-tertiary transition-colors hover:text-text-secondary"
+              className="py-1 font-fw-sans text-body-sm text-text-tertiary hover:text-text-secondary"
             >
               Cancel
-            </button>
+            </Button>
           )}
         </div>
 

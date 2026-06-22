@@ -220,7 +220,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         onClick={() => canNavigate && onNavigateToHole?.(holeIndex)}
         disabled={!canNavigate}
         className={cn(
-          'relative min-w-[72px] rounded-none border-r border-border-subtle px-2 py-2.5 text-center transition-colors [&>span]:block [&>span]:w-full',
+          'relative min-w-[72px] rounded-none border-r border-border-subtle px-2 py-2.5 text-center transition-colors [&>div]:block [&>div]:w-full',
           'outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
           isCurrent
             ? 'bg-accent-50'
@@ -238,8 +238,8 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         <div className={cn('font-fw-sans text-microlabel font-semibold', isCurrent ? 'text-accent-700' : 'text-text-secondary')}>
           {hole.number}
         </div>
-        <div className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
-        <div className="font-fw-sans text-microbadge text-text-tertiary/80">{hole.yardage} yds</div>
+        <div className="truncate font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
+        <div className="truncate font-fw-sans text-microbadge text-text-tertiary/80">{hole.yardage} yds</div>
         <div className={cn('mt-1 font-fw-display text-body-lg font-semibold tabular-nums', scoreColor)}>
           {hasScore ? hole.score : '–'}
         </div>
@@ -251,7 +251,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           </div>
         )}
         {canNavigate && !isCurrent && !hasScore && (
-          <div className="mt-0.5 font-fw-sans text-microbadge text-text-tertiary">Edit</div>
+          <div className="mt-0.5 truncate font-fw-sans text-microbadge text-text-tertiary">Edit</div>
         )}
       </Button>
     );
@@ -272,7 +272,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         emphasis ? 'bg-surface-tint' : 'bg-surface-sunken',
       )}
     >
-      <div className="font-fw-sans text-microlabel font-semibold uppercase tracking-wide text-text-secondary">{label}</div>
+      <div className="truncate font-fw-sans text-microlabel font-semibold uppercase tracking-wide text-text-secondary">{label}</div>
       <div className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {par}</div>
       <div className="font-fw-sans text-microbadge text-text-tertiary/80">{yards}</div>
       <div className="mt-1 font-fw-display text-body-lg font-semibold tabular-nums text-text-primary">{hasScores ? score : '–'}</div>
@@ -300,7 +300,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         </div>
         <div className="flex items-center gap-2">
           <AutoSaveChip status={autoSaveStatus} compact />
-          <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-accent-700">
+          <span className="flex-shrink-0 whitespace-nowrap font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-accent-700">
             Hole {currentHoleNumber} / {holes.length}
           </span>
         </div>

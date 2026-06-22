@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
+import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import type { HoleConfig } from '@/lib/types/golf-course';
 
 interface FairwayHoleConfigProps {
@@ -278,9 +279,9 @@ export function FairwayHoleConfig({
       </m.div>
 
       {validationError && (
-        <p className="rounded-fw-md bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger">
+        <InlineNotice tone="danger" title="Check your hole values">
           {validationError}
-        </p>
+        </InlineNotice>
       )}
 
       {/* Action dock */}

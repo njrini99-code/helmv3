@@ -61,7 +61,7 @@ interface FairwayShotEntryProps {
 }
 
 /* Shared chip styles — thumb-sized selectable options */
-const segWrap = 'flex w-full gap-1 rounded-fw-md border border-border-subtle bg-surface-sunken p-1';
+const segWrap = 'flex w-full gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken p-1';
 const segBtn = (active: boolean) =>
   cn(
     'min-h-[48px] flex-1 rounded-fw-sm px-2 font-fw-sans text-sm font-medium transition-colors',
@@ -278,7 +278,7 @@ export function FairwayShotEntry({
                       role="radio"
                       aria-checked={isSelected}
                       className={cn(
-                        'min-h-[52px] rounded-fw-md px-2 font-fw-sans text-sm font-medium transition-colors',
+                        'min-h-[52px] rounded-fw-md px-3 font-fw-sans text-sm font-medium transition-colors',
                         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                         isSelected
                           ? 'bg-accent-500 text-text-on-accent shadow-flat ring-1 ring-accent-600'
@@ -383,7 +383,7 @@ export function FairwayShotEntry({
                           dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' });
                         }}
                         className={cn(
-                          'min-h-[44px] rounded-fw-md font-fw-sans text-eyebrow font-medium transition-colors',
+                          'min-h-[44px] rounded-fw-md transition-colors',
                           'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                           distanceAfterShot === String(ft) && distanceAfterUnit === 'feet'
                             ? 'bg-accent-500 text-text-on-accent shadow-flat'
@@ -402,7 +402,7 @@ export function FairwayShotEntry({
                     the same rule), so a value can never be stored in the wrong unit. */}
                 <div className="flex items-center justify-center gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2.5">
                   <span className="font-fw-sans text-xs font-medium uppercase tracking-wide text-text-tertiary">Measured in</span>
-                  <span className="font-fw-sans text-sm font-semibold uppercase tracking-wide text-accent-700">
+                  <span className="font-fw-sans text-sm font-semibold uppercase tracking-wide text-text-secondary">
                     {lockedAfterUnit === 'feet' ? 'Feet' : 'Yards'}
                   </span>
                 </div>
