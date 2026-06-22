@@ -44,6 +44,7 @@ import { IconSparkles, IconRefresh, IconGolf } from '@/components/icons';
 import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
 import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
 import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
+import { RoundIntelligence } from '@/components/golf/coachhelm/round-review/RoundIntelligence';
 import { Button } from '@/components/ui/button';
 import {
   ViewHeader as FwViewHeader,
@@ -842,6 +843,19 @@ export default function RoundReviewPage() {
           playerAvg={toComparisonProps(playerAvg)}
           teamAvg={toComparisonProps(teamAvg)}
         />
+
+        {/* CoachHelm round intelligence — REDESIGN ONLY. Surfaces this round's
+            stroke-leak board (review.strokesToGain) + the per-round practice
+            priority (review.coachHelm) — both computed by the engine but, until
+            now, all but invisible on the review. Additive; the component itself
+            returns null when neither piece has content. Page is already inside
+            the `.fairway-ds` scope under the redesign, so no nested scope here. */}
+        {isRedesignEnabled() && storedReview?.review_content && (
+          <RoundIntelligence
+            strokesToGain={storedReview.review_content.strokesToGain}
+            coachHelm={storedReview.review_content.coachHelm}
+          />
+        )}
 
         {/* Where this sits vs PGA + team — REDESIGN ONLY.
             Season-level standing (NOT round values) for the metrics this round

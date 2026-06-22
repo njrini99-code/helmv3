@@ -108,7 +108,7 @@ import {
   FocusAreasGrid,
 } from '@/components/golf/coachhelm/player';
 import { CompositeRatingCard } from '@/components/golf/coachhelm/player/CompositeRatingCard';
-import { TrendDashboard } from '@/components/golf/coachhelm/player/TrendDashboard';
+import { FairwayTrendBrain } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
 import { ShotAnalysisCard } from '@/components/golf/coachhelm/player/ShotAnalysisCard';
 import { WhatIfPanel } from '@/components/golf/coachhelm/player/WhatIfPanel';
 
@@ -609,7 +609,7 @@ export function FairwayPlayerCoachHelm({
                   )}
 
                   {trendData != null ? (
-                    <TrendDashboard
+                    <FairwayTrendBrain
                       trendData={trendData}
                       playerState={data.playerState}
                     />
