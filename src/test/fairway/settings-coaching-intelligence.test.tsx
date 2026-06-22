@@ -180,7 +180,6 @@ vi.mock('@/components/golf/coachhelm/settings', () => ({
   ThresholdSlider: ({ label }: { label?: string }) => <div>{label}</div>,
   WeightDistributor: weightDistributorMock,
   AlertTypeToggles: () => <div />,
-  SgBaselineSelector: () => <div />,
 }));
 
 describe('FairwaySettingsCoachingIntelligence', () => {

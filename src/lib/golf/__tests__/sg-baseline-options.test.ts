@@ -9,29 +9,31 @@ import {
 } from '../sg-benchmarks';
 
 /**
- * Locks the per-team selectable SG baselines (PR #240).
+ * Locks the SG baselines. As of 2026-06-22 there are exactly TWO: PGA Tour
+ * (men, 1.0) and LPGA (women, WOMENS_SG_SCALE). NCAA D1/D2/D3 and the scratch
+ * scale were removed — every team anchors to its gender's Tour automatically.
  *
- * The DB `sg_baseline_scale(key)` (migration 20260607200000) is AUTHORITATIVE for
- * computation — these TS scales are the UI mirror. If they drift, a coach sees a
- * baseline label whose displayed scale disagrees with the recompute the DB just
- * ran. This test pins every key→scale pair to the exact DB values so any change
- * to one side forces a conscious update to the other.
- *
- * Keep in sync with the CASE in `public.sg_baseline_scale`.
+ * The DB `sg_baseline_scale(key)` (migration 20260622130000) is AUTHORITATIVE
+ * for computation; these TS scales are the mirror. If they drift, a label's
+ * displayed scale disagrees with the recompute the DB ran. This test pins each
+ * key→scale pair to the exact DB value so a change on one side forces the other.
  */
 const DB_SCALE: Record<SgBaselineKey, number> = {
   pga_tour: 1.0,
-  scratch: 1.028,
-  ncaa_d1: 1.057,
-  ncaa_d2: 1.1,
-  ncaa_d3: 1.143,
   womens: 1.083,
 };
 
 describe('SG baseline options (TS mirror of DB sg_baseline_scale)', () => {
-  it('exposes exactly the six DB baseline keys', () => {
+  it('exposes exactly the two DB baseline keys (PGA + LPGA only)', () => {
     const keys = SG_BASELINE_OPTIONS.map((o) => o.key).sort();
     expect(keys).toEqual(Object.keys(DB_SCALE).sort());
+  });
+
+  it('does NOT expose any NCAA-division or scratch baseline', () => {
+    const keys = SG_BASELINE_OPTIONS.map((o) => o.key);
+    for (const dead of ['scratch', 'ncaa_d1', 'ncaa_d2', 'ncaa_d3']) {
+      expect(keys, `${dead} must be gone`).not.toContain(dead);
+    }
   });
 
   it('every option scale matches the authoritative DB value', () => {
@@ -46,13 +48,8 @@ describe('SG baseline options (TS mirror of DB sg_baseline_scale)', () => {
     expect(womens?.scale).toBe(WOMENS_SG_SCALE);
   });
 
-  it('scales increase monotonically from PGA Tour up the difficulty ladder', () => {
-    // Easier field (higher scoring) => larger scale (the expected-strokes curve is
-    // raised). pga_tour is the strictest (1.0); D3 the most lenient.
-    expect(sgBaselineScale('pga_tour')).toBeLessThan(sgBaselineScale('scratch'));
-    expect(sgBaselineScale('scratch')).toBeLessThan(sgBaselineScale('ncaa_d1'));
-    expect(sgBaselineScale('ncaa_d1')).toBeLessThan(sgBaselineScale('ncaa_d2'));
-    expect(sgBaselineScale('ncaa_d2')).toBeLessThan(sgBaselineScale('ncaa_d3'));
+  it('LPGA scale is more lenient than PGA Tour (raised expected-strokes curve)', () => {
+    expect(sgBaselineScale('pga_tour')).toBeLessThan(sgBaselineScale('womens'));
   });
 
   it('unknown / null keys fall back to PGA Tour identity (1.0)', () => {
@@ -69,8 +66,7 @@ describe('SG baseline options (TS mirror of DB sg_baseline_scale)', () => {
   });
 
   it('effective baseline prefers the explicit setting, else the gender default', () => {
-    // explicit override wins regardless of gender
-    expect(effectiveSgBaseline('ncaa_d2', 'womens')).toBe('ncaa_d2');
+    expect(effectiveSgBaseline('womens', 'mens')).toBe('womens');
     expect(effectiveSgBaseline('pga_tour', 'womens')).toBe('pga_tour');
     // no override -> gender default (mirrors DB sg_scale_for_player)
     expect(effectiveSgBaseline(null, 'womens')).toBe('womens');
