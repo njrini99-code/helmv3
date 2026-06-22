@@ -228,12 +228,26 @@ async function getCoachPhilosophy(
 ): Promise<CoachPhilosophy> {
   const supabase = client ?? await createClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
-    .from('golf_coach_philosophy')
-    .select('*')
-    .eq('coach_id', coachId)
-    .maybeSingle();
+  // Resilient: a thrown query (transient DB error, etc.) must NOT propagate —
+  // every caller can safely operate on the defaults below, so swallow the
+  // throw to null and fall through to the `if (!data)` default path.
+  let data: unknown = null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const res = await (supabase as any)
+      .from('golf_coach_philosophy')
+      .select('*')
+      .eq('coach_id', coachId)
+      .maybeSingle();
+    data = res?.data ?? null;
+  } catch (philErr) {
+    await logServerError(
+      `getCoachPhilosophy query failed (using defaults): ${philErr instanceof Error ? philErr.message : String(philErr)}`,
+      { action: 'getCoachPhilosophy', featureArea: 'insights', extra: { coachId } },
+      'warning',
+    );
+    data = null;
+  }
 
   const defaults: CoachPhilosophy = {
     id: '',
@@ -1995,8 +2009,31 @@ export async function generateTeamInsight(): Promise<{
       return { success: false, error: 'No team assigned' };
     }
 
-    // 2. Check if CoachHelm is enabled
-    const status = await isCoachHelmEnabledForCoach(coach.id);
+    // 2. Check if CoachHelm is enabled.
+    // `isCoachHelmEnabledForCoach` comes from the @/lib/coachhelm/v2 barrel,
+    // so this is the FIRST line that forces evaluation of the whole engine
+    // module graph. If a transitive import cycle ever surfaces a load-time
+    // TDZ again (see the 2026-06-22 composite index↔synthesis fix), it would
+    // throw HERE — before any rollup wrapper — and otherwise land in the
+    // generic outer catch. Wrap it so the failure is labeled precisely.
+    let status: Awaited<ReturnType<typeof isCoachHelmEnabledForCoach>>;
+    try {
+      status = await isCoachHelmEnabledForCoach(coach.id);
+    } catch (gateErr) {
+      await logServerError(
+        `generateTeamInsight.isCoachHelmEnabledForCoach failed: ${gateErr instanceof Error ? gateErr.message : String(gateErr)}`,
+        {
+          action: 'generateTeamInsight.engineGateCheck',
+          featureArea: 'insights',
+          extra: {
+            stackHint: gateErr instanceof Error && gateErr.stack
+              ? gateErr.stack.split('\n').slice(0, 4).join(' | ')
+              : 'no-stack',
+          },
+        },
+      );
+      return { success: false, error: 'CoachHelm engine failed to initialize. Please try again.' };
+    }
     if (!status.effectivelyEnabled) {
       return { success: false, error: status.disabledReason || 'CoachHelm is disabled' };
     }

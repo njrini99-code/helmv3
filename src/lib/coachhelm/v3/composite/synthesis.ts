@@ -15,7 +15,12 @@ import { upsertInsightV3, GATED_OUT } from '@/lib/coachhelm/v3/insights/upsert-v
 import { logServerError } from '@/lib/server-error-logger';
 import { calcConfidence } from '@/lib/coachhelm/v2/insights/types';
 import type { CausalityLevel, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
-import { COMPOSITE_RULES } from './index';
+// Import from the leaf registry, NOT the './index' barrel — the barrel
+// re-exports synthesizeForPlayer FROM this file, so importing COMPOSITE_RULES
+// from './index' created a value-level cycle (index ↔ synthesis) that the
+// bundler surfaced as a TDZ ("Cannot access 'a' before initialization"),
+// collapsing generateTeamInsight. See ./registry header (2026-06-22).
+import { COMPOSITE_RULES } from './registry';
 import { loadRecentInsightsForPlayer } from './loader';
 import { loadCompositeContext } from './hole-sequence-loader';
 import type { CompositeMatch, CompositeRule, EvidenceInsight } from './types';
