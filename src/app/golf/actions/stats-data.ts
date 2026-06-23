@@ -1091,7 +1091,18 @@ export async function getDetailedStats(
       return calculateStatsFromShots([], [], []);
     }
 
-    return queryDetailedStatsWithClient(supabase, playerId, roundId, filter);
+    // ROOT FIX: verifyPlayerAccess above has already authorised this read (the
+    // viewer is the player, or a coach in the player's team org — the exact rule
+    // the golf_shots RLS policies encode). Running the ~1k-row shot read on the
+    // user-scoped client makes a COACH re-pay that rule per row via the
+    // is_golf_team_coach() RLS function, which under DB load exceeds the 8s
+    // statement_timeout and silently degrades to round-level stats (blank SG,
+    // distance, miss bias, proximity, scrambling, 3-putts). Read on the
+    // service-role client instead: identical authorisation, no per-row RLS, no
+    // statement_timeout — full stats in ~100ms. Same trust model as
+    // getDetailedStatsAsAdmin. The in-function admin-retry remains as a safety net.
+    const trusted = createAdminClient() as unknown as Awaited<ReturnType<typeof createClient>>;
+    return queryDetailedStatsWithClient(trusted, playerId, roundId, filter);
   } catch (outerError) {
     await logServerError(`[Stats] getDetailedStats failed: ${describeError(outerError)}`, { action: 'stats_data.getDetailedStats' });
     return serializeDetailedStats(calculateStatsFromShots([], [], []));
