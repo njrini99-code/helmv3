@@ -807,6 +807,15 @@ async function queryDetailedStatsWithClient(
   playerId: string,
   roundId?: string | 'overall',
   filter?: StatsFilter,
+  // When the user-scoped shot query trips the 8s statement_timeout (the per-row
+  // golf_shots RLS policies — is_golf_team_coach() etc. — make a coach reading a
+  // player's ~1k shots far more expensive than the same rows read as service
+  // role), retry ONCE on the admin client (no RLS, no statement_timeout) instead
+  // of degrading to round-level stats, which blanks SG, putting-by-distance,
+  // approach, and par scoring. Safe because getDetailedStats already authorised
+  // the viewer via verifyPlayerAccess before this query. false on the retry call
+  // itself prevents recursion.
+  allowAdminRetry: boolean = true,
 ): Promise<GolfStats> {
   const conditions = getFilterConditions(filter);
 
@@ -1023,10 +1032,37 @@ async function queryDetailedStatsWithClient(
     const isStatementTimeout =
       described.includes('57014') || described.toLowerCase().includes('statement_timeout');
     if (isStatementTimeout) {
-      // Handled degradation: the detailed-shot query hit statement_timeout (57014)
-      // and we fall back to round-level stats — the user still gets data. Record it
-      // for perf tracking but keep THIS specific case out of Sentry (issue 4K).
-      await logServerError(`[Stats] Falling back to round-level stats: ${described}`, { action: 'stats_data.queryDetailedStatsWithClient', skipSentry: true }, 'warning');
+      // The user-scoped shot query hit statement_timeout (57014) — almost always
+      // RLS overhead (per-row golf_shots policies) under DB load, NOT a query that
+      // is genuinely too large. Re-run the SAME query on the service-role client,
+      // which bypasses RLS and has no statement_timeout, so the viewer still gets
+      // FULL detailed stats instead of a round-level fallback that blanks SG /
+      // putting / approach / par scoring. Authorisation was already enforced by
+      // getDetailedStats → verifyPlayerAccess, so this widens no data access.
+      if (allowAdminRetry) {
+        try {
+          const admin = createAdminClient();
+          const recovered = await queryDetailedStatsWithClient(
+            admin as unknown as Awaited<ReturnType<typeof createClient>>,
+            playerId,
+            roundId,
+            filter,
+            false,
+          );
+          // Keep out of Sentry (handled, recovered) but record for perf tracking.
+          await logServerError(`[Stats] Recovered full stats via admin client after statement_timeout: ${described}`, { action: 'stats_data.queryDetailedStatsWithClient', skipSentry: true }, 'warning');
+          return recovered;
+        } catch (retryError) {
+          // Admin retry also failed — fall through to the round-level fallback so
+          // the user still sees headline numbers. This one IS worth a Sentry page.
+          await logServerError(`[Stats] Admin retry after statement_timeout failed: ${describeError(retryError)}`, { action: 'stats_data.queryDetailedStatsWithClient' });
+        }
+      } else {
+        // Handled degradation: the detailed-shot query hit statement_timeout (57014)
+        // and we fall back to round-level stats — the user still gets data. Record it
+        // for perf tracking but keep THIS specific case out of Sentry (issue 4K).
+        await logServerError(`[Stats] Falling back to round-level stats: ${described}`, { action: 'stats_data.queryDetailedStatsWithClient', skipSentry: true }, 'warning');
+      }
     } else {
       // Any OTHER failure (schema break, bad response shape, mapping/calc bug) is a
       // real defect that also degrades to round-level stats — it MUST still page
