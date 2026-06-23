@@ -1,0 +1,22 @@
+-- ============================================================================
+-- service_role statement_timeout — give the admin client real headroom.
+-- ----------------------------------------------------------------------------
+-- The detailed-stats read (getDetailedStats) runs on the SERVICE-ROLE/admin
+-- client specifically to bypass per-row golf_shots RLS and the 8s
+-- statement_timeout (the #339/#340 root fix). But it was STILL hitting
+-- `57014 canceling statement due to statement timeout` and degrading to
+-- round-level stats on heavier reads + background engine/cron fetches.
+--
+-- Root cause: Supabase connections enter PostgREST as the `authenticator`
+-- login role (which sets `statement_timeout=8s`) and then `SET ROLE
+-- service_role` per request. `service_role` had NO explicit statement_timeout
+-- of its own (rolconfig = null), so it INHERITED the 8s session default rather
+-- than running unbounded as the fix assumed.
+--
+-- Fix: give service_role an explicit, bounded 30s timeout — matching the
+-- convention already used by heavy DB functions in this codebase
+-- (`SET statement_timeout TO '30s'`). 30s is generous headroom over the ~1k-row
+-- shot read while still bounding a runaway query (vs. an unlimited 0).
+-- ============================================================================
+
+ALTER ROLE service_role SET statement_timeout = '30s';
