@@ -24,6 +24,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { runGoalProgressForPlayers } from '@/app/golf/actions/v3/goal-progress';
+import { runFocusAreaProgressForPlayers } from '@/app/golf/actions/v3/focus-area-progress';
 import {
   STANDING_REFRESH_METRIC_IDS,
   STANDING_REFRESH_DEFERRED_METRIC_IDS,
@@ -53,6 +54,9 @@ interface RefreshSummary {
   // advanced now that this chunk's standings are fresh. Optional so the early
   // returns (which run before the goal pass) need not set it.
   goals_progressed?: number;
+  // Active focus areas whose current_value advanced this pass (windowed against
+  // rounds since each area started). Optional, same reason as goals_progressed.
+  focus_areas_progressed?: number;
   // W7 pre-sweep: player caches fully refreshed BEFORE the standing RPCs
   // (is_stale flag or recent completed-round activity), so standing never
   // ranks players on stale shot-derived columns.
@@ -351,6 +355,7 @@ async function handle(): Promise<NextResponse> {
   // outcome) so progress moves durably — a goal can be hit or lapse even if
   // nobody opens the app. Failure-isolated — never fails the standing refresh.
   let goalsProgressed = 0;
+  let focusAreasProgressed = 0;
   try {
     const { data: goalMembers } = await supabase
       .from('golf_team_members')
@@ -361,6 +366,11 @@ async function handle(): Promise<NextResponse> {
     const goalPlayerIds = [...new Set((goalMembers ?? []).map((m) => m.player_id as string))];
     const summary = await runGoalProgressForPlayers(goalPlayerIds);
     goalsProgressed = summary.updated;
+    // Same durable pass for focus areas: window each active area's metric over
+    // the rounds played since it started so the development-plan bar advances
+    // nightly even if nobody opens the app. Reuses the chunk's player set.
+    const focusSummary = await runFocusAreaProgressForPlayers(goalPlayerIds);
+    focusAreasProgressed = focusSummary.updated;
   } catch (err) {
     await logServerError(
       `standing-refresh goal-progress: ${err instanceof Error ? err.message : String(err)}`,
@@ -391,6 +401,7 @@ async function handle(): Promise<NextResponse> {
     orphans_pruned: orphansPruned,
     stale_caches_refreshed: staleCachesRefreshed,
     goals_progressed: goalsProgressed,
+    focus_areas_progressed: focusAreasProgressed,
     duration_ms: Date.now() - startedAt,
   } satisfies RefreshSummary);
 }

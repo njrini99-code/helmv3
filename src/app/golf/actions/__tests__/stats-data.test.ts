@@ -69,6 +69,19 @@ vi.mock('@/lib/supabase/server', () => ({
   })),
 }));
 
+// getDetailedStats reads identity / retries shot queries on the service-role
+// client. createAdminClient() THROWS when the service-role env is a placeholder
+// (which it is under vitest), so mock it through the same chainable builder —
+// otherwise the function fails before reaching calculateStatsFromShots, and the
+// pass/fail becomes env-load-order dependent (flaky across worker sharding).
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => ({
+    from: mockFrom,
+    rpc: vi.fn(async () => ({ data: 1, error: null })),
+    auth: { getUser: vi.fn(() => ({ data: { user: { id: 'user-1' } }, error: null })) },
+  })),
+}));
+
 vi.mock('@/lib/utils/golf-stats-calculator-shots', () => ({
   calculateStatsFromShots: vi.fn(() => ({
     roundsPlayed: 0,

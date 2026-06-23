@@ -399,6 +399,19 @@ export function patternToSignalRow(pattern: ExtendedPattern): SignalRow {
       value: String(pattern.occurrenceCount),
     });
   }
+  // Actionability (0-1) — the de65bcf3 signal for "is this worth a focus area?".
+  // Persisted on golf_patterns_v2 but previously only shown in the dead v2
+  // PatternCard; surface it here so it reaches the live Signals path.
+  if (typeof pattern.actionability === 'number') {
+    const pct = Math.round(pattern.actionability * 100);
+    const tier =
+      pattern.actionability >= 0.7
+        ? 'highly actionable'
+        : pattern.actionability >= 0.4
+          ? 'moderately actionable'
+          : 'situational';
+    evidence.push({ label: 'Actionability', value: `${pct}%`, gloss: tier });
+  }
 
   return {
     id: pattern.id,

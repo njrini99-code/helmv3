@@ -10,6 +10,7 @@ import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import { runGoalProgressForPlayers } from '@/app/golf/actions/v3/goal-progress';
+import { runFocusAreaProgressForPlayers } from '@/app/golf/actions/v3/focus-area-progress';
 import { getTeamCausalRelationships } from '@/app/golf/actions/causal-relationships';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
@@ -342,7 +343,13 @@ export default async function DevelopmentPlansPage({
     // (single goals query + chunked standing); best-effort so a hiccup never
     // blanks the coach page.
     try {
-      await runGoalProgressForPlayers(playerIds);
+      await Promise.all([
+        runGoalProgressForPlayers(playerIds),
+        // Same idea for focus areas: window each active area against the rounds
+        // played since it started so the development-plan bar reflects reality,
+        // not the value captured when the area was created. Best-effort.
+        runFocusAreaProgressForPlayers(playerIds),
+      ]);
     } catch {
       /* progress refresh is best-effort; fall through to last-known goals */
     }

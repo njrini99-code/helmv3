@@ -935,10 +935,12 @@ export async function getPatternStats(): Promise<{
       (players || []).map(p => [p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim()])
     );
 
-    // Get all patterns
+    // Get all patterns. is_active filter mirrors getTeamPatterns (6db66d46) so
+    // soft-superseded (stale) rows don't inflate the counts here too.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: patterns, error } = await (supabase.from('golf_patterns_v2' as any) as any)
       .select('player_id, pattern_type, lifecycle_state, severity, stroke_impact')
+      .eq('is_active', true)
       .in('player_id', playerIds);
 
     if (error) {

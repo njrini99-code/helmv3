@@ -20,7 +20,9 @@ import { compose } from '@/lib/coachhelm/v3/llm/compose';
 import type { ComposeResult, EvidenceClaim } from '@/lib/coachhelm/v3/llm/types';
 
 export interface PracticeRxInput {
-  player_id: string;
+  /** Player the generation is attributed to for budget logging, or null when
+   *  there is no representative roster member (team-level plan, empty roster). */
+  player_id: string | null;
   coach_id: string | null;
   goal: {
     id: string;
@@ -142,9 +144,16 @@ export async function composePracticeRx(input: PracticeRxInput): Promise<Practic
   );
 
   const candidateIds = new Set(input.candidate_drills.map((d) => d.id));
+  // LLM path: parse its day-by-day text (drops hallucinated ids). Template path
+  // (budget-gated / LLM error / citation failure → used_llm=false): build
+  // STRUCTURED days from the candidate drills directly. The fallback must never
+  // be empty just because the LLM was unavailable — an empty `days` rendered as
+  // a "ready" plan with no drills (the review's high-severity finding). We build
+  // the days structurally rather than re-parsing fallback_text so a drill's
+  // title is never echoed as both prose AND a chip downstream.
   const days = result.used_llm
     ? parsePlan(result.text, candidateIds)
-    : [];
+    : buildFallbackDays(input.candidate_drills);
 
   return {
     goal_id: input.goal.id,
@@ -152,4 +161,21 @@ export async function composePracticeRx(input: PracticeRxInput): Promise<Practic
     raw_text: result.text,
     used_llm: result.used_llm,
   };
+}
+
+/**
+ * Deterministic template plan when the LLM is unavailable — one drill per day,
+ * up to 7 days (mirrors the caller's fallback_text intent). Honest prose marks
+ * it as a template stub so the UI can disclose it, and the drills still render
+ * as real, hydrate-able blocks. Empty only when there are no candidate drills
+ * (the action layer already refuses to reach here with zero drills).
+ */
+function buildFallbackDays(
+  drills: PracticeRxInput['candidate_drills'],
+): PracticePlanDay[] {
+  return drills.slice(0, 7).map((d, i) => ({
+    day: i + 1,
+    drill_ids: [d.id],
+    prose: 'Template block — AI draft unavailable; edit after saving.',
+  }));
 }

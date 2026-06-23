@@ -306,6 +306,104 @@ export async function createDocument(
   }
 }
 
+/**
+ * Save a markdown/plain-text document directly from a string — no File handle.
+ * Used by the team-CoachHelm "Add to Documents" flow, which materializes an
+ * AI-drafted practice plan as a stored document. Mirrors createDocument but
+ * uploads an in-memory Blob instead of a multipart File.
+ *
+ * AUTH: coach-only. resolveTeamRole must return 'coach' (the user is STAFFED on
+ * this team) — a server action without an auth check is a hard CI rule, and a
+ * player should never be able to write a coaching plan into the team library.
+ */
+export async function saveTextDocument(
+  teamId: string,
+  title: string,
+  content: string,
+  options: {
+    description?: string;
+    category?: string;
+    playerVisible?: boolean;
+    /** File extension + mime; defaults to markdown. */
+    extension?: 'md' | 'txt';
+  } = {}
+): Promise<{ data: GolfDocument | null; error: string | null }> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
+
+    // Coach-team access guard. Only a coach staffed on this team may persist a
+    // plan into the team's document library.
+    const role = await resolveTeamRole(supabase, user.id, teamId);
+    if (role !== 'coach') {
+      return { data: null, error: 'Only a coach on this team can save documents' };
+    }
+
+    const trimmed = (content ?? '').trim();
+    if (!trimmed) return { data: null, error: 'Document content is empty' };
+
+    const ext = options.extension ?? 'md';
+    const mimeType = ext === 'txt' ? 'text/plain' : 'text/markdown';
+    const fileName = `${crypto.randomUUID()}.${ext}`;
+    const storagePath = `golf-documents/${teamId}/${fileName}`;
+    const blob = new Blob([trimmed], { type: mimeType });
+
+    const { error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(storagePath, blob, { contentType: mimeType });
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('documents')
+      .getPublicUrl(storagePath);
+
+    const { data: document, error: insertError } = await supabase
+      .from('golf_documents')
+      .insert({
+        team_id: teamId,
+        title,
+        description: options.description || null,
+        file_url: urlData.publicUrl,
+        file_type: mimeType,
+        file_size: blob.size,
+        category: options.category || 'practice_plan',
+        is_public: options.playerVisible ?? true,
+        uploaded_by: user.id,
+        version_count: 1,
+      })
+      .select()
+      .single();
+    if (insertError) throw insertError;
+
+    // Initial version record (file_url is NOT NULL — supply the public URL).
+    const { error: versionError } = await supabase
+      .from('golf_document_versions' as any)
+      .insert({
+        document_id: document.id,
+        version_number: 1,
+        file_url: urlData.publicUrl,
+        file_name: `${title}.${ext}`,
+        file_size: blob.size,
+        mime_type: mimeType,
+        storage_path: storagePath,
+        change_notes: 'Saved from CoachHelm',
+        uploaded_by: user.id,
+      });
+    if (versionError) throw versionError;
+
+    revalidatePath('/golf/dashboard/documents');
+    return { data: document as GolfDocument, error: null };
+  } catch (error) {
+    await logServerError(
+      `Unexpected error in saveTextDocument: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.saveTextDocument', featureArea: 'documents' }
+    );
+    return { data: null, error: handleError(error) };
+  }
+}
+
 export async function updateDocument(
   documentId: string,
   updates: {

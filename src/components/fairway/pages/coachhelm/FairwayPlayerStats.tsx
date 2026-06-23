@@ -21,11 +21,13 @@
  * ADDITIVE + GATED — imported only behind isRedesignEnabled() in stats/page.tsx.
  * ========================================================================== */
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Surface, EmptyState } from '@/components/fairway';
 import { useGolfUser } from '@/contexts/golf-user-context';
+import { getPlayerDisplayName } from '@/app/golf/actions/stats-data';
 import { CoachHelmShell } from './CoachHelmShell';
 import { FairwayStatsCockpit } from './FairwayStatsCockpit';
 
@@ -38,13 +40,36 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
 
   const resolvedPlayerId = initialPlayerId || golfUser.playerId || null;
   const isCoachView = golfUser.role === 'coach';
-  const playerName = isCoachView ? '' : golfUser.name;
+
+  // A coach drilling into a teammate must see THAT player's name — not the
+  // coach's own (golfUser.name) and not the generic "Player stats". The name
+  // isn't in any cockpit payload, so resolve it here (authorized server action).
+  const [viewedPlayerName, setViewedPlayerName] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (isCoachView && resolvedPlayerId) {
+      getPlayerDisplayName(resolvedPlayerId)
+        .then((name) => { if (!cancelled) setViewedPlayerName(name); })
+        .catch(() => { if (!cancelled) setViewedPlayerName(null); });
+    } else {
+      setViewedPlayerName(null);
+    }
+    return () => { cancelled = true; };
+  }, [isCoachView, resolvedPlayerId]);
+
+  const playerName = isCoachView ? viewedPlayerName : golfUser.name;
 
   const title = isCoachView
     ? playerName
       ? `${playerName}'s stats`
       : 'Player stats'
     : 'Your stats';
+
+  // Third-person framing for a coach viewing a teammate; first-person for a
+  // player viewing their own page.
+  const description = isCoachView
+    ? `Where ${playerName ?? 'this player'} stands vs PGA Tour and the team — and where the strokes are leaking.`
+    : 'Where you stand vs PGA Tour and your team — and where the strokes are leaking.';
 
   const backAction = isCoachView ? (
     <Link
@@ -64,7 +89,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
           role="player"
           eyebrow="Stats"
           title={title}
-          description="Where you stand vs PGA Tour and your team — and where the strokes are leaking."
+          description={description}
           actions={backAction}
         >
           {!resolvedPlayerId ? (

@@ -704,7 +704,9 @@ export async function getTeamCategoryInsights(
             attentionCount: 0,
           })),
           teamHealth: 0,
-          lastAnalyzed: new Date().toISOString(),
+          // No active players → no data analyzed. Empty (consumers guard on
+          // truthy) rather than a fake "analyzed now" timestamp.
+          lastAnalyzed: '',
         },
       };
     }
@@ -897,12 +899,24 @@ export async function getTeamCategoryInsights(
     // count (empty = insufficient data, not a perfect score). See P2-17.
     const teamHealth = computeTeamHealth(categories);
 
+    // Truthful freshness: the analysis is recomputed live every request, so the
+    // honest "last analyzed" is bounded by the freshest INPUT — the most recent
+    // completed round feeding it. Stamping `now()` (the old behavior) made the
+    // Brief claim "updated now" while showing data that hadn't changed in days.
+    // `round_date` is an ISO date; lexical max == chronological max. '' when no
+    // rounds (consumers guard on truthy → render nothing rather than a fake time).
+    const latestRoundDate = (roundsResult.data ?? []).reduce<string>((max, r) => {
+      const d = typeof r.round_date === 'string' ? r.round_date : '';
+      return d > max ? d : max;
+    }, '');
+    const lastAnalyzed = latestRoundDate ? new Date(latestRoundDate).toISOString() : '';
+
     return {
       success: true,
       data: {
         categories,
         teamHealth,
-        lastAnalyzed: new Date().toISOString(),
+        lastAnalyzed,
       },
     };
   } catch (err) {

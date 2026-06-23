@@ -42,7 +42,7 @@
 import { useCallback, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Clock, CheckCircle2 } from 'lucide-react';
+import { Clock, CheckCircle2, Target } from 'lucide-react';
 
 import { fairwayScope } from '@/lib/redesign/flag';
 import {
@@ -62,6 +62,9 @@ import {
   FocusAreaCard,
   type FocusAreaCardData,
 } from './FocusAreaCard';
+import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
+import { getAreaType, type AreaAutoFillStats } from './areaTypes';
+import { IconPlus } from '@/components/icons';
 import { GoalsSection, type GoalSuggestionView } from './GoalsSection';
 import { CausalWhyPanel } from './CausalWhyPanel';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
@@ -75,6 +78,9 @@ import {
   updateFocusAreaProgress,
   completeFocusArea,
   reactivateFocusArea,
+  createPlayerFocusArea,
+  acceptFocusArea,
+  declineFocusArea,
 } from '@/app/golf/actions/development';
 import { useToast } from '@/components/ui/sonner';
 import {
@@ -97,6 +103,12 @@ export interface FairwayMyDevelopmentProps {
   activeAreas: FocusAreaCardData[];
   /** Completed focus areas. */
   completedAreas: FocusAreaCardData[];
+  /** Coach-prescribed areas awaiting this player's accept/decline. Defaults []. */
+  proposedAreas?: FocusAreaCardData[];
+  /** This player's id — required for the self-create flow. */
+  playerId?: string;
+  /** This player's cached stats — drives the create modal's real values + targets. */
+  playerStats?: AreaAutoFillStats;
   /** True when the server select failed — render an error, not an empty state. */
   loadError?: boolean;
   /**
@@ -329,6 +341,9 @@ function LogProgressDrawer({
 export function FairwayMyDevelopment({
   activeAreas,
   completedAreas,
+  proposedAreas = [],
+  playerId,
+  playerStats,
   loadError = false,
   goals = [],
   suggestions = [],
@@ -345,8 +360,79 @@ export function FairwayMyDevelopment({
   const [completingId, setCompletingId] = useState<string | null>(null);
   // Which completed area is mid-reopen (busy flag for the card "Reopen" button).
   const [reopeningId, setReopeningId] = useState<string | null>(null);
+  // Which proposed area is mid-accept/decline (busy flag for its buttons).
+  const [decidingId, setDecidingId] = useState<string | null>(null);
+  // Player self-create modal.
+  const [createOpen, setCreateOpen] = useState(false);
 
   const total = activeAreas.length + completedAreas.length;
+  const hasAnyArea = total + proposedAreas.length > 0;
+  const canCreateOwn = Boolean(playerId);
+
+  // Accept a coach-prescribed area → it becomes active and the window starts.
+  const handleAccept = useCallback(
+    (focusArea: FocusAreaCardData) => {
+      if (decidingId) return;
+      setDecidingId(focusArea.id);
+      startTransition(async () => {
+        try {
+          const result = await acceptFocusArea(focusArea.id);
+          if (!result.success) {
+            addToast({ type: 'error', title: result.error || 'Failed to accept' });
+            setDecidingId(null);
+            return;
+          }
+          addToast({
+            type: 'success',
+            title: 'Focus area accepted',
+            description: focusArea.title || 'Now tracking',
+          });
+          setDecidingId(null);
+          router.refresh();
+        } catch {
+          addToast({ type: 'error', title: 'Failed to accept' });
+          setDecidingId(null);
+        }
+      });
+    },
+    [addToast, decidingId, router, startTransition],
+  );
+
+  // Decline a coach-prescribed area → status 'declined' (hidden from the list).
+  const handleDecline = useCallback(
+    (focusArea: FocusAreaCardData) => {
+      if (decidingId) return;
+      setDecidingId(focusArea.id);
+      startTransition(async () => {
+        try {
+          const result = await declineFocusArea(focusArea.id);
+          if (!result.success) {
+            addToast({ type: 'error', title: result.error || 'Failed to decline' });
+            setDecidingId(null);
+            return;
+          }
+          addToast({ type: 'success', title: 'Declined', description: focusArea.title || 'Focus area' });
+          setDecidingId(null);
+          router.refresh();
+        } catch {
+          addToast({ type: 'error', title: 'Failed to decline' });
+          setDecidingId(null);
+        }
+      });
+    },
+    [addToast, decidingId, router, startTransition],
+  );
+
+  // Player self-create: persist their OWN focus area (active immediately).
+  const handleCreateSubmit = useCallback(
+    async (payload: FocusAreaModalSubmit): Promise<{ success: boolean; error?: string }> => {
+      const { player_id, ...fields } = payload;
+      const res = await createPlayerFocusArea({ player_id, ...fields });
+      if (res.success) router.refresh();
+      return res;
+    },
+    [router],
+  );
 
   const handleLogProgress = useCallback((focusArea: FocusAreaCardData) => {
     setLogState({ focusArea });
@@ -416,16 +502,24 @@ export function FairwayMyDevelopment({
     [addToast, completingId, handleReopen, router, startTransition],
   );
 
-  // Header "Message coach" is a SECONDARY helper alongside real content. When the
-  // surface is genuinely empty the empty-state's own primary "Message coach" CTA
-  // is the single obvious next action, so we drop the duplicate header affordance
-  // to keep one primary action per screen (squint test / single-primary rule).
-  const headerActions =
-    total > 0 ? (
-      <Button asChild variant="secondary" size="sm">
-        <Link href="/golf/dashboard/messages">Message coach</Link>
-      </Button>
-    ) : undefined;
+  // Header actions: the player can always create their OWN focus area (primary).
+  // "Message coach" stays a secondary helper, shown only alongside real content
+  // (when empty, the empty-state owns the single obvious next action).
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      {total > 0 ? (
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/golf/dashboard/messages">Message coach</Link>
+        </Button>
+      ) : null}
+      {canCreateOwn ? (
+        <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)}>
+          <IconPlus size={16} />
+          New focus area
+        </Button>
+      ) : null}
+    </div>
+  );
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
@@ -480,20 +574,55 @@ export function FairwayMyDevelopment({
                     there aren't enough rounds to map drivers). ── */}
               <CausalWhyPanel relationships={causalRelationships} />
 
-              {total === 0 ? (
-                /* ── Genuinely-empty focus areas (Goals above still render) ── */
+              {/* ── Prescribed for you (proposed) — coach-assigned areas awaiting
+                    your accept/decline. Rendered first so they're acted on. ── */}
+              {proposedAreas.length > 0 ? (
+                <section>
+                  <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
+                    <Target className="h-5 w-5 text-accent-600" aria-hidden />
+                    Prescribed for you
+                    <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
+                      {proposedAreas.length} pending
+                    </span>
+                  </h2>
+                  <div className="flex flex-col gap-3">
+                    {proposedAreas.map((fa) => (
+                      <ProposedAreaCard
+                        key={fa.id}
+                        focusArea={fa}
+                        deciding={decidingId === fa.id}
+                        onAccept={() => handleAccept(fa)}
+                        onDecline={() => handleDecline(fa)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              {!hasAnyArea ? (
+                /* ── Genuinely-empty (Goals above still render). The player can
+                      create their own focus area OR reach out to their coach. ── */
                 <Surface padding="lg">
                   <EmptyState
                     title="No development plans yet"
-                    description="Your coach will assign focus areas to track your improvement. Reach out if you'd like to set some goals together."
+                    description="Set your own focus area to track an improvement, or your coach can prescribe one for you to accept."
                     action={
-                      <Button asChild variant="primary">
-                        <Link href="/golf/dashboard/messages">Message coach</Link>
-                      </Button>
+                      canCreateOwn ? (
+                        <Button variant="primary" onClick={() => setCreateOpen(true)}>
+                          <IconPlus size={16} />
+                          New focus area
+                        </Button>
+                      ) : (
+                        <Button asChild variant="primary">
+                          <Link href="/golf/dashboard/messages">Message coach</Link>
+                        </Button>
+                      )
                     }
                   />
                 </Surface>
-              ) : (
+              ) : null}
+
+              {total > 0 ? (
                 <>
                   {/* ── The plan instrument — ONE warm-glass focal readout of the
                         player's development progress. The dense FocusAreaCard rows
@@ -565,7 +694,7 @@ export function FairwayMyDevelopment({
                     </section>
                   ) : null}
                 </>
-              )}
+              ) : null}
             </div>
           )}
         </CoachHelmShell>
@@ -573,7 +702,81 @@ export function FairwayMyDevelopment({
 
       {/* Single controlled log-progress drawer shared by every active card. */}
       <LogProgressDrawer state={logState} onClose={() => setLogState(null)} />
+
+      {/* Player self-create modal — the SAME shared modal the coach uses, in
+          player mode (no player picker; created 'active' immediately). */}
+      {canCreateOwn ? (
+        <FocusAreaModal
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          mode="player"
+          playerId={playerId}
+          playerStats={playerId ? { [playerId]: playerStats } : {}}
+          onSubmit={handleCreateSubmit}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * ProposedAreaCard — a coach-prescribed focus area awaiting the player's call.
+ * A compact matte card showing the target + an Accept / Decline pair. Kept
+ * separate from FocusAreaCard (which models active/completed lifecycles) so the
+ * accept/decline affordance stays unambiguous.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function ProposedAreaCard({
+  focusArea,
+  deciding,
+  onAccept,
+  onDecline,
+}: {
+  focusArea: FocusAreaCardData;
+  deciding: boolean;
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  const area = getAreaType(focusArea.area_type);
+  const hasTarget =
+    focusArea.target_metric != null && focusArea.target_value != null;
+  return (
+    <Surface padding="md" className="flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-fw-sm bg-accent-50 text-accent-700">
+          <area.icon size={18} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-fw-sans text-body font-semibold text-text-primary">
+            {focusArea.title || area.label}
+          </p>
+          {focusArea.description ? (
+            <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">
+              {focusArea.description}
+            </p>
+          ) : null}
+          {hasTarget ? (
+            <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+              Target:{' '}
+              <span className="font-fw-mono tabular-nums text-text-secondary">
+                {focusArea.target_metric}
+              </span>{' '}
+              →{' '}
+              <span className="font-fw-mono tabular-nums text-text-primary">
+                {focusArea.target_value}
+              </span>
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={onDecline} disabled={deciding}>
+          Decline
+        </Button>
+        <Button variant="primary" size="sm" busy={deciding} onClick={onAccept}>
+          Accept
+        </Button>
+      </div>
+    </Surface>
   );
 }
 

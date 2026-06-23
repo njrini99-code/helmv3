@@ -45,14 +45,16 @@
  * ADDITIVE + GATED — consumed only behind the isRedesignEnabled() fork.
  * ========================================================================== */
 
-import { Suspense, lazy, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   CoachHelmShell,
   type CoachHelmShellProps,
 } from './index';
 import {
+  Badge,
   InstrumentPanel,
   Readout,
   Ribbon,
@@ -63,7 +65,6 @@ import {
   type RibbonPoint,
 } from '@/components/fairway';
 import {
-  IconSparkles,
   IconArrowRight,
   IconChevronDown,
   IconChevronRight,
@@ -71,6 +72,7 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconActivity,
+  IconSettings,
 } from '@/components/icons';
 import { Flag as LucideFlag } from 'lucide-react';
 import type {
@@ -80,6 +82,10 @@ import type {
   CategoryInsight,
   PlayerCategoryStat,
 } from '@/app/golf/actions/team-category-insights';
+import {
+  FairwayAspectDrillDown,
+  type AspectDrillDownTarget,
+} from './FairwayAspectDrillDown';
 
 /* ──────────────────────────────────────────────────────────────────────────
  * PRESERVED ENGINE — the V2 deep-analysis command center, imported UNCHANGED.
@@ -218,6 +224,20 @@ interface RankedCategory extends CatPresentation {
   cat?: TeamCategory;
 }
 
+/** Flatten a ranked category into the drill-down's presentation-ready target.
+ *  Strength vs weakness is the same 50 mid-line the hero already speaks in. */
+function toAspect(r: RankedCategory): AspectDrillDownTarget {
+  return {
+    categoryId: r.categoryId,
+    label: r.label,
+    long: r.long,
+    rating: r.rating,
+    kind: r.rating >= 50 ? 'strength' : 'weakness',
+    players: r.cat?.players ?? [],
+    primaryMetric: r.cat?.primaryMetric,
+  };
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
@@ -232,6 +252,33 @@ export function FairwayBrief({
 }: FairwayBriefProps) {
   // Deep-analysis is DEMOTED + collapsed by default (glance vs deep-dive split).
   const [deepOpen, setDeepOpen] = useState(false);
+  // The aspect drill-down (team strengths/weaknesses → goals / plans / calendar).
+  const [activeAspect, setActiveAspect] = useState<AspectDrillDownTarget | null>(null);
+
+  // ── Cross-user freshness ────────────────────────────────────────────────
+  // The Brief reads live, fresh DB, but ROUNDS are logged by PLAYERS, not the
+  // coach — so a player's submit revalidates the player's cache, never the
+  // coach's. The coach's RSC payload then sits frozen in the client Router
+  // Cache until a hard reload. Re-fetch when the coach returns to the tab
+  // (focus / visibility) so "this week" reflects rounds logged since they left.
+  // Debounced so a quick alt-tab doesn't spam refreshes.
+  const router = useRouter();
+  useEffect(() => {
+    let last = 0;
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - last < 5000) return;
+      last = now;
+      router.refresh();
+    };
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [router]);
 
   const ov = overview.success ? overview.data : undefined;
   const ci = categoryInsights.success ? categoryInsights.data : undefined;
@@ -266,8 +313,12 @@ export function FairwayBrief({
         })).sort((a, b) => a.rating - b.rating)
       : [];
   const weakest = ranked[0] ?? null;
-  const otherFour = ranked.slice(1);
-  const lowestOther = otherFour.length ? Math.min(...otherFour.map((r) => r.rating)) : -1;
+
+  // ── Strengths vs weaknesses split — partitioned at the 50 mid-line (the same
+  //    line the hero speaks in). `ranked` is worst-first; weaknesses keep that
+  //    order, strengths read best-first. Each row opens the rich aspect panel.
+  const weaknesses = ranked.filter((r) => r.rating < 50);
+  const strengths = [...ranked].filter((r) => r.rating >= 50).reverse();
 
   // ── Hero evidence: avg strokes-gained vs par by yardage band (the Ribbon),
   //    and the toughest band sentence (largest-deficit dead zone). Honest empty.
@@ -305,22 +356,16 @@ export function FairwayBrief({
   const totalAttention = categories.reduce((s, c) => s + c.attentionCount, 0);
 
   /* -- masthead action cluster: NO primary here — the one green primary lives
-        in the hero ("Work on {category}"). These stay secondary. -- */
+        in the hero ("Work on {category}"). The old "Players"/"Ask CoachHelm"
+        buttons duplicated the top tab strip (Players + Ask tabs), so they're
+        dropped; only the single, non-duplicative settings affordance remains. -- */
   const actions = (
-    <>
-      <Button variant="secondary" size="sm" asChild>
-        <Link href="/golf/dashboard/development">
-          <IconActivity size={16} />
-          <span>Players</span>
-        </Link>
-      </Button>
-      <Button variant="secondary" size="sm" asChild>
-        <Link href="/golf/dashboard/coachhelm/chat">
-          <IconSparkles size={16} />
-          <span>Ask CoachHelm</span>
-        </Link>
-      </Button>
-    </>
+    <Button variant="secondary" size="sm" asChild>
+      <Link href="/golf/dashboard/settings/coaching-intelligence" aria-label="Coaching intelligence settings">
+        <IconSettings size={16} />
+        <span>Settings</span>
+      </Link>
+    </Button>
   );
 
   return (
@@ -376,7 +421,7 @@ export function FairwayBrief({
             <Readout
               state="awaiting"
               size="md"
-              samples={{ have: statsRows, need: needSamples }}
+              samples={hasTeamStats && weakest ? undefined : { have: statsRows, need: needSamples }}
               awaitingLabel={
                 hasTeamStats && weakest
                   ? 'Calibrating strokes-gained'
@@ -405,13 +450,29 @@ export function FairwayBrief({
           />
         )}
 
-        {/* ── 2 · OTHER AREAS TO WATCH — worst-first bar strip ──────────────── */}
-        {hasTeamStats && otherFour.length > 0 ? (
-          <section aria-label="Other areas to watch" className="flex flex-col gap-3">
-            <SectionHeading title="Other areas to watch" hint="Tap to triage its signals" />
-            <InstrumentPanel depth="base" padding="md">
-              <CategoryBars rows={otherFour} lowestRating={lowestOther} />
-            </InstrumentPanel>
+        {/* ── 2 · STRENGTHS & WEAKNESSES — clickable split into the aspect panel ─ */}
+        {hasTeamStats && ranked.length > 0 ? (
+          <section aria-label="Team strengths and weaknesses" className="flex flex-col gap-3">
+            <SectionHeading
+              title="Strengths & weaknesses"
+              hint={isSgCalibrated ? 'Tap an area to plan goals, drills & practice' : 'Benchmark ratings — strokes-gained still calibrating'}
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <AspectColumn
+                title="Strengths"
+                tone="success"
+                rows={strengths}
+                emptyHint="No area is above the mid-line yet."
+                onOpen={(r) => setActiveAspect(toAspect(r))}
+              />
+              <AspectColumn
+                title="Needs work"
+                tone="warning"
+                rows={weaknesses}
+                emptyHint="Nothing sits below the mid-line — well balanced."
+                onOpen={(r) => setActiveAspect(toAspect(r))}
+              />
+            </div>
           </section>
         ) : null}
 
@@ -504,6 +565,16 @@ export function FairwayBrief({
           ) : null}
         </section>
       </div>
+
+      {/* Aspect drill-down — team strengths/weaknesses → goals, plans, calendar. */}
+      <FairwayAspectDrillDown
+        open={activeAspect !== null}
+        onOpenChange={(o) => {
+          if (!o) setActiveAspect(null);
+        }}
+        aspect={activeAspect}
+        teamId={teamId}
+      />
     </CoachHelmShell>
   );
 }
@@ -563,14 +634,9 @@ function WorkOnThisHero({
               size="md"
               label={`${weakest.label} · out of 100`}
             />
-            <span
-              className={cn(
-                'mb-1 inline-flex items-center rounded-full px-2.5 py-0.5 font-fw-sans text-caption font-semibold',
-                belowMid ? 'bg-surface-sunken text-fw-warning' : 'bg-fw-success-bg text-fw-success',
-              )}
-            >
+            <Badge tone={belowMid ? 'warning' : 'success'} size="sm" className="mb-1">
               {midGap} {belowMid ? 'below' : 'above'} the 50 mid-line
-            </span>
+            </Badge>
           </div>
 
           {worstZone ? (
@@ -723,6 +789,94 @@ function CategoryBars({
         );
       })}
     </ul>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * AspectColumn — one half of the strengths/weaknesses split. Each row is a
+ * BUTTON (not a link) that opens the rich aspect drill-down (goals / plans /
+ * documents / calendar). Empty halves degrade to an honest one-liner.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function AspectColumn({
+  title,
+  tone,
+  rows,
+  emptyHint,
+  onOpen,
+}: {
+  title: string;
+  tone: 'success' | 'warning';
+  rows: RankedCategory[];
+  emptyHint: string;
+  onOpen: (row: RankedCategory) => void;
+}) {
+  const dotColor = tone === 'success' ? 'bg-fw-success' : 'bg-fw-warning';
+  return (
+    <InstrumentPanel depth="base" padding="md" className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', dotColor)} aria-hidden />
+        <h3 className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+          {title}
+        </h3>
+      </div>
+      {rows.length > 0 ? (
+        <ul className="flex flex-col gap-2">
+          {rows.map((row) => (
+            <li key={row.categoryId}>
+              <AspectRow row={row} tone={tone} onOpen={onOpen} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="font-fw-sans text-body-sm text-text-secondary">{emptyHint}</p>
+      )}
+    </InstrumentPanel>
+  );
+}
+
+function AspectRow({
+  row,
+  tone,
+  onOpen,
+}: {
+  row: RankedCategory;
+  tone: 'success' | 'warning';
+  onOpen: (row: RankedCategory) => void;
+}) {
+  const tag = statusTag(row.cat?.trend, row.cat?.attentionCount ?? 0);
+  const barColor = tone === 'success' ? 'bg-fw-success' : 'bg-fw-warning';
+  return (
+    /* eslint-disable-next-line helm/no-raw-button */
+    <button
+      type="button"
+      onClick={() => onOpen(row)}
+      aria-label={`${row.label} ${row.rating} of 100 — open team aspect`}
+      className={cn(
+        'grid w-full grid-cols-[4.5rem_1fr_auto_auto] items-center gap-3 rounded-fw-md border border-border-subtle px-3 py-2.5 text-left',
+        'transition-colors duration-fast ease-soft hover:bg-surface-sunken/60',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-1 focus-visible:ring-offset-surface',
+      )}
+    >
+      <span className="truncate font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
+        {row.label}
+      </span>
+      <div className="flex items-center gap-3">
+        <div className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-sunken">
+          <div
+            className={cn('absolute inset-y-0 left-0 rounded-full', barColor)}
+            style={{ width: `${Math.max(2, Math.min(100, row.rating))}%` }}
+          />
+          <span className="absolute inset-y-0 left-1/2 w-px bg-text-tertiary/40" aria-hidden />
+        </div>
+        <span className="w-7 shrink-0 text-right font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">
+          {row.rating}
+        </span>
+      </div>
+      <span className={cn('hidden shrink-0 font-fw-sans text-caption font-medium sm:inline', tag.className)}>
+        {tag.label}
+      </span>
+      <IconChevronRight size={16} className="shrink-0 text-text-tertiary" aria-hidden />
+    </button>
   );
 }
 

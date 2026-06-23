@@ -1792,10 +1792,11 @@ export function IntelligenceCommandCenter({
           )}
 
           {/* Surface disclosure — in-product entry point to every CoachHelm
-              surface. Without this, seven of the nine surfaces (Alerts,
-              Patterns, Insights, Analytics, AI Chat, Player Genome, Qualifying)
-              had no link from the command center. */}
-          <SurfaceHubGrid variant={variant} />
+              surface, for embeds that lack the unified tab strip. On the
+              Intelligence page itself (the unified CoachHelm shell), the top
+              tabs + Brief already own all this navigation, so the hub here is
+              pure scatter ("takes you all over the place") — hide it. */}
+          {!onIntelligencePage && <SurfaceHubGrid variant={variant} />}
         </div>
       </TabsContent>
 
@@ -1971,10 +1972,13 @@ export function IntelligenceCommandCenter({
           </div>
 
           {/* Surfaces stay reachable even before any analysis has run — the
-              tabbed disclosure above is gated behind hasData. */}
-          <div className={cn(isPage ? 'mt-8' : 'mt-4')}>
-            <SurfaceHubGrid variant={variant} />
-          </div>
+              tabbed disclosure above is gated behind hasData. Hidden on the
+              Intelligence page (the unified shell owns navigation via tabs). */}
+          {!onIntelligencePage && (
+            <div className={cn(isPage ? 'mt-8' : 'mt-4')}>
+              <SurfaceHubGrid variant={variant} />
+            </div>
+          )}
         </div>
       )}
     </div>

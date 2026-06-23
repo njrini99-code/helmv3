@@ -63,6 +63,7 @@ import { PrescribedPracticePlanCard } from '@/components/golf/coachhelm/coach';
 
 // Hierarchical THEME insights (v3) — flag-gated replacement for the flat feed.
 import { ThemesPanel } from '@/components/fairway/cards-insight/themes';
+import { FairwayTrendBrain } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
 import { isThemesEnabled } from '@/lib/redesign/flag';
 import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
@@ -186,6 +187,13 @@ export interface FairwayPlayerInsightProps {
    * badge (honest, never a fake "0"). Mirrors GenomeDetailView.
    */
   signalCount?: number | null;
+  /**
+   * Raw trend-analysis blob (getPlayerTrendAnalysis) for the honest
+   * signal-vs-noise FairwayTrendBrain. Previously only on the player's own
+   * cockpit — surfaced here so a coach sees per-player trends. `null` → the
+   * component renders its own honest-empty state (never fabricated).
+   */
+  trendData?: Record<string, unknown> | null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -402,6 +410,7 @@ export function FairwayPlayerInsight({
   focusAreas,
   predictions,
   themes,
+  trendData,
   signalCount,
 }: FairwayPlayerInsightProps) {
   const router = useRouter();
@@ -840,6 +849,14 @@ export function FairwayPlayerInsight({
             isRefreshing={isRefreshing}
           />
         </section>
+
+        {/* ════════ D2 · TRENDS (honest signal-vs-noise) ════════ */}
+        {trendData ? (
+          <section>
+            <Eyebrow className="mb-3">Trends</Eyebrow>
+            <FairwayTrendBrain trendData={trendData} />
+          </section>
+        ) : null}
 
         {/* ════════ E · WHAT WE'RE TRACKING ════════ */}
         <section>

@@ -35,6 +35,29 @@ import {
   IconClipboardList,
 } from '@/components/icons';
 
+// The metric catalog + its helpers (and the windowed auto-tracking the cron
+// uses) now live in a pure, icon-free lib module so the server tracker can
+// import them without pulling React. Re-exported below so existing
+// `./areaTypes` importers (modal, cards, index, tests) keep their import path.
+import type {
+  AreaAutoFillStats,
+  MetricDirection,
+  MetricCatalogEntry,
+  FocusWindowRound,
+} from '@/lib/coachhelm/focus-areas/catalog';
+export type { AreaAutoFillStats, MetricDirection, MetricCatalogEntry, FocusWindowRound };
+export {
+  METRIC_CATALOG,
+  metricsForArea,
+  findMetric,
+  readMetricValue,
+  suggestTarget,
+  formatMetricValue,
+  WINDOWABLE_FOCUS_METRIC_KEYS,
+  isWindowableFocusMetric,
+  aggregateFocusMetric,
+} from '@/lib/coachhelm/focus-areas/catalog';
+
 /* ---------------------------------------------------------------------------
  * Types
  * ------------------------------------------------------------------------- */
@@ -153,33 +176,9 @@ export function suggestedMetrics(value: string | null | undefined): string[] {
  * Area-type auto-fill — VERBATIM logic lifted from handleAreaTypeChange
  * ------------------------------------------------------------------------- */
 
-/**
- * Player-stats shape the auto-fill reads. The five core fields (rounds_played +
- * the four legacy per-area sources) are always present; the rest are OPTIONAL so
- * any compatible stats row still satisfies the type, while a route that widens
- * its `golf_player_stats_cache` select unlocks autofill for every metric below.
- * Keys are the friendly names the Fairway grid already uses (avg_score, not
- * scoring_average) so callers pass their existing stats object unchanged.
- */
-export interface AreaAutoFillStats {
-  rounds_played: number;
-  avg_score: number | null;
-  avg_putts: number | null;
-  fairway_pct: number | null;
-  gir_pct: number | null;
-  // ── Extended sources (present when the route widens the cache select) ──
-  best_score?: number | null;
-  driving_distance?: number | null;
-  proximity_to_hole?: number | null;
-  scrambling_pct?: number | null;
-  up_and_down_pct?: number | null;
-  sand_save_pct?: number | null;
-  one_putt_pct?: number | null;
-  three_putt_pct?: number | null;
-  par3_avg?: number | null;
-  par4_avg?: number | null;
-  par5_avg?: number | null;
-}
+// `AreaAutoFillStats` (the player-stats shape the auto-fill reads) now lives in
+// `@/lib/coachhelm/focus-areas/catalog` alongside the metric catalog that reads
+// it, and is imported + re-exported at the top of this file.
 
 /** Result of an area-type change: the suggested metric + an auto-filled current value. */
 export interface AreaAutoFill {
@@ -307,3 +306,4 @@ export function getProgressPercent(
   if (target < 0) return 0;
   return Math.min(100, Math.round((current / target) * 100));
 }
+

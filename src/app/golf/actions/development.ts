@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyDevPlanAssigned } from '@/lib/notifications';
 import { revalidatePath } from 'next/cache';
@@ -48,6 +49,14 @@ interface CreateFocusAreaData extends FocusAreaTimeframeFields {
   target_value: number | null;
   /** Canonical live-schema column name. The old `source_insight_id` does not exist. */
   from_insight_id?: string | null;
+  /**
+   * Lifecycle on create. A coach creating an area is PRESCRIBING it, so the
+   * default is `'proposed'` — the player must accept (→ `'active'`) before the
+   * improvement window starts. Pass `'active'` explicitly only when the coach
+   * and player are setting it up together and it should start immediately.
+   * `started_at` is deferred (null) until acceptance for proposed areas.
+   */
+  status?: 'active' | 'proposed';
 }
 
 interface UpdateFocusAreaData extends FocusAreaTimeframeFields {
@@ -138,6 +147,13 @@ export async function createFocusArea(
     }
   }
 
+  // Coach create == prescription. Default to 'proposed' (player must accept),
+  // and defer started_at until acceptance so the improvement window begins when
+  // the player commits — not when the coach drafts it. Pass status:'active'
+  // explicitly to start immediately (e.g. coach + player setting it up together).
+  const status = data.status ?? 'proposed';
+  const startedAt = status === 'active' ? new Date().toISOString() : null;
+
   // Timeframe columns (target_kind/target_date/target_rounds) are not yet in the
   // generated Database types (migration 20260621230000), so route the insert
   // through fromUntyped to persist them without an as-any cast scattered inline.
@@ -147,11 +163,11 @@ export async function createFocusArea(
     area_type: data.area_type,
     title: data.title,
     description: data.description,
-    status: 'active',
+    status,
     target_metric: data.target_metric,
     current_value: data.current_value,
     target_value: data.target_value,
-    started_at: new Date().toISOString(),
+    started_at: startedAt,
     from_insight_id: data.from_insight_id ?? null,
     ...normalizeTimeframe(data),
   });
@@ -192,6 +208,156 @@ export async function createFocusArea(
 
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
+
+  return { success: true };
+}
+
+/**
+ * Player self-create: a player sets their OWN focus area (status='active',
+ * no coach attribution). The improvement window starts immediately.
+ *
+ * RLS has a coach-only INSERT policy and NO player self-insert policy, so this
+ * runs through the service-role admin client and enforces ownership in code:
+ * the caller's authenticated user must own the target `golf_players` row. The
+ * admin client bypasses RLS, so this manual check is the ONLY thing gating the
+ * write — keep it strict.
+ */
+export async function createPlayerFocusArea(
+  data: Omit<CreateFocusAreaData, 'coach_id' | 'status'>,
+): Promise<DevelopmentActionResult> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Ownership: the authenticated user must own this player profile. Resolve the
+  // player from the user (don't trust the caller-supplied player_id blindly),
+  // then require it to match.
+  const { data: player, error: playerError } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (playerError || !player) {
+    return { success: false, error: 'Only players can create their own focus areas' };
+  }
+  if (player.id !== data.player_id) {
+    return { success: false, error: 'You can only create focus areas for yourself' };
+  }
+
+  // Service-role client: RLS has no player self-insert policy. The ownership
+  // check above is the gate — the player_id is forced to the resolved profile.
+  const admin = createAdminClient();
+  const { error } = await fromUntyped(admin, 'golf_player_focus_areas').insert({
+    player_id: player.id,
+    coach_id: null,
+    area_type: data.area_type,
+    title: data.title,
+    description: data.description,
+    status: 'active',
+    target_metric: data.target_metric,
+    current_value: data.current_value,
+    target_value: data.target_value,
+    started_at: new Date().toISOString(),
+    from_insight_id: data.from_insight_id ?? null,
+    ...normalizeTimeframe(data),
+  });
+
+  if (error) {
+    await logServerError(
+      `Failed to create player focus area: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'development.createPlayerFocusArea' },
+    );
+    return { success: false, error: 'Failed to create focus area. Please try again.' };
+  }
+
+  revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/development');
+
+  return { success: true };
+}
+
+/**
+ * Player accepts a coach-prescribed focus area: 'proposed' → 'active', and the
+ * improvement window starts now (started_at = now). Idempotent-safe: only a row
+ * the player owns AND that is currently 'proposed' is flipped; anything else
+ * (already active, not yours, missing) is a no-op failure via the select-back
+ * guard. Uses the RLS client — the player UPDATE policy gates it to own rows.
+ */
+export async function acceptFocusArea(
+  id: string,
+): Promise<DevelopmentActionResult> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const nowIso = new Date().toISOString();
+  const { data: updated, error } = await fromUntyped(supabase, 'golf_player_focus_areas')
+    .update({ status: 'active', started_at: nowIso, updated_at: nowIso })
+    .eq('id', id)
+    .eq('status', 'proposed')
+    .select('id');
+
+  if (error) {
+    await logServerError(
+      `Failed to accept focus area: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'development.acceptFocusArea' },
+    );
+    return { success: false, error: 'Failed to accept. Please try again.' };
+  }
+
+  if (!Array.isArray(updated) || updated.length === 0) {
+    return { success: false, error: 'Focus area not found or no longer pending' };
+  }
+
+  revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/development');
+
+  return { success: true };
+}
+
+/**
+ * Player declines a coach-prescribed focus area: 'proposed' → 'declined'.
+ * Mirror of {@link acceptFocusArea} — RLS-gated to the player's own rows, only
+ * acts on a currently-'proposed' row, select-back guard surfaces a 0-row update.
+ */
+export async function declineFocusArea(
+  id: string,
+): Promise<DevelopmentActionResult> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const nowIso = new Date().toISOString();
+  const { data: updated, error } = await fromUntyped(supabase, 'golf_player_focus_areas')
+    .update({ status: 'declined', updated_at: nowIso })
+    .eq('id', id)
+    .eq('status', 'proposed')
+    .select('id');
+
+  if (error) {
+    await logServerError(
+      `Failed to decline focus area: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'development.declineFocusArea' },
+    );
+    return { success: false, error: 'Failed to decline. Please try again.' };
+  }
+
+  if (!Array.isArray(updated) || updated.length === 0) {
+    return { success: false, error: 'Focus area not found or no longer pending' };
+  }
+
+  revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/development');
 
   return { success: true };
 }
