@@ -371,6 +371,10 @@ export function DevelopmentPlansClient({
         target_metric: formData.target_metric || null,
         current_value: formData.current_value ? parseFloat(formData.current_value) : null,
         target_value: formData.target_value ? parseFloat(formData.target_value) : null,
+        // Legacy (flag-off) coach surface has no player-accept flow, so keep its
+        // historic behavior: create active immediately (the redesign's
+        // prescribe→accept handshake lives in the Fairway surfaces).
+        status: 'active',
       });
       setIsCreateModalOpen(false);
       resetForm();

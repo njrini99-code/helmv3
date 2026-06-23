@@ -67,6 +67,8 @@ import { InsightCard } from '@/components/fairway/cards-insight/InsightCard';
 import { Checkbox } from '@/components/fairway/forms/Checkbox';
 import { InsightPanel } from '@/components/fairway/cards-insight/InsightPanel';
 import { MetricCard } from '@/components/fairway/cards-insight/MetricCard';
+import { DiagnosisPanel } from '@/components/golf/coachhelm/insights/DiagnosisPanel';
+import { LeakBoard, type LeakInsight } from '@/components/golf/coachhelm/coach/LeakBoard';
 import { Button } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
@@ -587,6 +589,34 @@ export function FairwayCoachHelmSignals({
     if (isPatterns) return patternsToSignalRows(patterns);
     return insightsToSignalRows(insights);
   }, [isPatterns, patterns, insights]);
+
+  // Team "where are we bleeding strokes" rollup (LeakBoard) — groups the live
+  // insights by skill category by summed stroke-impact. Previously orphaned
+  // (vizlab demo only); fed here from the SAME live insight rows the list shows.
+  // Insights only (patterns have their own evidence shape); LeakBoard renders
+  // its own honest-empty state, so we just pass what we have.
+  const leakInsights: LeakInsight[] = useMemo(() => {
+    if (isPatterns) return [];
+    const PRIORITY: Record<string, LeakInsight['priority']> = {
+      critical: 'urgent', urgent: 'urgent', high: 'high', medium: 'medium', low: 'low', info: 'low',
+    };
+    const out: LeakInsight[] = [];
+    for (const ins of insights) {
+      const impact = ins.evidence?.strokes_impact;
+      if (typeof impact !== 'number' || impact === 0) continue;
+      out.push({
+        id: ins.id,
+        category: ins.category ?? null,
+        title: ins.title,
+        strokesImpact: impact,
+        priority: PRIORITY[ins.priority as string] ?? 'medium',
+        // LeakBoard uses playerName only for the distinct-player COUNT (never
+        // displays it), so player_id gives an accurate count without a name.
+        playerName: ins.player_id ?? undefined,
+      });
+    }
+    return out;
+  }, [isPatterns, insights]);
 
   /* ── client-side filter (ported applyClientFilters) ────────────────────── */
   const weight: Record<string, number> = useMemo(
@@ -1325,6 +1355,15 @@ export function FairwayCoachHelmSignals({
     [rows, allRows, openRowId],
   );
 
+  // Root-cause spine (P0-05): every V3 insight stamps a structured
+  // `evidence.diagnosis` (symptom → root cause → drivers → Rx + a Measured /
+  // Hypothesis seal). It was rendered only on the Players-tab insight card, so
+  // the main triage workflow here never showed it. Surface it in the detail
+  // panel for insight rows that carry one.
+  const openInsight =
+    openRow && openRow.source === 'insights' ? (openRow.raw as EvidenceInsight) : null;
+  const openDiagnosis = openInsight?.evidence?.diagnosis ?? null;
+
   const panelActions = useMemo(() => {
     if (!openRow) return [];
     if (openRow.source === 'patterns') {
@@ -1713,6 +1752,12 @@ export function FairwayCoachHelmSignals({
           </div>
         ) : null}
 
+        {/* Team "where are we bleeding strokes" rollup — insights only, and only
+            once there's real stroke-impact to group. Honest-empty handled inside. */}
+        {!isPatterns && !loading && leakInsights.length > 0 ? (
+          <LeakBoard insights={leakInsights} className="mb-2" />
+        ) : null}
+
         {/* body */}
         {loading ? (
           // Shape-matched skeleton: a hero card placeholder + 3 compact card
@@ -1906,6 +1951,23 @@ export function FairwayCoachHelmSignals({
           }
           actions={panelActions}
         >
+          {openDiagnosis ? (
+            <DiagnosisPanel
+              diagnosis={openDiagnosis}
+              category={openInsight?.category ?? undefined}
+              confidence={
+                typeof openInsight?.evidence?.confidence === 'number'
+                  ? openInsight.evidence.confidence
+                  : undefined
+              }
+              strokesImpact={
+                typeof openInsight?.evidence?.strokes_impact === 'number'
+                  ? openInsight.evidence.strokes_impact
+                  : undefined
+              }
+              className="mb-5"
+            />
+          ) : null}
           {openRow.body}
         </InsightPanel>
       ) : null}

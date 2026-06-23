@@ -101,6 +101,32 @@ export async function verifyPlayerAccess(
   return false;
 }
 
+/**
+ * Resolve a player's display name for the stats header, gated by the SAME
+ * authorization as the stats read (verifyPlayerAccess: the viewer is the player,
+ * or a coach in the player's team org). Returns null when unauthorized or not
+ * found. The stats cockpit shell uses this so a COACH drilling into a teammate
+ * sees "<Player>'s stats" (third person) instead of the player-first "Your stats"
+ * / generic "Player stats" — the name is otherwise never available client-side
+ * (golfUser.name is the *coach*, and the cockpit fetches stats, not identity).
+ */
+export async function getPlayerDisplayName(playerId: string): Promise<string | null> {
+  if (!playerId) return null;
+  const { supabase, user } = await requireAuth();
+  if (!(await verifyPlayerAccess(supabase, user.id, playerId))) return null;
+  // Read identity on the service-role client (access already enforced above) so a
+  // coach doesn't re-pay golf_players RLS — consistent with getDetailedStats.
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('golf_players')
+    .select('first_name, last_name')
+    .eq('id', playerId)
+    .maybeSingle();
+  if (!data) return null;
+  const name = `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim();
+  return name || null;
+}
+
 // ============================================================================
 // TYPES (imported from stats-data-types.ts)
 // ============================================================================

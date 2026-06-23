@@ -8,6 +8,7 @@ import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerInsight } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { getPlayerTrendAnalysis } from '@/app/golf/actions/coachhelm-data';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { computeCompositeRating } from './composite-rating';
@@ -208,11 +209,15 @@ export default async function PlayerInsightPage({
 
     // Predictions — fetch a wider window so we can dedupe to one row per
     // metric (otherwise the seed engine produces many "Score To Par"
-    // duplicates that all render as identical cards).
+    // duplicates that all render as identical cards). Recency-bounded: dedupe
+    // takes the newest per metric, but a months-old "newest" would otherwise
+    // surface forever (the stale-row pattern closed elsewhere) — only show
+    // predictions generated in the last 90 days; older → honestly absent.
     supabase
       .from('golf_predictions')
       .select('id, metric, predicted_value, confidence, trend, due_date, prediction_context, related_round_id, created_at')
       .eq('player_id', playerId)
+      .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: false })
       .limit(40),
 
@@ -367,8 +372,19 @@ export default async function PlayerInsightPage({
     // so it needs the SAME urgent/high open-signal count the rest of the cluster
     // shows on the Signals badge (ONE source: getAlertCounts().counts.critical).
     // Degrades to null (no badge) on failure — never a fabricated "0".
-    const countsRes = await getAlertCounts(coach.id);
+    // Honest signal-vs-noise trends (FairwayTrendBrain) for THIS player — the
+    // "individual players" trend layer that previously rendered only on the
+    // player's own cockpit, never on the coach's per-player view. Best-effort:
+    // null on failure → the component renders its own honest-empty state.
+    const [countsRes, trendRes] = await Promise.all([
+      getAlertCounts(coach.id),
+      getPlayerTrendAnalysis(playerId).catch(() => null),
+    ]);
     const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+    const trendData =
+      trendRes && trendRes.success
+        ? (trendRes.data as unknown as Record<string, unknown>)
+        : null;
 
     return (
       <div className={fairwayScope('min-h-full bg-canvas')}>
@@ -384,6 +400,7 @@ export default async function PlayerInsightPage({
           focusAreas={focusAreas}
           predictions={predictions}
           themes={themes}
+          trendData={trendData}
           signalCount={signalCount}
         />
       </div>

@@ -25,6 +25,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayMyDevelopment, type FocusAreaCardData } from '@/components/fairway';
+import type { AreaAutoFillStats } from '@/lib/coachhelm/focus-areas/catalog';
 import {
   loadActiveGoals,
   loadPendingGoalSuggestions,
@@ -32,6 +33,7 @@ import {
 } from '@/lib/coachhelm/v3/goals/loader';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import { evaluateAndPersistGoals } from '@/app/golf/actions/v3/goal-progress';
+import { evaluateAndPersistFocusAreas } from '@/app/golf/actions/v3/focus-area-progress';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import type { GoalSuggestionView } from '@/components/fairway/pages/coachhelm/GoalsSection';
@@ -168,6 +170,9 @@ export default async function MyDevelopmentPage() {
     fa => fa.status === 'active' || fa.status === 'in_progress' || fa.status === 'paused',
   );
   const completedAreas = focusAreasWithHistory.filter(fa => fa.status === 'completed');
+  // Coach-PRESCRIBED areas awaiting the player's decision (accept → active /
+  // decline → declined). Surfaced first so the player can act on them.
+  const proposedAreas = focusAreasWithHistory.filter(fa => fa.status === 'proposed');
 
   // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
   // Flag ON → the warm player "My Development" list (player CoachHelmShell
@@ -184,21 +189,56 @@ export default async function MyDevelopmentPage() {
     // dedupes same-day snapshots), so it's safe on every view; failures are
     // swallowed so a standing hiccup never blanks the development page.
     try {
-      await evaluateAndPersistGoals(player.id);
+      await Promise.all([
+        evaluateAndPersistGoals(player.id),
+        // Focus-area progress: window each active area's metric over the rounds
+        // played since it started so the bar reflects reality, not the value set
+        // at creation. Best-effort, same as goals.
+        evaluateAndPersistFocusAreas(player.id),
+      ]);
     } catch {
       /* progress refresh is best-effort; fall through to the last-known goals */
     }
 
     // ── v3 data layers (Goals + Standing) — read ONLY inside the flag fork ──
     // The flag-OFF legacy branch below never touches these loaders.
-    const [activeGoals, achievedGoals, suggestions, standingMap, causalRelationships] =
+    const [activeGoals, achievedGoals, suggestions, standingMap, causalRelationships, statsRow] =
       await Promise.all([
         loadActiveGoals(player.id),
         loadRecentlyAchievedGoals(player.id),
         loadPendingGoalSuggestions(player.id, 5),
         loadPlayerStandingMap(player.id),
         getPlayerCausalRelationships(player.id),
+        // The player's cached stats — drives the create-focus-area modal's
+        // real-value display + smart target suggestion (same source + friendly
+        // mapping as the coach development page). All nullable → honest-empty.
+        supabase
+          .from('golf_player_stats_cache')
+          .select(
+            'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
+          )
+          .eq('player_id', player.id)
+          .maybeSingle(),
       ]);
+    const sr = statsRow.data;
+    const myStats: AreaAutoFillStats = {
+      rounds_played: sr?.rounds_played ?? 0,
+      avg_score: sr?.scoring_average ?? null,
+      avg_putts: sr?.putts_per_round ?? null,
+      fairway_pct: sr?.driving_accuracy_percentage ?? null,
+      gir_pct: sr?.gir_percentage ?? null,
+      best_score: sr?.best_round ?? null,
+      driving_distance: sr?.driving_distance_average ?? null,
+      proximity_to_hole: sr?.approach_proximity_average ?? null,
+      scrambling_pct: sr?.scrambling_percentage ?? null,
+      up_and_down_pct: sr?.up_and_down_percentage ?? null,
+      sand_save_pct: sr?.sand_save_percentage ?? null,
+      one_putt_pct: sr?.one_putt_percentage ?? null,
+      three_putt_pct: sr?.three_putt_percentage ?? null,
+      par3_avg: sr?.par3_average ?? null,
+      par4_avg: sr?.par4_average ?? null,
+      par5_avg: sr?.par5_average ?? null,
+    };
     const goalCards: FairwayGoalCardData[] = activeGoals.map((g) => ({
       goal: g,
       standing: standingMap.get(g.metric_id) ?? null,
@@ -225,6 +265,9 @@ export default async function MyDevelopmentPage() {
         <FairwayMyDevelopment
           activeAreas={activeAreas as FocusAreaCardData[]}
           completedAreas={completedAreas as FocusAreaCardData[]}
+          proposedAreas={proposedAreas as FocusAreaCardData[]}
+          playerId={player.id}
+          playerStats={myStats}
           loadError={Boolean(focusAreasError)}
           goals={goalCards}
           suggestions={suggestionViews}

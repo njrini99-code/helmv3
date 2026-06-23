@@ -54,15 +54,8 @@ import { GoalsSection } from './GoalsSection';
 import { CausalWhyPanel } from './CausalWhyPanel';
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import type { FairwayGoalCardData } from './FairwayGoalCard';
-import {
-  AREA_TYPES,
-  getAreaType,
-  getProgressPercent,
-  getAreaAutoFill,
-  getMetricCurrentValue,
-  type AreaAutoFillStats,
-} from './areaTypes';
-import { Inset } from '@/components/fairway/surfaces';
+import { type AreaAutoFillStats } from './areaTypes';
+import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
 import {
   // The instrument cockpit kit — the warm-glass hero header (matches
   // FairwayEffectiveness): ranked cluster, frosted bezels, honest big readouts.
@@ -81,14 +74,10 @@ import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Badge } from '@/components/fairway/controls/badge';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
-import { SelectablePill } from '@/components/fairway/controls/selectable-pill';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import {
-  FormSection,
   FormField,
-  Input,
   TextArea,
-  Select,
   NumberField,
 } from '@/components/fairway/forms';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
@@ -194,44 +183,9 @@ export interface PlayersGridViewProps {
  * Form state (verbatim shape from development-client.tsx)
  * ------------------------------------------------------------------------- */
 
-/**
- * Timeframe choices for the measurable target (Feature F). 'none' is the local
- * default (coach can skip a timeframe); 'date' / 'rounds' map to the DB
- * target_kind enum. Kept on the form so the segmented control + matching input
- * can round-trip an existing focus area's timeframe in the edit flow.
- */
-type FocusAreaTimeframeKind = 'none' | 'date' | 'rounds';
-
-interface FocusAreaForm {
-  player_id: string;
-  area_type: string;
-  title: string;
-  description: string;
-  target_metric: string;
-  current_value: string;
-  target_value: string;
-  /** 'none' | 'date' | 'rounds' — the measurable-target timeframe (Feature F). */
-  target_kind: FocusAreaTimeframeKind;
-  /** YYYY-MM-DD when target_kind === 'date' (else ''). */
-  target_date: string;
-  /** Round count (as a string for the input) when target_kind === 'rounds' (else ''). */
-  target_rounds: string;
-}
-
-const EMPTY_FORM: FocusAreaForm = {
-  player_id: '',
-  area_type: 'driving',
-  title: '',
-  description: '',
-  target_metric: '',
-  current_value: '',
-  target_value: '',
-  target_kind: 'none',
-  target_date: '',
-  target_rounds: '',
-};
-
-const AREA_OPTIONS = AREA_TYPES.map((a) => ({ value: a.value, label: a.label }));
+// The focus-area create/edit form lifecycle now lives in the shared
+// FocusAreaModal (coach + player). This view only opens it and persists the
+// normalized payload it returns.
 
 function playerName(p?: PlayersGridPlayer | null): string {
   if (!p) return 'Player';
@@ -298,11 +252,11 @@ export function PlayersGridView({
     initialSelectedPlayerId ? 'areas' : 'grid',
   );
 
-  // Modal + form state — same lifecycle as the legacy client, re-skinned chrome.
+  // Modal state — the shared FocusAreaModal owns the form lifecycle + saving.
   const [createOpen, setCreateOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<PlayersGridFocusArea | null>(null);
-  const [form, setForm] = React.useState<FocusAreaForm>(EMPTY_FORM);
-  const [saving, setSaving] = React.useState(false);
+  /** Player to preselect when opening the create modal (coach prescribe flow). */
+  const [createPlayerId, setCreatePlayerId] = React.useState<string>('');
   const [completingId, setCompletingId] = React.useState<string | null>(null);
 
   // Log-progress dialog — a focused Fairway ModalShell that replaces the
@@ -429,125 +383,31 @@ export function PlayersGridView({
     ? players.find((p) => p.id === selectedPlayerId) ?? null
     : null;
 
-  /* ---- create / edit handlers (logic preserved) ---- */
+  /* ---- create / edit handlers (the shared modal owns the form) ---- */
 
   function openCreate(playerId?: string) {
-    setForm({ ...EMPTY_FORM, player_id: playerId ?? selectedPlayerId ?? '' });
     setEditing(null);
+    setCreatePlayerId(playerId ?? selectedPlayerId ?? '');
     setCreateOpen(true);
   }
 
   function openEdit(fa: FocusAreaCardData) {
-    const row = fa as PlayersGridFocusArea;
-    setEditing(row);
-    setForm({
-      player_id: row.player_id,
-      area_type: row.area_type || 'driving',
-      title: row.title || '',
-      description: row.description || '',
-      target_metric: row.target_metric || '',
-      current_value: row.current_value?.toString() || '',
-      target_value: row.target_value?.toString() || '',
-      // Hydrate the timeframe (Feature F) — falls back to 'none' for legacy rows.
-      target_kind: row.target_kind === 'date' || row.target_kind === 'rounds' ? row.target_kind : 'none',
-      target_date: row.target_date || '',
-      target_rounds: row.target_rounds != null ? String(row.target_rounds) : '',
-    });
+    setEditing(fa as PlayersGridFocusArea);
     setCreateOpen(true);
   }
 
-  // Area-type change → suggested metric + auto-filled current value (VERBATIM
-  // logic, now routed through the shared getAreaAutoFill from areaTypes.ts).
-  function onAreaTypeChange(areaType: string) {
-    const stats = playerStats[form.player_id] as AreaAutoFillStats | undefined;
-    const { suggestedMetric, autoCurrentValue } = getAreaAutoFill(areaType, stats);
-    setForm((prev) => ({
-      ...prev,
-      area_type: areaType,
-      target_metric: suggestedMetric,
-      current_value: autoCurrentValue,
-    }));
-  }
-
-  // Player change → re-run the SAME auto-fill for the currently-selected area
-  // against the NEW player's stats. Without this, picking Area first then
-  // changing Player leaves current_value / target_metric stale for the prior
-  // player (the snapshot strip would also disagree with the numeric fields).
-  // Editing locks the player Select, so this only runs in the create flow.
-  function onPlayerChange(playerId: string) {
-    const stats = playerStats[playerId] as AreaAutoFillStats | undefined;
-    setForm((prev) => {
-      const { suggestedMetric, autoCurrentValue } = getAreaAutoFill(prev.area_type, stats);
-      return {
-        ...prev,
-        player_id: playerId,
-        target_metric: suggestedMetric,
-        current_value: autoCurrentValue,
-      };
-    });
-  }
-
-  // Metric change → re-derive the current value from the CHOSEN stat against the
-  // selected player's real stats (the core "pick the stat → its current value
-  // autofills" behavior). Only overwrite when we actually resolved a value, so
-  // picking a custom/untracked metric leaves a manually-typed value intact.
-  function onMetricChange(metric: string) {
-    const stats = playerStats[form.player_id] as AreaAutoFillStats | undefined;
-    const resolved = getMetricCurrentValue(metric, stats);
-    setForm((prev) => ({
-      ...prev,
-      target_metric: metric,
-      current_value: resolved !== '' ? resolved : prev.current_value,
-    }));
-  }
-
-  async function handleSave() {
-    if (!form.player_id || !form.title.trim()) return;
-    setSaving(true);
-    try {
-      // Timeframe (Feature F): only a 'date' with a date, or 'rounds' with a
-      // positive round count, persists a real timeframe; otherwise it clears to
-      // null. The server action normalizes again, but we keep the wire clean.
-      const roundsNum = form.target_rounds ? parseInt(form.target_rounds, 10) : NaN;
-      const timeframe =
-        form.target_kind === 'date' && form.target_date
-          ? { target_kind: 'date' as const, target_date: form.target_date, target_rounds: null }
-          : form.target_kind === 'rounds' && Number.isFinite(roundsNum) && roundsNum > 0
-            ? { target_kind: 'rounds' as const, target_date: null, target_rounds: roundsNum }
-            : { target_kind: null, target_date: null, target_rounds: null };
-
-      const payload = {
-        area_type: form.area_type,
-        title: form.title.trim(),
-        description: form.description.trim() || null,
-        target_metric: form.target_metric.trim() || null,
-        current_value: form.current_value ? parseFloat(form.current_value) : null,
-        target_value: form.target_value ? parseFloat(form.target_value) : null,
-        ...timeframe,
-      };
-
-      const res = editing
-        ? await updateFocusArea(editing.id, payload)
-        : await createFocusArea({
-            player_id: form.player_id,
-            coach_id: coachId,
-            ...payload,
-          });
-
-      if (res.success) {
-        fairwayToast.success(editing ? 'Focus area updated' : 'Focus area created');
-        setCreateOpen(false);
-        setEditing(null);
-        setForm(EMPTY_FORM);
-        router.refresh();
-      } else {
-        fairwayToast.error(res.error ?? 'Could not save focus area');
-      }
-    } catch {
-      fairwayToast.error('Could not save focus area');
-    } finally {
-      setSaving(false);
-    }
+  // The shared modal hands back a normalized payload; the coach surface decides
+  // the action: edit an existing area, or PRESCRIBE a new one (the server
+  // defaults a coach-created area to 'proposed' for the player to accept).
+  async function handleSubmitFocusArea(
+    payload: FocusAreaModalSubmit,
+  ): Promise<{ success: boolean; error?: string }> {
+    const { player_id, ...fields } = payload;
+    const res = editing
+      ? await updateFocusArea(editing.id, fields)
+      : await createFocusArea({ player_id, coach_id: coachId, ...fields });
+    if (res.success) router.refresh();
+    return res;
   }
 
   async function handleComplete(fa: FocusAreaCardData) {
@@ -970,26 +830,38 @@ export function PlayersGridView({
         )}
       </div>
 
-      {/* ---- CREATE / EDIT MODAL ---- */}
+      {/* ---- CREATE / EDIT MODAL (shared coach + player component) ---- */}
       <FocusAreaModal
         open={createOpen}
         onOpenChange={(o) => {
           setCreateOpen(o);
-          if (!o) {
-            setEditing(null);
-            setForm(EMPTY_FORM);
-          }
+          if (!o) setEditing(null);
         }}
+        mode="coach"
         editing={Boolean(editing)}
-        form={form}
-        setForm={setForm}
-        players={players}
-        playerStats={playerStats}
-        onAreaTypeChange={onAreaTypeChange}
-        onPlayerChange={onPlayerChange}
-        onMetricChange={onMetricChange}
-        onSave={handleSave}
-        saving={saving}
+        players={players.map((p) => ({ id: p.id, name: playerName(p) }))}
+        playerStats={playerStats as Record<string, AreaAutoFillStats>}
+        playerId={editing ? editing.player_id : createPlayerId}
+        initial={
+          editing
+            ? {
+                player_id: editing.player_id,
+                area_type: editing.area_type || 'driving',
+                title: editing.title || '',
+                description: editing.description || '',
+                target_metric: editing.target_metric || '',
+                current_value: editing.current_value ?? null,
+                target_value: editing.target_value ?? null,
+                target_kind:
+                  editing.target_kind === 'date' || editing.target_kind === 'rounds'
+                    ? editing.target_kind
+                    : null,
+                target_date: editing.target_date || null,
+                target_rounds: editing.target_rounds ?? null,
+              }
+            : undefined
+        }
+        onSubmit={handleSubmitFocusArea}
       />
 
       {/* ---- LOG-PROGRESS DIALOG (replaces native window.prompt) ---- */}
@@ -1425,375 +1297,3 @@ function RosterHealthHeader({
   );
 }
 
-/* ---------------------------------------------------------------------------
- * FocusAreaModal — shared ModalShell + FormField/FormSection/Select
- * ------------------------------------------------------------------------- */
-
-function FocusAreaModal({
-  open,
-  onOpenChange,
-  editing,
-  form,
-  setForm,
-  players,
-  playerStats,
-  onAreaTypeChange,
-  onPlayerChange,
-  onMetricChange,
-  onSave,
-  saving,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  editing: boolean;
-  form: FocusAreaForm;
-  setForm: React.Dispatch<React.SetStateAction<FocusAreaForm>>;
-  players: PlayersGridPlayer[];
-  playerStats: Record<string, PlayersGridStats>;
-  onAreaTypeChange: (areaType: string) => void;
-  /** Player change → re-run auto-fill for the current area vs the new player. */
-  onPlayerChange: (playerId: string) => void;
-  /** Metric change → re-derive the current value from the chosen stat. */
-  onMetricChange: (metric: string) => void;
-  onSave: () => void;
-  saving: boolean;
-}) {
-  const playerOptions = React.useMemo(
-    () => players.map((p) => ({ value: p.id, label: playerName(p) })),
-    [players],
-  );
-
-  const stats = form.player_id ? playerStats[form.player_id] : undefined;
-  const area = getAreaType(form.area_type);
-  const canSave = Boolean(form.player_id && form.title.trim());
-
-  // Pickable stat chips for the selected area ('Custom Metric' is a placeholder,
-  // not a real stat, so it never becomes a chip — the free-text input covers it).
-  const metricChips = area.suggestedMetrics.filter(
-    (m) => m.toLowerCase() !== 'custom metric',
-  );
-
-  // The current value was auto-derived when it equals what the chosen metric
-  // resolves to from this player's stats (and is non-empty) — drives the hint.
-  const isAutofilled =
-    form.current_value !== '' &&
-    form.current_value === getMetricCurrentValue(form.target_metric, stats as AreaAutoFillStats | undefined);
-
-  /* ---- unsaved-changes guard (Nielsen #5 error prevention / #3 user control)
-     Snapshot the form when the modal opens; a close attempt (Cancel, Esc, scrim,
-     or the top-right close affordance — all route through onOpenChange/Cancel)
-     while the form differs from that baseline shows an in-modal "Discard
-     changes?" confirm instead of silently dropping the coach's input. ---- */
-  const baselineRef = React.useRef<FocusAreaForm>(form);
-  const [confirmingDiscard, setConfirmingDiscard] = React.useState(false);
-  const wasOpen = React.useRef(open);
-  React.useEffect(() => {
-    // On the closed→open transition, re-baseline to the form we opened with and
-    // clear any stale confirm. (Open→closed is owned by the parent's reset.)
-    if (open && !wasOpen.current) {
-      baselineRef.current = form;
-      setConfirmingDiscard(false);
-    }
-    wasOpen.current = open;
-  }, [open, form]);
-
-  const isDirty = React.useMemo(() => {
-    const b = baselineRef.current;
-    return (
-      form.player_id !== b.player_id ||
-      form.area_type !== b.area_type ||
-      form.title !== b.title ||
-      form.description !== b.description ||
-      form.target_metric !== b.target_metric ||
-      form.current_value !== b.current_value ||
-      form.target_value !== b.target_value ||
-      form.target_kind !== b.target_kind ||
-      form.target_date !== b.target_date ||
-      form.target_rounds !== b.target_rounds
-    );
-  }, [form]);
-
-  // Single close gate: dirty → arm the discard confirm; clean → close for real.
-  const requestClose = React.useCallback(() => {
-    if (isDirty) {
-      setConfirmingDiscard(true);
-    } else {
-      onOpenChange(false);
-    }
-  }, [isDirty, onOpenChange]);
-
-  const discardAndClose = React.useCallback(() => {
-    setConfirmingDiscard(false);
-    onOpenChange(false);
-  }, [onOpenChange]);
-
-  // Honest preview of progress for the chosen target (no fabricated meter).
-  const previewPct =
-    form.current_value && form.target_value
-      ? getProgressPercent(
-          parseFloat(form.current_value),
-          parseFloat(form.target_value),
-          form.target_metric,
-        )
-      : null;
-
-  return (
-    <ModalShell
-      open={open}
-      onOpenChange={(o) => {
-        // Esc / scrim / close-button close requests pass through the guard.
-        // Re-opens (o === true) pass straight through to the parent.
-        if (o) onOpenChange(true);
-        else requestClose();
-      }}
-      size="lg"
-      title={editing ? 'Edit focus area' : 'New focus area'}
-      description={
-        editing
-          ? 'Update the target and details for this development focus area.'
-          : 'Assign a measurable development focus area to a player.'
-      }
-    >
-      <ModalShell.Body>
-        <div className="space-y-6">
-          {/* Player + area */}
-          <FormSection title="Assignment">
-            <FormField label="Player" required>
-              <Select
-                placeholder="Select a player…"
-                options={playerOptions}
-                value={form.player_id || undefined}
-                onValueChange={(v) => onPlayerChange(v ?? '')}
-                disabled={editing}
-              />
-            </FormField>
-
-            <FormField label="Focus area" required>
-              <Select
-                options={AREA_OPTIONS}
-                value={form.area_type}
-                onValueChange={(v) => v && onAreaTypeChange(v)}
-              />
-            </FormField>
-
-            {/* Player snapshot — honest stat strip (no recompute; props-fed). */}
-            {form.player_id ? (
-              <Inset padding="sm" className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    'grid h-8 w-8 flex-shrink-0 place-items-center rounded-fw-sm',
-                    'bg-accent-50 text-accent-700',
-                  )}
-                >
-                  <area.icon size={16} />
-                </span>
-                {stats && stats.rounds_played > 0 ? (
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-fw-sans text-eyebrow text-text-secondary">
-                    <span>
-                      Avg{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.avg_score ?? '—'}
-                      </span>
-                    </span>
-                    <span>
-                      Putts{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.avg_putts ?? '—'}
-                      </span>
-                    </span>
-                    <span>
-                      FW{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.fairway_pct != null ? `${stats.fairway_pct}%` : '—'}
-                      </span>
-                    </span>
-                    <span>
-                      GIR{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.gir_pct != null ? `${stats.gir_pct}%` : '—'}
-                      </span>
-                    </span>
-                  </div>
-                ) : (
-                  <span className="font-fw-sans text-eyebrow italic text-text-tertiary">
-                    No rounds recorded yet — targets won&apos;t auto-fill.
-                  </span>
-                )}
-              </Inset>
-            ) : null}
-          </FormSection>
-
-          {/* Details */}
-          <FormSection title="Details">
-            <FormField label="Title" required>
-              <Input
-                value={form.title}
-                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g. Tighten driving dispersion"
-              />
-            </FormField>
-
-            <FormField label="Description" showOptional>
-              <TextArea
-                value={form.description}
-                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                placeholder="What should the player focus on, and why?"
-                rows={3}
-              />
-            </FormField>
-          </FormSection>
-
-          {/* Target */}
-          <FormSection
-            title="Measurable target"
-            description="Pick a metric and target so progress is trackable (golf metrics like putts/score are lower-is-better)."
-          >
-            <FormField label="Target metric" showOptional>
-              <div className="space-y-2">
-                {/* Pick the stat to address — clicking a chip autofills the
-                    current value from this player's real stats. Free-text input
-                    remains for a custom metric. */}
-                {metricChips.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {metricChips.map((m) => (
-                      <SelectablePill
-                        key={m}
-                        shape="round"
-                        active={form.target_metric === m}
-                        onClick={() => onMetricChange(m)}
-                      >
-                        {m}
-                      </SelectablePill>
-                    ))}
-                  </div>
-                ) : null}
-                <Input
-                  value={form.target_metric}
-                  onChange={(e) => onMetricChange(e.target.value)}
-                  placeholder={area.suggestedMetrics[0] ?? 'e.g. Fairways Hit %'}
-                />
-              </div>
-            </FormField>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label="Current value" showOptional>
-                <NumberField
-                  value={form.current_value === '' ? null : Number(form.current_value)}
-                  onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, current_value: v == null ? '' : String(v) }))
-                  }
-                />
-                {isAutofilled ? (
-                  <p className="mt-1 font-fw-sans text-eyebrow text-text-tertiary">
-                    Auto-filled from recent rounds — edit if needed.
-                  </p>
-                ) : null}
-              </FormField>
-              <FormField label="Target value" showOptional>
-                <NumberField
-                  value={form.target_value === '' ? null : Number(form.target_value)}
-                  onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, target_value: v == null ? '' : String(v) }))
-                  }
-                />
-              </FormField>
-            </div>
-
-            {/* Timeframe (Feature F) — optionally bound the target by a date or a
-                round count. A segmented switch picks the kind; the matching input
-                appears beneath. 'No deadline' clears any timeframe. */}
-            <FormField label="Timeframe" showOptional>
-              <div className="space-y-3">
-                <Segmented<FocusAreaTimeframeKind>
-                  aria-label="Target timeframe"
-                  value={form.target_kind}
-                  onValueChange={(v) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      target_kind: v,
-                      // Clear the now-irrelevant input so a stale value never persists.
-                      ...(v === 'date' ? { target_rounds: '' } : {}),
-                      ...(v === 'rounds' ? { target_date: '' } : {}),
-                      ...(v === 'none' ? { target_date: '', target_rounds: '' } : {}),
-                    }))
-                  }
-                  options={[
-                    { value: 'none', label: 'No deadline' },
-                    { value: 'date', label: 'By date' },
-                    { value: 'rounds', label: 'In rounds' },
-                  ]}
-                />
-
-                {form.target_kind === 'date' ? (
-                  <Input
-                    type="date"
-                    aria-label="Target date"
-                    value={form.target_date}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, target_date: e.target.value }))
-                    }
-                  />
-                ) : null}
-
-                {form.target_kind === 'rounds' ? (
-                  <NumberField
-                    aria-label="Number of rounds"
-                    min={1}
-                    value={form.target_rounds === '' ? null : Number(form.target_rounds)}
-                    onValueChange={(v) =>
-                      setForm((prev) => ({ ...prev, target_rounds: v == null ? '' : String(v) }))
-                    }
-                  />
-                ) : null}
-              </div>
-            </FormField>
-
-            {previewPct != null ? (
-              <p className="font-fw-sans text-eyebrow text-text-tertiary">
-                Starting at{' '}
-                <Badge tone={previewPct >= 100 ? 'success' : 'neutral'} size="sm" numeric>
-                  {previewPct}%
-                </Badge>{' '}
-                of target.
-              </p>
-            ) : null}
-          </FormSection>
-        </div>
-      </ModalShell.Body>
-
-      {confirmingDiscard ? (
-        <ModalShell.Footer>
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p
-              role="alert"
-              className="font-fw-sans text-body-sm font-medium text-text-primary"
-            >
-              Discard your unsaved changes?
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => setConfirmingDiscard(false)}
-                disabled={saving}
-              >
-                Keep editing
-              </Button>
-              <Button variant="danger" onClick={discardAndClose} disabled={saving}>
-                Discard changes
-              </Button>
-            </div>
-          </div>
-        </ModalShell.Footer>
-      ) : (
-        <ModalShell.Footer>
-          <Button variant="ghost" onClick={requestClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button variant="primary" busy={saving} disabled={!canSave} onClick={onSave}>
-            {editing ? 'Save changes' : 'Create focus area'}
-          </Button>
-        </ModalShell.Footer>
-      )}
-    </ModalShell>
-  );
-}

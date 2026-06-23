@@ -249,6 +249,9 @@ const STATUS_TONE: Record<string, { tone: FwStatusTone; label: string }> = {
   in_progress: { tone: 'info', label: 'In Progress' },
   completed: { tone: 'success', label: 'Completed' },
   paused: { tone: 'warning', label: 'Paused' },
+  // Coach-prescribed, awaiting the player's acceptance (the coach sees this on
+  // their board so a prescribed area reads as pending, not already Active).
+  proposed: { tone: 'warning', label: 'Proposed' },
 };
 
 function statusMeta(status: string | null | undefined): { tone: FwStatusTone; label: string } {

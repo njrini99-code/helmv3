@@ -22,6 +22,12 @@ export const metadata = {
   description: 'AI-powered insights, patterns, predictions, and coaching intelligence for your team',
 };
 
+// The coach Brief reflects team data that PLAYERS change (logging rounds). Force
+// dynamic so the route is always freshly rendered and never served from a stale
+// Full Route Cache entry; the FairwayBrief focus/visibility refresh handles the
+// client Router Cache on soft navigations.
+export const dynamic = 'force-dynamic';
+
 // ============================================================================
 // PAGE COMPONENT
 // ============================================================================

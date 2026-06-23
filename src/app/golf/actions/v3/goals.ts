@@ -24,6 +24,7 @@ import type {
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
+import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import {
   getMetricRenderConfig,
@@ -411,4 +412,109 @@ export async function dismissGoalSuggestion(
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * createTeamGoal — a TEAM goal for a skill area, modeled as a FAN-OUT of
+ * per-player golf_goals rows (one per targeted player). There is no
+ * golf_team_goals table and golf_goals.player_id is NOT NULL, so fan-out is the
+ * cheapest correct model: createGoal already coach-creates per player (RLS
+ * validates each row: coach staffs team + player active), and the goal-progress
+ * cron tracks every fanned row for free. Partial failures are reported, never
+ * fatal — one inactive player can't abort the batch.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export interface CreateTeamGoalInput {
+  metric_id: MetricId;
+  title: string;
+  /** Convention tag (no migration); defaults to 'team' so these read as a set. */
+  category?: string;
+  ends_at: string;
+  /** Shared team target (e.g. derived from team_avg), or null to leave open. */
+  target_value: number | null;
+  target_source: GoalTargetSource | null;
+  /** 'suggested' (player accepts) | 'mandatory' (auto-accepted). Default suggested. */
+  coach_assignment_mode?: GoalCoachAssignmentMode;
+  team_id: string;
+  /** Players to assign (contributing/active members). */
+  player_ids: string[];
+  origin?: GoalOrigin;
+}
+
+export interface CreateTeamGoalResult {
+  ok: boolean;
+  created: number;
+  failed: Array<{ player_id: string; error: string }>;
+  warning?: 'soft_cap_exceeded';
+  error?: string;
+}
+
+export async function createTeamGoal(input: CreateTeamGoalInput): Promise<CreateTeamGoalResult> {
+  if (!isMetricId(input.metric_id)) {
+    return { ok: false, created: 0, failed: [], error: 'Invalid metric' };
+  }
+  if (!input.team_id) {
+    return { ok: false, created: 0, failed: [], error: 'Missing team' };
+  }
+  const ids = [...new Set(input.player_ids.filter(Boolean))];
+  if (ids.length === 0) {
+    return { ok: false, created: 0, failed: [], error: 'No players to assign' };
+  }
+
+  // Coach-team guard up front. createGoal resolves the coach from the session
+  // and leans on RLS per row, but without this a *player* calling createTeamGoal
+  // would silently fall into createGoal's player branch and mint self-goals.
+  // Resolve + validate once here so the whole fan-out is coach-gated, not row-gated.
+  const sb = await createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return { ok: false, created: 0, failed: [], error: 'Unauthorized' };
+  const { data: coach } = await sb
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!coach) {
+    return { ok: false, created: 0, failed: [], error: 'Only coaches can assign team goals' };
+  }
+  const allowed = await validateCoachTeamAccess(sb, coach.id, input.team_id, coach.organization_id);
+  if (!allowed) {
+    return { ok: false, created: 0, failed: [], error: 'Not authorized for this team' };
+  }
+
+  let created = 0;
+  let warning: 'soft_cap_exceeded' | undefined;
+  const failed: Array<{ player_id: string; error: string }> = [];
+
+  // createGoal handles auth/RLS/soft-cap per call; loop it (team sizes are small).
+  for (const pid of ids) {
+    try {
+      const res = await createGoal({
+        metric_id: input.metric_id,
+        title: input.title,
+        category: input.category ?? 'team',
+        ends_at: input.ends_at,
+        target_value: input.target_value,
+        target_source: input.target_source,
+        baseline_value: null,
+        team_id: input.team_id,
+        player_id_if_coach_creating: pid,
+        coach_assignment_mode: input.coach_assignment_mode ?? 'suggested',
+        origin: input.origin ?? 'manual',
+      });
+      if (res.ok) {
+        created += 1;
+        if (res.warning === 'soft_cap_exceeded') warning = 'soft_cap_exceeded';
+      } else {
+        failed.push({ player_id: pid, error: res.error ?? 'Failed to create goal' });
+      }
+    } catch (err) {
+      failed.push({ player_id: pid, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
+  if (created > 0) {
+    revalidatePath('/golf/dashboard/development');
+    revalidatePath('/golf/dashboard/intelligence');
+  }
+  return { ok: created > 0, created, failed, warning };
 }
