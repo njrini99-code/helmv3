@@ -38,7 +38,6 @@ import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
-import { coachHelmRoutes } from '@/lib/coachhelm/fairway-routes';
 import {
   IconMoreVertical,
   IconUser,
@@ -256,7 +255,7 @@ export function FairwayPlayerActionsMenu({
           View Insights
         </Link>
 
-        <PopoverPanel.Item onClick={() => goTo(coachHelmRoutes.playerStats(playerId))}>
+        <PopoverPanel.Item onClick={() => goTo(`/golf/dashboard/stats?player=${playerId}`)}>
           <IconChartBar size={18} className="text-text-tertiary" />
           View Stats
         </PopoverPanel.Item>

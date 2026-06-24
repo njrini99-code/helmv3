@@ -6,8 +6,14 @@
  * ----------------------------------------------------------------------------
  * The coach-facing player page reached from the roster (Roster → player). It is
  * now a thin IDENTITY HEADER (avatar, name, year, editable status, contact +
- * message) on top of sibling-surface links — stats, insight, genome, etc.
- * The full 10-tab stats cockpit lives at `/stats/players/[id]` (canonical).
+ * message) on top of the shared <FairwayStatsCockpit> — the SAME re-architected
+ * strokes-gained stats body the player sees at /golf/dashboard/stats. This is
+ * the "unify on the cockpit" decision: one beautiful stats page, two roles, no
+ * double-nav (the coach gets a roster header instead of the CoachHelm sub-nav).
+ *
+ * The cockpit owns the stats, leak maps, trend, detailed standings, CoachHelm
+ * cause/effect, and recent rounds — so this file no longer renders its own
+ * stats block or rounds list.
  *
  * The only mutation reachable here is the NON-destructive status change inside
  * FairwayPlayerStatusBadge. No row is deleted; no destructive write auto-fires.
@@ -34,9 +40,8 @@ import {
 } from '@/components/icons';
 import { FairwayYearBadge } from './FairwayYearBadge';
 import { FairwayPlayerStatusBadge } from './FairwayPlayerStatusBadge';
-import { FairwayPlayerStatsTeaser } from './FairwayPlayerStatsTeaser';
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
-import type { FairwayPlayerStatsSummary } from '@/lib/fairway/player-stats-summary';
+import { FairwayStatsCockpit } from '@/components/fairway/pages/coachhelm/FairwayStatsCockpit';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the roster/[id] loader output
@@ -60,8 +65,6 @@ export interface FairwayPlayerProfileProps {
   player: FairwayPlayerProfilePlayer;
   /** golf_team_members.status for this player on the coach's team. */
   membershipStatus: string | null;
-  /** Cached vitals for the at-a-glance teaser (null when no cache row). */
-  statsSummary?: FairwayPlayerStatsSummary | null;
   className?: string;
 }
 
@@ -89,7 +92,6 @@ function memberSince(createdAt: string | null): string {
 export function FairwayPlayerProfile({
   player,
   membershipStatus,
-  statsSummary = null,
   className,
 }: FairwayPlayerProfileProps) {
   const name = fullName(player);
@@ -179,17 +181,12 @@ export function FairwayPlayerProfile({
         </div>
       </Surface>
 
-      <FairwayPlayerStatsTeaser
-        className="mb-8"
-        playerId={player.id}
-        playerName={name}
-        summary={statsSummary}
-      />
-
-      {/* ── Cross-surface links — insight, genome, and siblings. Stats owns the teaser above. ── */}
+      {/* ── Cross-surface links (P107) — the canonical player page is the hub:
+           every player-scoped coach surface is reachable from here, not just the
+           stats cockpit. Recognition over recall — siblings cross-link too. ── */}
       <nav
         aria-label="Player surfaces"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+        className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3"
       >
         <PlayerSurfaceLink
           href={`/golf/dashboard/players/${player.id}`}
@@ -210,6 +207,10 @@ export function FairwayPlayerProfile({
           description="Game-profile radar"
         />
       </nav>
+
+      {/* ── The shared stats cockpit (stats · leak maps · trend · CoachHelm ·
+           detailed standings · recent rounds) ── */}
+      <FairwayStatsCockpit playerId={player.id} />
     </div>
   );
 }

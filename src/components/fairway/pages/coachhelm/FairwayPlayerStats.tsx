@@ -1,83 +1,118 @@
 'use client';
 
+/**
+ * ============================================================================
+ * Fairway · CoachHelm · FairwayPlayerStats — the PLAYER stats route shell
+ * ----------------------------------------------------------------------------
+ * The flag-on stats surface for /golf/dashboard/stats. It is now a THIN shell:
+ * it resolves the requested player id + role, wraps the shared
+ * <FairwayStatsCockpit> in the CoachHelm sub-nav (CoachHelmShell), and owns the
+ * one state the cockpit can't — "no player selected".
+ *
+ * The cockpit BODY (data fetch + the re-architected sections) lives in
+ * FairwayStatsCockpit so the coach roster drill-down (roster/[id]) can render
+ * the SAME body inside a roster identity header — one beautiful stats page,
+ * two roles, no double-nav.
+ *
+ * ── PLAYER RESOLUTION (mirrors the legacy StatsClient verbatim) ─────────────
+ *   resolvedPlayerId = initialPlayerId (coach ?player=) ?? golfUser.playerId.
+ *   A coach viewing a teammate keeps a back link to the team roster.
+ *
+ * ADDITIVE + GATED — imported only behind isRedesignEnabled() in stats/page.tsx.
+ * ========================================================================== */
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { EmptyState, Surface } from '@/components/fairway';
+
+import { fairwayScope } from '@/lib/redesign/flag';
+import { Surface, EmptyState } from '@/components/fairway';
 import { useGolfUser } from '@/contexts/golf-user-context';
-import { FairwayStatsCockpit } from '@/components/fairway/pages/coachhelm/FairwayStatsCockpit';
-import { StatsPageShell } from '@/components/fairway/pages/stats/StatsPageShell';
-import { coachHelmRoutes } from '@/lib/coachhelm/fairway-routes';
+import { getPlayerDisplayName } from '@/app/golf/actions/stats-data';
+import { CoachHelmShell } from './CoachHelmShell';
+import { FairwayStatsCockpit } from './FairwayStatsCockpit';
 
 export interface FairwayPlayerStatsProps {
   initialPlayerId?: string | null;
-  /** Server-resolved display name — avoids masthead flash on coach drill-down. */
-  initialPlayerName?: string | null;
 }
 
-export function FairwayPlayerStats({
-  initialPlayerId = null,
-  initialPlayerName = null,
-}: FairwayPlayerStatsProps) {
+export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStatsProps) {
   const golfUser = useGolfUser();
 
   const resolvedPlayerId = initialPlayerId || golfUser.playerId || null;
   const isCoachView = golfUser.role === 'coach';
 
-  const playerName = isCoachView
-    ? initialPlayerName
-    : golfUser.name;
+  // A coach drilling into a teammate must see THAT player's name — not the
+  // coach's own (golfUser.name) and not the generic "Player stats". The name
+  // isn't in any cockpit payload, so resolve it here (authorized server action).
+  const [viewedPlayerName, setViewedPlayerName] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (isCoachView && resolvedPlayerId) {
+      getPlayerDisplayName(resolvedPlayerId)
+        .then((name) => { if (!cancelled) setViewedPlayerName(name); })
+        .catch(() => { if (!cancelled) setViewedPlayerName(null); });
+    } else {
+      setViewedPlayerName(null);
+    }
+    return () => { cancelled = true; };
+  }, [isCoachView, resolvedPlayerId]);
+
+  const playerName = isCoachView ? viewedPlayerName : golfUser.name;
 
   const title = isCoachView
-    ? playerName ?? 'Player'
+    ? playerName
+      ? `${playerName}'s stats`
+      : 'Player stats'
     : 'Your stats';
 
+  // Third-person framing for a coach viewing a teammate; first-person for a
+  // player viewing their own page.
   const description = isCoachView
-    ? playerName
-      ? `Where ${playerName} is gaining and leaking strokes — vs Tour and your team.`
-      : 'Vs Tour and the team — strokes gained and fundamentals.'
-    : 'Where you are gaining and leaking strokes — vs Tour and your team.';
+    ? `Where ${playerName ?? 'this player'} stands vs PGA Tour and the team — and where the strokes are leaking.`
+    : 'Where you stand vs PGA Tour and your team — and where the strokes are leaking.';
 
   const backAction = isCoachView ? (
-    <div className="flex flex-wrap items-center gap-4">
-      <Link
-        href={coachHelmRoutes.teamStats}
-        className="rounded-fw-sm font-fw-sans text-label font-medium text-text-secondary outline-none transition-colors [transition-duration:180ms] hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
-      >
-        ← Team stats
-      </Link>
-      {resolvedPlayerId ? (
-        <Link
-          href={`/golf/dashboard/roster/${resolvedPlayerId}`}
-          className="rounded-fw-sm font-fw-sans text-label font-medium text-text-tertiary outline-none transition-colors [transition-duration:180ms] hover:text-text-secondary focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
-        >
-          Roster profile
-        </Link>
-      ) : null}
-    </div>
+    <Link
+      href="/golf/dashboard/stats"
+      className="rounded-fw-sm font-fw-sans text-label font-medium text-text-secondary outline-none transition-colors [transition-duration:180ms] hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+    >
+      ← Team stats
+    </Link>
   ) : undefined;
 
-  const body = !resolvedPlayerId ? (
-    <Surface padding="lg">
-      <EmptyState
-        title="No player selected"
-        description="Pick a player from the team leaderboard to see their personal stats."
-        action={
-          <Link
-            href={coachHelmRoutes.teamStats}
-            className="font-fw-sans text-label font-medium text-accent-600 hover:text-accent-700"
-          >
-            Back to team stats
-          </Link>
-        }
-      />
-    </Surface>
-  ) : (
-    <FairwayStatsCockpit playerId={resolvedPlayerId} isOwnStats={!isCoachView} />
-  );
-
   return (
-    <StatsPageShell title={title} description={description} actions={backAction}>
-      {body}
-    </StatsPageShell>
+    <div className={fairwayScope('min-h-full bg-canvas')}>
+      <div className="mx-auto w-full max-w-[1200px] px-4 py-2 md:px-6">
+        <CoachHelmShell
+          active="players"
+          // eslint-disable-next-line jsx-a11y/aria-role
+          role="player"
+          eyebrow="Stats"
+          title={title}
+          description={description}
+          actions={backAction}
+        >
+          {!resolvedPlayerId ? (
+            <Surface padding="lg">
+              <EmptyState
+                title="No player selected"
+                description="Pick a player from the team stats roster to see their personal stats."
+                action={
+                  <Link
+                    href="/golf/dashboard/stats"
+                    className="font-fw-sans text-label font-medium text-accent-600 hover:text-accent-700"
+                  >
+                    Back to team stats
+                  </Link>
+                }
+              />
+            </Surface>
+          ) : (
+            <FairwayStatsCockpit playerId={resolvedPlayerId} isOwnStats={!isCoachView} />
+          )}
+        </CoachHelmShell>
+      </div>
+    </div>
   );
 }
 
