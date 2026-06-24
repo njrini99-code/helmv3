@@ -17,6 +17,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { coachHelmRoutes } from '@/lib/coachhelm/fairway-routes';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
@@ -868,7 +869,7 @@ export function PlayerInsightClient({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em]">Recent Rounds</h3>
                   <Link
-                    href={`/golf/dashboard/stats?player=${player.id}`}
+                    href={coachHelmRoutes.playerStats(player.id)}
                     className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
                   >
                     View All Stats
@@ -947,7 +948,7 @@ export function PlayerInsightClient({
                   Create Focus Area
                 </Link>
                 <Link
-                  href={`/golf/dashboard/stats?player=${player.id}`}
+                  href={coachHelmRoutes.playerStats(player.id)}
                   className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex-shrink-0"
                 >
                   <IconChartBar size={16} />

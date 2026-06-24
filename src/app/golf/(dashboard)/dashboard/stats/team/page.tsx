@@ -11,6 +11,7 @@ import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence'
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamStats } from '@/components/fairway/pages/coachhelm/FairwayTeamStats';
+import { StatsPageShell } from '@/components/fairway/pages/stats/StatsPageShell';
 import { ViewHeader, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
@@ -447,18 +448,22 @@ export default async function TeamStatsPage() {
     ]);
     const leakError = !leakRes.success;
     return (
-      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-        <FairwayTeamStats
-          teamName={team?.name ?? 'Your Team'}
-          players={playersWithStats}
-          intelligenceByPlayer={intelligenceByPlayer}
-          intelligenceError={intelligenceError}
-          intelligenceSampleSize={intelligenceSampleSize}
-          leakMaps={leakRes.success ? leakRes.data ?? null : null}
-          leakError={leakError}
-          standingByPlayer={standingByPlayer}
-        />
-      </div>
+      <StatsPageShell
+        title="Team stats"
+        description={`${team?.name ?? 'Your team'} · ${playersWithStats.length} player${playersWithStats.length !== 1 ? 's' : ''}`}
+      >
+          <FairwayTeamStats
+            teamName={team?.name ?? 'Your Team'}
+            players={playersWithStats}
+            intelligenceByPlayer={intelligenceByPlayer}
+            intelligenceError={intelligenceError}
+            intelligenceSampleSize={intelligenceSampleSize}
+            leakMaps={leakRes.success ? leakRes.data ?? null : null}
+            leakError={leakError}
+            standingByPlayer={standingByPlayer}
+            hideMasthead
+          />
+      </StatsPageShell>
     );
   }
 

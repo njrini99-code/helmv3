@@ -30,8 +30,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Download } from 'lucide-react';
-
+import { Download, ArrowRight } from 'lucide-react';
 import {
   ViewHeader,
   StrokesGainedTornado,
@@ -53,6 +52,8 @@ import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 import type { TeamPlayerStats } from '@/app/golf/(dashboard)/dashboard/stats/team/page';
 import type { TeamLeakMaps, LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
+import { TeamLeaderboardTable } from '@/components/fairway/pages/stats/TeamLeaderboardTable';
+import { coachHelmRoutes } from '@/lib/coachhelm/fairway-routes';
 
 // ============================================================================
 // PROPS
@@ -86,6 +87,9 @@ export interface FairwayTeamStatsProps {
   leakError?: boolean;
   /** Per-player standing snapshot (from `loadPlayerStandingMap`), keyed by player id. */
   standingByPlayer: Map<string, Map<MetricId, PlayerStanding>>;
+  /** When true, skip the in-page ViewHeader (parent CoachHelmShell owns masthead). */
+  hideMasthead?: boolean;
+  signalCount?: number | null;
 }
 
 // ============================================================================
@@ -499,6 +503,8 @@ export function buildTeamStatsCsv(
 // COMPONENT
 // ============================================================================
 
+type TeamStatsView = 'snapshot' | 'leaderboard' | 'cards';
+
 export function FairwayTeamStats({
   teamName,
   players,
@@ -508,10 +514,13 @@ export function FairwayTeamStats({
   leakMaps,
   leakError = false,
   standingByPlayer,
+  hideMasthead = false,
+  signalCount: _signalCount,
 }: FairwayTeamStatsProps) {
   // ── Format toggle (P131) + roster ranking (P132) — client-side view state ──
   const [format, setFormat] = React.useState<HoleFormat>('all');
   const [rankKey, setRankKey] = React.useState<RankKey>('scoring_average');
+  const [teamView, setTeamView] = React.useState<TeamStatsView>('leaderboard');
 
   const counts = React.useMemo(() => formatCounts(players), [players]);
 
@@ -644,18 +653,15 @@ export function FairwayTeamStats({
   const hasTrajectory = trajectory.analyzed > 0;
 
   return (
-    <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
-      {/* ── MASTHEAD ──────────────────────────────────────────────────────────── */}
-      {/* P140: the ONE prominent action is now stats-native (export the sheet),
-          with "Open team intelligence" demoted to a quieter secondary link so
-          the squint-test primary serves the page's own job-to-be-done. */}
+    <div className={hideMasthead ? 'flex flex-col gap-8' : 'mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24'}>
+      {!hideMasthead ? (
       <ViewHeader
         eyebrow="Team Stats"
         title="Team Stats"
         description={`${teamName} · ${players.length} player${players.length !== 1 ? 's' : ''}`}
         secondaryActions={
           <Button asChild variant="ghost" size="md">
-            <Link href="/golf/dashboard/intelligence">Open team intelligence</Link>
+            <Link href="/golf/dashboard/coachhelm/team">Open team brief</Link>
           </Button>
         }
         primaryAction={
@@ -670,6 +676,19 @@ export function FairwayTeamStats({
           </Button>
         }
       />
+      ) : (
+        <div className="flex justify-end">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleExport}
+            disabled={players.length === 0}
+            leftIcon={<Download className="h-4 w-4" aria-hidden />}
+          >
+            Export stats
+          </Button>
+        </div>
+      )}
 
       {/* ── HONESTY NOTICES: a FAILED load reads as "couldn't load", never as a
           cheerful empty (the empty charts/composites below assume success). ─── */}
@@ -677,7 +696,6 @@ export function FairwayTeamStats({
         <InlineNotice
           tone="warning"
           title="Some stats couldn't load"
-          className="mt-6"
         >
           {intelligenceError && leakError
             ? "Team intelligence and leak maps failed to load. The figures below may be incomplete — reload to try again."
@@ -687,8 +705,70 @@ export function FairwayTeamStats({
         </InlineNotice>
       ) : null}
 
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Segmented<TeamStatsView>
+          size="sm"
+          aria-label="Team stats view"
+          value={teamView}
+          onValueChange={setTeamView}
+          options={[
+            { value: 'leaderboard', label: 'Leaderboard' },
+            { value: 'snapshot', label: 'Team picture' },
+            { value: 'cards', label: 'Player cards' },
+          ]}
+        />
+        {players.length > 0 && teamView !== 'snapshot' ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex items-center gap-2">
+              <span
+                id="fw-team-format-label"
+                className="font-fw-sans text-caption font-medium text-text-tertiary"
+              >
+                Format
+              </span>
+              <Segmented<HoleFormat>
+                size="sm"
+                aria-labelledby="fw-team-format-label"
+                value={format}
+                onValueChange={setFormat}
+                options={[
+                  { value: 'all', label: `All${counts.all > 0 ? ` (${counts.all})` : ''}` },
+                  { value: '18', label: `18${counts.h18 > 0 ? ` (${counts.h18})` : ''}` },
+                  { value: '9', label: `9${counts.h9 > 0 ? ` (${counts.h9})` : ''}` },
+                ]}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span
+                id="fw-team-rank-label"
+                className="font-fw-sans text-caption font-medium text-text-tertiary"
+              >
+                Sort
+              </span>
+              <Segmented<RankKey>
+                size="sm"
+                aria-labelledby="fw-team-rank-label"
+                value={rankKey}
+                onValueChange={setRankKey}
+                options={[
+                  { value: 'scoring_average', label: 'Scoring' },
+                  { value: 'putts_per_round', label: 'Putts' },
+                  { value: 'fairway_pct', label: 'FW%' },
+                  { value: 'gir_pct', label: 'GIR%' },
+                  { value: 'composite', label: 'Composite' },
+                  { value: 'scoring_trend', label: 'Trend' },
+                  { value: 'name', label: 'Name' },
+                ]}
+              />
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {teamView === 'snapshot' ? (
+        <>
       {/* ── HERO: Team Strokes Gained ─────────────────────────────────────────── */}
-      <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <StrokesGainedTornado
           overline="Strokes Gained"
           title="Team Strokes Gained"
@@ -817,61 +897,43 @@ export function FairwayTeamStats({
           />
         </div>
       </section>
+        </>
+      ) : null}
 
-      {/* ── PER-PLAYER TILES: pulse + standing ─────────────────────────────────── */}
-      <section className="mt-10">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+      {teamView === 'leaderboard' ? (
+        <section className="flex flex-col gap-4">
+          <div>
+            <h2 className="font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">
+              Roster leaderboard
+            </h2>
+            <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
+              Tap a player for their full stat sheet — strokes gained, leak maps, and trends.
+            </p>
+          </div>
+          {players.length === 0 ? (
+            <InstrumentPanel depth="base">
+              <p className="font-fw-sans text-body-sm text-text-secondary">
+                No players on your roster yet.
+              </p>
+            </InstrumentPanel>
+          ) : (
+            <>
+              <TeamLeaderboardTable players={viewPlayers} intelligenceByPlayer={intelligenceByPlayer} />
+              <TeamAverageFooter players={viewPlayers} />
+            </>
+          )}
+        </section>
+      ) : null}
+
+      {teamView === 'cards' ? (
+      <section>
+        <div className="mb-4">
           <h2 className="font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">
-            Players
+            Player cards
           </h2>
-          {players.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-              {/* P131: format toggle wired to the route's _9 / _18 columns. */}
-              <div className="flex items-center gap-2">
-                <span
-                  id="fw-team-format-label"
-                  className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-secondary"
-                >
-                  Format
-                </span>
-                <Segmented<HoleFormat>
-                  size="sm"
-                  aria-label="Round format"
-                  value={format}
-                  onValueChange={setFormat}
-                  options={[
-                    { value: 'all', label: `All${counts.all > 0 ? ` (${counts.all})` : ''}` },
-                    { value: '18', label: `18${counts.h18 > 0 ? ` (${counts.h18})` : ''}` },
-                    { value: '9', label: `9${counts.h9 > 0 ? ` (${counts.h9})` : ''}` },
-                  ]}
-                />
-              </div>
-              {/* P132: roster ranking — reorder the tile grid by any metric. */}
-              <div className="flex items-center gap-2">
-                <span
-                  id="fw-team-rank-label"
-                  className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-secondary"
-                >
-                  Rank by
-                </span>
-                <Segmented<RankKey>
-                  size="sm"
-                  aria-label="Rank roster by"
-                  value={rankKey}
-                  onValueChange={setRankKey}
-                  options={[
-                    { value: 'scoring_average', label: 'Scoring' },
-                    { value: 'putts_per_round', label: 'Putts' },
-                    { value: 'fairway_pct', label: 'FW%' },
-                    { value: 'gir_pct', label: 'GIR%' },
-                    { value: 'composite', label: 'Composite' },
-                    { value: 'scoring_trend', label: 'Trend' },
-                    { value: 'name', label: 'Name' },
-                  ]}
-                />
-              </div>
-            </div>
-          ) : null}
+          <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
+            Headline leak metric and composite per player.
+          </p>
         </div>
         {players.length === 0 ? (
           <InstrumentPanel depth="base">
@@ -896,6 +958,7 @@ export function FairwayTeamStats({
           </>
         )}
       </section>
+      ) : null}
     </div>
   );
 }
@@ -1024,7 +1087,7 @@ function PlayerTile({
         <div className="min-w-0">
           <h3 className="truncate font-fw-display text-body-lg font-medium text-text-primary">
             <Link
-              href={`/golf/dashboard/stats?player=${player.id}`}
+              href={coachHelmRoutes.playerStats(player.id)}
               className="transition-colors hover:text-accent-700"
             >
               {fullName}
@@ -1105,7 +1168,7 @@ function PlayerTile({
       {/* Top insight footnote → that player's stats */}
       {intelligence?.topInsightTitle ? (
         <Link
-          href={`/golf/dashboard/stats?player=${player.id}`}
+          href={coachHelmRoutes.playerStats(player.id)}
           className="mt-3 block truncate font-fw-sans text-caption text-text-tertiary transition-colors hover:text-text-secondary"
           title={intelligence.topInsightTitle}
         >
@@ -1118,7 +1181,7 @@ function PlayerTile({
           failing accent-600 — and carries an underline so color is not the
           only contrast cue. */}
       <Link
-        href={`/golf/dashboard/stats?player=${player.id}`}
+        href={coachHelmRoutes.playerStats(player.id)}
         className="mt-3 inline-flex items-center gap-1 font-fw-sans text-caption font-medium text-accent-700 underline underline-offset-2 transition-colors hover:text-accent-800"
       >
         View full stats

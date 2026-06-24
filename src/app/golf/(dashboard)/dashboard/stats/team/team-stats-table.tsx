@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { coachHelmRoutes } from '@/lib/coachhelm/fairway-routes';
 import { Avatar } from '@/components/ui/avatar';
 import {
   IconChevronUp,
@@ -487,7 +488,7 @@ export function TeamStatsTable({
                 {/* View Details */}
                 <td className="px-3 py-3">
                   <Link
-                    href={`/golf/dashboard/stats?player=${player.id}`}
+                    href={coachHelmRoutes.playerStats(player.id)}
                     className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-warm-100 active:bg-warm-200 transition-colors inline-flex sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <IconChevronRight size={16} />

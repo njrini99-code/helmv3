@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { coachHelmRoutes } from '@/lib/coachhelm/fairway-routes';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { Button, IconButton } from '@/components/ui/button';
 import {
@@ -162,7 +163,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
           <DropdownMenuItem
             onSelect={() => {
               void triggerHaptic('light');
-              router.push(`/golf/dashboard/stats?player=${playerId}`);
+              router.push(coachHelmRoutes.playerStats(playerId));
             }}
             className="gap-3"
           >

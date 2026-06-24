@@ -25,7 +25,7 @@ export default function Loading() {
   }
 
   return (
-    <div className={fairwayScope('min-h-full bg-canvas')}>
+    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient')}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-2 md:px-6">
         <div
           className="flex flex-col gap-10"
@@ -34,7 +34,7 @@ export default function Loading() {
           aria-live="polite"
         >
           <span className="sr-only">Loading stats…</span>
-          {/* Masthead (eyebrow + title + description) — mirrors CoachHelmShell header */}
+          {/* Masthead — mirrors StatsPageShell ViewHeader */}
           <div className="flex flex-col gap-2">
             <Skeleton className="h-3 w-16 rounded-fw-sm" />
             <Skeleton className="h-8 w-56 rounded-fw-sm" />

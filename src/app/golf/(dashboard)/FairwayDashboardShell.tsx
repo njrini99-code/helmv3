@@ -50,6 +50,8 @@ import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { cn } from '@/lib/utils';
+import { coachHelmBreadcrumbTab, coachHelmRoutes } from '@/lib/coachhelm/fairway-routes';
+import { usePlayerPathLabel } from '@/hooks/golf/use-player-path-label';
 import {
   IconHome,
   IconSparkles,
@@ -99,15 +101,14 @@ type Role = 'coach' | 'player';
  * a single source of truth so the two location systems agree.
  */
 const COACHHELM_CLUSTER_PREFIXES = [
+  '/golf/dashboard/coachhelm/team',
+  '/golf/dashboard/coachhelm/players',
   '/golf/dashboard/intelligence',
   '/golf/dashboard/alerts',
   '/golf/dashboard/insights',
   '/golf/dashboard/patterns',
   '/golf/dashboard/development',
   '/golf/dashboard/analytics/coachhelm',
-  // NOTE: only the COACH CoachHelm sub-routes (`/coachhelm/chat`, `/coachhelm/genome`)
-  // belong to this cluster. Bare `/golf/dashboard/coachhelm` is the PLAYER CoachHelm
-  // home (no masthead sub-nav) and must NOT be treated as the coach cluster.
   '/golf/dashboard/coachhelm/',
 ] as const;
 
@@ -150,6 +151,15 @@ function isPlayerCoachHelmCluster(pathname: string): boolean {
   );
 }
 
+/** Coach stats cluster — team board + per-player drill-down. */
+function isCoachStatsCluster(pathname: string): boolean {
+  return (
+    pathname.startsWith('/golf/dashboard/stats/team') ||
+    pathname.startsWith('/golf/dashboard/stats/players/') ||
+    pathname === '/golf/dashboard/stats'
+  );
+}
+
 /** The already-computed notification counts the nav rail can surface. The
  *  badge context polls all of these every 45s; previously only `messages` and
  *  `coachhelm` reached the rail and the rest were thrown away (P438). A badge
@@ -182,7 +192,7 @@ function buildNavSections(role: Role, badges: NavBadgeCounts): NavSection[] {
           { label: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
           {
             label: 'CoachHelm AI',
-            href: '/golf/dashboard/intelligence',
+            href: '/golf/dashboard/coachhelm/team',
             icon: IconSparkles,
             // P414: ONE SOURCE for the "pressing CoachHelm signals" count. This
             // sidebar cluster badge (badges.coachhelm) and the CoachHelmSubNav
@@ -209,7 +219,7 @@ function buildNavSections(role: Role, badges: NavBadgeCounts): NavSection[] {
             // P438: surface the already-polled calendar-notification count.
             badge: navBadge(badges.calendarNotifications),
           },
-          { label: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
+          { label: 'Stats', href: '/golf/dashboard/stats/team', icon: IconChartBar, activeMatch: isCoachStatsCluster },
           {
             label: 'Messages',
             href: '/golf/dashboard/messages',
@@ -331,12 +341,18 @@ function buildBottomNavItems(role: Role, badges: NavBadgeCounts): NavItem[] {
       { label: 'Home', href: '/golf/dashboard', icon: IconHome },
       {
         label: 'CoachHelm',
-        href: '/golf/dashboard/intelligence',
+        href: coachHelmRoutes.teamBrief,
         icon: IconSparkles,
         badge: navBadge(badges.coachhelm),
         activeMatch: isCoachHelmCluster,
       },
       { label: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
+      {
+        label: 'Stats',
+        href: '/golf/dashboard/stats/team',
+        icon: IconChartBar,
+        activeMatch: isCoachStatsCluster,
+      },
       {
         label: 'Calendar',
         href: '/golf/dashboard/calendar',
@@ -403,33 +419,46 @@ function toTitle(seg: string): string {
   return seg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** Within the CoachHelm cluster, the leaf-tab label the masthead sub-nav shows
- *  (so the top-bar breadcrumb agrees with it instead of disagreeing). */
-const COACHHELM_TAB_LABELS: Record<string, string> = {
-  intelligence: 'Brief',
-  alerts: 'Signals',
-  insights: 'Signals',
-  patterns: 'Signals',
-  development: 'Players',
-  analytics: 'Effectiveness', // /analytics/coachhelm
-  coachhelm: 'Ask', // /coachhelm/chat, /coachhelm/genome
-};
-
 /** Pathname → breadcrumb trail. Two levels normally (Dashboard / Section); for
  *  the CoachHelm cluster, three (Dashboard / CoachHelm AI / Tab) so the top-bar
  *  breadcrumb agrees with the CoachHelm masthead + sub-nav instead of showing a
  *  competing trail for the same screen (P409). */
-function buildBreadcrumbs(pathname: string): Breadcrumb[] {
+function buildBreadcrumbs(
+  pathname: string,
+  role: Role,
+  playerLabel?: { name: string | null } | null,
+): Breadcrumb[] {
   const rest = pathname.replace(/^\/golf\/dashboard\/?/, '');
   if (!rest) return [{ label: 'Dashboard' }];
   const seg = rest.split('/')[0] ?? '';
 
-  // CoachHelm cluster → reconcile with the masthead's "CoachHelm AI / <Tab>".
-  if (COACHHELM_CLUSTER_SEGMENTS.has(seg) && isCoachHelmCluster(pathname)) {
-    const tabLabel = COACHHELM_TAB_LABELS[seg] ?? SEGMENT_LABELS[seg] ?? toTitle(seg);
+  // Stats cluster — first-class nav area (not nested under CoachHelm AI).
+  if (role === 'coach' && pathname.startsWith('/golf/dashboard/stats')) {
+    const crumbs: Breadcrumb[] = [
+      { label: 'Dashboard', href: '/golf/dashboard' },
+      { label: 'Stats', href: coachHelmRoutes.teamStats },
+    ];
+    if (pathname.startsWith('/golf/dashboard/stats/players/')) {
+      crumbs.push({ label: playerLabel?.name ?? 'Player' });
+    }
+    return crumbs;
+  }
+
+  // Roster player drill-down — name in the trail, not a generic leaf.
+  if (role === 'coach' && pathname.startsWith('/golf/dashboard/roster/') && pathname !== '/golf/dashboard/roster') {
     return [
       { label: 'Dashboard', href: '/golf/dashboard' },
-      { label: 'CoachHelm AI', href: '/golf/dashboard/intelligence' },
+      { label: 'Roster', href: '/golf/dashboard/roster' },
+      { label: playerLabel?.name ?? 'Player' },
+    ];
+  }
+
+  // CoachHelm cluster → reconcile with the masthead's "CoachHelm AI / <Tab>".
+  if (COACHHELM_CLUSTER_SEGMENTS.has(seg) && isCoachHelmCluster(pathname)) {
+    const tabLabel = coachHelmBreadcrumbTab(pathname);
+    return [
+      { label: 'Dashboard', href: '/golf/dashboard' },
+      { label: 'CoachHelm AI', href: coachHelmRoutes.teamBrief },
       { label: tabLabel },
     ];
   }
@@ -642,7 +671,15 @@ function FairwayDashboardContent({
     window.dispatchEvent(new Event('helm:open-command-palette'));
   }, []);
 
-  const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
+  const { name: pathPlayerName } = usePlayerPathLabel(pathname);
+
+  const breadcrumbs = useMemo(
+    () =>
+      buildBreadcrumbs(pathname, role, {
+        name: pathPlayerName,
+      }),
+    [pathname, role, pathPlayerName],
+  );
 
   // Live shot-entry flows own their full screen (their own sticky control header
   // + immersive scoring UI), so render them WITHOUT the shell chrome — the glass

@@ -39,6 +39,7 @@ import { useRouter } from 'next/navigation';
 import { Activity, Target, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { coachHelmRoutes } from '@/lib/coachhelm/fairway-routes';
 import { CoachHelmShell } from './CoachHelmShell';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
@@ -519,7 +520,7 @@ export function FairwayPlayerInsight({
               description: target.content ?? '',
               insight_type: (target.category as string | undefined) ?? 'general',
             });
-            if (res.success) router.push('/golf/dashboard/development');
+            if (res.success) router.push(coachHelmRoutes.playersRoster);
           }
         } catch {
           setInsights(prev);
@@ -564,7 +565,7 @@ export function FairwayPlayerInsight({
 
           if (res.success) {
             addToast({ type: 'success', title: 'Focus area created' });
-            router.push('/golf/dashboard/development');
+            router.push(coachHelmRoutes.playersRoster);
           } else {
             addToast({ type: 'error', title: res.error ?? 'Could not create focus area' });
           }
@@ -640,7 +641,7 @@ export function FairwayPlayerInsight({
       signalCount={signalCount}
       title="Player Insight"
       breadcrumbs={[
-        { label: 'Players', href: '/golf/dashboard/development' },
+        { label: 'Players', href: coachHelmRoutes.playersRoster },
         { label: playerName },
       ]}
       actions={headerActions}
@@ -863,7 +864,7 @@ export function FairwayPlayerInsight({
           <div className="flex items-center justify-between gap-3">
             <Eyebrow>What we&rsquo;re tracking</Eyebrow>
             <Link
-              href={`/golf/dashboard/development?player=${player.id}`}
+              href={coachHelmRoutes.playerBrief(player.id)}
               className="font-fw-sans text-caption font-medium text-accent-700 hover:text-accent-600"
             >
               Manage
@@ -970,7 +971,7 @@ export function FairwayPlayerInsight({
               </p>
             </div>
             <Button asChild variant="primary" leftIcon={<IconChartBar size={16} />} className="flex-shrink-0">
-              <Link href={`/golf/dashboard/stats?player=${player.id}`}>Open CoachHelm stats</Link>
+              <Link href={coachHelmRoutes.playerStats(player.id)}>Open full stats</Link>
             </Button>
           </div>
         </Surface>
@@ -981,7 +982,7 @@ export function FairwayPlayerInsight({
             <Link href={`/golf/dashboard/messages?player=${player.id}`}>Message player</Link>
           </Button>
           <Button asChild variant="secondary" leftIcon={<IconTarget size={16} />}>
-            <Link href={`/golf/dashboard/development?player=${player.id}`}>Create focus area</Link>
+            <Link href={coachHelmRoutes.playerBrief(player.id)}>Create focus area</Link>
           </Button>
           <Button asChild variant="ghost" leftIcon={<IconCalendar size={16} />}>
             <Link href="/golf/dashboard/calendar">Open calendar</Link>

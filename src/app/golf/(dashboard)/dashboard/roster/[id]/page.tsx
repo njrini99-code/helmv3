@@ -26,6 +26,7 @@ import {
 import { Metadata } from 'next';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerProfile } from '@/components/fairway/pages/roster/FairwayPlayerProfile';
+import { statsSummaryFromCache } from '@/lib/fairway/player-stats-summary';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -173,9 +174,21 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   // detailed stats cluster (FairwayStatsSection) refetches via the same engine
   // action client-side. Legacy markup below stays byte-for-byte when flag-off.
   if (isRedesignEnabled()) {
+    const { data: statsCache } = await supabase
+      .from('golf_player_stats_cache')
+      .select(
+        'rounds_played, scoring_average, gir_percentage, driving_accuracy_percentage, putts_per_round, best_round, strokes_gained_total, trend_direction',
+      )
+      .eq('player_id', id)
+      .maybeSingle();
+
     return (
-      <div className={fairwayScope('min-h-full bg-canvas')}>
-        <FairwayPlayerProfile player={player} membershipStatus={membership.status} />
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayPlayerProfile
+          player={player}
+          membershipStatus={membership.status}
+          statsSummary={statsSummaryFromCache(statsCache)}
+        />
       </div>
     );
   }
