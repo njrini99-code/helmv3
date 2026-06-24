@@ -26,7 +26,7 @@ export { Sparkline } from './sections/shared-primitives';
 // TYPES
 // ============================================================================
 
-export type StatsCategory = 'overview' | 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling' | 'strokes-gained' | 'progress' | 'dispersion' | 'analysis';
+type StatsCategory = 'overview' | 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling' | 'strokes-gained' | 'progress' | 'dispersion' | 'analysis';
 
 interface RoundOption {
   id: string;
