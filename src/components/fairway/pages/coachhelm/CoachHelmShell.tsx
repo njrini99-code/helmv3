@@ -89,10 +89,14 @@ export interface CoachHelmShellProps {
 const DEFAULT_TITLE: Record<CoachHelmTab, string> = {
   brief: 'Team Brief',
   signals: 'Signals',
-  players: 'Players',
+  stats: 'Team Stats',
+  reviews: 'Round Reviews',
+  ask: 'Ask CoachHelm',
+  roster: 'Roster',
+  compare: 'Compare Players',
+  players: 'Roster',
   standing: 'Standing',
   effectiveness: 'Effectiveness',
-  ask: 'Ask CoachHelm',
 };
 
 export function CoachHelmShell({
