@@ -96,6 +96,8 @@ type CoachHelmPattern = NonNullable<
 
 import type { StatsCategory } from '@/components/golf/stats/GolfStatsDisplay';
 
+const SG_STANDING_CATEGORIES = ['sg_ott', 'sg_approach', 'sg_around_green', 'sg_putting'] as const;
+
 const STATS_CATEGORIES = [
   'overview',
   'progress',
@@ -285,10 +287,8 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
 
   const sgTotal = standingByMetric.get('sg_total') ?? null;
 
-  const SG_CATEGORIES = ['sg_ott', 'sg_approach', 'sg_around_green', 'sg_putting'] as const;
-
   const gainLeak = useMemo(() => {
-    const scored = SG_CATEGORIES.map((id) => {
+    const scored = SG_STANDING_CATEGORIES.map((id) => {
       const row = standingByMetric.get(id);
       const cfg = getMetricRenderConfig(id);
       if (!row || !cfg) return null;

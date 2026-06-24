@@ -71,7 +71,7 @@ describe('CoachHelmSubNav — player consolidation', () => {
       .getAllByRole('link')
       .map((a) => a.textContent);
 
-    expect(labels).toEqual(['Brief', 'Signals', 'Players', 'Effectiveness', 'Ask']);
+    expect(labels).toEqual(['Brief', 'Signals', 'Reviews', 'Ask']);
     expect(screen.queryByRole('link', { name: 'Standing' })).toBeNull();
   });
 });
