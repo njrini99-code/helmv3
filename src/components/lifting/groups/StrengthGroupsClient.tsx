@@ -11,6 +11,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { IconPlus, IconUsers, IconUserPlus, IconUserX, IconTrash } from '@/components/icons';
 import {
   createGroup,
@@ -42,6 +44,49 @@ interface Props {
   athletes: Array<Pick<HelmLiftingAthleteRow, 'id' | 'first_name' | 'last_name' | 'position' | 'sport'>>;
   orgId: string;
   canEdit: boolean;
+  loading?: boolean;
+}
+
+function StrengthGroupsSkeleton() {
+  return (
+    <div className="flex h-full min-h-[600px] overflow-hidden">
+      {/* LEFT */}
+      <aside className="w-64 shrink-0 border-r border-warm-100 bg-warm-50/50 p-3 space-y-2">
+        <div className="flex items-center justify-between mb-3 px-1">
+          <Skeleton className="h-3.5 w-16" />
+          <Skeleton className="h-7 w-14 rounded-lg" />
+        </div>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-xl p-3 space-y-1.5" style={{ animationDelay: `${i * 60}ms` }}>
+            <div className="flex items-center justify-between gap-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-14 rounded-full" />
+            </div>
+            <Skeleton className="h-3 w-20" />
+          </div>
+        ))}
+      </aside>
+      {/* CENTER */}
+      <main className="flex-1 p-6 space-y-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <Skeleton className="h-8 w-20 rounded-lg" />
+        </div>
+        <div className="rounded-2xl border border-warm-100 bg-white/70 overflow-hidden">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-warm-50 last:border-0">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-7 w-20 rounded-lg ml-auto" />
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
 }
 
 const TYPE_META: Record<HelmLiftingGroupType, { label: string; cls: string }> = {
@@ -51,7 +96,8 @@ const TYPE_META: Record<HelmLiftingGroupType, { label: string; cls: string }> = 
   temporary: { label: 'Temp',      cls: 'bg-warm-50 text-warm-500 border-warm-200' },
 };
 
-export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, canEdit }: Props) {
+export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, canEdit, loading = false }: Props) {
+  const prefersReducedMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
   const [groups, setGroups] = useState(initialGroups);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
@@ -87,6 +133,8 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
       return name.includes(q);
     });
   }, [selectedGroup, athletes, athleteSearch]);
+
+  if (loading) return <StrengthGroupsSkeleton />;
 
   function handleCreate() {
     if (!newName.trim()) { setCreateError('Name is required.'); return; }
@@ -201,38 +249,48 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
 
         {groups.length === 0 ? (
           <EmptyState
+            variant="minimal"
             icon={<IconUsers size={20} className="text-warm-300" />}
-            title="No groups"
-            description={canEdit ? 'Create a group to segment your room.' : 'No groups yet.'}
+            title="No groups yet"
+            description={canEdit ? 'Create a group to segment your weight room.' : 'No groups yet.'}
           />
         ) : (
           <div className="space-y-1">
-            {groups.map((group) => {
-              const typeMeta = TYPE_META[group.group_type];
-              const isSelected = selectedGroupId === group.id;
-              return (
-                <button
-                  key={group.id}
-                  type="button"
-                  onClick={() => setSelectedGroupId(group.id)}
-                  className={`w-full rounded-xl p-3 text-left transition-colors ${
-                    isSelected ? 'bg-primary-50 border border-primary-100' : 'hover:bg-white/60'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <p className={`text-sm font-medium truncate ${isSelected ? 'text-primary-800' : 'text-warm-800'}`}>
-                      {group.name}
-                    </p>
-                    <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${typeMeta.cls}`}>
-                      {typeMeta.label}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-warm-400 mt-0.5">
-                    {group.member_count} member{group.member_count !== 1 ? 's' : ''}
-                  </p>
-                </button>
-              );
-            })}
+            <AnimatePresence initial={false}>
+              {groups.map((group, i) => {
+                const typeMeta = TYPE_META[group.group_type];
+                const isSelected = selectedGroupId === group.id;
+                return (
+                  <motion.div
+                    key={group.id}
+                    initial={prefersReducedMotion ? false : { opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -8 }}
+                    transition={{ duration: 0.18, delay: i * 0.04 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGroupId(group.id)}
+                      className={`w-full rounded-xl p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
+                        isSelected ? 'bg-primary-50 border border-primary-100' : 'hover:bg-white/60'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <p className={`text-sm font-medium truncate ${isSelected ? 'text-primary-800' : 'text-warm-800'}`}>
+                          {group.name}
+                        </p>
+                        <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${typeMeta.cls}`}>
+                          {typeMeta.label}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-warm-400 mt-0.5">
+                        {group.member_count} member{group.member_count !== 1 ? 's' : ''}
+                      </p>
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </aside>
@@ -403,7 +461,7 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
                           const checked = e.target.checked;
                           setNewInitialIds((prev) => {
                             const next = new Set(prev);
-                            checked ? next.add(a.id) : next.delete(a.id);
+                            if (checked) { next.add(a.id); } else { next.delete(a.id); }
                             return next;
                           });
                         }}

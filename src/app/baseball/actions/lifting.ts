@@ -227,9 +227,9 @@ export const createExercise = withBaseballAction(
 //    baseball_lift_assignments table is bypassed entirely — the session IS the
 //    assignment in the unified model. Returns the helm_lifting_sessions.id so
 //    callers (updateAssignmentStatus, logLiftResult) can target the right row.
-//    Player-group quick-assign (no single player): session requires athlete_id
-//    (NOT NULL in helm schema) so group-only quick-assigns are a no-op on the
-//    session write — the action degrades honestly rather than guessing a roster.
+//    Group quick-assign (no single playerId, groupScope provided): fetches all
+//    members from baseball_strength_group_members, resolves their athlete IDs,
+//    and bulk-inserts one helm_lifting_session per member — real materialization.
 // -----------------------------------------------------------------------------
 
 export const createLiftAssignment = withBaseballAction(
@@ -249,14 +249,117 @@ export const createLiftAssignment = withBaseballAction(
 
     const supabase = await createClient();
 
-    // Group-only quick-assigns have no single athlete_id. The unified helm model
-    // requires athlete_id on sessions, so we cannot materialize a group session
-    // here. Return a synthetic id placeholder so the caller gets a success response
-    // without a DB write (multi-player materialization is the V11 program builder's
-    // job — same honest degradation as before, different reason).
+    // Group-scope quick-assign: fetch all members for each group in groupScope,
+    // resolve their athlete IDs, and bulk-insert one helm_lifting_session per athlete.
+    // We intentionally bulk-upsert (never delete-then-reinsert) so a re-submit is safe.
     if (!input.playerId) {
+      const groups = input.groupScope;
+      if (!groups || groups.length === 0) {
+        // Neither player nor group supplied — schema refinement already rejects this,
+        // but guard defensively here too.
+        throw new BaseballActionError('Assign to a player or a group.');
+      }
+
+      const scheduledDate = input.dueDate ?? new Date().toISOString().slice(0, 10);
+
+      // 1. Collect all baseball_players.id values from the specified groups.
+      const { data: memberRows } = await fromUntyped(supabase, 'baseball_strength_group_members')
+        .select('player_id')
+        .in('group_id', groups) as { data: Array<{ player_id: string }> | null };
+
+      const playerIds = [...new Set((memberRows ?? []).map((r) => r.player_id))];
+      if (playerIds.length === 0) {
+        // Groups are empty — succeed silently (coach will see no new assignments).
+        revalidatePath(PERFORMANCE_PATH);
+        return { success: true };
+      }
+
+      // 2. Resolve baseball_players.id → helm_lifting_athletes.id for all members.
+      const athleteMap = await resolveBaseballAthleteIds(liftCtx.organizationId, playerIds);
+
+      // 3. Resolve the exercise snapshot name (same as single-player path).
+      let exerciseName = input.title ?? 'Lift';
+      let liftExerciseId: string | null = null;
+      if (input.exerciseId) {
+        const { data: ex } = await fromUntyped(supabase, 'helm_lifting_exercises')
+          .select('id, name')
+          .eq('id', input.exerciseId)
+          .maybeSingle() as { data: { id: string; name: string } | null };
+        if (ex?.name) {
+          exerciseName = ex.name;
+          liftExerciseId = ex.id;
+        }
+      }
+
+      const presc = (input.prescription ?? {}) as {
+        sets?: number; reps?: number; weight?: number;
+      };
+      const titleValue = input.title ?? 'Lift';
+
+      // 4. Bulk-insert one session per resolved athlete (idempotent upsert on
+      //    (athlete_id, scheduled_date, title, program_assignment_id=null)).
+      let insertedCount = 0;
+      for (const playerId of playerIds) {
+        const athleteId = athleteMap[playerId];
+        if (!athleteId) continue; // player not yet seeded in helm — skip, never throw.
+
+        // Dedupe check: if a session already exists for this athlete + date + title,
+        // skip the insert to stay idempotent (never delete-then-reinsert).
+        const { data: dupe } = await fromUntyped(supabase, 'helm_lifting_sessions')
+          .select('id')
+          .eq('athlete_id', athleteId)
+          .eq('scheduled_date', scheduledDate)
+          .eq('title', titleValue)
+          .is('program_assignment_id', null)
+          .maybeSingle() as { data: { id: string } | null };
+
+        let sessionId = dupe?.id;
+        if (!sessionId) {
+          const sessionPayload: HelmLiftingSessionInsert = {
+            organization_id: liftCtx.organizationId,
+            sport: 'baseball',
+            team_id: ctx.targetTeamId,
+            athlete_id: athleteId,
+            title: titleValue,
+            scheduled_date: scheduledDate,
+            status: 'assigned',
+            program_assignment_id: null,
+          };
+          const { data: newSession } = await fromUntyped(supabase, 'helm_lifting_sessions')
+            .insert(sessionPayload)
+            .select('id')
+            .maybeSingle() as { data: { id: string } | null };
+          sessionId = newSession?.id;
+          insertedCount++;
+        }
+
+        // Seed the exercise row for this session (idempotent: skip if already present).
+        if (sessionId) {
+          const { data: existingSe } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
+            .select('id')
+            .eq('session_id', sessionId)
+            .limit(1) as { data: Array<{ id: string }> | null };
+
+          if (!existingSe || existingSe.length === 0) {
+            const sePayload: HelmLiftingSessionExerciseInsert = {
+              session_id: sessionId,
+              exercise_id: liftExerciseId,
+              exercise_name_snapshot: exerciseName,
+              order_index: 0,
+              prescribed_sets: presc.sets ?? null,
+              prescribed_reps: presc.reps ?? null,
+              prescribed_load: presc.weight ?? null,
+              prescribed_load_unit: presc.weight != null ? 'lb' : null,
+              status: 'assigned',
+            };
+            await fromUntyped(supabase, 'helm_lifting_session_exercises').insert(sePayload);
+          }
+        }
+      }
+
       revalidatePath(PERFORMANCE_PATH);
-      return { success: true };
+      revalidatePath(PLAYER_TODAY_PATH);
+      return { success: true, id: `group:${insertedCount}` };
     }
 
     const scheduledDate = input.dueDate ?? new Date().toISOString().slice(0, 10);

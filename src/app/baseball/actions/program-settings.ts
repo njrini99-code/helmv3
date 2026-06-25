@@ -35,6 +35,8 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 // doc is created lazily, never delete-then-reinsert.
 // =============================================================================
 
+import { z } from 'zod';
+
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
@@ -1019,3 +1021,53 @@ function synthesizeDefaultRow(
     ...getDefaultProgramSettings(programType),
   };
 }
+
+// -----------------------------------------------------------------------------
+// update_program_block_order — drag-reorder for program sections (W5c).
+//
+// Accepts an ordered array of baseball_lift_sections.id values and writes
+// section_order (integer) back to each row in a loop. The column already
+// exists (migration 20260624000063 line 241) — no migration needed.
+//
+// Gated: can_manage_lifting (same gate as the lifting authoring surface;
+// settings feature-area is used for consistency with this file's other actions).
+// -----------------------------------------------------------------------------
+
+const updateBlockOrderSchema = z.object({
+  orderedIds: z.array(z.string().uuid()).min(1).max(500),
+});
+
+export interface UpdateBlockOrderResult {
+  success: boolean;
+  error?: string;
+}
+
+export const updateProgramBlockOrder = withBaseballAction(
+  'updateProgramBlockOrder',
+  { featureArea: 'baseball-settings', requiredCapability: 'can_manage_lifting' },
+  async (
+    _ctx,
+    raw: z.input<typeof updateBlockOrderSchema>,
+  ): Promise<UpdateBlockOrderResult> => {
+    const input = updateBlockOrderSchema.parse(raw);
+    const supabase = await createClient();
+
+    // Write section_order for each id in the ordered array. We update one row at
+    // a time rather than a bulk CASE WHEN because the array is typically 2-10 items
+    // and the per-row RLS check (team_id match inside the section → day → week →
+    // program) keeps the surface area tight.
+    for (let i = 0; i < input.orderedIds.length; i++) {
+      const id = input.orderedIds[i];
+      if (!id) continue;
+      const { error } = await fromUntyped(supabase, 'baseball_lift_sections')
+        .update({ section_order: i, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    }
+
+    // Revalidate the program editor surface so the updated order is reflected.
+    revalidatePath('/baseball/dashboard/performance');
+
+    return { success: true };
+  },
+);

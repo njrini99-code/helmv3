@@ -4,8 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
-import { AlertCircle, CheckCircle2, Dumbbell, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
@@ -100,7 +101,7 @@ function SignupContent() {
             <div className="relative">
               <div className="absolute inset-0 bg-primary-500/20 rounded-full blur-xl scale-150" />
               <div className="relative w-14 h-14 flex items-center justify-center mb-4 bg-primary-50 rounded-2xl border border-primary-100">
-                <Dumbbell className="w-8 h-8 text-primary-600" />
+                <Image src="/helm-lifting-logo.png" alt="Helm Lifting Lab" width={56} height={56} className="object-contain" priority />
               </div>
             </div>
             <h1 className="text-xl font-bold text-warm-900">Helm Lifting Lab</h1>

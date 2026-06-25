@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   IconSparkles,
@@ -14,6 +15,7 @@ import {
 } from '@/components/icons';
 import type { BaseballCoachInsight } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { dismissInsight, markInsightAddressed } from '@/app/baseball/actions/insights';
 
 interface PlayerInsightsPanelProps {
   insights: BaseballCoachInsight[];
@@ -38,7 +40,30 @@ const priorityColors: Record<string, { bg: string; border: string; text: string;
 
 export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsightsPanelProps) {
   const prefersReducedMotion = useReducedMotion();
+  const router = useRouter();
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
+  const [pendingAction, setPendingAction] = useState<{ id: string; action: 'dismiss' | 'address' } | null>(null);
+  const [, startTransition] = useTransition();
+
+  function handleDismiss(insightId: string) {
+    if (pendingAction) return;
+    setPendingAction({ id: insightId, action: 'dismiss' });
+    startTransition(async () => {
+      await dismissInsight(insightId);
+      setPendingAction(null);
+      router.refresh();
+    });
+  }
+
+  function handleMarkAddressed(insightId: string) {
+    if (pendingAction) return;
+    setPendingAction({ id: insightId, action: 'address' });
+    startTransition(async () => {
+      await markInsightAddressed(insightId);
+      setPendingAction(null);
+      router.refresh();
+    });
+  }
 
   if (insights.length === 0) {
     return (
@@ -148,13 +173,39 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                       )}
 
                       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-warm-200/60">
-                        <Button variant="ghost" aria-label={`Mark insight "${insight.title}" as addressed`} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 active:bg-primary-200 transition-colors min-h-0">
+                        {/* Mark Addressed — calls markInsightAddressed server action */}
+                        <Button
+                          variant="ghost"
+                          aria-label={`Mark insight "${insight.title}" as addressed`}
+                          disabled={!!pendingAction}
+                          onClick={() => handleMarkAddressed(insight.id)}
+                          className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 active:bg-primary-200 transition-colors min-h-0 ${
+                            pendingAction?.id === insight.id && pendingAction.action === 'address'
+                              ? 'opacity-60 cursor-not-allowed'
+                              : ''
+                          }`}
+                        >
                           <IconCheck size={14} />
-                          Mark Addressed
+                          {pendingAction?.id === insight.id && pendingAction.action === 'address'
+                            ? 'Saving…'
+                            : 'Mark Addressed'}
                         </Button>
-                        <Button variant="ghost" aria-label={`Dismiss insight "${insight.title}"`} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200 active:bg-warm-300 transition-colors min-h-0">
+                        {/* Dismiss — calls dismissInsight server action */}
+                        <Button
+                          variant="ghost"
+                          aria-label={`Dismiss insight "${insight.title}"`}
+                          disabled={!!pendingAction}
+                          onClick={() => handleDismiss(insight.id)}
+                          className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200 active:bg-warm-300 transition-colors min-h-0 ${
+                            pendingAction?.id === insight.id && pendingAction.action === 'dismiss'
+                              ? 'opacity-60 cursor-not-allowed'
+                              : ''
+                          }`}
+                        >
                           <IconX size={14} />
-                          Dismiss
+                          {pendingAction?.id === insight.id && pendingAction.action === 'dismiss'
+                            ? 'Dismissing…'
+                            : 'Dismiss'}
                         </Button>
                       </div>
                     </div>

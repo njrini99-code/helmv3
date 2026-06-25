@@ -76,6 +76,8 @@ export type OperationalRuleId =
   // Stats / postgame
   | 'official_stats_missing'
   | 'postgame_review_needed'
+  // Hitting performance
+  | 'player_cold_streak'
   // Recruiting / showcase
   | 'profile_incomplete'
   | 'missing_video'
@@ -111,6 +113,14 @@ export interface RuleSignal {
   visibility: BaseballSignalVisibility;
   /** stable per (rule, subject) so a re-run UPSERTs the open signal, never clones. */
   dedupeKey: string;
+  /**
+   * When true the action layer persists this signal with
+   * disposition='sample_too_small' rather than 'new'. Signals remain in the
+   * inbox as a "watch" item until more data accumulates or the condition clears.
+   * Only used by rules where sample size is the primary confidence gate
+   * (currently: player_cold_streak). Other rules leave this undefined → 'new'.
+   */
+  sampleTooSmall?: boolean;
 }
 
 // -----------------------------------------------------------------------------
@@ -224,6 +234,24 @@ export interface FactAiOutput {
   lastGeneratedAt: string | null;
 }
 
+/**
+ * Pre-aggregated hitting span for one player — loaded by the action layer from
+ * baseball_player_stats and handed to the 'player_cold_streak' rule.
+ * All OPS values are OBP + SLG; 0 when no plate appearances are recorded.
+ */
+export interface FactPlayerHittingSpan {
+  playerId: string;
+  playerName: string;
+  /** Actual game count in the recent window (may be < coldStreakMinGames). */
+  recentGameCount: number;
+  /** Average OPS over the last N games in the recent window. */
+  recentOPS: number;
+  /** Season OPS (full-season aggregate). */
+  seasonOPS: number;
+  /** ISO date (YYYY-MM-DD) of the most-recent game in the span (for dedupe weekOf). */
+  mostRecentGameDate: string;
+}
+
 export interface OperationalRuleFacts {
   /** Upcoming mandatory events to check for missing acks. */
   upcomingEvents: FactEvent[];
@@ -239,6 +267,12 @@ export interface OperationalRuleFacts {
   /** team-required document categories (program checklist). */
   requiredDocumentCategories: string[];
   ai: FactAiOutput;
+  /**
+   * Per-player hitting spans for the cold-streak rule. Optional so existing
+   * tests that create facts snapshots without this field continue to pass
+   * (the rule degrades to no signals when the array is absent or empty).
+   */
+  playerHittingSpans?: FactPlayerHittingSpan[];
   /** "now" as ISO so the engine is deterministic in tests. */
   nowIso: string;
 }
@@ -261,6 +295,17 @@ export interface RuleEngineConfig {
   aiStaleHours: number;
   /** Profile completeness below this ratio fires 'profile_incomplete'. */
   profileCompletenessFloor: number;
+  /**
+   * Minimum games in the recent window for a cold-streak signal to reach
+   * disposition='new'. Fewer games → 'sample_too_small' (still surfaced; the
+   * coach can acknowledge or wait for more data).
+   */
+  coldStreakMinGames: number;
+  /**
+   * OPS drop required to fire the cold-streak rule: recentOPS must be at least
+   * this far below seasonOPS. Default 0.150 (a meaningful, coach-visible drop).
+   */
+  coldStreakOPSDrop: number;
 }
 
 export const DEFAULT_RULE_ENGINE_CONFIG: RuleEngineConfig = {
@@ -270,6 +315,8 @@ export const DEFAULT_RULE_ENGINE_CONFIG: RuleEngineConfig = {
   officialStatsGraceHours: 24,
   aiStaleHours: 14 * 24, // two weeks
   profileCompletenessFloor: 0.7,
+  coldStreakMinGames: 5,
+  coldStreakOPSDrop: 0.15,
 };
 
 // -----------------------------------------------------------------------------
@@ -783,6 +830,77 @@ export const OPERATIONAL_RULES: readonly OperationalRule[] = [
           recommendedOwnerRole: 'coaching',
           visibility: 'staff_only',
           dedupeKey: `postgame_review_needed:${g.id}`,
+        });
+      }
+      return out;
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // HITTING PERFORMANCE
+  // ---------------------------------------------------------------------------
+  {
+    id: 'player_cold_streak',
+    condition:
+      'A hitter\'s recent-game OPS has dropped at least 0.150 below their season OPS (minimum 5 recent games for full confidence).',
+    sourceTypes: ['baseball_player_stats'],
+    severity: 'info',
+    ownerRole: 'coaching',
+    category: 'hitting',
+    actionTemplate: 'meeting_item',
+    visibility: 'staff_only',
+    evaluate(facts, cfg) {
+      const out: RuleSignal[] = [];
+      // Degrade gracefully when no span data was loaded (e.g. in unit tests that
+      // do not populate playerHittingSpans — rules for other categories still run).
+      for (const span of facts.playerHittingSpans ?? []) {
+        const drop = span.seasonOPS - span.recentOPS;
+        // Only surface when there is a meaningful downward trend.
+        if (drop < cfg.coldStreakOPSDrop) continue;
+        // Sample-size gate: mark as 'sample_too_small' when the window has fewer
+        // games than the threshold so the coach sees it as "worth monitoring"
+        // rather than a confirmed concern.
+        const sampleTooSmall = span.recentGameCount < cfg.coldStreakMinGames;
+
+        // Compute ISO date of the Monday of the week containing the most-recent
+        // game — used as the stable weekly dedupe suffix so a re-run in the same
+        // week UPSERTs the existing signal rather than creating a duplicate.
+        const gameDate = new Date(`${span.mostRecentGameDate}T00:00:00Z`);
+        const daysFromMonday = (gameDate.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+        const monday = new Date(gameDate.getTime() - daysFromMonday * 86400000);
+        const weekOf = monday.toISOString().slice(0, 10);
+
+        const evidence = `Recent ${span.recentGameCount}G OPS ${span.recentOPS.toFixed(3)} vs season ${span.seasonOPS.toFixed(3)} (−${drop.toFixed(3)})`;
+
+        out.push({
+          ruleId: 'player_cold_streak',
+          signalType: 'hitting_concern',
+          category: 'hitting',
+          severity: 'info',
+          playerId: span.playerId,
+          eventId: null,
+          title: `Hitting slump worth review: ${span.playerName}`,
+          whyItMatters: sampleTooSmall
+            ? `${span.playerName}'s OPS over the last ${span.recentGameCount} game${span.recentGameCount === 1 ? '' : 's'} (${span.recentOPS.toFixed(3)}) is associated with a notable drop from season average (${span.seasonOPS.toFixed(3)}). Limited data — worth monitoring as more games accumulate.`
+            : `${span.playerName}'s OPS over the last ${span.recentGameCount} games (${span.recentOPS.toFixed(3)}) is associated with a ${drop.toFixed(3)} drop from season average (${span.seasonOPS.toFixed(3)}). Worth a review to see what may be contributing.`,
+          evidence,
+          sourceRefs: [
+            ref(
+              'baseball_player_stats',
+              null,
+              `${span.playerName}: ${evidence}`,
+              'staff_only',
+            ),
+          ],
+          // Statistical inference over a sample of games — not a literal
+          // deterministic fact. Confidence is modestly lower when sample is thin.
+          confidence: sampleTooSmall ? 0.4 : 0.7,
+          recommendedActionLabel: 'Review recent at-bats with player',
+          recommendedActionType: 'meeting_item',
+          recommendedOwnerRole: 'coaching',
+          visibility: 'staff_only',
+          dedupeKey: `cold_streak:${span.playerId}:${weekOf}`,
+          sampleTooSmall,
         });
       }
       return out;

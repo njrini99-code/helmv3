@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SourceTrustBadge } from '@/components/baseball/source-trust';
 import { SignalSourceDrawer } from '@/components/baseball/source-trust/SourceDrawer';
+import { SignalDrillDown } from './SignalDrillDown';
 import {
   IconCheck,
   IconX,
@@ -107,7 +108,7 @@ function ActionVerdictBadge({ action }: { action: SignalActionRow }) {
   if (!v) return null;
   if (v === 'improved') {
     return (
-      <Badge tone="emerald" appearance="soft" size="sm">
+      <Badge tone="primary" appearance="soft" size="sm">
         <IconTrendingUp size={11} />
         Improved
       </Badge>
@@ -174,6 +175,7 @@ export function SignalCard({
   onFeedback,
 }: SignalCardProps) {
   const [sourceDrawerOpen, setSourceDrawerOpen] = React.useState(false);
+  const [drillDownOpen, setDrillDownOpen] = React.useState(false);
   const reduce = useReducedMotionGuard();
   const sev = getSeverityPresentation(signal.severity);
   const disp = getDispositionPresentation(signal.disposition);
@@ -241,7 +243,7 @@ export function SignalCard({
             )}
           </div>
 
-          {/* Source chip + Source drawer trigger (min 44px touch target). */}
+          {/* Source chip + Source drawer trigger + Detail slide-over trigger (min 44px). */}
           <div className="flex-shrink-0 flex items-center gap-1.5">
             <SourceTrustBadge
               trust={signal.trust}
@@ -262,6 +264,22 @@ export function SignalCard({
               <span className="hidden sm:inline">Source</span>
               <IconChevronRight size={11} aria-hidden className="text-warm-400" />
             </Button>
+            {/* [W6c] Detail button — opens the full signal drill-down slide-over
+                showing why_it_matters / evidence / recommended_action_label /
+                limitation / sample_n + structured source refs. */}
+            {!compact && (
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => setDrillDownOpen(true)}
+                aria-label="View full signal detail"
+                aria-haspopup="dialog"
+                className="inline-flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center rounded-lg px-2 text-xs font-medium text-warm-500 hover:text-warm-900 hover:bg-warm-50"
+              >
+                <span className="hidden sm:inline text-xs">Detail</span>
+                <IconChevronRight size={11} aria-hidden className="text-warm-400" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -415,6 +433,16 @@ export function SignalCard({
         sourceChips={signal.sourceRefs.length > 0 ? signal.sourceRefs : null}
         signalConfidence={signal.confidence}
         limitation={limitation}
+      />
+
+      {/* [W6c] Full signal drill-down slide-over — why it matters, evidence,
+          recommended action label, limitation, and structured source refs.
+          Radix Dialog (focus trap + Escape) rendered as a right-panel. */}
+      <SignalDrillDown
+        signal={signal}
+        playerName={playerName}
+        open={drillDownOpen}
+        onOpenChange={setDrillDownOpen}
       />
     </LazyMotion>
   );

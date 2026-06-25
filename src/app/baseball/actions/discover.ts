@@ -583,16 +583,39 @@ export async function getWatchlistIds(): Promise<string[]> {
 /**
  * Get state-level counts for the map visualization.
  * OPTIMIZED: Uses is_on_college_team column for fast filtering.
+ *
+ * coachType gates which player/org types appear in the map counts so the map
+ * reflects what the coach can actually recruit (same rules as getDiscoverPlayers
+ * and getDiscoverTeams):
+ *   - college : HS + showcase + JUCO players; HS + showcase + JUCO orgs
+ *   - juco    : HS + showcase players only; HS orgs only
+ *   - high_school / showcase : no recruiting (map returns empty)
+ *
+ * SECURITY: When this function is called from a server action, the caller MUST
+ * derive coachType from the authenticated session (not from client input).
+ * The coachId parameter is used only to exclude the coach's own roster.
  */
 export async function getStateCounts(
   mode: 'players' | 'teams',
   coachId?: string,
-   
-  _coachType?: CoachType // Reserved: will filter differently by coach type
+  coachType?: CoachType,
 ): Promise<Record<string, number>> {
   const supabase = await createClient();
 
+  // Non-recruiting coach types see nothing in discover map.
+  if (coachType === 'high_school' || coachType === 'showcase') {
+    return {};
+  }
+
   if (mode === 'players') {
+    // Eligible player types by coach type.
+    // college (and undefined/unknown) → HS + showcase + JUCO
+    // juco → HS + showcase only (cannot recruit other JUCO players)
+    const eligiblePlayerTypes =
+      coachType === 'juco'
+        ? (['high_school', 'showcase'] as const)
+        : (['high_school', 'showcase', 'juco'] as const);
+
     // Run pre-queries in parallel
     const [coachRosterIds, discoverablePlayerIds] = await Promise.all([
       getCoachRosterPlayerIds(supabase, coachId),
@@ -607,7 +630,7 @@ export async function getStateCounts(
       .from('baseball_players')
       .select('id, state')
       .eq('recruiting_activated', true)
-      .neq('player_type', 'college')
+      .in('player_type', eligiblePlayerTypes)
       .not('state', 'is', null);
 
     if (discoverablePlayerIds && discoverablePlayerIds.length > 0) {
@@ -623,10 +646,18 @@ export async function getStateCounts(
     });
     return counts;
   } else {
+    // Teams mode: discoverable org types by coach type.
+    // college (and undefined/unknown) → HS + showcase + JUCO
+    // juco → HS only
+    const eligibleOrgTypes =
+      coachType === 'juco'
+        ? (['high_school'] as const)
+        : (['high_school', 'showcase', 'juco'] as const);
+
     const { data } = await supabase
       .from('organizations')
       .select('location_state')
-      .in('type', ['high_school', 'showcase', 'juco'])
+      .in('type', eligibleOrgTypes)
       .not('location_state', 'is', null);
 
     const counts: Record<string, number> = {};

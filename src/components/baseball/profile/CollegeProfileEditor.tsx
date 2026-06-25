@@ -248,7 +248,6 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {membership.team.logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- arbitrary team logo URLs (any remote host); next/image would need per-host remotePatterns
                       <img
                         src={membership.team.logo_url}
                         alt={membership.team.name}

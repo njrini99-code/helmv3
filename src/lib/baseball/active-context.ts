@@ -26,6 +26,7 @@
 // =============================================================================
 
 import { cookies } from 'next/headers';
+import { unstable_rethrow } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { logServerException } from '@/lib/server-error-logger';
 import {
@@ -152,6 +153,11 @@ export async function getActiveBaseballContext(): Promise<ActiveBaseballContext 
       fellBackFromStale,
     };
   } catch (error) {
+    // Next.js control-flow signals (DYNAMIC_SERVER_USAGE from cookies()/getUser(),
+    // redirect(), notFound()) surface as thrown errors. They MUST propagate so Next
+    // can mark the route dynamic — swallowing DYNAMIC_SERVER_USAGE here was re-logging
+    // it as an app error on every prerender attempt, flooding error_logs + Sentry.
+    unstable_rethrow(error);
     await logServerException(error, {
       action: 'getActiveBaseballContext',
       featureArea: 'baseball-auth',
@@ -203,6 +209,7 @@ export async function setActiveBaseballTeam(
 
     return { success: true };
   } catch (error) {
+    unstable_rethrow(error);
     await logServerException(error, {
       action: 'setActiveBaseballTeam',
       featureArea: 'baseball-auth',

@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { IconCheckCircle2, IconAlertCircle } from '@/components/icons';
+import { Skeleton } from '@/components/ui/skeleton';
 import { submitReadinessCheckin } from '@/app/baseball/actions/lifting';
 import { logBodyweight, saveSorenessMap } from '@/app/baseball/actions/lifting-v11';
 
@@ -36,6 +37,7 @@ interface ExistingCheckin {
 interface Props {
   checkDate: string;
   existing: ExistingCheckin | null;
+  isLoading?: boolean;
 }
 
 const ARM_OPTIONS = ['fresh', 'normal', 'tight', 'sore', 'pain'] as const;
@@ -70,7 +72,7 @@ function ScaleRow({ label, value, onChange, lowLabel, highLabel }: {
   );
 }
 
-export function PlayerReadinessClient({ checkDate, existing }: Props) {
+export function PlayerReadinessClient({ checkDate, existing, isLoading = false }: Props) {
   const [isPending, startTransition] = useTransition();
   const prefersReducedMotion = useReducedMotion();
   const [sleep, setSleep] = useState(existing?.sleep_hours?.toString() ?? '');
@@ -84,6 +86,48 @@ export function PlayerReadinessClient({ checkDate, existing }: Props) {
   const [bodyweight, setBodyweight] = useState('');
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4" aria-busy="true" aria-label="Loading readiness check-in…">
+        <Card variant="glass">
+          <CardHeader>
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-56 mt-1" />
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {/* Scale rows skeleton */}
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2" style={{ animationDelay: `${i * 60}ms` }}>
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <div className="flex gap-2">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <Skeleton key={j} className="h-9 flex-1 rounded-lg" />
+                  ))}
+                </div>
+              </div>
+            ))}
+            {/* Arm status skeleton */}
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-20" />
+              <div className="flex gap-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-9 flex-1 rounded-lg" />
+                ))}
+              </div>
+            </div>
+            {/* Notes skeleton */}
+            <Skeleton className="h-20 w-full rounded-xl" />
+            {/* Submit */}
+            <Skeleton className="h-11 w-32 rounded-xl" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   function handleSubmit() {
     setError(null);

@@ -1,0 +1,15 @@
+{
+  "name": "BaseballHelm",
+  "short_name": "Baseball",
+  "description": "Baseball recruiting, team management, and athletic development powered by Helm Sports Labs",
+  "start_url": "/baseball/player/today",
+  "scope": "/baseball/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#16A34A",
+  "background_color": "#FFFEFA",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

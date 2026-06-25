@@ -35,7 +35,7 @@ export function SportTabBar({ activeSport, baseHref }: SportTabBarProps) {
 
   return (
     <div
-      className="flex items-center gap-1 p-1 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/20"
+      className="flex items-center gap-1 p-1 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/20 overflow-x-auto scrollbar-none"
       role="tablist"
       aria-label="Filter by sport"
     >
@@ -50,7 +50,8 @@ export function SportTabBar({ activeSport, baseHref }: SportTabBarProps) {
             role="tab"
             aria-selected={isActive}
             className={cn(
-              'relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 min-h-[36px] select-none',
+              'relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 min-h-[40px] select-none',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
               isActive
                 ? 'text-primary-700'
                 : 'text-warm-500 hover:text-warm-800 hover:bg-white/40'

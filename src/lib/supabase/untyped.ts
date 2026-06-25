@@ -42,6 +42,14 @@ export type UntypedTable =
   | 'helm_lifting_prs'
   | 'helm_lifting_import_runs'
   | 'helm_lifting_import_rows'
+  // Wave 2 — Helm Lifting Lab check-in scheduling tables
+  // (supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql)
+  | 'helm_lifting_soreness_check_schedules'
+  | 'helm_lifting_soreness_check_requests'
+  | 'helm_lifting_weight_checkin_schedules'
+  | 'helm_lifting_weight_checkin_requests'
+  | 'helm_lifting_nutrition_plans'
+  | 'helm_lifting_nutrition_plan_assignments'
   // fallback: any other table not yet in generated types
   | (string & Record<never, never>);
 

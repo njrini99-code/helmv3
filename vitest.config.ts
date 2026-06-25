@@ -41,6 +41,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // `server-only` is a Next.js build-time guard with no runtime behaviour.
+      // Vitest cannot resolve the bare specifier (Next owns the package), so we
+      // alias it to an empty stub for all test projects so server-scoped modules
+      // (e.g. coachhelm/scheduled-evaluator, player-access, ai-policy-server)
+      // can be exercised in unit and RLS tests without pulling Next's bundler.
+      'server-only': path.resolve(__dirname, './src/test/stubs/server-only.ts'),
     },
   },
   test: {

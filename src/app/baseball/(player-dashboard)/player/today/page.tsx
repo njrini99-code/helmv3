@@ -28,6 +28,15 @@
 // passed through with their available:false flags so the client shows "coming
 // soon" instead of inventing rows. The lift-today slot is a labeled
 // placeholder that the Performance vertical wires in during integration.
+//
+// PERFORMANCE CHECK-IN SLOT (§5 integration):
+//   After resolving the baseball context we also resolve the player's Helm
+//   Lifting athlete row (if any) and fetch:
+//     - getPlayerSorenessToday   → SorenessCheckCard
+//     - getPlayerBodyweightHistory (today's pending request)  → WeightCheckInCard
+//     - getPlayerNutritionPlans  → NutritionPlanCard (first active)
+//   If the player has no athlete row, or no due items, the check-in slot is
+//   simply null-ed out and the client renders nothing (honest empty state).
 // =============================================================================
 
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
@@ -41,10 +50,38 @@ import {
 import { createClient } from '@/lib/supabase/server';
 import { PlayerTodayClient } from '@/components/baseball/player-today/PlayerTodayClient';
 import { PlayerTodayTeamless } from '@/components/baseball/player-today/PlayerTodayTeamless';
+import {
+  resolveBaseballLiftingOrg,
+  resolveMyBaseballAthleteId,
+} from '@/lib/lifting/resolve-baseball-context';
+import { getPlayerSorenessToday } from '@/app/lifting/actions/soreness';
+import { getPlayerBodyweightHistory } from '@/app/lifting/actions/weight-checkins';
+import { getPlayerNutritionPlans } from '@/app/lifting/actions/nutrition';
+import type { PlayerSoreness } from '@/app/lifting/actions/soreness';
+import type { PlayerNutritionPlanCard } from '@/app/lifting/actions/nutrition';
 
 export const metadata = {
   title: 'Today · BaseballHelm',
 };
+
+// ---------------------------------------------------------------------------
+// Performance check-in slot view-models
+// These are the plain serialisable types passed to PlayerTodayClient.
+// ---------------------------------------------------------------------------
+
+export interface PerformanceCheckinSlot {
+  orgId: string;
+  athleteId: string;
+  /** null when no soreness check is due today and no checkin submitted */
+  sorenessToday: PlayerSoreness | null;
+  /** null when no weight request pending today */
+  weightToday: {
+    pendingRequestId: string | null;
+    pendingDueDate: string | null;
+  } | null;
+  /** first active nutrition plan assigned to this athlete (null if none) */
+  nutritionPlan: PlayerNutritionPlanCard | null;
+}
 
 export default async function PlayerTodayPage() {
   // 1. Resolve the active baseball context (server-validated against memberships).
@@ -72,13 +109,67 @@ export default async function PlayerTodayPage() {
   //    envelope (authorized:false / error string) rather than throwing. The
   //    Daily Contract is the commitment-loop mechanic; the Passport is the
   //    source-backed identity snapshot — both compose into the daily view.
-  const [today, dailyContract, passport] = await Promise.all([
+  //
+  //    Performance check-in resolution runs in parallel with the baseball reads.
+  //    We wrap each lifting fetch in try/catch so a lifting failure never breaks
+  //    the baseball today page (the slot simply renders as null).
+  const [today, dailyContract, passport, liftingCtx] = await Promise.all([
     getPlayerToday(context.activeTeamId),
     getPlayerDailyContract(context.activeTeamId, { forDate: todayIso }),
     getPlayerPassport(context.activeTeamId),
+    resolveBaseballLiftingOrg(context.activeTeamId).catch(() => null),
   ]);
 
-  // 3. Hand the serializable view-models to the client. The client owns all
+  // 3. If the player has a lifting org, resolve athlete ID + fetch due items.
+  let performanceSlot: PerformanceCheckinSlot | null = null;
+
+  if (liftingCtx) {
+    const { organizationId: orgId } = liftingCtx;
+
+    // Resolve the player's helm_lifting_athletes.id (null if not seeded).
+    const athleteId = await resolveMyBaseballAthleteId(orgId).catch(() => null);
+
+    if (athleteId) {
+      // Fan out: soreness, weight history (for today's pending request),
+      // and nutrition plans. Any individual failure yields null.
+      const [sorenessToday, weightHistory, nutritionPlans] = await Promise.all([
+        getPlayerSorenessToday({ orgId, athleteId, date: todayIso }).catch(() => null),
+        getPlayerBodyweightHistory({ orgId, athleteId, toDate: todayIso, days: 7 }).catch(() => null),
+        getPlayerNutritionPlans({ orgId, athleteId }).catch(() => null),
+      ]);
+
+      // Only include sorenessToday if there's a pending request or a submitted checkin.
+      const hasSoreness =
+        sorenessToday !== null &&
+        (sorenessToday.request !== null || sorenessToday.checkin !== null);
+
+      // Only include weight if there's a pending request.
+      const hasPendingWeight =
+        weightHistory !== null && weightHistory.pendingRequestId !== null;
+
+      // First active nutrition plan (most recently assigned).
+      const nutritionPlan: PlayerNutritionPlanCard | null =
+        nutritionPlans && nutritionPlans.length > 0 ? (nutritionPlans[0] ?? null) : null;
+
+      // Build the slot only if at least one item is actionable.
+      if (hasSoreness || hasPendingWeight || nutritionPlan) {
+        performanceSlot = {
+          orgId,
+          athleteId,
+          sorenessToday: hasSoreness ? sorenessToday : null,
+          weightToday: hasPendingWeight
+            ? {
+                pendingRequestId: weightHistory!.pendingRequestId,
+                pendingDueDate: weightHistory!.pendingDueDate,
+              }
+            : null,
+          nutritionPlan,
+        };
+      }
+    }
+  }
+
+  // 4. Hand the serializable view-models to the client. The client owns all
   //    interactivity (the acknowledgement affordance, the deferred + lift-today
   //    slots, the daily-contract loop).
   return (
@@ -91,6 +182,7 @@ export default async function PlayerTodayPage() {
       // server UTC), so display matches the contract the player actually wrote.
       // The client uses it only for display; it does not re-fetch.
       todayIso={todayIso}
+      performanceSlot={performanceSlot}
     />
   );
 }

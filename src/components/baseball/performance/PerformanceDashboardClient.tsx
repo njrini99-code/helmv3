@@ -40,8 +40,8 @@ import { getFullName } from '@/lib/utils';
 import {
   createLiftAssignment,
   updateAssignmentStatus,
+  createExercise,
 } from '@/app/baseball/actions/lifting';
-import { createLiftExercise } from '@/app/baseball/actions/lifting-v11';
 import type {
   BaseballLiftAssignmentRow,
   BaseballLiftAssignmentStatus,
@@ -52,7 +52,9 @@ import type {
   BaseballLiftExerciseRow,
   BaseballLiftExerciseCategory,
   BaseballLiftBodyRegion,
+  BaseballStrengthGroupRow,
 } from '@/lib/types/baseball-lifting-v11';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface RosterPlayer {
   id: string;
@@ -70,6 +72,10 @@ interface PerformanceDashboardClientProps {
   assignments: BaseballLiftAssignmentRow[];
   exercises: BaseballLiftExerciseRow[];
   readiness: BaseballReadinessSummary[];
+  /** Strength groups for group-scope assignment. Optional — if absent, only single-player assign is shown. */
+  groups?: Pick<BaseballStrengthGroupRow, 'id' | 'name'>[];
+  /** Show skeleton loaders while data is loading. */
+  isLoading?: boolean;
 }
 
 // V11 exercise vocabulary (mirrors the migration CHECK constraints). Surfaced as
@@ -138,6 +144,8 @@ export function PerformanceDashboardClient({
   assignments: initialAssignments,
   exercises: initialExercises,
   readiness,
+  groups,
+  isLoading = false,
 }: PerformanceDashboardClientProps) {
   void teamId; // team scope is enforced server-side; kept for prop-contract clarity.
 
@@ -152,7 +160,11 @@ export function PerformanceDashboardClient({
   const prefersReducedMotion = useReducedMotion();
 
   // --- Assignment form state ---
+  /** 'player' or 'group' — controls which target field is shown. */
+  const [assignMode, setAssignMode] = useState<'player' | 'group'>('player');
   const [assignPlayerId, setAssignPlayerId] = useState('');
+  /** Selected group IDs for group-scope quick-assign (multi-select via checkboxes). */
+  const [assignGroupIds, setAssignGroupIds] = useState<string[]>([]);
   const [assignExerciseId, setAssignExerciseId] = useState('');
   const [assignTitle, setAssignTitle] = useState('');
   const [assignDueDate, setAssignDueDate] = useState('');
@@ -206,8 +218,12 @@ export function PerformanceDashboardClient({
 
   function handleCreateAssignment() {
     setError(null);
-    if (!assignPlayerId) {
+    if (assignMode === 'player' && !assignPlayerId) {
       setError('Select a player to assign the lift to.');
+      return;
+    }
+    if (assignMode === 'group' && assignGroupIds.length === 0) {
+      setError('Select at least one group to assign the lift to.');
       return;
     }
     const prescription: BaseballLiftPrescription = {};
@@ -217,42 +233,62 @@ export function PerformanceDashboardClient({
 
     startTransition(async () => {
       try {
-        const res = await createLiftAssignment({
-          playerId: assignPlayerId,
-          exerciseId: assignExerciseId || null,
-          title: assignTitle || null,
-          dueDate: assignDueDate || null,
-          prescription,
-        });
-        if (!res.success || !res.id) {
+        const res = await createLiftAssignment(
+          assignMode === 'player'
+            ? {
+                playerId: assignPlayerId,
+                exerciseId: assignExerciseId || null,
+                title: assignTitle || null,
+                dueDate: assignDueDate || null,
+                prescription,
+              }
+            : {
+                groupScope: assignGroupIds,
+                exerciseId: assignExerciseId || null,
+                title: assignTitle || null,
+                dueDate: assignDueDate || null,
+                prescription,
+              },
+        );
+        if (!res.success) {
           setError(res.error ?? 'Could not create the assignment.');
           return;
         }
-        setAssignments((prev) => [
-          {
-            id: res.id as string,
-            team_id: teamId,
-            player_id: assignPlayerId,
-            group_scope: null,
-            assigned_by_coach_id: null,
-            exercise_id: assignExerciseId || null,
-            title: assignTitle || null,
-            due_date: assignDueDate || null,
-            prescription,
-            status: 'assigned',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          ...prev,
-        ]);
+        // For single-player we do an optimistic push; for group mode the server
+        // materialized N sessions — re-render via revalidatePath is the source of
+        // truth. We still flash success in both cases.
+        if (assignMode === 'player' && res.id) {
+          setAssignments((prev) => [
+            {
+              id: res.id as string,
+              team_id: teamId,
+              player_id: assignPlayerId,
+              group_scope: null,
+              assigned_by_coach_id: null,
+              exercise_id: assignExerciseId || null,
+              title: assignTitle || null,
+              due_date: assignDueDate || null,
+              prescription,
+              status: 'assigned',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            ...prev,
+          ]);
+        }
         setAssignPlayerId('');
+        setAssignGroupIds([]);
         setAssignExerciseId('');
         setAssignTitle('');
         setAssignDueDate('');
         setAssignSets('');
         setAssignReps('');
         setAssignWeight('');
-        flashNotice('Lift assigned.');
+        flashNotice(
+          assignMode === 'group'
+            ? 'Lift assigned to group — players will see it on their Today page.'
+            : 'Lift assigned.',
+        );
       } catch {
         setError('Something went wrong assigning the lift. Please try again.');
       }
@@ -299,12 +335,17 @@ export function PerformanceDashboardClient({
     }
     startTransition(async () => {
       try {
-        const res = await createLiftExercise({
+        // createExercise writes to helm_lifting_exercises (unified Lab tables).
+        // The description field maps to the instructions column in the helm schema.
+        // Body region and equipment are preserved in the optimistic row below;
+        // the fuller V11 field set will be wired when lifting-v11.ts is rewired.
+        const res = await createExercise({
           name,
           category: exCategory,
-          bodyRegion: exBodyRegion || null,
-          equipment: exEquipment.trim() || null,
-          instructions: exInstructions.trim() || null,
+          description:
+            [exBodyRegion ? `region:${exBodyRegion}` : '', exEquipment.trim(), exInstructions.trim()]
+              .filter(Boolean)
+              .join(' | ') || null,
         });
         if (!res.success || !res.id) {
           setError(res.error ?? 'Could not add the exercise.');
@@ -353,6 +394,53 @@ export function PerformanceDashboardClient({
         setError('Something went wrong adding the exercise.');
       }
     });
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-4 lg:p-8 space-y-6" aria-busy="true" aria-label="Loading performance dashboard…">
+        {/* Header skeleton */}
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        {/* KPI strip skeleton */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4 space-y-2"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-7 w-12" />
+            </div>
+          ))}
+        </div>
+        {/* Tabs skeleton */}
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-24 rounded-full" />
+            ))}
+          </div>
+          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 space-y-4">
+            <Skeleton className="h-5 w-32" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3" style={{ animationDelay: `${i * 50}ms` }}>
+                <Skeleton variant="circular" className="w-9 h-9 flex-shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -560,18 +648,76 @@ export function PerformanceDashboardClient({
                     <h2 className="font-semibold text-warm-900">Assign a Lift</h2>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    {/* Target mode toggle — only show if groups are available */}
+                    {groups && groups.length > 0 && (
+                      <div className="flex gap-1 rounded-xl bg-warm-50 p-1 w-fit" role="group" aria-label="Assign to">
+                        <button
+                          type="button"
+                          onClick={() => setAssignMode('player')}
+                          aria-pressed={assignMode === 'player'}
+                          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
+                            assignMode === 'player'
+                              ? 'bg-white text-warm-900 shadow-sm'
+                              : 'text-warm-500 hover:text-warm-700'
+                          }`}
+                        >
+                          Player
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAssignMode('group')}
+                          aria-pressed={assignMode === 'group'}
+                          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
+                            assignMode === 'group'
+                              ? 'bg-white text-warm-900 shadow-sm'
+                              : 'text-warm-500 hover:text-warm-700'
+                          }`}
+                        >
+                          Group
+                        </button>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                      <Select
-                        value={assignPlayerId}
-                        onChange={setAssignPlayerId}
-                        options={[
-                          { value: '', label: 'Select player…' },
-                          ...roster.map((p) => ({
-                            value: p.id,
-                            label: getFullName(p.first_name, p.last_name),
-                          })),
-                        ]}
-                      />
+                      {assignMode === 'player' ? (
+                        <Select
+                          value={assignPlayerId}
+                          onChange={setAssignPlayerId}
+                          options={[
+                            { value: '', label: 'Select player…' },
+                            ...roster.map((p) => ({
+                              value: p.id,
+                              label: getFullName(p.first_name, p.last_name),
+                            })),
+                          ]}
+                        />
+                      ) : (
+                        <fieldset className="rounded-xl border border-warm-200 bg-white/60 px-3 py-2 space-y-1.5">
+                          <legend className="px-1 text-xs font-medium text-warm-500">Groups</legend>
+                          {(groups ?? []).map((g) => (
+                            <label
+                              key={g.id}
+                              className="flex items-center gap-2.5 cursor-pointer group"
+                            >
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500/40"
+                                checked={assignGroupIds.includes(g.id)}
+                                onChange={(e) =>
+                                  setAssignGroupIds((prev) =>
+                                    e.target.checked
+                                      ? [...prev, g.id]
+                                      : prev.filter((id) => id !== g.id),
+                                  )
+                                }
+                              />
+                              <span className="text-sm text-warm-800 group-hover:text-warm-900">{g.name}</span>
+                            </label>
+                          ))}
+                          {(groups ?? []).length === 0 && (
+                            <p className="text-xs text-warm-400 py-1">No groups yet.</p>
+                          )}
+                        </fieldset>
+                      )}
                       <Select
                         value={assignExerciseId}
                         onChange={setAssignExerciseId}

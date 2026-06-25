@@ -48,6 +48,7 @@ import { normalizeConfidence } from '@/lib/baseball/source-record';
 import {
   runOperationalRuleEngine,
   normalizedNameKey,
+  DEFAULT_RULE_ENGINE_CONFIG,
   type OperationalRuleFacts,
   type FactEvent,
   type FactPractice,
@@ -57,6 +58,7 @@ import {
   type FactPlayer,
   type FactGame,
   type FactImportRow,
+  type FactPlayerHittingSpan,
   type RuleSignal,
   type RuleEngineConfig,
 } from '@/lib/baseball/operational-rule-engine';
@@ -86,6 +88,13 @@ const OPERATIONAL_SIGNAL_TTL_DAYS = 14;
 const GAME_LOOKBACK_DAYS = 21;
 /** How far forward to look for upcoming events / practices / travel. */
 const HORIZON_DAYS = 14;
+/**
+ * Number of most-recent game rows per player to aggregate for the cold-streak
+ * rule. Matches DEFAULT_RULE_ENGINE_CONFIG.coldStreakMinGames so the loader
+ * and the rule share the same N — keeps the "recent" window definition
+ * consistent without passing the config to the loader.
+ */
+const COLD_STREAK_LOOKBACK_GAMES: number = DEFAULT_RULE_ENGINE_CONFIG.coldStreakMinGames;
 
 /**
  * Profile-completeness fields a recruiting-active player is expected to fill.
@@ -441,6 +450,136 @@ async function loadInactiveImportRows(
   return out;
 }
 
+/**
+ * Derive OPS from a stats row. Prefers an explicit `ops` column; falls back to
+ * `obp + slg`; returns null when neither is available (the player row is skipped
+ * rather than fabricating a 0 that would distort the average).
+ */
+function computeOPS(r: {
+  ops: number | null | undefined;
+  obp: number | null | undefined;
+  slg: number | null | undefined;
+}): number | null {
+  if (typeof r.ops === 'number' && Number.isFinite(r.ops)) return r.ops;
+  const obp = typeof r.obp === 'number' && Number.isFinite(r.obp) ? r.obp : null;
+  const slg = typeof r.slg === 'number' && Number.isFinite(r.slg) ? r.slg : null;
+  if (obp !== null && slg !== null) return obp + slg;
+  return null;
+}
+
+/**
+ * Load per-player hitting spans for the cold-streak rule. Queries recent
+ * game-type rows and season-type aggregate rows from baseball_player_stats,
+ * then groups by player and computes: recentOPS (average of last N games) and
+ * seasonOPS (the season aggregate). Returns [] when the table is empty or
+ * unavailable (the rule produces no signals in that case — degrades safely).
+ */
+async function loadPlayerHittingSpans(
+  db: LooseClient,
+  teamId: string,
+  sinceIso: string,
+  nowIso: string,
+): Promise<FactPlayerHittingSpan[]> {
+  const sinceDate = sinceIso.slice(0, 10);
+  const nowDate = nowIso.slice(0, 10);
+
+  // 1. Recent game-type rows (per-game batting log) within the lookback window.
+  //    Ordered newest-first so that slice(0, N) gives the most-recent N games.
+  const { data: gameData } = await db
+    .from('baseball_player_stats')
+    .select('player_id, session_date, ops, obp, slg')
+    .eq('team_id', teamId)
+    .eq('stat_type', 'game')
+    .gte('session_date', sinceDate)
+    .lte('session_date', nowDate)
+    .order('session_date', { ascending: false })
+    .limit(2000);
+
+  const gameRows = (gameData ?? []) as Array<{
+    player_id: string;
+    session_date: string;
+    ops: number | null;
+    obp: number | null;
+    slg: number | null;
+  }>;
+
+  if (gameRows.length === 0) return [];
+
+  // Collect distinct player ids that appear in recent games.
+  const playerIds = [...new Set(gameRows.map((r) => r.player_id))];
+
+  // 2. Season aggregate + player names — two batched reads in parallel.
+  const [{ data: seasonData }, { data: playerData }] = await Promise.all([
+    db
+      .from('baseball_player_stats')
+      .select('player_id, ops, obp, slg')
+      .eq('team_id', teamId)
+      .eq('stat_type', 'season')
+      .in('player_id', playerIds),
+    db
+      .from('baseball_players')
+      .select('id, first_name, last_name')
+      .in('id', playerIds),
+  ]);
+
+  // Build lookup maps.
+  const seasonOPSByPlayer = new Map<string, number>();
+  for (const r of (seasonData ?? []) as Array<{
+    player_id: string;
+    ops: number | null;
+    obp: number | null;
+    slg: number | null;
+  }>) {
+    const ops = computeOPS(r);
+    if (ops !== null) seasonOPSByPlayer.set(r.player_id, ops);
+  }
+
+  const nameByPlayer = new Map<string, string>();
+  for (const p of (playerData ?? []) as Array<{
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+  }>) {
+    const name = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim();
+    nameByPlayer.set(p.id, name || 'Unknown Player');
+  }
+
+  // 3. Group game rows by player (already newest-first) and take last N.
+  const gamesByPlayer = new Map<
+    string,
+    Array<{ session_date: string; ops: number }>
+  >();
+  for (const r of gameRows) {
+    const ops = computeOPS(r);
+    if (ops === null) continue; // skip rows with no OPS data rather than distort average
+    const arr = gamesByPlayer.get(r.player_id) ?? [];
+    arr.push({ session_date: r.session_date, ops });
+    gamesByPlayer.set(r.player_id, arr);
+  }
+
+  // 4. Build FactPlayerHittingSpan per player.
+  const spans: FactPlayerHittingSpan[] = [];
+  for (const [playerId, games] of gamesByPlayer) {
+    const seasonOPS = seasonOPSByPlayer.get(playerId);
+    if (seasonOPS === undefined) continue; // can't compute drop without season baseline
+    // Rows are newest-first — slice to the most-recent N games.
+    const recent = games.slice(0, COLD_STREAK_LOOKBACK_GAMES);
+    if (recent.length === 0) continue;
+    const recentOPS = recent.reduce((sum, g) => sum + g.ops, 0) / recent.length;
+    const mostRecentGameDate = recent[0]!.session_date;
+    spans.push({
+      playerId,
+      playerName: nameByPlayer.get(playerId) ?? 'Unknown Player',
+      recentGameCount: recent.length,
+      recentOPS,
+      seasonOPS,
+      mostRecentGameDate,
+    });
+  }
+
+  return spans;
+}
+
 async function loadLastEngineRun(
   db: LooseClient,
   teamId: string,
@@ -481,7 +620,7 @@ function ruleSignalToInsert(
     recommended_action_label: s.recommendedActionLabel,
     recommended_action_type: s.recommendedActionType,
     recommended_owner_role: s.recommendedOwnerRole,
-    disposition: 'new',
+    disposition: s.sampleTooSmall ? 'sample_too_small' : 'new',
     visibility: s.visibility,
     generated_by: `rule:${s.ruleId}`,
     source_kind: 'system',
@@ -528,6 +667,7 @@ export const runOperationalSignalDetection = withBaseballAction(
       recentGames,
       inactiveImportRows,
       lastGeneratedAt,
+      playerHittingSpans,
     ] = await Promise.all([
       loadEventFacts(db, teamId, nowIso, horizonIso),
       loadPracticeFacts(db, teamId),
@@ -538,6 +678,7 @@ export const runOperationalSignalDetection = withBaseballAction(
       loadGameFacts(db, teamId, sinceIso, nowIso),
       loadInactiveImportRows(db, teamId),
       loadLastEngineRun(db, teamId),
+      loadPlayerHittingSpans(db, teamId, sinceIso, nowIso),
     ]);
 
     // Program settings drive the data-driven thresholds (the spec's intent that
@@ -559,6 +700,7 @@ export const runOperationalSignalDetection = withBaseballAction(
       inactiveImportRows,
       requiredDocumentCategories,
       ai: { lastGeneratedAt },
+      playerHittingSpans,
       nowIso,
     };
 

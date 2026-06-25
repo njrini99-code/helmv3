@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
   LineChart,
   Line,
@@ -32,11 +33,22 @@ import {
   IconPlus,
   IconChevronRight,
   IconMapPin,
+  IconShieldCheck,
+  IconDumbbell,
+  IconList,
+  IconCheck,
 } from '@/components/icons';
 import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
+import type { SnapshotHeader } from '@/lib/baseball/read-models/player-snapshot-cards';
+import type { TimelineEventView } from '@/lib/baseball/read-models/timeline';
 import { PlayerInsightsPanel } from './PlayerInsightsPanel';
 import { PlayerNotesSection } from './PlayerNotesSection';
+import { ProfileTimeline } from './ProfileTimeline';
+import { SnapshotHeaderBand } from './snapshot-cards';
 import { Button, IconButton } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { PlayerPerformanceTab } from '@/components/lifting/performance/PlayerPerformanceTab';
+import { createCoachNote } from '@/app/baseball/actions/coach-notes';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,9 +95,49 @@ interface PlayerProfileClientProps {
   teamId: string;
   teamName: string;
   coachId: string;
+  /**
+   * Resolved Helm Lifting Lab org ID for the Performance tab.
+   * Computed server-side via resolveBaseballLiftingOrg(teamId).
+   * When absent the Performance tab renders an honest empty state.
+   */
+  liftingOrgId?: string | null;
+  /**
+   * Resolved Helm Lifting Lab athlete ID for the Performance tab.
+   * Computed server-side via resolveBaseballAthleteIds(orgId, [playerId]).
+   * When absent the Performance tab renders an honest empty state.
+   */
+  liftingAthleteId?: string | null;
+  /**
+   * V7 Snapshot header — feeds SnapshotHeaderBand rendered above the tabs.
+   * Null when the viewer is not authorized staff or the read failed.
+   */
+  snapshotHeader?: SnapshotHeader | null;
+  /** Chronological timeline events from getPlayerTimeline(). */
+  timelineEvents?: TimelineEventView[];
+  /** The role the timeline read model resolved for the viewer. */
+  timelineViewerRole?: 'staff' | 'player' | 'none';
+  /** Count of timeline events filtered out by visibility. */
+  timelineHiddenCount?: number;
+  /** True when the viewer may author new coach notes. */
+  notesCanAuthor?: boolean;
+  /** Player tasks fetched from baseball_tasks via getPlayerTasks(). */
+  tasks?: PlayerTask[];
 }
 
-type MainTab = 'overview' | 'stats' | 'videos';
+/** Shape used for the Tasks tab — matches what page.tsx constructs from TaskWithAssignment. */
+interface PlayerTask {
+  id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  priority: string | null;
+  category: string | null;
+  created_at: string | null;
+  assignment_status: string;
+  completed_at: string | null;
+}
+
+type MainTab = 'overview' | 'stats' | 'videos' | 'performance' | 'passport' | 'timeline' | 'notes' | 'tasks';
 type StatFilter = 'all' | 'game' | 'practice';
 type VideoFilter = 'all' | 'game' | 'scrimmage' | 'practice';
 type StatSortKey = 'date' | 'ab' | 'h' | 'hr' | 'rbi' | 'bb' | 'so' | 'avg';
@@ -194,9 +246,23 @@ export function PlayerProfileClient({
   teamId: _teamId,
   teamName,
   coachId: _coachId,
+  liftingOrgId,
+  liftingAthleteId,
+  snapshotHeader,
+  timelineEvents = [],
+  timelineViewerRole,
+  timelineHiddenCount = 0,
+  notesCanAuthor = false,
+  tasks = [],
 }: PlayerProfileClientProps) {
   const prefersReducedMotion = useReducedMotion();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
+  // ── Note add form state ────────────────────────────────────────────────────
+  const [noteBody, setNoteBody] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
+  const [noteSuccess, setNoteSuccess] = useState(false);
+  const [isPendingNote, startNoteTransition] = useTransition();
   const [statFilter, setStatFilter] = useState<StatFilter>('all');
   const [videoFilter, setVideoFilter] = useState<VideoFilter>('all');
   const [sortKey, setSortKey] = useState<StatSortKey>('date');
@@ -326,6 +392,24 @@ export function PlayerProfileClient({
       setSortDir('desc');
     }
   };
+
+  // ── Add note handler ─────────────────────────────────────────────────────
+  function handleAddNote() {
+    const body = noteBody.trim();
+    if (!body) return;
+    setNoteError(null);
+    setNoteSuccess(false);
+    startNoteTransition(async () => {
+      const result = await createCoachNote({ playerId: player.id, body, scope: 'staff_public' });
+      if (result.success) {
+        setNoteBody('');
+        setNoteSuccess(true);
+        router.refresh();
+      } else {
+        setNoteError(result.error ?? 'Failed to save note.');
+      }
+    });
+  }
 
   // ── Trend badge ─────────────────────────────────────────────────────────────
   const trend = aggregates?.recent_trend;
@@ -496,12 +580,24 @@ export function PlayerProfileClient({
           </div>
         </div>
 
+        {/* ── Snapshot Header Band — V7 operating status strip ────────── */}
+        {snapshotHeader && (
+          <div className="mb-6">
+            <SnapshotHeaderBand header={snapshotHeader} playerId={player.id} />
+          </div>
+        )}
+
         {/* ── Tabs ─────────────────────────────────────────────────────── */}
         <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 scrollbar-hide" role="tablist" aria-label="Player sections">
           {([
             { id: 'overview' as const, label: 'Overview', icon: <IconChart size={15} /> },
             { id: 'stats' as const, label: 'Stats', icon: <IconActivity size={15} /> },
             { id: 'videos' as const, label: `Videos${videos.length > 0 ? ` (${videos.length})` : ''}`, icon: <IconVideo size={15} /> },
+            { id: 'performance' as const, label: 'Performance', icon: <IconDumbbell size={15} /> },
+            { id: 'passport' as const, label: 'Passport', icon: <IconShieldCheck size={15} /> },
+            { id: 'timeline' as const, label: 'Timeline', icon: <IconActivity size={15} /> },
+            { id: 'notes' as const, label: `Notes${notes.length > 0 ? ` (${notes.length})` : ''}`, icon: <IconNote size={15} /> },
+            { id: 'tasks' as const, label: `Tasks${tasks.length > 0 ? ` (${tasks.length})` : ''}`, icon: <IconList size={15} /> },
           ]).map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -791,10 +887,16 @@ export function PlayerProfileClient({
                     <IconNote size={15} className="text-warm-400" />
                     Coach Notes
                   </h3>
-                  <Button variant="ghost" className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors font-medium">
-                    <IconPlus size={13} />
-                    Add
-                  </Button>
+                  {notesCanAuthor && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => setActiveTab('notes')}
+                      className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors font-medium"
+                    >
+                      <IconPlus size={13} />
+                      Add
+                    </Button>
+                  )}
                 </div>
                 <PlayerNotesSection notes={notes.slice(0, 3)} compact />
               </div>
@@ -1098,6 +1200,314 @@ export function PlayerProfileClient({
                   </Button>
                 ))}
               </div>
+            )}
+          </div>
+        </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════
+            PERFORMANCE TAB
+        ═══════════════════════════════════════════════════════════════ */}
+        {activeTab === 'performance' && (
+        <motion.div
+          key="panel-performance"
+          role="tabpanel"
+          id="pp-panel-performance"
+          aria-labelledby="pp-tab-performance"
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? {} : { opacity: 0, y: -6 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
+        >
+          {liftingOrgId && liftingAthleteId ? (
+            <PlayerPerformanceTab orgId={liftingOrgId} athleteId={liftingAthleteId} />
+          ) : (
+            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
+                <IconDumbbell size={28} />
+              </div>
+              <p className="font-semibold text-warm-900">No performance data yet</p>
+              {!liftingOrgId ? (
+                <p className="mt-1 text-sm leading-relaxed text-warm-500">
+                  Set up Helm Lifting Lab for this team to unlock performance tracking.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm leading-relaxed text-warm-500">
+                  This player&apos;s lifting athlete record has not been created yet.
+                </p>
+              )}
+            </div>
+          )}
+        </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════
+            PASSPORT TAB
+        ═══════════════════════════════════════════════════════════════ */}
+        {activeTab === 'passport' && (
+        <motion.div
+          key="panel-passport"
+          role="tabpanel"
+          id="pp-panel-passport"
+          aria-labelledby="pp-tab-passport"
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? {} : { opacity: 0, y: -6 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
+        >
+          <div className="space-y-6">
+            {/* Passport summary entry — links into the dedicated full surface */}
+            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
+                    <IconShieldCheck size={20} className="text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-warm-900">Player Passport</h3>
+                    <p className="text-sm text-warm-500 mt-0.5">
+                      Source-backed proof: measurables, development story, video, and performance
+                      with full provenance for roster evaluation.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={`/baseball/dashboard/players/${player.id}/passport`}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors shadow-sm"
+                >
+                  <IconShieldCheck size={14} />
+                  View passport
+                </Link>
+              </div>
+            </div>
+
+            {/* Scout Packet entry — links into the dedicated share surface */}
+            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
+                    <IconShieldCheck size={20} className="text-warm-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-warm-900">Scout Packet</h3>
+                    <p className="text-sm text-warm-500 mt-0.5">
+                      Mint revocable share links for college scouts. Control exactly
+                      what a scout sees and track packet access.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={`/baseball/dashboard/players/${player.id}/scout-packet`}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cream-100/75 hover:bg-warm-50 border border-warm-200/60 text-warm-700 text-sm font-semibold transition-colors shadow-sm"
+                >
+                  Manage
+                  <IconChevronRight size={14} />
+                </Link>
+              </div>
+            </div>
+
+            {/* Visibility hint */}
+            <p className="text-xs text-warm-400 text-center px-4">
+              Passport visibility and scout-packet sharing are managed on the full passport surface.
+              Changes take effect immediately across all active share links.
+            </p>
+          </div>
+        </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════
+            TIMELINE TAB
+        ═══════════════════════════════════════════════════════════════ */}
+        {activeTab === 'timeline' && (
+        <motion.div
+          key="panel-timeline"
+          role="tabpanel"
+          id="pp-panel-timeline"
+          aria-labelledby="pp-tab-timeline"
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? {} : { opacity: 0, y: -6 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
+        >
+          <ProfileTimeline
+            events={timelineEvents}
+            viewerRole={timelineViewerRole}
+            hiddenCount={timelineHiddenCount}
+          />
+        </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════
+            NOTES TAB
+        ═══════════════════════════════════════════════════════════════ */}
+        {activeTab === 'notes' && (
+        <motion.div
+          key="panel-notes"
+          role="tabpanel"
+          id="pp-panel-notes"
+          aria-labelledby="pp-tab-notes"
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? {} : { opacity: 0, y: -6 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
+        >
+          <div className="space-y-5">
+            {/* Add note form — staff only */}
+            {notesCanAuthor && (
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+                <h3 className="font-semibold text-warm-900 mb-4 flex items-center gap-2">
+                  <IconPlus size={15} className="text-primary-600" />
+                  Add Note
+                </h3>
+                <Textarea
+                  value={noteBody}
+                  onChange={(e) => { setNoteBody(e.target.value); setNoteSuccess(false); }}
+                  placeholder="Write a coaching observation…"
+                  rows={4}
+                  disabled={isPendingNote}
+                />
+                <div className="flex items-center justify-between mt-3">
+                  <div>
+                    {noteError && (
+                      <p className="text-xs text-red-600">{noteError}</p>
+                    )}
+                    {noteSuccess && (
+                      <p className="text-xs text-primary-600 flex items-center gap-1">
+                        <IconCheck size={13} />
+                        Note saved
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="primary"
+                    onClick={handleAddNote}
+                    disabled={isPendingNote || !noteBody.trim()}
+                    className="px-5 py-2 text-sm font-semibold"
+                  >
+                    {isPendingNote ? 'Saving…' : 'Save Note'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Notes list */}
+            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+              <h3 className="font-semibold text-warm-900 mb-4 flex items-center gap-2">
+                <IconNote size={15} className="text-warm-400" />
+                Coach Notes
+                {notes.length > 0 && (
+                  <span className="ml-auto text-xs font-medium px-2 py-0.5 bg-warm-100 text-warm-600 rounded-full">
+                    {notes.length}
+                  </span>
+                )}
+              </h3>
+              <PlayerNotesSection notes={notes} compact={false} />
+            </div>
+          </div>
+        </motion.div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════
+            TASKS TAB
+        ═══════════════════════════════════════════════════════════════ */}
+        {activeTab === 'tasks' && (
+        <motion.div
+          key="panel-tasks"
+          role="tabpanel"
+          id="pp-panel-tasks"
+          aria-labelledby="pp-tab-tasks"
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? {} : { opacity: 0, y: -6 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
+        >
+          <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
+              <h3 className="font-semibold text-warm-900 flex items-center gap-2">
+                <IconList size={15} className="text-warm-400" />
+                Tasks
+              </h3>
+              {tasks.length > 0 && (
+                <span className="text-xs font-medium px-2 py-0.5 bg-warm-100 text-warm-600 rounded-full">
+                  {tasks.length}
+                </span>
+              )}
+            </div>
+
+            {tasks.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
+                  <IconList size={24} />
+                </div>
+                <p className="font-semibold text-warm-900">No tasks assigned</p>
+                <p className="mt-1 text-sm leading-relaxed text-warm-500">
+                  Tasks assigned to this player will appear here.
+                </p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-warm-50">
+                {tasks.map((task) => {
+                  const isOverdue =
+                    task.due_date &&
+                    new Date(task.due_date) < new Date() &&
+                    task.assignment_status !== 'completed';
+                  return (
+                    <li key={task.id} className="px-6 py-4 flex items-start gap-3 hover:bg-warm-50/60 transition-colors">
+                      <span
+                        className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${
+                          task.assignment_status === 'completed'
+                            ? 'bg-primary-500'
+                            : isOverdue
+                            ? 'bg-red-400'
+                            : 'bg-warm-300'
+                        }`}
+                        aria-hidden="true"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium leading-snug ${
+                          task.assignment_status === 'completed'
+                            ? 'line-through text-warm-400'
+                            : 'text-warm-900'
+                        }`}>
+                          {task.title}
+                        </p>
+                        {task.description && (
+                          <p className="text-xs text-warm-500 mt-0.5 line-clamp-2">
+                            {task.description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          {task.due_date && (
+                            <span className={`text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-warm-400'}`}>
+                              Due {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                          )}
+                          {task.priority && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${
+                              task.priority === 'high'
+                                ? 'bg-red-100 text-red-700'
+                                : task.priority === 'medium'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-warm-100 text-warm-600'
+                            }`}>
+                              {task.priority}
+                            </span>
+                          )}
+                          <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium capitalize ${
+                            task.assignment_status === 'completed'
+                              ? 'bg-primary-100 text-primary-700'
+                              : isOverdue
+                              ? 'bg-red-50 text-red-600'
+                              : 'bg-warm-100 text-warm-600'
+                          }`}>
+                            {task.assignment_status}
+                          </span>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
         </motion.div>

@@ -34,6 +34,26 @@ function sanitizeString(input: string, maxLength = 255): string {
   return input.trim().slice(0, maxLength);
 }
 
+/**
+ * Supabase PostgrestError objects are plain objects, not Error instances, so
+ * `String(err)` / `err instanceof Error` produced the useless "[object Object]"
+ * in our logs — which is exactly what hid the real cause of the silent
+ * team-creation failure. Extract message/code/details/hint for actionable logs.
+ */
+function describeDbError(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as { message?: string; code?: string; details?: string; hint?: string };
+    const parts = [
+      e.message,
+      e.code ? `code=${e.code}` : null,
+      e.details ? `details=${e.details}` : null,
+      e.hint ? `hint=${e.hint}` : null,
+    ].filter(Boolean);
+    if (parts.length > 0) return parts.join(' | ');
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
 // ─── Complete Coach Onboarding (authenticated users) ────────────────────────
 
 export async function completeCoachOnboarding(
@@ -106,7 +126,7 @@ export async function completeCoachOnboarding(
     .upsert({ id: user.id, email: user.email || '', role: 'coach' }, { onConflict: 'id' });
 
   if (userError) {
-    await logServerError(`[Onboarding] Failed to upsert user: ${userError instanceof Error ? userError.message : String(userError)}`, { action: 'onboarding.completeCoachOnboarding' });
+    await logServerError(`[Onboarding] Failed to upsert user: ${describeDbError(userError)}`, { action: 'onboarding.completeCoachOnboarding' });
     return { success: false, error: 'Unable to set up your account. Please try again.' };
   }
 
@@ -124,12 +144,14 @@ export async function completeCoachOnboarding(
     .single();
 
   if (orgError) {
-    await logServerError(`[Onboarding] Failed to create organization: ${orgError instanceof Error ? orgError.message : String(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
+    await logServerError(`[Onboarding] Failed to create organization: ${describeDbError(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
     return { success: false, error: 'Unable to create your program. Please try again.' };
   }
 
-  // Create coach profile
-  const { error: coachError } = await admin
+  // Create coach profile. Capture the new coach id — baseball_teams.created_by is a
+  // FK to baseball_coaches(id), NOT auth.users(id). Passing user.id here was an FK
+  // violation that silently failed team creation for EVERY coach at onboarding.
+  const { data: coachRow, error: coachError } = await admin
     .from('baseball_coaches')
     .insert({
       user_id: user.id,
@@ -139,28 +161,62 @@ export async function completeCoachOnboarding(
       email: user.email || '',
       title,
       onboarding_completed: true,
-    });
+    })
+    .select('id')
+    .single();
 
-  if (coachError) {
-    await logServerError(`[Onboarding] Failed to create coach profile: ${coachError instanceof Error ? coachError.message : String(coachError)}`, { action: 'onboarding.completeCoachOnboarding' });
+  if (coachError || !coachRow) {
+    await logServerError(`[Onboarding] Failed to create coach profile: ${describeDbError(coachError)}`, { action: 'onboarding.completeCoachOnboarding' });
     return { success: false, error: 'Unable to create your profile. Please try again.' };
   }
 
-  // Create team
+  // Create team. created_by references baseball_coaches(id) — use the coach row id.
   const joinCode = generateJoinCode();
-  const { error: teamError } = await admin
+  const { data: teamRow, error: teamError } = await admin
     .from('baseball_teams')
     .insert({
       name: `${schoolName} Baseball`,
       team_type: coachType,
       organization_id: org.id,
       join_code: joinCode,
-      created_by: user.id,
-    });
+      created_by: coachRow.id,
+    })
+    .select('id')
+    .single();
 
-  if (teamError) {
+  if (teamError || !teamRow) {
     // Non-fatal — log but don't block onboarding
-    await logServerError(`[Onboarding] Failed to create team (non-fatal): ${teamError instanceof Error ? teamError.message : String(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
+    await logServerError(`[Onboarding] Failed to create team (non-fatal): ${describeDbError(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
+  } else {
+    // Staff-link the new coach to their team as head coach. WITHOUT this row,
+    // getActiveBaseballContext() resolves zero memberships, the coach dashboard has
+    // no active team, and the user is bounced back into onboarding — the trap.
+    const { error: staffError } = await admin
+      .from('baseball_team_coach_staff')
+      .insert({
+        team_id: teamRow.id,
+        coach_id: coachRow.id,
+        role: 'head_coach',
+        is_head_coach: true,
+        is_primary: true,
+        status: 'active',
+        title: title ?? 'Head Coach',
+        can_manage_roster: true,
+        can_manage_practice: true,
+        can_manage_lifting: true,
+        can_view_academics: true,
+        can_manage_imports: true,
+        can_manage_stats: true,
+        can_invite_staff: true,
+        can_manage_settings: true,
+        can_view_medical: true,
+        can_message_team: true,
+        can_manage_calendar: true,
+      });
+
+    if (staffError) {
+      await logServerError(`[Onboarding] Failed to staff-link coach to team (non-fatal): ${describeDbError(staffError)}`, { action: 'onboarding.completeCoachOnboarding' });
+    }
   }
 
   revalidatePath('/baseball');
@@ -378,7 +434,7 @@ export async function completeBaseballSignup(data: {
     });
 
     if (coachError) {
-      await logServerError(`[Onboarding] Failed to create coach profile: ${coachError instanceof Error ? coachError.message : String(coachError)}`, { action: 'onboarding.completeBaseballSignup' });
+      await logServerError(`[Onboarding] Failed to create coach profile: ${describeDbError(coachError)}`, { action: 'onboarding.completeBaseballSignup' });
       return { success: false, error: 'Unable to create your profile. Please try again.' };
     }
 
@@ -404,7 +460,7 @@ export async function completeBaseballSignup(data: {
     });
 
     if (playerError) {
-      await logServerError(`[Onboarding] Failed to create player profile: ${playerError instanceof Error ? playerError.message : String(playerError)}`, { action: 'onboarding.completeBaseballSignup' });
+      await logServerError(`[Onboarding] Failed to create player profile: ${describeDbError(playerError)}`, { action: 'onboarding.completeBaseballSignup' });
       return { success: false, error: 'Unable to create your profile. Please try again.' };
     }
 
@@ -507,7 +563,7 @@ export async function completePlayerOnboarding(
 
   if (error) {
     await logServerError(
-      `[Onboarding] Failed to upsert player profile: ${error instanceof Error ? error.message : String(error)}`,
+      `[Onboarding] Failed to upsert player profile: ${describeDbError(error)}`,
       { action: 'onboarding.completePlayerOnboarding' },
     );
     return { success: false, error: 'Unable to complete your profile. Please try again.' };

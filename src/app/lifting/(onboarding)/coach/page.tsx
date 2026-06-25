@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
-import { AlertCircle, CheckCircle2, Dumbbell, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,15 +67,8 @@ export default function LiftingCoachOnboardingPage() {
             .in('id', orgIds) as { data: Array<{ id: string; name: string }> | null };
           setOrgs(orgRows ?? []);
           if (orgRows && orgRows.length === 1 && orgRows[0]) setOrgId(orgRows[0].id);
-        } else {
-          // Fallback: show a broad list so self-signups can pick their school
-          const { data: orgRows } = await supabase
-            .from('organizations')
-            .select('id, name')
-            .order('name')
-            .limit(100) as { data: Array<{ id: string; name: string }> | null };
-          setOrgs(orgRows ?? []);
         }
+        // No fallback to all-orgs: without an invite the coach cannot join.
       } finally {
         setOrgsLoading(false);
       }
@@ -148,7 +142,7 @@ export default function LiftingCoachOnboardingPage() {
                 <div className="relative mb-4">
                   <div className="absolute inset-0 bg-primary-500/20 rounded-full blur-xl scale-150" />
                   <div className="relative w-14 h-14 flex items-center justify-center bg-primary-50 rounded-2xl border border-primary-100">
-                    <Dumbbell className="w-8 h-8 text-primary-600" />
+                    <Image src="/helm-lifting-logo.png" alt="Helm Lifting Lab" width={56} height={56} className="object-contain" priority />
                   </div>
                 </div>
                 <h1 className="text-xl font-bold text-warm-900">Helm Lifting Lab</h1>
@@ -211,9 +205,11 @@ export default function LiftingCoachOnboardingPage() {
                       <span className="text-warm-400 text-sm">Loading organizations…</span>
                     </div>
                   ) : orgs.length === 0 ? (
-                    <div className="px-4 py-3 bg-warm-50 border border-warm-200 rounded-xl">
-                      <p className="text-warm-600 text-sm">
-                        No organizations found. Please contact your head coach to send an invite.
+                    <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                      <p className="text-amber-800 text-sm font-medium">No invitation found</p>
+                      <p className="text-amber-700 text-sm">
+                        Enter your invite code or ask your head coach to invite you from their
+                        dashboard. You&apos;ll receive an email with a link to join.
                       </p>
                     </div>
                   ) : (

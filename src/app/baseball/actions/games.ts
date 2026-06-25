@@ -26,6 +26,7 @@ import type {
   BaseballGameType,
   BaseballGameStatus,
   BaseballPitchingResult,
+  BaseballHomeAway,
 } from '@/lib/types';
 
 const STATS_PATHS = [
@@ -1086,4 +1087,244 @@ export async function recalculateAllSeasonStats(
 
   revalidateStatsPaths();
   return { success: true };
+}
+
+// ============================================================================
+// SCHEDULE IMPORT
+// ============================================================================
+
+/**
+ * A single game row from an imported schedule. Corresponds to one line in
+ * a schedule CSV/paste (e.g. from GameChanger, a conference website, or a
+ * hand-entered list).
+ */
+export interface ScheduleImportRow {
+  /** ISO date string: "2026-03-15" */
+  game_date: string;
+  /** Time string: "14:00" or "2:00 PM" — optional */
+  event_time?: string | null;
+  opponent_name: string;
+  home_away?: BaseballHomeAway | null;
+  location?: string | null;
+  /** 'game' or 'scrimmage'; defaults to 'game' */
+  game_type?: BaseballGameType;
+  notes?: string | null;
+}
+
+export interface ImportScheduleResult {
+  success: boolean;
+  /** Number of newly-created game+event pairs */
+  created: number;
+  /** Number of rows that already existed and were skipped (idempotent) */
+  skipped: number;
+  /** Per-row errors — non-fatal; other rows still commit */
+  rowErrors: Array<{ row: number; error: string }>;
+  error?: string;
+}
+
+/**
+ * Bulk-import a parsed schedule into `baseball_games` + `baseball_events`.
+ *
+ * Idempotent on (team_id, game_date, opponent_name) — re-running the same
+ * schedule file is safe. The import-center calls this once the user confirms
+ * the preview step; it does NOT touch any existing game rows.
+ *
+ * Security: requires the caller to be a staff member with `can_manage_practice`
+ * on the target team (same capability gate as event creation).
+ */
+export async function importSchedule(
+  teamId: string,
+  rows: ScheduleImportRow[],
+): Promise<ImportScheduleResult> {
+  const authResult = await requireCoachAuth();
+  if ('error' in authResult) {
+    return { success: false, created: 0, skipped: 0, rowErrors: [], error: authResult.error };
+  }
+  const { coach, supabase } = authResult;
+
+  const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
+  if (!hasAccess) {
+    return { success: false, created: 0, skipped: 0, rowErrors: [], error: 'Access denied' };
+  }
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return { success: false, created: 0, skipped: 0, rowErrors: [], error: 'No schedule rows provided' };
+  }
+
+  if (rows.length > 200) {
+    return {
+      success: false,
+      created: 0,
+      skipped: 0,
+      rowErrors: [],
+      error: 'Too many rows — split into batches of 200 or fewer',
+    };
+  }
+
+  // ── Fetch existing games for this team to enable idempotent dedup ──────────
+  // Natural key: (team_id, game_date, opponent_name)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabase as any;
+  const { data: existingGames } = await db
+    .from('baseball_games')
+    .select('game_date, opponent_name')
+    .eq('team_id', teamId);
+
+  // Build a fast lookup set: "YYYY-MM-DD:opponent" (lowercased opponent for
+  // case-insensitive dedup — coaches often format names inconsistently).
+  const existingKey = (date: string, opponent: string) =>
+    `${date}:${(opponent ?? '').toLowerCase().trim()}`;
+
+  const existing = new Set<string>(
+    ((existingGames ?? []) as Array<{ game_date: string; opponent_name: string | null }>).map(
+      (g) => existingKey(g.game_date, g.opponent_name ?? ''),
+    ),
+  );
+
+  let created = 0;
+  let skipped = 0;
+  const rowErrors: ImportScheduleResult['rowErrors'] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+
+    // ── Validate required fields ──────────────────────────────────────────────
+    if (!row.game_date || !/^\d{4}-\d{2}-\d{2}$/.test(row.game_date)) {
+      rowErrors.push({ row: i, error: 'game_date must be ISO format YYYY-MM-DD' });
+      continue;
+    }
+    if (!row.opponent_name?.trim()) {
+      rowErrors.push({ row: i, error: 'opponent_name is required' });
+      continue;
+    }
+
+    const gameType: BaseballGameType = row.game_type === 'scrimmage' ? 'scrimmage' : 'game';
+    const opponentName = row.opponent_name.trim();
+    const key = existingKey(row.game_date, opponentName);
+
+    // ── Idempotent skip ───────────────────────────────────────────────────────
+    if (existing.has(key)) {
+      skipped++;
+      continue;
+    }
+
+    // ── Compute ISO datetime for the calendar event ───────────────────────────
+    const normalizedTime = normalizeTimeString(row.event_time ?? null);
+    const startDateTime = normalizedTime
+      ? `${row.game_date}T${normalizedTime}`
+      : `${row.game_date}T12:00:00`;
+    // Default game window: 3 hours
+    const endDateTime = normalizedTime
+      ? `${row.game_date}T${addHours(normalizedTime, 3)}`
+      : `${row.game_date}T15:00:00`;
+
+    const eventTitle =
+      gameType === 'scrimmage'
+        ? `Scrimmage vs ${opponentName}`
+        : `vs ${opponentName}`;
+
+    // ── Write calendar event ──────────────────────────────────────────────────
+    const { data: eventRow, error: eventErr } = await db
+      .from('baseball_events')
+      .insert({
+        team_id: teamId,
+        created_by: coach.id,
+        created_by_id: authResult.user.id,
+        title: eventTitle,
+        event_type: gameType,
+        start_time: startDateTime,
+        end_time: endDateTime,
+        location: row.location ?? null,
+        is_mandatory: true,
+        // Tagging the event as schedule-imported so the calendar can render a
+        // distinct chip without requiring a DB column change (stored in description
+        // as a structured prefix that the UI strips before display).
+        description: `__schedule_import__${row.notes ?? ''}`.trimEnd(),
+      })
+      .select('id')
+      .single();
+
+    if (eventErr || !eventRow) {
+      rowErrors.push({
+        row: i,
+        error: sanitizeDbError(eventErr ?? new Error('Event insert returned no id'), 'games'),
+      });
+      continue;
+    }
+
+    // ── Write game record ─────────────────────────────────────────────────────
+    const { error: gameErr } = await db.from('baseball_games').insert({
+      team_id: teamId,
+      event_id: eventRow.id,
+      game_date: row.game_date,
+      game_type: gameType,
+      opponent_name: opponentName,
+      location: row.location ?? null,
+      home_away: row.home_away ?? null,
+      notes: row.notes ?? null,
+      created_by: coach.id,
+      status: 'scheduled',
+    });
+
+    if (gameErr) {
+      // Roll back the calendar event we just created to keep them in sync.
+      await db.from('baseball_events').delete().eq('id', eventRow.id);
+      rowErrors.push({ row: i, error: sanitizeDbError(gameErr, 'games') });
+      continue;
+    }
+
+    // Mark as existing so later duplicate rows in the same batch are skipped.
+    existing.add(key);
+    created++;
+  }
+
+  revalidateStatsPaths();
+  revalidatePath('/baseball/dashboard/calendar');
+  revalidatePath('/baseball/dashboard/events');
+
+  return { success: true, created, skipped, rowErrors };
+}
+
+// ── Schedule import helpers ────────────────────────────────────────────────────
+
+/**
+ * Normalise a user-supplied time string to "HH:MM:SS".
+ * Accepts: "14:00", "2:00 PM", "14:00:00", null/undefined → null.
+ */
+function normalizeTimeString(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+
+  // HH:MM or HH:MM:SS
+  const iso = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(trimmed);
+  if (iso) {
+    const hh = iso[1]!.padStart(2, '0');
+    const mm = iso[2]!;
+    return `${hh}:${mm}:00`;
+  }
+
+  // 12-hour format: "2:00 PM", "11:30 AM"
+  const twelve = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(trimmed);
+  if (twelve) {
+    let h = parseInt(twelve[1]!, 10);
+    const m = twelve[2]!;
+    const period = twelve[3]!.toUpperCase();
+    if (period === 'AM' && h === 12) h = 0;
+    if (period === 'PM' && h !== 12) h += 12;
+    return `${String(h).padStart(2, '0')}:${m}:00`;
+  }
+
+  return null;
+}
+
+/**
+ * Add hours to a "HH:MM:SS" string, clamping at "23:59:59".
+ */
+function addHours(timeStr: string, hours: number): string {
+  const parts = timeStr.split(':').map(Number);
+  const totalMinutes = (parts[0] ?? 0) * 60 + (parts[1] ?? 0) + hours * 60;
+  const clampedMinutes = Math.min(totalMinutes, 23 * 60 + 59);
+  const h = Math.floor(clampedMinutes / 60);
+  const m = clampedMinutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
 }

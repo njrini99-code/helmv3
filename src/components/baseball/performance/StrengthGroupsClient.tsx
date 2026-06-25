@@ -37,6 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconPlus, IconUsers, IconUserPlus, IconUserX, IconFilter,
   IconSparkles, IconTrash, IconCheck, IconBolt,
@@ -90,9 +91,10 @@ interface Props {
   groups: StrengthGroupListItem[];
   roster: PlayerRuleAttributes[];
   defaultGroupsPresent: number;
+  isLoading?: boolean;
 }
 
-export function StrengthGroupsClient({ groups, roster, defaultGroupsPresent }: Props) {
+export function StrengthGroupsClient({ groups, roster, defaultGroupsPresent, isLoading = false }: Props) {
   const activeGroups = useMemo(() => groups.filter((g) => g.is_active), [groups]);
   const [selectedId, setSelectedId] = useState<string | null>(activeGroups[0]?.id ?? null);
   const selected = useMemo(
@@ -100,6 +102,72 @@ export function StrengthGroupsClient({ groups, roster, defaultGroupsPresent }: P
     [activeGroups, selectedId],
   );
   const prefersReducedMotion = useReducedMotion();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6" aria-busy="true" aria-label="Loading strength groups…">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-56" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-28 rounded-xl" />
+            <Skeleton className="h-9 w-32 rounded-xl" />
+          </div>
+        </div>
+        {/* Three-pane layout skeleton */}
+        <div className="grid gap-5 lg:grid-cols-[16rem_1fr_18rem]">
+          {/* Left pane */}
+          <div className="rounded-2xl border border-warm-100 bg-white/70 p-3 space-y-2">
+            <Skeleton className="h-4 w-20 mb-3" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-xl p-2.5"
+                style={{ animationDelay: `${i * 50}ms` }}
+              >
+                <Skeleton variant="circular" className="w-7 h-7 flex-shrink-0" />
+                <div className="flex-1 space-y-1">
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Center pane */}
+          <div className="rounded-2xl border border-warm-100 bg-white/70 p-4 space-y-3">
+            <Skeleton className="h-5 w-32" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3" style={{ animationDelay: `${i * 50}ms` }}>
+                <Skeleton variant="circular" className="w-8 h-8 flex-shrink-0" />
+                <div className="flex-1 space-y-1">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-7 w-16 rounded-lg" />
+              </div>
+            ))}
+          </div>
+          {/* Right pane */}
+          <div className="rounded-2xl border border-warm-100 bg-white/70 p-4 space-y-3">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-4 w-48" />
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="grid grid-cols-2 gap-2" style={{ animationDelay: `${i * 60}ms` }}>
+                  <Skeleton className="h-9 rounded-xl" />
+                  <Skeleton className="h-9 rounded-xl" />
+                </div>
+              ))}
+            </div>
+            <Skeleton className="h-9 w-full rounded-xl mt-2" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

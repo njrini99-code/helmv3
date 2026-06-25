@@ -4,6 +4,8 @@ import { PlayerCard } from '@/components/player/profile/PlayerCard';
 import { Button } from '@/components/ui/button';
 import { IconArrowLeft, IconMessage, IconChartBar } from '@/components/icons';
 import Link from 'next/link';
+import { resolveBaseballAthleteIds, resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
+import { PlayerPerformanceTab } from '@/components/lifting/performance/PlayerPerformanceTab';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -70,6 +72,47 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   const hasBatting = seasonStats && seasonStats.ab > 0;
   const hasPitching = seasonStats && seasonStats.ip > 0;
   const hasStats = hasBatting || hasPitching;
+
+  // Real engagement data — video count + last active from player.updated_at.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count: videoCount } = await (supabase as any)
+    .from('baseball_videos')
+    .select('*', { count: 'exact', head: true })
+    .eq('player_id', id) as { count: number | null };
+
+  // Relative "last active" from the player row's updated_at.
+  function formatRelativeTime(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const diffMin = Math.floor(diffMs / 60_000);
+    if (diffMin < 60) return diffMin <= 1 ? 'Just now' : `${diffMin}m ago`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH}h ago`;
+    const diffD = Math.floor(diffH / 24);
+    if (diffD < 7) return `${diffD}d ago`;
+    if (diffD < 30) return `${Math.floor(diffD / 7)}w ago`;
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+  const lastActive = formatRelativeTime(player.updated_at as string | null | undefined);
+
+  // Resolve Helm Lifting athlete context for the Performance tab.
+  // If the coach's team has a lifting org and the player has an athlete row,
+  // we pass orgId + athleteId to PlayerPerformanceTab. Otherwise we show an
+  // honest "no performance data yet" empty state.
+  let liftingOrgId: string | null = null;
+  let liftingAthleteId: string | null = null;
+
+  if (teamId) {
+    const liftingCtx = await resolveBaseballLiftingOrg(teamId).catch(() => null);
+    if (liftingCtx) {
+      liftingOrgId = liftingCtx.organizationId;
+      const athleteMap = await resolveBaseballAthleteIds(
+        liftingCtx.organizationId,
+        [id],
+      ).catch(() => null);
+      liftingAthleteId = athleteMap ? (athleteMap[id] ?? null) : null;
+    }
+  }
 
   return (
     <div className="min-h-dvh bg-[#FAF6F1]">
@@ -169,23 +212,19 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                 )}
               </div>
             ) : (
-              /* Fallback: profile engagement stats when no box score data */
+              /* Fallback: real profile engagement data when no box score data */
               <div className="bg-white rounded-2xl border border-warm-200 p-5">
                 <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
                   Quick Stats
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-xs text-warm-500">Profile Views</span>
-                    <span className="text-sm font-bold text-warm-900">127</span>
-                  </div>
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-xs text-warm-500">Watchlists</span>
-                    <span className="text-sm font-bold text-warm-900">8</span>
+                    <span className="text-xs text-warm-500">Videos</span>
+                    <span className="text-sm font-bold text-warm-900">{videoCount ?? 0}</span>
                   </div>
                   <div className="flex justify-between items-baseline">
                     <span className="text-xs text-warm-500">Last Active</span>
-                    <span className="text-sm font-bold text-warm-900">2h ago</span>
+                    <span className="text-sm font-bold text-warm-900">{lastActive}</span>
                   </div>
                   {teamId && (
                     <Link
@@ -200,6 +239,35 @@ export default async function PlayerProfilePage({ params }: PageProps) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Performance Tab — Helm Lifting Lab data for this player.
+          Rendered below the player card + stats when a lifting org + athlete
+          row exists. Shows an honest empty state when the player has no
+          lifting data yet (no athlete row seeded). */}
+      <div className="mt-8">
+        <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-warm-700">
+          Performance
+        </h2>
+        {liftingOrgId && liftingAthleteId ? (
+          <PlayerPerformanceTab orgId={liftingOrgId} athleteId={liftingAthleteId} />
+        ) : (
+          <div className="rounded-2xl border border-warm-200 bg-white/60 px-6 py-8 text-center">
+            <p className="text-sm text-warm-500">
+              No performance data yet for this player.
+            </p>
+            {!liftingOrgId && (
+              <p className="mt-1 text-xs text-warm-400">
+                Set up Helm Lifting Lab for this team to unlock performance tracking.
+              </p>
+            )}
+            {liftingOrgId && !liftingAthleteId && (
+              <p className="mt-1 text-xs text-warm-400">
+                This player&apos;s lifting athlete record has not been created yet.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

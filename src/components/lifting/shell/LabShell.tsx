@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Menu, X, LogOut, User } from 'lucide-react';
+import { Menu, X, LogOut, User } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { LabNav } from './LabNav';
 import type { HelmLiftingCoachRow } from '@/lib/types/helm-lifting';
@@ -52,8 +53,8 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
         className="flex items-center gap-2.5 px-4 py-5 mb-2"
         onClick={() => setDrawerOpen(false)}
       >
-        <div className="w-8 h-8 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-          <Dumbbell className="w-4 h-4 text-white" />
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <Image src="/helm-lifting-logo.png" alt="Helm Lifting Lab" width={32} height={32} className="object-contain" priority />
         </div>
         <div>
           <p className="text-sm font-bold text-warm-900 leading-none">Helm</p>
@@ -71,11 +72,13 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
         <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/40">
           <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
             {coachRow?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={coachRow.avatar_url}
                 alt={displayName}
+                width={32}
+                height={32}
                 className="w-8 h-8 rounded-full object-cover"
+                unoptimized
               />
             ) : (
               <span className="text-xs font-bold text-primary-700">{initials || <User className="w-4 h-4" />}</span>
@@ -119,6 +122,7 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
               transition={{ duration: 0.2 }}
               className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
               onClick={() => setDrawerOpen(false)}
+              aria-hidden
             />
             <motion.aside
               key="drawer"
@@ -127,6 +131,10 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
               className="fixed inset-y-0 left-0 z-50 w-56 bg-white/90 backdrop-blur-xl border-r border-white/30 shadow-2xl lg:hidden flex flex-col"
+              onKeyDown={(e) => { if (e.key === 'Escape') setDrawerOpen(false); }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation menu"
             >
               <SidebarContent />
             </motion.aside>
@@ -140,14 +148,16 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
         <header className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-white/80 backdrop-blur-md border-b border-white/20">
           <button
             onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-warm-600 hover:bg-white/60 transition-colors"
+            aria-label="Open navigation menu"
+            aria-expanded={drawerOpen}
+            aria-controls="mobile-nav-drawer"
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-warm-600 hover:bg-white/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
           >
             {drawerOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex items-center gap-2 flex-1">
-            <div className="w-6 h-6 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Dumbbell className="w-3.5 h-3.5 text-white" />
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center overflow-hidden">
+              <Image src="/helm-lifting-logo.png" alt="" width={24} height={24} className="object-contain" priority />
             </div>
             <span className="text-sm font-bold text-warm-900">Lifting Lab</span>
           </div>

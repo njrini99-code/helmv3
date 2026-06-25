@@ -10,15 +10,24 @@
 //
 // WRITE MODEL: optimistic with rollback. Changes apply to local state
 // immediately, fire the server action, and on failure revert + toast error.
+//
+// REALTIME: Supabase postgres_changes subscriptions on helm_lifting_set_results
+// and helm_lifting_sessions, both filtered by organization_id. On any event,
+// router.refresh() re-runs the server component to rebuild the denormalised
+// HelmLiftingLiveAthleteRow[] from the DB. Channel names include a random
+// suffix to avoid the postgres_changes-after-subscribe collision.
 // =============================================================================
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useState, useTransition, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { IconDumbbell, IconCheck, IconAlertCircle, IconUsers, IconRefresh } from '@/components/icons';
 import {
   advanceSessionLifecycle,
@@ -53,14 +62,130 @@ interface Props {
   exerciseLibrary: Array<{ id: string; name: string; category: string | null }>;
   orgId: string;
   canEdit: boolean;
+  loading?: boolean;
 }
 
-export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props) {
+function LiveWeightRoomSkeleton() {
+  return (
+    <div className="flex h-screen flex-col bg-[#FFFEFA]">
+      {/* Sticky header skeleton */}
+      <header className="sticky top-0 z-20 border-b border-warm-100 bg-white/90 backdrop-blur-xl px-6 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-5 rounded" />
+              <Skeleton className="h-5 w-40" />
+            </div>
+            <div className="hidden sm:flex items-center gap-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-20 rounded-lg" />
+        </div>
+        {/* Group tabs skeleton */}
+        <div className="mt-2 flex items-center gap-1.5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-6 w-16 rounded-full" />
+          ))}
+        </div>
+      </header>
+      {/* Athlete grid skeleton */}
+      <main className="flex-1 overflow-y-auto p-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-warm-100 bg-white/70 p-4 space-y-3"
+              style={{ animationDelay: `${i * 40}ms` }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-10" />
+                </div>
+                <Skeleton className="h-1.5 w-full rounded-full" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading = false }: Props) {
+  // All hooks must be called unconditionally before any early return.
   const prefersReducedMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
   const [athletes, setAthletes] = useState(initialAthletes);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string | null>(null);
   const [groupFilter, setGroupFilter] = useState<string | null>(null);
+  const router = useRouter();
+  const supabaseRef = useRef(createClient());
+
+  // Sync local state when the server component re-renders with fresh data
+  // (triggered by router.refresh() from the realtime subscription below).
+  useEffect(() => {
+    setAthletes(initialAthletes);
+  }, [initialAthletes]);
+
+  // -------------------------------------------------------------------------
+  // Realtime: subscribe to helm_lifting_set_results + helm_lifting_sessions,
+  // both scoped to this org. Each event triggers router.refresh() so the
+  // server component re-runs and the denormalised athlete rows are rebuilt.
+  // A random suffix on the channel name prevents the postgres_changes
+  // "subscribe after initial snapshot" collision when the component remounts.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    const supabase = supabaseRef.current;
+    const suffix = Math.random().toString(36).slice(2, 9);
+
+    const channel = supabase
+      .channel(`live-room-${orgId}-${suffix}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'helm_lifting_set_results',
+          filter: `organization_id=eq.${orgId}`,
+        },
+        () => {
+          startTransition(() => { router.refresh(); });
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'helm_lifting_sessions',
+          filter: `organization_id=eq.${orgId}`,
+        },
+        () => {
+          startTransition(() => { router.refresh(); });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // orgId is stable for the lifetime of this page mount; router is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId]);
 
   // Computed stats.
   const stats = useMemo(() => {
@@ -95,6 +220,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
   const [actualReps, setActualReps] = useState('');
   const [actualLoad, setActualLoad] = useState('');
   const [rpe, setRpe] = useState('');
+
+  // Early return after all hooks have been called.
+  if (loading) return <LiveWeightRoomSkeleton />;
 
   function handleComplete(athlete: HelmLiftingLiveAthleteRow) {
     const prev = athletes.map((a) => ({ ...a }));
@@ -238,9 +366,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
         <main className="flex-1 overflow-y-auto p-4">
           {visible.length === 0 ? (
             <EmptyState
-              icon={<IconUsers size={28} className="text-warm-300" />}
+              icon={<IconUsers size={32} className="text-warm-300" />}
               title="No athletes scheduled today"
-              description="Publish a program to generate today's sessions."
+              description="Publish a program to your athletes and they'll appear here during the session."
             />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -263,7 +391,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
                       onClick={() =>
                         setSelectedAthleteId(isSelected ? null : athlete.athlete_id)
                       }
-                      className={`w-full text-left rounded-2xl border p-4 transition-all duration-150 ${
+                      className={`w-full text-left rounded-2xl border p-4 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 ${
                         isSelected
                           ? 'border-primary-400 bg-primary-50 shadow-md'
                           : 'border-warm-100 bg-white/70 hover:border-warm-200 hover:shadow-sm'
@@ -325,16 +453,21 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
 
         {/* Right drawer — athlete detail */}
         {selectedAthlete && (
-          <aside className="w-80 shrink-0 border-l border-warm-100 bg-warm-50/50 overflow-y-auto p-4 space-y-4">
+          <aside
+            className="w-80 shrink-0 border-l border-warm-100 bg-warm-50/50 overflow-y-auto p-4 space-y-4"
+            onKeyDown={(e) => { if (e.key === 'Escape') setSelectedAthleteId(null); }}
+            role="complementary"
+            aria-label="Athlete detail"
+          >
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-warm-900">{getFullName(selectedAthlete)}</h2>
               <button
                 type="button"
                 onClick={() => setSelectedAthleteId(null)}
-                className="text-warm-400 hover:text-warm-700 text-lg leading-none"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-700 hover:bg-white/60 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                 aria-label="Close drawer"
               >
-                ×
+                <span aria-hidden className="text-lg leading-none">×</span>
               </button>
             </div>
 

@@ -14,6 +14,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +39,46 @@ interface Props {
   assignments: HelmLiftingCoachAssignmentRow[];
   orgId: string;
   canEdit: boolean;
+  loading?: boolean;
+}
+
+function AthleteRosterSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-36" />
+          <Skeleton className="h-4 w-52" />
+        </div>
+        <Skeleton className="h-10 w-36 rounded-xl" />
+      </div>
+      <div className="flex gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-9 w-20 rounded-full" />
+        ))}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-4 space-y-3"
+            style={{ animationDelay: `${i * 40}ms` }}
+          >
+            <div className="flex items-center gap-3">
+              <Skeleton variant="circular" className="h-10 w-10 shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <Skeleton className="h-3 w-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 type Tab = 'all' | HelmLiftingSport;
@@ -47,12 +88,15 @@ const SPORT_LABELS: Record<HelmLiftingSport, string> = {
   golf: 'Golf',
 };
 
-export function AthleteRosterClient({ athletes, assignments, orgId, canEdit }: Props) {
+export function AthleteRosterClient({ athletes, assignments, orgId, canEdit, loading = false }: Props) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [, startTransition] = useTransition();
+
+  if (loading) return <AthleteRosterSkeleton />;
 
   // Determine which sports actually have athletes (or assignments)
   const activeSports = Array.from(
@@ -148,33 +192,64 @@ export function AthleteRosterClient({ athletes, assignments, orgId, canEdit }: P
       )}
 
       {/* Roster list */}
-      {syncing && filtered.length === 0 ? (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-2xl" />
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <Card variant="glass">
-          <CardContent className="py-12">
-            <EmptyState
-              icon={<IconUsers size={28} />}
-              title="No athletes"
-              description={
-                activeTab === 'all'
-                  ? 'Use "Sync athletes" to pull your roster into the Lab, or invite players through their sport dashboard.'
-                  : `No ${SPORT_LABELS[activeTab as HelmLiftingSport]} athletes found. Sync your roster to populate this sport.`
-              }
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((athlete) => (
-            <AthleteProfileCard key={athlete.id} athlete={athlete} latestCheckin={null} />
-          ))}
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {syncing && filtered.length === 0 ? (
+          <motion.div
+            key="syncing-skeleton"
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            {Array.from({ length: 9 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+            ))}
+          </motion.div>
+        ) : filtered.length === 0 ? (
+          <motion.div
+            key="empty-athletes"
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <Card variant="glass">
+              <CardContent className="py-12">
+                <EmptyState
+                  icon={<IconUsers size={32} />}
+                  title="No athletes yet"
+                  description={
+                    activeTab === 'all'
+                      ? 'Use "Sync athletes" to pull your roster into the Lab, or invite players through their sport dashboard.'
+                      : `No ${SPORT_LABELS[activeTab as HelmLiftingSport]} athletes found. Sync your roster to populate this sport.`
+                  }
+                />
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="athlete-grid"
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            {filtered.map((athlete, i) => (
+              <motion.div
+                key={athlete.id}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: prefersReducedMotion ? 0 : i * 0.04, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                <AthleteProfileCard athlete={athlete} latestCheckin={null} />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Empty sport coverage notice */}
       {athletes.length > 0 && activeSports.length === 0 && (

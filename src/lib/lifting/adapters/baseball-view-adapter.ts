@@ -40,6 +40,12 @@ import type {
 } from '@/lib/types/baseball-lifting-v11';
 
 import type {
+  BaseballLiftAssignmentRow,
+  BaseballLiftAssignmentStatus,
+  BaseballReadinessCheckinRow,
+} from '@/lib/types/baseball-lifting';
+
+import type {
   HelmLiftingGroupRow,
   HelmLiftingGroupMemberRow,
   HelmLiftingExerciseRow,
@@ -60,6 +66,7 @@ import type {
   HelmLiftingPrRow,
   HelmLiftingImportRunRow,
   HelmLiftingImportRowRow,
+  HelmLiftingReadinessCheckinRow,
 } from '@/lib/types/helm-lifting-data';
 
 // -----------------------------------------------------------------------------
@@ -515,5 +522,99 @@ export function adaptImportRow(
     match_status: r.match_status as BaseballLiftImportRowRow['match_status'],
     validation_error: r.validation_error,
     created_at: r.created_at,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Session → Assignment (used by the performance dashboard's Assignments tab)
+//
+// The unified helm model has no separate assignments table — a quick-assigned
+// session IS the assignment. This adapter maps a helm_lifting_sessions row back
+// to the BaseballLiftAssignmentRow shape the performance dashboard consumes.
+// The inverse status map mirrors lifting.ts:toHelmSessionStatus in reverse.
+// -----------------------------------------------------------------------------
+
+function helmSessionStatusToAssignment(
+  helmStatus: string,
+): BaseballLiftAssignmentStatus {
+  switch (helmStatus) {
+    case 'started': return 'in_progress';
+    case 'completed': return 'completed';
+    case 'missed':
+    case 'excused': return 'skipped';
+    case 'modified': return 'in_progress';
+    default: return 'assigned'; // 'assigned' and any unknown value
+  }
+}
+
+export function adaptSessionToAssignment(
+  r: HelmLiftingSessionRow,
+  fallbackTeamId: string,
+  athleteToPlayer: HelmToBaseballIdMap,
+  exerciseId: string | null = null,
+): BaseballLiftAssignmentRow {
+  return {
+    id: r.id,
+    team_id: r.team_id ?? fallbackTeamId,
+    player_id: athleteToPlayer[r.athlete_id] ?? r.athlete_id,
+    group_scope: null,
+    assigned_by_coach_id: null,
+    exercise_id: exerciseId,
+    title: r.title,
+    due_date: r.scheduled_date,
+    prescription: {},
+    status: helmSessionStatusToAssignment(r.status),
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// HelmLiftingReadinessCheckinRow → BaseballReadinessCheckinRow
+//
+// Field mapping:
+//   checkin_date    → check_date
+//   sleep_quality   → sleep_hours  (reverse quintile: quality*2 hours, capped at
+//                     9 as a round-trip approximation; null stays null)
+//   energy_level    → energy_level (1-5 scale; same semantics)
+//   soreness_overall→ soreness_level (1-5; same semantics)
+//   notes           → notes (may contain "arm_status: X | ..." encoded by
+//                     submitReadinessCheckin in lifting.ts — we surface the raw
+//                     notes to the UI rather than trying to re-parse it, since
+//                     the readiness tab only renders the structured numeric fields
+//                     + arm_status; arm_status is extracted via regex below)
+// -----------------------------------------------------------------------------
+
+export function adaptHelmReadinessCheckin(
+  r: HelmLiftingReadinessCheckinRow,
+  fallbackTeamId: string,
+  athleteToPlayer: HelmToBaseballIdMap,
+): BaseballReadinessCheckinRow {
+  // Extract arm_status from the notes field if it was encoded by submitReadinessCheckin.
+  // Format: "arm_status: <value> | ..."
+  let armStatus: BaseballReadinessCheckinRow['arm_status'] = null;
+  if (r.notes) {
+    const m = r.notes.match(/arm_status:\s*(fresh|normal|tight|sore|pain)/i);
+    if (m?.[1]) {
+      armStatus = m[1].toLowerCase() as BaseballReadinessCheckinRow['arm_status'];
+    }
+  }
+
+  // Reverse the sleep_quality quintile → approximate hours (quintile * 2).
+  const sleepHours = r.sleep_quality != null ? r.sleep_quality * 2 : null;
+
+  return {
+    id: r.id,
+    team_id: fallbackTeamId,
+    player_id: athleteToPlayer[r.athlete_id] ?? r.athlete_id,
+    check_date: r.checkin_date,
+    sleep_hours: sleepHours,
+    energy_level: r.energy_level,
+    soreness_level: r.soreness_overall,
+    arm_status: armStatus,
+    mood: null,
+    notes: r.notes,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
   };
 }

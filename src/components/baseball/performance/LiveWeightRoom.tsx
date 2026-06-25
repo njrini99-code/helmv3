@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getFullName } from '@/lib/utils';
 import { readinessBandLabel, readinessBandTone } from '@/lib/baseball/lifting/readiness-compute';
 import {
@@ -58,6 +59,7 @@ interface Props {
   playerNameById: Record<string, string>;
   exerciseLibrary: Array<{ id: string; name: string; category: string | null }>;
   groupFilter: string | null;
+  isLoading?: boolean;
 }
 
 const POLL_MS = 20_000;
@@ -120,6 +122,7 @@ export function LiveWeightRoom({
   playerNameById,
   exerciseLibrary,
   groupFilter,
+  isLoading = false,
 }: Props) {
   const [data, setData] = useState<BaseballLiveWeightRoomData>(initialData);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -234,6 +237,72 @@ export function LiveWeightRoom({
   );
 
   const tb = data.top_bar;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-cream-50" aria-busy="true" aria-label="Loading weight room…">
+        {/* Sticky top bar skeleton */}
+        <div className="sticky top-0 z-30 border-b border-warm-200 bg-cream-50/95 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+            <Skeleton className="h-7 w-32 rounded-lg" />
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-32" />
+            <div className="ml-auto flex items-center gap-3">
+              <Skeleton className="h-8 w-28 rounded-xl" />
+              <Skeleton className="h-8 w-20 rounded-xl" />
+            </div>
+          </div>
+        </div>
+        {/* Main layout skeleton */}
+        <div className="mx-auto max-w-[1600px] flex gap-5 p-4">
+          {/* Athlete grid */}
+          <div className="flex-1 space-y-3">
+            {/* Grid header */}
+            <div className="grid grid-cols-7 gap-3 px-3 py-2">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <Skeleton key={i} className="h-3" />
+              ))}
+            </div>
+            {/* Athlete rows */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-7 gap-3 rounded-2xl border border-warm-100 bg-white/70 px-3 py-3 items-center"
+                style={{ animationDelay: `${i * 40}ms` }}
+              >
+                <div className="flex items-center gap-2 col-span-2">
+                  <Skeleton variant="circular" className="w-8 h-8 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="h-3 w-12" />
+                  </div>
+                </div>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-3 w-14" />
+              </div>
+            ))}
+          </div>
+          {/* Right rail */}
+          <div className="w-72 flex-shrink-0 space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-warm-100 bg-white/70 p-4 space-y-3">
+                <Skeleton className="h-4 w-32" />
+                {Array.from({ length: 2 }).map((_, j) => (
+                  <div key={j} className="flex items-center gap-2">
+                    <Skeleton variant="circular" className="w-6 h-6 flex-shrink-0" />
+                    <Skeleton className="flex-1 h-3.5" />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-cream-50">

@@ -41,6 +41,12 @@ import type {
   HelmLiftingSectionType,
   HelmLiftingPrescriptionInsert,
   HelmLiftingPrescriptionType,
+  HelmLiftingExerciseInsert,
+  HelmLiftingExerciseRow,
+  HelmLiftingExerciseCategory,
+  HelmLiftingPrimaryPattern,
+  HelmLiftingBodyRegion,
+  HelmLiftingUnit,
 } from '@/lib/types/helm-lifting-data';
 
 const LAB_PATH = '/lifting/dashboard/programs';
@@ -1120,5 +1126,206 @@ export const duplicateLiftWeek = withLiftingAction(
 
     revalidatePath(`${LAB_PATH}/${src.program_id}`);
     return { success: true, id: newWeekId };
+  },
+);
+
+// =============================================================================
+// 6. Exercise library CRUD
+//
+// createExercise / updateExercise / archiveExercise over helm_lifting_exercises.
+// All org-scoped (organization_id = ctx.orgId), requireEdit:true.
+// archiveExercise sets is_active=false (non-destructive; exercises already
+// referenced in prescriptions/sessions are preserved).
+// =============================================================================
+
+const EXERCISES_PATH = '/lifting/dashboard/exercises';
+
+export interface LiftingExerciseActionResult {
+  success: boolean;
+  id?: string;
+  error?: string;
+}
+
+const createExerciseSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(120),
+  category: z.enum([
+    'warmup', 'power', 'strength', 'accessory', 'arm_care',
+    'mobility', 'conditioning', 'recovery', 'test',
+  ]).optional(),
+  primaryPattern: z.enum([
+    'squat', 'hinge', 'push', 'pull', 'carry', 'rotate', 'anti_rotate',
+    'sprint', 'jump', 'throw', 'shoulder', 'elbow', 'hip', 'ankle',
+  ]).optional().nullable(),
+  bodyRegion: z.enum(['lower', 'upper', 'trunk', 'arm', 'full_body']).optional().nullable(),
+  equipment: z.string().trim().max(60).optional().nullable(),
+  unilateral: z.boolean().optional(),
+  defaultUnit: z.enum([
+    'lb', 'kg', 'bodyweight', 'seconds', 'yards', 'reps', 'mph', 'watts', 'mps',
+  ]).optional(),
+  instructions: z.string().trim().max(2000).optional().nullable(),
+  videoUrl: z.string().trim().url().max(500).optional().nullable(),
+  sport: z.enum(['baseball', 'golf']).optional(),
+});
+
+const updateExerciseSchema = createExerciseSchema.partial().extend({
+  exerciseId: uuid,
+});
+
+const archiveExerciseSchema = z.object({ exerciseId: uuid });
+const searchExercisesSchema = z.object({
+  query: z.string().trim().max(100).optional(),
+  sport: z.enum(['baseball', 'golf']).optional(),
+  category: z.string().optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+});
+
+export const createExercise = withLiftingAction(
+  'createExercise',
+  { featureArea: 'lifting-exercises', requireEdit: true },
+  async (ctx, raw: z.input<typeof createExerciseSchema>): Promise<LiftingExerciseActionResult> => {
+    const input = createExerciseSchema.parse(raw);
+    const supabase = await createClient();
+
+    const payload: HelmLiftingExerciseInsert = {
+      organization_id: ctx.orgId,
+      sport: input.sport ?? 'baseball',
+      created_by_coach_id: ctx.access.coachRow?.id ?? null,
+      name: input.name,
+      category: (input.category as HelmLiftingExerciseCategory | undefined) ?? 'strength',
+      primary_pattern: (input.primaryPattern as HelmLiftingPrimaryPattern | undefined) ?? null,
+      body_region: (input.bodyRegion as HelmLiftingBodyRegion | undefined) ?? null,
+      equipment: input.equipment ?? null,
+      unilateral: input.unilateral ?? false,
+      default_unit: (input.defaultUnit as HelmLiftingUnit | undefined) ?? 'lb',
+      instructions: input.instructions ?? null,
+      video_url: input.videoUrl ?? null,
+      is_active: true,
+      is_global: false,
+    };
+
+    const { data, error } = await fromUntyped(supabase, 'helm_lifting_exercises')
+      .insert(payload)
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    revalidatePath(EXERCISES_PATH);
+    return { success: true, id: (data as { id: string }).id };
+  },
+);
+
+export const updateExercise = withLiftingAction(
+  'updateExercise',
+  { featureArea: 'lifting-exercises', requireEdit: true },
+  async (ctx, raw: z.input<typeof updateExerciseSchema>): Promise<LiftingExerciseActionResult> => {
+    const input = updateExerciseSchema.parse(raw);
+    const { exerciseId, ...fields } = input;
+    const supabase = await createClient();
+
+    // Verify the exercise belongs to this org (global exercises are read-only).
+    const { data: existing } = await fromUntyped(supabase, 'helm_lifting_exercises')
+      .select('id, organization_id, is_global')
+      .eq('id', exerciseId)
+      .eq('organization_id', ctx.orgId)
+      .maybeSingle() as { data: { id: string; organization_id: string; is_global: boolean } | null };
+
+    if (!existing) throw new LiftingActionError('Exercise not found or not editable.');
+    if (existing.is_global) throw new LiftingActionError('Global exercises cannot be edited.');
+
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (fields.name !== undefined) patch.name = fields.name;
+    if (fields.category !== undefined) patch.category = fields.category;
+    if (fields.primaryPattern !== undefined) patch.primary_pattern = fields.primaryPattern;
+    if (fields.bodyRegion !== undefined) patch.body_region = fields.bodyRegion;
+    if (fields.equipment !== undefined) patch.equipment = fields.equipment;
+    if (fields.unilateral !== undefined) patch.unilateral = fields.unilateral;
+    if (fields.defaultUnit !== undefined) patch.default_unit = fields.defaultUnit;
+    if (fields.instructions !== undefined) patch.instructions = fields.instructions;
+    if (fields.videoUrl !== undefined) patch.video_url = fields.videoUrl;
+    if (fields.sport !== undefined) patch.sport = fields.sport;
+
+    const { error } = await fromUntyped(supabase, 'helm_lifting_exercises')
+      .update(patch)
+      .eq('id', exerciseId)
+      .eq('organization_id', ctx.orgId);
+
+    if (error) throw error;
+    revalidatePath(EXERCISES_PATH);
+    return { success: true, id: exerciseId };
+  },
+);
+
+export const archiveExercise = withLiftingAction(
+  'archiveExercise',
+  { featureArea: 'lifting-exercises', requireEdit: true },
+  async (ctx, raw: z.input<typeof archiveExerciseSchema>): Promise<LiftingExerciseActionResult> => {
+    const { exerciseId } = archiveExerciseSchema.parse(raw);
+    const supabase = await createClient();
+
+    const { data: existing } = await fromUntyped(supabase, 'helm_lifting_exercises')
+      .select('id, organization_id, is_global')
+      .eq('id', exerciseId)
+      .eq('organization_id', ctx.orgId)
+      .maybeSingle() as { data: { id: string; organization_id: string; is_global: boolean } | null };
+
+    if (!existing) throw new LiftingActionError('Exercise not found.');
+    if (existing.is_global) throw new LiftingActionError('Global exercises cannot be archived.');
+
+    const { error } = await fromUntyped(supabase, 'helm_lifting_exercises')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', exerciseId)
+      .eq('organization_id', ctx.orgId);
+
+    if (error) throw error;
+    revalidatePath(EXERCISES_PATH);
+    return { success: true, id: exerciseId };
+  },
+);
+
+export const restoreExercise = withLiftingAction(
+  'restoreExercise',
+  { featureArea: 'lifting-exercises', requireEdit: true },
+  async (ctx, raw: z.input<typeof archiveExerciseSchema>): Promise<LiftingExerciseActionResult> => {
+    const { exerciseId } = archiveExerciseSchema.parse(raw);
+    const supabase = await createClient();
+
+    const { error } = await fromUntyped(supabase, 'helm_lifting_exercises')
+      .update({ is_active: true, updated_at: new Date().toISOString() })
+      .eq('id', exerciseId)
+      .eq('organization_id', ctx.orgId);
+
+    if (error) throw error;
+    revalidatePath(EXERCISES_PATH);
+    return { success: true, id: exerciseId };
+  },
+);
+
+// searchExercises — used by ExercisePicker (no requireEdit; read-only).
+export const searchExercises = withLiftingAction(
+  'searchExercises',
+  { featureArea: 'lifting-exercises', requireEdit: false },
+  async (ctx, raw: z.input<typeof searchExercisesSchema>): Promise<{
+    success: boolean;
+    exercises: HelmLiftingExerciseRow[];
+    error?: string;
+  }> => {
+    const input = searchExercisesSchema.parse(raw);
+    const supabase = await createClient();
+
+    let q = fromUntyped(supabase, 'helm_lifting_exercises')
+      .select('*')
+      .eq('organization_id', ctx.orgId)
+      .eq('is_active', true)
+      .order('name', { ascending: true })
+      .limit(input.limit ?? 100);
+
+    if (input.sport) q = q.eq('sport', input.sport);
+    if (input.category) q = q.eq('category', input.category);
+    if (input.query) q = q.ilike('name', `%${input.query}%`);
+
+    const { data, error } = await q as { data: HelmLiftingExerciseRow[] | null; error: unknown };
+    if (error) throw error as Error;
+
+    return { success: true, exercises: data ?? [] };
   },
 );

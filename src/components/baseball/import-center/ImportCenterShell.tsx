@@ -98,6 +98,9 @@ export function ImportCenterShell({
       {mode === 'box_score' ? (
         // showHeader={false} suppresses the wizard's own <h1> since the shell
         // already renders the "Import Center" header above the mode switcher.
+        // onRequestEventLevel: when the coach picks "Event log" in Step 1, we
+        // switch to the "Event level" mode so they reach the EventImportWizard
+        // instead of a dead end.
         <ImportWizardClient
           teamId={teamId}
           teamName={teamName}
@@ -105,6 +108,7 @@ export function ImportCenterShell({
           recentRuns={recentRuns}
           registeredSources={registeredSources}
           showHeader={false}
+          onRequestEventLevel={() => setMode('event_level')}
         />
       ) : (
         <EventImportWizard

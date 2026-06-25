@@ -68,6 +68,7 @@ import {
   reopenMeetingItem,
   recordDecisionNote,
   createMeetingItem,
+  convertSignalToPracticeBlock,
   type DecisionRoomData,
   type DecisionRoomInsight,
   type DecisionRoomLedgerEntry,
@@ -923,7 +924,7 @@ function AgendaDetailPane({
   toastError: (t: string, d?: string) => void;
 }) {
   const [pending, startTransition] = useTransition();
-  const [mode, setMode] = useState<'idle' | 'resolve' | 'note' | 'task'>('idle');
+  const [mode, setMode] = useState<'idle' | 'resolve' | 'note' | 'task' | 'practice'>('idle');
   const [text, setText] = useState('');
   const isMeetingItem = item.kind === 'meeting_item';
   const discussed = item.status === 'discussed';
@@ -1032,6 +1033,23 @@ function AgendaDetailPane({
     );
   }
 
+  // [W6f] Convert the signal linked to this agenda item into a practice block.
+  // Requires the caller to hold `can_manage_practice` (checked server-side in
+  // `convertSignalToPracticeBlock`). A descriptive title seeds from the agenda
+  // item; the coach may optionally add a coaching note in the textarea.
+  function submitPracticeBlock() {
+    if (!item.sourceSignalId) return;
+    run(
+      () =>
+        convertSignalToPracticeBlock({
+          signalId: item.sourceSignalId as string,
+          title: item.title,
+          detail: text.trim() || item.detail,
+        }),
+      'Practice block created',
+    );
+  }
+
   return (
     <Card variant="raised" padding="lg" className="lg:sticky lg:top-4">
       <CardContent className="p-0">
@@ -1098,7 +1116,7 @@ function AgendaDetailPane({
           )}
         </div>
 
-        {/* Inline text capture for resolve / note / task */}
+        {/* Inline text capture for resolve / note / task / practice */}
         {mode !== 'idle' && (
           <div className="mb-3">
             <Textarea
@@ -1110,7 +1128,9 @@ function AgendaDetailPane({
                   ? 'What did the staff decide? (resolution note)'
                   : mode === 'task'
                     ? 'Task detail for the player (optional)'
-                    : 'Record the decision…'
+                    : mode === 'practice'
+                      ? 'Coaching focus or context for the practice block (optional)'
+                      : 'Record the decision…'
               }
               className="w-full"
             />
@@ -1123,9 +1143,23 @@ function AgendaDetailPane({
                 size="sm"
                 isLoading={pending}
                 leftIcon={<IconCheck size={14} />}
-                onClick={mode === 'resolve' ? submitResolve : mode === 'task' ? submitTask : submitNote}
+                onClick={
+                  mode === 'resolve'
+                    ? submitResolve
+                    : mode === 'task'
+                      ? submitTask
+                      : mode === 'practice'
+                        ? submitPracticeBlock
+                        : submitNote
+                }
               >
-                {mode === 'resolve' ? 'Resolve item' : mode === 'task' ? 'Create task' : 'Record decision'}
+                {mode === 'resolve'
+                  ? 'Resolve item'
+                  : mode === 'task'
+                    ? 'Create task'
+                    : mode === 'practice'
+                      ? 'Create practice block'
+                      : 'Record decision'}
               </Button>
             </div>
           </div>
@@ -1157,6 +1191,20 @@ function AgendaDetailPane({
             <Button variant="outline" size="sm" leftIcon={<IconClipboardList size={14} />} onClick={() => setMode('task')}>
               Create task
             </Button>
+            {/* [W6f] Convert to practice block — only available when the item
+                links to a source signal (required to materialise a block). The
+                coach can add a coaching note in the textarea before confirming.
+                Capability gate (can_manage_practice) is enforced server-side. */}
+            {item.sourceSignalId && (
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<IconCalendar size={14} />}
+                onClick={() => setMode('practice')}
+              >
+                Practice block
+              </Button>
+            )}
             {item.playerId && (
               <Button variant="outline" size="sm" isLoading={pending} leftIcon={<IconNote size={14} />} onClick={convertNote}>
                 Player note

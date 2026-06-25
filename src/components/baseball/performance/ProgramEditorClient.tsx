@@ -50,6 +50,7 @@ import {
   addLiftPrescription, updateLiftPrescription, reorderLiftPrescriptions, deleteLiftPrescription,
   saveProgramAsTemplate, publishLiftDay,
 } from '@/app/baseball/actions/lifting-v11';
+import { updateProgramBlockOrder } from '@/app/baseball/actions/program-settings';
 import type {
   LiftProgramTree, LiftWeekNode, LiftDayNode, LiftSectionNode,
   LiftPrescriptionNode, AssignContext,
@@ -573,6 +574,24 @@ function DayEditor({
   const [est, setEst] = useState<string>(day.estimated_minutes != null ? String(day.estimated_minutes) : '');
   const [assignOpen, setAssignOpen] = useState(false);
 
+  // Section-level drag-to-reorder. We track the dragged section id in a ref so
+  // the onDrop handler can compute the new ordered array and call the server action.
+  const sectionDragId = useRef<string | null>(null);
+
+  function onDropSection(targetId: string) {
+    const ids = day.sections.map((s) => s.id);
+    const from = ids.indexOf(sectionDragId.current ?? '');
+    const to = ids.indexOf(targetId);
+    sectionDragId.current = null;
+    if (from < 0 || to < 0 || from === to) return;
+    const next = [...ids];
+    const [moved] = next.splice(from, 1);
+    if (moved === undefined) return;
+    next.splice(to, 0, moved);
+    // W5c: call the new update_program_block_order action from program-settings.ts.
+    run(() => updateProgramBlockOrder({ orderedIds: next }));
+  }
+
   const totalExercises = day.sections.reduce((n, s) => n + s.prescriptions.length, 0);
 
   return (
@@ -671,16 +690,24 @@ function DayEditor({
       ) : (
         <div className="space-y-3">
           {day.sections.map((s, i) => (
-            <SectionEditor
+            <div
               key={s.id}
-              section={s}
-              index={i}
-              count={day.sections.length}
-              sectionsOrder={day.sections.map((x) => x.id)}
-              exercises={assign.exercises}
-              pending={pending}
-              run={run}
-            />
+              draggable={!pending}
+              onDragStart={() => { sectionDragId.current = s.id; }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => onDropSection(s.id)}
+              className="transition-opacity"
+            >
+              <SectionEditor
+                section={s}
+                index={i}
+                count={day.sections.length}
+                sectionsOrder={day.sections.map((x) => x.id)}
+                exercises={assign.exercises}
+                pending={pending}
+                run={run}
+              />
+            </div>
           ))}
         </div>
       )}

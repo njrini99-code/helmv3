@@ -36,6 +36,7 @@ import {
   Inbox,
   X,
   AlertCircle,
+  AlertTriangle,
 } from 'lucide-react';
 
 import { Header } from '@/components/layout/header';
@@ -50,8 +51,10 @@ import {
   savePractice,
   publishPractice,
   recordPracticeAttendance,
+  getClassConflictsForPractice,
   type PracticeBlockInput,
   type AttendanceEntryInput,
+  type ClassConflictSummary,
 } from '@/app/baseball/actions/practice';
 import type { PracticeValidationResult } from '@/lib/baseball/practice-validation';
 import {
@@ -74,6 +77,7 @@ import { PracticeIntelligenceBoard } from './PracticeIntelligenceBoard';
 import { ScrimmagePanel } from './ScrimmagePanel';
 import { BlockObjectiveEditor } from './BlockObjectiveEditor';
 import { PracticeRecapPanel } from './PracticeRecapPanel';
+import { PracticePrintExport } from './PracticePrintExport';
 import type { ScrimmageRosterPlayer } from './ScrimmageLineupBuilder';
 
 interface RosterPlayer {
@@ -196,6 +200,25 @@ export function PracticePlannerClient() {
     setObjectives(res.success ? (res.data ?? []) : []);
   }, []);
 
+  // Class-conflict summary for the practice currently being edited.
+  // Loaded best-effort when an existing practice is opened in the editor.
+  // Never fabricated: if the fetch fails or the practice has no ID, byPlayer={}.
+  const [classConflicts, setClassConflicts] = useState<ClassConflictSummary>({ byPlayer: {} });
+
+  const loadClassConflicts = useCallback(async (practiceId: string | null) => {
+    if (!practiceId) {
+      setClassConflicts({ byPlayer: {} });
+      return;
+    }
+    try {
+      const res = await getClassConflictsForPractice({ practiceId });
+      setClassConflicts(res.success && res.data ? res.data : { byPlayer: {} });
+    } catch {
+      // Non-fatal: leave byPlayer empty (no fake flags).
+      setClassConflicts({ byPlayer: {} });
+    }
+  }, []);
+
   const loadPractices = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -290,6 +313,7 @@ export function PracticePlannerClient() {
     setSelectedBlockKey(null);
     setValidation(null);
     setObjectives([]);
+    setClassConflicts({ byPlayer: {} });
   };
 
   const startNew = () => {
@@ -351,6 +375,7 @@ export function PracticePlannerClient() {
     setBlocks(mapped);
     setSelectedBlockKey(mapped[0]?.key ?? null);
     void loadObjectives(p.id);
+    void loadClassConflicts(p.id);
   };
 
   const addBlock = () => {
@@ -877,6 +902,11 @@ export function PracticePlannerClient() {
                   onPublishToggle={(publish, cal) => handlePublishToggle(p, publish, cal)}
                   onAttendanceSaved={loadPractices}
                   onError={setError}
+                  // Conflicts loaded only for the practice currently open in the
+                  // editor. For all other cards the map is empty (no fake flags).
+                  classConflicts={
+                    editPracticeId === p.id ? classConflicts : { byPlayer: {} }
+                  }
                 />
               </m.div>
             ))}
@@ -911,6 +941,7 @@ function PracticeCard({
   onPublishToggle,
   onAttendanceSaved,
   onError,
+  classConflicts,
 }: {
   practice: BaseballPracticeWithDetail;
   isCoach: boolean;
@@ -924,6 +955,8 @@ function PracticeCard({
   ) => void;
   onAttendanceSaved: () => void | Promise<void>;
   onError: (msg: string | null) => void;
+  /** Class-conflict summary for this practice (empty map = no data / no conflicts). */
+  classConflicts: ClassConflictSummary;
 }) {
   const published = practice.status === 'published';
   const isBacklog = practice.is_backlog === true;
@@ -1014,6 +1047,14 @@ function PracticeCard({
                   You: {ATTENDANCE_STATUS_DISPLAY[ownAttendanceStatus].label}
                 </span>
               )}
+              {/* Class-conflict badge (coach only, shown when conflict data is loaded). */}
+              {isCoach && Object.keys(classConflicts.byPlayer).length > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                  <AlertTriangle className="h-3 w-3" />
+                  {Object.keys(classConflicts.byPlayer).length} player
+                  {Object.keys(classConflicts.byPlayer).length !== 1 ? 's' : ''} with class conflicts
+                </span>
+              )}
             </div>
             {practice.focus && <p className="mt-1 text-sm text-warm-500">{practice.focus}</p>}
             {isBacklog && (
@@ -1039,6 +1080,10 @@ function PracticeCard({
                 >
                   Add to calendar
                 </Button>
+              )}
+              {/* Export + share affordance — visible on published plans only */}
+              {published && !isBacklog && (
+                <PracticePrintExport practice={practice} />
               )}
               {!isBacklog && (
                 <Button

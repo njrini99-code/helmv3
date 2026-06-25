@@ -68,6 +68,24 @@ export interface ActionResult {
   error?: string;
 }
 
+/** The top-performing set from a completed session (max load, for H2 display). */
+export interface TopSet {
+  name: string;
+  load: number;
+  reps: number;
+  unit: string;
+}
+
+/** Extended result returned by completeLiftSession (H2). */
+export interface CompleteSessionResult extends ActionResult {
+  /** Number of PRs detected during the session. Mirrors count for convenience. */
+  prCount: number;
+  /** The highest-load set logged in this session, null when no weighted sets. */
+  topSet: TopSet | null;
+  /** Average RPE across all logged sets that reported one; null when none. */
+  rpeAverage: number | null;
+}
+
 const uuid = z.string().uuid();
 const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD');
 
@@ -1799,7 +1817,7 @@ const completeSessionSchema = z.object({
 export const completeLiftSession = withBaseballAction(
   'completeLiftSession',
   { featureArea: 'lifting', requiredPlayerAccess: 'can_self_log_lift' },
-  async (ctx, raw: z.input<typeof completeSessionSchema>): Promise<ActionResult> => {
+  async (ctx, raw: z.input<typeof completeSessionSchema>): Promise<CompleteSessionResult> => {
     const input = completeSessionSchema.parse(raw);
     const supabase = (await createClient()) as Db;
     const { data, error } = await supabase
@@ -1824,46 +1842,90 @@ export const completeLiftSession = withBaseballAction(
     };
     const isCoach = ctx.activeRole === 'coach';
 
-    // Final PR sweep: catch any best from a logged set in this session that
-    // hasn't already produced a PR (idempotent — detectAndRecordPr re-reads the
-    // current best each time, so an already-recorded PR is not re-emitted).
-    let prCount = 0;
-    const { data: sweepSets } = await supabase
-      .from('baseball_lift_set_results')
-      .select('session_exercise_id, actual_load, actual_reps, load_unit')
-      .eq('player_id', session.player_id)
-      .gt('actual_load', 0)
-      .gt('actual_reps', 0)
-      .in(
-        'session_exercise_id',
-        // restrict to this session's exercises
-        (
-          (
-            await supabase
-              .from('baseball_lift_session_exercises')
-              .select('id')
-              .eq('session_id', input.sessionId)
-          ).data ?? []
-        ).map((r: { id: string }) => r.id),
-      );
-    for (const s of (sweepSets ?? []) as Array<{
+    // Gather this session's exercise ids + name snapshots (needed for both PR
+    // sweep and the H2 completion stats: top-set display and RPE average).
+    const { data: seRows } = await supabase
+      .from('baseball_lift_session_exercises')
+      .select('id, exercise_name_snapshot')
+      .eq('session_id', input.sessionId);
+    type SeRow = { id: string; exercise_name_snapshot: string | null };
+    const seIds = (seRows ?? []).map((r: SeRow) => r.id);
+    const seNameMap = new Map<string, string>(
+      (seRows ?? []).map((r: SeRow) => [r.id, r.exercise_name_snapshot ?? 'Exercise']),
+    );
+
+    // All logged sets for this session — no load/reps filter so bodyweight sets
+    // contribute to the RPE average and the top-set scan covers everything.
+    type SetStatRow = {
       session_exercise_id: string;
       actual_load: number | null;
       actual_reps: number | null;
       load_unit: string | null;
-    }>) {
-      prCount += await detectAndRecordPr(supabase, {
-        teamId: session.team_id,
-        playerId: session.player_id,
-        sessionId: input.sessionId,
-        sessionExerciseId: s.session_exercise_id,
-        actualLoad: s.actual_load,
-        actualReps: s.actual_reps,
-        loadUnit: s.load_unit,
-        actorIsCoach: isCoach,
-        activeCoachId: ctx.activeCoachId,
-      });
+      rpe: number | null;
+    };
+    const allSets: SetStatRow[] = [];
+    if (seIds.length > 0) {
+      const { data: setData } = await supabase
+        .from('baseball_lift_set_results')
+        .select('session_exercise_id, actual_load, actual_reps, load_unit, rpe')
+        .in('session_exercise_id', seIds);
+      if (setData) allSets.push(...(setData as SetStatRow[]));
     }
+
+    // Final PR sweep: catch any best from a logged set in this session that
+    // hasn't already produced a PR (idempotent — detectAndRecordPr re-reads the
+    // current best each time, so an already-recorded PR is not re-emitted).
+    let prCount = 0;
+    if (seIds.length > 0) {
+      const { data: sweepSets } = await supabase
+        .from('baseball_lift_set_results')
+        .select('session_exercise_id, actual_load, actual_reps, load_unit')
+        .eq('player_id', session.player_id)
+        .gt('actual_load', 0)
+        .gt('actual_reps', 0)
+        .in('session_exercise_id', seIds);
+      for (const s of (sweepSets ?? []) as Array<{
+        session_exercise_id: string;
+        actual_load: number | null;
+        actual_reps: number | null;
+        load_unit: string | null;
+      }>) {
+        prCount += await detectAndRecordPr(supabase, {
+          teamId: session.team_id,
+          playerId: session.player_id,
+          sessionId: input.sessionId,
+          sessionExerciseId: s.session_exercise_id,
+          actualLoad: s.actual_load,
+          actualReps: s.actual_reps,
+          loadUnit: s.load_unit,
+          actorIsCoach: isCoach,
+          activeCoachId: ctx.activeCoachId,
+        });
+      }
+    }
+
+    // Compute H2 completion stats from all logged sets.
+    let topSet: TopSet | null = null;
+    let maxLoad = -1;
+    const rpeValues: number[] = [];
+    for (const s of allSets) {
+      const load = Number(s.actual_load ?? 0);
+      const reps = Number(s.actual_reps ?? 0);
+      if (load > 0 && reps > 0 && load > maxLoad) {
+        maxLoad = load;
+        topSet = {
+          name: seNameMap.get(s.session_exercise_id) ?? 'Exercise',
+          load,
+          reps,
+          unit: s.load_unit ?? 'lb',
+        };
+      }
+      if (s.rpe !== null && Number(s.rpe) > 0) rpeValues.push(Number(s.rpe));
+    }
+    const rpeAverage =
+      rpeValues.length > 0
+        ? Math.round((rpeValues.reduce((a, b) => a + b, 0) / rpeValues.length) * 10) / 10
+        : null;
 
     // Always close the loop to the timeline: even with no PR, a completed lift is
     // a real player_only event so the lifting loop reaches the player timeline.
@@ -1883,7 +1945,7 @@ export const completeLiftSession = withBaseballAction(
     revalidatePath(PERFORMANCE);
     revalidatePath(PLAYER_TODAY);
     revalidatePath(`${PERFORMANCE}/players/${session.player_id}`);
-    return { success: true, id: input.sessionId, count: prCount };
+    return { success: true, id: input.sessionId, count: prCount, prCount, topSet, rpeAverage };
   },
 );
 
