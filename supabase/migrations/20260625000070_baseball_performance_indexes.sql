@@ -41,22 +41,15 @@ CREATE INDEX IF NOT EXISTS helm_lifting_session_exercises_exercise_idx
 --    NOT VALID: skips existing-data validation (safe on a live shared DB where
 --    the table may already have rows; VALIDATE CONSTRAINT can run offline later).
 -- -----------------------------------------------------------------------------
+-- NOTE: UNIQUE constraints cannot be NOT VALID in Postgres; use a UNIQUE INDEX
+-- (works identically for ON CONFLICT upserts) and guard for table existence.
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname    = 'uq_baseball_strength_max'
-      AND conrelid   = 'public.baseball_strength_maxes'::regclass
-  ) THEN
-    ALTER TABLE public.baseball_strength_maxes
-      ADD CONSTRAINT uq_baseball_strength_max
-      UNIQUE (player_id, exercise_id, max_type, test_date) NOT VALID;
+  IF to_regclass('public.baseball_strength_maxes') IS NOT NULL THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_baseball_strength_max
+      ON public.baseball_strength_maxes (player_id, exercise_id, max_type, test_date);
   END IF;
 END $$;
-
-COMMENT ON CONSTRAINT uq_baseball_strength_max ON public.baseball_strength_maxes IS
-  'Prevents duplicate (player, exercise, max_type, test_date) rows, enabling '
-  'INSERT ... ON CONFLICT DO UPDATE upsert semantics in logSetResult.';
 
 -- -----------------------------------------------------------------------------
 -- 4. baseball_practice_blocks — coach_owner_id FK index
