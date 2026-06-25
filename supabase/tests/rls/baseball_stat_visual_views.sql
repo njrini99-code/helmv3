@@ -1,5 +1,5 @@
 -- pgTAP contracts for the BaseballHelm stat-visual saved-view table
--- (migration 20260624000082_baseball_stat_visual_views.sql).
+-- (migration 20260624000083_baseball_stat_visual_views.sql).
 --
 -- Security-critical invariants for the V10 stat-visual saved-view persistence:
 --   1. RLS is ENABLED (and FORCED) on baseball_stat_visual_views; anon has no

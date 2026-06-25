@@ -38,12 +38,12 @@ There are **49** `*_baseball_*` migrations in `supabase/migrations/` (range `202
 
 ### 2a. Ordering hazard — duplicate timestamp (MUST handle explicitly)
 
-Two migrations share the numeric prefix `20260624001400`:
+Previously two migrations shared the numeric prefix `20260624001400` — that collision has been resolved:
 
-- `20260624001400_baseball_public_player_stats_rpc.sql`
-- `20260624001400_baseball_readiness_select_gate_fix.sql`
+- `20260624001400_baseball_readiness_select_gate_fix.sql` (unchanged)
+- `20260624001401_baseball_public_player_stats_rpc.sql` (renamed from 001400)
 
-Lexical sort places `public_player_stats_rpc` before `readiness_select_gate_fix` (p < r). The apply plan MUST pin an explicit order for these two; do not rely on glob ordering being stable across tools. Apply them in the order the apply plan specifies, one after the other.
+Apply them in the order the apply plan specifies (readiness gate first, then public stats RPC).
 
 ### 2b. How to apply each one
 
