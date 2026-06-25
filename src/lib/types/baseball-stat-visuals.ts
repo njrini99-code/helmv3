@@ -291,6 +291,55 @@ export interface BaserunningRow {
 }
 
 // -----------------------------------------------------------------------------
+// Arm Board — throw distance vs velocity scatter, colored by position group
+// -----------------------------------------------------------------------------
+
+export interface ArmBoardPoint {
+  id: string;
+  /** Player display name. */
+  playerName: string;
+  /** Distance of the throw in feet. null → excluded (never plotted as 0). */
+  throwDistance: number | null;
+  /** Peak velocity of the throw in mph. null → excluded. */
+  throwVelocity: number | null;
+  /** Broad position group for color coding (not color-only — also in legend/table). */
+  positionGroup: 'infield' | 'outfield' | 'catcher' | 'pitcher' | 'other';
+  /** Session date for x-axis / tooltip context. */
+  date: string | null;
+  /** Raw context label (bullpen, game, combine, etc.). */
+  context: import('./baseball-stat-events').BaseballDataContext;
+  source?: ChartPointSource;
+}
+
+// -----------------------------------------------------------------------------
+// Speed & Decision Board — sprint splits + decision efficiency per player
+// -----------------------------------------------------------------------------
+
+export interface SpeedDecisionRow {
+  playerId: string;
+  playerName: string;
+  /** 60-yard dash in seconds — the canonical speed benchmark. null = not yet captured. */
+  sixtyTime: number | null;
+  /** Home-to-first in seconds. null = not captured. */
+  homeToFirst: number | null;
+  /** First-to-third in seconds. null = not captured. */
+  firstToThird: number | null;
+  /**
+   * Decision efficiency — ratio of "correct" aggressive decisions (advancing /
+   * stealing when successful) to total aggressive decisions; range [0,1].
+   * null = fewer than 3 decisions (never fabricated as 0%).
+   */
+  decisionEfficiency: number | null;
+  /** Raw counts for honest display: correct aggressive plays, total attempted. */
+  correctDecisions: number | null;
+  totalDecisions: number | null;
+  /** SB/CS for context. */
+  stolenBases: number | null;
+  caughtStealing: number | null;
+  source?: ChartPointSource;
+}
+
+// -----------------------------------------------------------------------------
 // Readiness — heat strip
 // -----------------------------------------------------------------------------
 

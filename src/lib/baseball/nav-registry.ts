@@ -898,11 +898,22 @@ export function getVisibleBaseballNav(
           visible.map((e) => e.id),
         );
   const rank = new Map(orderedIds.map((id, i) => [id, i]));
-  return [...visible].sort(
-    (a, b) =>
+  return [...visible].sort((a, b) => {
+    // Section is the primary sort key: primary entries ALWAYS precede secondary
+    // entries regardless of mode priority. This preserves the section split even
+    // when a secondary registry entry (e.g. staff-settings at registry index 15)
+    // appears before primary entries that are absent from the mode's priority list
+    // (e.g. pipeline, discover, announcements) and would otherwise sort ahead of
+    // them when both carry MAX_SAFE_INTEGER rank.
+    if (a.section !== b.section) {
+      return a.section === 'primary' ? -1 : 1;
+    }
+    // Within the same section, order by the mode's surface priority rank.
+    return (
       (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
-      (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER),
-  );
+      (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER)
+    );
+  });
 }
 
 /** Visible entries in the 'primary' section, in registry order. */

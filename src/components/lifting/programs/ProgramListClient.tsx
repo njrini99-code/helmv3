@@ -12,7 +12,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import { NativeSelect } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { IconPlus, IconDumbbell } from '@/components/icons';
 import { createProgram } from '@/app/lifting/actions/programs';
 import type {
@@ -39,6 +40,51 @@ interface Props {
   programs: ProgramWithCounts[];
   orgId: string;
   canEdit: boolean;
+  /** Pass true while the server is fetching — renders skeleton loaders */
+  loading?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton loading state
+// ---------------------------------------------------------------------------
+function ProgramListSkeleton() {
+  return (
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8">
+      {/* Header skeleton */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-32" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-60 rounded-xl" />
+          <Skeleton className="h-10 w-32 rounded-xl" />
+        </div>
+      </div>
+      {/* Section skeletons */}
+      {['Active', 'Templates'].map((section) => (
+        <div key={section} className="space-y-3">
+          <Skeleton className="h-3.5 w-20" />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-white/20 glass-standard backdrop-blur-xl p-5 space-y-3"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-3/4" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 const PHASE_OPTIONS: Array<{ value: HelmLiftingProgramPhase; label: string }> = [
@@ -68,11 +114,11 @@ function StatusChip({ status, template }: { status: HelmLiftingProgramStatus; te
   const meta = STATUS_META[status];
   return (
     <span className="inline-flex items-center gap-1">
-      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${meta.cls}`}>
+      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-medium ${meta.cls}`}>
         {meta.label}
       </span>
       {template && (
-        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-eyebrow font-medium text-amber-700">
           Template
         </span>
       )}
@@ -80,7 +126,7 @@ function StatusChip({ status, template }: { status: HelmLiftingProgramStatus; te
   );
 }
 
-export function ProgramListClient({ programs, orgId, canEdit }: Props) {
+export function ProgramListClient({ programs, orgId, canEdit, loading = false }: Props) {
   const router = useRouter();
   const prefersReducedMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
@@ -111,6 +157,8 @@ export function ProgramListClient({ programs, orgId, canEdit }: Props) {
     return { active, templates, drafts, archived };
   }, [filtered]);
 
+  if (loading) return <ProgramListSkeleton />;
+
   function handleCreate() {
     if (!name.trim()) { setCreateError('Name is required.'); return; }
     setCreateError(null);
@@ -127,14 +175,17 @@ export function ProgramListClient({ programs, orgId, canEdit }: Props) {
     });
   }
 
-  const ProgramCard = ({ program }: { program: ProgramWithCounts }) => (
+  const ProgramCard = ({ program, index = 0 }: { program: ProgramWithCounts; index?: number }) => (
     <motion.div
       layout
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.22, delay: prefersReducedMotion ? 0 : index * 0.05, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <Link href={`/lifting/dashboard/programs/${program.id}`}>
+      <Link
+        href={`/lifting/dashboard/programs/${program.id}`}
+        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 rounded-2xl"
+      >
         <Card variant="interactive" className="group cursor-pointer p-0 overflow-hidden">
           <CardContent className="p-5 space-y-2">
             <div className="flex items-start justify-between gap-2">
@@ -145,9 +196,9 @@ export function ProgramListClient({ programs, orgId, canEdit }: Props) {
             </div>
             <div className="flex items-center gap-3 text-xs text-warm-500">
               <span>{PHASE_LABEL[program.phase] ?? program.phase}</span>
-              <span>·</span>
+              <span aria-hidden>·</span>
               <span>{GOAL_LABEL[program.goal] ?? program.goal}</span>
-              <span>·</span>
+              <span aria-hidden>·</span>
               <span>{program.week_count}w / {program.day_count}d</span>
             </div>
             {program.description && (
@@ -165,7 +216,7 @@ export function ProgramListClient({ programs, orgId, canEdit }: Props) {
       <section>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-warm-400">{title}</h2>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {items.map((p) => <ProgramCard key={p.id} program={p} />)}
+          {items.map((p, i) => <ProgramCard key={p.id} program={p} index={i} />)}
         </div>
       </section>
     );
@@ -198,32 +249,57 @@ export function ProgramListClient({ programs, orgId, canEdit }: Props) {
       </div>
 
       {/* Grouped list */}
-      {programs.length === 0 ? (
-        <EmptyState
-          icon={<IconDumbbell size={28} className="text-warm-300" />}
-          title="No programs yet"
-          description={canEdit ? 'Create your first lifting program to get started.' : 'No programs have been created yet.'}
-          action={
-            canEdit ? (
-              <Button onClick={() => setShowCreate(true)} className="gap-1.5">
-                <IconPlus size={15} /> New program
-              </Button>
-            ) : undefined
-          }
-        />
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          title="No matching programs"
-          description={`No programs match "${search}". Try a different search.`}
-        />
-      ) : (
-        <div className="space-y-8">
-          <Section title="Active" items={grouped.active} />
-          <Section title="Templates" items={grouped.templates} />
-          <Section title="Drafts" items={grouped.drafts} />
-          <Section title="Archived" items={grouped.archived} />
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {programs.length === 0 ? (
+          <motion.div
+            key="empty-programs"
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <EmptyState
+              icon={<IconDumbbell size={32} className="text-warm-300" />}
+              title="Create your first program"
+              description={canEdit ? 'Build a lifting program, add weeks and days, then publish it to your athletes.' : 'No programs have been created yet.'}
+              action={
+                canEdit ? (
+                  <Button onClick={() => setShowCreate(true)} className="gap-1.5">
+                    <IconPlus size={15} /> New program
+                  </Button>
+                ) : undefined
+              }
+            />
+          </motion.div>
+        ) : filtered.length === 0 ? (
+          <motion.div
+            key="empty-search"
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <EmptyState
+              title="No matching programs"
+              description={`No programs match "${search}". Try a different search.`}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="program-list"
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="space-y-8"
+          >
+            <Section title="Active" items={grouped.active} />
+            <Section title="Templates" items={grouped.templates} />
+            <Section title="Drafts" items={grouped.drafts} />
+            <Section title="Archived" items={grouped.archived} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Create modal */}
       {canEdit && (
@@ -234,17 +310,18 @@ export function ProgramListClient({ programs, orgId, canEdit }: Props) {
         >
           <div className="space-y-4 p-1">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Name</label>
+              <label htmlFor="program-name" className="block text-sm font-medium text-warm-700 mb-1">Name</label>
               <Input
+                id="program-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Fall Strength Block"
-                autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Description</label>
+              <label htmlFor="program-description" className="block text-sm font-medium text-warm-700 mb-1">Description</label>
               <Textarea
+                id="program-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional overview…"
@@ -253,8 +330,9 @@ export function ProgramListClient({ programs, orgId, canEdit }: Props) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Phase</label>
+                <label htmlFor="program-phase" className="block text-sm font-medium text-warm-700 mb-1">Phase</label>
                 <NativeSelect
+                  id="program-phase"
                   value={phase}
                   onChange={(e) => setPhase(e.target.value as HelmLiftingProgramPhase)}
                 >
@@ -262,8 +340,9 @@ export function ProgramListClient({ programs, orgId, canEdit }: Props) {
                 </NativeSelect>
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Goal</label>
+                <label htmlFor="program-goal" className="block text-sm font-medium text-warm-700 mb-1">Goal</label>
                 <NativeSelect
+                  id="program-goal"
                   value={goal}
                   onChange={(e) => setGoal(e.target.value as HelmLiftingProgramGoal)}
                 >

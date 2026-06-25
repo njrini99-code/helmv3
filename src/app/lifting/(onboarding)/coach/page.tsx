@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
-import { AlertCircle, CheckCircle2, Dumbbell, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
 import { completeLiftingCoachOnboarding, type CompleteLiftingCoachOnboardingArgs } from '@/app/lifting/actions/onboarding';
 import { fromUntyped } from '@/lib/supabase/untyped';
 
@@ -66,15 +68,8 @@ export default function LiftingCoachOnboardingPage() {
             .in('id', orgIds) as { data: Array<{ id: string; name: string }> | null };
           setOrgs(orgRows ?? []);
           if (orgRows && orgRows.length === 1 && orgRows[0]) setOrgId(orgRows[0].id);
-        } else {
-          // Fallback: show a broad list so self-signups can pick their school
-          const { data: orgRows } = await supabase
-            .from('organizations')
-            .select('id, name')
-            .order('name')
-            .limit(100) as { data: Array<{ id: string; name: string }> | null };
-          setOrgs(orgRows ?? []);
         }
+        // No fallback to all-orgs: without an invite the coach cannot join.
       } finally {
         setOrgsLoading(false);
       }
@@ -110,12 +105,12 @@ export default function LiftingCoachOnboardingPage() {
       {/* Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute w-[500px] h-[500px] -top-32 -right-32 rounded-full bg-gradient-to-br from-green-400/30 to-green-600/20 blur-3xl"
+          className="absolute w-[500px] h-[500px] -top-32 -right-32 rounded-full bg-gradient-to-br from-primary-400/30 to-primary-600/20 blur-3xl"
           animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 15, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute w-[400px] h-[400px] -bottom-24 -left-24 rounded-full bg-gradient-to-tr from-emerald-400/25 to-green-400/20 blur-3xl"
+          className="absolute w-[400px] h-[400px] -bottom-24 -left-24 rounded-full bg-gradient-to-tr from-primary-400/25 to-primary-400/20 blur-3xl"
           animate={{ x: [0, -25, 0], y: [0, 25, 0] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
         />
@@ -126,7 +121,7 @@ export default function LiftingCoachOnboardingPage() {
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
+          className="glass-standard backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
         >
           {done ? (
             <motion.div
@@ -148,7 +143,7 @@ export default function LiftingCoachOnboardingPage() {
                 <div className="relative mb-4">
                   <div className="absolute inset-0 bg-primary-500/20 rounded-full blur-xl scale-150" />
                   <div className="relative w-14 h-14 flex items-center justify-center bg-primary-50 rounded-2xl border border-primary-100">
-                    <Dumbbell className="w-8 h-8 text-primary-600" />
+                    <Image src="/helm-lifting-logo.png" alt="Helm Lifting Lab" width={56} height={56} className="object-contain" priority />
                   </div>
                 </div>
                 <h1 className="text-xl font-bold text-warm-900">Helm Lifting Lab</h1>
@@ -206,29 +201,27 @@ export default function LiftingCoachOnboardingPage() {
                     Organization <span className="text-red-500">*</span>
                   </label>
                   {orgsLoading ? (
-                    <div className="flex items-center gap-2 px-4 py-3 bg-white border border-warm-200 rounded-xl">
+                    <div className="flex items-center gap-2 px-4 py-3 bg-cream-50 border border-warm-200 rounded-xl">
                       <Loader2 className="w-4 h-4 text-primary-600 animate-spin flex-shrink-0" />
                       <span className="text-warm-400 text-sm">Loading organizations…</span>
                     </div>
                   ) : orgs.length === 0 ? (
-                    <div className="px-4 py-3 bg-warm-50 border border-warm-200 rounded-xl">
-                      <p className="text-warm-600 text-sm">
-                        No organizations found. Please contact your head coach to send an invite.
+                    <div className="px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                      <p className="text-amber-800 text-sm font-medium">No invitation found</p>
+                      <p className="text-amber-700 text-sm">
+                        Enter your invite code or ask your head coach to invite you from their
+                        dashboard. You&apos;ll receive an email with a link to join.
                       </p>
                     </div>
                   ) : (
-                    <select
+                    <NativeSelect
                       id="onboard-org"
                       value={orgId}
                       onChange={(e) => setOrgId(e.target.value)}
                       required
-                      className="w-full px-4 py-3 bg-white border border-warm-200 rounded-xl text-warm-900 text-sm focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10 transition-all"
-                    >
-                      <option value="" disabled>Select your school / organization</option>
-                      {orgs.map((o) => (
-                        <option key={o.id} value={o.id}>{o.name}</option>
-                      ))}
-                    </select>
+                      placeholder="Select your school / organization"
+                      options={orgs.map((o) => ({ value: o.id, label: o.name }))}
+                    />
                   )}
                 </div>
 

@@ -188,7 +188,7 @@ export async function loginAction(
   if (adminAllowlist.includes(normalizedEmail)) {
     return {
       success: true,
-      redirectTo: '/baseball/admin',
+      redirectTo: '/baseball/dashboard/command-center',
     };
   }
 

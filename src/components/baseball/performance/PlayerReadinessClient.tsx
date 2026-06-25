@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { IconCheckCircle2, IconAlertCircle } from '@/components/icons';
+import { Skeleton } from '@/components/ui/skeleton';
 import { submitReadinessCheckin } from '@/app/baseball/actions/lifting';
 import { logBodyweight, saveSorenessMap } from '@/app/baseball/actions/lifting-v11';
 
@@ -36,6 +37,7 @@ interface ExistingCheckin {
 interface Props {
   checkDate: string;
   existing: ExistingCheckin | null;
+  isLoading?: boolean;
 }
 
 const ARM_OPTIONS = ['fresh', 'normal', 'tight', 'sore', 'pain'] as const;
@@ -48,29 +50,30 @@ function ScaleRow({ label, value, onChange, lowLabel, highLabel }: {
     <div>
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-warm-800">{label}</span>
-        <span className="text-[11px] text-warm-400">{lowLabel} → {highLabel}</span>
+        <span className="text-eyebrow text-warm-400">{lowLabel} → {highLabel}</span>
       </div>
       <div className="mt-1.5 flex gap-2">
         {SCALE.map((n) => (
-          <button
+          <Button
             key={n}
             type="button"
+            variant="ghost"
             onClick={() => onChange(n)}
             className={`h-9 flex-1 rounded-lg border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1 ${
-              value === n ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'
+              value === n ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-300'
             }`}
             aria-pressed={value === n}
             aria-label={`${label}: ${n}`}
           >
             {n}
-          </button>
+          </Button>
         ))}
       </div>
     </div>
   );
 }
 
-export function PlayerReadinessClient({ checkDate, existing }: Props) {
+export function PlayerReadinessClient({ checkDate, existing, isLoading = false }: Props) {
   const [isPending, startTransition] = useTransition();
   const prefersReducedMotion = useReducedMotion();
   const [sleep, setSleep] = useState(existing?.sleep_hours?.toString() ?? '');
@@ -84,6 +87,48 @@ export function PlayerReadinessClient({ checkDate, existing }: Props) {
   const [bodyweight, setBodyweight] = useState('');
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4" aria-busy="true" aria-label="Loading readiness check-in…">
+        <Card variant="glass">
+          <CardHeader>
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-56 mt-1" />
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {/* Scale rows skeleton */}
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2" style={{ animationDelay: `${i * 60}ms` }}>
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <div className="flex gap-2">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <Skeleton key={j} className="h-9 flex-1 rounded-lg" />
+                  ))}
+                </div>
+              </div>
+            ))}
+            {/* Arm status skeleton */}
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-20" />
+              <div className="flex gap-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-9 flex-1 rounded-lg" />
+                ))}
+              </div>
+            </div>
+            {/* Notes skeleton */}
+            <Skeleton className="h-20 w-full rounded-xl" />
+            {/* Submit */}
+            <Skeleton className="h-11 w-32 rounded-xl" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   function handleSubmit() {
     setError(null);
@@ -183,22 +228,22 @@ export function PlayerReadinessClient({ checkDate, existing }: Props) {
           <ScaleRow label="Overall soreness" value={soreness} onChange={setSoreness} lowLabel="none" highLabel="severe" />
           <ScaleRow label="Lower body" value={lowerBody} onChange={setLowerBody} lowLabel="fresh" highLabel="very sore" />
           <div>
-            <label className="text-sm font-medium text-warm-800">Throwing arm</label>
+            <p className="text-sm font-medium text-warm-800">Throwing arm</p>
             <div className="mt-1.5 flex flex-wrap gap-2">
               {ARM_OPTIONS.map((opt) => (
-                <button
-                  key={opt} type="button" onClick={() => setArm(opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1 ${arm === opt ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'}`}
+                <Button
+                  key={opt} type="button" variant="ghost" onClick={() => setArm(opt)}
+                  className={`rounded-full border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1 ${arm === opt ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-300'}`}
                   aria-pressed={arm === opt}
                   aria-label={`Throwing arm: ${opt}`}
                 >
                   {opt}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-warm-700">
-            <input type="checkbox" checked={illness} onChange={(e) => setIllness(e.target.checked)} className="h-4 w-4 rounded border-warm-300 accent-primary-600" />
+          <label htmlFor="illness-checkbox" className="flex cursor-pointer items-center gap-2 text-sm text-warm-700">
+            <Input id="illness-checkbox" type="checkbox" checked={illness} onChange={(e) => setIllness(e.target.checked)} className="h-4 w-4 rounded border-warm-300 accent-primary-600" />
             Feeling sick / under the weather
           </label>
         </CardContent>

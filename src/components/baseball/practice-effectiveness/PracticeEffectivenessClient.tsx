@@ -238,7 +238,7 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
           {/* Reviews column */}
           <section className="lg:col-span-2">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-warm-500">
+              <h2 className="text-body-sm font-semibold uppercase tracking-[0.08em] text-warm-500">
                 Measurements
               </h2>
               <div
@@ -254,9 +254,10 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
                     ['needs_more', 'Need data'],
                   ] as [ReviewFilter, string][]
                 ).map(([f, lbl]) => (
-                  <button
+                  <Button
                     key={f}
                     type="button"
+                    variant="ghost"
                     role="tab"
                     aria-selected={filter === f}
                     onClick={() => setFilter(f)}
@@ -267,7 +268,7 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
                     }`}
                   >
                     {lbl}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -303,7 +304,7 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
 
           {/* Focus roll-up column */}
           <section>
-            <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-warm-500">
+            <h2 className="mb-3 text-body-sm font-semibold uppercase tracking-[0.08em] text-warm-500">
               By focus area
             </h2>
             {focusRollup.length === 0 ? (
@@ -455,31 +456,51 @@ function ReviewCard({
           </div>
         )}
 
-        {/* Footer: timestamp + dispose */}
-        <div className="mt-3 flex items-center justify-between border-t border-warm-100 pt-2.5">
+        {/* Footer: timestamp + verdict buttons */}
+        <div className="mt-3 border-t border-warm-100 pt-2.5">
           <span className="flex items-center gap-1 text-xs text-warm-400">
             <IconClock size={12} />
             {relativeTime(review.generated_at)}
           </span>
           {!resolved && (
-            <div className="flex items-center gap-1">
+            <div
+              className={`mt-2 grid grid-cols-2 gap-1.5 transition-opacity duration-200 ${
+                isPending || disabled ? 'pointer-events-none opacity-40' : ''
+              }`}
+              role="group"
+              aria-label="Verdict"
+            >
+              <Button
+                variant="success"
+                size="sm"
+                disabled={disabled || isPending}
+                onClick={() => dispose('resolved')}
+              >
+                Worked
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={disabled || isPending}
+                onClick={() => dispose('resolved')}
+              >
+                Needs More Time
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={disabled || isPending}
+                onClick={() => dispose('resolved')}
+              >
+                Not Enough Data
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 disabled={disabled || isPending}
                 onClick={() => dispose('dismissed')}
               >
-                <IconXCircle size={14} className="mr-1" />
-                Dismiss
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={disabled || isPending}
-                onClick={() => dispose('resolved')}
-              >
-                <IconCheckCircle2 size={14} className="mr-1" />
-                Resolve
+                Change Approach
               </Button>
             </div>
           )}

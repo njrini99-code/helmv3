@@ -10,9 +10,9 @@ import {
   IconActivity,
   IconTarget,
   IconMaximize,
+  IconInfo,
 } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
-import { TimeRangeFilter, type TimeRange } from './TimeRangeFilter';
 import { StatTypeFilter, type StatCategory } from './StatTypeFilter';
 import { Button, IconButton } from '@/components/ui/button';
 import {
@@ -259,12 +259,16 @@ export function GameVsPracticePanel({
   onExpandClick,
   className,
 }: GameVsPracticePanelProps) {
-  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  // NOTE: practice_avg / game_avg / pressure_gap are career aggregates computed
+  // from all imported sessions with no date sub-slice. There is no date dimension
+  // on the underlying data exposed to this component, so time-range filtering is
+  // not supported. The filter UI is intentionally omitted here to avoid showing a
+  // control that would silently do nothing.
   const [statCategory, setStatCategory] = useState<StatCategory>('all');
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
   const [showAllPlayers, setShowAllPlayers] = useState(false);
 
-  // Process player data
+  // Process player data — career aggregates only; no per-period slicing.
   const pressureData = useMemo(() => {
     const playersWithBothTypes = players.filter(
       (p) =>
@@ -377,10 +381,18 @@ export function GameVsPracticePanel({
         </div>
       </div>
 
-      {/* Filters Row */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <TimeRangeFilter value={timeRange} onChange={setTimeRange} size="sm" />
+      {/* Filters Row — TimeRange is not available for this view (career aggregates only) */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
         <StatTypeFilter value={statCategory} onChange={setStatCategory} size="sm" />
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-1 bg-warm-100 rounded-full text-xs text-warm-500 cursor-default select-none"
+          title="Practice vs game splits are computed from all imported sessions. Per-period filtering requires session-level date data."
+          role="status"
+          aria-label="Showing career totals — time-range filtering not available for this view"
+        >
+          <IconInfo size={11} className="shrink-0" aria-hidden="true" />
+          Career totals
+        </div>
       </div>
 
       {/* Team Average Gap Card */}

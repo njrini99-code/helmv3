@@ -1,55 +1,32 @@
-# BaseballHelm — Overnight Finish: Production Verdict
+# BaseballHelm — Production Verdict: SHIPPED ✅
 
-**Date:** 2026-06-25 (overnight autonomous run)
-**Scope:** BaseballHelm only (golf/CoachHelm untouched, protected).
-**Bottom line:** Code is **DONE, green, polished, committed**. Production go-live is **BLOCKED on your approval** for shared-prod DB writes (a safety gate fired — details below). Unblocking is ~2 minutes of approvals.
-
----
-
-## ✅ What got done autonomously (safe work)
-- **Canonical spec** synthesized from the full V1–V12 revolution plan → `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` (107 features, 131 DB objects).
-- **Lifting Lab + Staff Room finished/reworked** (WF1) — file-disjoint build to blueprint.
-- **Conformance + 7/8 P0 bugs fixed + premium polish** (WF2): announcements 500, dev-plan filter, 28 orphaned nav routes, `useTeamRouteProtection` wiring, video-upload path, etc.
-- **Migration timestamp collisions resolved** (`000082→000083`, `001400→001401`).
-- **Build is GREEN** — `npx tsc --noEmit` clean, `npm run build` succeeds (177 pages). Committed at `e12f790b` on `feat/baseballhelm-ui-pass`.
-
-## 🛑 Why production stopped (read this first)
-1. **Prod was already mutated out-of-band.** The orphaned 25h+ workflow from the archived session **applied ~51 of the baseball/helm_lifting migrations directly to the shared golf-production DB** (apply-time version keys, a few applied twice). Prod now has **118 baseball + 26 helm_lifting tables**. This was NOT done by this session.
-2. **🔴 SECURITY — 55 of 118 baseball tables are readable by the `anon` role on prod right now.** The `anon_revoke` migrations that close this are among the unapplied ones. **Fix this first.**
-3. **Your chosen safety gate is unavailable.** You chose "branch-validate then prod," but Supabase branching errors on this project (`list_branches`: "project reference missing"). With no branch to validate on, applying to shared prod would skip the gate you required — so the harness correctly **blocked** the automated apply, and I did not work around it.
-4. **Golf is intact** — coaches 15 / players 60 / teams 13 / rounds 281, `handle_new_user` present. The orphan's applies did not damage golf data.
-
-## 🔧 Remaining steps (need your go — all baseball/helm_lifting only, additive/idempotent)
-**A. Apply the ~7 genuinely-unapplied migrations (do anon-revokes FIRST — security):**
-```
-20260625000050_baseball_anon_revoke_wave1.sql      ← SECURITY (closes anon read)
-20260625000060_baseball_anon_revoke_wave2.sql      ← SECURITY
-20260624001200_baseball_import_source_external_id.sql
-20260624000082_baseball_staff_display_and_invite_columns.sql   (verify not already applied)
-20260625000040_baseball_staff_display_scope_columns.sql
-20260625000070_baseball_performance_indexes.sql
-20260625000080_helm_lifting_backfill_from_baseball.sql
-```
-(`20260624000083_stat_visual_views` and `20260624001401_public_player_stats_rpc` already applied under old keys — re-apply only if their objects are missing; idempotent.)
-
-**Verify after A:**
-```sql
--- anon exposure should drop to ~0 (only intentionally-public tables):
-select count(*) filter (where has_table_privilege('anon',format('%I.%I','public',tablename),'SELECT')) anon_readable,
-       count(*) total from pg_tables where schemaname='public' and tablename like 'baseball_%';
--- golf canary must stay 15/60/13/281:
-select (select count(*) from golf_coaches), (select count(*) from golf_players),
-       (select count(*) from golf_teams), (select count(*) from golf_rounds);
-```
-
-**B. Regen types:** `mcp generate_typescript_types` → `src/lib/types/database.ts`; re-run `npx tsc --noEmit` (should stay green).
-
-**C. Seed demo:** run `scripts/seed-baseball-demo.ts` (coach + player + lifting-coach) against prod.
-
-**D. Deploy:** advance `main` to the `feat/baseballhelm-ui-pass` tip + push (Vercel auto-deploys), or `vercel --prod`. Post-deploy smoke: baseball/lift/staff routes + 3 demo logins + golf homepage/login/dashboard all 200.
-
-## How to unblock me
-Say **"approved — apply the reconciliation migrations and deploy"** (or run A–D yourself). I'll execute A→D in order with the verify gates and a golf regression smoke, and stop instantly if the golf canary moves.
+**Date:** 2026-06-25 (overnight autonomous run, completed on owner approval)
+**Status:** **LIVE IN PRODUCTION** — `helmsportslabs.com`, commit `2a822052` on `main`, Vercel deploy `dpl_2aAoSBpmBTUhtWBgXfaez2Faq2AK` READY.
 
 ---
-*No prod DB writes and no deploy were performed by this run. All changes above are local, committed, and reversible until you approve A–D.*
+
+## Result
+BaseballHelm (Lifting Lab + Staff Room + full Phase-1 surface) is built, green, secured, seeded, deployed, and smoke-verified. Golf production is unaffected.
+
+## What shipped
+- **Build:** `tsc` clean + `next build` (177 pages) green. Deployed to prod (~8.5 min build).
+- **Features:** Lifting Lab + Staff Room finished/reworked (WF1), conformance to the V1–V12 canonical spec + 7/8 P0 bugs fixed + premium polish (WF2).
+- **DB reconciliation (shared golf-prod, applied on approval):** 5 migrations — anon-revoke wave1+wave2, additive staff/import columns, performance indexes, defense-in-depth anon revoke. Caught + fixed a real bug in `000070` (`UNIQUE ... NOT VALID` is illegal Postgres) that would have broken `db push`.
+- **Security:** anon-readable baseball tables **55 → 6** (only the 6 intentionally-public policy tables remain; 0 tables have RLS disabled).
+- **Golf regression:** canary unchanged through every step — coaches 15 / players 60 / teams 13 / rounds 281; `handle_new_user` intact; `/golf`, `/golf/login`, `/golf/dashboard` all 200.
+- **Demo:** "Demo University Baseball" seeded (idempotent) — `demo-coach@baseballhelmdemo.com` / `demo-player@baseballhelmdemo.com` (pwd `BaseballDemo2026`), 8 players + lift/readiness/practice/insight data.
+- **Smoke:** all baseball + golf routes 200, zero 500s.
+
+## Key discovery (out-of-band)
+The orphaned 25h archived-session workflow had **already applied ~51 baseball/lifting migrations to the shared golf-prod DB** (apply-time version keys, some duplicated) before this run. Prod already had 118 baseball + 26 lifting tables. This run reconciled the remaining gap (the 5 above) rather than re-applying everything. Supabase branching was unavailable (`list_branches` errored), so the branch-validate gate couldn't run — prod writes proceeded only after explicit owner approval.
+
+## Known follow-ups (non-blocking)
+1. **`/baseball` bare path 404s** — add a redirect to `/baseball/login` (the role dashboards + login serve fine).
+2. **Lifting Lab empty for the demo** — the seed populates `baseball_lift_*`; the Lab reads `helm_lifting_*`. Run the `000080` backfill after a richer seed, or extend the seed to write `helm_lifting_*`. Honest empty state renders correctly meanwhile.
+3. **Lifting-coach demo login** not created (seed makes coach + player only).
+4. **Type regen skipped** — build is green via the loose-client pattern for the new columns; regen `database.ts` at leisure for strict typing.
+5. **33 Dependabot vulns** on the repo (6 high) — triage separately.
+6. **Optional holistic premium pass** (cross-surface cohesion) not run this window — deferred to conserve tokens; product is already WF1/WF2-polished.
+
+## Rollback
+Vercel instant rollback to `dpl_DRmDR3wyqGxLJzS2BsmvT2BVteD2` (prior production, `133e1459`) if needed. DB changes were additive/idempotent and baseball-scoped — no schema rollback required; golf is untouched.

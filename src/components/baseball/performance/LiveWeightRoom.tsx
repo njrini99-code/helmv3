@@ -24,13 +24,17 @@
 // Cream/green GolfHelm palette ONLY. Reuses Card / EmptyState. No navy/amber tale.
 // =============================================================================
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { toast } from 'sonner';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
 import { getFullName } from '@/lib/utils';
 import { readinessBandLabel, readinessBandTone } from '@/lib/baseball/lifting/readiness-compute';
 import {
@@ -58,6 +62,7 @@ interface Props {
   playerNameById: Record<string, string>;
   exerciseLibrary: Array<{ id: string; name: string; category: string | null }>;
   groupFilter: string | null;
+  isLoading?: boolean;
 }
 
 const POLL_MS = 20_000;
@@ -120,6 +125,7 @@ export function LiveWeightRoom({
   playerNameById,
   exerciseLibrary,
   groupFilter,
+  isLoading = false,
 }: Props) {
   const [data, setData] = useState<BaseballLiveWeightRoomData>(initialData);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -235,6 +241,72 @@ export function LiveWeightRoom({
 
   const tb = data.top_bar;
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-cream-50" aria-busy="true" aria-label="Loading weight room…">
+        {/* Sticky top bar skeleton */}
+        <div className="sticky top-0 z-30 border-b border-warm-200 bg-cream-50/95 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+            <Skeleton className="h-7 w-32 rounded-lg" />
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-32" />
+            <div className="ml-auto flex items-center gap-3">
+              <Skeleton className="h-8 w-28 rounded-xl" />
+              <Skeleton className="h-8 w-20 rounded-xl" />
+            </div>
+          </div>
+        </div>
+        {/* Main layout skeleton */}
+        <div className="mx-auto max-w-[1600px] flex gap-5 p-4">
+          {/* Athlete grid */}
+          <div className="flex-1 space-y-3">
+            {/* Grid header */}
+            <div className="grid grid-cols-7 gap-3 px-3 py-2">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <Skeleton key={i} className="h-3" />
+              ))}
+            </div>
+            {/* Athlete rows */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-7 gap-3 rounded-2xl border border-warm-100 glass-standard px-3 py-3 items-center"
+                style={{ animationDelay: `${i * 40}ms` }}
+              >
+                <div className="flex items-center gap-2 col-span-2">
+                  <Skeleton variant="circular" className="w-8 h-8 flex-shrink-0" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="h-3 w-12" />
+                  </div>
+                </div>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-3 w-14" />
+              </div>
+            ))}
+          </div>
+          {/* Right rail */}
+          <div className="w-72 flex-shrink-0 space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-warm-100 glass-standard p-4 space-y-3">
+                <Skeleton className="h-4 w-32" />
+                {Array.from({ length: 2 }).map((_, j) => (
+                  <div key={j} className="flex items-center gap-2">
+                    <Skeleton variant="circular" className="w-6 h-6 flex-shrink-0" />
+                    <Skeleton className="flex-1 h-3.5" />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-cream-50">
       {/* ===== Full-width sticky top bar (spec L526-533) ===== */}
@@ -243,7 +315,7 @@ export function LiveWeightRoom({
           <div className="flex items-center gap-3">
             <Link
               href="/baseball/dashboard/performance"
-              className="rounded-lg border border-warm-200 bg-white/70 px-2.5 py-1 text-xs font-medium text-warm-600 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+              className="rounded-lg border border-warm-200 glass-standard px-2.5 py-1 text-xs font-medium text-warm-600 transition-colors hover:bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
             >
               ← Command center
             </Link>
@@ -271,32 +343,33 @@ export function LiveWeightRoom({
             {/* Group filter (top-bar "active group") */}
             <form method="get" className="flex items-center gap-2">
               <label htmlFor="group" className="sr-only">Filter by group</label>
-              <select
+              <NativeSelect
                 id="group"
                 name="group"
                 defaultValue={groupFilter ?? ''}
                 onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                className="rounded-lg border border-warm-200 bg-white px-2 py-1.5 text-sm text-warm-700 transition-colors focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm text-warm-700 transition-colors focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
               >
                 <option value="">All groups</option>
                 {data.groups.map((g) => (
                   <option key={g.id} value={g.id}>{g.name}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </form>
             <SyncPill pending={setSync.pending} isOnline={setSync.isOnline} onRetry={setSync.flushNow} />
             <span className="tabular-nums text-sm font-medium text-warm-700" aria-label="Current time">
               {clock.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={refresh}
               disabled={refreshing}
               aria-busy={refreshing}
-              className="rounded-lg border border-warm-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-warm-700 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 disabled:opacity-60"
+              className="rounded-lg border border-warm-200 glass-standard px-3 py-1.5 text-sm font-medium text-warm-700 hover:bg-cream-50 disabled:opacity-60"
             >
               {refreshing ? 'Refreshing…' : 'Refresh'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -320,10 +393,10 @@ export function LiveWeightRoom({
               </CardContent>
             </Card>
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-warm-200 bg-white/70 shadow-glass">
+            <div className="overflow-x-auto rounded-2xl border border-warm-200 glass-standard shadow-glass">
               <table className="w-full min-w-[920px] text-sm">
                 <thead className="sticky top-[57px] z-10 bg-cream-100/95 backdrop-blur">
-                  <tr className="border-b border-warm-200 text-left text-[11px] font-semibold uppercase tracking-wide text-warm-500">
+                  <tr className="border-b border-warm-200 text-left text-eyebrow font-semibold uppercase tracking-wide text-warm-500">
                     <th className="px-3 py-2.5">Athlete</th>
                     <th className="px-3 py-2.5">Status</th>
                     <th className="px-3 py-2.5">Station / exercise</th>
@@ -352,7 +425,7 @@ export function LiveWeightRoom({
                             )}
                             <div>
                               <div className="font-medium text-warm-900">{getFullName(a.first_name, a.last_name)}</div>
-                              <div className="text-[11px] text-warm-400">
+                              <div className="text-eyebrow text-warm-400">
                                 {a.primary_position ?? '—'}
                                 {a.group_names[0] ? ` · ${a.group_names[0]}` : ''}
                               </div>
@@ -361,13 +434,13 @@ export function LiveWeightRoom({
                         </td>
                         <td className="px-3 py-2.5">
                           <StatusChip status={a.session_status} />
-                          <div className="mt-0.5 text-[11px] text-warm-400">
+                          <div className="mt-0.5 text-eyebrow text-warm-400">
                             {a.completed_exercises}/{a.total_exercises} lifts
                           </div>
                         </td>
                         <td className="px-3 py-2.5">
                           <div className="text-warm-800">{a.current_exercise ?? '—'}</div>
-                          <div className="text-[11px] text-warm-400">{a.current_station ?? '—'}</div>
+                          <div className="text-eyebrow text-warm-400">{a.current_station ?? '—'}</div>
                         </td>
                         <td className="px-3 py-2.5 text-right tabular-nums text-warm-700">
                           {a.prescribed_load != null ? `${a.prescribed_load} lb` : '—'}
@@ -387,21 +460,18 @@ export function LiveWeightRoom({
                         {canViewReadiness && (
                           <td className="px-3 py-2.5"><BandChip band={a.readiness_band} /></td>
                         )}
-                        <td className="px-3 py-2.5 text-right text-[11px] text-warm-400">{relTime(a.last_update)}</td>
+                        <td className="px-3 py-2.5 text-right text-eyebrow text-warm-400">{relTime(a.last_update)}</td>
                         <td className="px-3 py-2.5 text-right">
-                          <button
+                          <Button
                             type="button"
+                            variant="primary"
                             onClick={() => setSelectedId(isSel ? null : a.session_id)}
                             aria-expanded={isSel}
                             aria-label={isSel ? `Close ${getFullName(a.first_name, a.last_name)}` : `Manage ${getFullName(a.first_name, a.last_name)}`}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1 ${
-                              isSel
-                                ? 'bg-primary-700 text-white'
-                                : 'bg-primary-600 text-white hover:bg-primary-700'
-                            }`}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${isSel ? 'bg-primary-700' : ''}`}
                           >
                             {isSel ? 'Close' : 'Manage'}
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -492,7 +562,7 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
   return (
     <div className="leading-tight">
       <div className={`text-lg font-semibold tabular-nums ${color}`}>{value}</div>
-      <div className="text-[10px] font-medium uppercase tracking-wide text-warm-400">{label}</div>
+      <div className="text-micro font-medium uppercase tracking-wide text-warm-400">{label}</div>
     </div>
   );
 }
@@ -515,15 +585,16 @@ function SyncPill({ pending, isOnline, onRetry }: { pending: number; isOnline: b
   }
   const label = pending > 0 ? `${pending} set${pending === 1 ? '' : 's'} saved locally` : 'Offline';
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={onRetry}
       title={pending > 0 ? 'Saved on this device — tap to sync now.' : 'No connection — tap to retry.'}
-      className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+      className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
     >
       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" aria-hidden />
       {isOnline ? `Syncing · ${label}` : `Offline · ${label}`}
-    </button>
+    </Button>
   );
 }
 
@@ -557,15 +628,16 @@ function QueueCard({
           <ul className="space-y-1.5">
             {items.map((it) => (
               <li key={it.key}>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => it.athleteId && onSelect(it.athleteId)}
                   disabled={!it.athleteId}
-                  className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-cream-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:cursor-default disabled:hover:bg-transparent"
+                  className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-cream-100/70 disabled:cursor-default disabled:hover:bg-transparent"
                 >
                   <span className="font-medium text-warm-800">{it.name}</span>
-                  <span className="truncate text-right text-[11px] text-warm-500">{it.detail}</span>
-                </button>
+                  <span className="truncate text-right text-eyebrow text-warm-500">{it.detail}</span>
+                </Button>
               </li>
             ))}
           </ul>
@@ -632,7 +704,7 @@ function AthleteDrawer({
       initial={prefersReducedMotion ? false : { y: 24, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-warm-200 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-warm-200 glass-standard shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
     >
       <div className="mx-auto max-w-[1600px] px-4 py-4">
         {/* Drawer header */}
@@ -643,17 +715,18 @@ function AthleteDrawer({
             <StatusChip status={athlete.session_status} />
             <BandChip band={athlete.readiness_band} />
           </div>
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={onClose}
-            className="rounded-lg border border-warm-200 px-3 py-1.5 text-sm text-warm-600 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+            className="rounded-lg px-3 py-1.5 text-sm text-warm-600 hover:bg-cream-100"
           >
             Close
-          </button>
+          </Button>
         </div>
 
         {athlete.readiness_reasons.length > 0 && (
-          <p className="mt-1 text-[11px] text-warm-500">{athlete.readiness_reasons.slice(0, 2).join(' · ')}</p>
+          <p className="mt-1 text-eyebrow text-warm-500">{athlete.readiness_reasons.slice(0, 2).join(' · ')}</p>
         )}
 
         <div className="mt-3 grid gap-4 lg:grid-cols-[260px_1fr]">
@@ -663,23 +736,24 @@ function AthleteDrawer({
               <p className="px-2 py-4 text-xs text-warm-400">No exercises in this session.</p>
             ) : (
               athlete.exercises.map((ex) => (
-                <button
+                <Button
                   type="button"
                   key={ex.session_exercise_id}
+                  variant="ghost"
                   onClick={() => setActiveExId(ex.session_exercise_id)}
                   aria-pressed={ex.session_exercise_id === activeExId}
-                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
-                    ex.session_exercise_id === activeExId ? 'bg-primary-100 text-primary-800' : 'hover:bg-white'
+                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm ${
+                    ex.session_exercise_id === activeExId ? 'bg-primary-100 text-primary-800' : 'hover:bg-cream-50'
                   }`}
                 >
                   <span className="truncate">
                     <span className="font-medium text-warm-800">{ex.exercise_name}</span>
-                    {ex.was_modified && <span className="ml-1 text-[10px] text-amber-600">· adj</span>}
+                    {ex.was_modified && <span className="ml-1 text-micro text-amber-600">· adj</span>}
                   </span>
-                  <span className="shrink-0 text-[11px] text-warm-400">
+                  <span className="shrink-0 text-eyebrow text-warm-400">
                     {ex.sets_logged}/{ex.prescribed_sets ?? '—'}
                   </span>
-                </button>
+                </Button>
               ))
             )}
           </div>
@@ -888,7 +962,7 @@ function ExercisePanel({
           {ex.prescribed_rpe != null ? ` · RPE ${ex.prescribed_rpe}` : ''}
         </span>
         {ex.was_modified && ex.modification_reason && (
-          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700">
+          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-eyebrow text-amber-700">
             {ex.modification_reason}
           </span>
         )}
@@ -900,7 +974,7 @@ function ExercisePanel({
           {ex.sets.map((s) => (
             <span
               key={s.set_number}
-              className="inline-flex items-center gap-1 rounded-lg border border-warm-200 bg-white px-2 py-1 text-[11px] text-warm-700"
+              className="inline-flex items-center gap-1 rounded-lg border border-warm-200 bg-cream-50 px-2 py-1 text-eyebrow text-warm-700"
             >
               <span className="font-medium">#{s.set_number}</span>
               {s.actual_reps ?? '—'}×{s.actual_load ?? '—'}
@@ -916,62 +990,67 @@ function ExercisePanel({
         <Field label={`Set ${nextSet} reps`} value={reps} onChange={setReps} placeholder="reps" />
         <Field label="Load (lb)" value={load} onChange={setLoad} placeholder="load" />
         <Field label="RPE" value={rpe} onChange={setRpe} placeholder="0–10" />
-        <button
+        <Button
           type="button"
+          variant="primary"
           onClick={logSet}
-          className="mt-auto h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1"
+          className="mt-auto h-[42px] rounded-xl px-4 text-sm font-medium"
         >
           Log set
-        </button>
+        </Button>
       </div>
 
       {/* Adjust next-set load + substitute + observe */}
       <div className="flex flex-wrap items-end gap-2 border-t border-warm-100 pt-3">
         <Field label="Adjust load" value={adjLoad} onChange={setAdjLoad} placeholder="new lb" />
-        <input
-          value={adjReason}
-          onChange={(e) => setAdjReason(e.target.value)}
-          placeholder="reason"
-          aria-label="Reason for load adjustment"
-          className="h-[42px] min-w-[140px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-        />
-        <button type="button" onClick={adjustLoad} className="h-[42px] rounded-xl border border-warm-300 bg-white px-3 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
+        <div className="min-w-[140px] flex-1">
+          <Input
+            value={adjReason}
+            onChange={(e) => setAdjReason(e.target.value)}
+            placeholder="reason"
+            aria-label="Reason for load adjustment"
+            className="h-[42px] rounded-xl border border-warm-200 bg-cream-50 px-3 text-sm text-warm-800 placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:ring-2 focus-visible:ring-primary-500/40"
+          />
+        </div>
+        <Button type="button" variant="outline" onClick={adjustLoad} className="h-[42px] rounded-xl px-3 text-sm font-medium text-warm-700 hover:bg-cream-100">
           Adjust
-        </button>
-        <button type="button" onClick={() => setSubOpen((v) => !v)} aria-expanded={subOpen} className="h-[42px] rounded-xl border border-warm-300 bg-white px-3 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
+        </Button>
+        <Button type="button" variant="outline" onClick={() => setSubOpen((v) => !v)} aria-expanded={subOpen} className="h-[42px] rounded-xl px-3 text-sm font-medium text-warm-700 hover:bg-cream-100">
           Substitute
-        </button>
-        <button type="button" onClick={markObserved} className="h-[42px] rounded-xl border border-warm-300 bg-white px-3 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
+        </Button>
+        <Button type="button" variant="outline" onClick={markObserved} className="h-[42px] rounded-xl px-3 text-sm font-medium text-warm-700 hover:bg-cream-100">
           Mark observed
-        </button>
+        </Button>
       </div>
 
       {subOpen && (
         <div className="flex flex-wrap items-end gap-2 rounded-xl border border-warm-100 bg-cream-50/60 p-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="lwr-sub-exercise" className="text-[11px] font-medium text-warm-500">Swap to</label>
-            <select
+            <label htmlFor="lwr-sub-exercise" className="text-eyebrow font-medium text-warm-500">Swap to</label>
+            <NativeSelect
               id="lwr-sub-exercise"
               value={subId}
               onChange={(e) => setSubId(e.target.value)}
-              className="h-[42px] min-w-[200px] rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+              className="h-[42px] min-w-[200px] rounded-xl border border-warm-200 px-3 text-sm text-warm-800 focus-visible:border-primary-400 focus-visible:ring-2 focus-visible:ring-primary-500/40"
             >
               <option value="">Select exercise…</option>
               {exerciseLibrary.map((e) => (
                 <option key={e.id} value={e.id}>{e.name}</option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
-          <input
-            value={subReason}
-            onChange={(e) => setSubReason(e.target.value)}
-            placeholder="reason (e.g. shoulder soreness)"
-            aria-label="Reason for substitution"
-            className="h-[42px] min-w-[160px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-          />
-          <button type="button" onClick={substitute} className="h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1">
+          <div className="min-w-[160px] flex-1">
+            <Input
+              value={subReason}
+              onChange={(e) => setSubReason(e.target.value)}
+              placeholder="reason (e.g. shoulder soreness)"
+              aria-label="Reason for substitution"
+              className="h-[42px] rounded-xl border border-warm-200 bg-cream-50 px-3 text-sm text-warm-800 placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:ring-2 focus-visible:ring-primary-500/40"
+            />
+          </div>
+          <Button type="button" variant="primary" onClick={substitute} className="h-[42px] rounded-xl px-4 text-sm font-medium">
             Confirm swap
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -1039,18 +1118,18 @@ function AthleteActions({
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-warm-100 pt-3">
-      <button type="button" onClick={markLimited} className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50">
+      <Button type="button" variant="ghost" onClick={markLimited} className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-100">
         Mark limited
-      </button>
-      <button type="button" onClick={() => setMsgOpen((v) => !v)} aria-expanded={msgOpen} className="rounded-xl border border-warm-300 bg-white px-3 py-1.5 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
+      </Button>
+      <Button type="button" variant="outline" onClick={() => setMsgOpen((v) => !v)} aria-expanded={msgOpen} className="rounded-xl px-3 py-1.5 text-sm font-medium text-warm-700 hover:bg-cream-100">
         Quick message
-      </button>
-      <button type="button" onClick={() => setTaskOpen((v) => !v)} aria-expanded={taskOpen} className="rounded-xl border border-warm-300 bg-white px-3 py-1.5 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
+      </Button>
+      <Button type="button" variant="outline" onClick={() => setTaskOpen((v) => !v)} aria-expanded={taskOpen} className="rounded-xl px-3 py-1.5 text-sm font-medium text-warm-700 hover:bg-cream-100">
         Follow-up task
-      </button>
+      </Button>
       <Link
         href={`/baseball/dashboard/performance/players/${athlete.player_id}`}
-        className="ml-auto rounded-xl border border-warm-200 bg-white px-3 py-1.5 text-sm font-medium text-warm-600 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+        className="ml-auto rounded-xl border border-warm-200 bg-cream-50 px-3 py-1.5 text-sm font-medium text-warm-600 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
         onClick={onClose}
       >
         Full profile →
@@ -1058,33 +1137,37 @@ function AthleteActions({
 
       {msgOpen && (
         <div className="flex w-full items-end gap-2 rounded-xl border border-warm-100 bg-cream-50/60 p-3">
-          <input
-            value={msg}
-            onChange={(e) => setMsg(e.target.value)}
-            placeholder={`Message to ${playerName}…`}
-            aria-label={`Quick message to ${playerName}`}
-            className="h-[42px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          />
-          <button type="button" onClick={sendMessage} className="h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1">
+          <div className="flex-1">
+            <Input
+              value={msg}
+              onChange={(e) => setMsg(e.target.value)}
+              placeholder={`Message to ${playerName}…`}
+              aria-label={`Quick message to ${playerName}`}
+              className="h-[42px] rounded-xl border border-warm-200 bg-cream-50 px-3 text-sm text-warm-800 placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:ring-2 focus-visible:ring-primary-500/40"
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+            />
+          </div>
+          <Button type="button" variant="primary" onClick={sendMessage} className="h-[42px] rounded-xl px-4 text-sm font-medium">
             Send
-          </button>
+          </Button>
         </div>
       )}
 
       {taskOpen && (
         <div className="flex w-full items-end gap-2 rounded-xl border border-warm-100 bg-cream-50/60 p-3">
-          <input
-            value={taskTitle}
-            onChange={(e) => setTaskTitle(e.target.value)}
-            placeholder={`e.g. Re-test ${playerName}'s back squat next week`}
-            aria-label="Follow-up task title"
-            className="h-[42px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-            onKeyDown={(e) => e.key === 'Enter' && createTask()}
-          />
-          <button type="button" onClick={createTask} className="h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1">
+          <div className="flex-1">
+            <Input
+              value={taskTitle}
+              onChange={(e) => setTaskTitle(e.target.value)}
+              placeholder={`e.g. Re-test ${playerName}'s back squat next week`}
+              aria-label="Follow-up task title"
+              className="h-[42px] rounded-xl border border-warm-200 bg-cream-50 px-3 text-sm text-warm-800 placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:ring-2 focus-visible:ring-primary-500/40"
+              onKeyDown={(e) => e.key === 'Enter' && createTask()}
+            />
+          </div>
+          <Button type="button" variant="primary" onClick={createTask} className="h-[42px] rounded-xl px-4 text-sm font-medium">
             Create
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -1102,16 +1185,18 @@ function Field({
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
+  const fieldId = useId();
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[11px] font-medium text-warm-500">{label}</label>
-      <input
+      <label htmlFor={fieldId} className="text-eyebrow font-medium text-warm-500">{label}</label>
+      <Input
+        id={fieldId}
         type="number"
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-[42px] rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+        className="h-[42px] rounded-xl border border-warm-200 bg-cream-50 px-3 text-sm text-warm-800 placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:ring-2 focus-visible:ring-primary-500/40"
       />
     </div>
   );

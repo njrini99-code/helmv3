@@ -475,17 +475,29 @@ export type Database = {
       baseball_actions: {
         Row: {
           action_type: string
+          assignee_coach_id: string | null
+          assignee_player_id: string | null
           body: string | null
+          completed_at: string | null
+          confidence: number | null
           created_at: string
           created_by: string | null
+          detail: string | null
+          due_date: string | null
+          event_id: string | null
           id: string
+          outcome: string | null
           outcome_baseline_value: number | null
           outcome_metric: string | null
           outcome_movement: string | null
           outcome_observed_value: number | null
+          outcome_recorded_at: string | null
           outcome_sample_n: number | null
           outcome_verdict: string | null
+          owner_coach_id: string | null
           player_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           signal_id: string | null
           source_refs: Json
           status: string
@@ -494,20 +506,33 @@ export type Database = {
           team_id: string
           title: string
           updated_at: string
+          visibility: string | null
         }
         Insert: {
           action_type?: string
+          assignee_coach_id?: string | null
+          assignee_player_id?: string | null
           body?: string | null
+          completed_at?: string | null
+          confidence?: number | null
           created_at?: string
           created_by?: string | null
+          detail?: string | null
+          due_date?: string | null
+          event_id?: string | null
           id?: string
+          outcome?: string | null
           outcome_baseline_value?: number | null
           outcome_metric?: string | null
           outcome_movement?: string | null
           outcome_observed_value?: number | null
+          outcome_recorded_at?: string | null
           outcome_sample_n?: number | null
           outcome_verdict?: string | null
+          owner_coach_id?: string | null
           player_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           signal_id?: string | null
           source_refs?: Json
           status?: string
@@ -516,20 +541,33 @@ export type Database = {
           team_id: string
           title: string
           updated_at?: string
+          visibility?: string | null
         }
         Update: {
           action_type?: string
+          assignee_coach_id?: string | null
+          assignee_player_id?: string | null
           body?: string | null
+          completed_at?: string | null
+          confidence?: number | null
           created_at?: string
           created_by?: string | null
+          detail?: string | null
+          due_date?: string | null
+          event_id?: string | null
           id?: string
+          outcome?: string | null
           outcome_baseline_value?: number | null
           outcome_metric?: string | null
           outcome_movement?: string | null
           outcome_observed_value?: number | null
+          outcome_recorded_at?: string | null
           outcome_sample_n?: number | null
           outcome_verdict?: string | null
+          owner_coach_id?: string | null
           player_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           signal_id?: string | null
           source_refs?: Json
           status?: string
@@ -538,8 +576,30 @@ export type Database = {
           team_id?: string
           title?: string
           updated_at?: string
+          visibility?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "baseball_actions_assignee_coach_id_fkey"
+            columns: ["assignee_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_actions_assignee_player_id_fkey"
+            columns: ["assignee_player_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_actions_owner_coach_id_fkey"
+            columns: ["owner_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "baseball_actions_player_id_fkey"
             columns: ["player_id"]
@@ -5567,6 +5627,7 @@ export type Database = {
           session_date: string
           session_name: string | null
           source: string | null
+          source_external_id: string | null
           source_match_confidence: number | null
           source_match_tier: string | null
           source_trust_level: string | null
@@ -5603,6 +5664,7 @@ export type Database = {
           session_date: string
           session_name?: string | null
           source?: string | null
+          source_external_id?: string | null
           source_match_confidence?: number | null
           source_match_tier?: string | null
           source_trust_level?: string | null
@@ -5639,6 +5701,7 @@ export type Database = {
           session_date?: string
           session_name?: string | null
           source?: string | null
+          source_external_id?: string | null
           source_match_confidence?: number | null
           source_match_tier?: string | null
           source_trust_level?: string | null
@@ -6762,15 +6825,28 @@ export type Database = {
       }
       baseball_signals: {
         Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
           body: string | null
           category: string
           confidence: number | null
           created_at: string
+          created_by: string | null
           dedupe_key: string | null
           disposition: string
+          event_id: string | null
+          evidence: string | null
           expires_at: string | null
+          feedback: string | null
+          generated_by: string | null
           id: string
+          owner_coach_id: string | null
           player_id: string | null
+          recommended_action_label: string | null
+          recommended_action_type: string | null
+          recommended_owner_role: string | null
+          resolved_at: string | null
+          sample_n: number | null
           severity: string
           signal_type: string
           source_kind: string
@@ -6780,17 +6856,31 @@ export type Database = {
           title: string
           updated_at: string
           visibility: string
+          why_it_matters: string | null
         }
         Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           body?: string | null
           category?: string
           confidence?: number | null
           created_at?: string
+          created_by?: string | null
           dedupe_key?: string | null
           disposition?: string
+          event_id?: string | null
+          evidence?: string | null
           expires_at?: string | null
+          feedback?: string | null
+          generated_by?: string | null
           id?: string
+          owner_coach_id?: string | null
           player_id?: string | null
+          recommended_action_label?: string | null
+          recommended_action_type?: string | null
+          recommended_owner_role?: string | null
+          resolved_at?: string | null
+          sample_n?: number | null
           severity?: string
           signal_type: string
           source_kind?: string
@@ -6800,17 +6890,31 @@ export type Database = {
           title: string
           updated_at?: string
           visibility?: string
+          why_it_matters?: string | null
         }
         Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
           body?: string | null
           category?: string
           confidence?: number | null
           created_at?: string
+          created_by?: string | null
           dedupe_key?: string | null
           disposition?: string
+          event_id?: string | null
+          evidence?: string | null
           expires_at?: string | null
+          feedback?: string | null
+          generated_by?: string | null
           id?: string
+          owner_coach_id?: string | null
           player_id?: string | null
+          recommended_action_label?: string | null
+          recommended_action_type?: string | null
+          recommended_owner_role?: string | null
+          resolved_at?: string | null
+          sample_n?: number | null
           severity?: string
           signal_type?: string
           source_kind?: string
@@ -6820,8 +6924,16 @@ export type Database = {
           title?: string
           updated_at?: string
           visibility?: string
+          why_it_matters?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "baseball_signals_owner_coach_id_fkey"
+            columns: ["owner_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "baseball_signals_player_id_fkey"
             columns: ["player_id"]
@@ -17048,17 +17160,26 @@ export type Database = {
           created_by_coach_id: string | null
           default_unit: string
           equipment: string | null
+          grip_stress: string
           id: string
           instructions: string | null
           is_active: boolean
           is_global: boolean
+          is_pitcher_sensitive: boolean
           legacy_baseball_id: string | null
+          lower_body_loading: string
           name: string
           organization_id: string
+          primary_body_regions: string[]
           primary_pattern: string | null
+          rotational_stress: string
+          secondary_body_regions: string[]
+          spine_loading: string
           sport: string
           sport_constraints: Json
           sport_tags: string[]
+          stress_regions: string[]
+          throwing_arm_stress: string
           track_distance: boolean
           track_load: boolean
           track_reps: boolean
@@ -17079,17 +17200,26 @@ export type Database = {
           created_by_coach_id?: string | null
           default_unit?: string
           equipment?: string | null
+          grip_stress?: string
           id?: string
           instructions?: string | null
           is_active?: boolean
           is_global?: boolean
+          is_pitcher_sensitive?: boolean
           legacy_baseball_id?: string | null
+          lower_body_loading?: string
           name: string
           organization_id: string
+          primary_body_regions?: string[]
           primary_pattern?: string | null
+          rotational_stress?: string
+          secondary_body_regions?: string[]
+          spine_loading?: string
           sport: string
           sport_constraints?: Json
           sport_tags?: string[]
+          stress_regions?: string[]
+          throwing_arm_stress?: string
           track_distance?: boolean
           track_load?: boolean
           track_reps?: boolean
@@ -17110,17 +17240,26 @@ export type Database = {
           created_by_coach_id?: string | null
           default_unit?: string
           equipment?: string | null
+          grip_stress?: string
           id?: string
           instructions?: string | null
           is_active?: boolean
           is_global?: boolean
+          is_pitcher_sensitive?: boolean
           legacy_baseball_id?: string | null
+          lower_body_loading?: string
           name?: string
           organization_id?: string
+          primary_body_regions?: string[]
           primary_pattern?: string | null
+          rotational_stress?: string
+          secondary_body_regions?: string[]
+          spine_loading?: string
           sport?: string
           sport_constraints?: Json
           sport_tags?: string[]
+          stress_regions?: string[]
+          throwing_arm_stress?: string
           track_distance?: boolean
           track_load?: boolean
           track_reps?: boolean
@@ -17484,6 +17623,165 @@ export type Database = {
           },
           {
             foreignKeyName: "helm_lifting_maxes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helm_lifting_nutrition_plan_assignments: {
+        Row: {
+          acknowledged_at: string | null
+          assigned_at: string
+          assigned_by_coach_id: string | null
+          assignment_type: string
+          athlete_id: string | null
+          created_at: string
+          group_id: string | null
+          id: string
+          organization_id: string
+          plan_id: string
+          sport: string
+          team_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          assigned_at?: string
+          assigned_by_coach_id?: string | null
+          assignment_type: string
+          athlete_id?: string | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          organization_id: string
+          plan_id: string
+          sport: string
+          team_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          assigned_at?: string
+          assigned_by_coach_id?: string | null
+          assignment_type?: string
+          athlete_id?: string | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          organization_id?: string
+          plan_id?: string
+          sport?: string
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helm_lifting_nutrition_plan_assignmen_assigned_by_coach_id_fkey"
+            columns: ["assigned_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_nutrition_plan_assignments_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_athletes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_nutrition_plan_assignments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_nutrition_plan_assignments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_nutrition_plan_assignments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_nutrition_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helm_lifting_nutrition_plans: {
+        Row: {
+          created_at: string
+          created_by_coach_id: string | null
+          description: string | null
+          external_url: string | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          organization_id: string
+          plan_type: string
+          published_at: string | null
+          sport: string
+          status: string
+          storage_path: string | null
+          team_id: string | null
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_coach_id?: string | null
+          description?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          organization_id: string
+          plan_type?: string
+          published_at?: string | null
+          sport: string
+          status?: string
+          storage_path?: string | null
+          team_id?: string | null
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_coach_id?: string | null
+          description?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          organization_id?: string
+          plan_type?: string
+          published_at?: string | null
+          sport?: string
+          status?: string
+          storage_path?: string | null
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helm_lifting_nutrition_plans_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_nutrition_plans_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -17913,8 +18211,10 @@ export type Database = {
           readiness_score: number | null
           sleep_quality: number | null
           soreness_overall: number | null
+          soreness_status: string | null
           sport: string
           stress_level: number | null
+          submitted_from: string | null
           updated_at: string
           visibility: string
         }
@@ -17935,8 +18235,10 @@ export type Database = {
           readiness_score?: number | null
           sleep_quality?: number | null
           soreness_overall?: number | null
+          soreness_status?: string | null
           sport: string
           stress_level?: number | null
+          submitted_from?: string | null
           updated_at?: string
           visibility?: string
         }
@@ -17957,8 +18259,10 @@ export type Database = {
           readiness_score?: number | null
           sleep_quality?: number | null
           soreness_overall?: number | null
+          soreness_status?: string | null
           sport?: string
           stress_level?: number | null
+          submitted_from?: string | null
           updated_at?: string
           visibility?: string
         }
@@ -18297,6 +18601,186 @@ export type Database = {
           },
         ]
       }
+      helm_lifting_soreness_check_requests: {
+        Row: {
+          athlete_id: string
+          completed_at: string | null
+          created_at: string
+          due_at: string | null
+          due_date: string
+          id: string
+          organization_id: string
+          readiness_checkin_id: string | null
+          reminder_sent_at: string | null
+          schedule_id: string | null
+          sport: string
+          status: string
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          due_date: string
+          id?: string
+          organization_id: string
+          readiness_checkin_id?: string | null
+          reminder_sent_at?: string | null
+          schedule_id?: string | null
+          sport: string
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          due_date?: string
+          id?: string
+          organization_id?: string
+          readiness_checkin_id?: string | null
+          reminder_sent_at?: string | null
+          schedule_id?: string | null
+          sport?: string
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helm_lifting_soreness_check_requests_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_athletes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_soreness_check_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_soreness_check_requests_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_soreness_check_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helm_lifting_soreness_check_schedules: {
+        Row: {
+          assignment_type: string
+          athlete_id: string | null
+          body_focus: string
+          created_at: string
+          created_by_coach_id: string | null
+          custom_regions: string[] | null
+          days_of_week: number[] | null
+          due_time: string | null
+          due_window_end: string | null
+          due_window_start: string | null
+          end_date: string | null
+          frequency_type: string
+          group_id: string | null
+          id: string
+          instructions: string | null
+          organization_id: string
+          sport: string
+          start_date: string
+          status: string
+          team_id: string | null
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          assignment_type: string
+          athlete_id?: string | null
+          body_focus?: string
+          created_at?: string
+          created_by_coach_id?: string | null
+          custom_regions?: string[] | null
+          days_of_week?: number[] | null
+          due_time?: string | null
+          due_window_end?: string | null
+          due_window_start?: string | null
+          end_date?: string | null
+          frequency_type: string
+          group_id?: string | null
+          id?: string
+          instructions?: string | null
+          organization_id: string
+          sport: string
+          start_date: string
+          status?: string
+          team_id?: string | null
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          assignment_type?: string
+          athlete_id?: string | null
+          body_focus?: string
+          created_at?: string
+          created_by_coach_id?: string | null
+          custom_regions?: string[] | null
+          days_of_week?: number[] | null
+          due_time?: string | null
+          due_window_end?: string | null
+          due_window_start?: string | null
+          end_date?: string | null
+          frequency_type?: string
+          group_id?: string | null
+          id?: string
+          instructions?: string | null
+          organization_id?: string
+          sport?: string
+          start_date?: string
+          status?: string
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helm_lifting_soreness_check_schedules_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_athletes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_soreness_check_schedules_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_soreness_check_schedules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_soreness_check_schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       helm_lifting_soreness_maps: {
         Row: {
           athlete_id: string
@@ -18398,6 +18882,187 @@ export type Database = {
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "helm_lifting_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helm_lifting_weight_checkin_requests: {
+        Row: {
+          athlete_id: string
+          bodyweight_entry_id: string | null
+          completed_at: string | null
+          created_at: string
+          due_at: string | null
+          due_date: string
+          id: string
+          organization_id: string
+          reminder_sent_at: string | null
+          schedule_id: string | null
+          sport: string
+          status: string
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          bodyweight_entry_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          due_date: string
+          id?: string
+          organization_id: string
+          reminder_sent_at?: string | null
+          schedule_id?: string | null
+          sport: string
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          bodyweight_entry_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          due_date?: string
+          id?: string
+          organization_id?: string
+          reminder_sent_at?: string | null
+          schedule_id?: string | null
+          sport?: string
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helm_lifting_weight_checkin_requests_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_athletes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_weight_checkin_requests_bodyweight_entry_id_fkey"
+            columns: ["bodyweight_entry_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_bodyweight_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_weight_checkin_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_weight_checkin_requests_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_weight_checkin_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      helm_lifting_weight_checkin_schedules: {
+        Row: {
+          assignment_type: string
+          athlete_id: string | null
+          created_at: string
+          created_by_coach_id: string | null
+          days_of_week: number[] | null
+          due_time: string | null
+          due_window_end: string | null
+          due_window_start: string | null
+          end_date: string | null
+          frequency_type: string
+          group_id: string | null
+          id: string
+          instructions: string | null
+          organization_id: string
+          sport: string
+          start_date: string
+          status: string
+          team_id: string | null
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          assignment_type: string
+          athlete_id?: string | null
+          created_at?: string
+          created_by_coach_id?: string | null
+          days_of_week?: number[] | null
+          due_time?: string | null
+          due_window_end?: string | null
+          due_window_start?: string | null
+          end_date?: string | null
+          frequency_type: string
+          group_id?: string | null
+          id?: string
+          instructions?: string | null
+          organization_id: string
+          sport: string
+          start_date: string
+          status?: string
+          team_id?: string | null
+          title: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          assignment_type?: string
+          athlete_id?: string | null
+          created_at?: string
+          created_by_coach_id?: string | null
+          days_of_week?: number[] | null
+          due_time?: string | null
+          due_window_end?: string | null
+          due_window_start?: string | null
+          end_date?: string | null
+          frequency_type?: string
+          group_id?: string | null
+          id?: string
+          instructions?: string | null
+          organization_id?: string
+          sport?: string
+          start_date?: string
+          status?: string
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helm_lifting_weight_checkin_schedules_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_athletes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_weight_checkin_schedules_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_weight_checkin_schedules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "helm_lifting_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "helm_lifting_weight_checkin_schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -19144,6 +19809,10 @@ export type Database = {
         Returns: boolean
       }
       helm_lifting_coach_for_org: { Args: { p_org: string }; Returns: boolean }
+      helm_lifting_is_head_coach_viewer: {
+        Args: { p_org: string }
+        Returns: boolean
+      }
       helm_lifting_is_my_athlete: {
         Args: { p_athlete: string }
         Returns: boolean

@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Menu, X, LogOut, User } from 'lucide-react';
+import { Menu, X, LogOut, User } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
 import { LabNav } from './LabNav';
 import type { HelmLiftingCoachRow } from '@/lib/types/helm-lifting';
 
@@ -52,8 +54,8 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
         className="flex items-center gap-2.5 px-4 py-5 mb-2"
         onClick={() => setDrawerOpen(false)}
       >
-        <div className="w-8 h-8 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-          <Dumbbell className="w-4 h-4 text-white" />
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <Image src="/helm-lifting-logo.png" alt="Helm Lifting Lab" width={32} height={32} className="object-contain" priority />
         </div>
         <div>
           <p className="text-sm font-bold text-warm-900 leading-none">Helm</p>
@@ -62,20 +64,28 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
       </Link>
 
       {/* Navigation — flex-1 so settings link is pushed down */}
-      <div className="flex-1 px-2 overflow-y-auto" onClick={() => setDrawerOpen(false)}>
+      <div
+        className="flex-1 px-2 overflow-y-auto"
+        onClick={() => setDrawerOpen(false)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setDrawerOpen(false); }}
+        role="button"
+        tabIndex={0}
+      >
         <LabNav />
       </div>
 
       {/* User strip */}
       <div className="px-2 pb-4 pt-2 border-t border-white/20">
-        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white/40">
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl glass-standard">
           <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
             {coachRow?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={coachRow.avatar_url}
                 alt={displayName}
+                width={32}
+                height={32}
                 className="w-8 h-8 rounded-full object-cover"
+                unoptimized
               />
             ) : (
               <span className="text-xs font-bold text-primary-700">{initials || <User className="w-4 h-4" />}</span>
@@ -87,14 +97,15 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
               <p className="text-xs text-warm-500 truncate">{coachRow.title}</p>
             )}
           </div>
-          <button
+          <Button
+            variant="ghost"
             onClick={handleSignOut}
             disabled={signingOut}
             aria-label="Sign out"
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-700 hover:bg-white/60 transition-all disabled:opacity-50"
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-700 transition-all"
           >
             <LogOut className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -103,7 +114,7 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
   return (
     <div className="min-h-dvh flex" style={{ backgroundColor: '#FFFEFA' }}>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-56 xl:w-60 flex-shrink-0 bg-white/70 backdrop-blur-xl border-r border-white/20 shadow-[2px_0_12px_rgba(0,0,0,0.04)]">
+      <aside className="hidden lg:flex flex-col w-56 xl:w-60 flex-shrink-0 glass-standard border-r border-white/20 shadow-[2px_0_12px_rgba(0,0,0,0.04)]">
         <SidebarContent />
       </aside>
 
@@ -119,6 +130,7 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
               transition={{ duration: 0.2 }}
               className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
               onClick={() => setDrawerOpen(false)}
+              aria-hidden
             />
             <motion.aside
               key="drawer"
@@ -126,7 +138,11 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              className="fixed inset-y-0 left-0 z-50 w-56 bg-white/90 backdrop-blur-xl border-r border-white/30 shadow-2xl lg:hidden flex flex-col"
+              className="fixed inset-y-0 left-0 z-50 w-56 glass-standard border-r border-white/30 shadow-2xl lg:hidden flex flex-col"
+              onKeyDown={(e) => { if (e.key === 'Escape') setDrawerOpen(false); }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation menu"
             >
               <SidebarContent />
             </motion.aside>
@@ -137,17 +153,20 @@ export function LabShell({ children, coachRow, isViewOnly = false }: LabShellPro
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile top bar */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-white/80 backdrop-blur-md border-b border-white/20">
-          <button
+        <header className="lg:hidden sticky top-0 z-30 flex items-center gap-3 px-4 py-3 glass-standard border-b border-white/20">
+          <Button
+            variant="ghost"
             onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-warm-600 hover:bg-white/60 transition-colors"
+            aria-label="Open navigation menu"
+            aria-expanded={drawerOpen}
+            aria-controls="mobile-nav-drawer"
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-warm-600 transition-colors focus-visible:ring-primary-500/50"
           >
             {drawerOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          </Button>
           <div className="flex items-center gap-2 flex-1">
-            <div className="w-6 h-6 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Dumbbell className="w-3.5 h-3.5 text-white" />
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center overflow-hidden">
+              <Image src="/helm-lifting-logo.png" alt="" width={24} height={24} className="object-contain" priority />
             </div>
             <span className="text-sm font-bold text-warm-900">Lifting Lab</span>
           </div>

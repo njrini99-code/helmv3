@@ -101,15 +101,6 @@ export async function generateTeamInsights(
     .eq('team_id', teamId)
     .in('player_id', playerIds) as { data: BaseballPlayerAggregates[] | null };
 
-  // Clear existing active insights for this coach/team
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
-    .from('baseball_coach_insights')
-    .update({ status: 'dismissed' })
-    .eq('coach_id', coachId)
-    .eq('team_id', teamId)
-    .eq('status', 'active');
-
   // Generate insights for each player
   const insightsToCreate: Partial<BaseballCoachInsight>[] = [];
 
@@ -142,12 +133,51 @@ export async function generateTeamInsights(
     player_id: null,
   })));
 
-  // Insert new insights
+  // Reconcile insights without destroying coach decisions. Fetch the coach's
+  // existing rows for this team, then: refresh still-active insights in place,
+  // SKIP anything the coach has dismissed/resolved (never resurface it), and
+  // insert only genuinely new insight types. No delete-then-reinsert, and no
+  // dependence on a partial/expression unique index that PostgREST can't match.
   if (insightsToCreate.length > 0) {
+    const keyOf = (playerId: string | null | undefined, type: string | null | undefined) =>
+      `${playerId ?? 'TEAM'}::${type ?? ''}`;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    const { data: existingRows } = (await (supabase as any)
       .from('baseball_coach_insights')
-      .insert(insightsToCreate);
+      .select('id, player_id, insight_type, status')
+      .eq('team_id', teamId)
+      .eq('coach_id', coachId)) as {
+      data: Array<{ id: string; player_id: string | null; insight_type: string; status: string }> | null;
+    };
+
+    const existingByKey = new Map<string, { id: string; status: string }>();
+    for (const row of existingRows ?? []) {
+      existingByKey.set(keyOf(row.player_id, row.insight_type), { id: row.id, status: row.status });
+    }
+
+    const toInsert: Partial<BaseballCoachInsight>[] = [];
+    const toUpdate: Array<Partial<BaseballCoachInsight> & { id: string }> = [];
+    for (const insight of insightsToCreate) {
+      const existing = existingByKey.get(keyOf(insight.player_id, insight.insight_type));
+      if (!existing) {
+        toInsert.push(insight);
+      } else if (existing.status === 'active') {
+        // Refresh body/priority of a still-active insight in place (update by PK).
+        toUpdate.push({ ...insight, id: existing.id });
+      }
+      // else: coach dismissed/resolved this insight — respect it, do not recreate.
+    }
+
+    if (toInsert.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('baseball_coach_insights').insert(toInsert);
+    }
+    if (toUpdate.length > 0) {
+      // Update-by-primary-key — the id PK always has a matching unique constraint.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('baseball_coach_insights').upsert(toUpdate, { onConflict: 'id' });
+    }
   }
 
   revalidatePath('/baseball/dashboard/command-center');
@@ -325,23 +355,86 @@ function analyzePlayer(
 }
 
 /**
- * Analyze team-level patterns
+ * Derive per-insight thresholds from the coach's philosophy config so different
+ * coaching styles produce different signal sets — a high-sensitivity coach sees
+ * earlier warnings; a low-sensitivity coach needs a stronger signal to fire.
+ *
+ * Philosophy influences:
+ *   alert_sensitivity  → scales the fraction of the roster that must be declining
+ *                        before a team-wide alert fires, and the minimum count of
+ *                        pressure-strugglers before the mental-game signal fires.
+ *   decline_threshold  → the absolute per-player decline magnitude (%) that the
+ *                        pressure-gap is measured against at team level.
+ *   pressure_gap_threshold → the gap magnitude (%) used to identify individual
+ *                        pressure-strugglers when counting for the team signal.
+ *   priority_mental_game (optional) → when ≥ 3 (coaches who prioritize mental
+ *                        game), the pressure-struggler count threshold is lowered.
+ */
+function deriveTeamThresholds(config: BaseballCoachPhilosophy): {
+  /** Fraction of roster (0..1) that must be declining to fire the team alert. */
+  decliningFraction: number;
+  /** Fraction of roster (0..1) that must be improving to fire the team surge. */
+  improvingFraction: number;
+  /** Absolute pressure gap (decimal) to count someone as a pressure-struggler. */
+  pressureGapCutoff: number;
+  /** Minimum count of pressure-strugglers to fire the team mental-game alert. */
+  pressureStrugglerMinCount: number;
+} {
+  const sensitivity = config.alert_sensitivity ?? 'balanced';
+
+  // Base fractions vary by alert sensitivity so coaches get what they asked for.
+  const decliningFraction =
+    sensitivity === 'aggressive' ? 0.3 : sensitivity === 'conservative' ? 0.5 : 0.4;
+  const improvingFraction =
+    sensitivity === 'aggressive' ? 0.4 : sensitivity === 'conservative' ? 0.6 : 0.5;
+
+  // Pressure gap cutoff: use coach's threshold, convert from % to decimal.
+  // Clamp to a reasonable [0.005, 0.10] range.
+  const rawGap = (config.pressure_gap_threshold ?? 2.0) / 100;
+  const pressureGapCutoff = Math.max(0.005, Math.min(0.10, rawGap));
+
+  // Pressure-struggler count threshold is lowered when the coach has explicitly
+  // prioritized the mental game (priority_mental_game ≤ 2 means it is a top-2
+  // priority; we use that as a proxy for "raise sensitivity to this signal").
+  const mentalPriority = config.priority_mental_game ?? 5;
+  const pressureStrugglerMinCount =
+    sensitivity === 'aggressive' || mentalPriority <= 2 ? 2 : 3;
+
+  return {
+    decliningFraction,
+    improvingFraction,
+    pressureGapCutoff,
+    pressureStrugglerMinCount,
+  };
+}
+
+/**
+ * Analyze team-level patterns. Philosophy weights are now THREADED into the
+ * thresholds via deriveTeamThresholds() so the coach's alert_sensitivity,
+ * pressure_gap_threshold, and mental-game priority actually change which signals
+ * fire, rather than being silently ignored.
  */
 function analyzeTeam(
   playerCount: number,
   aggregates: BaseballPlayerAggregates[],
-   
-  _config: BaseballCoachPhilosophy // Reserved: will customize thresholds based on coach philosophy
+  config: BaseballCoachPhilosophy,
 ): Partial<BaseballCoachInsight>[] {
   const insights: Partial<BaseballCoachInsight>[] = [];
 
   if (aggregates.length < 3) return insights;
 
-  // Count declining players
+  const {
+    decliningFraction,
+    improvingFraction,
+    pressureGapCutoff,
+    pressureStrugglerMinCount,
+  } = deriveTeamThresholds(config);
+
+  // Count declining players.
   const declining = aggregates.filter(a => a.recent_trend === 'declining').length;
   const improving = aggregates.filter(a => a.recent_trend === 'improving').length;
 
-  if (declining >= Math.ceil(playerCount * 0.4)) {
+  if (declining >= Math.ceil(playerCount * decliningFraction)) {
     insights.push({
       insight_type: 'comparison_alert',
       priority: 'critical',
@@ -358,7 +451,7 @@ function analyzeTeam(
     });
   }
 
-  if (improving >= Math.ceil(playerCount * 0.5)) {
+  if (improving >= Math.ceil(playerCount * improvingFraction)) {
     insights.push({
       insight_type: 'performance_surge',
       priority: 'low',
@@ -375,9 +468,14 @@ function analyzeTeam(
     });
   }
 
-  // Pressure performance analysis (team_health - mental game)
-  const pressureStrugglers = aggregates.filter(a => a.pressure_gap != null && a.pressure_gap < -0.03);
-  if (pressureStrugglers.length >= 3) {
+  // Pressure performance analysis (team_health — mental game).
+  // The cutoff for what counts as a "pressure-struggler" comes from the coach's
+  // configured pressure_gap_threshold so a conservative coach doesn't fire on
+  // small gaps and an aggressive coach catches smaller discrepancies.
+  const pressureStrugglers = aggregates.filter(
+    a => a.pressure_gap != null && a.pressure_gap < -pressureGapCutoff,
+  );
+  if (pressureStrugglers.length >= pressureStrugglerMinCount) {
     insights.push({
       insight_type: 'pressure_gap',
       priority: 'high',
@@ -386,6 +484,7 @@ function analyzeTeam(
       metadata: {
         category: 'team_health' as BaseballInsightCategory,
         count: pressureStrugglers.length,
+        pressure_gap_threshold_used: pressureGapCutoff,
       },
       recommended_action: 'Implement team mental training, pressure simulation in practice, possibly bring in sports psychologist.',
       status: 'active',
@@ -479,7 +578,7 @@ export async function markInsightAddressed(insightId: string): Promise<{ success
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('baseball_coach_insights')
-    .update({ status: 'addressed' })
+    .update({ status: 'resolved' })
     .eq('id', insightId);
 
   if (error) {

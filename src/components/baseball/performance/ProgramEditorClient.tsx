@@ -32,6 +32,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -50,6 +51,7 @@ import {
   addLiftPrescription, updateLiftPrescription, reorderLiftPrescriptions, deleteLiftPrescription,
   saveProgramAsTemplate, publishLiftDay,
 } from '@/app/baseball/actions/lifting-v11';
+import { updateProgramBlockOrder } from '@/app/baseball/actions/program-settings';
 import type {
   LiftProgramTree, LiftWeekNode, LiftDayNode, LiftSectionNode,
   LiftPrescriptionNode, AssignContext,
@@ -358,7 +360,7 @@ function ProgramHeader({
                 <span aria-hidden>·</span>
                 <span className="capitalize">{p.status}</span>
                 {p.is_template && (
-                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-eyebrow font-medium text-amber-700">
                     Template
                   </span>
                 )}
@@ -433,36 +435,38 @@ function WeekRail({
         ) : (
           <ul className="space-y-3">
             {weeks.map((w) => (
-              <li key={w.id} className="rounded-xl border border-warm-100 bg-white/50 p-2">
+              <li key={w.id} className="rounded-xl border border-warm-100 glass-standard p-2">
                 <div className="flex items-center justify-between gap-1 px-1">
                   <div className="min-w-0">
                     <div className="truncate text-sm font-semibold text-warm-800">
                       {w.name ?? `Week ${w.week_number}`}
-                      {w.deload && <span className="ml-1 text-[11px] font-medium text-amber-600">deload</span>}
+                      {w.deload && <span className="ml-1 text-eyebrow font-medium text-amber-600">deload</span>}
                     </div>
-                    {w.theme && <div className="truncate text-[11px] text-warm-400">{w.theme}</div>}
+                    {w.theme && <div className="truncate text-eyebrow text-warm-400">{w.theme}</div>}
                   </div>
                   <div className="flex shrink-0">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       title="Duplicate week"
                       aria-label={`Duplicate ${w.name ?? `week ${w.week_number}`}`}
-                      className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-50"
+                      className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:ring-primary-500/40 disabled:opacity-50"
                       onClick={() => onDuplicateWeek(w.id)}
                       disabled={pending}
                     >
                       <IconCopy size={14} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
                       title="Delete week"
                       aria-label={`Delete ${w.name ?? `week ${w.week_number}`}`}
-                      className="rounded-md p-1 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:opacity-50"
+                      className="rounded-md p-1 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:ring-red-500/40 disabled:opacity-50"
                       onClick={() => setConfirmWeek(w)}
                       disabled={pending}
                     >
                       <IconTrash size={14} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -471,51 +475,55 @@ function WeekRail({
                     const active = d.id === selectedDayId;
                     return (
                       <li key={d.id} className="group flex items-center gap-1">
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
                           onClick={() => onSelectDay(d.id)}
                           aria-current={active ? 'true' : undefined}
-                          className={`flex-1 truncate rounded-lg px-2 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
+                          className={`flex-1 truncate rounded-lg px-2 py-1.5 text-left text-sm transition-colors focus-visible:ring-primary-500/40 ${
                             active
                               ? 'bg-primary-50 font-medium text-primary-700'
                               : 'text-warm-600 hover:bg-warm-50'
                           }`}
                         >
                           {d.name ?? `Day ${d.day_number}`}
-                          <span className="ml-1 text-[11px] text-warm-400">{DAY_TYPE_LABEL[d.day_type]}</span>
-                        </button>
-                        <button
+                          <span className="ml-1 text-eyebrow text-warm-400">{DAY_TYPE_LABEL[d.day_type]}</span>
+                        </Button>
+                        <Button
                           type="button"
+                          variant="ghost"
                           title="Duplicate day"
                           aria-label={`Duplicate ${d.name ?? `day ${d.day_number}`}`}
-                          className="rounded-md p-1 text-warm-300 opacity-0 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 group-hover:opacity-100 disabled:opacity-50"
+                          className="rounded-md p-1 text-warm-300 opacity-0 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:opacity-100 focus-visible:ring-primary-500/40 group-hover:opacity-100 disabled:opacity-50"
                           onClick={() => onDuplicateDay(d.id)}
                           disabled={pending}
                         >
                           <IconCopy size={13} />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
+                          variant="ghost"
                           title="Delete day"
                           aria-label={`Delete ${d.name ?? `day ${d.day_number}`}`}
-                          className="rounded-md p-1 text-warm-300 opacity-0 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 group-hover:opacity-100 disabled:opacity-50"
+                          className="rounded-md p-1 text-warm-300 opacity-0 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:opacity-100 focus-visible:ring-red-500/40 group-hover:opacity-100 disabled:opacity-50"
                           onClick={() => setConfirmDay(d)}
                           disabled={pending}
                         >
                           <IconTrash size={13} />
-                        </button>
+                        </Button>
                       </li>
                     );
                   })}
                   <li>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => onAddDay(w)}
                       disabled={pending || w.days.length >= 7}
-                      className="w-full rounded-lg border border-dashed border-warm-200 px-2 py-1.5 text-left text-xs font-medium text-warm-500 transition-colors hover:border-primary-200 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-50"
+                      className="w-full rounded-lg border border-dashed border-warm-200 px-2 py-1.5 text-left text-xs font-medium text-warm-500 transition-colors hover:border-primary-200 hover:text-primary-700 focus-visible:ring-primary-500/40 disabled:opacity-50"
                     >
                       + Add day{w.days.length >= 7 ? ' (max 7)' : ''}
-                    </button>
+                    </Button>
                   </li>
                 </ul>
               </li>
@@ -573,6 +581,24 @@ function DayEditor({
   const [est, setEst] = useState<string>(day.estimated_minutes != null ? String(day.estimated_minutes) : '');
   const [assignOpen, setAssignOpen] = useState(false);
 
+  // Section-level drag-to-reorder. We track the dragged section id in a ref so
+  // the onDrop handler can compute the new ordered array and call the server action.
+  const sectionDragId = useRef<string | null>(null);
+
+  function onDropSection(targetId: string) {
+    const ids = day.sections.map((s) => s.id);
+    const from = ids.indexOf(sectionDragId.current ?? '');
+    const to = ids.indexOf(targetId);
+    sectionDragId.current = null;
+    if (from < 0 || to < 0 || from === to) return;
+    const next = [...ids];
+    const [moved] = next.splice(from, 1);
+    if (moved === undefined) return;
+    next.splice(to, 0, moved);
+    // W5c: call the new update_program_block_order action from program-settings.ts.
+    run(() => updateProgramBlockOrder({ orderedIds: next }));
+  }
+
   const totalExercises = day.sections.reduce((n, s) => n + s.prescriptions.length, 0);
 
   return (
@@ -621,7 +647,7 @@ function DayEditor({
                   {day.baseball_context && (
                     <>
                       <span aria-hidden>·</span>
-                      <span className="rounded-full bg-cream-100 px-2 py-0.5 text-[11px] text-warm-600">
+                      <span className="rounded-full bg-cream-100 px-2 py-0.5 text-eyebrow text-warm-600">
                         {BASEBALL_CONTEXT_LABEL[day.baseball_context] ?? day.baseball_context}
                       </span>
                     </>
@@ -669,20 +695,28 @@ function DayEditor({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <ul className="space-y-3 list-none">
           {day.sections.map((s, i) => (
-            <SectionEditor
+            <li
               key={s.id}
-              section={s}
-              index={i}
-              count={day.sections.length}
-              sectionsOrder={day.sections.map((x) => x.id)}
-              exercises={assign.exercises}
-              pending={pending}
-              run={run}
-            />
+              draggable={!pending}
+              onDragStart={() => { sectionDragId.current = s.id; }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => onDropSection(s.id)}
+              className="transition-opacity"
+            >
+              <SectionEditor
+                section={s}
+                index={i}
+                count={day.sections.length}
+                sectionsOrder={day.sections.map((x) => x.id)}
+                exercises={assign.exercises}
+                pending={pending}
+                run={run}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {day.sections.length > 0 && (
@@ -785,40 +819,40 @@ function SectionEditor({
         ) : (
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-warm-50 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-warm-500">
+              <span className="rounded-full bg-warm-50 px-2 py-0.5 text-eyebrow font-medium uppercase tracking-wide text-warm-500">
                 {SECTION_TYPE_LABEL[section.section_type]}
               </span>
               <h3 className="text-base font-semibold text-warm-900">{section.name}</h3>
             </div>
             <div className="flex items-center gap-0.5">
-              <button
-                type="button" title="Move section up" aria-label="Move section up"
-                className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-30"
+              <Button
+                type="button" variant="ghost" title="Move section up" aria-label="Move section up"
+                className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:ring-primary-500/40 disabled:opacity-30"
                 onClick={() => moveSection(-1)} disabled={pending || index === 0}
               >
                 <IconChevronUp size={15} />
-              </button>
-              <button
-                type="button" title="Move section down" aria-label="Move section down"
-                className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-30"
+              </Button>
+              <Button
+                type="button" variant="ghost" title="Move section down" aria-label="Move section down"
+                className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:ring-primary-500/40 disabled:opacity-30"
                 onClick={() => moveSection(1)} disabled={pending || index === count - 1}
               >
                 <IconChevronDown size={15} />
-              </button>
-              <button
-                type="button" title="Edit section" aria-label="Edit section"
-                className="rounded-md px-2 py-1 text-xs font-medium text-warm-500 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+              </Button>
+              <Button
+                type="button" variant="ghost" title="Edit section" aria-label="Edit section"
+                className="rounded-md px-2 py-1 text-xs font-medium text-warm-500 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:ring-primary-500/40"
                 onClick={() => setEditing(true)} disabled={pending}
               >
                 Edit
-              </button>
-              <button
-                type="button" title="Delete section" aria-label="Delete section"
-                className="rounded-md p-1 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:opacity-50"
+              </Button>
+              <Button
+                type="button" variant="ghost" title="Delete section" aria-label="Delete section"
+                className="rounded-md p-1 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:ring-red-500/40 disabled:opacity-50"
                 onClick={() => setConfirmDelete(true)} disabled={pending}
               >
                 <IconTrash size={15} />
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -929,7 +963,7 @@ function PrescriptionRow({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-warm-100 bg-white/60 px-2 py-1.5">
+    <div className="flex items-center gap-2 rounded-lg border border-warm-100 glass-standard px-2 py-1.5">
       <span className="cursor-grab" title="Drag to reorder"><GripDots /></span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -938,28 +972,28 @@ function PrescriptionRow({
           </span>
         </div>
         <div className="truncate text-xs text-warm-500">{prescriptionSummary(p) || '—'}</div>
-        {p.coaching_note && <div className="truncate text-[11px] text-warm-400">“{p.coaching_note}”</div>}
+        {p.coaching_note && <div className="truncate text-eyebrow text-warm-400">"{p.coaching_note}"</div>}
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
-        <button type="button" title="Move up" aria-label="Move exercise up"
-          className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-30"
+        <Button type="button" variant="ghost" title="Move up" aria-label="Move exercise up"
+          className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 focus-visible:ring-primary-500/40 disabled:opacity-30"
           onClick={() => move(-1)} disabled={pending || index === 0}>
           <IconChevronUp size={14} />
-        </button>
-        <button type="button" title="Move down" aria-label="Move exercise down"
-          className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-30"
+        </Button>
+        <Button type="button" variant="ghost" title="Move down" aria-label="Move exercise down"
+          className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 focus-visible:ring-primary-500/40 disabled:opacity-30"
           onClick={() => move(1)} disabled={pending || index === count - 1}>
           <IconChevronDown size={14} />
-        </button>
-        <button type="button" aria-label="Edit exercise" className="rounded-md px-2 py-1 text-xs font-medium text-warm-500 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+        </Button>
+        <Button type="button" variant="ghost" aria-label="Edit exercise" className="rounded-md px-2 py-1 text-xs font-medium text-warm-500 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:ring-primary-500/40"
           onClick={() => setEditOpen(true)} disabled={pending}>
           Edit
-        </button>
-        <button type="button" title="Delete exercise" aria-label="Delete exercise"
-          className="rounded-md p-1 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:opacity-50"
+        </Button>
+        <Button type="button" variant="ghost" title="Delete exercise" aria-label="Delete exercise"
+          className="rounded-md p-1 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:ring-red-500/40 disabled:opacity-50"
           onClick={() => run(() => deleteLiftPrescription({ id: p.id }))} disabled={pending}>
           <IconTrash size={14} />
-        </button>
+        </Button>
       </div>
 
       {editOpen && (
@@ -1194,10 +1228,11 @@ function AssignPublishDialog({
 
         <Input label="Scheduled date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
 
-        <label className="flex items-center gap-2 text-sm text-warm-700">
-          <input type="checkbox" checked={calendar} onChange={(e) => setCalendar(e.target.checked)} className="h-4 w-4 rounded border-warm-300 text-primary-600" />
-          Add a Lift event to the team calendar
-        </label>
+        <Checkbox
+          checked={calendar}
+          onChange={(e) => setCalendar(e.target.checked)}
+          label="Add a Lift event to the team calendar"
+        />
 
         <div className="rounded-lg border border-warm-100 bg-cream-100/50 px-3 py-2 text-xs text-warm-600">
           {resolvedPlayerIds.length === 0

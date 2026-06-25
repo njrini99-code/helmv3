@@ -26,6 +26,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { IconPlus, IconDumbbell } from '@/components/icons';
 import { createLiftProgram } from '@/app/baseball/actions/lifting-v11';
 import type { LiftProgramListItem } from '@/lib/baseball/read-models/lift-programs';
@@ -69,11 +70,11 @@ function StatusChip({ status, template }: { status: BaseballLiftProgramStatus; t
   const meta = STATUS_META[status];
   return (
     <span className="inline-flex items-center gap-1">
-      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${meta.cls}`}>
+      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-medium ${meta.cls}`}>
         {meta.label}
       </span>
       {template && (
-        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-eyebrow font-medium text-amber-700">
           Template
         </span>
       )}
@@ -85,7 +86,7 @@ function ProgramCard({ program }: { program: LiftProgramListItem }) {
   return (
     <Link
       href={`/baseball/dashboard/performance/programs/${program.id}`}
-      className="group block rounded-2xl border border-warm-100 bg-white/70 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:bg-white hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 motion-reduce:hover:translate-y-0"
+      className="group block rounded-2xl border border-warm-100 glass-standard p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:bg-cream-50 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 motion-reduce:hover:translate-y-0"
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-base font-semibold text-warm-900 group-hover:text-primary-700">
@@ -125,9 +126,10 @@ function Group({ title, items }: { title: string; items: LiftProgramListItem[] }
 
 interface Props {
   programs: LiftProgramListItem[];
+  isLoading?: boolean;
 }
 
-export function ProgramListClient({ programs }: Props) {
+export function ProgramListClient({ programs, isLoading = false }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -145,6 +147,63 @@ export function ProgramListClient({ programs }: Props) {
     const archived = programs.filter((p) => p.status === 'archived' && !p.is_template);
     return { active, drafts, templates, archived };
   }, [programs]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6" aria-busy="true" aria-label="Loading programs…">
+        {/* Header row skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <Skeleton className="h-7 w-36" />
+            <Skeleton className="h-4 w-52" />
+          </div>
+          <Skeleton className="h-10 w-32 rounded-xl" />
+        </div>
+        {/* Active programs skeleton group */}
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-16" />
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-warm-100 glass-standard p-4 space-y-2"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className="flex items-start justify-between">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-4 w-64" />
+              <div className="flex gap-3 mt-1">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-12" />
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Drafts skeleton group */}
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-12" />
+          {Array.from({ length: 1 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-warm-100 glass-standard p-4 space-y-2"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className="flex items-start justify-between">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-5 w-12 rounded-full" />
+              </div>
+              <div className="flex gap-3 mt-1">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   function handleCreate() {
     setError(null);

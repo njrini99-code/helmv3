@@ -11,6 +11,8 @@ export function useUnreadCount() {
   // useRef prevents new client instance on every render (was causing infinite refetch loop)
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+  // Stable, unique-per-mount realtime channel name (see subscribe block below).
+  const channelNameRef = useRef(`unread-baseball-messages-${Math.random().toString(36).slice(2)}`);
 
   const fetchUnreadCount = useCallback(async () => {
     if (!user) {
@@ -58,8 +60,12 @@ export function useUnreadCount() {
 
     // Set up real-time subscription for new messages
     if (user) {
+      // Unique channel name per mount. With a fixed name, supabase-js returned the
+      // already-subscribed channel on remount/multi-mount, so the chained `.on()` ran
+      // AFTER `.subscribe()` → "cannot add postgres_changes callbacks ... after
+      // subscribe()". A per-mount id guarantees a fresh channel each time.
       const channel = supabase
-        .channel('unread-baseball-messages')
+        .channel(channelNameRef.current)
         .on(
           'postgres_changes',
           {

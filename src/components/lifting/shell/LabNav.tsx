@@ -11,6 +11,11 @@ import {
   Users,
   Activity,
   ClipboardList,
+  Command,
+  CalendarCheck,
+  CalendarDays,
+  BookOpen,
+  Upload,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,11 +27,16 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/lifting/dashboard', label: 'Home', icon: Home },
+  { href: '/lifting/dashboard/today', label: 'Today', icon: CalendarDays },
+  { href: '/lifting/dashboard/command', label: 'Command', icon: Command },
   { href: '/lifting/dashboard/athletes', label: 'Athletes', icon: Users },
   { href: '/lifting/dashboard/programs', label: 'Programs', icon: ClipboardList },
+  { href: '/lifting/dashboard/exercises', label: 'Exercises', icon: BookOpen },
   { href: '/lifting/dashboard/sessions', label: 'Sessions', icon: Dumbbell },
   { href: '/lifting/dashboard/readiness', label: 'Readiness', icon: Activity },
+  { href: '/lifting/dashboard/check-ins', label: 'Check-Ins', icon: CalendarCheck },
   { href: '/lifting/dashboard/groups', label: 'Groups', icon: BarChart3 },
+  { href: '/lifting/dashboard/import', label: 'Import', icon: Upload },
 ];
 
 export function LabNav() {
@@ -48,9 +58,10 @@ export function LabNav() {
             href={item.href}
             className={cn(
               'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
               isActive
-                ? 'text-primary-700 bg-primary-50'
-                : 'text-warm-600 hover:text-warm-900 hover:bg-white/60'
+                ? 'text-primary-700'
+                : 'text-warm-600 hover:text-warm-900 hover:glass-subtle'
             )}
             aria-current={isActive ? 'page' : undefined}
           >
@@ -73,9 +84,10 @@ export function LabNav() {
           href="/lifting/dashboard/settings"
           className={cn(
             'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
             pathname.startsWith('/lifting/dashboard/settings')
-              ? 'text-primary-700 bg-primary-50'
-              : 'text-warm-600 hover:text-warm-900 hover:bg-white/60'
+              ? 'text-primary-700'
+              : 'text-warm-600 hover:text-warm-900 hover:glass-subtle'
           )}
           aria-current={pathname.startsWith('/lifting/dashboard/settings') ? 'page' : undefined}
         >

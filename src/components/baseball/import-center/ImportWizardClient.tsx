@@ -4,7 +4,18 @@
 // src/components/baseball/import-center/ImportWizardClient.tsx
 //
 // Wave 6 / packet: source-registry. The Import Center wizard:
-//   upload -> detect -> map -> normalize -> match -> preview -> validate -> commit
+//   choose -> upload -> detect -> map -> match -> preview -> validate -> commit
+//
+// Step 1 "What are you uploading?" drives the column template, target table,
+// and dedup key for the three data shapes:
+//   - season_totals  → baseball_player_season_stats  (dedup: player_id + season_year)
+//   - game_box_score → baseball_box_score_batting/pitching + baseball_games
+//                      (dedup: player_id + game_id)
+//   - event_log      → baseball_stat_facts            (dedup: source_external_id [+ game_id])
+//
+// The "event_log" shape has a dedicated advanced wizard (EventImportWizard via
+// the "Event level" tab in ImportCenterShell). Selecting it here routes the
+// coach there with a clear explanation rather than dead-ending.
 //
 // Cream/green tokens + glass/matte primitives. Honest per-step states (loading,
 // empty, error). framer-motion via LazyMotion/domAnimation + useReducedMotion.
@@ -53,6 +64,83 @@ import { xlsxToCsv } from '@/lib/baseball/adapters/xlsx-reader';
 import { IconWarning } from '@/components/icons';
 
 // -----------------------------------------------------------------------------
+// DATA SHAPE — drives column template, target table, dedup key.
+// -----------------------------------------------------------------------------
+
+/**
+ * The three import data shapes the wizard handles.
+ *
+ * `season_totals`  — one row per player for the full season.
+ *                    Target: baseball_player_season_stats
+ *                    Dedup key: player_id + season_year
+ *
+ * `game_box_score` — one row per player per game (batting / pitching lines).
+ *                    Target: baseball_box_score_batting / baseball_box_score_pitching
+ *                    + baseball_games if a new game needs to be created.
+ *                    Dedup key: player_id + game_id
+ *
+ * `event_log`      — pitch / batted-ball / swing events (sensor/video granularity).
+ *                    Target: baseball_stat_facts (generic) or the elite event tables.
+ *                    Dedup key: source_external_id [+ game_id]
+ *                    NOTE: the dedicated EventImportWizard (Event-level tab in
+ *                    ImportCenterShell) is the correct entry point for this shape.
+ *                    Selecting it here shows a redirect card instead of duplicating
+ *                    the event-import pipeline.
+ */
+export type ImportDataShape = 'season_totals' | 'game_box_score' | 'event_log';
+
+interface DataShapeMeta {
+  shape: ImportDataShape;
+  label: string;
+  subtitle: string;
+  targetTable: string;
+  dedupKey: string;
+  columnTemplate: string[];
+  sessionTypeLabel: string;
+  /** When true, this shape is handled by a different wizard — show redirect. */
+  redirectToEventLevel?: boolean;
+}
+
+export const DATA_SHAPE_META: Record<ImportDataShape, DataShapeMeta> = {
+  season_totals: {
+    shape: 'season_totals',
+    label: 'Season totals',
+    subtitle: 'One row per player — cumulative stats for the whole season.',
+    targetTable: 'baseball_player_season_stats',
+    dedupKey: 'player_id + season_year',
+    columnTemplate: [
+      'player', 'g', 'ab', 'r', 'h', '2b', '3b', 'hr', 'rbi', 'bb', 'k', 'sb', 'avg',
+      'ip', 'er', 'era', 'k_thrown', 'bb_allowed', 'w', 'l', 'sv',
+    ],
+    sessionTypeLabel: 'Season year',
+  },
+  game_box_score: {
+    shape: 'game_box_score',
+    label: 'Game box score',
+    subtitle: 'One row per player per game — batting and/or pitching lines.',
+    targetTable: 'baseball_box_score_batting / baseball_box_score_pitching',
+    dedupKey: 'player_id + game_id',
+    columnTemplate: [
+      'player', 'ab', 'r', 'h', '2b', '3b', 'hr', 'rbi', 'bb', 'k', 'sb', 'lob',
+      'ip', 'er', 'k_thrown', 'bb_allowed', 'result',
+    ],
+    sessionTypeLabel: 'Game date',
+  },
+  event_log: {
+    shape: 'event_log',
+    label: 'Event log',
+    subtitle: 'Pitch-by-pitch or swing events from a sensor or tracking platform.',
+    targetTable: 'baseball_stat_facts',
+    dedupKey: 'source_external_id + game_id',
+    columnTemplate: [
+      'player', 'stat_key', 'stat_value', 'game_id', 'period_type', 'period_start', 'period_end',
+    ],
+    sessionTypeLabel: 'Session date',
+    redirectToEventLevel: true,
+  },
+};
+
+// -----------------------------------------------------------------------------
 
 // The wizard receives the SAME shape the matcher uses (id/name + the tier-3
 // disambiguation signals jersey/grad_year/primary_position), so the manual-match
@@ -77,6 +165,11 @@ interface Props {
    * Defaults to true so standalone usages keep their header.
    */
   showHeader?: boolean;
+  /**
+   * Called when the coach selects "Event log" in the data-shape chooser.
+   * The shell intercepts this to switch to the "Event level" wizard tab.
+   */
+  onRequestEventLevel?: () => void;
 }
 
 const TRUST_LABEL: Record<string, string> = {
@@ -89,6 +182,7 @@ const TRUST_LABEL: Record<string, string> = {
 };
 
 type WizardStep =
+  | 'choose'
   | 'upload'
   | 'detect'
   | 'map'
@@ -97,17 +191,18 @@ type WizardStep =
   | 'committing'
   | 'done';
 
-const STEP_ORDER: WizardStep[] = [
+// Steps shown in the stepper (choose is pre-stepper; committing is internal).
+const VISIBLE_STEP_ORDER: WizardStep[] = [
   'upload',
   'detect',
   'map',
   'match',
   'preview',
-  'committing',
   'done',
 ];
 
 const STEP_LABELS: Record<WizardStep, string> = {
+  choose: 'Choose',
   upload: 'Upload',
   detect: 'Detect',
   map: 'Map',
@@ -132,6 +227,7 @@ export function ImportWizardClient({
   recentRuns,
   registeredSources,
   showHeader = true,
+  onRequestEventLevel,
 }: Props) {
   const prefersReducedMotion = useReducedMotion();
   const { addToast } = useToast();
@@ -153,7 +249,8 @@ export function ImportWizardClient({
     [registeredSources]
   );
 
-  const [step, setStep] = useState<WizardStep>('upload');
+  const [step, setStep] = useState<WizardStep>('choose');
+  const [dataShape, setDataShape] = useState<ImportDataShape>('game_box_score');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -579,7 +676,8 @@ export function ImportWizardClient({
   );
 
   const resetWizard = useCallback(() => {
-    setStep('upload');
+    setStep('choose');
+    setDataShape('game_box_score');
     setPreview(null);
     setMatches([]);
     setResult(null);
@@ -590,7 +688,11 @@ export function ImportWizardClient({
   }, []);
 
   // ---- render ----------------------------------------------------------------
-  const activeStepIdx = STEP_ORDER.indexOf(step);
+  // 'choose' and 'committing' are not in the visible stepper.
+  const stepperStep = step === 'choose' || step === 'committing' ? null : step;
+  const activeStepIdx = stepperStep ? VISIBLE_STEP_ORDER.indexOf(stepperStep) : -1;
+
+  const shapeMeta = DATA_SHAPE_META[dataShape];
 
   return (
     <LazyMotion features={domAnimation}>
@@ -605,30 +707,56 @@ export function ImportWizardClient({
           </header>
         )}
 
-        {/* Stepper */}
-        <ol className="mb-6 flex flex-wrap items-center gap-2" aria-label="Import steps">
-          {STEP_ORDER.filter((s) => s !== 'committing').map((s) => {
-            const idx = STEP_ORDER.indexOf(s);
-            const state =
-              idx < activeStepIdx ? 'done' : idx === activeStepIdx ? 'active' : 'upcoming';
-            return (
-              <li
-                key={s}
-                className={[
-                  'rounded-full px-3 py-1 text-sm font-medium transition-colors',
-                  state === 'active'
-                    ? 'bg-primary-600 text-white'
-                    : state === 'done'
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'bg-cream-200 text-warm-500',
-                ].join(' ')}
-                aria-current={state === 'active' ? 'step' : undefined}
+        {/* Stepper — hidden on the 'choose' step (pre-wizard selection). */}
+        {step !== 'choose' && (
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            {/* Shape badge — shows what the coach chose. */}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">
+              {shapeMeta.label}
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="Change data shape"
+                onClick={() => { setStep('choose'); setError(null); }}
+                className="ml-0.5 rounded-full p-0.5 hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
               >
-                {STEP_LABELS[s]}
-              </li>
-            );
-          })}
-        </ol>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  width={11}
+                  height={11}
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
+                </svg>
+              </Button>
+            </span>
+            <ol className="flex flex-wrap items-center gap-2" aria-label="Import steps">
+              {VISIBLE_STEP_ORDER.map((s) => {
+                const idx = VISIBLE_STEP_ORDER.indexOf(s);
+                const state =
+                  idx < activeStepIdx ? 'done' : idx === activeStepIdx ? 'active' : 'upcoming';
+                return (
+                  <li
+                    key={s}
+                    className={[
+                      'rounded-full px-3 py-1 text-sm font-medium transition-colors',
+                      state === 'active'
+                        ? 'bg-primary-600 text-white'
+                        : state === 'done'
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'bg-cream-200 text-warm-500',
+                    ].join(' ')}
+                    aria-current={state === 'active' ? 'step' : undefined}
+                  >
+                    {STEP_LABELS[s]}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
 
         {error && (
           <div
@@ -640,10 +768,116 @@ export function ImportWizardClient({
         )}
 
         <m.div key={step} {...fadeProps}>
+          {/* STEP: CHOOSE ---------------------------------------------------- */}
+          {step === 'choose' && (
+            <div className="space-y-4">
+              <div className="mb-2">
+                <h2 className="text-2xl font-semibold text-warm-900">What are you uploading?</h2>
+                <p className="mt-1.5 text-warm-600">
+                  Choose the data shape that matches your file. Each shape targets a different
+                  table and dedup model.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {(Object.values(DATA_SHAPE_META) as DataShapeMeta[]).map((meta) => (
+                  <Button
+                    key={meta.shape}
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setDataShape(meta.shape);
+                      if (meta.redirectToEventLevel && onRequestEventLevel) {
+                        onRequestEventLevel();
+                      } else {
+                        setStep('upload');
+                      }
+                    }}
+                    className={[
+                      'group relative flex flex-col gap-2 rounded-2xl border px-5 py-5 text-left transition-all whitespace-normal items-start',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400',
+                      dataShape === meta.shape
+                        ? 'border-primary-300 bg-primary-50/60 shadow-sm'
+                        : 'border-warm-200 bg-white/70 hover:border-primary-200 hover:bg-primary-50/30',
+                    ].join(' ')}
+                    aria-pressed={dataShape === meta.shape}
+                  >
+                    <span className="text-base font-semibold text-warm-900">{meta.label}</span>
+                    <span className="text-sm text-warm-600">{meta.subtitle}</span>
+                    <div className="mt-1 space-y-1 text-xs">
+                      <span className="flex items-center gap-1.5 text-warm-500">
+                        <span className="font-medium text-warm-700">Target</span>
+                        <code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-warm-600">
+                          {meta.targetTable.split(' / ')[0]}
+                        </code>
+                        {meta.targetTable.includes('/') && (
+                          <code className="rounded bg-cream-200 px-1 py-0.5 font-mono text-warm-600">
+                            + pitching
+                          </code>
+                        )}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-warm-500">
+                        <span className="font-medium text-warm-700">Dedup</span>
+                        <span className="text-warm-500">{meta.dedupKey}</span>
+                      </span>
+                    </div>
+                    {meta.redirectToEventLevel && (
+                      <span className="mt-1 inline-block rounded-md bg-cream-200 px-2 py-0.5 text-xs font-medium text-warm-600">
+                        Uses Event-level wizard
+                      </span>
+                    )}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Column template preview — shows expected headers for the chosen shape. */}
+              <div className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-warm-500">
+                  Expected columns for{' '}
+                  <span className="text-warm-700">{DATA_SHAPE_META[dataShape].label}</span>
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {DATA_SHAPE_META[dataShape].columnTemplate.map((col) => (
+                    <span
+                      key={col}
+                      className="rounded-md bg-cream-200 px-2 py-0.5 font-mono text-xs text-warm-600"
+                    >
+                      {col}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-warm-400">
+                  Your file doesn&apos;t need to match exactly — column headers are mapped
+                  automatically.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* STEP: UPLOAD ---------------------------------------------------- */}
           {step === 'upload' && (
             <Card variant="overlay" hover={false} padding="lg">
               <CardContent className="space-y-5 p-0">
+                {/* Context strip — shape + target table. */}
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary-100 bg-primary-50/60 px-4 py-3">
+                  <span className="text-sm font-semibold text-primary-800">{shapeMeta.label}</span>
+                  <span className="text-warm-400">·</span>
+                  <span className="text-xs text-warm-600">
+                    Writes to{' '}
+                    <code className="rounded glass-standard px-1 py-0.5 font-mono text-xs text-warm-700">
+                      {shapeMeta.targetTable.split(' / ')[0]}
+                    </code>
+                    {shapeMeta.targetTable.includes('/') && (
+                      <>
+                        {' '}
+                        <code className="rounded glass-standard px-1 py-0.5 font-mono text-xs text-warm-700">
+                          baseball_box_score_pitching
+                        </code>
+                      </>
+                    )}
+                  </span>
+                  <span className="text-warm-400">·</span>
+                  <span className="text-xs text-warm-500">Dedup: {shapeMeta.dedupKey}</span>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <NativeSelect
@@ -691,17 +925,18 @@ export function ImportWizardClient({
                     options={STAT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
                   />
                   <Input
-                    label="Session date"
-                    type="date"
+                    label={shapeMeta.sessionTypeLabel}
+                    type={dataShape === 'season_totals' ? 'number' : 'date'}
                     value={sessionDate}
                     onChange={(e) => setSessionDate(e.target.value)}
+                    placeholder={dataShape === 'season_totals' ? String(new Date().getFullYear()) : undefined}
                   />
                   <Input
-                    label="Session name (optional)"
+                    label={dataShape === 'game_box_score' ? 'Opponent (optional)' : 'Session name (optional)'}
                     type="text"
                     value={sessionName}
                     onChange={(e) => setSessionName(e.target.value)}
-                    placeholder="e.g. vs State, Fall ball"
+                    placeholder={dataShape === 'game_box_score' ? 'e.g. vs State, Away game' : 'e.g. Fall ball session'}
                   />
                 </div>
 
@@ -727,7 +962,31 @@ export function ImportWizardClient({
                   </span>
                 </label>
 
-                <div className="flex justify-end">
+                {/* Show the expected column template for this shape so the coach
+                    can verify their file has the right columns before uploading. */}
+                <details className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-2 text-sm">
+                  <summary className="cursor-pointer py-1 font-medium text-warm-700">
+                    Expected column template
+                  </summary>
+                  <div className="mt-2 flex flex-wrap gap-1.5 pb-1">
+                    {shapeMeta.columnTemplate.map((col) => (
+                      <span
+                        key={col}
+                        className="rounded-md bg-cream-200 px-2 py-0.5 font-mono text-xs text-warm-600"
+                      >
+                        {col}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-warm-400">
+                    Column names are matched automatically — abbreviations and variations are accepted.
+                  </p>
+                </details>
+
+                <div className="flex items-center justify-between">
+                  <Button variant="ghost" onClick={() => setStep('choose')}>
+                    Back
+                  </Button>
                   <Button onClick={runPreview} isLoading={busy} disabled={!csvContent.trim()}>
                     Analyze file
                   </Button>

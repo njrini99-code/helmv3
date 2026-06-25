@@ -10,6 +10,8 @@ export { SignalInboxClient } from './SignalInboxClient';
 export type { SignalInboxClientProps } from './SignalInboxClient';
 export { SignalCard } from './SignalCard';
 export type { SignalCardProps } from './SignalCard';
+export { SignalDrillDown } from './SignalDrillDown';
+export type { SignalDrillDownProps } from './SignalDrillDown';
 export { CommandSignalStack } from './CommandSignalStack';
 export type { CommandSignalStackProps } from './CommandSignalStack';
 export {

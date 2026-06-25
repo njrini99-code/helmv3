@@ -11,6 +11,7 @@ import {
   type PlayerMatch,
 } from '@/lib/baseball/csv-utils';
 import { logServerError } from '@/lib/server-error-logger';
+import { fromUntyped } from '@/lib/supabase/untyped';
 
 // Re-export types and utilities for backward compatibility
 export { parseCSV, findBestPlayerMatch, type CSVRow, type PlayerMatch };
@@ -296,11 +297,22 @@ export async function uploadStatsCSV(
 /**
  * Manually resolve unmatched player names
  */
+// W5a HONESTY FIX — resolveUnmatchedPlayers.
+//
+// The legacy flat upload path (uploadStatsCSV) does NOT store the original CSV
+// body — only a processed row count. Re-processing unmatched players requires
+// the raw file, which was never retained for these uploads. Persisting manual
+// match assignments and re-ingesting against the stored body is implemented in
+// the NEW import path (actions/imports.ts → commitImport, which uses
+// rawFileBody + baseball_import_raw_file_and_hash). The legacy path cannot be
+// re-processed here without the original file.
+//
+// This function does NOT pretend to succeed. It surfaces the honest constraint
+// so callers can disable / relabel the control and prompt the user to re-upload.
 export async function resolveUnmatchedPlayers(
   uploadId: string,
-   
-  _mappings: Array<{ csvName: string; playerId: string }> // Reserved: will be used when CSV re-processing is implemented
-): Promise<{ success: boolean; error?: string }> {
+  _mappings: Array<{ csvName: string; playerId: string }>,
+): Promise<{ success: boolean; error?: string; reason?: 'original_file_not_stored' }> {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -308,23 +320,105 @@ export async function resolveUnmatchedPlayers(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Get the upload record
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: upload } = await (supabase as any)
     .from('baseball_stat_uploads')
-    .select('*')
+    .select('id, import_run_id')
     .eq('id', uploadId)
-    .single() as { data: BaseballStatUpload | null };
+    .single() as { data: { id: string; import_run_id: string | null } | null };
 
   if (!upload) {
     return { success: false, error: 'Upload not found' };
   }
 
-  // This would require storing the original CSV data to re-process
-  // For now, return success as a placeholder
-  revalidatePath('/baseball/dashboard/command-center');
+  // Check whether this upload was done via the new import path, which DOES
+  // preserve the original file (import_run_id is set + file_hash on the run).
+  if (upload.import_run_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: run } = await (supabase as any)
+      .from('baseball_import_runs')
+      .select('id, file_hash')
+      .eq('id', upload.import_run_id)
+      .maybeSingle() as { data: { id: string; file_hash: string | null } | null };
 
-  return { success: true };
+    if (run?.file_hash) {
+      // New import path with preserved file — re-processing is possible via
+      // the imports.ts previewImport / commitImport path. Direct the caller
+      // there instead of duplicating that logic here.
+      return {
+        success: false,
+        error:
+          'This upload was created with the new import system. Re-resolve unmatched players by re-opening the import run from Recent imports and re-committing with updated player matches.',
+        reason: 'original_file_not_stored',
+      };
+    }
+  }
+
+  // Legacy upload: no file body stored — honest refusal.
+  return {
+    success: false,
+    error:
+      'Re-processing needs the original file (not stored for this upload). Re-upload the same file from Import Center to match the remaining players.',
+    reason: 'original_file_not_stored',
+  };
+}
+
+// W5a HONESTY FIX — reprocessUpload.
+//
+// The legacy upload path does not store the raw file body. Re-processing is a
+// no-op for any upload created before the new import path (which DOES store
+// files via baseball_import_raw_file_and_hash). This function returns an
+// honest failure so callers can disable / relabel the button rather than
+// showing a success toast for a silent no-op.
+export async function reprocessUpload(
+  uploadId: string,
+): Promise<{ success: boolean; error?: string; reason?: 'original_file_not_stored' }> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: upload } = await (supabase as any)
+    .from('baseball_stat_uploads')
+    .select('id, import_run_id')
+    .eq('id', uploadId)
+    .single() as { data: { id: string; import_run_id: string | null } | null };
+
+  if (!upload) {
+    return { success: false, error: 'Upload not found' };
+  }
+
+   
+  const rawFileExists = upload.import_run_id
+    ? await fromUntyped(supabase, 'baseball_import_runs')
+        .select('file_hash')
+        .eq('id', upload.import_run_id)
+        .maybeSingle()
+        .then(({ data }: { data: { file_hash: string | null } | null }) => !!data?.file_hash)
+    : false;
+
+  if (!rawFileExists) {
+    // Honest refusal — never a silent no-op with a success toast.
+    return {
+      success: false,
+      error:
+        'Re-processing needs the original file (not stored yet). Re-upload the same file from Import Center to apply updated settings.',
+      reason: 'original_file_not_stored',
+    };
+  }
+
+  // The file IS stored — re-processing would require replaying commitImport with
+  // the stored body. That path is intentionally NOT duplicated here; direct the
+  // caller to re-commit via the Import Center.
+  return {
+    success: false,
+    error:
+      'Re-processing this run requires re-opening it in the Import Center and re-committing with updated player matches.',
+    reason: 'original_file_not_stored',
+  };
 }
 
 // ============================================================================

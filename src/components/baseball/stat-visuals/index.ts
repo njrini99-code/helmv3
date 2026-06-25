@@ -129,6 +129,14 @@ export {
   type StatVisualSavedView,
 } from './StatVisualsSection';
 
+// ---- Arm strength + speed/decision -----------------------------------------
+export {
+  ArmBoard,
+  SpeedDecisionBoard,
+  type ArmBoardProps,
+  type SpeedDecisionBoardProps,
+} from './SpeedArmVisuals';
+
 // Saved-view persistence hook — wires the gallery to baseball_stat_visual_views
 // (the stat-visual-views server actions). Surfaces mount it with one line.
 export {

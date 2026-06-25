@@ -22,7 +22,8 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
-import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
+import { resolveBaseballCapabilities, hasBaseballCapability } from '@/lib/baseball/capabilities';
+import { convertSignalToAction } from '@/app/baseball/actions/signals';
 import { loadAgendaItems, loadDecisionLedger } from '@/lib/baseball/read-models/decision-room/agenda-ledger';
 import { loadInsights } from '@/lib/baseball/read-models/decision-room/insights';
 import { loadEffectivenessReviews } from '@/lib/baseball/read-models/decision-room/effectiveness';
@@ -680,6 +681,111 @@ export const recordDecisionNote = withBaseballAction(
     }
 
     revalidatePath(DECISION_ROOM_PATH);
+    return { success: true };
+  },
+);
+
+/**
+ * [W6f] Convert a Decision Room agenda item's source signal into a practice
+ * block. Wraps `convertSignalToAction` with `actionType:'practice_block'` and
+ * appends a `converted_practice` entry to `baseball_decision_log` so the ledger
+ * records the decision ("staff decided to address this in practice").
+ *
+ * Capability: can_manage_settings (Decision Room gate) AND can_manage_practice
+ * (practice subsystem gate). We pre-check the practice capability before
+ * delegating so a denied conversion never leaves an orphan ledger entry.
+ *
+ * Target table: `baseball_practice_blocks` (materialized by
+ * `materializePracticeBlockFromSignal` inside `convertSignalToAction`). No
+ * additive migration required — the table and the `converted_practice` ledger
+ * kind already exist (migration 20260624000310).
+ */
+export const convertSignalToPracticeBlock = withBaseballAction(
+  'convertSignalToPracticeBlock',
+  {
+    featureArea: 'baseball-decision-room',
+    requiredCapability: 'can_manage_settings',
+  },
+  async (
+    ctx,
+    args: {
+      /** The signal to materialize as a practice block. */
+      signalId: string;
+      /** Block title — defaults to the agenda item title. */
+      title: string;
+      /** Optional coach context for the block. */
+      detail: string | null;
+    },
+  ): Promise<DecisionRoomMutationResult> => {
+    // Pre-check: the practice subsystem requires can_manage_practice in
+    // addition to the decision-room capability gate above. Check before the
+    // conversion so a denied call never writes a partial ledger row.
+    const canPractice = await hasBaseballCapability(
+      ctx.targetTeamId,
+      'can_manage_practice',
+    );
+    if (!canPractice) {
+      return {
+        success: false,
+        error: 'You do not have permission to create practice blocks.',
+      };
+    }
+
+    // Delegate the signal→practice_block materialization to the canonical
+    // signals engine. It handles: inserting the baseball_actions row, calling
+    // materializePracticeBlockFromSignal, stamping target_table/target_id
+    // back on the action, and flipping the signal disposition to 'converted'.
+    const convertResult = await convertSignalToAction({
+      signalId: args.signalId,
+      actions: [
+        {
+          actionType: 'practice_block',
+          title: args.title,
+          detail: args.detail ?? null,
+          visibility: 'staff_only',
+        },
+      ],
+    });
+
+    if (!convertResult.success) {
+      return {
+        success: false,
+        error: convertResult.error ?? 'Could not create the practice block.',
+      };
+    }
+
+    // Append a `converted_practice` entry to the Decision Ledger so the room
+    // records "staff decided to address this in practice". The action_id
+    // links back to the baseball_actions row created above (first id returned).
+    const supabase = (await createClient()) as unknown as LooseClient;
+    const actionId = convertResult.ids?.[0] ?? null;
+
+    const { error: ledgerErr } = await supabase
+      .from('baseball_decision_log')
+      .insert({
+        team_id: ctx.targetTeamId,
+        decision_kind: 'converted_practice',
+        title: `Practice block: ${args.title}`,
+        detail: args.detail ?? null,
+        subject_table: 'baseball_signals',
+        subject_id: args.signalId,
+        source_signal_id: args.signalId,
+        action_id: actionId,
+        decided_by: ctx.user.id,
+      });
+
+    if (ledgerErr) {
+      // The practice block was already materialized. Surface a soft warning
+      // but treat the conversion as successful — the ledger write is secondary.
+      revalidatePath(DECISION_ROOM_PATH);
+      return {
+        success: true,
+        error: 'Practice block created, but the decision ledger entry could not be recorded.',
+      };
+    }
+
+    revalidatePath(DECISION_ROOM_PATH);
+    revalidatePath('/baseball/dashboard/practice');
     return { success: true };
   },
 );

@@ -37,6 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconPlus, IconUsers, IconUserPlus, IconUserX, IconFilter,
   IconSparkles, IconTrash, IconCheck, IconBolt,
@@ -90,9 +91,10 @@ interface Props {
   groups: StrengthGroupListItem[];
   roster: PlayerRuleAttributes[];
   defaultGroupsPresent: number;
+  isLoading?: boolean;
 }
 
-export function StrengthGroupsClient({ groups, roster, defaultGroupsPresent }: Props) {
+export function StrengthGroupsClient({ groups, roster, defaultGroupsPresent, isLoading = false }: Props) {
   const activeGroups = useMemo(() => groups.filter((g) => g.is_active), [groups]);
   const [selectedId, setSelectedId] = useState<string | null>(activeGroups[0]?.id ?? null);
   const selected = useMemo(
@@ -100,6 +102,72 @@ export function StrengthGroupsClient({ groups, roster, defaultGroupsPresent }: P
     [activeGroups, selectedId],
   );
   const prefersReducedMotion = useReducedMotion();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6" aria-busy="true" aria-label="Loading strength groups…">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-56" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-28 rounded-xl" />
+            <Skeleton className="h-9 w-32 rounded-xl" />
+          </div>
+        </div>
+        {/* Three-pane layout skeleton */}
+        <div className="grid gap-5 lg:grid-cols-[16rem_1fr_18rem]">
+          {/* Left pane */}
+          <div className="rounded-2xl border border-warm-100 glass-standard p-3 space-y-2">
+            <Skeleton className="h-4 w-20 mb-3" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-xl p-2.5"
+                style={{ animationDelay: `${i * 50}ms` }}
+              >
+                <Skeleton variant="circular" className="w-7 h-7 flex-shrink-0" />
+                <div className="flex-1 space-y-1">
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Center pane */}
+          <div className="rounded-2xl border border-warm-100 glass-standard p-4 space-y-3">
+            <Skeleton className="h-5 w-32" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3" style={{ animationDelay: `${i * 50}ms` }}>
+                <Skeleton variant="circular" className="w-8 h-8 flex-shrink-0" />
+                <div className="flex-1 space-y-1">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-7 w-16 rounded-lg" />
+              </div>
+            ))}
+          </div>
+          {/* Right pane */}
+          <div className="rounded-2xl border border-warm-100 glass-standard p-4 space-y-3">
+            <Skeleton className="h-5 w-28" />
+            <Skeleton className="h-4 w-48" />
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="grid grid-cols-2 gap-2" style={{ animationDelay: `${i * 60}ms` }}>
+                  <Skeleton className="h-9 rounded-xl" />
+                  <Skeleton className="h-9 rounded-xl" />
+                </div>
+              ))}
+            </div>
+            <Skeleton className="h-9 w-full rounded-xl mt-2" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -268,10 +336,11 @@ function GroupListPane({
           const active = g.id === selectedId;
           return (
             <li key={g.id}>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => onSelect(g.id)}
-                className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 ${
+                className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors focus-visible:ring-inset ${
                   active ? 'bg-primary-50/60' : 'hover:bg-warm-50'
                 }`}
                 aria-current={active ? 'true' : undefined}
@@ -280,14 +349,14 @@ function GroupListPane({
                   <div className={`truncate text-sm font-medium ${active ? 'text-primary-800' : 'text-warm-900'}`}>
                     {g.name}
                   </div>
-                  <span className={`mt-0.5 inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${meta.cls}`}>
+                  <span className={`mt-0.5 inline-flex items-center rounded-full border px-1.5 py-0.5 text-micro font-medium ${meta.cls}`}>
                     {meta.label}
                   </span>
                 </div>
                 <span className="shrink-0 rounded-full bg-warm-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-warm-700">
                   {g.member_count}
                 </span>
-              </button>
+              </Button>
             </li>
           );
         })}
@@ -386,7 +455,7 @@ function AthletePane({ group, roster }: { group: StrengthGroupListItem; roster: 
       ) : (
         <div className="max-h-[28rem] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-white/95 backdrop-blur">
+            <thead className="sticky top-0 glass-standard backdrop-blur">
               <tr className="border-b border-warm-100 text-left text-xs font-medium text-warm-400">
                 <th className="px-4 py-2">Athlete</th>
                 <th className="px-2 py-2">Pos</th>
@@ -516,7 +585,7 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
         <h2 className="flex items-center gap-1.5 text-base font-semibold text-warm-900">
           <IconBolt size={16} className="text-primary-600" /> Rule builder
         </h2>
-        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${TYPE_META[group.group_type].cls}`}>
+        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-medium ${TYPE_META[group.group_type].cls}`}>
           {TYPE_META[group.group_type].label}
         </span>
       </div>
@@ -548,17 +617,18 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
               {POSITION_OPTIONS.map((pos) => {
                 const on = rule.positions?.includes(pos);
                 return (
-                  <button
+                  <Button
                     key={pos}
                     type="button"
+                    variant="ghost"
                     onClick={() => toggleArray('positions', pos)}
                     aria-pressed={Boolean(on)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
-                      on ? 'border-primary-300 bg-primary-100 text-primary-800' : 'border-warm-200 bg-white text-warm-600 hover:bg-warm-50'
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      on ? 'border-primary-300 bg-primary-100 text-primary-800' : 'border-warm-200 bg-cream-50 text-warm-600 hover:bg-warm-50'
                     }`}
                   >
                     {pos}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -571,17 +641,18 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
               {AVAILABILITY_OPTIONS.map((opt) => {
                 const on = rule.availability_statuses?.includes(opt.value);
                 return (
-                  <button
+                  <Button
                     key={opt.value}
                     type="button"
+                    variant="ghost"
                     onClick={() => toggleArray('availability_statuses', opt.value)}
                     aria-pressed={Boolean(on)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
-                      on ? 'border-primary-300 bg-primary-100 text-primary-800' : 'border-warm-200 bg-white text-warm-600 hover:bg-warm-50'
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      on ? 'border-primary-300 bg-primary-100 text-primary-800' : 'border-warm-200 bg-cream-50 text-warm-600 hover:bg-warm-50'
                     }`}
                   >
                     {opt.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

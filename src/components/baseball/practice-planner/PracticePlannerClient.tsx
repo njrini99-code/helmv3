@@ -36,11 +36,16 @@ import {
   Inbox,
   X,
   AlertCircle,
+  AlertTriangle,
 } from 'lucide-react';
 
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { NativeSelect } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
@@ -50,8 +55,10 @@ import {
   savePractice,
   publishPractice,
   recordPracticeAttendance,
+  getClassConflictsForPractice,
   type PracticeBlockInput,
   type AttendanceEntryInput,
+  type ClassConflictSummary,
 } from '@/app/baseball/actions/practice';
 import type { PracticeValidationResult } from '@/lib/baseball/practice-validation';
 import {
@@ -74,6 +81,7 @@ import { PracticeIntelligenceBoard } from './PracticeIntelligenceBoard';
 import { ScrimmagePanel } from './ScrimmagePanel';
 import { BlockObjectiveEditor } from './BlockObjectiveEditor';
 import { PracticeRecapPanel } from './PracticeRecapPanel';
+import { PracticePrintExport } from './PracticePrintExport';
 import type { ScrimmageRosterPlayer } from './ScrimmageLineupBuilder';
 
 interface RosterPlayer {
@@ -124,7 +132,7 @@ function fmtOffset(startMin: number, durationMin: number) {
 function PracticeCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative overflow-clip rounded-2xl border border-warm-200 bg-white p-5"
+      className="relative overflow-clip rounded-2xl border border-warm-200 bg-cream-50 p-5"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -194,6 +202,25 @@ export function PracticePlannerClient() {
     }
     const res = await getPracticeObjectives({ practiceId });
     setObjectives(res.success ? (res.data ?? []) : []);
+  }, []);
+
+  // Class-conflict summary for the practice currently being edited.
+  // Loaded best-effort when an existing practice is opened in the editor.
+  // Never fabricated: if the fetch fails or the practice has no ID, byPlayer={}.
+  const [classConflicts, setClassConflicts] = useState<ClassConflictSummary>({ byPlayer: {} });
+
+  const loadClassConflicts = useCallback(async (practiceId: string | null) => {
+    if (!practiceId) {
+      setClassConflicts({ byPlayer: {} });
+      return;
+    }
+    try {
+      const res = await getClassConflictsForPractice({ practiceId });
+      setClassConflicts(res.success && res.data ? res.data : { byPlayer: {} });
+    } catch {
+      // Non-fatal: leave byPlayer empty (no fake flags).
+      setClassConflicts({ byPlayer: {} });
+    }
   }, []);
 
   const loadPractices = useCallback(async () => {
@@ -290,6 +317,7 @@ export function PracticePlannerClient() {
     setSelectedBlockKey(null);
     setValidation(null);
     setObjectives([]);
+    setClassConflicts({ byPlayer: {} });
   };
 
   const startNew = () => {
@@ -351,6 +379,7 @@ export function PracticePlannerClient() {
     setBlocks(mapped);
     setSelectedBlockKey(mapped[0]?.key ?? null);
     void loadObjectives(p.id);
+    void loadClassConflicts(p.id);
   };
 
   const addBlock = () => {
@@ -548,14 +577,16 @@ export function PracticePlannerClient() {
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{error}</span>
                 </p>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => setError(null)}
                   aria-label="Dismiss error"
-                  className="-mr-1 -mt-0.5 shrink-0 rounded-md p-1 text-error/70 transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/40"
+                  className="-mr-1 -mt-0.5 shrink-0 rounded-md p-1 text-error/70 transition-colors hover:bg-error/10 hover:text-error"
                 >
                   <X className="h-3.5 w-3.5" />
-                </button>
+                </Button>
               </CardContent>
             </Card>
           </m.div>
@@ -571,26 +602,22 @@ export function PracticePlannerClient() {
             <Card>
               <CardContent className="space-y-5 py-6">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-medium text-warm-700">Practice title</span>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Tuesday — Defense & Baserunning"
-                      className="w-full rounded-xl border border-warm-200 bg-cream-50 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-medium text-warm-700">Focus (optional)</span>
-                    <input
-                      type="text"
-                      value={focus}
-                      onChange={(e) => setFocus(e.target.value)}
-                      placeholder="Cutoffs, first-step reads"
-                      className="w-full rounded-xl border border-warm-200 bg-cream-50 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
-                    />
-                  </label>
+                  <Input
+                    label="Practice title"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Tuesday — Defense & Baserunning"
+                    className="rounded-xl border border-warm-200 bg-cream-50 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  />
+                  <Input
+                    label="Focus (optional)"
+                    type="text"
+                    value={focus}
+                    onChange={(e) => setFocus(e.target.value)}
+                    placeholder="Cutoffs, first-step reads"
+                    className="rounded-xl border border-warm-200 bg-cream-50 px-3 py-2 text-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  />
                 </div>
 
                 {/* Time rail + block detail editor (left) and Intelligence Board (right) */}
@@ -634,33 +661,31 @@ export function PracticePlannerClient() {
                           </Button>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-12">
-                          <label className="sm:col-span-7">
-                            <span className="mb-1 block text-xs font-medium text-warm-600">Headline</span>
-                            <input
+                          <div className="sm:col-span-7">
+                            <Input
+                              label="Headline"
                               type="text"
                               value={selectedBlock.activity}
                               onChange={(e) => updateBlock(selectedBlock.key, { activity: e.target.value })}
                               placeholder="Two-strike chase station"
-                              className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
                             />
-                          </label>
-                          <label className="sm:col-span-5">
-                            <span className="mb-1 block text-xs font-medium text-warm-600">Station type</span>
-                            <input
+                          </div>
+                          <div className="sm:col-span-5">
+                            <Input
+                              label="Station type"
                               type="text"
                               value={selectedBlock.stationType ?? ''}
                               onChange={(e) =>
                                 updateBlock(selectedBlock.key, { stationType: e.target.value || null })
                               }
                               placeholder="hitting / defense / bullpen"
-                              className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
                             />
-                          </label>
-                          <label className="sm:col-span-12">
-                            <span className="mb-1 block text-xs font-medium text-warm-600">
-                              Description (optional)
-                            </span>
-                            <textarea
+                          </div>
+                          <div className="sm:col-span-12">
+                            <Textarea
+                              label="Description (optional)"
                               value={selectedBlock.description ?? ''}
                               onChange={(e) =>
                                 updateBlock(selectedBlock.key, { description: e.target.value || null })
@@ -669,39 +694,39 @@ export function PracticePlannerClient() {
                               placeholder="Group A sees breaking balls below the zone; record swing/take decisions."
                               className="w-full resize-none rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
                             />
-                          </label>
-                          <label className="sm:col-span-4">
-                            <span className="mb-1 block text-xs font-medium text-warm-600">Location</span>
-                            <input
+                          </div>
+                          <div className="sm:col-span-4">
+                            <Input
+                              label="Location"
                               type="text"
                               value={selectedBlock.location ?? ''}
                               onChange={(e) =>
                                 updateBlock(selectedBlock.key, { location: e.target.value || null })
                               }
                               placeholder="Field 2 / Cage 1"
-                              className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
                             />
-                          </label>
-                          <label className="sm:col-span-4">
-                            <span className="mb-1 block text-xs font-medium text-warm-600">Group</span>
-                            <input
+                          </div>
+                          <div className="sm:col-span-4">
+                            <Input
+                              label="Group"
                               type="text"
                               value={selectedBlock.groupLabel ?? ''}
                               onChange={(e) =>
                                 updateBlock(selectedBlock.key, { groupLabel: e.target.value || null })
                               }
                               placeholder="Hitters 1–6"
-                              className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
                             />
-                          </label>
+                          </div>
                           <div className="sm:col-span-4">
-                            <span className="mb-1 block text-xs font-medium text-warm-600">Staff owner</span>
-                            <select
+                            <NativeSelect
+                              label="Staff owner"
                               value={selectedBlock.coachOwnerId ?? ''}
                               onChange={(e) =>
                                 updateBlock(selectedBlock.key, { coachOwnerId: e.target.value || null })
                               }
-                              className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
                               aria-label="Assigned staff"
                             >
                               <option value="">Staff…</option>
@@ -710,57 +735,50 @@ export function PracticePlannerClient() {
                                   {s.name}
                                 </option>
                               ))}
-                            </select>
+                            </NativeSelect>
                           </div>
-                          <label className="sm:col-span-4">
-                            <span className="mb-1 block text-xs font-medium text-warm-600">Equipment</span>
-                            <input
+                          <div className="sm:col-span-4">
+                            <Input
+                              label="Equipment"
                               type="text"
                               value={selectedBlock.equipment ?? ''}
                               onChange={(e) =>
                                 updateBlock(selectedBlock.key, { equipment: e.target.value || null })
                               }
                               placeholder="Machine, screens"
-                              className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
                             />
-                          </label>
+                          </div>
                           <div className="sm:col-span-4">
-                            <span className="mb-1 block text-xs font-medium text-warm-600">Visibility</span>
-                            <select
+                            <NativeSelect
+                              label="Visibility"
                               value={selectedBlock.visibility ?? DEFAULT_VISIBILITY}
                               onChange={(e) =>
                                 updateBlock(selectedBlock.key, {
                                   visibility: e.target.value as BaseballBlockVisibility,
                                 })
                               }
-                              className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                              className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
                               aria-label="Block visibility"
                             >
                               <option value="player_visible">Players can see</option>
                               <option value="staff_only">Staff only</option>
                               <option value="restricted">Restricted</option>
-                            </select>
+                            </NativeSelect>
                           </div>
                           <div className="flex items-end sm:col-span-4">
-                            <label className="inline-flex items-center gap-2 text-xs font-medium text-warm-700">
-                              <input
-                                type="checkbox"
-                                checked={selectedBlock.isMeasured ?? false}
-                                onChange={(e) =>
-                                  updateBlock(selectedBlock.key, { isMeasured: e.target.checked })
-                                }
-                                className="h-4 w-4 rounded border-warm-300 text-primary-600 focus:ring-primary-200"
-                              />
-                              <Ruler className="h-3.5 w-3.5 text-primary-600" />
-                              Measured station
-                            </label>
+                            <Checkbox
+                              checked={selectedBlock.isMeasured ?? false}
+                              onChange={(e) =>
+                                updateBlock(selectedBlock.key, { isMeasured: e.target.checked })
+                              }
+                              label="Measured station"
+                            />
                           </div>
                           {selectedBlock.isMeasured && (
-                            <label className="sm:col-span-8">
-                              <span className="mb-1 block text-xs font-medium text-warm-600">
-                                Measurement target
-                              </span>
-                              <input
+                            <div className="sm:col-span-8">
+                              <Input
+                                label="Measurement target"
                                 type="text"
                                 value={selectedBlock.measurementTarget ?? ''}
                                 onChange={(e) =>
@@ -769,12 +787,12 @@ export function PracticePlannerClient() {
                                   })
                                 }
                                 placeholder="Track swing/take decisions"
-                                className="w-full rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
+                                className="rounded-lg border border-warm-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:outline-none"
                               />
-                            </label>
+                            </div>
                           )}
                           {selectedBlock.sourceReason && (
-                            <p className="sm:col-span-12 text-[11px] text-primary-600">
+                            <p className="sm:col-span-12 text-eyebrow text-primary-600">
                               {selectedBlock.sourceReason}
                             </p>
                           )}
@@ -799,7 +817,7 @@ export function PracticePlannerClient() {
                   </div>
 
                   {/* RIGHT: Practice Intelligence Board (signals -> blocks) */}
-                  <div className="rounded-2xl border border-warm-200 bg-white/60 p-4">
+                  <div className="rounded-2xl border border-warm-200 glass-standard p-4">
                     <PracticeIntelligenceBoard
                       signals={signals}
                       suggestions={suggestions}
@@ -877,6 +895,11 @@ export function PracticePlannerClient() {
                   onPublishToggle={(publish, cal) => handlePublishToggle(p, publish, cal)}
                   onAttendanceSaved={loadPractices}
                   onError={setError}
+                  // Conflicts loaded only for the practice currently open in the
+                  // editor. For all other cards the map is empty (no fake flags).
+                  classConflicts={
+                    editPracticeId === p.id ? classConflicts : { byPlayer: {} }
+                  }
                 />
               </m.div>
             ))}
@@ -911,6 +934,7 @@ function PracticeCard({
   onPublishToggle,
   onAttendanceSaved,
   onError,
+  classConflicts,
 }: {
   practice: BaseballPracticeWithDetail;
   isCoach: boolean;
@@ -924,6 +948,8 @@ function PracticeCard({
   ) => void;
   onAttendanceSaved: () => void | Promise<void>;
   onError: (msg: string | null) => void;
+  /** Class-conflict summary for this practice (empty map = no data / no conflicts). */
+  classConflicts: ClassConflictSummary;
 }) {
   const published = practice.status === 'published';
   const isBacklog = practice.is_backlog === true;
@@ -1014,6 +1040,14 @@ function PracticeCard({
                   You: {ATTENDANCE_STATUS_DISPLAY[ownAttendanceStatus].label}
                 </span>
               )}
+              {/* Class-conflict badge (coach only, shown when conflict data is loaded). */}
+              {isCoach && Object.keys(classConflicts.byPlayer).length > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                  <AlertTriangle className="h-3 w-3" />
+                  {Object.keys(classConflicts.byPlayer).length} player
+                  {Object.keys(classConflicts.byPlayer).length !== 1 ? 's' : ''} with class conflicts
+                </span>
+              )}
             </div>
             {practice.focus && <p className="mt-1 text-sm text-warm-500">{practice.focus}</p>}
             {isBacklog && (
@@ -1040,6 +1074,10 @@ function PracticeCard({
                   Add to calendar
                 </Button>
               )}
+              {/* Export + share affordance — visible on published plans only */}
+              {published && !isBacklog && (
+                <PracticePrintExport practice={practice} />
+              )}
               {!isBacklog && (
                 <Button
                   variant={published ? 'outline' : 'primary'}
@@ -1065,34 +1103,35 @@ function PracticeCard({
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary-100 bg-primary-50/40 px-3 py-2.5">
             <CalendarPlus className="h-4 w-4 shrink-0 text-primary-600" />
             <span className="text-xs font-medium text-warm-700">Add to calendar when publishing:</span>
-            <input
+            <Input
               type="date"
               value={calDate}
               onChange={(e) => setCalDate(e.target.value)}
               className="rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
               aria-label="Practice date"
             />
-            <input
+            <Input
               type="time"
               value={calStart}
               onChange={(e) => setCalStart(e.target.value)}
               aria-label="Start time"
               className="rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
             />
-            <input
+            <Input
               type="time"
               value={calEnd}
               onChange={(e) => setCalEnd(e.target.value)}
               aria-label="End time"
               className="rounded-lg border border-warm-200 px-2 py-1 text-sm focus:border-primary-400 focus:outline-none"
             />
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => { setShowCalendarAttach(false); setCalDate(''); setCalStart(''); setCalEnd(''); }}
               className="text-xs text-warm-400 hover:text-warm-600"
             >
               Remove
-            </button>
+            </Button>
           </div>
         )}
 
@@ -1157,7 +1196,7 @@ function PracticeCard({
                       className="flex items-center justify-between rounded-lg border border-warm-100 bg-cream-50/60 px-3 py-2"
                     >
                       <span className="text-sm text-warm-800">{pl.name}</span>
-                      <select
+                      <NativeSelect
                         value={attendance[pl.id] ?? ''}
                         onChange={(e) =>
                           setAttendance((a) => ({
@@ -1176,7 +1215,7 @@ function PracticeCard({
                             {o.label}
                           </option>
                         ))}
-                      </select>
+                      </NativeSelect>
                     </div>
                   ))}
                 </div>
@@ -1262,8 +1301,9 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
               key={s.id}
               className="rounded-xl border border-warm-100 bg-cream-50/60 p-3"
             >
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className="flex w-full items-center justify-between gap-2 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                 aria-expanded={isExpanded}
                 onClick={() => setExpanded(isExpanded ? null : s.id)}
@@ -1283,7 +1323,7 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
                 <span className="text-xs text-warm-400" aria-hidden>
                   {isExpanded ? '▲' : '▼'}
                 </span>
-              </button>
+              </Button>
 
               {isExpanded && s.slots.length > 0 && (
                 <div className="mt-2 space-y-1.5">
@@ -1294,13 +1334,13 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
                       .map((sl) => (
                         <div
                           key={sl.id}
-                          className="flex items-center gap-1.5 rounded-lg border border-warm-100 bg-white/70 px-2 py-1"
+                          className="flex items-center gap-1.5 rounded-lg border border-warm-100 glass-standard px-2 py-1"
                         >
-                          <span className="text-[10px] font-bold text-warm-400">
+                          <span className="text-micro font-bold text-warm-400">
                             {sl.defensive_position}
                           </span>
                           {sl.batting_order != null && (
-                            <span className="text-[10px] tabular-nums text-warm-400">
+                            <span className="text-micro tabular-nums text-warm-400">
                               #{sl.batting_order}
                             </span>
                           )}
@@ -1308,7 +1348,7 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
                             {sl.player_name}
                           </span>
                           {sl.side && (
-                            <span className={`text-[9px] font-semibold uppercase ${sl.side === 'blue' ? 'text-primary-600' : 'text-warm-500'}`}>
+                            <span className={`text-microbadge font-semibold uppercase ${sl.side === 'blue' ? 'text-primary-600' : 'text-warm-500'}`}>
                               {sl.side}
                             </span>
                           )}

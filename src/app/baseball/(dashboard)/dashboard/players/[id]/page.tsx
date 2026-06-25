@@ -2,6 +2,10 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { PlayerProfileClient } from '@/components/baseball/player-profile/PlayerProfileClient';
 import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
+import { getPlayerSnapshotCards } from '@/lib/baseball/read-models/player-snapshot-cards';
+import { getPlayerTimeline } from '@/lib/baseball/read-models/timeline';
+import { getPlayerCoachNotes } from '@/lib/baseball/read-models/coach-notes';
+import { getPlayerTasks } from '@/app/baseball/actions/tasks';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -118,9 +122,13 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .eq('status', 'active')
     .order('priority', { ascending: true }) as { data: BaseballCoachInsight[] | null };
 
-  // Get coach notes - Note: baseball_coach_notes table doesn't exist yet
-  // Using empty array until table is created
-  const notes: Array<{ id: string; note_content: string; created_at: string | null; tags: string[] | null }> = [];
+  // Parallel fetch: snapshot cards + timeline + coach notes + player tasks
+  const [snapshotResult, timelineResult, notesResult, tasksResult] = await Promise.all([
+    getPlayerSnapshotCards(team.id, playerId),
+    getPlayerTimeline(team.id, playerId),
+    getPlayerCoachNotes(team.id, playerId),
+    getPlayerTasks(playerId),
+  ]);
 
   // Get player videos
   const { data: videos } = await supabase
@@ -130,13 +138,28 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .order('created_at', { ascending: false })
     .limit(12);
 
-  // Transform notes to expected format
-  const transformedNotes = (notes || []).map(note => ({
+  // Transform coach notes from CoachNoteView to the format PlayerNotesSection expects
+  const transformedNotes = notesResult.notes.map(note => ({
     id: note.id,
-    content: note.note_content,
-    created_at: note.created_at || new Date().toISOString(),
-    note_type: note.tags?.[0] || undefined,
+    content: note.body,
+    created_at: note.createdAt,
+    note_type: note.scope,
   }));
+
+  // Transform tasks — TaskWithAssignment is an internal type in tasks.ts; extract what we need
+  const playerTasks = (tasksResult.success && tasksResult.data)
+    ? tasksResult.data.map(t => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        due_date: t.due_date,
+        priority: t.priority,
+        category: t.category,
+        created_at: t.created_at,
+        assignment_status: t.assignment_status,
+        completed_at: t.completed_at,
+      }))
+    : [];
 
   // Transform videos to expected format
   const transformedVideos = (videos || []).map(video => ({
@@ -161,10 +184,16 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       aggregates={aggregates}
       insights={insights || []}
       notes={transformedNotes}
+      notesCanAuthor={notesResult.canAuthor}
       videos={transformedVideos}
       teamId={team.id}
       teamName={team.name}
       coachId={coach.id}
+      snapshotHeader={snapshotResult.authorized ? snapshotResult.header : null}
+      timelineEvents={timelineResult.events}
+      timelineViewerRole={timelineResult.viewerRole}
+      timelineHiddenCount={timelineResult.hiddenCount}
+      tasks={playerTasks}
     />
   );
 }

@@ -3,11 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { AlertCircle, Dumbbell, ShieldCheck } from 'lucide-react';
+import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function LiftingResetPasswordPage() {
   const prefersReducedMotion = useReducedMotion();
@@ -81,12 +83,12 @@ export default function LiftingResetPasswordPage() {
       {/* Animated orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute w-[500px] h-[500px] -top-32 -right-32 rounded-full bg-gradient-to-br from-green-400/30 to-green-600/20 blur-3xl"
+          className="absolute w-[500px] h-[500px] -top-32 -right-32 rounded-full bg-gradient-to-br from-primary-400/30 to-primary-600/20 blur-3xl"
           animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.05, 1] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 15, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute w-[400px] h-[400px] -bottom-24 -left-24 rounded-full bg-gradient-to-tr from-emerald-400/25 to-green-400/20 blur-3xl"
+          className="absolute w-[400px] h-[400px] -bottom-24 -left-24 rounded-full bg-gradient-to-tr from-primary-400/25 to-primary-400/20 blur-3xl"
           animate={{ x: [0, -25, 0], y: [0, 25, 0], scale: [1, 0.95, 1] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
         />
@@ -105,7 +107,7 @@ export default function LiftingResetPasswordPage() {
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
+          className="glass-standard border border-white/20 rounded-3xl p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
         >
           {/* Logo */}
           <motion.div
@@ -117,7 +119,7 @@ export default function LiftingResetPasswordPage() {
             <div className="relative">
               <div className="absolute inset-0 bg-primary-500/20 rounded-full blur-xl scale-150" />
               <div className="relative w-14 h-14 flex items-center justify-center mb-4 bg-primary-50 rounded-2xl border border-primary-100">
-                <Dumbbell className="w-8 h-8 text-primary-600" />
+                <Image src="/helm-lifting-logo.png" alt="Helm Lifting Lab" width={56} height={56} className="object-contain" priority />
               </div>
             </div>
             <h1 className="text-xl font-bold text-warm-900">Helm Lifting Lab</h1>
@@ -159,7 +161,7 @@ export default function LiftingResetPasswordPage() {
                   </div>
                 </div>
                 <Link href="/lifting/login">
-                  <Button variant="ghost" className="w-full py-3 bg-white text-warm-700 font-medium text-sm rounded-xl border border-warm-200 hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all">
+                  <Button variant="ghost" className="w-full py-3 bg-cream-50 text-warm-700 font-medium text-sm rounded-xl border border-warm-200 hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all">
                     Back to Sign In
                   </Button>
                 </Link>
@@ -178,7 +180,7 @@ export default function LiftingResetPasswordPage() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="reset-new-password" className="text-sm font-medium text-warm-700">New Password</label>
-                  <input
+                  <Input
                     id="reset-new-password"
                     type="password"
                     value={password}
@@ -188,14 +190,14 @@ export default function LiftingResetPasswordPage() {
                     // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on a single-field auth page
                     autoFocus
                     autoComplete="new-password"
-                    className="w-full px-4 py-3 bg-white border border-warm-200 rounded-xl text-warm-900 text-base lg:text-sm placeholder:text-warm-400 transition-all focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10"
+                    className="border-warm-200 rounded-xl text-warm-900 text-base lg:text-sm placeholder:text-warm-400 transition-all focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10"
                   />
                   <PasswordStrengthIndicator password={password} />
                 </div>
 
                 <div className="space-y-1.5">
                   <label htmlFor="reset-confirm-password" className="text-sm font-medium text-warm-700">Confirm Password</label>
-                  <input
+                  <Input
                     id="reset-confirm-password"
                     type="password"
                     value={confirmPassword}
@@ -203,7 +205,7 @@ export default function LiftingResetPasswordPage() {
                     placeholder="Confirm your new password"
                     required
                     autoComplete="new-password"
-                    className={`w-full px-4 py-3 bg-white border rounded-xl text-warm-900 text-base lg:text-sm placeholder:text-warm-400 transition-all focus:outline-none focus:ring-[3px] ${
+                    className={`border rounded-xl text-warm-900 text-base lg:text-sm placeholder:text-warm-400 transition-all focus:outline-none focus:ring-[3px] ${
                       confirmPassword && confirmPassword !== password
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
                         : confirmPassword && confirmPassword === password
@@ -233,9 +235,9 @@ export default function LiftingResetPasswordPage() {
                 >
                   {loading ? (
                     <div className="flex items-center gap-1" role="status" aria-label="Updating password">
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       <span className="sr-only">Updating password...</span>
                     </div>
                   ) : (

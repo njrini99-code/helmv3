@@ -91,6 +91,10 @@ import type { DailyContractReadModel } from '@/lib/baseball/read-models/player-d
 import type { PassportReadModel } from '@/lib/baseball/read-models/player-passport';
 import { DailyContract } from '@/components/baseball/daily-contract/DailyContract';
 import { PlayerPassportCard } from '@/components/baseball/passport/PlayerPassportCard';
+import { SorenessCheckCard } from '@/components/lifting/soreness/SorenessCheckCard';
+import { WeightCheckInCard } from '@/components/lifting/weight/WeightCheckInCard';
+import { NutritionPlanCard } from '@/components/lifting/nutrition/NutritionPlanCard';
+import type { PerformanceCheckinSlot } from '@/app/baseball/(player-dashboard)/player/today/page';
 
 // -----------------------------------------------------------------------------
 // Props
@@ -105,6 +109,12 @@ interface PlayerTodayClientProps {
   activeRole: ActiveBaseballRole;
   /** ISO date (YYYY-MM-DD) the read-model treated as "today" (display only). */
   todayIso: string;
+  /**
+   * Resolved server-side: due soreness check, weight check-in, and active
+   * nutrition plan for the lifting Lab. null when the player has no athlete
+   * row or no actionable items.
+   */
+  performanceSlot: PerformanceCheckinSlot | null;
 }
 
 // -----------------------------------------------------------------------------
@@ -1064,6 +1074,60 @@ function RecentStatsSection({ stats }: { stats: PlayerTodayStat[] }) {
 }
 
 // -----------------------------------------------------------------------------
+// Performance check-in section — soreness / weight / nutrition due today
+//
+// Additive surface: only renders when performanceSlot is non-null AND at least
+// one item is actionable. Never fabricates cards or shows fake "coming soon"
+// states — when there is nothing due, this section simply doesn't appear.
+// -----------------------------------------------------------------------------
+
+function PerformanceCheckinSection({ slot }: { slot: PerformanceCheckinSlot }) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const hasSoreness = slot.sorenessToday !== null;
+  const hasWeight = slot.weightToday !== null;
+  const hasNutrition = slot.nutritionPlan !== null;
+
+  if (!hasSoreness && !hasWeight && !hasNutrition) return null;
+
+  return (
+    <section>
+      <SectionHeader
+        icon={<IconActivity size={16} />}
+        title="Daily Check-Ins"
+      />
+      <div className="space-y-3">
+        {hasSoreness && slot.sorenessToday && (
+          <SorenessCheckCard
+            request={slot.sorenessToday.request}
+            orgId={slot.orgId}
+            athleteId={slot.athleteId}
+            alreadySubmitted={slot.sorenessToday.checkin !== null}
+            sorenessStatus={slot.sorenessToday.checkin?.soreness_status ?? null}
+          />
+        )}
+
+        {hasWeight && slot.weightToday && (
+          <WeightCheckInCard
+            orgId={slot.orgId}
+            athleteId={slot.athleteId}
+            requestId={slot.weightToday.pendingRequestId}
+            dueDate={slot.weightToday.pendingDueDate ?? today}
+          />
+        )}
+
+        {hasNutrition && slot.nutritionPlan && (
+          <NutritionPlanCard
+            card={slot.nutritionPlan}
+            orgId={slot.orgId}
+          />
+        )}
+      </div>
+    </section>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // Lift + check-in input surface (the daily loop's execution card)
 // -----------------------------------------------------------------------------
 
@@ -1259,13 +1323,13 @@ function CoachNotesSection({ feed }: { feed: PlayerTodayReadModel['coachNotes'] 
                       {note.body}
                     </p>
                     {isLong && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
                         onClick={() => toggleNote(note.id)}
                         className="mt-1 text-eyebrow font-semibold text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                       >
                         {isOpen ? 'Show less' : 'Read more'}
-                      </button>
+                      </Button>
                     )}
                     <p className="mt-1.5 text-eyebrow text-warm-400">
                       {new Date(note.createdAt).toLocaleDateString([], {
@@ -1456,7 +1520,7 @@ function PrimaryCtaRow({
             ? '/baseball/dashboard/practice'
             : '/baseball/dashboard/calendar'
         }
-        className="inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-white px-4 py-2 text-sm font-semibold text-warm-700 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+        className="inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-cream-50 px-4 py-2 text-sm font-semibold text-warm-700 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
       >
         <IconCalendar size={15} />
         {practiceId ? 'View Today Plan' : 'View Schedule'}
@@ -1494,6 +1558,7 @@ export function PlayerTodayClient({
   passport,
   activeRole,
   todayIso,
+  performanceSlot,
 }: PlayerTodayClientProps) {
   // Hooks run unconditionally before any early return (rules-of-hooks).
   const reduceMotion = useReducedMotion();
@@ -1584,6 +1649,13 @@ export function PlayerTodayClient({
                   important thing a player DOES each day, and completing it
                   compounds into the Passport development story. */}
               <DailyContract model={dailyContract} />
+              {/* Performance check-ins (soreness / weight / nutrition) — due items
+                  from the Helm Lifting Lab. Rendered just after the Daily Contract
+                  so scheduled health checks are a top daily priority. Only visible
+                  when the player has an athlete row AND at least one due item. */}
+              {performanceSlot && (
+                <PerformanceCheckinSection slot={performanceSlot} />
+              )}
               {/* From Your Coach — the player-side of source -> signal -> action.
                   A signal a coach converted into a player task lands here as a
                   real, completable obligation. Sits right under the Daily

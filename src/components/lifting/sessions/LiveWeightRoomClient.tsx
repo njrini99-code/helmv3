@@ -10,15 +10,24 @@
 //
 // WRITE MODEL: optimistic with rollback. Changes apply to local state
 // immediately, fire the server action, and on failure revert + toast error.
+//
+// REALTIME: Supabase postgres_changes subscriptions on helm_lifting_set_results
+// and helm_lifting_sessions, both filtered by organization_id. On any event,
+// router.refresh() re-runs the server component to rebuild the denormalised
+// HelmLiftingLiveAthleteRow[] from the DB. Channel names include a random
+// suffix to avoid the postgres_changes-after-subscribe collision.
 // =============================================================================
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useState, useTransition, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { IconDumbbell, IconCheck, IconAlertCircle, IconUsers, IconRefresh } from '@/components/icons';
 import {
   advanceSessionLifecycle,
@@ -53,14 +62,130 @@ interface Props {
   exerciseLibrary: Array<{ id: string; name: string; category: string | null }>;
   orgId: string;
   canEdit: boolean;
+  loading?: boolean;
 }
 
-export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props) {
+function LiveWeightRoomSkeleton() {
+  return (
+    <div className="flex h-screen flex-col bg-[#FFFEFA]">
+      {/* Sticky header skeleton */}
+      <header className="sticky top-0 z-20 border-b border-warm-100 glass-standard backdrop-blur-xl px-6 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-5 rounded" />
+              <Skeleton className="h-5 w-40" />
+            </div>
+            <div className="hidden sm:flex items-center gap-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-20 rounded-lg" />
+        </div>
+        {/* Group tabs skeleton */}
+        <div className="mt-2 flex items-center gap-1.5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-6 w-16 rounded-full" />
+          ))}
+        </div>
+      </header>
+      {/* Athlete grid skeleton */}
+      <main className="flex-1 overflow-y-auto p-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-warm-100 glass-standard p-4 space-y-3"
+              style={{ animationDelay: `${i * 40}ms` }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-10" />
+                </div>
+                <Skeleton className="h-1.5 w-full rounded-full" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading = false }: Props) {
+  // All hooks must be called unconditionally before any early return.
   const prefersReducedMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
   const [athletes, setAthletes] = useState(initialAthletes);
   const [selectedAthleteId, setSelectedAthleteId] = useState<string | null>(null);
   const [groupFilter, setGroupFilter] = useState<string | null>(null);
+  const router = useRouter();
+  const supabaseRef = useRef(createClient());
+
+  // Sync local state when the server component re-renders with fresh data
+  // (triggered by router.refresh() from the realtime subscription below).
+  useEffect(() => {
+    setAthletes(initialAthletes);
+  }, [initialAthletes]);
+
+  // -------------------------------------------------------------------------
+  // Realtime: subscribe to helm_lifting_set_results + helm_lifting_sessions,
+  // both scoped to this org. Each event triggers router.refresh() so the
+  // server component re-runs and the denormalised athlete rows are rebuilt.
+  // A random suffix on the channel name prevents the postgres_changes
+  // "subscribe after initial snapshot" collision when the component remounts.
+  // -------------------------------------------------------------------------
+  useEffect(() => {
+    const supabase = supabaseRef.current;
+    const suffix = Math.random().toString(36).slice(2, 9);
+
+    const channel = supabase
+      .channel(`live-room-${orgId}-${suffix}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'helm_lifting_set_results',
+          filter: `organization_id=eq.${orgId}`,
+        },
+        () => {
+          startTransition(() => { router.refresh(); });
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'helm_lifting_sessions',
+          filter: `organization_id=eq.${orgId}`,
+        },
+        () => {
+          startTransition(() => { router.refresh(); });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // orgId is stable for the lifetime of this page mount; router is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId]);
 
   // Computed stats.
   const stats = useMemo(() => {
@@ -95,6 +220,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
   const [actualReps, setActualReps] = useState('');
   const [actualLoad, setActualLoad] = useState('');
   const [rpe, setRpe] = useState('');
+
+  // Early return after all hooks have been called.
+  if (loading) return <LiveWeightRoomSkeleton />;
 
   function handleComplete(athlete: HelmLiftingLiveAthleteRow) {
     const prev = athletes.map((a) => ({ ...a }));
@@ -164,7 +292,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
   return (
     <div className="flex h-screen flex-col bg-[#FFFEFA]">
       {/* Sticky top bar */}
-      <header className="sticky top-0 z-20 border-b border-warm-100 bg-white/90 backdrop-blur-xl px-6 py-3">
+      <header className="sticky top-0 z-20 border-b border-warm-100 glass-standard backdrop-blur-xl px-6 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
@@ -193,40 +321,44 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
             </div>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => {
               window.location.reload();
             }}
-            className="flex items-center gap-1.5 rounded-lg border border-warm-200 bg-white px-3 py-1.5 text-xs text-warm-600 hover:border-warm-300 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-warm-200 bg-cream-50 px-3 py-1.5 text-xs text-warm-600 hover:border-warm-300 transition-colors"
           >
             <IconRefresh size={12} /> Refresh
-          </button>
+          </Button>
         </div>
 
         {/* Group filter tabs */}
         {allGroups.length > 0 && (
           <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-1">
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setGroupFilter(null)}
               className={`shrink-0 rounded-full border px-3 py-0.5 text-xs font-medium transition-colors ${
                 !groupFilter ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-warm-200 text-warm-600 hover:border-warm-300'
               }`}
             >
               All
-            </button>
+            </Button>
             {allGroups.map((g) => (
-              <button
+              <Button
                 key={g}
                 type="button"
+                variant="ghost"
                 onClick={() => setGroupFilter(g === groupFilter ? null : g)}
                 className={`shrink-0 rounded-full border px-3 py-0.5 text-xs font-medium transition-colors ${
                   groupFilter === g ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-warm-200 text-warm-600 hover:border-warm-300'
                 }`}
               >
                 {g}
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -238,9 +370,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
         <main className="flex-1 overflow-y-auto p-4">
           {visible.length === 0 ? (
             <EmptyState
-              icon={<IconUsers size={28} className="text-warm-300" />}
+              icon={<IconUsers size={32} className="text-warm-300" />}
               title="No athletes scheduled today"
-              description="Publish a program to generate today's sessions."
+              description="Publish a program to your athletes and they'll appear here during the session."
             />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -258,15 +390,16 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.15 }}
                   >
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() =>
                         setSelectedAthleteId(isSelected ? null : athlete.athlete_id)
                       }
-                      className={`w-full text-left rounded-2xl border p-4 transition-all duration-150 ${
+                      className={`w-full text-left rounded-2xl border p-4 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 ${
                         isSelected
                           ? 'border-primary-400 bg-primary-50 shadow-md'
-                          : 'border-warm-100 bg-white/70 hover:border-warm-200 hover:shadow-sm'
+                          : 'border-warm-100 glass-standard hover:border-warm-200 hover:shadow-sm'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -277,7 +410,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
                             {athlete.group_names.length > 0 ? ` · ${athlete.group_names[0]}` : ''}
                           </p>
                         </div>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusMeta.cls}`}>
+                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-micro font-medium ${statusMeta.cls}`}>
                           {statusMeta.label}
                         </span>
                       </div>
@@ -285,7 +418,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
                       {/* Progress bar */}
                       {athlete.total_exercises > 0 && (
                         <div className="mt-3">
-                          <div className="flex items-center justify-between text-[11px] text-warm-400 mb-1">
+                          <div className="flex items-center justify-between text-eyebrow text-warm-400 mb-1">
                             <span>{athlete.current_exercise ?? 'Ready'}</span>
                             <span>{athlete.completed_exercises}/{athlete.total_exercises}</span>
                           </div>
@@ -301,12 +434,12 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
                       {/* Readiness + load */}
                       <div className="mt-2.5 flex items-center gap-2">
                         {band && (
-                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${band.cls}`}>
+                          <span className={`rounded-full border px-2 py-0.5 text-micro font-medium ${band.cls}`}>
                             {band.label}
                           </span>
                         )}
                         {athlete.actual_load != null && (
-                          <span className="text-[11px] text-warm-500">
+                          <span className="text-eyebrow text-warm-500">
                             {athlete.actual_load}
                             {athlete.prescribed_load != null && athlete.has_load_change ? (
                               <span className="text-amber-600"> (Δ{athlete.prescribed_load})</span>
@@ -315,7 +448,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
                           </span>
                         )}
                       </div>
-                    </button>
+                    </Button>
                   </motion.div>
                 );
               })}
@@ -325,17 +458,23 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
 
         {/* Right drawer — athlete detail */}
         {selectedAthlete && (
-          <aside className="w-80 shrink-0 border-l border-warm-100 bg-warm-50/50 overflow-y-auto p-4 space-y-4">
+          <aside
+            className="w-80 shrink-0 border-l border-warm-100 bg-warm-50/50 overflow-y-auto p-4 space-y-4"
+            aria-label="Athlete detail"
+          >
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-warm-900">{getFullName(selectedAthlete)}</h2>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setSelectedAthleteId(null)}
-                className="text-warm-400 hover:text-warm-700 text-lg leading-none"
+                onKeyDown={(e) => { if (e.key === 'Escape') setSelectedAthleteId(null); }}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-700 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                 aria-label="Close drawer"
               >
-                ×
-              </button>
+                <span aria-hidden className="text-lg leading-none">×</span>
+              </Button>
             </div>
 
             {/* Readiness band */}
@@ -353,7 +492,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
               ) : (
                 <div className="space-y-2">
                   {selectedAthlete.exercises.map((ex) => (
-                    <div key={ex.id} className="rounded-xl bg-white border border-warm-100 p-3">
+                    <div key={ex.id} className="rounded-xl bg-cream-50 border border-warm-100 p-3">
                       <p className="text-sm font-medium text-warm-800">{ex.exercise_name_snapshot}</p>
                       <p className="text-xs text-warm-400 mt-0.5">
                         {[
@@ -374,8 +513,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-700">Log set #{setNum}</h3>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[11px] text-warm-500 mb-1">Reps</label>
+                    <label htmlFor="log-reps" className="block text-eyebrow text-warm-500 mb-1">Reps</label>
                     <Input
+                      id="log-reps"
                       type="number"
                       min={0}
                       value={actualReps}
@@ -385,8 +525,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-warm-500 mb-1">Load</label>
+                    <label htmlFor="log-load" className="block text-eyebrow text-warm-500 mb-1">Load</label>
                     <Input
+                      id="log-load"
                       type="number"
                       min={0}
                       value={actualLoad}
@@ -396,8 +537,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit }: Props)
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-warm-500 mb-1">RPE</label>
+                    <label htmlFor="log-rpe" className="block text-eyebrow text-warm-500 mb-1">RPE</label>
                     <Input
+                      id="log-rpe"
                       type="number"
                       min={0}
                       max={10}
