@@ -82,7 +82,7 @@ import {
   type DecisionRoomLiftSummary,
   type DecisionRoomOpenTask,
   type DecisionRoomConflict,
-} from '@/app/baseball/actions/teams';
+} from '@/app/baseball/actions/decision-room';
 import { convertSignalToAction } from '@/app/baseball/actions/signals';
 import { recordActionOutcomes } from '@/app/baseball/actions/coachhelm-actions';
 import type { BaseballActionOutcomeVerdict } from '@/lib/types/baseball-coachhelm-v10';

@@ -23,7 +23,7 @@
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
-import { getDecisionRoomData } from '@/app/baseball/actions/teams';
+import { getDecisionRoomData } from '@/app/baseball/actions/decision-room';
 import { StaffDecisionRoomClient } from '@/components/baseball/staff-decision-room/StaffDecisionRoomClient';
 
 export const metadata = {

@@ -51,7 +51,7 @@ import type {
   StaffSettingsData,
   StaffMemberView,
   StaffInvitationView,
-} from '@/app/baseball/actions/teams';
+} from '@/app/baseball/actions/decision-room';
 
 // -----------------------------------------------------------------------------
 // Capability descriptors (label + helptext for the matrix).

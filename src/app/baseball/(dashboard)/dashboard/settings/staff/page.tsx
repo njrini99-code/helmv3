@@ -17,7 +17,7 @@
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
-import { getStaffSettingsData } from '@/app/baseball/actions/teams';
+import { getStaffSettingsData } from '@/app/baseball/actions/decision-room';
 import { StaffSettingsClient } from '@/components/baseball/staff/StaffSettingsClient';
 
 export const metadata = {
