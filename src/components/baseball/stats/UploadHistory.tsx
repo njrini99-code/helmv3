@@ -49,15 +49,16 @@ function UploadSkeleton() {
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="flex items-center gap-4 p-3 bg-warm-50 rounded-lg animate-pulse"
+          className="flex items-center gap-4 p-3 bg-warm-50 rounded-lg"
+          style={{ animationDelay: `${i * 60}ms` }}
         >
-          <div className="w-10 h-10 rounded-lg bg-warm-200" />
+          <div className="w-10 h-10 rounded-lg bg-warm-200/60 skeleton-shimmer" />
           <div className="flex-1">
-            <div className="h-4 w-32 bg-warm-200 rounded mb-2" />
-            <div className="h-3 w-48 bg-warm-200 rounded" />
+            <div className="h-4 w-32 bg-warm-200/60 rounded mb-2 skeleton-shimmer" />
+            <div className="h-3 w-48 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-4 w-8 bg-warm-200 rounded" />
+            <div className="h-4 w-8 bg-warm-200/60 rounded skeleton-shimmer" />
           </div>
         </div>
       ))}
@@ -116,7 +117,7 @@ export function UploadHistory({
       <div className="glass-standard rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-warm-900">Recent Uploads</h3>
-          <div className="w-6 h-6 rounded-full border-2 border-primary-600 border-t-transparent animate-spin" />
+          <IconRefresh size={16} className="text-warm-400 animate-spin" aria-hidden />
         </div>
         <UploadSkeleton />
       </div>

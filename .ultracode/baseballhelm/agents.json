@@ -1,0 +1,356 @@
+[
+  {
+    "id": "orchestrator",
+    "name": "Mayor",
+    "role": "Orchestrator",
+    "district": "Prompt Plaza",
+    "status": "active",
+    "focus": [
+      "Create Command Center",
+      "Enforce V12 Chrome gate",
+      "Read V12→V6 order",
+      "Prevent feature drift"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T23:21:51.288Z",
+    "notes": "Finish-all-18 wave: regen database.ts → 4 straggler fixers (casts + coach analytics + docs) → re-verify to 90+"
+  },
+  {
+    "id": "repo-cartographer",
+    "name": "Repo Cartographer",
+    "role": "Repo Cartographer",
+    "district": "Code Quarry",
+    "status": "active",
+    "focus": [
+      "baseball routes",
+      "dashboard shell",
+      "auth hooks",
+      "team join",
+      "server actions",
+      "migrations"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T01:40:25.251Z",
+    "notes": "Roster, Profile & Timeline (roster-timeline) verified"
+  },
+  {
+    "id": "auth-staff",
+    "name": "Auth & Staff Access",
+    "role": "Auth and Staff Access Agent",
+    "district": "Backend Machine Shop",
+    "status": "active",
+    "focus": [
+      "use-baseball-auth.ts",
+      "auth-store.ts",
+      "actions/auth.ts",
+      "team join",
+      "staff invite matrix"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T16:44:51.769Z",
+    "notes": "verify: Security & RLS (adversarial) (round 2) — complete"
+  },
+  {
+    "id": "supabase-rls",
+    "name": "Database Crane",
+    "role": "Supabase and RLS Agent",
+    "district": "Data District",
+    "status": "active",
+    "focus": [
+      "baseball_* tables",
+      "source registry",
+      "import runs",
+      "performance/lifting",
+      "AI source refs",
+      "RLS"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T16:48:59.737Z",
+    "notes": "verify: Migration safety (prod-apply) (round 2)"
+  },
+  {
+    "id": "ui-systems",
+    "name": "UI Systems",
+    "role": "UI Systems Agent",
+    "district": "Component Foundry",
+    "status": "active",
+    "focus": [
+      "app shell",
+      "coach desktop UI",
+      "mobile player UI",
+      "source drawers",
+      "stat visuals",
+      "command center"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T16:47:58.169Z",
+    "notes": "verify: Cohesion & consistency (one product) (round 2)"
+  },
+  {
+    "id": "stats-integrations",
+    "name": "Stats & Integrations",
+    "role": "Stats and Integrations Agent",
+    "district": "Integration Harbor",
+    "status": "active",
+    "focus": [
+      "official/scrimmage stats",
+      "dev metrics",
+      "pitch/swing/batted-ball",
+      "GameChanger/StatCrew/TrackMan imports"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T16:47:20.317Z",
+    "notes": "verify: Performance & data-fetching (round 2)"
+  },
+  {
+    "id": "practice-teamops",
+    "name": "Practice & Team Ops",
+    "role": "Practice and Team Ops Agent",
+    "district": "Component Foundry",
+    "status": "active",
+    "focus": [
+      "practice plan generator",
+      "time-slot builder",
+      "drag/drop lineup",
+      "calendar attach",
+      "game/scrimmage split"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 0,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T16:41:57.419Z",
+    "notes": "verify: Shared team-mgmt parity with UPDATED GolfHelm (round 2)"
+  },
+  {
+    "id": "performance-lifting",
+    "name": "Performance & Lifting",
+    "role": "Performance and Lifting Agent",
+    "district": "Component Foundry",
+    "status": "active",
+    "focus": [
+      "lifting coach dashboard",
+      "exercise library",
+      "program builder",
+      "live weight room",
+      "player lift",
+      "readiness/soreness"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 0,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T03:32:26.404Z",
+    "notes": "Premium lifting system (V11) (premium-lifting) verified"
+  },
+  {
+    "id": "coachhelm-engine",
+    "name": "CoachHelm Engine",
+    "role": "CoachHelm Engine Agent",
+    "district": "Observatory",
+    "status": "active",
+    "focus": [
+      "decision ledger",
+      "Staff Decision Room",
+      "Postgame Action Review",
+      "practice prescription",
+      "source citations"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T16:42:02.479Z",
+    "notes": "verify: Data + AI contracts (round 2)"
+  },
+  {
+    "id": "qa-visibility",
+    "name": "QA Inspector",
+    "role": "QA and Visibility Agent",
+    "district": "QA Lab",
+    "status": "active",
+    "focus": [
+      "dashboard opened in Chrome",
+      "typecheck/lint/test",
+      "route checks",
+      "role visibility",
+      "screenshot ledger"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T16:55:13.509Z",
+    "notes": "confirm: Wiring verified clean: nav→route resolut"
+  },
+  {
+    "id": "agent-city-systems",
+    "name": "Agent City Systems",
+    "role": "Agent City Systems Agent",
+    "district": "Broadcast Center",
+    "status": "active",
+    "focus": [
+      "local server",
+      "event store",
+      "hook receiver",
+      "git/repo polling",
+      "Agent City view",
+      "cream/green visuals"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T00:04:24.062Z",
+    "notes": "Working on Task 0."
+  },
+  {
+    "id": "risk-warden",
+    "name": "Security Warden",
+    "role": "Risk and Scope Warden",
+    "district": "Permission Control Tower",
+    "status": "active",
+    "focus": [
+      "risky commands",
+      "auth/RLS/migration changes",
+      "product-code-before-Task-0 guard",
+      "checkpoints",
+      "kill/freeze"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T16:51:13.928Z",
+    "notes": "verify done: Error tracking + observability wiring"
+  },
+  {
+    "id": "memory-librarian",
+    "name": "Memory Librarian",
+    "role": "Memory Librarian",
+    "district": "Memory Library",
+    "status": "active",
+    "focus": [
+      "Decision Ledger",
+      "Memory Library",
+      "milestone summaries",
+      "replay artifacts",
+      "handoff ledger"
+    ],
+    "files_touched": [],
+    "tables_touched": [],
+    "routes_touched": [],
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "not_run": true
+    },
+    "risk_events": 0,
+    "queue_depth": 1,
+    "heartbeat": "live",
+    "last_update": "2026-06-24T00:04:26.062Z",
+    "notes": "Working on Task 0."
+  }
+]

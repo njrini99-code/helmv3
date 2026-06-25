@@ -99,10 +99,12 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
         )}
       >
         {/* Card header - always visible */}
-        <Button variant="ghost"
+        <Button
+          variant="ghost"
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full text-left px-5 py-4 flex items-start gap-4"
+          aria-expanded={isExpanded}
+          className="w-full justify-start text-left px-5 py-4 flex items-start gap-4 min-h-0 rounded-none hover:bg-warm-50/50 focus-visible:ring-inset"
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">

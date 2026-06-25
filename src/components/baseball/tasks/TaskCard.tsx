@@ -149,18 +149,21 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
           <div className="flex items-start gap-3 flex-1">
             {/* Player checkbox */}
             {!isCoach && playerAssignment && (
-              <Button variant="primary"
+              <IconButton
+                variant="ghost"
                 onClick={handleToggleComplete}
                 disabled={completing}
+                aria-pressed={isCompletedByPlayer}
+                aria-label={isCompletedByPlayer ? 'Mark task as incomplete' : 'Mark task as complete'}
                 className={cn(
-                  'mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all',
+                  'mt-0.5 w-5 h-5 min-h-0 min-w-0 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all hover:bg-transparent',
                   isCompletedByPlayer
                     ? 'bg-primary-600 border-primary-600 text-white'
                     : 'border-warm-300 hover:border-primary-500'
                 )}
               >
                 {isCompletedByPlayer && <IconCheck size={12} />}
-              </Button>
+              </IconButton>
             )}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
@@ -250,9 +253,12 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
           </div>
 
           {isCoach && totalCount > 0 && (
-            <Button variant="ghost"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-1 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
+              aria-expanded={expanded}
+              className="gap-1 px-2 font-medium text-warm-600 hover:text-warm-900 hover:bg-transparent"
             >
               {expanded ? 'Hide' : 'View'} details
               {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}

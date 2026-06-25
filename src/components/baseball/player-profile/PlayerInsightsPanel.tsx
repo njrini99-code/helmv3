@@ -32,7 +32,7 @@ const priorityColors: Record<string, { bg: string; border: string; text: string;
   critical: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: 'text-red-500' },
   urgent: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: 'text-red-500' },
   high: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', icon: 'text-amber-500' },
-  medium: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: 'text-blue-500' },
+  medium: { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700', icon: 'text-primary-500' },
   low: { bg: 'bg-warm-50', border: 'border-warm-200', text: 'text-warm-700', icon: 'text-warm-500' },
 };
 
@@ -42,10 +42,12 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
   if (insights.length === 0) {
     return (
       <div className="text-center py-6">
-        <IconSparkles size={24} className="mx-auto text-warm-300 mb-2" />
-        <p className="text-sm text-warm-500">No active insights</p>
-        <p className="text-xs text-warm-400 mt-1">
-          Insights will appear as we analyze performance data
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
+          <IconSparkles size={22} />
+        </div>
+        <p className="text-sm font-medium text-warm-700">No active insights</p>
+        <p className="mt-1 text-xs leading-relaxed text-warm-500">
+          Insights will appear as we analyze performance data.
         </p>
       </div>
     );

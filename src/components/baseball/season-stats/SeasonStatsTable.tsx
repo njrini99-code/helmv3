@@ -185,13 +185,13 @@ export function SeasonStatsTable({
 
       {/* Stats table */}
       {sorted.length === 0 ? (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
-          <p className="text-sm text-warm-400">
+        <div className="glass-standard rounded-2xl p-10 text-center">
+          <p className="text-sm leading-relaxed text-warm-500 max-w-md mx-auto">
             No {activeTab} stats for {seasonYear}. Enter game box scores to populate stats.
           </p>
         </div>
       ) : (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>

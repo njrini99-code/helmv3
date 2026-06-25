@@ -169,12 +169,14 @@ export function UploadNewVersionModal({
                 <p className="text-sm text-warm-500 mt-1">
                   {formatFileSize(selectedFile.size)}
                 </p>
-                <Button variant="ghost"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedFile(null);
                   }}
-                  className="mt-3 text-sm text-warm-500 hover:text-warm-700 underline"
+                  className="mt-3 px-2 text-warm-500 hover:text-warm-700 hover:bg-transparent underline"
                 >
                   Choose different file
                 </Button>
@@ -210,29 +212,22 @@ export function UploadNewVersionModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-200 bg-warm-50 rounded-b-2xl">
-          <Button variant="ghost"
+          <Button
+            variant="secondary"
+            type="button"
             onClick={handleClose}
             disabled={uploading}
-            className="px-4 py-2 text-warm-700 font-medium hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
           >
             Cancel
           </Button>
-          <Button variant="primary"
+          <Button
+            type="button"
             onClick={handleSubmit}
-            disabled={!selectedFile || uploading}
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            disabled={!selectedFile}
+            isLoading={uploading}
+            leftIcon={<IconUpload size={18} />}
           >
-            {uploading ? (
-              <>
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <IconUpload size={18} />
-                Upload Version
-              </>
-            )}
+            Upload Version
           </Button>
         </div>
       </div>

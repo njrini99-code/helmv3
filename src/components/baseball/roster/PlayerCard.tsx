@@ -10,6 +10,7 @@ import {
   IconMinus,
   IconChart,
   IconMessage,
+  IconMapPin,
 } from '@/components/icons';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 
@@ -149,7 +150,7 @@ export function PlayerCard({
     <div
       role="button"
       tabIndex={0}
-      className="bg-white rounded-xl border border-warm-200 p-4 shadow-sm hover:shadow-md hover:border-warm-300 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+      className="bg-cream-50 rounded-2xl border border-warm-200 p-4 shadow-sm hover:shadow-md hover:border-warm-300 active:scale-[0.98] transition-all duration-200 cursor-pointer"
       onClick={handleCardClick}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(); } }}
     >
@@ -237,8 +238,9 @@ export function PlayerCard({
 
       {/* Location */}
       {(player.city || player.state) && (
-        <p className="text-xs text-warm-500 mb-3">
-          📍 {player.city && player.state ? `${player.city}, ${player.state}` : player.city || player.state}
+        <p className="flex items-center gap-1 text-xs text-warm-500 mb-3">
+          <IconMapPin size={12} className="shrink-0 text-warm-400" />
+          {player.city && player.state ? `${player.city}, ${player.state}` : player.city || player.state}
         </p>
       )}
 

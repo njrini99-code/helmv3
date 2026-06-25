@@ -29,9 +29,11 @@ export function ReminderBanner({ overdueCount, onViewOverdue, className }: Remin
           Review and update tasks that are past their due date
         </p>
       </div>
-      <Button variant="danger"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={onViewOverdue}
-        className="text-xs font-medium text-red-700 hover:text-red-800 px-2 py-1 rounded-md hover:bg-red-100 transition-colors flex-shrink-0"
+        className="flex-shrink-0 text-red-700 hover:text-red-800 hover:bg-red-100 active:bg-red-200"
       >
         View
       </Button>

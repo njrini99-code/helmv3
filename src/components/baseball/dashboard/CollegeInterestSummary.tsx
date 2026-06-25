@@ -122,8 +122,8 @@ export function CollegeInterestSummary({ data, loading }: CollegeInterestSummary
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center">
-            <IconEye size={18} className="text-purple-600" />
+          <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
+            <IconEye size={18} className="text-primary-600" />
           </div>
           <div>
             <h2 className="font-semibold text-warm-900 tracking-tight">Who's Looking at Your Players</h2>

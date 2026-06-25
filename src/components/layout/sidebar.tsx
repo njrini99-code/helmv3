@@ -13,23 +13,28 @@ import {
   IconLogOut,
   IconUser,
   IconBuilding,
-  IconVideo,
   IconCalendar,
-  IconNote,
-  IconEye,
   IconHelp,
   IconGraduationCap,
-  IconLayers,
   IconChevronLeft,
   IconChevronRight,
   IconChartBar,
   IconClipboardList,
-  IconFileText,
   IconMessageSquare,
   IconMap,
-  IconBell,
-  IconAirplane,
+  IconFileText,
+  IconTarget,
 } from '@/components/icons';
+import {
+  COACH_TEAM_TABS,
+  COACH_STATS_TABS,
+  COACH_DEVELOPMENT_TABS,
+  COACH_MANAGEMENT_TABS,
+  COACH_ACADEMICS_TABS,
+  PLAYER_STATS_TABS,
+  PLAYER_DEVELOPMENT_TABS,
+  PLAYER_TEAM_TABS,
+} from '@/app/baseball/(dashboard)/_components/hub-definitions';
 import { TeamSwitcher } from './team-switcher';
 import { useTeams } from '@/hooks/use-teams';
 import { usePlayerTeams } from '@/hooks/use-player-teams';
@@ -37,116 +42,153 @@ import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { Button } from '@/components/ui/button';
 
-// ARCHIVED: Recruiting features hidden — re-enable when recruiting is ready
-// College/JUCO Coach - Recruiting Mode
-// const coachRecruitingNav = [
-//   { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
-//   { name: 'Command Center', href: '/baseball/dashboard/command-center', icon: IconLayers },
-//   { name: 'Discover', href: '/baseball/dashboard/discover', icon: IconSearch },
-//   { name: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconStar },
-//   { name: 'Watchlist', href: '/baseball/dashboard/watchlist', icon: IconBookmark },
-//   { name: 'Compare', href: '/baseball/dashboard/compare', icon: IconTarget },
-//   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-//   { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconBuilding },
-//   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-// ];
+// =============================================================================
+// GROUPED-HUBS NAVIGATION (approved 2026-06-24)
+//
+// The old flat 11–13 sidebar tabs are condensed into a handful of top-level HUBS.
+// Each hub is ONE sidebar item that lands on its first child route; the hub's own
+// sub-tab strip (rendered by BaseballDashboardShell via HubSubNav) then exposes
+// the leaf routes. `hubPrefixes` lists every route inside the hub so the sidebar
+// item lights active whenever ANY of the hub's leaves is the current page. The
+// hub tab lists themselves live in the single-source-of-truth hub-definitions.
+//
+// ADDITIVE: every existing leaf route still works; the hubs add a layer above
+// them. The sidebar's dark styling is unchanged — only the top-level item set is.
+// =============================================================================
 
-// HS Coach - Team Mode (HS-specific dashboard)
-const hsCoachTeamNav = [
+type SidebarHubItem = {
+  name: string;
+  href: string;
+  icon: typeof IconHome;
+  badge?: boolean;
+  /** Route prefixes that mark this hub item active (defaults to [href]). */
+  hubPrefixes?: string[];
+};
+
+/** Collect every route a hub owns (each tab's href + matchPrefixes). */
+function hubPrefixesFrom(
+  tabs: readonly { href: string; matchPrefixes?: string[] }[],
+): string[] {
+  return tabs.flatMap((t) => [t.href, ...(t.matchPrefixes ?? [])]);
+}
+
+// --- Coach hub item builders (one shared set; landing differs by program mode) ---
+const COACH_TEAM_HUB: SidebarHubItem = {
+  name: 'Team',
+  href: COACH_TEAM_TABS[0]!.href,
+  icon: IconUsers,
+  hubPrefixes: hubPrefixesFrom(COACH_TEAM_TABS),
+};
+const COACH_STATS_HUB: SidebarHubItem = {
+  name: 'Stats',
+  href: COACH_STATS_TABS[0]!.href,
+  icon: IconChartBar,
+  hubPrefixes: hubPrefixesFrom(COACH_STATS_TABS),
+};
+const COACH_DEVELOPMENT_HUB: SidebarHubItem = {
+  name: 'Development',
+  href: COACH_DEVELOPMENT_TABS[0]!.href,
+  icon: IconTarget,
+  hubPrefixes: hubPrefixesFrom(COACH_DEVELOPMENT_TABS),
+};
+const COACH_MANAGEMENT_HUB: SidebarHubItem = {
+  name: 'Management',
+  href: COACH_MANAGEMENT_TABS[0]!.href,
+  icon: IconBuilding,
+  hubPrefixes: hubPrefixesFrom(COACH_MANAGEMENT_TABS),
+};
+// RECRUITING hub — gated / scaffolded hidden (archived-ok). The hub's tabs +
+// route ownership live in hub-definitions.ts + resolve-active-hub.ts; surfacing
+// it is a one-line change: build a SidebarHubItem from COACH_RECRUITING_TABS
+// (icon: IconStar) and add it to the coach nav arrays below. Kept out of the
+// live nav arrays for now so the sidebar stays lean.
+const COACH_ACADEMICS_HUB: SidebarHubItem = {
+  name: 'Academics',
+  href: COACH_ACADEMICS_TABS[0]!.href,
+  icon: IconGraduationCap,
+  hubPrefixes: hubPrefixesFrom(COACH_ACADEMICS_TABS),
+};
+const COACH_MESSAGES_ITEM: SidebarHubItem = {
+  name: 'Messages',
+  href: '/baseball/dashboard/messages',
+  icon: IconMessage,
+  badge: true,
+};
+
+// College Coach — grouped hubs (Dashboard, Team, Stats, Development, Management).
+const collegeTeamNav: SidebarHubItem[] = [
+  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  COACH_TEAM_HUB,
+  COACH_STATS_HUB,
+  COACH_DEVELOPMENT_HUB,
+  COACH_MANAGEMENT_HUB,
+];
+
+// HS Coach — same hubs, HS-specific dashboard landing.
+const hsCoachTeamNav: SidebarHubItem[] = [
   { name: 'Dashboard', href: '/baseball/dashboard/team/high-school', icon: IconHome },
-  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
-  { name: 'Stats', href: '/baseball/dashboard/stats', icon: IconChartBar },
-  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
-  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
-  { name: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconEye },
-  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
-  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
-  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
-  { name: 'Travel', href: '/baseball/dashboard/travel', icon: IconAirplane },
+  COACH_TEAM_HUB,
+  COACH_STATS_HUB,
+  COACH_DEVELOPMENT_HUB,
+  COACH_MANAGEMENT_HUB,
 ];
 
-// College Coach - Team Mode
-const collegeTeamNav = [
+// JUCO Coach — adds the Academics hub (JUCO-only).
+const jucoTeamNav: SidebarHubItem[] = [
   { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
-  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
-  { name: 'Stats', href: '/baseball/dashboard/stats', icon: IconChartBar },
-  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
-  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
-  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
-  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
-  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
-  { name: 'Travel', href: '/baseball/dashboard/travel', icon: IconAirplane },
+  COACH_TEAM_HUB,
+  COACH_STATS_HUB,
+  COACH_DEVELOPMENT_HUB,
+  COACH_ACADEMICS_HUB,
+  COACH_MANAGEMENT_HUB,
 ];
 
-// JUCO Coach - Team Mode (includes Academics)
-const jucoTeamNav = [
-  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
-  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
-  { name: 'Stats', href: '/baseball/dashboard/stats', icon: IconChartBar },
-  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
-  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
-  { name: 'Academics', href: '/baseball/dashboard/academics', icon: IconGraduationCap },
-  { name: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconEye },
-  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
-  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
-  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
-  { name: 'Travel', href: '/baseball/dashboard/travel', icon: IconAirplane },
-];
-
-// Showcase Coach - Organization Mode (manages multiple teams)
-const showcaseOrgNav = [
+// Showcase Coach - Organization Mode (manages multiple teams). Showcase keeps its
+// org-level surfaces at the top level; the per-team hubs appear once a team is
+// selected (showcaseTeamNav below).
+const showcaseOrgNav: SidebarHubItem[] = [
   { name: 'Dashboard', href: '/baseball/dashboard/organization', icon: IconHome },
-  { name: 'Teams', href: '/baseball/dashboard/teams', icon: IconLayers },
+  { name: 'Teams', href: '/baseball/dashboard/teams', icon: IconUsers },
   { name: 'Events', href: '/baseball/dashboard/events', icon: IconCalendar },
-  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+  COACH_MESSAGES_ITEM,
 ];
 
-// Showcase Coach - Team-specific navigation (shown when team selected)
-const showcaseTeamNav = [
-  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
-  { name: 'Stats', href: '/baseball/dashboard/stats', icon: IconChartBar },
-  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
-  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
-  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
-  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
-  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
+// Showcase Coach - Team-specific hubs (shown when a team is selected).
+const showcaseTeamNav: SidebarHubItem[] = [
+  COACH_TEAM_HUB,
+  COACH_STATS_HUB,
+  COACH_DEVELOPMENT_HUB,
 ];
 
-// ARCHIVED: Recruiting features hidden — re-enable when recruiting is ready
-// Player - Recruiting Mode
-// const playerRecruitingNav = [
-//   { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
-//   { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
-//   { name: 'Colleges', href: '/baseball/dashboard/colleges', icon: IconBuilding },
-//   { name: 'Journey', href: '/baseball/dashboard/journey', icon: IconTarget },
-//   { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconCalendar },
-//   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-//   { name: 'Analytics', href: '/baseball/dashboard/analytics', icon: IconChart },
-// ];
-
-// Player - Team Mode (used for college players + non-recruiting-activated players)
-const playerTeamNav = [
+// Player — grouped hubs: Dashboard, My Profile, My Stats hub, Development hub,
+// Calendar, Messages, and a Team hub (Announcements / Tasks / Documents).
+const playerTeamNav: SidebarHubItem[] = [
   { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
   { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
-  { name: 'My Stats', href: '/baseball/dashboard/my-stats', icon: IconChartBar },
-  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
-  { name: 'Dev Plan', href: '/baseball/dashboard/dev-plan', icon: IconNote },
+  {
+    name: 'My Stats',
+    href: PLAYER_STATS_TABS[0]!.href,
+    icon: IconChartBar,
+    hubPrefixes: hubPrefixesFrom(PLAYER_STATS_TABS),
+  },
+  {
+    name: 'Development',
+    href: PLAYER_DEVELOPMENT_TABS[0]!.href,
+    icon: IconTarget,
+    hubPrefixes: hubPrefixesFrom(PLAYER_DEVELOPMENT_TABS),
+  },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
-  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
-  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
+  {
+    name: 'Team',
+    href: PLAYER_TEAM_TABS[0]!.href,
+    icon: IconUsers,
+    hubPrefixes: hubPrefixesFrom(PLAYER_TEAM_TABS),
+  },
 ];
 
-// Golf Coach navigation
-const golfCoachNav = [
+// Golf Coach navigation (flat — golf keeps its own nav model; unchanged).
+const golfCoachNav: SidebarHubItem[] = [
   { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
   { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
   { name: 'Rounds', href: '/golf/dashboard/rounds', icon: IconClipboardList },
@@ -157,18 +199,47 @@ const golfCoachNav = [
   { name: 'Travel', href: '/golf/dashboard/travel', icon: IconMap },
 ];
 
-// Secondary navigation (coach)
+// Secondary navigation (coach) — Settings + Program now live in the Management
+// hub, so "More" carries only the always-available Help link for coaches.
 const coachSecondaryNav = [
-  { name: 'Program', href: '/baseball/dashboard/program', icon: IconBuilding },
-  { name: 'Settings', href: '/baseball/dashboard/settings', icon: IconSettings },
   { name: 'Help', href: '/help', icon: IconHelp },
 ];
 
-// Secondary navigation (player)
+// Secondary navigation (player) — players have no Management hub, so Settings
+// stays in the "More" group.
 const playerSecondaryNav = [
   { name: 'Settings', href: '/baseball/dashboard/settings', icon: IconSettings },
   { name: 'Help', href: '/help', icon: IconHelp },
 ];
+
+/**
+ * Dashboard / "home" hrefs that must match EXACTLY (never light via a startsWith
+ * prefix, since every nested route starts with the dashboard root).
+ */
+const EXACT_MATCH_HREFS = new Set<string>([
+  '/baseball/dashboard',
+  '/baseball/dashboard/team',
+  '/baseball/dashboard/team/high-school',
+  '/baseball/coach/high-school',
+  '/baseball/dashboard/organization',
+  '/golf/dashboard',
+]);
+
+/**
+ * Whether a top-level (hub or flat) sidebar item is active for the current path.
+ * A hub item lights when the pathname matches its href OR any route inside the
+ * hub (`hubPrefixes`); home/dashboard items match exactly. Settings is excluded
+ * from the Management hub's prefixes when it would collide with the secondary
+ * Settings link (handled by the secondary nav's own active state).
+ */
+function isHubItemActive(item: SidebarHubItem, pathname: string): boolean {
+  const prefixes = item.hubPrefixes ?? [item.href];
+  for (const p of prefixes) {
+    if (pathname === p) return true;
+    if (!EXACT_MATCH_HREFS.has(p) && pathname.startsWith(`${p}/`)) return true;
+  }
+  return false;
+}
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -300,10 +371,10 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
               )}
             >
               <Image
-                src="/helm-baseball-logo-cropped.png"
+                src="/anim/helm-baseball-icon.png"
                 alt="BaseballHelm"
-                width={166}
-                height={160}
+                width={300}
+                height={300}
                 className="w-10 h-10 object-contain"
                 priority
                 unoptimized
@@ -319,10 +390,10 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             >
               <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                 <Image
-                  src="/helm-baseball-logo-cropped.png"
+                  src="/anim/helm-baseball-icon.png"
                   alt=""
-                  width={166}
-                  height={160}
+                  width={300}
+                  height={300}
                   className="w-10 h-10 object-contain"
                   priority
                   unoptimized
@@ -365,7 +436,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
 
         <ul className="space-y-0.5">
           {navigation.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/baseball/dashboard' && item.href !== '/baseball/dashboard/team' && item.href !== '/golf/dashboard' && pathname.startsWith(item.href));
+            const isActive = isHubItemActive(item, pathname);
             return (
               <li key={item.name}>
                 <Link
@@ -430,7 +501,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             )}
             <ul className="space-y-0.5">
               {teamNavigation.map((item) => {
-                const isActive = pathname.startsWith(item.href);
+                const isActive = isHubItemActive(item, pathname);
                 return (
                   <li key={item.name}>
                     <Link

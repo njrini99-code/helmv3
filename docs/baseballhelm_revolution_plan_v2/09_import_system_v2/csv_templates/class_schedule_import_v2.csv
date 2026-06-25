@@ -1,0 +1,2 @@
+term,player_name,external_id,course_code,course_name,days,start_time,end_time,location,instructor,conflict_policy,notes
+Spring 2026,Eli Carter,nsu-031,BIO-221,Anatomy Lab,TR,14:00,15:20,Science 204,Dr. Patel,conflict_only,"Conflicts with early defensive work"

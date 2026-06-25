@@ -19,12 +19,14 @@ interface TeamDevProgressProps {
 }
 
 function ProgressBar({ value, className }: { value: number; className?: string }) {
-  const colorClass = value >= 75 
-    ? 'bg-primary-500' 
-    : value >= 50 
-      ? 'bg-amber-500' 
-      : value >= 25 
-        ? 'bg-orange-500' 
+  // Restricted accent set — primary (good) → amber (watch) → red (behind).
+  // Orange folds to amber so the bar matches the daily-home palette.
+  const colorClass = value >= 75
+    ? 'bg-primary-500'
+    : value >= 50
+      ? 'bg-amber-500'
+      : value >= 25
+        ? 'bg-amber-500'
         : 'bg-red-500';
 
   return (
@@ -108,10 +110,10 @@ export function TeamDevProgress({ data, loading }: TeamDevProgressProps) {
       <ShineEffect />
       <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100/50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-            <IconNote size={16} className="text-blue-600" />
+          <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+            <IconNote size={16} className="text-primary-600" />
           </div>
-          <h3 className="font-semibold text-warm-900">Dev Plan Progress</h3>
+          <h3 className="font-semibold text-warm-900 tracking-tight">Dev Plan Progress</h3>
         </div>
         <Link 
           href="/baseball/dashboard/dev-plans" 

@@ -73,8 +73,8 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
   if (!hasBatting && !hasPitching) {
     return (
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
-        <p className="text-sm text-warm-400">No game log yet. Stats will appear here after box scores are entered.</p>
+      <div className="glass-standard rounded-2xl p-8 text-center">
+        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">No game log yet. Stats will appear here after box scores are entered.</p>
       </div>
     );
   }
@@ -123,7 +123,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
       {/* Batting log */}
       {activeTab === 'batting' && (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -221,7 +221,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
       {/* Pitching log */}
       {activeTab === 'pitching' && (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>

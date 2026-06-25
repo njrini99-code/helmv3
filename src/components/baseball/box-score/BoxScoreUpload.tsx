@@ -186,7 +186,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
       {activeTab === 'csv' && (
         <div className="space-y-5">
           {/* CSV type + template download */}
-          <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="glass-standard rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-warm-800">Upload Stats CSV</h3>
@@ -290,7 +290,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
 
           {/* Results */}
           {(matched.length > 0 || unmatched.length > 0) && (
-            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="glass-standard rounded-2xl p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-warm-800">Player Matching Results</h3>
                 {allMatched && (
@@ -377,9 +377,9 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
 
       {/* PDF upload tab */}
       {activeTab === 'pdf' && (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-sm text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto">
-            <IconUpload size={24} className="text-warm-400" />
+        <div className="glass-standard rounded-2xl p-8 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-primary-600/80 mx-auto">
+            <IconUpload size={26} />
           </div>
           <div>
             <h3 className="text-base font-semibold text-warm-800 mb-1">Upload Box Score PDF</h3>

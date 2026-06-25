@@ -26,13 +26,16 @@ interface UpcomingSectionProps {
   loading?: boolean;
 }
 
+// Event-type dots stay on the daily-home restricted accent set: primary green
+// for on-field work, amber for competitive/contested, warm-stone for everything
+// administrative — no separate blue / purple / cyan categorical hues.
 const eventTypeColors: Record<string, string> = {
   practice: 'bg-primary-500',
-  game: 'bg-blue-500',
+  game: 'bg-amber-500',
   scrimmage: 'bg-amber-500',
-  team_meeting: 'bg-purple-500',
+  team_meeting: 'bg-warm-500',
   travel: 'bg-warm-500',
-  film_session: 'bg-cyan-500',
+  film_session: 'bg-warm-400',
   other: 'bg-warm-400',
 };
 
@@ -99,8 +102,8 @@ export function UpcomingSection({
         <ShineEffect />
         <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-2">
-            <IconCalendar size={16} className="text-blue-500" />
-            <h3 className="font-semibold text-warm-900 text-sm">Upcoming Events</h3>
+            <IconCalendar size={16} className="text-warm-400" />
+            <h3 className="font-semibold text-warm-900 text-sm tracking-tight">Upcoming Events</h3>
           </div>
           <Link 
             href="/baseball/dashboard/calendar" 
@@ -140,8 +143,8 @@ export function UpcomingSection({
         <ShineEffect />
         <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-2">
-            <IconClipboardList size={16} className="text-amber-500" />
-            <h3 className="font-semibold text-warm-900 text-sm">Tasks Due</h3>
+            <IconClipboardList size={16} className="text-warm-400" />
+            <h3 className="font-semibold text-warm-900 text-sm tracking-tight">Tasks Due</h3>
             {pendingTasks > 0 && (
               <Badge variant="warning" className="text-eyebrow px-1.5 py-0">
                 {pendingTasks}
@@ -180,8 +183,8 @@ export function UpcomingSection({
         <ShineEffect />
         <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-2">
-            <IconBell size={16} className="text-purple-500" />
-            <h3 className="font-semibold text-warm-900 text-sm">Messages</h3>
+            <IconBell size={16} className="text-warm-400" />
+            <h3 className="font-semibold text-warm-900 text-sm tracking-tight">Messages</h3>
             {unreadMessages > 0 && (
               <Badge variant="danger" className="text-eyebrow px-1.5 py-0">
                 {unreadMessages}

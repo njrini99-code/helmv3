@@ -137,14 +137,14 @@ export function PhilosophySettingsClient({
 
         {/* Welcome message for new users */}
         {isNew && (
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl p-6 mb-8">
+          <div className="bg-gradient-to-r from-primary-50 to-primary-100/50 border border-primary-200 rounded-2xl p-6 mb-8">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                <IconSparkles size={20} className="text-purple-600" />
+              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                <IconSparkles size={20} className="text-primary-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-purple-800">Welcome, {coachName}!</h3>
-                <p className="text-sm text-purple-700 mt-1">
+                <h3 className="font-semibold text-warm-900">Welcome, {coachName}!</h3>
+                <p className="text-sm leading-relaxed text-warm-600 mt-1">
                   Set up your coaching philosophy to personalize AI-powered insights.
                   The system will learn your priorities and alert you to what matters most.
                 </p>
@@ -168,13 +168,14 @@ export function PhilosophySettingsClient({
 
             <div className="grid grid-cols-3 gap-3">
               {(['conservative', 'balanced', 'aggressive'] as const).map((level) => (
-                <Button variant="primary"
+                <Button variant="ghost"
                   key={level}
                   onClick={() => setAlertSensitivity(level)}
-                  className={`p-4 rounded-xl border-2 transition-all ${
+                  aria-pressed={alertSensitivity === level}
+                  className={`h-auto flex-col items-start p-4 rounded-xl border-2 transition-all ${
                     alertSensitivity === level
-                      ? 'border-primary-500 bg-primary-50'
-                      : 'border-warm-200 hover:border-warm-300'
+                      ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-200'
+                      : 'border-warm-200 bg-cream-50 hover:border-primary-200'
                   }`}
                 >
                   <p className={`font-medium capitalize ${
@@ -195,8 +196,8 @@ export function PhilosophySettingsClient({
           {/* Threshold Settings */}
           <div className="glass-standard rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <IconTarget size={20} className="text-blue-600" />
+              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                <IconTarget size={20} className="text-primary-600" />
               </div>
               <div>
                 <h3 className="font-semibold text-warm-900">Alert Thresholds</h3>
@@ -329,11 +330,11 @@ export function PhilosophySettingsClient({
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-            <IconInfo size={20} className="text-blue-500 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-700">
-              <p className="font-medium">How this works</p>
-              <p className="mt-1">
+          <div className="bg-warm-50 border border-warm-200 rounded-xl p-4 flex items-start gap-3">
+            <IconInfo size={20} className="text-primary-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-warm-600">
+              <p className="font-medium text-warm-900">How this works</p>
+              <p className="mt-1 leading-relaxed">
                 Your philosophy settings customize the AI insights engine. Higher priorities
                 get weighted more heavily in analysis, and thresholds determine when alerts
                 are triggered. Changes apply to future insight generation.
@@ -348,22 +349,11 @@ export function PhilosophySettingsClient({
             </Link>
             <Button
               onClick={handleSave}
-              disabled={saving}
+              isLoading={saving}
+              leftIcon={saved && !saving ? <IconCheck size={16} /> : undefined}
               className="gap-2"
             >
-              {saving ? (
-                <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  Saving...
-                </>
-              ) : saved ? (
-                <>
-                  <IconCheck size={16} />
-                  Saved!
-                </>
-              ) : (
-                'Save Philosophy'
-              )}
+              {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Philosophy'}
             </Button>
           </div>
         </div>

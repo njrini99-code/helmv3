@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect width="1600" height="900" fill="#fbfaf7"/>
+  <text x="80" y="90" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="700" fill="#18222c">Source To Action Loop</text>
+  <text x="82" y="130" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#59636f">The product advantage: data does not stop at charts. It becomes staff action and measured improvement.</text>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="95" y="345" width="210" height="130" rx="18" fill="#fff" stroke="#d8d2c7"/>
+    <text x="200" y="390" text-anchor="middle" font-size="26" font-weight="700" fill="#17212b">Sources</text>
+    <text x="200" y="425" text-anchor="middle" font-size="16" fill="#5b6470">stats, video, lifts</text>
+    <text x="200" y="452" text-anchor="middle" font-size="16" fill="#5b6470">classes, sensors</text>
+
+    <rect x="365" y="345" width="210" height="130" rx="18" fill="#fff" stroke="#d8d2c7"/>
+    <text x="470" y="390" text-anchor="middle" font-size="26" font-weight="700" fill="#17212b">Trust</text>
+    <text x="470" y="425" text-anchor="middle" font-size="16" fill="#5b6470">official, vendor</text>
+    <text x="470" y="452" text-anchor="middle" font-size="16" fill="#5b6470">coach, unverified</text>
+
+    <rect x="635" y="345" width="210" height="130" rx="18" fill="#17212b"/>
+    <text x="740" y="390" text-anchor="middle" font-size="26" font-weight="700" fill="#fff">Signals</text>
+    <text x="740" y="425" text-anchor="middle" font-size="16" fill="#cdd6df">what changed</text>
+    <text x="740" y="452" text-anchor="middle" font-size="16" fill="#cdd6df">why it matters</text>
+
+    <rect x="905" y="345" width="210" height="130" rx="18" fill="#fff" stroke="#d8d2c7"/>
+    <text x="1010" y="390" text-anchor="middle" font-size="26" font-weight="700" fill="#17212b">Actions</text>
+    <text x="1010" y="425" text-anchor="middle" font-size="16" fill="#5b6470">tasks, practice</text>
+    <text x="1010" y="452" text-anchor="middle" font-size="16" fill="#5b6470">lift, video, meeting</text>
+
+    <rect x="1175" y="345" width="210" height="130" rx="18" fill="#fff" stroke="#d8d2c7"/>
+    <text x="1280" y="390" text-anchor="middle" font-size="26" font-weight="700" fill="#17212b">Outcomes</text>
+    <text x="1280" y="425" text-anchor="middle" font-size="16" fill="#5b6470">did it work?</text>
+    <text x="1280" y="452" text-anchor="middle" font-size="16" fill="#5b6470">learn + adjust</text>
+  </g>
+  <g stroke="#d94f2b" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M305 410 L365 410"/>
+    <path d="M575 410 L635 410"/>
+    <path d="M845 410 L905 410"/>
+    <path d="M1115 410 L1175 410"/>
+    <path d="M1280 475 C1250 630 360 630 200 475"/>
+  </g>
+  <g fill="#d94f2b">
+    <path d="M355 410 l-16 -9 v18 z"/>
+    <path d="M625 410 l-16 -9 v18 z"/>
+    <path d="M895 410 l-16 -9 v18 z"/>
+    <path d="M1165 410 l-16 -9 v18 z"/>
+    <path d="M205 486 l-6 -17 l18 5 z"/>
+  </g>
+  <rect x="470" y="675" width="660" height="76" rx="18" fill="#fff3ed" stroke="#f0b099"/>
+  <text x="800" y="722" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#a63a20">This is why BaseballHelm beats static dashboards.</text>
+</svg>
+

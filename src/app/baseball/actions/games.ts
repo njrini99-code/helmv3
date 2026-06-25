@@ -9,6 +9,12 @@ import {
   findColumnMapping,
   type CSVRow,
 } from '@/lib/baseball/csv-utils';
+import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import {
+  getStatsCenter,
+  type StatsCenterOptions,
+  type StatsCenterReadModel,
+} from '@/lib/baseball/read-models/stats-center';
 import type {
   BaseballGame,
   BaseballBoxScoreBatting,
@@ -1012,6 +1018,49 @@ export async function getMySeasonStats(
   if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   return { success: true, data: data as BaseballPlayerSeasonStats | undefined };
+}
+
+// ============================================================================
+// STATS CENTER (read-model re-fetch for the client filter/refresh path)
+// ============================================================================
+
+/**
+ * Re-fetch the Stats Center read model for the current user's active team.
+ *
+ * Called by StatsCenterClient when filters change (season / positions / side /
+ * date window). The team is ALWAYS the server-validated active baseball team —
+ * never accepted from the client — and getStatsCenter is itself staff-only
+ * (returns an honest `authorized:false` / `error` envelope, never throws), so
+ * this is a read that re-applies auth + RLS server-side.
+ *
+ * When there is no active baseball context (unauthenticated or no membership),
+ * we return an honest unauthorized envelope rather than throwing, so the client
+ * shows a recoverable state instead of a hard error.
+ */
+export async function loadStatsCenter(
+  options: StatsCenterOptions = {},
+): Promise<StatsCenterReadModel> {
+  const context = await getActiveBaseballContext();
+  if (!context) {
+    const seasonYear = options.seasonYear ?? new Date().getFullYear();
+    return {
+      teamId: '',
+      seasonYear,
+      authorized: false,
+      rows: [],
+      positions: [],
+      summary: {
+        rosterSize: 0,
+        playersWithData: 0,
+        officialGames: 0,
+        scrimmages: 0,
+        unreconciled: 0,
+      },
+      error: null,
+    };
+  }
+
+  return getStatsCenter(context.activeTeamId, options);
 }
 
 export async function recalculateAllSeasonStats(

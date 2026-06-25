@@ -1,0 +1,2 @@
+player_name,external_id,date,source,category,metric_name,metric_value,unit,visibility,review_status,notes
+Marcus Lee,nsu-018,2026-03-24,Coach Sheet,hitting,quality_at_bats,6,count,staff_only,needs_review,"Manual chart from Tuesday scrimmage"

@@ -1,6 +1,17 @@
 // Type exports and helpers for Helm Sports Labs
 import { Database } from './database';
 
+// Re-export the generated Json scalar so consumers can import it from '@/lib/types'
+export type { Json } from './database';
+
+// Helm Lifting Lab — identity/access + data types (hand-written; pending db:types regen)
+// Wave 1: supabase/migrations/20260625000000_* through 20260625000030_*
+export * from './helm-lifting';
+export * from './helm-lifting-data';
+
+// Baseball extended types (timeline, coach notes, staff invitations) — consumed via '@/lib/types'
+export * from './baseball-extended';
+
 // ============================================
 // DATABASE TABLE TYPES
 // ============================================

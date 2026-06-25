@@ -236,7 +236,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     ) : (
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: membership.team.primary_color || '#6366f1' }}
+                        style={{ backgroundColor: membership.team.primary_color || '#16A34A' }}
                       >
                         {membership.team.name.substring(0, 2).toUpperCase()}
                       </div>

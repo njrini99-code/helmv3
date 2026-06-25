@@ -24,10 +24,12 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
   if (notes.length === 0) {
     return (
       <div className="text-center py-6">
-        <IconNote size={24} className="mx-auto text-warm-300 mb-2" />
-        <p className="text-sm text-warm-500">No notes yet</p>
-        <p className="text-xs text-warm-400 mt-1">
-          Add notes to track observations and coaching points
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
+          <IconNote size={22} />
+        </div>
+        <p className="text-sm font-medium text-warm-700">No notes yet</p>
+        <p className="mt-1 text-xs leading-relaxed text-warm-500">
+          Add notes to track observations and coaching points.
         </p>
       </div>
     );
@@ -82,10 +84,10 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
 
               {!compact && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <IconButton variant="default" aria-label="Edit" className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white active:bg-cream-100/75 transition-colors">
+                  <IconButton variant="default" aria-label="Edit" className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-cream-50 active:bg-cream-100/75 transition-colors">
                     <IconEdit size={14} />
                   </IconButton>
-                  <IconButton variant="default" aria-label="Delete" className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-white active:bg-cream-100/75 transition-colors">
+                  <IconButton variant="default" aria-label="Delete" className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-cream-50 active:bg-cream-100/75 transition-colors">
                     <IconTrash size={14} />
                   </IconButton>
                 </div>

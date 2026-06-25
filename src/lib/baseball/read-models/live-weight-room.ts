@@ -1,0 +1,466 @@
+// =============================================================================
+// src/lib/baseball/read-models/live-weight-room.ts
+//
+// V11 Live Weight Room read model (spec L522-573 + Packet G). This is the
+// flagship premium staff surface: a strength coach runs a room of 20-60 athletes
+// from ONE screen — full athlete grid, right-rail queues, and a per-athlete set
+// logger drawer — without opening individual profiles.
+//
+// Source -> signal -> action wiring:
+//   source : today's materialized baseball_lift_sessions + session_exercises +
+//            set_results, plus readiness bands + availability + soreness.
+//   signal : the right-rail queues (needs-coach / readiness flags / load changes /
+//            missing check-ins) are DERIVED here from those sources — they are not
+//            stored, so they can never drift from the truth.
+//   action : the client logs sets / adjusts load / substitutes / marks observed /
+//            marks limited / messages / creates tasks via lifting-v11 actions; a
+//            poll re-runs THIS read model so the grid reflects the new state.
+//
+// HONESTY: readiness is only composed when the caller passes canViewReadiness
+// (the V11 gate). Bands come from the transparent readiness-compute — never a
+// medical claim, never a false "high" on sparse data. Every signal cites its
+// reason so the right rail is explainable, not a black box.
+//
+// SERVER-ONLY plain async — NOT 'use server'. RLS backs every query (staff scope).
+// =============================================================================
+
+import 'server-only';
+
+import { createClient } from '@/lib/supabase/server';
+import { computeReadiness } from '@/lib/baseball/lifting/readiness-compute';
+import { getFullName } from '@/lib/utils';
+import type {
+  BaseballLiveWeightRoomData,
+  BaseballLiveAthleteRow,
+  BaseballLiveExerciseRow,
+  BaseballLiveSetRow,
+  BaseballLiveQueues,
+  BaseballReadinessBand,
+  BaseballReadinessComputation,
+  BaseballAvailabilityStatus,
+  BaseballLiftSessionStatus,
+  BaseballLiftSessionExerciseStatus,
+} from '@/lib/types/baseball-lifting-v11';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Db = any;
+
+interface RosterRow {
+  id: string;
+  user_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  primary_position: string | null;
+}
+
+function todayYmd(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isRiskBand(band: BaseballReadinessBand | null): boolean {
+  return band === 'red' || band === 'orange_lower' || band === 'orange_upper';
+}
+
+/**
+ * Build the full Live Weight Room payload for a team. One call materializes the
+ * grid, drawer detail, and right-rail queues so the client polls a single source.
+ *
+ * @param teamId           active team (server-validated by the caller)
+ * @param canViewReadiness V11 gate — withholds readiness sub-feeds when false
+ * @param groupFilter      optional strength-group id; restricts the grid + queues
+ */
+export async function getLiveWeightRoomData(
+  teamId: string,
+  canViewReadiness: boolean,
+  groupFilter?: string | null,
+): Promise<BaseballLiveWeightRoomData> {
+  const supabase = (await createClient()) as Db;
+  const today = todayYmd();
+  const generatedAt = new Date().toISOString();
+
+  // ---- Roster (RLS-scoped to viewable players) ----------------------------
+  const { data: members } = await supabase
+    .from('baseball_team_members')
+    .select('player_id, baseball_players!inner ( id, user_id, first_name, last_name, primary_position )')
+    .eq('team_id', teamId);
+  const roster: RosterRow[] = (members ?? [])
+    .map((m: { baseball_players: RosterRow }) => m.baseball_players)
+    .filter((p: RosterRow | null): p is RosterRow => Boolean(p?.id));
+  const rosterById = new Map(roster.map((p) => [p.id, p]));
+
+  // ---- Today's materialized sessions --------------------------------------
+  const { data: sessionRows } = await supabase
+    .from('baseball_lift_sessions')
+    .select('id, player_id, status, scheduled_date, title')
+    .eq('team_id', teamId)
+    .eq('scheduled_date', today);
+  let sessions = (sessionRows ?? []) as Array<{
+    id: string; player_id: string; status: BaseballLiftSessionStatus;
+    scheduled_date: string; title: string | null;
+  }>;
+
+  // ---- Strength-group names per player + the group filter ------------------
+  const { data: groupRows } = await supabase
+    .from('baseball_strength_groups')
+    .select('id, name')
+    .eq('team_id', teamId)
+    .eq('is_active', true)
+    .order('name', { ascending: true });
+  const groups = (groupRows ?? []).map((g: { id: string; name: string }) => ({ id: g.id, name: g.name }));
+  const groupNameById = new Map<string, string>(groups.map((g: { id: string; name: string }) => [g.id, g.name]));
+
+  const { data: memberRows } = await supabase
+    .from('baseball_strength_group_members')
+    .select('group_id, player_id');
+  const groupsByPlayer = new Map<string, string[]>();
+  const playersInFilterGroup = new Set<string>();
+  for (const m of memberRows ?? []) {
+    const gid = (m as { group_id: string }).group_id;
+    const pid = (m as { player_id: string }).player_id;
+    const name = groupNameById.get(gid);
+    if (name) {
+      const arr = groupsByPlayer.get(pid) ?? [];
+      arr.push(name);
+      groupsByPlayer.set(pid, arr);
+    }
+    if (groupFilter && gid === groupFilter) playersInFilterGroup.add(pid);
+  }
+
+  // Apply the group filter to the session set (top bar still reflects the filter).
+  if (groupFilter) {
+    sessions = sessions.filter((s) => playersInFilterGroup.has(s.player_id));
+  }
+  const sessionIds = sessions.map((s) => s.id);
+
+  // ---- Session exercises (the stations) -----------------------------------
+  const exercisesBySession = new Map<string, BaseballLiveExerciseRow[]>();
+  const seToSession = new Map<string, string>();
+  if (sessionIds.length) {
+    const { data: seRows } = await supabase
+      .from('baseball_lift_session_exercises')
+      .select('id, session_id, exercise_id, exercise_name_snapshot, section_name_snapshot, section_type_snapshot, order_index, prescribed_sets, prescribed_reps, prescribed_load, prescribed_load_unit, prescribed_rpe, modification_reason, status')
+      .in('session_id', sessionIds)
+      .order('order_index', { ascending: true });
+    for (const se of seRows ?? []) {
+      const r = se as {
+        id: string; session_id: string; exercise_id: string | null;
+        exercise_name_snapshot: string; section_name_snapshot: string | null;
+        section_type_snapshot: string | null; order_index: number;
+        prescribed_sets: number | null; prescribed_reps: number | null;
+        prescribed_load: number | null; prescribed_load_unit: string | null;
+        prescribed_rpe: number | null; modification_reason: string | null;
+        status: BaseballLiftSessionExerciseStatus;
+      };
+      seToSession.set(r.id, r.session_id);
+      const arr = exercisesBySession.get(r.session_id) ?? [];
+      arr.push({
+        session_exercise_id: r.id,
+        exercise_id: r.exercise_id,
+        exercise_name: r.exercise_name_snapshot,
+        section_name: r.section_name_snapshot,
+        section_type: r.section_type_snapshot,
+        order_index: r.order_index,
+        prescribed_sets: r.prescribed_sets,
+        prescribed_reps: r.prescribed_reps,
+        prescribed_load: r.prescribed_load,
+        prescribed_load_unit: r.prescribed_load_unit,
+        prescribed_rpe: r.prescribed_rpe,
+        modification_reason: r.modification_reason,
+        was_modified: Boolean(r.modification_reason),
+        status: r.status,
+        sets: [],
+        sets_logged: 0,
+      });
+      exercisesBySession.set(r.session_id, arr);
+    }
+  }
+
+  // ---- Set results (the logged work) --------------------------------------
+  const seIds = Array.from(seToSession.keys());
+  const setsBySe = new Map<string, BaseballLiveSetRow[]>();
+  if (seIds.length) {
+    const { data: setRows } = await supabase
+      .from('baseball_lift_set_results')
+      .select('session_exercise_id, set_number, prescribed_reps, actual_reps, prescribed_load, actual_load, load_unit, rpe, velocity, coach_observed, completed_at, player_note')
+      .in('session_exercise_id', seIds)
+      .order('set_number', { ascending: true });
+    for (const st of setRows ?? []) {
+      const r = st as BaseballLiveSetRow & { session_exercise_id: string };
+      const arr = setsBySe.get(r.session_exercise_id) ?? [];
+      arr.push({
+        set_number: r.set_number,
+        prescribed_reps: r.prescribed_reps,
+        actual_reps: r.actual_reps,
+        prescribed_load: r.prescribed_load,
+        actual_load: r.actual_load,
+        load_unit: r.load_unit,
+        rpe: r.rpe,
+        velocity: r.velocity,
+        coach_observed: r.coach_observed,
+        completed_at: r.completed_at,
+        player_note: r.player_note,
+      });
+      setsBySe.set(r.session_exercise_id, arr);
+    }
+  }
+  // Attach sets to their exercise + count logged.
+  for (const list of exercisesBySession.values()) {
+    for (const ex of list) {
+      ex.sets = setsBySe.get(ex.session_exercise_id) ?? [];
+      ex.sets_logged = ex.sets.filter((s) => s.actual_reps != null || s.actual_load != null).length;
+    }
+  }
+
+  // ---- Readiness (gated) — band + reasons + availability ------------------
+  const bandByPlayer = new Map<string, BaseballReadinessComputation>();
+  const availByPlayer = new Map<string, BaseballAvailabilityStatus>();
+  const hasCheckinByPlayer = new Set<string>();
+
+  if (canViewReadiness) {
+    const since = new Date();
+    since.setDate(since.getDate() - 14);
+    const sinceYmd = since.toISOString().slice(0, 10);
+
+    const { data: checkins } = await supabase
+      .from('baseball_readiness_checkins')
+      .select('*')
+      .eq('team_id', teamId)
+      .gte('check_date', sinceYmd)
+      .order('check_date', { ascending: false });
+    const latestCheckin = new Map<string, Record<string, unknown>>();
+    const checkinIds: string[] = [];
+    for (const c of checkins ?? []) {
+      const pid = (c as { player_id: string }).player_id;
+      if (!latestCheckin.has(pid)) {
+        latestCheckin.set(pid, c as Record<string, unknown>);
+        checkinIds.push((c as { id: string }).id);
+        if ((c as { check_date: string }).check_date === today) hasCheckinByPlayer.add(pid);
+      }
+    }
+
+    const sorenessByCheckin = new Map<string, Array<{ region: string; severity: number }>>();
+    if (checkinIds.length) {
+      const { data: sm } = await supabase
+        .from('baseball_soreness_maps')
+        .select('checkin_id, body_region, severity')
+        .in('checkin_id', checkinIds);
+      for (const s of sm ?? []) {
+        const r = s as { checkin_id: string; body_region: string; severity: number };
+        const arr = sorenessByCheckin.get(r.checkin_id) ?? [];
+        arr.push({ region: r.body_region, severity: r.severity });
+        sorenessByCheckin.set(r.checkin_id, arr);
+      }
+    }
+
+    const { data: bw } = await supabase
+      .from('baseball_bodyweight_entries')
+      .select('player_id, entry_date, weight_lbs')
+      .eq('team_id', teamId)
+      .gte('entry_date', sinceYmd)
+      .order('entry_date', { ascending: false });
+    const bwDeltaByPlayer = new Map<string, number>();
+    const bwByPlayer = new Map<string, Array<{ date: string; w: number }>>();
+    for (const e of bw ?? []) {
+      const r = e as { player_id: string; entry_date: string; weight_lbs: number };
+      const arr = bwByPlayer.get(r.player_id) ?? [];
+      arr.push({ date: r.entry_date, w: r.weight_lbs });
+      bwByPlayer.set(r.player_id, arr);
+    }
+    for (const [pid, list] of bwByPlayer) {
+      const newest = list[0];
+      const oldest = list[list.length - 1];
+      if (newest && oldest && list.length >= 2) {
+        bwDeltaByPlayer.set(pid, Math.round((newest.w - oldest.w) * 10) / 10);
+      }
+    }
+
+    const { data: avail } = await supabase
+      .from('baseball_availability_statuses')
+      .select('player_id, status, starts_at')
+      .eq('team_id', teamId)
+      .order('starts_at', { ascending: false });
+    for (const a of avail ?? []) {
+      const r = a as { player_id: string; status: BaseballAvailabilityStatus };
+      if (!availByPlayer.has(r.player_id)) availByPlayer.set(r.player_id, r.status);
+    }
+
+    for (const p of roster) {
+      const c = latestCheckin.get(p.id) as Record<string, unknown> | undefined;
+      const checkinId = c?.id as string | undefined;
+      const soreList = checkinId ? sorenessByCheckin.get(checkinId) ?? [] : [];
+      const maxSeverity = soreList.length ? Math.max(...soreList.map((s) => s.severity)) : null;
+      const hasUpper = soreList.some((s) => /arm|shoulder|elbow|chest|upper|back/i.test(s.region));
+      const hasLower = soreList.some((s) => /leg|knee|hip|quad|hamstring|calf|ankle|lower/i.test(s.region));
+      const comp = computeReadiness({
+        playerId: p.id,
+        checkDate: (c?.check_date as string) ?? null,
+        today,
+        sleepHours: (c?.sleep_hours as number) ?? null,
+        energyLevel: (c?.energy_level as number) ?? null,
+        stressLevel: (c?.stress_level as number) ?? null,
+        sorenessLevel: (c?.soreness_level as number) ?? null,
+        armStatus: (c?.arm_status as never) ?? null,
+        lowerBodyStatus: (c?.lower_body_status as number) ?? null,
+        illnessFlag: Boolean(c?.illness_flag),
+        maxSorenessSeverity: maxSeverity,
+        hasUpperSoreness: hasUpper,
+        hasLowerSoreness: hasLower,
+        bodyweightDelta7d: bwDeltaByPlayer.get(p.id) ?? null,
+        availabilityStatus: (availByPlayer.get(p.id) as never) ?? null,
+      });
+      bandByPlayer.set(p.id, comp);
+    }
+  }
+
+  // ---- Build per-athlete grid rows ----------------------------------------
+  const athletes: BaseballLiveAthleteRow[] = sessions.map((s) => {
+    const p = rosterById.get(s.player_id);
+    const list = (exercisesBySession.get(s.id) ?? []).slice().sort((a, b) => a.order_index - b.order_index);
+    const comp = bandByPlayer.get(s.player_id) ?? null;
+    const band = comp?.band ?? null;
+    const availability = availByPlayer.get(s.player_id) ?? null;
+
+    // Current station = first exercise not yet fully logged; else the last one.
+    const current =
+      list.find((ex) => ex.status !== 'completed' && (ex.prescribed_sets == null || ex.sets_logged < (ex.prescribed_sets ?? 0))) ??
+      list[list.length - 1] ??
+      null;
+
+    // Prescribed/actual/RPE columns track the first main_strength lift if present,
+    // otherwise the current station — so the grid shows the lift that matters.
+    const mainEx = list.find((ex) => ex.section_type === 'main_strength') ?? current;
+    const mainSets = mainEx?.sets ?? [];
+    const actualLoad = mainSets.reduce<number | null>(
+      (best, st) => (st.actual_load != null ? Math.max(best ?? 0, st.actual_load) : best),
+      null,
+    );
+    const lastRpeSet = [...mainSets].reverse().find((st) => st.rpe != null);
+
+    // Last update = newest completed_at across every set on this session.
+    let lastUpdate: string | null = null;
+    for (const ex of list) {
+      for (const st of ex.sets) {
+        if (st.completed_at && (!lastUpdate || st.completed_at > lastUpdate)) lastUpdate = st.completed_at;
+      }
+    }
+
+    const hasLoadChange = list.some((ex) => ex.was_modified);
+    const missingCheckin = canViewReadiness && !hasCheckinByPlayer.has(s.player_id);
+    const completedExercises = list.filter((ex) => ex.status === 'completed').length;
+
+    const needsCoach =
+      isRiskBand(band) ||
+      availability === 'limited' ||
+      availability === 'hold' ||
+      s.status === 'missed' ||
+      missingCheckin;
+
+    return {
+      session_id: s.id,
+      player_id: s.player_id,
+      user_id: p?.user_id ?? null,
+      first_name: p?.first_name ?? null,
+      last_name: p?.last_name ?? null,
+      primary_position: p?.primary_position ?? null,
+      group_names: groupsByPlayer.get(s.player_id) ?? [],
+      session_status: s.status,
+      readiness_band: band,
+      readiness_reasons: comp?.reasons ?? [],
+      availability_status: availability,
+      current_station: current?.section_name ?? null,
+      current_exercise: current?.exercise_name ?? null,
+      prescribed_load: mainEx?.prescribed_load ?? null,
+      actual_load: actualLoad,
+      rpe: lastRpeSet?.rpe ?? null,
+      last_update: lastUpdate,
+      has_load_change: hasLoadChange,
+      needs_coach: needsCoach,
+      exercises: list,
+      total_exercises: list.length,
+      completed_exercises: completedExercises,
+    };
+  });
+
+  // Sort: athletes who need a coach first, then in-progress, then by name.
+  const statusRank: Record<BaseballLiftSessionStatus, number> = {
+    started: 0, assigned: 1, modified: 1, missed: 0, excused: 3, completed: 4,
+  };
+  athletes.sort((a, b) => {
+    if (a.needs_coach !== b.needs_coach) return a.needs_coach ? -1 : 1;
+    const sr = (statusRank[a.session_status] ?? 2) - (statusRank[b.session_status] ?? 2);
+    if (sr !== 0) return sr;
+    return getFullName(a.first_name, a.last_name).localeCompare(getFullName(b.first_name, b.last_name));
+  });
+
+  // ---- Right-rail queues (derived signals) --------------------------------
+  const queues: BaseballLiveQueues = {
+    needs_coach: [],
+    readiness_flags: [],
+    load_changes: [],
+    missing_checkins: [],
+  };
+  for (const a of athletes) {
+    if (isRiskBand(a.readiness_band) && a.readiness_band) {
+      queues.readiness_flags.push({ player_id: a.player_id, band: a.readiness_band });
+    }
+    if (a.has_load_change) {
+      const modEx = a.exercises.find((ex) => ex.was_modified);
+      queues.load_changes.push({
+        player_id: a.player_id,
+        reason: modEx?.modification_reason ?? 'Load adjusted',
+      });
+    }
+    if (canViewReadiness && !hasCheckinByPlayer.has(a.player_id)) {
+      queues.missing_checkins.push(a.player_id);
+    }
+    if (a.needs_coach) {
+      let reason = 'Needs attention';
+      if (a.session_status === 'missed') reason = 'Missed session';
+      else if (a.readiness_band === 'red') reason = 'Hold and review';
+      else if (a.readiness_band === 'orange_lower') reason = 'Modify lower body';
+      else if (a.readiness_band === 'orange_upper') reason = 'Modify upper body';
+      else if (a.availability_status === 'limited') reason = 'Marked limited';
+      else if (a.availability_status === 'hold') reason = 'On hold';
+      else if (canViewReadiness && !hasCheckinByPlayer.has(a.player_id)) reason = 'No check-in today';
+      queues.needs_coach.push({ player_id: a.player_id, reason });
+    }
+  }
+
+  // ---- Top bar ------------------------------------------------------------
+  const { data: teamRow } = await supabase
+    .from('baseball_teams')
+    .select('name')
+    .eq('id', teamId)
+    .maybeSingle();
+  const total = athletes.length;
+  const completed = athletes.filter((a) => a.session_status === 'completed').length;
+  const inProgress = athletes.filter((a) => a.session_status === 'started').length;
+  const notStarted = athletes.filter((a) => a.session_status === 'assigned' || a.session_status === 'modified').length;
+  const riskCount = athletes.filter((a) => isRiskBand(a.readiness_band)).length;
+  // The lift-day label: dominant session title today (they share a published day).
+  const titleCounts = new Map<string, number>();
+  for (const s of sessions) {
+    const t = s.title ?? 'Lift';
+    titleCounts.set(t, (titleCounts.get(t) ?? 0) + 1);
+  }
+  const liftDayLabel =
+    [...titleCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Lift';
+
+  return {
+    top_bar: {
+      team_name: (teamRow as { name?: string } | null)?.name ?? 'Team',
+      lift_day_label: liftDayLabel,
+      active_group: groupFilter ? groupNameById.get(groupFilter) ?? null : null,
+      total,
+      completed,
+      in_progress: inProgress,
+      not_started: notStarted,
+      risk_count: riskCount,
+    },
+    athletes,
+    queues,
+    groups,
+    readiness_withheld: !canViewReadiness,
+    generated_at: generatedAt,
+  };
+}

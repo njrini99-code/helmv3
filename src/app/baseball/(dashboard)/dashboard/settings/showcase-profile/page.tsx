@@ -1,0 +1,21 @@
+// =============================================================================
+// src/app/baseball/(dashboard)/dashboard/settings/showcase-profile/page.tsx
+//
+// Wave 4 / packet: qa-screens (Settings routes coverage completeness)
+//
+// Showcase & Scout Profile Settings is an ACCEPTED consolidation: its controls live as a section of the
+// single Program Settings page (one save surface, one capability gate). This
+// dedicated spec route (v4 §Settings Architecture) resolves by redirecting to
+// that section's anchor, so every route in the spec route map is reachable and
+// deep-linkable without duplicating the editor or its server enforcement.
+// =============================================================================
+
+import { permanentRedirect } from 'next/navigation';
+
+export const metadata = {
+  title: 'Showcase & Scout Profile Settings | Helm Baseball',
+};
+
+export default function Page() {
+  permanentRedirect('/baseball/dashboard/settings/program#showcase-profile');
+}

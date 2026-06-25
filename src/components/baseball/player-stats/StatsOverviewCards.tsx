@@ -34,7 +34,7 @@ function StatCard({ label, value, subLabel, subValue, trend, size = 'normal', hi
   return (
     <div
       className={cn(
-        'bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4 transition-all duration-200 hover:shadow-md',
+        'bg-cream-100/75 backdrop-blur-xl border border-warm-200/45 shadow-glass rounded-2xl p-4 transition-all duration-200 hover:shadow-glass-hover',
         size === 'large' && 'col-span-2 md:col-span-1',
         highlight && 'ring-2 ring-primary-500/20'
       )}

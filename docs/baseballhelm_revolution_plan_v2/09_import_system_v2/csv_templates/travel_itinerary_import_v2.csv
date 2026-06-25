@@ -1,0 +1,2 @@
+trip_name,item_type,title,starts_at,ends_at,location,player_group,requires_ack,notes
+Coastal Tech Series,bus_departure,Depart Baseball Facility,2026-03-27T09:15:00,2026-03-27T09:30:00,"North Shore Fieldhouse",travel_roster,true,"Players must bring team ID and navy travel gear"

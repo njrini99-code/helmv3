@@ -24,10 +24,14 @@ const activityConfig: Record<TeamActivity['type'], {
   color: string;
   bgColor: string;
 }> = {
+  // Activity types read as warm-neutral by default; only a positive outcome
+  // (goal completed / player joined) earns primary green. Keeps the feed on the
+  // restricted accent set shared with Signals + Command Center — no separate
+  // purple/blue categorical hues on the daily home.
   video_upload: {
     icon: IconVideo,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
+    color: 'text-warm-600',
+    bgColor: 'bg-warm-100',
   },
   goal_completed: {
     icon: IconCheck,
@@ -36,8 +40,8 @@ const activityConfig: Record<TeamActivity['type'], {
   },
   stats_uploaded: {
     icon: IconChart,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
+    color: 'text-warm-600',
+    bgColor: 'bg-warm-100',
   },
   player_joined: {
     icon: IconUsers,

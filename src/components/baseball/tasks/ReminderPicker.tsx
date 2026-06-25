@@ -94,14 +94,16 @@ export function ReminderPicker({
           <IconBell size={16} className="text-warm-500" />
           Set Reminder
         </span>
-        <IconButton variant="primary" aria-label="Set reminder"
+        <IconButton
+          variant="ghost"
+          aria-label="Set reminder"
           type="button"
           role="switch"
           aria-checked={isEnabled}
           onClick={handleToggle}
           disabled={disabled || !dueDate}
           className={cn(
-            'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+            'relative inline-flex h-5 w-9 min-h-0 min-w-0 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors hover:bg-transparent',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
             'disabled:cursor-not-allowed disabled:opacity-50',
             isEnabled ? 'bg-primary-600' : 'bg-warm-200'
@@ -129,17 +131,17 @@ export function ReminderPicker({
             </p>
             <div className="flex flex-wrap gap-2">
               {PRESETS.map((preset) => (
-                <Button variant="primary"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   key={preset.value}
                   type="button"
                   onClick={() => handlePresetChange(preset.value)}
                   disabled={disabled}
                   className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
-                    'disabled:cursor-not-allowed disabled:opacity-50',
+                    'rounded-full border font-medium',
                     selectedPreset === preset.value
-                      ? 'bg-primary-50 text-primary-700 border-primary-200'
+                      ? 'bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-50'
                       : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
                   )}
                 >

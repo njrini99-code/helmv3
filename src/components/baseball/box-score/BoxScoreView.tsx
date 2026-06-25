@@ -74,7 +74,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
   return (
     <div className="space-y-5">
       {/* Game header */}
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+      <div className="glass-standard rounded-2xl p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -127,7 +127,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
       {/* Batting */}
       {batting.length > 0 && (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip">
           <div className="px-5 py-3 border-b border-warm-100">
             <h2 className="text-sm font-bold text-warm-700 uppercase tracking-wider">Batting</h2>
           </div>
@@ -199,7 +199,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
       {/* Pitching */}
       {pitching.length > 0 && (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip">
           <div className="px-5 py-3 border-b border-warm-100">
             <h2 className="text-sm font-bold text-warm-700 uppercase tracking-wider">Pitching</h2>
           </div>
@@ -274,8 +274,8 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
       {/* Empty states */}
       {batting.length === 0 && pitching.length === 0 && (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
-          <p className="text-warm-400 text-sm">No stats recorded for this game yet.</p>
+        <div className="glass-standard rounded-2xl p-10 text-center">
+          <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">No stats recorded for this game yet.</p>
         </div>
       )}
     </div>

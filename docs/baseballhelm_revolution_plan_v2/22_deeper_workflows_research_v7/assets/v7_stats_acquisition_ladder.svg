@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="900" viewBox="0 0 1500 900">
+  <rect width="1500" height="900" fill="#f7f4ee"/>
+  <text x="70" y="90" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700" fill="#17212b">Stats Acquisition Ladder</text>
+  <text x="72" y="130" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#5b6470">BaseballHelm guides coaches to the cleanest available data path, then stores every row by source, scope, and trust.</text>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="120" y="210" width="1260" height="80" rx="16" fill="#17212b"/>
+    <text x="160" y="260" font-size="24" font-weight="700" fill="#fff">1. Partner/API sync when formally available</text>
+    <text x="1000" y="260" font-size="17" fill="#cdd6df">future-ready adapter</text>
+    <rect x="170" y="320" width="1160" height="80" rx="16" fill="#ffffff" stroke="#ded8ce"/>
+    <text x="210" y="370" font-size="24" font-weight="700" fill="#17212b">2. Official XML upload</text>
+    <text x="825" y="370" font-size="17" fill="#5b6470">GameChanger college, StatCrew, Presto, SIDEARM/NCAA</text>
+    <rect x="220" y="430" width="1060" height="80" rx="16" fill="#ffffff" stroke="#ded8ce"/>
+    <text x="260" y="480" font-size="24" font-weight="700" fill="#17212b">3. Vendor CSV/XLSX export</text>
+    <text x="810" y="480" font-size="17" fill="#5b6470">season stats, TrackMan, Rapsodo, TeamBuildr, classes</text>
+    <rect x="270" y="540" width="960" height="80" rx="16" fill="#ffffff" stroke="#ded8ce"/>
+    <text x="310" y="590" font-size="24" font-weight="700" fill="#17212b">4. Vendor report import</text>
+    <text x="780" y="590" font-size="17" fill="#5b6470">6-4-3, Synergy, custom reports</text>
+    <rect x="320" y="650" width="860" height="80" rx="16" fill="#ffffff" stroke="#ded8ce"/>
+    <text x="360" y="700" font-size="24" font-weight="700" fill="#17212b">5. PDF/text extraction with review</text>
+    <text x="880" y="700" font-size="17" fill="#5b6470">never auto-official</text>
+    <rect x="370" y="760" width="760" height="80" rx="16" fill="#fff3ed" stroke="#f0b099"/>
+    <text x="410" y="810" font-size="24" font-weight="700" fill="#a63a20">6. Manual entry with audit trail</text>
+    <text x="835" y="810" font-size="17" fill="#6f3b2c">fallback, not chaos</text>
+  </g>
+</svg>
+

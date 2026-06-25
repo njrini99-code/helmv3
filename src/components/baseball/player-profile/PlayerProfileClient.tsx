@@ -31,6 +31,7 @@ import {
   IconClock,
   IconPlus,
   IconChevronRight,
+  IconMapPin,
 } from '@/components/icons';
 import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
 import { PlayerInsightsPanel } from './PlayerInsightsPanel';
@@ -387,7 +388,7 @@ export function PlayerProfileClient({
 
               {/* Name + info */}
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-warm-900 leading-tight">
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-warm-900 leading-tight">
                   {fullName}
                 </h1>
 
@@ -409,7 +410,7 @@ export function PlayerProfileClient({
                     </span>
                   )}
                   {player.gpa && (
-                    <span className="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg">
+                    <span className="px-2.5 py-1 bg-warm-100 text-warm-700 text-xs font-semibold rounded-lg">
                       GPA {player.gpa.toFixed(2)}
                     </span>
                   )}
@@ -419,7 +420,7 @@ export function PlayerProfileClient({
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm text-warm-500">
                   {hometown && (
                     <span className="flex items-center gap-1">
-                      <span className="text-warm-300">📍</span>
+                      <IconMapPin size={14} className="shrink-0 text-warm-400" />
                       {hometown}
                     </span>
                   )}
@@ -496,7 +497,7 @@ export function PlayerProfileClient({
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-cream-100/75 backdrop-blur-sm text-warm-600 hover:bg-white border border-white/20 hover:shadow-sm'
+                  : 'bg-cream-100/75 backdrop-blur-sm text-warm-600 hover:bg-cream-50 border border-warm-200/45 hover:shadow-sm'
               }`}
             >
               {tab.icon}
@@ -555,32 +556,32 @@ export function PlayerProfileClient({
                   <div className="h-52">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={trendData} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeOpacity={0.6} vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" strokeOpacity={0.6} vertical={false} />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 10, fill: '#94a3b8' }}
-                          axisLine={{ stroke: '#e2e8f0' }}
+                          tick={{ fontSize: 10, fill: '#78716c' }}
+                          axisLine={{ stroke: '#e7e5e4' }}
                           tickLine={false}
                           interval="preserveStartEnd"
                           minTickGap={40}
                         />
                         <YAxis
-                          tick={{ fontSize: 10, fill: '#94a3b8' }}
+                          tick={{ fontSize: 10, fill: '#78716c' }}
                           axisLine={false}
                           tickLine={false}
                           tickFormatter={(v: number) => formatAvg(v)}
                           domain={[0, 0.5]}
                           width={36}
                         />
-                        <ReferenceLine y={0.3} stroke="#94a3b8" strokeDasharray="4 4" strokeWidth={1} />
+                        <ReferenceLine y={0.3} stroke="#a8a29e" strokeDasharray="4 4" strokeWidth={1} />
                         <Tooltip content={<TrendTooltip />} />
                         <Line
                           type="monotone"
                           dataKey="avg"
-                          stroke="#22c55e"
+                          stroke="#16a34a"
                           strokeWidth={2.5}
-                          dot={{ r: 3, fill: '#22c55e', stroke: '#fff', strokeWidth: 1.5 }}
-                          activeDot={{ r: 5, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 }}
+                          dot={{ r: 3, fill: '#16a34a', stroke: '#fff', strokeWidth: 1.5 }}
+                          activeDot={{ r: 5, fill: '#16a34a', stroke: '#fff', strokeWidth: 2 }}
                           connectNulls
                         />
                       </LineChart>
@@ -592,7 +593,7 @@ export function PlayerProfileClient({
                       Batting Average
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <span className="w-3 h-0.5 inline-block" style={{ background: 'repeating-linear-gradient(90deg,#94a3b8,#94a3b8 3px,transparent 3px,transparent 6px)' }} />
+                      <span className="w-3 h-0.5 inline-block" style={{ background: 'repeating-linear-gradient(90deg,#a8a29e,#a8a29e 3px,transparent 3px,transparent 6px)' }} />
                       .300 Line
                     </span>
                   </div>
@@ -605,12 +606,12 @@ export function PlayerProfileClient({
                   <h3 className="font-semibold text-warm-900 mb-4">Advanced Metrics</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {pressureIndex && (
-                      <div className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl">
-                        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-                          <IconTarget size={18} className="text-purple-600" />
+                      <div className="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200/45 rounded-xl">
+                        <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
+                          <IconTarget size={18} className="text-warm-600" />
                         </div>
                         <div>
-                          <p className="text-eyebrow font-semibold text-purple-500 uppercase tracking-wide">Pressure</p>
+                          <p className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Pressure</p>
                           <p className="text-base font-bold text-warm-900">{pressureIndex}</p>
                           {aggregates?.pressure_gap != null && (
                             <p className="text-eyebrow text-warm-400">
@@ -621,7 +622,7 @@ export function PlayerProfileClient({
                       </div>
                     )}
                     {aggregates?.trend_magnitude != null && (
-                      <div className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl">
+                      <div className="flex items-center gap-3 p-3.5 bg-amber-50 border border-amber-200/45 rounded-xl">
                         <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
                           <IconActivity size={18} className="text-amber-600" />
                         </div>
@@ -635,7 +636,7 @@ export function PlayerProfileClient({
                       </div>
                     )}
                     {aggregates?.avg_exit_velocity != null && (
-                      <div className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl">
+                      <div className="flex items-center gap-3 p-3.5 bg-primary-50 border border-primary-200/45 rounded-xl">
                         <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
                           <IconBolt size={18} className="text-primary-600" />
                         </div>
@@ -700,10 +701,10 @@ export function PlayerProfileClient({
               {/* AI Insights */}
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                 <h3 className="font-semibold text-warm-900 flex items-center gap-2 mb-4">
-                  <IconSparkles size={16} className="text-purple-500" />
+                  <IconSparkles size={16} className="text-primary-600" />
                   AI Insights
                   {insights.length > 0 && (
-                    <span className="ml-auto text-xs font-medium px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                    <span className="ml-auto text-xs font-medium px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full">
                       {insights.length}
                     </span>
                   )}
@@ -737,7 +738,7 @@ export function PlayerProfileClient({
                 <div className="space-y-3">
                   {[
                     { label: 'Game', count: stats.filter((s) => s.stat_type === 'game').length, color: 'bg-primary-500' },
-                    { label: 'Practice / Scrimmage', count: stats.filter((s) => s.stat_type === 'practice').length, color: 'bg-blue-400' },
+                    { label: 'Practice / Scrimmage', count: stats.filter((s) => s.stat_type === 'practice').length, color: 'bg-primary-300' },
                     { label: 'Other', count: stats.filter((s) => s.stat_type !== 'game' && s.stat_type !== 'practice').length, color: 'bg-warm-300' },
                   ].map(({ label, count, color }) => (
                     <div key={label} className="flex items-center justify-between">
@@ -837,9 +838,11 @@ export function PlayerProfileClient({
             {/* Stats table */}
             {filteredStats.length === 0 ? (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
-                <IconActivity size={32} className="mx-auto text-warm-300 mb-3" />
-                <p className="text-warm-500 font-medium">No stats for this filter</p>
-                <p className="text-sm text-warm-400 mt-1">Try switching to "All" to see all sessions.</p>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
+                  <IconActivity size={28} />
+                </div>
+                <p className="font-semibold text-warm-900">No stats for this filter</p>
+                <p className="mt-1 text-sm leading-relaxed text-warm-500">Switch to “All” to see every session.</p>
               </div>
             ) : (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
@@ -876,7 +879,7 @@ export function PlayerProfileClient({
                                   stat.stat_type === 'game'
                                     ? 'bg-primary-100 text-primary-700'
                                     : stat.stat_type === 'practice'
-                                    ? 'bg-blue-100 text-blue-700'
+                                    ? 'bg-amber-100 text-amber-700'
                                     : 'bg-warm-100 text-warm-600'
                                 }`}
                               >
@@ -947,9 +950,11 @@ export function PlayerProfileClient({
             {/* Video grid / empty state */}
             {videosByFilter.length === 0 ? (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
-                <IconVideo size={36} className="mx-auto text-warm-300 mb-3" />
-                <p className="text-warm-500 font-medium">No videos uploaded yet</p>
-                <p className="text-sm text-warm-400 mt-1">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600/80">
+                  <IconVideo size={28} />
+                </div>
+                <p className="font-semibold text-warm-900">No videos uploaded yet</p>
+                <p className="mt-1 text-sm leading-relaxed text-warm-500">
                   Videos will appear here once the player uploads them.
                 </p>
               </div>

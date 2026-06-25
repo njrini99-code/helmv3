@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconPlus,
   IconMapPin,
@@ -344,9 +345,20 @@ function ItineraryCard({
                 </div>
 
                 {loadingExpenses ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto" />
-                    <p className="text-sm text-warm-500 mt-2">Loading expenses...</p>
+                  <div className="space-y-3" aria-busy="true" aria-label="Loading expenses">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-4 rounded-xl border border-warm-200 bg-white p-4"
+                      >
+                        <Skeleton variant="circular" width={40} height={40} />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton variant="text" width="45%" />
+                          <Skeleton variant="text" width="30%" height={10} />
+                        </div>
+                        <Skeleton variant="text" width={56} />
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <>
@@ -367,16 +379,20 @@ function ItineraryCard({
               {/* Actions */}
               {isCoach && (
                 <div className="flex items-center gap-2 pt-4 border-t border-warm-100">
-                  <Button variant="ghost"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
+                    className="gap-2 text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200"
                   >
                     <IconEdit size={14} />
                     Edit Trip
                   </Button>
-                  <Button variant="danger"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors"
+                    className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100"
                   >
                     <IconTrash size={14} />
                     Delete

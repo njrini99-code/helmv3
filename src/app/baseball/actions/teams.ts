@@ -718,3 +718,49 @@ export async function joinTeamByCode(inviteCode: string, playerId: string) {
   // Use existing join logic with validation
   return await joinTeam(playerId, team.id);
 }
+
+// ============================================================================
+// DECISION ROOM + STAFF SETTINGS — re-exports
+//
+// The Staff Decision Room and Staff Settings client components import their
+// data API from '@/app/baseball/actions/teams'. The implementations (currently
+// typed honest-empty placeholders pending the DB pass) live in the sibling
+// './decision-room' module; we re-export them here so the components resolve
+// against teams.ts without being edited. Functions re-export normally from a
+// 'use server' module (they are async server actions); types re-export as
+// type-only (erased at compile time).
+// ============================================================================
+
+export {
+  getDecisionRoomData,
+  getStaffSettingsData,
+  recordDecisionNote,
+  markMeetingItemDiscussed,
+  reopenMeetingItem,
+  resolveMeetingItem,
+  createMeetingItem,
+} from './decision-room';
+
+export type {
+  DecisionRoomData,
+  DecisionRoomAgendaItem,
+  DecisionRoomInsight,
+  DecisionRoomLedgerEntry,
+  DecisionRoomPlayerFocus,
+  DecisionRoomImportIssue,
+  DecisionRoomEffectivenessReview,
+  DecisionRoomActionOutcome,
+  DecisionRoomGameResult,
+  DecisionRoomAvailabilityConcern,
+  DecisionRoomAttendanceSummary,
+  DecisionRoomLiftSummary,
+  DecisionRoomOpenTask,
+  DecisionRoomConflict,
+  DecisionRoomSourceRef,
+  DecisionRoomSeverity,
+  DecisionRoomSummaryPlayer,
+  DecisionRoomMutationResult,
+  StaffSettingsData,
+  StaffMemberView,
+  StaffInvitationView,
+} from './decision-room';

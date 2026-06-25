@@ -568,7 +568,7 @@ export function CommandCenterClient({
                     return (
                       <div key={type} className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5">
                         <div className="flex items-center gap-2 mb-3">
-                          <span className={`w-2 h-2 rounded-full ${isGame ? 'bg-primary-500' : 'bg-blue-400'}`} />
+                          <span className={`w-2 h-2 rounded-full ${isGame ? 'bg-primary-500' : 'bg-amber-500'}`} />
                           <span className="text-sm font-semibold text-warm-900">
                             {isGame ? 'Game' : 'Scrimmage'}
                           </span>

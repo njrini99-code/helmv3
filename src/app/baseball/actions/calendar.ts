@@ -393,6 +393,51 @@ export async function uncheckInBaseballPlayer(
 // Query Helpers (for server-side fetching)
 // ============================================================================
 
+// ============================================================================
+// Practice -> Calendar attach
+// ============================================================================
+
+interface AttachPracticeInput {
+  title: string;
+  date: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  location?: string | null;
+}
+
+/**
+ * Create a calendar event for a published practice and return its event id so
+ * the practice can store the back-reference (baseball_practices.event_id).
+ *
+ * Wires to the real createBaseballEvent path (auth + coach/team resolution +
+ * RLS happen there), creating a 'practice'-typed baseball_events row. Returns
+ * `{ success, data: { eventId } }` matching the publishPractice call site,
+ * which treats a failed attach as a soft, non-rolling-back warning.
+ */
+export async function attachPracticeToCalendar(
+  input: AttachPracticeInput,
+): Promise<ActionResult<{ eventId: string }>> {
+  const result = await createBaseballEvent({
+    title: input.title,
+    eventType: 'practice',
+    startDate: input.date,
+    startTime: input.startTime ?? null,
+    endTime: input.endTime ?? null,
+    location: input.location ?? null,
+  });
+
+  if (!result.success) {
+    return { success: false, error: result.error };
+  }
+
+  const eventId = (result.data as { id?: string } | undefined)?.id;
+  if (!eventId) {
+    return { success: false, error: 'Calendar event was created but no id was returned.' };
+  }
+
+  return { success: true, data: { eventId } };
+}
+
 export async function getTeamEvents(teamId: string): Promise<ActionResult> {
   const supabase = await createClient();
 

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="950" viewBox="0 0 1600 950">
+  <rect width="1600" height="950" fill="#f7f4ee"/>
+  <text x="80" y="95" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="700" fill="#17212b">AutoSync Pipeline</text>
+  <text x="82" y="135" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#5b6470">Official stats flow into BaseballHelm automatically after setup. Coaches get dashboards and insights without uploading after every game.</text>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="90" y="240" width="240" height="135" rx="18" fill="#fff" stroke="#d8d2c7"/>
+    <text x="210" y="290" text-anchor="middle" font-size="25" font-weight="700" fill="#17212b">Official Source</text>
+    <text x="210" y="325" text-anchor="middle" font-size="15" fill="#5b6470">Presto, StatCrew,</text>
+    <text x="210" y="350" text-anchor="middle" font-size="15" fill="#5b6470">SIDEARM, StatBroadcast</text>
+
+    <rect x="405" y="240" width="240" height="135" rx="18" fill="#fff" stroke="#d8d2c7"/>
+    <text x="525" y="290" text-anchor="middle" font-size="25" font-weight="700" fill="#17212b">Ingest</text>
+    <text x="525" y="325" text-anchor="middle" font-size="15" fill="#5b6470">SFTP, HTTPS, email,</text>
+    <text x="525" y="350" text-anchor="middle" font-size="15" fill="#5b6470">local sync agent</text>
+
+    <rect x="720" y="240" width="240" height="135" rx="18" fill="#17212b"/>
+    <text x="840" y="290" text-anchor="middle" font-size="25" font-weight="700" fill="#fff">Normalize</text>
+    <text x="840" y="325" text-anchor="middle" font-size="15" fill="#cdd6df">detect, parse, validate,</text>
+    <text x="840" y="350" text-anchor="middle" font-size="15" fill="#cdd6df">match, score confidence</text>
+
+    <rect x="1035" y="240" width="240" height="135" rx="18" fill="#fff" stroke="#d8d2c7"/>
+    <text x="1155" y="290" text-anchor="middle" font-size="25" font-weight="700" fill="#17212b">Commit</text>
+    <text x="1155" y="325" text-anchor="middle" font-size="15" fill="#5b6470">games, players, stats,</text>
+    <text x="1155" y="350" text-anchor="middle" font-size="15" fill="#5b6470">corrections, audit</text>
+
+    <rect x="625" y="550" width="350" height="135" rx="20" fill="#fff3ed" stroke="#f0b099"/>
+    <text x="800" y="602" text-anchor="middle" font-size="25" font-weight="700" fill="#a63a20">Postgame Intelligence</text>
+    <text x="800" y="637" text-anchor="middle" font-size="15" fill="#6f3b2c">season stats, player trends,</text>
+    <text x="800" y="662" text-anchor="middle" font-size="15" fill="#6f3b2c">CoachHelm report, practice actions</text>
+  </g>
+  <g stroke="#d94f2b" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M330 307 L405 307"/>
+    <path d="M645 307 L720 307"/>
+    <path d="M960 307 L1035 307"/>
+    <path d="M1155 375 C1125 465 925 505 840 550"/>
+    <path d="M840 375 C820 455 800 500 800 550"/>
+  </g>
+</svg>

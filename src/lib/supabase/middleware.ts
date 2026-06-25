@@ -2,6 +2,45 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
+ * STAFF_CAPABILITY_ROUTES — the middleware mirror of every nav-registry entry
+ * that declares a `requiredCapability`, mapping its route href to the baseball
+ * capability key a staffer must hold to reach it. This is the defense-in-depth
+ * layer: an unauthorized staffer is redirected BEFORE the page renders, not just
+ * shown the page's own authorized:false envelope.
+ *
+ * CONTRACT (locked by nav-capability-gating.test.ts):
+ *   - every BASEBALL_NAV_REGISTRY entry with a requiredCapability appears here
+ *     with the SAME capability;
+ *   - every entry here maps to a known capability and a real registry surface,
+ *     EXCEPT the allowlisted finer write sub-route /baseball/dashboard/stats/upload
+ *     (a write sub-route of Stats Center with no own registry row).
+ *
+ * Pure config — no DB. Edits to the registry's requiredCapability map must be
+ * mirrored here or CI fails.
+ *
+ * TODO(db): the middleware does not yet ENFORCE these (resolve the viewer's
+ * capabilities + redirect). That enforcement is wired in the DB pass; this map
+ * is the source of truth it will read.
+ */
+export const STAFF_CAPABILITY_ROUTES: Array<[string, string]> = [
+  ['/baseball/dashboard/import', 'can_manage_imports'],
+  ['/baseball/dashboard/practice-effectiveness', 'can_manage_practice'],
+  ['/baseball/dashboard/postgame', 'can_manage_stats'],
+  ['/baseball/dashboard/decision-room', 'can_manage_settings'],
+  ['/baseball/dashboard/settings/staff', 'can_invite_staff'],
+  ['/baseball/dashboard/settings/program', 'can_manage_settings'],
+  ['/baseball/dashboard/compare', 'can_manage_roster'],
+  ['/baseball/dashboard/comparisons', 'can_manage_roster'],
+  ['/baseball/dashboard/scout-packets', 'can_export_reports'],
+  ['/baseball/dashboard/academics', 'can_view_academics'],
+  ['/baseball/dashboard/organization', 'can_manage_settings'],
+  ['/baseball/dashboard/teams', 'can_manage_settings'],
+  ['/baseball/dashboard/program', 'can_manage_settings'],
+  // Allowlisted write sub-route of Stats Center (no own registry entry).
+  ['/baseball/dashboard/stats/upload', 'can_manage_stats'],
+];
+
+/**
  * Determine which sport context from the URL
  */
 function getSportFromPath(pathname: string): 'baseball' | 'golf' | null {

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <rect width="1200" height="1200" fill="#f7f4ee"/>
+  <text x="110" y="100" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700" fill="#17212b">Player Today</text>
+  <text x="112" y="138" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#5b6470">The player experience is simple: know today, do the work, close the loop.</text>
+  <rect x="390" y="190" width="420" height="850" rx="54" fill="#17212b"/>
+  <rect x="420" y="235" width="360" height="760" rx="34" fill="#fbfaf7"/>
+  <text x="455" y="295" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#17212b">Today</text>
+  <text x="455" y="325" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#5b6470">Tuesday, Feb 17</text>
+
+  <rect x="455" y="360" width="290" height="88" rx="16" fill="#fff" stroke="#ded8ce"/>
+  <text x="480" y="392" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#17212b">Readiness Check</text>
+  <text x="480" y="420" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#5b6470">2 questions due before lift</text>
+
+  <rect x="455" y="470" width="290" height="88" rx="16" fill="#fff3ed" stroke="#f0b099"/>
+  <text x="480" y="502" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#17212b">Lift</text>
+  <text x="480" y="530" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#5b6470">11:20 AM, lower body modified</text>
+
+  <rect x="455" y="580" width="290" height="88" rx="16" fill="#fff" stroke="#ded8ce"/>
+  <text x="480" y="612" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#17212b">Classes</text>
+  <text x="480" y="640" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#5b6470">Bio Lab 1:00-2:15, report after</text>
+
+  <rect x="455" y="690" width="290" height="110" rx="16" fill="#17212b"/>
+  <text x="480" y="724" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#fff">Development Action</text>
+  <text x="480" y="752" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#cdd6df">Watch 2 clips before practice</text>
+  <text x="480" y="778" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#cdd6df">Focus: two-strike takes</text>
+
+  <rect x="455" y="822" width="290" height="88" rx="16" fill="#fff" stroke="#ded8ce"/>
+  <text x="480" y="854" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#17212b">Practice</text>
+  <text x="480" y="882" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#5b6470">3:10 PM, Group 2 hitting</text>
+
+  <rect x="505" y="930" width="190" height="40" rx="20" fill="#d94f2b"/>
+  <text x="600" y="956" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#fff">Mark Ready</text>
+</svg>
+

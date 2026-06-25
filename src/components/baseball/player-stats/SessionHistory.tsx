@@ -49,7 +49,7 @@ function SessionRow({ stat, isExpanded, onToggle }: SessionRowProps) {
   const typeColor = stat.stat_type === 'game'
     ? 'bg-primary-100 text-primary-700'
     : stat.stat_type === 'practice'
-    ? 'bg-blue-100 text-blue-700'
+    ? 'bg-cyan-100 text-cyan-700'
     : 'bg-warm-100 text-warm-700';
 
   return (

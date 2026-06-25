@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <rect width="1600" height="1000" fill="#ece7df"/>
+  <rect x="70" y="70" width="1460" height="860" rx="26" fill="#fbfaf7" stroke="#d6cfc3"/>
+  <text x="115" y="135" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700" fill="#17212b">Practice Plan Builder</text>
+  <text x="117" y="170" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#5b6470">Time slots on the left. Headline is required. Description, players, staff, signals, and metrics are optional but powerful.</text>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="110" y="225" width="840" height="610" rx="18" fill="#fff" stroke="#ded8ce"/>
+    <text x="145" y="270" font-size="24" font-weight="700" fill="#17212b">Time-Blocked Plan</text>
+    <line x1="230" y1="305" x2="230" y2="800" stroke="#ded8ce" stroke-width="2"/>
+    <text x="145" y="345" font-size="18" font-weight="700" fill="#d94f2b">2:45</text>
+    <text x="260" y="345" font-size="20" font-weight="700" fill="#17212b">Dynamic warmup + throwing ramp</text>
+    <text x="260" y="372" font-size="15" fill="#5b6470">Pitchers follow workload-specific throwing plan.</text>
+    <rect x="720" y="325" width="170" height="32" rx="16" fill="#fff3ed"/>
+    <text x="805" y="347" text-anchor="middle" font-size="13" fill="#a63a20">workload linked</text>
+    <text x="145" y="445" font-size="18" font-weight="700" fill="#d94f2b">3:00</text>
+    <text x="260" y="445" font-size="20" font-weight="700" fill="#17212b">Two-strike chase station</text>
+    <text x="260" y="472" font-size="15" fill="#5b6470">Group A sees breaking balls below zone; track swing/take decisions.</text>
+    <rect x="720" y="425" width="170" height="32" rx="16" fill="#fff3ed"/>
+    <text x="805" y="447" text-anchor="middle" font-size="13" fill="#a63a20">CoachHelm signal</text>
+    <text x="145" y="545" font-size="18" font-weight="700" fill="#d94f2b">3:20</text>
+    <text x="260" y="545" font-size="20" font-weight="700" fill="#17212b">Catcher block down/arm-side</text>
+    <text x="260" y="572" font-size="15" fill="#5b6470">Catchers rotate with machine; tag miss location and recovery.</text>
+    <text x="145" y="645" font-size="18" font-weight="700" fill="#d94f2b">3:45</text>
+    <text x="260" y="645" font-size="20" font-weight="700" fill="#17212b">Controlled scrimmage</text>
+    <text x="260" y="672" font-size="15" fill="#5b6470">Blue vs White; score as scrimmage; link to practice event.</text>
+    <rect x="720" y="625" width="170" height="32" rx="16" fill="#fff3ed"/>
+    <text x="805" y="647" text-anchor="middle" font-size="13" fill="#a63a20">lineup attached</text>
+
+    <rect x="995" y="225" width="435" height="610" rx="18" fill="#17212b"/>
+    <text x="1030" y="270" font-size="24" font-weight="700" fill="#fff">Scrimmage Lineup</text>
+    <rect x="1040" y="315" width="340" height="250" rx="130" fill="#31543f" stroke="#b6d0bd"/>
+    <text x="1208" y="352" text-anchor="middle" font-size="16" fill="#fff">CF</text>
+    <text x="1110" y="410" text-anchor="middle" font-size="16" fill="#fff">LF</text>
+    <text x="1310" y="410" text-anchor="middle" font-size="16" fill="#fff">RF</text>
+    <text x="1208" y="475" text-anchor="middle" font-size="16" fill="#fff">P</text>
+    <text x="1208" y="540" text-anchor="middle" font-size="16" fill="#fff">C</text>
+    <text x="1125" y="495" text-anchor="middle" font-size="16" fill="#fff">3B</text>
+    <text x="1290" y="495" text-anchor="middle" font-size="16" fill="#fff">1B</text>
+    <text x="1165" y="455" text-anchor="middle" font-size="16" fill="#fff">SS</text>
+    <text x="1250" y="455" text-anchor="middle" font-size="16" fill="#fff">2B</text>
+    <text x="1030" y="625" font-size="18" font-weight="700" fill="#fff">Batting Order</text>
+    <text x="1030" y="665" font-size="15" fill="#cdd6df">1. Reyes - SS</text>
+    <text x="1030" y="700" font-size="15" fill="#cdd6df">2. Miller - CF</text>
+    <text x="1030" y="735" font-size="15" fill="#cdd6df">3. Jackson - 1B</text>
+    <text x="1030" y="770" font-size="15" fill="#cdd6df">4. Ortiz - DH</text>
+  </g>
+</svg>
+

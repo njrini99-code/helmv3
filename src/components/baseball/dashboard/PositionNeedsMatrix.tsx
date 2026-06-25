@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import {
   IconTarget,
@@ -78,8 +79,10 @@ function getStatusConfig(status: PositionStatus) {
     case 'ahead':
       return {
         icon: IconCheck,
-        color: 'text-blue-600',
-        bg: 'bg-blue-50',
+        // "Ahead" is a positive position → primary green (the daily-home
+        // restricted accent set), not a separate blue categorical hue.
+        color: 'text-primary-700',
+        bg: 'bg-primary-50',
         label: 'Ahead',
         description: 'Strong position',
       };
@@ -203,12 +206,18 @@ export function PositionNeedsMatrix({
       <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="px-6 py-4 border-b border-warm-100/50">
-          <div className="h-5 w-32 bg-warm-200 rounded animate-pulse" />
+          <div className="flex items-center gap-3">
+            <Skeleton variant="rectangular" width={36} height={36} className="rounded-lg" />
+            <div>
+              <Skeleton variant="text" width={140} height={18} className="mb-1" />
+              <Skeleton variant="text" width={90} height={12} />
+            </div>
+          </div>
         </div>
         <div className="p-6">
           <div className="space-y-3">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-10 bg-warm-100 rounded-lg animate-pulse" />
+              <Skeleton key={i} variant="rectangular" className="w-full h-10 rounded-lg" />
             ))}
           </div>
         </div>
@@ -223,8 +232,8 @@ export function PositionNeedsMatrix({
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
-            <IconTarget size={18} className="text-indigo-600" />
+          <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
+            <IconTarget size={18} className="text-primary-600" />
           </div>
           <div>
             <h2 className="font-semibold text-warm-900 tracking-tight">Position Needs</h2>

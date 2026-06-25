@@ -149,27 +149,31 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       {loading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 bg-warm-100 rounded-2xl animate-pulse" />
+            <div
+              key={i}
+              className="relative h-28 glass-standard rounded-2xl overflow-clip"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+            </div>
           ))}
         </div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-center">
-          <p className="text-sm text-red-600">{error}</p>
-          <Button variant="danger"
-            onClick={() => fetchGames()}
-            className="mt-3 text-sm text-red-600 underline"
-          >
-            Retry
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-center">
+          <p className="text-sm font-medium text-red-700 mb-1">Couldn&apos;t load games</p>
+          <p className="text-sm text-red-600/90 mb-4">{error}</p>
+          <Button variant="secondary" size="sm" onClick={() => fetchGames()}>
+            Try again
           </Button>
         </div>
       ) : games.length === 0 ? (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-            <IconPlus size={24} className="text-warm-400" />
+        <div className="glass-standard rounded-2xl p-10 text-center animate-fade-in">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-primary-600/80 mx-auto mb-5">
+            <IconPlus size={28} />
           </div>
-          <h3 className="text-base font-semibold text-warm-900 mb-1">No games yet</h3>
-          <p className="text-sm text-warm-500 mb-5">
-            Add your first game to start tracking stats.
+          <h3 className="text-[17px] font-semibold text-warm-900 tracking-tight mb-2">No games yet</h3>
+          <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto mb-6">
+            Add your first game to start tracking box scores and season stats.
           </p>
           {showAddButton && (
             <Link

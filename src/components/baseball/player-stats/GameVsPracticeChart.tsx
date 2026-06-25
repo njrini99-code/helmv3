@@ -57,7 +57,7 @@ function CustomTooltip({ active, payload, label }: {
         {data.practiceAB > 0 && (
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#0e7490]" />
               <span className="text-xs text-warm-600">Practice</span>
             </div>
             <span className="text-sm font-semibold text-warm-900">
@@ -68,7 +68,7 @@ function CustomTooltip({ active, payload, label }: {
         {data.gameAB > 0 && (
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-primary-600" />
               <span className="text-xs text-warm-600">Game</span>
             </div>
             <span className="text-sm font-semibold text-warm-900">
@@ -191,7 +191,7 @@ export function GameVsPracticeChart({ stats, className }: GameVsPracticeChartPro
             <Bar
               dataKey="practiceAvg"
               name="Practice"
-              fill="#3b82f6"
+              fill="#0e7490"
               radius={[4, 4, 0, 0]}
               maxBarSize={32}
             >
@@ -205,7 +205,7 @@ export function GameVsPracticeChart({ stats, className }: GameVsPracticeChartPro
             <Bar
               dataKey="gameAvg"
               name="Game"
-              fill="#22c55e"
+              fill="#16A34A"
               radius={[4, 4, 0, 0]}
               maxBarSize={32}
             >

@@ -1,0 +1,50 @@
+{
+  "product": "BaseballHelm Ultracode Command Center",
+  "mission": "Transform helmv3 baseball into a college-baseball operating-system MVP (Phase 0 + Phase 1) — source-linked, role-safe, premium.",
+  "phase": "Task 0 — Live Command Center",
+  "repo_path": "/Users/ricknini/Downloads/helmv3",
+  "branch": "fix/crm-logging-attendance-jersey-2026-06-23",
+  "url": "http://127.0.0.1:4878",
+  "permission_mode": "full-throttle (visible, audited, checkpointed)",
+  "task0_gate": {
+    "status": "open",
+    "verified": true,
+    "verified_at": "2026-06-24T00:09:56.392Z"
+  },
+  "read_order": [
+    "V12",
+    "V11",
+    "V10",
+    "V9",
+    "V8",
+    "V7",
+    "V6",
+    "older V2"
+  ],
+  "definition_of_done": [
+    "Command center files exist and server runs locally",
+    "Dashboard loads in Chrome (cream/green, no black)",
+    "Agent City, Factory Floor, Control Tower, QA Lab, Codebase City, Agent Cockpit, Flight Recorder, Memory Library, Handoff Ledger visible",
+    "Seeded agents + work packets render",
+    "Live events render/poll; hook receiver + bridge exist",
+    "Git/repo status renders; replay state exists",
+    "command_center_verified logged; Task 0 shown complete"
+  ],
+  "forbidden_scope": [
+    "Direct TrackMan/Rapsodo/GameChanger/Teamworks live sync",
+    "Recruiting marketplace",
+    "Full compliance engine",
+    "Full nutrition platform",
+    "Full strength platform",
+    "Full drill marketplace",
+    "Medical injury management",
+    "Unrestricted AI chat as primary product"
+  ],
+  "honest_states": {
+    "tests": "No tests run yet",
+    "migrations": "No migrations changed yet",
+    "product_files": "No product files changed yet"
+  },
+  "started_at": "2026-06-24T00:03:44.062Z",
+  "updated_at": "2026-06-24T00:09:56.392Z"
+}

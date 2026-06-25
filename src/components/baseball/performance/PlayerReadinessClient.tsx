@@ -1,0 +1,221 @@
+'use client';
+
+// =============================================================================
+// src/components/baseball/performance/PlayerReadinessClient.tsx
+//
+// V11 player readiness check-in (spec L480-485, L575-638). Sleep / energy /
+// stress / soreness / arm status / lower-body status / illness + bodyweight +
+// soreness map. Player-safe language only — NEVER medical. Cream/green, reuses
+// Card. Idempotent upsert via submitReadinessCheckin (no delete-then-insert).
+// =============================================================================
+
+import { useState, useTransition } from 'react';
+import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
+
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { submitReadinessCheckin } from '@/app/baseball/actions/lifting';
+import { logBodyweight, saveSorenessMap } from '@/app/baseball/actions/lifting-v11';
+
+interface ExistingCheckin {
+  id: string;
+  sleep_hours: number | null;
+  energy_level: number | null;
+  stress_level: number | null;
+  soreness_level: number | null;
+  lower_body_status: number | null;
+  arm_status: string | null;
+  illness_flag: boolean | null;
+  notes: string | null;
+}
+
+interface Props {
+  checkDate: string;
+  existing: ExistingCheckin | null;
+}
+
+const ARM_OPTIONS = ['fresh', 'normal', 'tight', 'sore', 'pain'] as const;
+const SCALE = [1, 2, 3, 4, 5];
+
+function ScaleRow({ label, value, onChange, lowLabel, highLabel }: {
+  label: string; value: number | null; onChange: (v: number) => void; lowLabel: string; highLabel: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-warm-800">{label}</span>
+        <span className="text-[11px] text-warm-400">{lowLabel} → {highLabel}</span>
+      </div>
+      <div className="mt-1.5 flex gap-2">
+        {SCALE.map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            className={`h-9 flex-1 rounded-lg border text-sm font-medium transition-colors ${
+              value === n ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'
+            }`}
+            aria-pressed={value === n}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function PlayerReadinessClient({ checkDate, existing }: Props) {
+  const [isPending, startTransition] = useTransition();
+  const prefersReducedMotion = useReducedMotion();
+  const [sleep, setSleep] = useState(existing?.sleep_hours?.toString() ?? '');
+  const [energy, setEnergy] = useState<number | null>(existing?.energy_level ?? null);
+  const [stress, setStress] = useState<number | null>(existing?.stress_level ?? null);
+  const [soreness, setSoreness] = useState<number | null>(existing?.soreness_level ?? null);
+  const [lowerBody, setLowerBody] = useState<number | null>(existing?.lower_body_status ?? null);
+  const [arm, setArm] = useState<string | null>(existing?.arm_status ?? null);
+  const [illness, setIllness] = useState(existing?.illness_flag ?? false);
+  const [notes, setNotes] = useState(existing?.notes ?? '');
+  const [bodyweight, setBodyweight] = useState('');
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleSubmit() {
+    setError(null);
+    startTransition(async () => {
+      const r = await submitReadinessCheckin({
+        checkDate,
+        sleepHours: sleep ? Number(sleep) : null,
+        energyLevel: energy,
+        stressLevel: stress,
+        sorenessLevel: soreness,
+        lowerBodyStatus: lowerBody,
+        armStatus: arm as never,
+        illnessFlag: illness,
+        notes: notes || null,
+      });
+      if (!r.success) { setError(r.error ?? 'Could not submit check-in.'); return; }
+      if (bodyweight) {
+        await logBodyweight({ entryDate: checkDate, weightLbs: Number(bodyweight) });
+      }
+      if (soreness && soreness >= 3 && r.id) {
+        // Record a coarse soreness map entry so the staff queue has region context.
+        await saveSorenessMap({
+          checkinId: r.id,
+          regions: lowerBody && lowerBody >= 3
+            ? [{ bodyRegion: 'lower_body', severity: Math.min(10, soreness * 2) }]
+            : [{ bodyRegion: 'general', severity: Math.min(10, soreness * 2) }],
+        });
+      }
+      setDone(true);
+    });
+  }
+
+  if (done) {
+    return (
+      <Card className="border-primary-200 bg-primary-50/50">
+        <CardContent className="py-8 text-center">
+          <p className="text-2xl font-semibold text-warm-900">Check-in saved</p>
+          <p className="mt-1 text-sm text-warm-500">Thanks — the staff has what they need before training.</p>
+          <Link href="/baseball/dashboard/lift" className="mt-4 inline-block rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700">
+            Go to Lift
+          </Link>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <motion.div
+      className="space-y-5"
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <div>
+        <h1 className="text-2xl font-semibold text-warm-900">Daily check-in</h1>
+        <p className="text-sm text-warm-500">Tell the staff how you feel today. This is not a medical form.</p>
+      </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <Card>
+        <CardHeader><h2 className="text-lg font-semibold text-warm-900">How you feel</h2></CardHeader>
+        <CardContent className="space-y-4">
+          <Input
+            label="Sleep last night (hours)"
+            inputMode="decimal"
+            value={sleep}
+            onChange={(e) => setSleep(e.target.value)}
+            placeholder="e.g. 7.5"
+          />
+          <ScaleRow label="Energy" value={energy} onChange={setEnergy} lowLabel="drained" highLabel="fresh" />
+          <ScaleRow label="Stress" value={stress} onChange={setStress} lowLabel="calm" highLabel="high" />
+          <ScaleRow label="Overall soreness" value={soreness} onChange={setSoreness} lowLabel="none" highLabel="severe" />
+          <ScaleRow label="Lower body" value={lowerBody} onChange={setLowerBody} lowLabel="fresh" highLabel="very sore" />
+          <div>
+            <label className="text-sm font-medium text-warm-800">Throwing arm</label>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {ARM_OPTIONS.map((opt) => (
+                <button
+                  key={opt} type="button" onClick={() => setArm(opt)}
+                  className={`rounded-full border px-3 py-1.5 text-sm capitalize transition-colors ${arm === opt ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'}`}
+                  aria-pressed={arm === opt}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-warm-700">
+            <input type="checkbox" checked={illness} onChange={(e) => setIllness(e.target.checked)} className="h-4 w-4 rounded border-warm-300 accent-primary-600" />
+            Feeling sick / under the weather
+          </label>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><h2 className="text-lg font-semibold text-warm-900">Bodyweight (optional)</h2></CardHeader>
+        <CardContent>
+          <div className="max-w-[8rem]">
+            <Input
+              inputMode="decimal"
+              value={bodyweight}
+              onChange={(e) => setBodyweight(e.target.value)}
+              placeholder="lb"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><h2 className="text-lg font-semibold text-warm-900">Anything the staff should know?</h2></CardHeader>
+        <CardContent>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            placeholder="Optional note for the staff"
+          />
+        </CardContent>
+      </Card>
+
+      <Button
+        onClick={handleSubmit}
+        isLoading={isPending}
+        className="w-full"
+        variant="primary"
+        size="lg"
+      >
+        Submit check-in
+      </Button>
+    </motion.div>
+  );
+}

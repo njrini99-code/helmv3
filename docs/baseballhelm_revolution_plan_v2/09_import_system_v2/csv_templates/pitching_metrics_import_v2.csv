@@ -1,0 +1,2 @@
+date,session_type,player_name,external_id,pitch_type,velocity,spin_rate,ivb,hb,extension,release_height,release_side,strike_pct,zone_pct,source,review_status,notes
+2026-03-24,bullpen,Caleb Morrison,nsu-012,Fastball,91.4,2360,17.8,-8.2,6.4,5.7,1.6,68,54,Rapsodo CSV,needs_review,"Limited to 18 pitches"

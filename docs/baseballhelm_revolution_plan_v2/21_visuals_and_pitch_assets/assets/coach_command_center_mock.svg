@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <rect width="1600" height="1000" fill="#ece7df"/>
+  <rect x="70" y="70" width="1460" height="860" rx="28" fill="#fbfaf7" stroke="#d6cfc3"/>
+  <rect x="70" y="70" width="250" height="860" rx="28" fill="#17212b"/>
+  <text x="115" y="135" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" fill="#fff">BaseballHelm</text>
+  <text x="115" y="195" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#cdd6df">Command</text>
+  <text x="115" y="245" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#8ea0b3">Roster</text>
+  <text x="115" y="295" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#8ea0b3">Stats</text>
+  <text x="115" y="345" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#8ea0b3">Practice</text>
+  <text x="115" y="395" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#8ea0b3">Performance</text>
+  <text x="115" y="445" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#8ea0b3">Video</text>
+  <text x="115" y="495" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#8ea0b3">Settings</text>
+
+  <text x="370" y="135" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700" fill="#17212b">Coach Command Center</text>
+  <text x="372" y="170" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#5b6470">Tuesday, game week. What changed, who needs attention, and what action to take.</text>
+
+  <rect x="370" y="215" width="330" height="155" rx="16" fill="#fff" stroke="#ded8ce"/>
+  <text x="400" y="255" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#17212b">Today's Operations</text>
+  <text x="400" y="292" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#5b6470">2 class conflicts before practice</text>
+  <text x="400" y="322" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#5b6470">Lift group B moved to 11:20</text>
+  <text x="400" y="350" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#d94f2b">Bus manifest due by 4:00</text>
+
+  <rect x="735" y="215" width="330" height="155" rx="16" fill="#fff" stroke="#ded8ce"/>
+  <text x="765" y="255" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#17212b">Signals</text>
+  <text x="765" y="292" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#5b6470">3 player development flags</text>
+  <text x="765" y="322" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#5b6470">1 workload risk</text>
+  <text x="765" y="350" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#d94f2b">TrackMan import needs review</text>
+
+  <rect x="1100" y="215" width="330" height="155" rx="16" fill="#fff" stroke="#ded8ce"/>
+  <text x="1130" y="255" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#17212b">Practice Focus</text>
+  <text x="1130" y="292" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#5b6470">Two-strike chase station</text>
+  <text x="1130" y="322" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#5b6470">Catcher block work</text>
+  <text x="1130" y="350" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#d94f2b">Pitcher command decay review</text>
+
+  <rect x="370" y="420" width="700" height="380" rx="18" fill="#fff" stroke="#ded8ce"/>
+  <text x="405" y="465" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#17212b">Signal Inbox</text>
+  <rect x="405" y="500" width="620" height="70" rx="12" fill="#fff3ed"/>
+  <text x="430" y="530" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#17212b">Hitter chase rate spike</text>
+  <text x="430" y="555" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#5b6470">Source: GameChanger XML + TrackMan pitch file | Convert to practice block</text>
+  <rect x="405" y="590" width="620" height="70" rx="12" fill="#f4f6f8"/>
+  <text x="430" y="620" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#17212b">Friday starter workload risk</text>
+  <text x="430" y="645" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#5b6470">Source: pitch count + readiness + lift result | Assign owner</text>
+  <rect x="405" y="680" width="620" height="70" rx="12" fill="#f4f6f8"/>
+  <text x="430" y="710" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" fill="#17212b">Catcher block misses clustered</text>
+  <text x="430" y="735" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#5b6470">Source: video tags + game stats | Request clips</text>
+
+  <rect x="1100" y="420" width="330" height="380" rx="18" fill="#17212b"/>
+  <text x="1130" y="465" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#fff">Staff Actions</text>
+  <text x="1130" y="515" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#cdd6df">✓ Review import warnings</text>
+  <text x="1130" y="560" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#cdd6df">• Approve player video task</text>
+  <text x="1130" y="605" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#cdd6df">• Modify lift for two-way player</text>
+  <text x="1130" y="650" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#cdd6df">• Add practice station</text>
+  <text x="1130" y="695" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#cdd6df">• Send travel acknowledgement</text>
+</svg>
+

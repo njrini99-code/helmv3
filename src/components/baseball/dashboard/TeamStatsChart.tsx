@@ -28,17 +28,21 @@ interface TeamStatsChartProps {
 
 type MetricKey = 'teamAvg' | 'exitVelo' | 'obp';
 
+// Restricted, brand-aligned line palette — primary green is the lead metric,
+// amber is the secondary accent, warm-stone is the tertiary. Keeps the chart on
+// the same disciplined accent set as the Signals / Command Center surfaces
+// (no arbitrary blue/teal categorical hues on the daily home).
 const metrics: { key: MetricKey; label: string; color: string; format: (v: number | null) => string }[] = [
-  { key: 'teamAvg', label: 'Team AVG', color: '#3b82f6', format: (v) => v ? `.${(v * 1000).toFixed(0).padStart(3, '0')}` : '—' },
-  { key: 'exitVelo', label: 'Exit Velo', color: '#10b981', format: (v) => v ? `${v.toFixed(1)} mph` : '—' },
-  { key: 'obp', label: 'OBP', color: '#f59e0b', format: (v) => v ? `.${(v * 1000).toFixed(0).padStart(3, '0')}` : '—' },
+  { key: 'teamAvg', label: 'Team AVG', color: '#16A34A', format: (v) => v ? `.${(v * 1000).toFixed(0).padStart(3, '0')}` : '—' },
+  { key: 'exitVelo', label: 'Exit Velo', color: '#f59e0b', format: (v) => v ? `${v.toFixed(1)} mph` : '—' },
+  { key: 'obp', label: 'OBP', color: '#a8a29e', format: (v) => v ? `.${(v * 1000).toFixed(0).padStart(3, '0')}` : '—' },
 ];
 
 function CustomTooltip({ active, payload, label }: Partial<TooltipContentProps<number, string>>) {
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="bg-cream-50/95 backdrop-blur-sm border border-warm-200 rounded-lg shadow-lg p-3">
+    <div className="bg-cream-50/95 backdrop-blur-sm border border-warm-200 rounded-xl shadow-glass p-3">
       <p className="text-xs text-warm-500 mb-2">{label}</p>
       {payload.map((entry) => {
         const metric = metrics.find(m => m.key === entry.dataKey);
@@ -156,15 +160,18 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
           </div>
         ) : (
           <>
-            {/* Metric toggles */}
-            <div className="flex items-center gap-2 mb-4">
+            {/* Metric toggles — pill filter chips (not primary CTAs); ghost base
+                so the segmented active/idle treatment isn't fighting variant
+                styles, with aria-pressed for the toggle semantics. */}
+            <div className="flex items-center gap-2 mb-4" role="group" aria-label="Toggle chart metrics">
               {metrics.map(metric => (
-                <Button variant="primary"
+                <Button variant="ghost"
                   key={metric.key}
                   onClick={() => toggleMetric(metric.key)}
+                  aria-pressed={visibleMetrics.has(metric.key)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     visibleMetrics.has(metric.key)
-                      ? 'bg-warm-900 text-white'
+                      ? 'bg-warm-900 text-white hover:bg-warm-900'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }`}
                 >
@@ -181,15 +188,17 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="dateLabel" 
-                    tick={{ fontSize: 11, fill: '#64748b' }}
+                  {/* Warm-stone grid + axis tokens (warm-200 / warm-500) so the
+                      chart never drops a cool-slate gray onto the cream surface. */}
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                  <XAxis
+                    dataKey="dateLabel"
+                    tick={{ fontSize: 11, fill: '#78716c' }}
                     tickLine={false}
-                    axisLine={{ stroke: '#e2e8f0' }}
+                    axisLine={{ stroke: '#e7e5e4' }}
                   />
-                  <YAxis 
-                    tick={{ fontSize: 11, fill: '#64748b' }}
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#78716c' }}
                     tickLine={false}
                     axisLine={false}
                     width={40}

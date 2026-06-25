@@ -180,15 +180,18 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
             </p>
             <div className="flex gap-2">
               {PRIORITIES.map((p) => (
-                <Button variant="ghost"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   key={p.value}
                   type="button"
                   onClick={() => setPriority(p.value)}
+                  aria-pressed={priority === p.value}
                   className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors',
+                    'rounded-full border font-medium',
                     priority === p.value
-                      ? p.color + ' border-transparent'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
+                      ? p.color + ' border-transparent hover:bg-transparent'
+                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 active:bg-warm-50'
                   )}
                 >
                   {p.label}

@@ -269,12 +269,12 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                         {insights.map((insight) => (
                           <div
                             key={insight.id}
-                            className="bg-purple-50 border border-purple-100 rounded-xl p-3"
+                            className="bg-primary-50 border border-primary-100 rounded-xl p-3"
                           >
-                            <p className="text-xs font-semibold text-purple-800 mb-0.5">
+                            <p className="text-xs font-semibold text-primary-800 mb-0.5">
                               {insight.title}
                             </p>
-                            <p className="text-xs text-purple-600 line-clamp-2">
+                            <p className="text-xs text-primary-700 line-clamp-2">
                               {insight.description}
                             </p>
                           </div>

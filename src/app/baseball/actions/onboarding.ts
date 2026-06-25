@@ -412,3 +412,108 @@ export async function completeBaseballSignup(data: {
     return { success: true, redirectTo: '/baseball/player' };
   }
 }
+
+// ─── Complete Player Onboarding (authenticated players) ───────────────────────
+
+export type PlayerOnboardingInput = {
+  playerType: string;
+  firstName: string;
+  lastName: string;
+  gradYear?: number | null;
+  primaryPosition?: string | null;
+  secondaryPosition?: string | null;
+  city?: string | null;
+  state?: string | null;
+  highSchoolName?: string | null;
+  profileCompletionPercent?: number | null;
+};
+
+/**
+ * Complete player onboarding for an authenticated player.
+ *
+ * GUARD (defect #1): the web email/password golden path creates NO
+ * baseball_players row. A bare `.update().eq('user_id', ...)` matched 0 rows,
+ * returned a null error, and silently never set onboarding_completed — trapping
+ * the player in an onboarding bounce loop. This UPSERTS (onConflict: user_id)
+ * via the admin client so the row is created-or-updated and onboarding_completed
+ * is actually persisted.
+ *
+ * Privacy-first: recruiting is NEVER auto-activated at onboarding — the player
+ * opts in later. Identity is verified via the SSR client (getUser); all writes
+ * use the admin client so RLS never blocks first-write onboarding.
+ */
+export async function completePlayerOnboarding(
+  input: PlayerOnboardingInput,
+): Promise<OnboardingResult> {
+  // Verify identity via the SSR client (reads session cookies).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'You must be signed in to complete onboarding.' };
+  }
+
+  // Validate inputs.
+  const playerType = input.playerType as PlayerType;
+  if (!VALID_PLAYER_TYPES.includes(playerType)) {
+    return { success: false, error: 'Please select a valid player type.' };
+  }
+
+  const firstName = sanitizeString(input.firstName ?? '', 100);
+  const lastName = sanitizeString(input.lastName ?? '', 100);
+  if (!firstName || !lastName) {
+    return { success: false, error: 'First and last name are required.' };
+  }
+
+  // Clamp profile completion into 0..100 (honest bounds; never trust the client).
+  const rawPercent = input.profileCompletionPercent ?? 0;
+  const profileCompletionPercent = Math.max(0, Math.min(100, Math.round(rawPercent)));
+
+  const gradYear = input.gradYear ?? null;
+  const primaryPosition = input.primaryPosition ? sanitizeString(input.primaryPosition, 10) : null;
+  const secondaryPosition = input.secondaryPosition ? sanitizeString(input.secondaryPosition, 10) : null;
+  const city = input.city ? sanitizeString(input.city, 100) : null;
+  const state = input.state ? sanitizeString(input.state, 2) : null;
+  const highSchoolName = input.highSchoolName ? sanitizeString(input.highSchoolName) : null;
+
+  // All writes use the admin client (service role) so RLS never blocks the
+  // first-write onboarding. Identity is already verified above via getUser().
+  const admin = createAdminClient();
+
+  // UPSERT on user_id — the create-or-update the old bare .update() lacked.
+  const { error } = await admin.from('baseball_players').upsert(
+    {
+      user_id: user.id,
+      player_type: playerType,
+      first_name: firstName,
+      last_name: lastName,
+      email: user.email || null,
+      grad_year: gradYear,
+      primary_position: primaryPosition,
+      secondary_position: secondaryPosition,
+      city,
+      state,
+      high_school_name: highSchoolName,
+      profile_completion_percent: profileCompletionPercent,
+      // Privacy-first: NEVER auto-activate recruiting at onboarding.
+      recruiting_activated: false,
+      onboarding_completed: true,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' },
+  );
+
+  if (error) {
+    await logServerError(
+      `[Onboarding] Failed to upsert player profile: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'onboarding.completePlayerOnboarding' },
+    );
+    return { success: false, error: 'Unable to complete your profile. Please try again.' };
+  }
+
+  revalidatePath('/baseball');
+
+  return { success: true, redirectTo: '/baseball/dashboard' };
+}

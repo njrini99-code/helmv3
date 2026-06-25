@@ -1,0 +1,1741 @@
+'use client';
+
+// =============================================================================
+// src/components/baseball/import-center/ImportWizardClient.tsx
+//
+// Wave 6 / packet: source-registry. The Import Center wizard:
+//   upload -> detect -> map -> normalize -> match -> preview -> validate -> commit
+//
+// Cream/green tokens + glass/matte primitives. Honest per-step states (loading,
+// empty, error). framer-motion via LazyMotion/domAnimation + useReducedMotion.
+// All writes go through the capability-gated server actions in actions/imports.ts.
+// =============================================================================
+
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { NativeSelect } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/sonner';
+
+import { BASEBALL_IMPORT_SOURCES } from '@/lib/baseball/import-matching';
+import { applyManualMatch, describeMatchablePlayer } from '@/lib/baseball/import-matching';
+import type { MatchablePlayer } from '@/lib/baseball/import-matching';
+import type { RegisteredSourceOption } from '@/components/baseball/import-center/ImportCenterShell';
+import {
+  validateImportRows,
+  type ImportValidationReport,
+  type ImportValidationIssue,
+  type ImportSeverity,
+} from '@/lib/baseball/csv-utils';
+import {
+  previewImport,
+  commitImport,
+  rollbackImport,
+  reviewImportRun,
+  getImportRunFileUrl,
+  type ImportPreview,
+  type CommitImportResult,
+} from '@/app/baseball/actions/imports';
+import type {
+  BaseballImportRunRow,
+  BaseballImportRowMatch,
+  BaseballImportMatchTier,
+  BaseballImportRowDuplicate,
+  BaseballImportDuplicateVerdict,
+} from '@/lib/types/baseball-imports';
+import { isBinaryFileName } from '@/lib/baseball/adapters/import-file-body';
+import { xlsxToCsv } from '@/lib/baseball/adapters/xlsx-reader';
+import { IconWarning } from '@/components/icons';
+
+// -----------------------------------------------------------------------------
+
+// The wizard receives the SAME shape the matcher uses (id/name + the tier-3
+// disambiguation signals jersey/grad_year/primary_position), so the manual-match
+// dropdown can show jersey/class/position to help a coach resolve same-name rows.
+type RosterPlayer = MatchablePlayer;
+
+interface Props {
+  teamId: string;
+  teamName: string;
+  players: RosterPlayer[];
+  recentRuns: BaseballImportRunRow[];
+  /**
+   * Box-score source options = hardcoded adapter defaults MERGED with the team's
+   * registered import-source policy. Falls back to the adapter defaults when the
+   * team has registered nothing (so the picker is never empty).
+   */
+  registeredSources?: RegisteredSourceOption[];
+  /**
+   * When false the internal <h1> header and subtitle are suppressed.
+   * Pass false when rendering inside a shell that already renders its own header
+   * (ImportCenterShell) to avoid two stacked "Import Center" headings.
+   * Defaults to true so standalone usages keep their header.
+   */
+  showHeader?: boolean;
+}
+
+const TRUST_LABEL: Record<string, string> = {
+  official: 'Official',
+  device_export: 'Device export',
+  staff_entered: 'Staff entered',
+  player_entered: 'Player entered',
+  ai_derived: 'AI derived',
+  unreviewed: 'Unreviewed',
+};
+
+type WizardStep =
+  | 'upload'
+  | 'detect'
+  | 'map'
+  | 'match'
+  | 'preview'
+  | 'committing'
+  | 'done';
+
+const STEP_ORDER: WizardStep[] = [
+  'upload',
+  'detect',
+  'map',
+  'match',
+  'preview',
+  'committing',
+  'done',
+];
+
+const STEP_LABELS: Record<WizardStep, string> = {
+  upload: 'Upload',
+  detect: 'Detect',
+  map: 'Map',
+  match: 'Match',
+  preview: 'Preview',
+  committing: 'Commit',
+  done: 'Done',
+};
+
+const STAT_TYPES = [
+  { value: 'game', label: 'Game' },
+  { value: 'practice', label: 'Practice' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+// -----------------------------------------------------------------------------
+
+export function ImportWizardClient({
+  teamId,
+  teamName,
+  players,
+  recentRuns,
+  registeredSources,
+  showHeader = true,
+}: Props) {
+  const prefersReducedMotion = useReducedMotion();
+  const { addToast } = useToast();
+
+  // Source picker options: registered (merged) sources when provided, else the
+  // hardcoded adapter defaults. The picker `value` is the key the commit path
+  // resolves the registry policy on.
+  const sourceOptions: RegisteredSourceOption[] = useMemo(
+    () =>
+      registeredSources && registeredSources.length > 0
+        ? registeredSources
+        : BASEBALL_IMPORT_SOURCES.map((s) => ({
+            value: s.id,
+            label: s.label,
+            registered: false,
+            trustLevel: null,
+            requiredReview: null,
+          })),
+    [registeredSources]
+  );
+
+  const [step, setStep] = useState<WizardStep>('upload');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [sourceId, setSourceId] = useState<string>('generic_csv');
+  const [fileName, setFileName] = useState<string>('');
+  const [csvContent, setCsvContent] = useState<string>('');
+  const [statType, setStatType] = useState<'game' | 'practice' | 'other'>('game');
+  const [sessionDate, setSessionDate] = useState<string>(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [sessionName, setSessionName] = useState<string>('');
+
+  const [preview, setPreview] = useState<ImportPreview | null>(null);
+  const [matches, setMatches] = useState<BaseballImportRowMatch[]>([]);
+  const [result, setResult] = useState<CommitImportResult | null>(null);
+  const [runs, setRuns] = useState<BaseballImportRunRow[]>(recentRuns);
+  /** Coach explicitly acknowledged the (non-blocking) warnings before commit. */
+  const [warningsAcknowledged, setWarningsAcknowledged] = useState(false);
+  /**
+   * GAP 2 — coach acknowledged that this exact file was already imported and chose
+   * to re-import it anyway (force past the duplicate short-circuit).
+   */
+  const [forceReimport, setForceReimport] = useState(false);
+  /** The prior run a duplicate file resolved to, surfaced as a skip-or-force card. */
+  const [duplicateFileRun, setDuplicateFileRun] = useState<{
+    runId: string;
+    committedAt: string | null;
+  } | null>(null);
+
+  const fadeProps = prefersReducedMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const },
+      };
+
+  // ---- step 1: file selection ------------------------------------------------
+  // The box-score path stores a CSV string the server parses. A workbook (.xlsx)
+  // is decoded to CSV right here (the reader is pure + client-safe) so the entire
+  // server path stays unchanged; PDFs are not supported in the flat box-score path
+  // (they route to the event-level / manual flow), so we reject them with guidance.
+  const onFile = useCallback((file: File) => {
+    setError(null);
+    if (/\.pdf$/i.test(file.name)) {
+      setError(
+        'PDF box scores can’t be imported as a flat file. Re-export as CSV/XLSX, or type the lines into the manual box-score entry.',
+      );
+      return;
+    }
+    if (isBinaryFileName(file.name)) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const buf = reader.result as ArrayBuffer | null;
+        if (!buf) {
+          setError('Could not read that workbook.');
+          return;
+        }
+        const { csv, warnings } = xlsxToCsv(new Uint8Array(buf));
+        if (!csv.trim()) {
+          setError(warnings[0] ?? 'That workbook had no readable rows.');
+          return;
+        }
+        setCsvContent(csv);
+        setFileName(file.name);
+      };
+      reader.onerror = () => setError('Could not read that workbook.');
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCsvContent(String(reader.result ?? ''));
+      setFileName(file.name);
+    };
+    reader.onerror = () => setError('Could not read that file. Try a plain CSV.');
+    reader.readAsText(file);
+  }, []);
+
+  // ---- run preview (detect + map + match) ------------------------------------
+  const runPreview = useCallback(async () => {
+    if (!csvContent.trim()) {
+      setError('Add a CSV file before continuing.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      // Pass the targeted grain so the preview can detect EXISTING rows and return
+      // the per-row create/update/skip verdict BEFORE commit (duplicate_resolution_v2.md).
+      const result = await previewImport({
+        teamId,
+        sourceId,
+        csvContent,
+        statType,
+        sessionDate,
+      });
+      if (result.totalRows === 0) {
+        setError('No data rows found in that file.');
+        setBusy(false);
+        return;
+      }
+      setPreview(result);
+      setMatches(result.matches);
+      setStep('detect');
+    } catch {
+      setError('We could not analyze that file. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }, [csvContent, sourceId, teamId, statType, sessionDate]);
+
+  // ---- per-row manual match override -----------------------------------------
+  const setRowPlayer = useCallback(
+    (rowIndex: number, playerId: string | null) => {
+      setMatches((prev) =>
+        prev.map((m) =>
+          m.rowIndex === rowIndex ? applyManualMatch(m, playerId, players) : m
+        )
+      );
+    },
+    [players]
+  );
+
+  const setRowAction = useCallback(
+    (rowIndex: number, action: BaseballImportRowMatch['action']) => {
+      setMatches((prev) =>
+        prev.map((m) => (m.rowIndex === rowIndex ? { ...m, action } : m))
+      );
+    },
+    []
+  );
+
+  const selectedSourceOption = useMemo(
+    () => sourceOptions.find((s) => s.value === sourceId) ?? null,
+    [sourceOptions, sourceId]
+  );
+
+  const counts = useMemo(() => {
+    const matched = matches.filter((m) => m.playerId && m.action !== 'skip').length;
+    const create = matches.filter((m) => m.action === 'create' && m.playerId).length;
+    const update = matches.filter((m) => m.action === 'update' && m.playerId).length;
+    const skip = matches.length - create - update;
+    return { matched, create, update, skip, total: matches.length };
+  }, [matches]);
+
+  // DUPLICATE / RE-IMPORT VERDICTS (duplicate_resolution_v2.md). The server
+  // computed, per resolved row, whether commit will create a NEW record, OVERWRITE
+  // an existing one (with the changed-field diff), or be an EXACT re-import. Index
+  // them by rowIndex so the Match + Preview steps can show the decision per row
+  // and so the coach's explicit Create/Update choice can be checked against it.
+  const verdictByRow = useMemo(() => {
+    const map = new Map<number, BaseballImportRowDuplicate>();
+    for (const d of preview?.duplicates ?? []) map.set(d.rowIndex, d);
+    return map;
+  }, [preview]);
+
+  // Resolve the LIVE verdict for a row: a verdict the server computed against a
+  // player the coach has since RE-MATCHED to someone else is stale, so we drop it
+  // (treating the row as "new/unknown") rather than mislabel its commit decision.
+  // The server re-detects duplicates at commit, so the labels stay honest even
+  // when a manual re-match outruns the preview verdict.
+  const liveVerdict = useCallback(
+    (m: BaseballImportRowMatch): BaseballImportRowDuplicate | undefined => {
+      const d = verdictByRow.get(m.rowIndex);
+      if (!d) return undefined;
+      if (d.playerId !== m.playerId) return undefined;
+      return d;
+    },
+    [verdictByRow]
+  );
+
+  const dupSummary = useMemo(() => {
+    let willCreate = 0;
+    let willUpdate = 0;
+    let exactDuplicate = 0;
+    // A 'Create' the coach set on a row that already has an existing record — this
+    // WILL be rejected server-side (the labels are now load-bearing), so surface it
+    // pre-commit as a conflict the coach must resolve.
+    const createConflictRows: number[] = [];
+    for (const m of matches) {
+      if (!m.playerId || m.action === 'skip') continue;
+      const v = liveVerdict(m)?.verdict ?? 'new';
+      if (v === 'exact_duplicate') exactDuplicate += 1;
+      else if (v === 'will_update') willUpdate += 1;
+      else willCreate += 1;
+      if (m.action === 'create' && (v === 'will_update' || v === 'exact_duplicate'))
+        createConflictRows.push(m.rowIndex);
+    }
+    return { willCreate, willUpdate, exactDuplicate, createConflictRows };
+  }, [matches, liveVerdict]);
+
+  // A coach 'Create' that collides with an existing record is a hard conflict —
+  // the server rejects it, so block the commit until it's resolved (switch to
+  // Update, or roll back the owning run). This makes the labels honest in the UI.
+  const hasCreateConflicts = dupSummary.createConflictRows.length > 0;
+
+  // ---- LIVE VALIDATION -------------------------------------------------------
+  // Re-run the IDENTICAL pure VALIDATE pass the server uses, against the CURRENT
+  // matches (so every manual override / skip instantly re-grades the report).
+  // The commit is hard-gated on blockers; warnings require explicit ack. The
+  // server re-validates and refuses blockers regardless of what the client sent.
+  const validation: ImportValidationReport = useMemo(() => {
+    if (!preview) {
+      return {
+        issues: [],
+        blockingCount: 0,
+        warningCount: 0,
+        infoCount: 0,
+        blockingRowIndices: [],
+        hasBlockers: false,
+        hasWarnings: false,
+      };
+    }
+    return validateImportRows({
+      rows: preview.rows,
+      mapping: preview.mapping,
+      headers: preview.headers,
+      matches: matches.map((m) => ({
+        rowIndex: m.rowIndex,
+        playerId: m.playerId,
+        action: m.action,
+        sourceName: m.sourceName,
+      })),
+    });
+  }, [preview, matches]);
+
+  // Any edit invalidates a prior warning acknowledgement (must re-confirm the
+  // CURRENT set of warnings, never a stale one).
+  const validationFingerprint = `${validation.blockingCount}:${validation.warningCount}`;
+  const lastFingerprintRef = useRef(validationFingerprint);
+  if (lastFingerprintRef.current !== validationFingerprint) {
+    lastFingerprintRef.current = validationFingerprint;
+    if (warningsAcknowledged) setWarningsAcknowledged(false);
+  }
+
+  const commitDisabled =
+    busy ||
+    counts.create + counts.update === 0 ||
+    validation.hasBlockers ||
+    hasCreateConflicts ||
+    (validation.hasWarnings && !warningsAcknowledged);
+
+  // ---- commit ----------------------------------------------------------------
+  const doCommit = useCallback(async () => {
+    if (!preview) return;
+    // Client-side blocker guard (the button is already disabled; this is a
+    // last-line check so a stale handler can never fire a blocked commit). The
+    // server re-validates and refuses blockers regardless — this just keeps the
+    // UI honest and surfaces a friendly message instead of a thrown error.
+    if (validation.hasBlockers) {
+      setError(
+        `Resolve the ${validation.blockingCount} blocking issue${
+          validation.blockingCount === 1 ? '' : 's'
+        } before committing.`,
+      );
+      return;
+    }
+    // A coach 'Create' that collides with an existing record is rejected server-
+    // side; bail with a friendly message rather than committing a partial run.
+    if (hasCreateConflicts) {
+      setError(
+        `${dupSummary.createConflictRows.length} row${
+          dupSummary.createConflictRows.length === 1 ? '' : 's'
+        } set to Create already exist. Switch them to Update, or roll back the existing import first.`,
+      );
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setStep('committing');
+    try {
+      const res = await commitImport({
+        teamId,
+        sourceId,
+        fileName: fileName || `import_${Date.now()}.csv`,
+        statType,
+        sessionDate,
+        sessionName: sessionName || undefined,
+        headers: preview.headers,
+        mapping: preview.mapping,
+        rows: preview.rows,
+        matches,
+        // GAP 1 + GAP 2 — hand the server the ORIGINAL file body so it preserves
+        // the source-of-truth file + fingerprints it for the duplicate guard.
+        rawFileBody: csvContent || undefined,
+        forceReimport,
+      });
+      // GAP 2 — the server short-circuited an EXACT-duplicate file. Surface the
+      // skip-or-force card and do not advance to the done step.
+      if (res.duplicateFileRun) {
+        setDuplicateFileRun(res.duplicateFileRun);
+        setStep('preview');
+        setBusy(false);
+        return;
+      }
+      setResult(res);
+      setStep('done');
+      if (res.heldForReview) {
+        addToast({
+          type: 'success',
+          title: 'Sent for review',
+          description:
+            'This source requires review — nothing was written yet. A coach must approve it from Recent imports.',
+        });
+      } else {
+        const dupNote = res.duplicatesSkipped > 0 ? ` · ${res.duplicatesSkipped} duplicate` : '';
+        const conflictNote =
+          res.createConflicts > 0 ? ` · ${res.createConflicts} create conflict` : '';
+        addToast({
+          type: res.createConflicts > 0 ? 'warning' : 'success',
+          title: 'Import committed',
+          description: `${res.created} created · ${res.updated} updated · ${res.skipped} skipped${dupNote}${conflictNote}`,
+        });
+      }
+    } catch {
+      setError('The import could not be committed. No changes were saved if it failed early.');
+      setStep('preview');
+    } finally {
+      setBusy(false);
+    }
+  }, [
+    preview,
+    teamId,
+    sourceId,
+    fileName,
+    statType,
+    sessionDate,
+    sessionName,
+    matches,
+    addToast,
+    validation,
+    hasCreateConflicts,
+    dupSummary,
+    csvContent,
+    forceReimport,
+  ]);
+
+  // ---- rollback a run --------------------------------------------------------
+  const doRollback = useCallback(
+    async (importRunId: string) => {
+      setBusy(true);
+      try {
+        const res = await rollbackImport({ teamId, importRunId });
+        setRuns((prev) =>
+          prev.map((r) =>
+            r.id === importRunId
+              ? { ...r, status: 'rolled_back', rolled_back_at: new Date().toISOString() }
+              : r
+          )
+        );
+        addToast({
+          type: 'success',
+          title: 'Import rolled back',
+          description: `${res.reverted} removed · ${res.restored} restored`,
+        });
+      } catch {
+        addToast({ type: 'error', title: 'Rollback failed', description: 'Please try again.' });
+      } finally {
+        setBusy(false);
+      }
+    },
+    [teamId, addToast]
+  );
+
+  // ---- GAP 1: download a run's preserved source file -------------------------
+  const doDownload = useCallback(
+    async (importRunId: string) => {
+      try {
+        const { url } = await getImportRunFileUrl({ teamId, importRunId });
+        if (!url) {
+          addToast({
+            type: 'info',
+            title: 'No source file',
+            description: 'This run was imported before source files were preserved.',
+          });
+          return;
+        }
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } catch {
+        addToast({ type: 'error', title: 'Download failed', description: 'Please try again.' });
+      }
+    },
+    [teamId, addToast]
+  );
+
+  // ---- approve / reject a run held by required_review ------------------------
+  const doReview = useCallback(
+    async (importRunId: string, decision: 'approve' | 'reject') => {
+      setBusy(true);
+      try {
+        const res = await reviewImportRun({ teamId, importRunId, decision });
+        setRuns((prev) =>
+          prev.map((r) =>
+            r.id === importRunId
+              ? {
+                  ...r,
+                  status: decision === 'approve' ? 'committed' : 'failed',
+                  review_state: decision === 'approve' ? 'approved' : 'rejected',
+                }
+              : r
+          )
+        );
+        addToast({
+          type: 'success',
+          title: decision === 'approve' ? 'Import approved' : 'Import rejected',
+          description:
+            decision === 'approve'
+              ? `${res.created} created · ${res.updated} updated`
+              : 'No rows were written.',
+        });
+      } catch {
+        addToast({
+          type: 'error',
+          title: 'Review failed',
+          description: 'Please try again.',
+        });
+      } finally {
+        setBusy(false);
+      }
+    },
+    [teamId, addToast]
+  );
+
+  const resetWizard = useCallback(() => {
+    setStep('upload');
+    setPreview(null);
+    setMatches([]);
+    setResult(null);
+    setCsvContent('');
+    setFileName('');
+    setError(null);
+    setWarningsAcknowledged(false);
+  }, []);
+
+  // ---- render ----------------------------------------------------------------
+  const activeStepIdx = STEP_ORDER.indexOf(step);
+
+  return (
+    <LazyMotion features={domAnimation}>
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
+        {showHeader && (
+          <header className="mb-6">
+            <h1 className="text-3xl font-semibold text-warm-900">Import Center</h1>
+            <p className="mt-1 text-warm-600">
+              Bring stats into <span className="font-medium text-warm-800">{teamName}</span> from an
+              export. Every import is auditable and can be rolled back.
+            </p>
+          </header>
+        )}
+
+        {/* Stepper */}
+        <ol className="mb-6 flex flex-wrap items-center gap-2" aria-label="Import steps">
+          {STEP_ORDER.filter((s) => s !== 'committing').map((s) => {
+            const idx = STEP_ORDER.indexOf(s);
+            const state =
+              idx < activeStepIdx ? 'done' : idx === activeStepIdx ? 'active' : 'upcoming';
+            return (
+              <li
+                key={s}
+                className={[
+                  'rounded-full px-3 py-1 text-sm font-medium transition-colors',
+                  state === 'active'
+                    ? 'bg-primary-600 text-white'
+                    : state === 'done'
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'bg-cream-200 text-warm-500',
+                ].join(' ')}
+                aria-current={state === 'active' ? 'step' : undefined}
+              >
+                {STEP_LABELS[s]}
+              </li>
+            );
+          })}
+        </ol>
+
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 rounded-xl border border-error/30 bg-error/5 px-4 py-3 text-sm text-error"
+          >
+            {error}
+          </div>
+        )}
+
+        <m.div key={step} {...fadeProps}>
+          {/* STEP: UPLOAD ---------------------------------------------------- */}
+          {step === 'upload' && (
+            <Card variant="overlay" hover={false} padding="lg">
+              <CardContent className="space-y-5 p-0">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <NativeSelect
+                      label="Source"
+                      value={sourceId}
+                      onChange={(e) => setSourceId(e.target.value)}
+                      options={sourceOptions.map((s) => ({
+                        value: s.value,
+                        label: s.registered ? `${s.label} ✓` : s.label,
+                      }))}
+                    />
+                    {/* Show the registered policy for the chosen source so the
+                        coach sees how it will be governed BEFORE uploading. */}
+                    {selectedSourceOption?.registered ? (
+                      <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-warm-500">
+                        {selectedSourceOption.trustLevel && (
+                          <span className="rounded-md bg-cream-200 px-1.5 py-0.5 font-medium text-warm-600">
+                            {TRUST_LABEL[selectedSourceOption.trustLevel] ??
+                              selectedSourceOption.trustLevel}
+                          </span>
+                        )}
+                        {selectedSourceOption.requiredReview ? (
+                          <span className="rounded-md bg-warning/10 px-1.5 py-0.5 font-medium text-warning">
+                            Requires review before commit
+                          </span>
+                        ) : (
+                          <span className="rounded-md bg-primary-50 px-1.5 py-0.5 font-medium text-primary-700">
+                            Auto-commits
+                          </span>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="mt-1.5 text-xs text-warm-400">
+                        Not configured — uses default trust (unreviewed) and auto-commits. Register
+                        it in Settings → Imports to control trust, review, and matching.
+                      </p>
+                    )}
+                  </div>
+                  <NativeSelect
+                    label="Session type"
+                    value={statType}
+                    onChange={(e) =>
+                      setStatType(e.target.value as 'game' | 'practice' | 'other')
+                    }
+                    options={STAT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                  />
+                  <Input
+                    label="Session date"
+                    type="date"
+                    value={sessionDate}
+                    onChange={(e) => setSessionDate(e.target.value)}
+                  />
+                  <Input
+                    label="Session name (optional)"
+                    type="text"
+                    value={sessionName}
+                    onChange={(e) => setSessionName(e.target.value)}
+                    placeholder="e.g. vs State, Fall ball"
+                  />
+                </div>
+
+                <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-warm-200 bg-cream-50 px-6 py-10 text-center transition-colors hover:border-primary-400 hover:bg-primary-50/40">
+                  {/* Hidden native file input — the <Input> primitive does not
+                      support type=file; this is a visually-hidden field driving
+                      the styled dropzone label. */}
+                  {/* eslint-disable-next-line helm/no-raw-input */}
+                  <input
+                    type="file"
+                    accept=".csv,text/csv,.tsv,text/tab-separated-values,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onFile(f);
+                    }}
+                  />
+                  <span className="text-sm font-medium text-warm-800">
+                    {fileName ? fileName : 'Choose a CSV or Excel file'}
+                  </span>
+                  <span className="mt-1 text-xs text-warm-500">
+                    CSV or .xlsx — a header row + one row per player.
+                  </span>
+                </label>
+
+                <div className="flex justify-end">
+                  <Button onClick={runPreview} isLoading={busy} disabled={!csvContent.trim()}>
+                    Analyze file
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* STEP: DETECT ---------------------------------------------------- */}
+          {step === 'detect' && preview && (
+            <Card variant="overlay" hover={false} padding="lg">
+              <CardContent className="space-y-4 p-0">
+                <h2 className="text-xl font-semibold text-warm-900">Detected source</h2>
+                <p className="text-sm text-warm-600">
+                  We read <strong>{preview.totalRows}</strong> rows. Best match for these columns:{' '}
+                  <strong className="text-primary-700">
+                    {BASEBALL_IMPORT_SOURCES.find((s) => s.id === preview.detectedSourceId)?.label ??
+                      preview.detectedSourceId}
+                  </strong>
+                  . You selected <strong>{preview.sourceLabel}</strong>.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {preview.headers.map((h) => (
+                    <span
+                      key={h}
+                      className="rounded-md bg-cream-200 px-2 py-1 text-xs text-warm-600"
+                    >
+                      {h}
+                    </span>
+                  ))}
+                </div>
+                <StepNav
+                  onBack={() => setStep('upload')}
+                  onNext={() => setStep('map')}
+                  nextLabel="Review mapping"
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* STEP: MAP (+ normalize note) ------------------------------------ */}
+          {step === 'map' && preview && (
+            <Card variant="overlay" hover={false} padding="lg">
+              <CardContent className="space-y-4 p-0">
+                <h2 className="text-xl font-semibold text-warm-900">Column mapping</h2>
+                <p className="text-sm text-warm-600">
+                  These source columns will be normalized into stat fields. Unmapped fields are
+                  skipped.
+                </p>
+                <div className="overflow-hidden rounded-xl border border-warm-200">
+                  <table className="w-full text-sm">
+                    <thead className="bg-cream-100 text-left text-warm-600">
+                      <tr>
+                        <th className="px-4 py-2 font-medium">Stat field</th>
+                        <th className="px-4 py-2 font-medium">Source column</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(preview.mapping).map(([field, col]) => (
+                        <tr key={field} className="border-t border-warm-100">
+                          <td className="px-4 py-2 text-warm-800">{field}</td>
+                          <td className="px-4 py-2">
+                            {col ? (
+                              <span className="text-warm-700">{col}</span>
+                            ) : (
+                              <span className="text-warm-400">— not found —</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <StepNav
+                  onBack={() => setStep('detect')}
+                  onNext={() => setStep('match')}
+                  nextLabel="Match players"
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* STEP: MATCH ----------------------------------------------------- */}
+          {step === 'match' && preview && (
+            <Card variant="overlay" hover={false} padding="lg">
+              <CardContent className="space-y-4 p-0">
+                <div className="flex items-baseline justify-between">
+                  <h2 className="text-xl font-semibold text-warm-900">Match players</h2>
+                  <p className="text-sm text-warm-600">
+                    {counts.matched}/{counts.total} matched
+                    {validation.blockingCount > 0 && (
+                      <span className="ml-2 rounded-md bg-error/10 px-2 py-0.5 text-xs font-medium text-error">
+                        {validation.blockingCount} blocking
+                      </span>
+                    )}
+                  </p>
+                </div>
+                {matches.length === 0 ? (
+                  <EmptyState
+                    variant="card"
+                    title="Nothing to match"
+                    description="No rows were parsed from this file."
+                  />
+                ) : (
+                  <div className="max-h-[28rem] overflow-auto rounded-xl border border-warm-200">
+                    <table className="w-full min-w-[640px] text-sm">
+                      <thead className="sticky top-0 z-10 bg-cream-100 text-left text-warm-600">
+                        <tr>
+                          <th className="sticky left-0 z-20 bg-cream-100 px-3 py-2 font-medium min-w-[120px]">
+                            From file
+                          </th>
+                          <th className="px-3 py-2 font-medium min-w-[180px]">Player</th>
+                          <th className="px-3 py-2 font-medium min-w-[140px]">How matched</th>
+                          <th className="px-3 py-2 font-medium min-w-[96px]">Confidence</th>
+                          <th className="px-3 py-2 font-medium min-w-[150px]">On commit</th>
+                          <th className="px-3 py-2 font-medium min-w-[120px]">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {matches.map((m) => {
+                          const blocking = validation.blockingRowIndices.includes(m.rowIndex);
+                          return (
+                          <tr
+                            key={m.rowIndex}
+                            className={[
+                              'border-t border-warm-100',
+                              blocking ? 'bg-error/5' : '',
+                            ].join(' ')}
+                          >
+                            <td
+                              className={[
+                                'sticky left-0 z-10 px-3 py-2 text-warm-800 min-w-[120px]',
+                                blocking
+                                  ? 'border-l-2 border-error bg-error/5'
+                                  : 'bg-cream-50',
+                              ].join(' ')}
+                            >
+                              {m.sourceName || '—'}
+                            </td>
+                            <td className="px-3 py-2">
+                              <NativeSelect
+                                aria-label={`Match player for ${m.sourceName || 'row'}`}
+                                value={m.playerId ?? ''}
+                                onChange={(e) =>
+                                  setRowPlayer(m.rowIndex, e.target.value || null)
+                                }
+                                options={[
+                                  { value: '', label: '— Unmatched —' },
+                                  // Show jersey · class · position so a coach can
+                                  // tell two same-name players apart at the point
+                                  // of resolution (the spec's manual-review tier).
+                                  ...players.map((p) => ({
+                                    value: p.id,
+                                    label: describeMatchablePlayer(p),
+                                  })),
+                                ]}
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <MatchTierBadge tier={m.matchTier} />
+                            </td>
+                            <td className="px-3 py-2">
+                              <ConfidenceBadge value={m.confidence} matched={!!m.playerId} />
+                            </td>
+                            <td className="px-3 py-2">
+                              <DuplicateVerdictCell match={m} duplicate={liveVerdict(m)} />
+                            </td>
+                            <td className="px-3 py-2">
+                              <NativeSelect
+                                aria-label={`Import action for ${m.sourceName || 'row'}`}
+                                value={m.action}
+                                onChange={(e) =>
+                                  setRowAction(
+                                    m.rowIndex,
+                                    e.target.value as BaseballImportRowMatch['action']
+                                  )
+                                }
+                                disabled={!m.playerId}
+                                options={[
+                                  { value: 'update', label: 'Update' },
+                                  { value: 'create', label: 'Create' },
+                                  { value: 'skip', label: 'Skip' },
+                                ]}
+                              />
+                            </td>
+                          </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <StepNav
+                  onBack={() => setStep('map')}
+                  onNext={() => setStep('preview')}
+                  nextLabel="Preview & validate"
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* STEP: PREVIEW / VALIDATE --------------------------------------- */}
+          {step === 'preview' && preview && (
+            <Card variant="overlay" hover={false} padding="lg">
+              <CardContent className="space-y-6 p-0">
+                {/* Header: what will land + the validation verdict at a glance. */}
+                <div>
+                  <h2 className="text-xl font-semibold text-warm-900">Validate &amp; commit</h2>
+                  <p className="mt-1 text-sm text-warm-600">
+                    We checked every row before anything is written to{' '}
+                    <strong className="text-warm-800">{teamName}</strong>. Resolve blockers to
+                    unlock the commit; warnings need a quick confirmation.
+                  </p>
+                </div>
+
+                {/* GAP 2 — EXACT-DUPLICATE FILE guard. The server recognized this
+                    identical file (by SHA-256) was already committed; offer skip
+                    or an explicit force re-import. */}
+                {duplicateFileRun && (
+                  <div className="rounded-2xl border border-warning/30 bg-warning/5 px-4 py-4">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-warning/15 text-warning">
+                        <IconWarning size={16} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-warm-900">
+                          This exact file was already imported
+                          {duplicateFileRun.committedAt
+                            ? ` on ${new Date(duplicateFileRun.committedAt).toLocaleDateString()}`
+                            : ''}
+                          .
+                        </p>
+                        <p className="mt-0.5 text-sm text-warm-600">
+                          Its fingerprint matches a committed run, so nothing was written. Skip it,
+                          or re-import the identical file anyway.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => doDownload(duplicateFileRun.runId)}
+                          >
+                            View the existing import
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            isLoading={busy}
+                            onClick={() => {
+                              setForceReimport(true);
+                              setDuplicateFileRun(null);
+                              void doCommit();
+                            }}
+                          >
+                            Re-import anyway
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <Stat label="Rows" value={counts.total} />
+                  <Stat label="Create" value={counts.create} tone="primary" />
+                  <Stat label="Update" value={counts.update} tone="primary" />
+                  <Stat label="Skip" value={counts.skip} tone="muted" />
+                </div>
+
+                {/* Validation verdict banner — the single source of truth for the gate. */}
+                <ValidationVerdict report={validation} willWrite={counts.create + counts.update} />
+
+                {/* DUPLICATE / RE-IMPORT verdict — the create/update/skip decision
+                    against existing rows, shown BEFORE commit (duplicate_resolution_v2.md). */}
+                <DuplicateSummary
+                  summary={dupSummary}
+                  overwrites={matches
+                    .filter((m) => m.playerId && m.action !== 'skip')
+                    .map((m) => liveVerdict(m))
+                    .filter(
+                      (d): d is BaseballImportRowDuplicate =>
+                        !!d && d.verdict === 'will_update'
+                    )}
+                  matches={matches}
+                  onFix={() => setStep('match')}
+                />
+
+                {counts.create + counts.update === 0 && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning"
+                  >
+                    Nothing will be written — every row is set to skip or is unmatched. Go back and
+                    match at least one player.
+                  </div>
+                )}
+
+                {/* Issues grouped by severity, with row-level drill-in + fast fix. */}
+                {validation.issues.length > 0 && (
+                  <div className="space-y-4">
+                    <IssueGroup
+                      severity="blocking"
+                      issues={validation.issues.filter((i) => i.severity === 'blocking')}
+                      onFix={() => setStep('match')}
+                    />
+                    <IssueGroup
+                      severity="warning"
+                      issues={validation.issues.filter((i) => i.severity === 'warning')}
+                      onFix={() => setStep('match')}
+                    />
+                    <IssueGroup
+                      severity="info"
+                      issues={validation.issues.filter((i) => i.severity === 'info')}
+                      onFix={() => setStep('match')}
+                    />
+                  </div>
+                )}
+
+                {/* Warning acknowledgement — required when warnings exist + no blockers. */}
+                {validation.hasWarnings && !validation.hasBlockers && (
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+                    {/* eslint-disable-next-line helm/no-raw-input */}
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
+                      checked={warningsAcknowledged}
+                      onChange={(e) => setWarningsAcknowledged(e.target.checked)}
+                    />
+                    <span className="text-sm text-warm-700">
+                      I&apos;ve reviewed the{' '}
+                      <strong className="text-warning">
+                        {validation.warningCount} warning{validation.warningCount === 1 ? '' : 's'}
+                      </strong>{' '}
+                      above and want to import these rows anyway.
+                    </span>
+                  </label>
+                )}
+
+                <p className="text-sm text-warm-600">
+                  Committing writes a single audited run. You can roll it back from the history
+                  below.
+                </p>
+
+                <div className="flex items-center justify-between">
+                  <Button variant="ghost" onClick={() => setStep('match')}>
+                    Back
+                  </Button>
+                  <Button onClick={doCommit} isLoading={busy} disabled={commitDisabled}>
+                    {validation.hasBlockers
+                      ? `Resolve ${validation.blockingCount} blocker${validation.blockingCount === 1 ? '' : 's'} to commit`
+                      : hasCreateConflicts
+                        ? `Resolve ${dupSummary.createConflictRows.length} create conflict${
+                            dupSummary.createConflictRows.length === 1 ? '' : 's'
+                          } to commit`
+                        : 'Commit import'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* STEP: COMMITTING ----------------------------------------------- */}
+          {step === 'committing' && (
+            <Card variant="overlay" hover={false} padding="lg">
+              <CardContent className="space-y-3 p-0">
+                <h2 className="text-xl font-semibold text-warm-900">Committing import…</h2>
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-3/4" />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* STEP: DONE ------------------------------------------------------ */}
+          {step === 'done' && result && (
+            <Card variant="overlay" hover={false} padding="lg">
+              <CardContent className="space-y-4 p-0">
+                {result.heldForReview ? (
+                  <>
+                    <h2 className="text-xl font-semibold text-warm-900">Sent for review</h2>
+                    <div
+                      role="status"
+                      className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3"
+                    >
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-warning" />
+                      <p className="text-sm text-warning">
+                        This source is configured to require review, so{' '}
+                        <strong>nothing was written yet</strong>. The {result.skipped} staged row
+                        {result.skipped === 1 ? '' : 's'} will only land once a coach approves this
+                        run from <strong>Recent imports</strong> below.
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button onClick={resetWizard}>Import another file</Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-xl font-semibold text-warm-900">Import complete</h2>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <Stat label="Created" value={result.created} tone="primary" />
+                      <Stat label="Updated" value={result.updated} tone="primary" />
+                      <Stat label="Duplicates" value={result.duplicatesSkipped} tone="muted" />
+                      <Stat label="Skipped" value={result.skipped} tone="muted" />
+                    </div>
+                    {/* Honored-action outcomes — only shown when they happened, so a
+                        clean import stays uncluttered (duplicate_resolution_v2.md). */}
+                    {result.createConflicts > 0 && (
+                      <div
+                        role="status"
+                        className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-warning"
+                      >
+                        <strong>
+                          {result.createConflicts} row{result.createConflicts === 1 ? '' : 's'}
+                        </strong>{' '}
+                        marked <strong>Create</strong> already existed and{' '}
+                        <strong>were not overwritten</strong>. Roll back the existing import or
+                        re-import those rows as <strong>Update</strong> to apply them.
+                      </div>
+                    )}
+                    {result.updateFellBackToInsert > 0 && (
+                      <div className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3 text-sm text-warm-600">
+                        <strong>
+                          {result.updateFellBackToInsert} row
+                          {result.updateFellBackToInsert === 1 ? '' : 's'}
+                        </strong>{' '}
+                        marked <strong>Update</strong> had no existing record, so a new line was
+                        created instead.
+                      </div>
+                    )}
+                    <div className="flex gap-3">
+                      <Button onClick={resetWizard}>Import another file</Button>
+                      <Button variant="ghost" onClick={() => doRollback(result.importRunId)}>
+                        Roll back this import
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </m.div>
+
+        {/* RUN HISTORY ----------------------------------------------------- */}
+        <section className="mt-10">
+          <h2 className="mb-3 text-lg font-semibold text-warm-900">Recent imports</h2>
+          {runs.length === 0 ? (
+            <EmptyState
+              variant="card"
+              title="No imports yet"
+              description="Your committed imports will appear here so you can audit or roll them back."
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-warm-200">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead className="bg-cream-100 text-left text-warm-600">
+                  <tr>
+                    <th className="sticky left-0 z-10 bg-cream-100 px-4 py-2 font-medium min-w-[140px]">
+                      Source
+                    </th>
+                    <th className="px-4 py-2 font-medium min-w-[160px]">File</th>
+                    <th className="px-4 py-2 font-medium min-w-[80px]">Rows</th>
+                    <th className="px-4 py-2 font-medium min-w-[110px]">Status</th>
+                    <th className="px-4 py-2 min-w-[110px]" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {runs.map((r) => (
+                    <tr key={r.id} className="border-t border-warm-100">
+                      <td className="sticky left-0 z-10 bg-cream-50 px-4 py-2 text-warm-800 min-w-[140px]">
+                        {r.source_label ?? r.source_id}
+                      </td>
+                      <td className="px-4 py-2 text-warm-600">{r.file_name ?? '—'}</td>
+                      <td className="px-4 py-2 text-warm-600">
+                        {r.matched_rows}/{r.total_rows}
+                      </td>
+                      <td className="px-4 py-2">
+                        <RunStatus status={r.status} />
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                          {/* GAP 1 — download the preserved source-of-truth file. */}
+                          {r.file_url && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => doDownload(r.id)}
+                              title="Download the original source file"
+                            >
+                              Source file
+                            </Button>
+                          )}
+                          {r.review_state === 'pending_review' ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                isLoading={busy}
+                                onClick={() => doReview(r.id, 'approve')}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                isLoading={busy}
+                                onClick={() => doReview(r.id, 'reject')}
+                                className="text-error hover:text-error"
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          ) : r.status === 'committed' ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              isLoading={busy}
+                              onClick={() => doRollback(r.id)}
+                            >
+                              Roll back
+                            </Button>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </LazyMotion>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Small presentational helpers
+// -----------------------------------------------------------------------------
+
+function StepNav({
+  onBack,
+  onNext,
+  nextLabel,
+}: {
+  onBack: () => void;
+  onNext: () => void;
+  nextLabel: string;
+}) {
+  return (
+    <div className="flex items-center justify-between pt-2">
+      <Button variant="ghost" onClick={onBack}>
+        Back
+      </Button>
+      <Button onClick={onNext}>{nextLabel}</Button>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  tone = 'default',
+}: {
+  label: string;
+  value: number;
+  tone?: 'default' | 'primary' | 'muted';
+}) {
+  const toneClass =
+    tone === 'primary'
+      ? 'text-primary-700'
+      : tone === 'muted'
+        ? 'text-warm-400'
+        : 'text-warm-900';
+  return (
+    <div className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3">
+      <div className={`text-2xl font-semibold ${toneClass}`}>{value}</div>
+      <div className="text-xs uppercase tracking-wide text-warm-500">{label}</div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Validation verdict + grouped issue list (data_validation_v2.md severity model)
+// -----------------------------------------------------------------------------
+
+const SEVERITY_META: Record<
+  ImportSeverity,
+  { label: string; plural: string; chip: string; dot: string; border: string; bg: string; text: string }
+> = {
+  blocking: {
+    label: 'Blocking',
+    plural: 'Blockers',
+    chip: 'bg-error/10 text-error',
+    dot: 'bg-error',
+    border: 'border-error/30',
+    bg: 'bg-error/5',
+    text: 'text-error',
+  },
+  warning: {
+    label: 'Warning',
+    plural: 'Warnings',
+    chip: 'bg-warning/10 text-warning',
+    dot: 'bg-warning',
+    border: 'border-warning/30',
+    bg: 'bg-warning/5',
+    text: 'text-warning',
+  },
+  info: {
+    label: 'Info',
+    plural: 'Info',
+    chip: 'bg-cream-200 text-warm-500',
+    dot: 'bg-warm-400',
+    border: 'border-warm-200',
+    bg: 'bg-cream-50',
+    text: 'text-warm-600',
+  },
+};
+
+function ValidationVerdict({
+  report,
+  willWrite,
+}: {
+  report: ImportValidationReport;
+  willWrite: number;
+}) {
+  if (report.hasBlockers) {
+    return (
+      <div
+        role="alert"
+        className="flex items-start gap-3 rounded-xl border border-error/30 bg-error/5 px-4 py-3"
+      >
+        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-error" />
+        <p className="text-sm text-error">
+          <strong>
+            {report.blockingCount} blocker{report.blockingCount === 1 ? '' : 's'}
+          </strong>{' '}
+          must be resolved before this import can be committed. Nothing will be written until they
+          are cleared.
+        </p>
+      </div>
+    );
+  }
+  if (willWrite === 0) return null;
+  if (report.hasWarnings) {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-warning" />
+        <p className="text-sm text-warning">
+          No blockers — <strong>{willWrite}</strong> row{willWrite === 1 ? '' : 's'} are ready to
+          import. Review the {report.warningCount} warning{report.warningCount === 1 ? '' : 's'}{' '}
+          below and confirm to continue.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-primary-200 bg-primary-50/60 px-4 py-3">
+      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary-600" />
+      <p className="text-sm text-primary-700">
+        All clear — <strong>{willWrite}</strong> row{willWrite === 1 ? '' : 's'} validated with no
+        issues. Ready to commit.
+      </p>
+    </div>
+  );
+}
+
+function IssueGroup({
+  severity,
+  issues,
+  onFix,
+}: {
+  severity: ImportSeverity;
+  issues: ImportValidationIssue[];
+  onFix: () => void;
+}) {
+  const [open, setOpen] = useState(severity !== 'info');
+  if (issues.length === 0) return null;
+  const meta = SEVERITY_META[severity];
+  const fixable = severity === 'blocking';
+
+  return (
+    <div className={`overflow-hidden rounded-xl border ${meta.border}`}>
+      {/* Disclosure header is a full-bleed colored summary row, not a CTA — the
+          <Button> primitive's variant styling would fight the severity tint, so
+          this stays a semantic raw <button> with aria-expanded. */}
+      {/* eslint-disable-next-line helm/no-raw-button */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={`flex w-full items-center justify-between px-4 py-2.5 text-left ${meta.bg}`}
+      >
+        <span className="flex items-center gap-2">
+          <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
+          <span className={`text-sm font-semibold ${meta.text}`}>
+            {issues.length} {issues.length === 1 ? meta.label : meta.plural}
+          </span>
+        </span>
+        <span className="text-xs text-warm-500">{open ? 'Hide' : 'Show'}</span>
+      </button>
+      {open && (
+        <ul className="divide-y divide-warm-100 bg-cream-50">
+          {issues.map((issue, idx) => (
+            <li
+              key={`${issue.code}-${issue.rowIndex ?? 'file'}-${issue.field ?? idx}`}
+              className="flex items-start justify-between gap-3 px-4 py-2.5"
+            >
+              <div className="min-w-0">
+                <p className="text-sm text-warm-800">{issue.message}</p>
+                <p className="mt-0.5 text-xs text-warm-500">
+                  {issue.rowIndex != null
+                    ? `Row ${issue.rowIndex + 1}${issue.rowLabel ? ` · ${issue.rowLabel}` : ''}`
+                    : 'File-level'}
+                  {issue.field ? ` · ${issue.field.replace(/_/g, ' ')}` : ''}
+                </p>
+              </div>
+              {fixable && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={onFix}
+                  className="shrink-0 text-xs"
+                >
+                  Fix in Match
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// The chosen-resolution tier badge (player_matching_v2.md). Shows HOW a row
+// resolved — a deterministic id / clean exact match reads green; a fuzzy-only
+// name reads amber so the coach knows to give it a second look.
+const MATCH_TIER_META: Record<
+  BaseballImportMatchTier,
+  { label: string; tone: string; title: string }
+> = {
+  external_id: {
+    label: 'ID match',
+    tone: 'bg-primary-50 text-primary-700',
+    title: 'Resolved by a previously-mapped external id (deterministic).',
+  },
+  exact_roster: {
+    label: 'Exact',
+    tone: 'bg-primary-50 text-primary-700',
+    title: 'Name is an exact, unambiguous match to one roster player.',
+  },
+  name_jersey_class: {
+    label: 'Name + #/class',
+    tone: 'bg-primary-50 text-primary-700',
+    title: 'Name match confirmed by jersey number and/or class (grad year).',
+  },
+  fuzzy_name: {
+    label: 'Fuzzy name',
+    tone: 'bg-warning/10 text-warning',
+    title: 'Name-similarity match only — no jersey/class to confirm it. Double-check.',
+  },
+  manual: {
+    label: 'Manual',
+    tone: 'bg-cream-200 text-warm-600',
+    title: 'A coach assigned this row by hand.',
+  },
+  unmatched: {
+    label: 'Unmatched',
+    tone: 'bg-cream-200 text-warm-400',
+    title: 'No player resolved — match it or set it to Skip.',
+  },
+};
+
+function MatchTierBadge({ tier }: { tier: BaseballImportMatchTier }) {
+  const meta = MATCH_TIER_META[tier] ?? MATCH_TIER_META.unmatched;
+  return (
+    <span
+      className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${meta.tone}`}
+      title={meta.title}
+    >
+      {meta.label}
+    </span>
+  );
+}
+
+function ConfidenceBadge({ value, matched }: { value: number; matched: boolean }) {
+  if (!matched) {
+    return <span className="text-xs font-medium text-warm-400">unmatched</span>;
+  }
+  const pct = Math.round(value * 100);
+  const tone =
+    value >= 0.9
+      ? 'bg-primary-50 text-primary-700'
+      : value >= 0.7
+        ? 'bg-warning/10 text-warning'
+        : 'bg-error/10 text-error';
+  return (
+    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${tone}`}>{pct}%</span>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Duplicate / re-import verdict UI (duplicate_resolution_v2.md)
+// -----------------------------------------------------------------------------
+
+const VERDICT_META: Record<
+  BaseballImportDuplicateVerdict,
+  { label: string; tone: string; title: string }
+> = {
+  new: {
+    label: 'New',
+    tone: 'bg-primary-50 text-primary-700',
+    title: 'No existing record for this player + session — commit will create a new line.',
+  },
+  will_update: {
+    label: 'Overwrites',
+    tone: 'bg-warning/10 text-warning',
+    title: 'An existing record matches — commit will OVERWRITE it. Open Preview to see what changes.',
+  },
+  exact_duplicate: {
+    label: 'Duplicate',
+    tone: 'bg-cream-200 text-warm-500',
+    title: 'Identical to an existing record from the same source — a re-import no-op you can skip.',
+  },
+  unresolved: {
+    label: '—',
+    tone: 'bg-cream-200 text-warm-400',
+    title: 'No player resolved yet — match the row to see its commit decision.',
+  },
+};
+
+/** Per-row commit decision shown in the Match table. Flags the hard conflict
+ * where a coach set 'Create' on a row that already exists (rejected on commit). */
+function DuplicateVerdictCell({
+  match,
+  duplicate,
+}: {
+  match: BaseballImportRowMatch;
+  duplicate?: BaseballImportRowDuplicate;
+}) {
+  if (!match.playerId || match.action === 'skip') {
+    return <span className="text-xs text-warm-400">—</span>;
+  }
+  const verdict = duplicate?.verdict ?? 'new';
+  const meta = VERDICT_META[verdict];
+  const conflict = match.action === 'create' && verdict !== 'new';
+  if (conflict) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-md bg-error/10 px-2 py-0.5 text-xs font-medium text-error"
+        title="You set this row to Create, but a matching record already exists. It will be rejected — switch to Update or roll back the existing import."
+      >
+        Conflict: already exists
+      </span>
+    );
+  }
+  return (
+    <span
+      className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${meta.tone}`}
+      title={meta.title}
+    >
+      {meta.label}
+      {verdict === 'will_update' && duplicate && duplicate.changedFields.length > 0
+        ? ` · ${duplicate.changedFields.length} field${duplicate.changedFields.length === 1 ? '' : 's'}`
+        : ''}
+    </span>
+  );
+}
+
+/** The duplicate verdict roll-up + before -> after diff for the Preview step. */
+function DuplicateSummary({
+  summary,
+  overwrites,
+  matches,
+  onFix,
+}: {
+  summary: {
+    willCreate: number;
+    willUpdate: number;
+    exactDuplicate: number;
+    createConflictRows: number[];
+  };
+  /** The LIVE will_update verdicts (already invalidated for stale re-matches). */
+  overwrites: BaseballImportRowDuplicate[];
+  matches: BaseballImportRowMatch[];
+  onFix: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const nameByRow = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const row of matches) m.set(row.rowIndex, row.playerName || row.sourceName || 'row');
+    return m;
+  }, [matches]);
+
+  const hasAny = summary.willCreate + summary.willUpdate + summary.exactDuplicate > 0;
+  if (!hasAny) return null;
+
+  return (
+    <div className="space-y-3">
+      {/* Conflict alert takes priority — these block the commit. */}
+      {summary.createConflictRows.length > 0 && (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-3 rounded-xl border border-error/30 bg-error/5 px-4 py-3"
+        >
+          <p className="text-sm text-error">
+            <strong>
+              {summary.createConflictRows.length} row
+              {summary.createConflictRows.length === 1 ? '' : 's'}
+            </strong>{' '}
+            set to <strong>Create</strong> already exist. Creating would lose the existing line —
+            switch them to Update or roll back the existing import first.
+          </p>
+          <Button size="sm" variant="ghost" onClick={onFix} className="shrink-0 text-xs text-error hover:text-error">
+            Fix in Match
+          </Button>
+        </div>
+      )}
+
+      {/* The create/update/skip roll-up — the spec's "show decisions before commit". */}
+      <div className="rounded-xl border border-warm-200 bg-cream-50 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+          <span className="font-medium text-warm-700">On commit:</span>
+          <span className="text-primary-700">
+            <strong>{summary.willCreate}</strong> new
+          </span>
+          <span className="text-warning">
+            <strong>{summary.willUpdate}</strong> overwrite existing
+          </span>
+          <span className="text-warm-500">
+            <strong>{summary.exactDuplicate}</strong> exact duplicate
+            {summary.exactDuplicate === 1 ? '' : 's'}
+          </span>
+          {overwrites.length > 0 && (
+            // A plain inline text disclosure toggle, not a CTA — the <Button>
+            // primitive's padding/variant would dominate this summary row.
+            // eslint-disable-next-line helm/no-raw-button
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              aria-expanded={open}
+              className="ml-auto text-xs font-medium text-warm-600 underline-offset-2 hover:underline"
+            >
+              {open ? 'Hide changes' : 'Show what changes'}
+            </button>
+          )}
+        </div>
+
+        {open && overwrites.length > 0 && (
+          <ul className="mt-3 space-y-2 border-t border-warm-100 pt-3">
+            {overwrites.map((d) => (
+              <li key={d.rowIndex} className="text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-warm-800">{nameByRow.get(d.rowIndex)}</span>
+                  {d.existingSource && (
+                    <span className="rounded bg-cream-200 px-1.5 py-0.5 text-warm-500">
+                      was {d.existingSource.replace(/^import:/, '')}
+                    </span>
+                  )}
+                </div>
+                {d.changedFields.length > 0 ? (
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {d.changedFields.slice(0, 8).map((c) => (
+                      <span
+                        key={c.field}
+                        className="rounded-md border border-warm-200 bg-cream-50 px-1.5 py-0.5 text-warm-600"
+                      >
+                        {c.field.replace(/_/g, ' ')}:{' '}
+                        <span className="text-warm-400 line-through">{c.before ?? '—'}</span>{' '}
+                        <span aria-hidden>→</span>{' '}
+                        <span className="font-medium text-warm-800">{c.after ?? '—'}</span>
+                      </span>
+                    ))}
+                    {d.changedFields.length > 8 && (
+                      <span className="text-warm-400">
+                        +{d.changedFields.length - 8} more
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-0.5 text-warm-400">
+                    Same values — overwrites the source/trust stamp only.
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RunStatus({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    committed: 'bg-primary-50 text-primary-700',
+    rolled_back: 'bg-cream-200 text-warm-500',
+    failed: 'bg-error/10 text-error',
+    pending: 'bg-cream-200 text-warm-500',
+    parsing: 'bg-cream-200 text-warm-500',
+    matching: 'bg-cream-200 text-warm-500',
+    review: 'bg-warning/10 text-warning',
+  };
+  const cls = map[status] ?? 'bg-cream-200 text-warm-500';
+  return (
+    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${cls}`}>
+      {status.replace('_', ' ')}
+    </span>
+  );
+}

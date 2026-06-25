@@ -165,7 +165,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
   return (
     <div className="space-y-5">
       {/* Game header / score input */}
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+      <div className="glass-standard rounded-2xl p-5">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-lg font-bold text-warm-900">
@@ -235,7 +235,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
 
       {/* Batting table */}
       {activeTab === 'batting' && (
-        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -344,13 +344,13 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
           </div>
 
           {pitchingRows.length === 0 ? (
-            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
-              <p className="text-sm text-warm-400">
-                Add pitchers using the selector above.
+            <div className="glass-standard rounded-2xl p-8 text-center">
+              <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
+                Add pitchers using the selector above to record pitching lines.
               </p>
             </div>
           ) : (
-            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+            <div className="glass-standard rounded-2xl overflow-clip">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>

@@ -1,11 +1,16 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { CommandPalette } from '@/components/CommandPalette';
 import { MobileBottomNav, type MobileNavItem } from '@/components/layout/mobile-bottom-nav';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { HubSubNav } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
+import { resolveActiveHub } from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
+import type { BaseballNavContext } from '@/lib/baseball/nav-registry';
 import {
   IconHome,
   IconUsers,
@@ -31,11 +36,31 @@ const PLAYER_NAV: MobileNavItem[] = [
 type Props = {
   children: React.ReactNode;
   role: 'coach' | 'player' | null;
+  /**
+   * Server-resolved nav context (role + capabilities + program type). Accepted
+   * but optional — the live layouts mount the shell without it, so the shell
+   * derives hub gating (coach_type) from useAuth instead. Kept in the prop
+   * surface so the BaseballShellLayout extraction (which resolves and passes a
+   * navContext) type-checks against the shell.
+   */
+  navContext?: BaseballNavContext;
 };
 
 export function BaseballDashboardShell({ children, role }: Props) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
+  const pathname = usePathname();
+  const { coach } = useAuth();
   const mobileNavItems = role === 'coach' ? COACH_NAV : PLAYER_NAV;
+
+  // Grouped-hubs sub-tab strip: resolve which hub (Team / Stats / Development /
+  // Management / Recruiting / Academics) owns the current route and render its
+  // sub-tabs above the page. Top-level surfaces (Dashboard, Profile, etc.) sit
+  // in no hub → activeHub is null → no strip, exactly like a flat tab.
+  const activeHub = resolveActiveHub({
+    pathname,
+    role,
+    coachType: coach?.coach_type ?? null,
+  });
   const mobileSidebarRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
 
@@ -153,6 +178,14 @@ export function BaseballDashboardShell({ children, role }: Props) {
             overscrollBehaviorY: 'contain',
           }}
         >
+          {/* Grouped-hub sub-tab strip (only on hub-owned routes). */}
+          {activeHub && (
+            <HubSubNav
+              key={activeHub.id}
+              tabs={activeHub.tabs}
+              ariaLabel={activeHub.ariaLabel}
+            />
+          )}
           {children}
         </main>
       </div>

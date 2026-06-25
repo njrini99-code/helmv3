@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { getPreviewUrl, getTextFileContent } from '@/app/baseball/actions/documents';
 import type { BaseballDocument, BaseballDocumentVersion } from '@/app/baseball/actions/documents';
@@ -161,11 +162,8 @@ export function DocumentPreview({
   const renderPreview = (): React.ReactNode => {
     if (isLoading) {
       return (
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin h-12 w-12 border-2 border-primary-600 border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-warm-500">Loading preview...</p>
-          </div>
+        <div className="h-[60vh] p-4">
+          <Skeleton variant="card" className="h-full w-full" />
         </div>
       );
     }

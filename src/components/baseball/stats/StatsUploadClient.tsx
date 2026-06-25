@@ -1172,12 +1172,18 @@ export function StatsUploadClient({
         {/* Step: Processing */}
         {step === 'processing' && (
           <div className="glass-standard rounded-2xl p-12 text-center">
-            <div className="animate-spin w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-warm-900 mb-2">
+            <div className="relative w-14 h-14 mx-auto mb-5">
+              <div className="absolute inset-0 rounded-full border-[3px] border-primary-100" />
+              <div className="absolute inset-0 rounded-full border-[3px] border-primary-600 border-t-transparent border-l-transparent animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <IconUpload size={20} className="text-primary-600" />
+              </div>
+            </div>
+            <h2 className="text-xl font-semibold text-warm-900 tracking-tight mb-2">
               Processing Upload
             </h2>
-            <p className="text-warm-500">
-              Matching players and calculating statistics...
+            <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
+              Matching players and calculating statistics…
             </p>
           </div>
         )}

@@ -239,7 +239,7 @@ export function MatchScoreRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="#e2e8f0"
+          stroke="#e7e5e4"
           strokeWidth={strokeWidth}
         />
         {/* Progress ring */}

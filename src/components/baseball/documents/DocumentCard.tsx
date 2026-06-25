@@ -193,57 +193,67 @@ export function DocumentCard({
                         setActiveDropdown(null);
                       }}
                     />
-                    <div className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-warm-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                      <Button variant="ghost"
+                    <div role="menu" className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-warm-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <Button
+                        variant="ghost"
+                        role="menuitem"
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePreview();
                           setActiveDropdown(null);
                         }}
-                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                        className="justify-start gap-2.5 w-full px-3 py-2 min-h-0 text-sm font-normal text-warm-700 hover:bg-warm-50 active:bg-warm-100"
                       >
                         <IconEye size={14} /> Preview
                       </Button>
                       {onViewHistory && (
-                        <Button variant="ghost"
+                        <Button
+                          variant="ghost"
+                          role="menuitem"
                           onClick={(e) => {
                             e.stopPropagation();
                             onViewHistory(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                          className="justify-start gap-2.5 w-full px-3 py-2 min-h-0 text-sm font-normal text-warm-700 hover:bg-warm-50 active:bg-warm-100"
                         >
                           <IconClock size={14} /> Version History
                         </Button>
                       )}
                       {onUploadVersion && (
-                        <Button variant="ghost"
+                        <Button
+                          variant="ghost"
+                          role="menuitem"
                           onClick={(e) => {
                             e.stopPropagation();
                             onUploadVersion(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                          className="justify-start gap-2.5 w-full px-3 py-2 min-h-0 text-sm font-normal text-warm-700 hover:bg-warm-50 active:bg-warm-100"
                         >
                           <IconUpload size={14} /> Upload New Version
                         </Button>
                       )}
                       {onEdit && (
-                        <Button variant="ghost"
+                        <Button
+                          variant="ghost"
+                          role="menuitem"
                           onClick={(e) => {
                             e.stopPropagation();
                             onEdit(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                          className="justify-start gap-2.5 w-full px-3 py-2 min-h-0 text-sm font-normal text-warm-700 hover:bg-warm-50 active:bg-warm-100"
                         >
                           <IconEdit size={14} /> Edit Details
                         </Button>
                       )}
                       {onMoveToFolder && (
-                        <Button variant="ghost"
+                        <Button
+                          variant="ghost"
+                          role="menuitem"
                           onClick={(e) => {
                             e.stopPropagation();
                             onMoveToFolder(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                          className="justify-start gap-2.5 w-full px-3 py-2 min-h-0 text-sm font-normal text-warm-700 hover:bg-warm-50 active:bg-warm-100"
                         >
                           <IconFolder size={14} /> Move to Folder
                         </Button>
@@ -251,13 +261,15 @@ export function DocumentCard({
                       {onDelete && (
                         <>
                           <div className="my-1 h-px bg-warm-100" />
-                          <Button variant="danger"
+                          <Button
+                            variant="ghost"
+                            role="menuitem"
                             onClick={(e) => {
                               e.stopPropagation();
                               onDelete(document);
                               setActiveDropdown(null);
                             }}
-                            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
+                            className="justify-start gap-2.5 w-full px-3 py-2 min-h-0 text-sm font-normal text-red-600 hover:bg-red-50 active:bg-red-100"
                           >
                             <IconTrash size={14} /> Delete
                           </Button>
@@ -316,13 +328,15 @@ export function DocumentCard({
             <span>{formatFileSize(document.file_size)}</span>
             <span>{timeAgo(document.created_at)}</span>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-            <IconButton variant="primary" aria-label="Show"
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all">
+            <IconButton
+              variant="ghost"
+              aria-label="Preview document"
               onClick={(e) => {
                 e.stopPropagation();
                 handlePreview();
               }}
-              className="p-1.5 rounded-lg hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-colors"
+              className="w-auto h-auto p-1.5 rounded-lg text-primary-600 hover:text-primary-600 hover:bg-primary-50 active:bg-primary-100"
               title="Preview"
             >
               <IconEye size={14} />

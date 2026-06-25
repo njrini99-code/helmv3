@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { differenceInDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import {
   IconMessage,
@@ -68,9 +69,11 @@ function getUrgencyConfig(urgency: LeadUrgency) {
     default:
       return {
         icon: IconTrendingUp,
-        iconBg: 'bg-blue-50',
-        iconColor: 'text-blue-500',
-        badge: 'bg-blue-100 text-blue-700',
+        // "Active" reads as a positive, in-motion lead → primary green (the
+        // daily-home restricted accent set), not a separate blue categorical hue.
+        iconBg: 'bg-primary-50',
+        iconColor: 'text-primary-500',
+        badge: 'bg-primary-100 text-primary-700',
         badgeText: 'Active',
       };
   }
@@ -172,19 +175,19 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
         <ShineEffect />
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
-              <IconTrendingUp size={18} className="text-orange-600" />
+            <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+              <IconTrendingUp size={18} className="text-amber-600" />
             </div>
             <h2 className="font-semibold text-warm-900 tracking-tight">Hot Leads</h2>
           </div>
         </div>
         <div className="p-6">
           {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-center gap-4 py-4 animate-pulse">
-              <div className="w-12 h-12 rounded-full bg-warm-200" />
+            <div key={i} className="flex items-center gap-4 py-4">
+              <Skeleton variant="circular" width={48} height={48} />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-1/3 bg-warm-200 rounded" />
-                <div className="h-3 w-1/2 bg-warm-100 rounded" />
+                <Skeleton variant="text" width="33%" height={16} />
+                <Skeleton variant="text" width="50%" height={12} />
               </div>
             </div>
           ))}
@@ -199,8 +202,8 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
         <ShineEffect />
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
-              <IconTrendingUp size={18} className="text-orange-600" />
+            <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+              <IconTrendingUp size={18} className="text-amber-600" />
             </div>
             <h2 className="font-semibold text-warm-900 tracking-tight">Hot Leads</h2>
           </div>
@@ -231,8 +234,8 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
       <ShineEffect />
       <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
-            <IconTrendingUp size={18} className="text-orange-600" />
+          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+            <IconTrendingUp size={18} className="text-amber-600" />
           </div>
           <div>
             <h2 className="font-semibold text-warm-900 tracking-tight">Hot Leads</h2>

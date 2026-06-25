@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BaseballHelm Ultracode Command Center</title>
+  <meta name="color-scheme" content="light" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23fcf8ec' stroke='%231f5b3d' stroke-width='2'/%3E%3Cpath d='M9 8c4 3 4 13 0 16M23 8c-4 3-4 13 0 16' fill='none' stroke='%23b86a3d' stroke-width='1.6'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app" class="app" data-booting="true">
+    <!-- Mission bar (rendered by app.js) -->
+    <header id="mission-bar" class="mission-bar" role="banner"></header>
+
+    <div class="layout">
+      <!-- Left sidebar: mode nav + agent rail (rendered by app.js) -->
+      <aside id="sidebar" class="sidebar" aria-label="Command center navigation">
+        <nav id="mode-nav" class="mode-nav" aria-label="Modes"></nav>
+        <section id="agent-rail" class="agent-rail" aria-label="Agent lanes"></section>
+      </aside>
+
+      <!-- Center: active mode renders here -->
+      <main id="mode-root" class="mode-root" tabindex="-1"></main>
+    </div>
+
+    <!-- Live event ribbon (rendered by app.js) -->
+    <footer id="event-ribbon" class="event-ribbon" aria-label="Live build events"></footer>
+
+    <!-- Connection / boot toast -->
+    <div id="conn-toast" class="conn-toast" hidden></div>
+  </div>
+
+  <noscript>
+    <div style="padding:24px;font-family:system-ui">This command center requires JavaScript. Start it with
+      <code>node scripts/baseballhelm-command-center.mjs</code> and open the printed URL in Chrome.</div>
+  </noscript>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

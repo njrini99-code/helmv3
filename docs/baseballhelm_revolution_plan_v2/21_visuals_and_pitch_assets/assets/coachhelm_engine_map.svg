@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050">
+  <rect width="1600" height="1050" fill="#fbfaf7"/>
+  <text x="80" y="88" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="700" fill="#17212b">Baseball CoachHelm Engine</text>
+  <text x="82" y="128" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#5b6470">Evidence-backed baseball intelligence: not a chatbot, a source-cited decision engine.</text>
+
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="100" y="210" width="310" height="520" rx="22" fill="#ffffff" stroke="#d8d2c7"/>
+    <text x="255" y="258" text-anchor="middle" font-size="28" font-weight="700" fill="#17212b">Inputs</text>
+    <text x="140" y="310" font-size="18" fill="#5b6470">Official stats</text>
+    <text x="140" y="350" font-size="18" fill="#5b6470">Pitch + swing data</text>
+    <text x="140" y="390" font-size="18" fill="#5b6470">Batted-ball events</text>
+    <text x="140" y="430" font-size="18" fill="#5b6470">Video clips</text>
+    <text x="140" y="470" font-size="18" fill="#5b6470">Lifts + readiness</text>
+    <text x="140" y="510" font-size="18" fill="#5b6470">Classes + availability</text>
+    <text x="140" y="550" font-size="18" fill="#5b6470">Practice results</text>
+    <text x="140" y="590" font-size="18" fill="#5b6470">Staff actions</text>
+
+    <rect x="520" y="205" width="560" height="530" rx="24" fill="#17212b"/>
+    <text x="800" y="260" text-anchor="middle" font-size="34" font-weight="700" fill="#fff">CoachHelm Core</text>
+    <rect x="575" y="310" width="210" height="80" rx="14" fill="#263442"/>
+    <text x="680" y="358" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Feature Extraction</text>
+    <rect x="815" y="310" width="210" height="80" rx="14" fill="#263442"/>
+    <text x="920" y="358" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Baselines</text>
+    <rect x="575" y="420" width="210" height="80" rx="14" fill="#263442"/>
+    <text x="680" y="468" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Pattern Mining</text>
+    <rect x="815" y="420" width="210" height="80" rx="14" fill="#263442"/>
+    <text x="920" y="468" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Reasoning</text>
+    <rect x="575" y="530" width="210" height="80" rx="14" fill="#263442"/>
+    <text x="680" y="578" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Practice RX</text>
+    <rect x="815" y="530" width="210" height="80" rx="14" fill="#263442"/>
+    <text x="920" y="578" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">Outcome Learning</text>
+    <text x="800" y="675" text-anchor="middle" font-size="18" fill="#cdd6df">Every insight carries source refs, confidence, sample, action, owner, and lifecycle.</text>
+
+    <rect x="1190" y="210" width="310" height="520" rx="22" fill="#ffffff" stroke="#d8d2c7"/>
+    <text x="1345" y="258" text-anchor="middle" font-size="28" font-weight="700" fill="#17212b">Outputs</text>
+    <text x="1230" y="310" font-size="18" fill="#5b6470">Chase pattern</text>
+    <text x="1230" y="350" font-size="18" fill="#5b6470">Velocity decay</text>
+    <text x="1230" y="390" font-size="18" fill="#5b6470">Workload risk</text>
+    <text x="1230" y="430" font-size="18" fill="#5b6470">Practice block</text>
+    <text x="1230" y="470" font-size="18" fill="#5b6470">Video request</text>
+    <text x="1230" y="510" font-size="18" fill="#5b6470">Lift modification</text>
+    <text x="1230" y="550" font-size="18" fill="#5b6470">Meeting item</text>
+    <text x="1230" y="590" font-size="18" fill="#5b6470">Player task</text>
+
+    <rect x="260" y="835" width="1080" height="92" rx="22" fill="#fff3ed" stroke="#f0b099"/>
+    <text x="800" y="875" text-anchor="middle" font-size="24" font-weight="700" fill="#a63a20">Insight lifecycle: tentative -> detected -> matured -> addressed -> resolved -> archived</text>
+    <text x="800" y="907" text-anchor="middle" font-size="18" fill="#6f3b2c">Coach status is separate: active, acknowledged, dismissed, resolved.</text>
+  </g>
+
+  <g stroke="#d94f2b" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M410 470 L520 470"/>
+    <path d="M1080 470 L1190 470"/>
+    <path d="M1345 730 C1320 805 1035 815 800 835"/>
+    <path d="M255 730 C280 805 565 815 800 835"/>
+  </g>
+</svg>
+

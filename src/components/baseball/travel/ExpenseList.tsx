@@ -178,13 +178,15 @@ export function ExpenseList({ expenses, onRefresh, isCoach }: ExpenseListProps) 
 
                     {isCoach && (
                       <div className="flex items-center gap-2 pt-2 border-t border-warm-100">
-                        <Button variant="danger"
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(expense.id);
                           }}
                           disabled={deleting === expense.id}
-                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                          className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100"
                         >
                           <IconTrash size={14} />
                           {deleting === expense.id ? 'Deleting...' : 'Delete'}

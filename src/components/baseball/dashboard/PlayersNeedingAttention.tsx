@@ -37,10 +37,13 @@ const typeConfig: Record<AttentionItem['type'], {
     bgColor: 'bg-amber-50',
     href: '/baseball/dashboard/roster',
   },
+  // Folded onto amber (warning) — the daily home keeps a restricted accent set
+  // (red / amber / primary-green / warm), matching the Signals + Command Center
+  // surfaces, rather than a separate orange categorical hue.
   overdue_goals: {
     icon: IconClock,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50',
     href: '/baseball/dashboard/dev-plans',
   },
   no_video: {
@@ -121,7 +124,7 @@ export function PlayersNeedingAttention({ data, loading }: PlayersNeedingAttenti
           <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
             <IconWarning size={16} className="text-amber-600" />
           </div>
-          <h3 className="font-semibold text-warm-900">Needs Attention</h3>
+          <h3 className="font-semibold text-warm-900 tracking-tight">Needs Attention</h3>
         </div>
         {data.length > 0 && (
           <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">

@@ -1,0 +1,253 @@
+{
+  "rules": {
+    "high_attention_paths": [
+      "auth",
+      "middleware",
+      "rls",
+      "policy",
+      "supabase/migrations"
+    ],
+    "high_or_critical_commands": [
+      "rm -rf",
+      "git reset --hard",
+      "git checkout --",
+      "force push",
+      "drop table",
+      "broad delete",
+      "commands outside repo"
+    ],
+    "high_or_critical_reads": [
+      ".env",
+      "secret",
+      "token",
+      "credential"
+    ],
+    "medium": [
+      "package install",
+      "generated type churn"
+    ],
+    "critical": [
+      "product code edits before Task 0 verification"
+    ]
+  },
+  "cards": [
+    {
+      "id": "risk-guard-product-code",
+      "level": "critical",
+      "category": "scope",
+      "title": "Product code before Task 0 verification",
+      "status": "armed",
+      "description": "Guard: no main BaseballHelm product code may change before command_center_verified.",
+      "affected_paths": [
+        "src/app/baseball/**"
+      ],
+      "command": null,
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T00:04:19.062Z",
+      "mitigation": "Hold all product edits until Task 0 gate opens."
+    },
+    {
+      "id": "risk-dirty-tree",
+      "level": "medium",
+      "category": "git",
+      "title": "Working tree has uncommitted changes on fix/crm-logging-attendance-jersey-2026-06-23",
+      "status": "noted",
+      "description": "22 unrelated dirty files present. Command center additions are new paths only; no existing files touched.",
+      "affected_paths": [],
+      "command": null,
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T00:04:20.062Z",
+      "mitigation": "Additive-only writes; do not stage or commit existing work."
+    },
+    {
+      "id": "risk-hook-evt-0599",
+      "level": "high",
+      "category": "hook",
+      "title": "Hook flagged high: preToolUse",
+      "status": "noted",
+      "description": "paths: /Users/ricknini/Downloads/helmv3/supabase/migrations · tool: Grep",
+      "affected_paths": [
+        "/Users/ricknini/Downloads/helmv3/supabase/migrations"
+      ],
+      "command": null,
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T20:58:24.986Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-0601",
+      "level": "high",
+      "category": "hook",
+      "title": "Hook flagged high: postToolUse",
+      "status": "noted",
+      "description": "paths: /Users/ricknini/Downloads/helmv3/supabase/migrations · tool: Grep",
+      "affected_paths": [
+        "/Users/ricknini/Downloads/helmv3/supabase/migrations"
+      ],
+      "command": null,
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T20:58:25.061Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-0653",
+      "level": "high",
+      "category": "hook",
+      "title": "Hook flagged high: preToolUse",
+      "status": "noted",
+      "description": "paths: /Users/ricknini/Downloads/helmv3/supabase/migrations · tool: Grep",
+      "affected_paths": [
+        "/Users/ricknini/Downloads/helmv3/supabase/migrations"
+      ],
+      "command": null,
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T20:58:40.394Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-0654",
+      "level": "high",
+      "category": "hook",
+      "title": "Hook flagged high: postToolUse",
+      "status": "noted",
+      "description": "paths: /Users/ricknini/Downloads/helmv3/supabase/migrations · tool: Grep",
+      "affected_paths": [
+        "/Users/ricknini/Downloads/helmv3/supabase/migrations"
+      ],
+      "command": null,
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T20:58:40.458Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-0915",
+      "level": "critical",
+      "category": "hook",
+      "title": "Hook flagged critical: preToolUse",
+      "status": "noted",
+      "description": "cmd: rm -rf /Users/ricknini/Downloads/helmv3/.next && df -h /Users/ricknini/Downloads/helmv3 | tail -1 · tool: Shell",
+      "affected_paths": [],
+      "command": "rm -rf /Users/ricknini/Downloads/helmv3/.next && df -h /Users/ricknini/Downloads/helmv3 | tail -1",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T21:16:33.825Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-3998",
+      "level": "critical",
+      "category": "hook",
+      "title": "Hook flagged critical: preToolUse",
+      "status": "noted",
+      "description": "cmd: cd /Users/ricknini/Downloads/helmv3 && rm -rf node_modules && npm ci 2>&1 | tail -20 · tool: Shell",
+      "affected_paths": [],
+      "command": "cd /Users/ricknini/Downloads/helmv3 && rm -rf node_modules && npm ci 2>&1 | tail -20",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T23:22:32.502Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-4052",
+      "level": "critical",
+      "category": "hook",
+      "title": "Hook flagged critical: preToolUse",
+      "status": "noted",
+      "description": "cmd: cd /Users/ricknini/Downloads/helmv3 && rm -rf node_modules/.cache 2>/dev/null; npm ci 2>&1 | tail -25 · tool: Shell",
+      "affected_paths": [],
+      "command": "cd /Users/ricknini/Downloads/helmv3 && rm -rf node_modules/.cache 2>/dev/null; npm ci 2>&1 | tail -25",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T23:23:50.614Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-4781",
+      "level": "high",
+      "category": "hook",
+      "title": "Hook flagged high: preToolUse",
+      "status": "noted",
+      "description": "cmd: cd /Users/ricknini/Downloads/helmv3 && gh run list --workflow \"Vercel\" --limit 3 2>&1 || gh api repos/njrini99-code/helmv3/deployments --jq '.[0:3] | .[] | {sha · tool: Shell",
+      "affected_paths": [],
+      "command": "cd /Users/ricknini/Downloads/helmv3 && gh run list --workflow \"Vercel\" --limit 3 2>&1 || gh api repos/njrini99-code/helmv3/deployments --jq '.[0:3] | .[] | {sha: .sha[0:7], env: .environment, created: .created_at}' 2>&1",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T23:31:37.295Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-4783",
+      "level": "high",
+      "category": "hook",
+      "title": "Hook flagged high: postToolUse",
+      "status": "noted",
+      "description": "cmd: cd /Users/ricknini/Downloads/helmv3 && gh run list --workflow \"Vercel\" --limit 3 2>&1 || gh api repos/njrini99-code/helmv3/deployments --jq '.[0:3] | .[] | {sha · tool: Shell",
+      "affected_paths": [],
+      "command": "cd /Users/ricknini/Downloads/helmv3 && gh run list --workflow \"Vercel\" --limit 3 2>&1 || gh api repos/njrini99-code/helmv3/deployments --jq '.[0:3] | .[] | {sha: .sha[0:7], env: .environment, created: .created_at}' 2>&1",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T23:31:38.373Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-5240",
+      "level": "critical",
+      "category": "hook",
+      "title": "Hook flagged critical: preToolUse",
+      "status": "noted",
+      "description": "cmd: cd /Users/ricknini/Downloads/helmv3 && git reset --hard 9d3bc7a3 && git status --short | head -15 && git log -3 --oneline · tool: Shell",
+      "affected_paths": [],
+      "command": "cd /Users/ricknini/Downloads/helmv3 && git reset --hard 9d3bc7a3 && git status --short | head -15 && git log -3 --oneline",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T23:53:27.626Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-5241",
+      "level": "critical",
+      "category": "hook",
+      "title": "Hook flagged critical: postToolUse",
+      "status": "noted",
+      "description": "cmd: cd /Users/ricknini/Downloads/helmv3 && git reset --hard 9d3bc7a3 && git status --short | head -15 && git log -3 --oneline · tool: Shell",
+      "affected_paths": [],
+      "command": "cd /Users/ricknini/Downloads/helmv3 && git reset --hard 9d3bc7a3 && git status --short | head -15 && git log -3 --oneline",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T23:53:28.673Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-5242",
+      "level": "critical",
+      "category": "hook",
+      "title": "Hook flagged critical: preToolUse",
+      "status": "noted",
+      "description": "cmd: cd /Users/ricknini/Downloads/helmv3 && git push --force-with-lease origin main · tool: Shell",
+      "affected_paths": [],
+      "command": "cd /Users/ricknini/Downloads/helmv3 && git push --force-with-lease origin main",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T23:53:31.104Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-5243",
+      "level": "critical",
+      "category": "hook",
+      "title": "Hook flagged critical: preToolUse",
+      "status": "noted",
+      "description": "cmd: cd /Users/ricknini/Downloads/helmv3 && git reset --hard origin/main && git revert --no-edit 4964b541 4cc910df d0bc1457 7fe15a6d b1b4a783 · tool: Shell",
+      "affected_paths": [],
+      "command": "cd /Users/ricknini/Downloads/helmv3 && git reset --hard origin/main && git revert --no-edit 4964b541 4cc910df d0bc1457 7fe15a6d b1b4a783",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T23:53:37.800Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    },
+    {
+      "id": "risk-hook-evt-5244",
+      "level": "critical",
+      "category": "hook",
+      "title": "Hook flagged critical: postToolUse",
+      "status": "noted",
+      "description": "cmd: cd /Users/ricknini/Downloads/helmv3 && git reset --hard origin/main && git revert --no-edit 4964b541 4cc910df d0bc1457 7fe15a6d b1b4a783 · tool: Shell",
+      "affected_paths": [],
+      "command": "cd /Users/ricknini/Downloads/helmv3 && git reset --hard origin/main && git revert --no-edit 4964b541 4cc910df d0bc1457 7fe15a6d b1b4a783",
+      "checkpoint_ref": null,
+      "timestamp": "2026-06-24T23:53:39.176Z",
+      "mitigation": "Review the flagged hook action before proceeding."
+    }
+  ]
+}

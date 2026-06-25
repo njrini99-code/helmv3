@@ -12,6 +12,7 @@ import {
   IconRuler,
   IconActivity,
   IconVideo,
+  IconUser,
 } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -57,7 +58,7 @@ const PlayerAvatar = memo(function PlayerAvatar({
           className="w-full h-full object-cover"
         />
       ) : (
-        <span className="font-bold text-warm-600">
+        <span className="font-semibold text-warm-600">
           {firstName.charAt(0)}
           {lastName.charAt(0)}
         </span>
@@ -69,7 +70,7 @@ const PlayerAvatar = memo(function PlayerAvatar({
 // Loading skeleton
 const PlayerPeekSkeleton = memo(function PlayerPeekSkeleton() {
   return (
-    <div className="p-5 space-y-5 animate-pulse">
+    <div className="p-5 space-y-5">
       {/* Header skeleton */}
       <div className="flex items-start gap-4">
         <Skeleton className="w-20 h-20 rounded-2xl" />
@@ -170,8 +171,16 @@ const PlayerPeekContentComponent = function PlayerPeekContent({
 
   if (error || !player) {
     return (
-      <div className="p-5 text-center">
-        <p className="text-warm-500">{error || 'Player not found'}</p>
+      <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-warm-100 to-warm-50 text-warm-400">
+          <IconUser size={26} />
+        </div>
+        <p className="text-base font-semibold text-warm-900">
+          {error ? 'Could not load player' : 'Player not found'}
+        </p>
+        <p className="mt-1 max-w-xs text-sm leading-relaxed text-warm-500">
+          {error || "This player's preview isn't available right now."}
+        </p>
       </div>
     );
   }
@@ -220,7 +229,7 @@ const PlayerPeekContentComponent = function PlayerPeekContent({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-bold text-warm-900 truncate">
+              <h2 className="text-xl font-semibold tracking-tight text-warm-900 truncate">
                 {player.firstName} {player.lastName}
               </h2>
               {player.hasVideo && (
@@ -303,7 +312,7 @@ const PlayerPeekContentComponent = function PlayerPeekContent({
       )}
 
       {/* Actions - fixed at bottom */}
-      <div className="mt-auto p-5 pt-4 bg-white border-t border-warm-100">
+      <div className="mt-auto p-5 pt-4 bg-cream-50 border-t border-warm-100">
         <PlayerQuickActions
           playerId={player.id}
           isOnWatchlist={player.isOnWatchlist}

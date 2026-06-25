@@ -6,7 +6,7 @@ import type { BaseballPlayerSeasonStats } from '@/lib/types';
 
 function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className={`rounded-2xl p-4 text-center border ${highlight ? 'bg-primary-50 border-primary-100' : 'bg-cream-100/75 backdrop-blur-xl border-white/20'} shadow-sm`}>
+    <div className={`rounded-2xl p-4 text-center border transition-all duration-200 ${highlight ? 'bg-primary-50 border-primary-100' : 'bg-cream-100/75 backdrop-blur-xl border-warm-200/45 shadow-glass'}`}>
       <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-1">{label}</p>
       <p className={`text-2xl font-black tabular-nums ${highlight ? 'text-primary-700' : 'text-warm-900'}`}>{value}</p>
     </div>
@@ -28,7 +28,13 @@ export function MySeasonStats() {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-20 bg-warm-100 rounded-2xl animate-pulse" />
+          <div
+            key={i}
+            className="relative h-20 glass-standard rounded-2xl overflow-clip"
+            style={{ animationDelay: `${i * 50}ms` }}
+          >
+            <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+          </div>
         ))}
       </div>
     );
@@ -36,8 +42,8 @@ export function MySeasonStats() {
 
   if (!stats || (stats.ab === 0 && stats.ip === 0)) {
     return (
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-center">
-        <p className="text-sm text-warm-400">
+      <div className="glass-standard rounded-2xl p-8 text-center">
+        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
           No season stats yet. Your coach will enter them from game box scores.
         </p>
       </div>

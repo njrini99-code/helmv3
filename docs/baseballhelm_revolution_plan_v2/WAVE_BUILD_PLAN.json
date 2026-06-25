@@ -1,0 +1,423 @@
+{
+  "gap_map": [
+    "IDENTITY/STAFF: user->coach is 1:1 via user_id FK; NO staff capability columns on baseball_team_coach_staff, NO baseball_staff_invitations table, NO staff invite/accept flow, NO staff auth hook, NO staff routes, NO capability-aware RLS helpers (has_baseball_staff_capability, can_view_baseball_player, etc.). Target: capability-driven staff model layered onto existing baseball_team_coach_staff + new baseball_staff_invitations, server-enforced.",
+    "IMPORT LINEAGE: baseball_stat_uploads TS Row (row_count/processed_count/file_url/status:string) MISMATCHES the archived SQL (total_rows/matched_rows/unmatched_rows/unmatched_data/stat_type/session_date) AND lacks import_run_id/source_id/mapping_config/match_confidence. NO baseball_import_runs, NO baseball_player_external_ids. Target: reconcile baseball_stat_uploads to a single canonical shape + add import_runs + external_ids for audited, rollback-able imports with stored match confidence.",
+    "TIMELINE/ACK: NO baseball_player_timeline_events (chronological player story), NO baseball_event_acknowledgements. Target: both added, feeding Command Center, Player Today, Profile/Timeline.",
+    "PRACTICE: NO baseball_practices / baseball_practice_blocks / baseball_practice_attendance. Target: practice header + timed blocks + attendance, optionally linked to baseball_events.",
+    "PERFORMANCE/LIFTING: NO lifting tables at all (sessions/exercises/assignments/results), NO wellness/readiness tables. Target: Performance Lite (exercise library + assignment + player-logged set results + readiness check-in) gated by strength_coach capabilities.",
+    "COACHHELM ENGINE: GolfHelm v3 engine (BaseGenerator, Diagnosis, confidence, lifecycle, window-honesty) exists and is sport-agnostic in spirit but golf-coupled in imports; baseball/actions/insights.ts is a manual stub. NO baseball_metrics registry, NO baseball event loaders, NO source-ref/confidence attribution columns. Target: extract shared engine layer to @/lib/coachhelm/shared + baseball generators reading box scores/stats with stored source refs.",
+    "READ MODELS: BaseballPlayerAggregates TS type claims fields (season_avg, career_obp/slg/ops, avg_pitch_velocity, development_stage, trend_velocity) that do NOT exist in DB; recalculatePlayerAggregates writes only ~14 of 22 claimed fields. Target: reconcile aggregate type<->schema and add the missing computed columns or trim the type.",
+    "TYPE SYNC: baseball_coach_recruiting_philosophy + player_percentiles exist in SQL but have NO TypeScript Row/Insert/Update types; baseball_stat_uploads.status is string not enum. Target: regenerate types after every migration; add enums.",
+    "NAV/ROUTES: recruiting routes exist but are client-guard-only (useRecruitingRouteProtection) bypassable by direct URL; mobile COACH_NAV/PLAYER_NAV hardcoded and out of sync with sidebar (missing stats/dev-plans/documents/travel); showcase coach falls back to college nav when coach_type undefined. Target: server-side capability gating + nav registry single source of truth.",
+    "SURFACES MISSING: NO Player Today/daily view, NO Stats Center hub, NO Practice Planner, NO Performance dashboard, NO Staff Decision Room, NO Player Profile Timeline, NO Import Center UI beyond StatsUploadClient, NO baseball CoachHelm UI. Command Center + Player Profile + team-mgmt surfaces exist and are reusable.",
+    "ERROR TRACKING: Sentry IS wired (instrumentation.ts/instrumentation-client.ts + server-error-logger.ts writing to error_logs + Sentry with scopes/tags/fingerprints) and 55 baseball error.tsx boundaries exist, but there is NO baseball-specific server-action wrapper with breadcrumbs/capability context, NO route-group-level error boundary for the new (dashboard) feature folders, and NO pipe from error_logs into the Command Center risk feed. Target: baseball action wrapper + risk-feed bridge reusing existing infra.",
+    "DEMO: NO baseball demo seed for the new Phase-1 surfaces (practice, lifting, timeline, imports, insights). Target: seeded demo team populated across all new tables."
+  ],
+  "waves": [
+    {
+      "wave": 1,
+      "title": "Foundation: migrations reconcile + identity/capability schema + RLS helpers",
+      "packets": [
+        "P1.1 Reconcile baseball_stat_uploads to canonical shape + add import lineage columns",
+        "P1.2 Create baseball_import_runs + baseball_player_external_ids",
+        "P1.3 Extend baseball_team_coach_staff with capability columns + create baseball_staff_invitations",
+        "P1.4 Create baseball_player_timeline_events + baseball_event_acknowledgements",
+        "P1.5 RLS helper functions (capability-aware) + policies for all new/changed tables",
+        "P1.6 Regenerate database types + add missing enums/types (recruiting_philosophy, percentiles, stat_uploads.status)"
+      ],
+      "creates": [
+        "supabase/migrations/20260623T0001_baseball_stat_uploads_reconcile.sql",
+        "supabase/migrations/20260623T0002_baseball_import_lineage.sql",
+        "supabase/migrations/20260623T0003_baseball_staff_capabilities.sql",
+        "supabase/migrations/20260623T0004_baseball_timeline_and_acks.sql",
+        "supabase/migrations/20260623T0005_baseball_rls_helpers_and_policies.sql",
+        "supabase/tests/rls/baseball_staff_capabilities.sql",
+        "supabase/tests/rls/baseball_import_lineage.sql",
+        "supabase/tests/rls/baseball_timeline_visibility.sql"
+      ],
+      "edits": [
+        "src/lib/types/database.ts (regen)",
+        "src/lib/types/index.ts (reconcile BaseballPlayerAggregates + add new types)"
+      ],
+      "depends_on": "none"
+    },
+    {
+      "wave": 2,
+      "title": "Auth + capability foundation + advanced error tracking",
+      "packets": [
+        "P2.1 useBaseballStaffAuth hook + active_baseball_context cookie/server validation",
+        "P2.2 Extend middleware checkRouteAuthorization for staff routes + capability checks",
+        "P2.3 loginAction staff redirect + invite returnTo handling; complete-signup invite context",
+        "P2.4 Capability resolver lib (server-enforced has_capability) + ownership helpers",
+        "P2.5 Baseball server-action wrapper with Sentry breadcrumbs/scopes/capability tags",
+        "P2.6 Route-group error boundaries for new (dashboard) feature folders + risk-feed bridge (error_logs -> command center)"
+      ],
+      "creates": [
+        "src/hooks/use-baseball-staff-auth.ts",
+        "src/lib/baseball/active-context.ts",
+        "src/lib/baseball/capabilities.ts",
+        "src/lib/baseball/with-baseball-action.ts",
+        "src/app/baseball/(dashboard)/dashboard/staff/error.tsx",
+        "src/lib/baseball/risk-feed-bridge.ts"
+      ],
+      "edits": [
+        "src/lib/supabase/middleware.ts",
+        "src/app/baseball/actions/auth.ts",
+        "src/app/baseball/(auth)/complete-signup/CompleteSignupClient.tsx",
+        "src/lib/server-error-logger.ts",
+        "src/lib/auth/ownership.ts"
+      ],
+      "depends_on": "Wave 1"
+    },
+    {
+      "wave": 3,
+      "title": "Read models + shared types + nav single-source-of-truth",
+      "packets": [
+        "P3.1 Reconcile recalculatePlayerAggregates writer to canonical schema",
+        "P3.2 Read-model query libs (command-center, player-today, timeline)",
+        "P3.3 Nav registry single source of truth; sync mobile + sidebar; capability-driven filtering",
+        "P3.4 Source-labeled record helpers (every imported/AI record carries source ref + confidence)"
+      ],
+      "creates": [
+        "src/lib/baseball/read-models/command-center.ts",
+        "src/lib/baseball/read-models/player-today.ts",
+        "src/lib/baseball/read-models/timeline.ts",
+        "src/lib/baseball/nav-registry.ts"
+      ],
+      "edits": [
+        "src/app/baseball/actions/stats.ts",
+        "src/components/layout/sidebar.tsx",
+        "src/components/baseball/dashboard-shell.tsx"
+      ],
+      "depends_on": "Wave 2"
+    },
+    {
+      "wave": 4,
+      "title": "Coach Command Center + Player Today (daily loops)",
+      "packets": [
+        "P4.1 Command Center risk/AI-flag strip + capability-aware actions",
+        "P4.2 Player Today daily view (assignments, lifts, schedule, check-in prompts)",
+        "P4.3 Event acknowledgement UI + server actions",
+        "P4.4 Embedded AI daily brief surface (reads insights read-model)"
+      ],
+      "creates": [
+        "src/app/baseball/(player-dashboard)/player/today/page.tsx",
+        "src/components/baseball/player-today/PlayerTodayClient.tsx",
+        "src/components/baseball/command-center/RiskFeedStrip.tsx",
+        "src/app/baseball/actions/acknowledgements.ts",
+        "src/components/baseball/command-center/DailyBriefPanel.tsx"
+      ],
+      "edits": [
+        "src/components/baseball/command-center/CommandCenterClient.tsx",
+        "src/app/baseball/(dashboard)/dashboard/command-center/page.tsx"
+      ],
+      "depends_on": "Wave 3"
+    },
+    {
+      "wave": 5,
+      "title": "Roster + Player Profile + Timeline",
+      "packets": [
+        "P5.1 Player Profile Timeline tab reading baseball_player_timeline_events",
+        "P5.2 Timeline writer hooks on stat/practice/lift/note/import/ai events",
+        "P5.3 Roster actions (assign/remove) parity with golf roster.ts"
+      ],
+      "creates": [
+        "src/components/baseball/player-profile/ProfileTimeline.tsx",
+        "src/app/baseball/actions/roster.ts",
+        "src/lib/baseball/timeline-writer.ts"
+      ],
+      "edits": [
+        "src/components/baseball/player-profile/PlayerProfileClient.tsx"
+      ],
+      "depends_on": "Wave 4"
+    },
+    {
+      "wave": 6,
+      "title": "Import Center MVP (audited, rollback-able)",
+      "packets": [
+        "P6.1 Import wizard UI: upload->detect->map->normalize->match->preview->validate->commit",
+        "P6.2 Import run actions writing baseball_import_runs + external_ids + match confidence",
+        "P6.3 Duplicate detection + create/update/skip + rollback action"
+      ],
+      "creates": [
+        "src/app/baseball/(dashboard)/dashboard/import/page.tsx",
+        "src/components/baseball/import-center/ImportWizardClient.tsx",
+        "src/app/baseball/actions/imports.ts",
+        "src/lib/baseball/import-matching.ts"
+      ],
+      "edits": [
+        "src/app/baseball/actions/stats.ts",
+        "src/lib/baseball/csv-utils.ts"
+      ],
+      "depends_on": "Wave 5"
+    },
+    {
+      "wave": 7,
+      "title": "Stats Center Lite",
+      "packets": [
+        "P7.1 Stats Center hub (team-wide browse, filter by position/stat/date, export)",
+        "P7.2 Stats Center read-model + season-stat reconcile"
+      ],
+      "creates": [
+        "src/app/baseball/(dashboard)/dashboard/stats-center/page.tsx",
+        "src/components/baseball/stats-center/StatsCenterClient.tsx",
+        "src/lib/baseball/read-models/stats-center.ts"
+      ],
+      "edits": [
+        "src/app/baseball/actions/games.ts"
+      ],
+      "depends_on": "Wave 6"
+    },
+    {
+      "wave": 8,
+      "title": "Practice Planner Lite",
+      "packets": [
+        "P8.1 Practice planner UI (time-slot blocks, stations, staff assignment)",
+        "P8.2 Practice actions writing baseball_practices/blocks/attendance + calendar attach"
+      ],
+      "creates": [
+        "src/app/baseball/(dashboard)/dashboard/practice/page.tsx",
+        "src/components/baseball/practice-planner/PracticePlannerClient.tsx",
+        "src/app/baseball/actions/practice.ts"
+      ],
+      "edits": [
+        "src/app/baseball/actions/calendar.ts"
+      ],
+      "depends_on": "Wave 7"
+    },
+    {
+      "wave": 9,
+      "title": "Performance / Lifting Lite",
+      "packets": [
+        "P9.1 Lifting schema migration (exercise library, assignments, set results, readiness)",
+        "P9.2 Strength-coach dashboard + player lift execution UI",
+        "P9.3 Lifting actions gated by strength capabilities; readiness/soreness check-in"
+      ],
+      "creates": [
+        "supabase/migrations/20260623T0006_baseball_lifting_performance.sql",
+        "supabase/tests/rls/baseball_lifting_visibility.sql",
+        "src/app/baseball/(dashboard)/dashboard/performance/page.tsx",
+        "src/components/baseball/performance/PerformanceDashboardClient.tsx",
+        "src/app/baseball/actions/lifting.ts"
+      ],
+      "edits": [
+        "src/lib/types/database.ts (regen)",
+        "src/components/baseball/player-today/PlayerTodayClient.tsx"
+      ],
+      "depends_on": "Wave 8"
+    },
+    {
+      "wave": 10,
+      "title": "CoachHelm baseball engine (embedded brief/flags/summaries)",
+      "packets": [
+        "P10.1 Extract sport-agnostic engine to @/lib/coachhelm/shared (BaseGenerator, Diagnosis, confidence, lifecycle, window-honesty)",
+        "P10.2 Baseball metric registry + box-score/stat event loaders with source refs",
+        "P10.3 Baseball generators (two-strike chase, game-vs-practice gap, velo/command decay, workload, conflict)",
+        "P10.4 Insight write layer with source attribution + confidence; wire into Command Center + Player Today"
+      ],
+      "creates": [
+        "src/lib/coachhelm/shared/base-generator.ts",
+        "src/lib/coachhelm/shared/evidence-types.ts",
+        "src/lib/coachhelm/baseball/metrics/registry.ts",
+        "src/lib/coachhelm/baseball/loaders.ts",
+        "src/lib/coachhelm/baseball/generators/index.ts",
+        "src/app/baseball/actions/coachhelm.ts"
+      ],
+      "edits": [
+        "src/app/baseball/actions/insights.ts",
+        "src/components/baseball/command-center/DailyBriefPanel.tsx"
+      ],
+      "depends_on": "Wave 9"
+    },
+    {
+      "wave": 11,
+      "title": "Staff Decision Room + Staff Settings + Staff Invite (1.5 wow)",
+      "packets": [
+        "P11.1 Staff invite create/accept flow + routes",
+        "P11.2 Staff settings (roster, capability matrix, scope, audit log)",
+        "P11.3 Staff Decision Room (shared coaching intelligence)"
+      ],
+      "creates": [
+        "src/app/baseball/staff/join/[code]/page.tsx",
+        "src/app/baseball/(dashboard)/dashboard/settings/staff/page.tsx",
+        "src/components/baseball/staff/StaffSettingsClient.tsx",
+        "src/components/baseball/staff-decision-room/StaffDecisionRoomClient.tsx",
+        "src/app/baseball/actions/staff.ts"
+      ],
+      "edits": [
+        "src/app/baseball/actions/teams.ts",
+        "src/components/layout/sidebar.tsx"
+      ],
+      "depends_on": "Wave 10"
+    },
+    {
+      "wave": 12,
+      "title": "Settings + demo seed + QA gate",
+      "packets": [
+        "P12.1 Program/team/capability settings surfaces",
+        "P12.2 Demo seed across all new tables (practice, lifting, timeline, imports, insights, acks)",
+        "P12.3 RLS test pass + role-visibility walkthrough + typecheck/lint/build + Playwright proof cards"
+      ],
+      "creates": [
+        "scripts/seed-baseball-demo.ts",
+        "src/app/baseball/(dashboard)/dashboard/settings/program/page.tsx",
+        "supabase/tests/rls/baseball_full_phase1.sql",
+        "e2e/baseball-phase1.spec.ts"
+      ],
+      "edits": [
+        "src/app/baseball/(dashboard)/dashboard/settings/page.tsx (if present)"
+      ],
+      "depends_on": "Wave 11"
+    }
+  ],
+  "migrations": [
+    {
+      "name": "20260623T0001_baseball_stat_uploads_reconcile",
+      "purpose": "Reconcile the baseball_stat_uploads TS-vs-SQL mismatch and add import lineage. Keep existing columns (row_count, processed_count, file_url, status, error_message, completed_at) and ADD the audit/lineage columns the code never persisted. Convert status to a strict enum via a CHECK rather than a destructive type swap.",
+      "extends_existing": true,
+      "sql_sketch": "ALTER TABLE public.baseball_stat_uploads\n  ADD COLUMN IF NOT EXISTS import_run_id uuid REFERENCES public.baseball_import_runs(id),\n  ADD COLUMN IF NOT EXISTS source_id text,\n  ADD COLUMN IF NOT EXISTS import_type text,\n  ADD COLUMN IF NOT EXISTS stat_type text,\n  ADD COLUMN IF NOT EXISTS session_date date,\n  ADD COLUMN IF NOT EXISTS session_name text,\n  ADD COLUMN IF NOT EXISTS mapping_config jsonb,\n  ADD COLUMN IF NOT EXISTS match_confidence numeric,\n  ADD COLUMN IF NOT EXISTS matched_rows integer,\n  ADD COLUMN IF NOT EXISTS unmatched_rows integer,\n  ADD COLUMN IF NOT EXISTS unmatched_data jsonb,\n  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();\n-- backfill total/row alignment then add a non-destructive status guard\nALTER TABLE public.baseball_stat_uploads\n  DROP CONSTRAINT IF EXISTS baseball_stat_uploads_status_chk,\n  ADD CONSTRAINT baseball_stat_uploads_status_chk\n    CHECK (status IN ('pending','processing','validated','committed','failed','rolled_back','needs_review'));\nCREATE INDEX IF NOT EXISTS idx_bsu_import_run ON public.baseball_stat_uploads(import_run_id);\nCREATE INDEX IF NOT EXISTS idx_bsu_team ON public.baseball_stat_uploads(team_id);"
+    },
+    {
+      "name": "20260623T0002_baseball_import_lineage",
+      "purpose": "Add baseball_import_runs (audited run lineage + rollback snapshot) and baseball_player_external_ids (canonical cross-source player identity with stored match confidence).",
+      "extends_existing": false,
+      "sql_sketch": "CREATE TABLE IF NOT EXISTS public.baseball_import_runs (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  coach_id uuid REFERENCES public.baseball_coaches(id),\n  import_type text NOT NULL,\n  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','processing','validated','committed','failed','rolled_back')),\n  total_rows integer DEFAULT 0, matched_rows integer DEFAULT 0, blocked_rows integer DEFAULT 0,\n  mapping_decisions jsonb, source_file_url text, error_log jsonb, audit_snapshot jsonb,\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz DEFAULT now());\nCREATE INDEX IF NOT EXISTS idx_bir_team ON public.baseball_import_runs(team_id);\nCREATE TABLE IF NOT EXISTS public.baseball_player_external_ids (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  player_id uuid NOT NULL REFERENCES public.baseball_players(id),\n  source text NOT NULL, external_id text NOT NULL,\n  external_data jsonb, confidence numeric,\n  verified_by uuid, verified_at timestamptz,\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz DEFAULT now(),\n  CONSTRAINT uq_bpei UNIQUE (team_id, source, external_id));\nCREATE INDEX IF NOT EXISTS idx_bpei_player ON public.baseball_player_external_ids(player_id);"
+    },
+    {
+      "name": "20260623T0003_baseball_staff_capabilities",
+      "purpose": "Layer capability model onto existing baseball_team_coach_staff (extends_existing) and add baseball_staff_invitations (new). Do NOT overload coach_type; staff_role + capabilities jsonb + boolean caps drive permissions.",
+      "extends_existing": true,
+      "sql_sketch": "ALTER TABLE public.baseball_team_coach_staff\n  ADD COLUMN IF NOT EXISTS staff_role text,\n  ADD COLUMN IF NOT EXISTS title text,\n  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' CHECK (status IN ('active','invited','suspended','removed')),\n  ADD COLUMN IF NOT EXISTS capabilities jsonb DEFAULT '{}'::jsonb,\n  ADD COLUMN IF NOT EXISTS player_scope jsonb,\n  ADD COLUMN IF NOT EXISTS position_scope text[],\n  ADD COLUMN IF NOT EXISTS group_scope uuid[],\n  ADD COLUMN IF NOT EXISTS can_invite_staff boolean DEFAULT false,\n  ADD COLUMN IF NOT EXISTS can_manage_roster boolean DEFAULT false,\n  ADD COLUMN IF NOT EXISTS can_manage_practice boolean DEFAULT false,\n  ADD COLUMN IF NOT EXISTS can_manage_stats boolean DEFAULT false,\n  ADD COLUMN IF NOT EXISTS can_manage_imports boolean DEFAULT false,\n  ADD COLUMN IF NOT EXISTS can_manage_lifting boolean DEFAULT false,\n  ADD COLUMN IF NOT EXISTS can_view_readiness boolean DEFAULT false,\n  ADD COLUMN IF NOT EXISTS can_view_private_notes boolean DEFAULT false,\n  ADD COLUMN IF NOT EXISTS can_message_players boolean DEFAULT false,\n  ADD COLUMN IF NOT EXISTS can_export_reports boolean DEFAULT false;\nCREATE TABLE IF NOT EXISTS public.baseball_staff_invitations (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  organization_id uuid REFERENCES public.organizations(id),\n  email text, code text UNIQUE NOT NULL,\n  invited_by_coach_id uuid REFERENCES public.baseball_coaches(id),\n  staff_role text NOT NULL, title text, capabilities jsonb,\n  position_scope text[], group_scope uuid[],\n  expires_at timestamptz, max_uses integer DEFAULT 1, used_count integer DEFAULT 0,\n  is_active boolean DEFAULT true,\n  accepted_by_user_id uuid, accepted_by_coach_id uuid, accepted_at timestamptz,\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz DEFAULT now());\nCREATE INDEX IF NOT EXISTS idx_bsi_team ON public.baseball_staff_invitations(team_id);"
+    },
+    {
+      "name": "20260623T0004_baseball_timeline_and_acks",
+      "purpose": "Add baseball_player_timeline_events (chronological player story with visibility) and baseball_event_acknowledgements.",
+      "extends_existing": false,
+      "sql_sketch": "CREATE TABLE IF NOT EXISTS public.baseball_player_timeline_events (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  player_id uuid NOT NULL REFERENCES public.baseball_players(id),\n  event_type text NOT NULL, event_at timestamptz NOT NULL,\n  title text NOT NULL, summary text,\n  source_table text, source_id uuid,\n  visibility text NOT NULL DEFAULT 'staff_only' CHECK (visibility IN ('staff_only','player_visible','restricted')),\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz DEFAULT now());\nCREATE INDEX IF NOT EXISTS idx_bpte_player_at ON public.baseball_player_timeline_events(player_id, event_at DESC);\nCREATE INDEX IF NOT EXISTS idx_bpte_team ON public.baseball_player_timeline_events(team_id);\nCREATE TABLE IF NOT EXISTS public.baseball_event_acknowledgements (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  event_id uuid NOT NULL REFERENCES public.baseball_events(id),\n  user_id uuid NOT NULL,\n  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','acknowledged','declined')),\n  acknowledged_at timestamptz,\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz DEFAULT now(),\n  CONSTRAINT uq_bea UNIQUE (event_id, user_id));"
+    },
+    {
+      "name": "20260623T0005_baseball_practices",
+      "purpose": "Add practice header + timed blocks + attendance, optionally linked to baseball_events.",
+      "extends_existing": false,
+      "sql_sketch": "CREATE TABLE IF NOT EXISTS public.baseball_practices (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  event_id uuid REFERENCES public.baseball_events(id),\n  title text NOT NULL, focus text,\n  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','published','completed')),\n  published_at timestamptz,\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz DEFAULT now());\nCREATE TABLE IF NOT EXISTS public.baseball_practice_blocks (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  practice_id uuid NOT NULL REFERENCES public.baseball_practices(id) ON DELETE CASCADE,\n  start_offset_min integer NOT NULL, duration_min integer NOT NULL,\n  activity text NOT NULL, location text, coach_owner_id uuid REFERENCES public.baseball_coaches(id),\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz DEFAULT now());\nCREATE TABLE IF NOT EXISTS public.baseball_practice_attendance (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  practice_id uuid NOT NULL REFERENCES public.baseball_practices(id) ON DELETE CASCADE,\n  player_id uuid NOT NULL REFERENCES public.baseball_players(id),\n  status text NOT NULL CHECK (status IN ('present','limited','absent','excused')), reason text,\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz DEFAULT now(),\n  CONSTRAINT uq_bpa UNIQUE (practice_id, player_id));"
+    },
+    {
+      "name": "20260623T0006_baseball_lifting_performance",
+      "purpose": "Add Performance/Lifting Lite: exercise library, assignments, player-logged set results, readiness check-ins. Source-ref columns on results for import lineage.",
+      "extends_existing": false,
+      "sql_sketch": "CREATE TABLE IF NOT EXISTS public.baseball_exercises (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), team_id uuid REFERENCES public.baseball_teams(id),\n  name text NOT NULL, category text, is_global boolean DEFAULT false,\n  created_at timestamptz NOT NULL DEFAULT now());\nCREATE TABLE IF NOT EXISTS public.baseball_lift_assignments (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  player_id uuid REFERENCES public.baseball_players(id), group_scope uuid[],\n  assigned_by_coach_id uuid REFERENCES public.baseball_coaches(id),\n  exercise_id uuid REFERENCES public.baseball_exercises(id),\n  due_date date, prescription jsonb, status text DEFAULT 'assigned',\n  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz DEFAULT now());\nCREATE TABLE IF NOT EXISTS public.baseball_lift_results (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  player_id uuid NOT NULL REFERENCES public.baseball_players(id),\n  assignment_id uuid REFERENCES public.baseball_lift_assignments(id),\n  exercise_id uuid REFERENCES public.baseball_exercises(id),\n  performed_at timestamptz, sets integer, reps integer, weight numeric, rpe numeric, notes text,\n  source text DEFAULT 'manual', import_run_id uuid REFERENCES public.baseball_import_runs(id),\n  created_at timestamptz NOT NULL DEFAULT now());\nCREATE TABLE IF NOT EXISTS public.baseball_readiness_checkins (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), team_id uuid NOT NULL REFERENCES public.baseball_teams(id),\n  player_id uuid NOT NULL REFERENCES public.baseball_players(id),\n  check_date date NOT NULL, sleep_hours numeric, energy_level int, soreness_level int, arm_status text, mood text, notes text,\n  created_at timestamptz NOT NULL DEFAULT now(), CONSTRAINT uq_brc UNIQUE (player_id, check_date));"
+    },
+    {
+      "name": "20260623T0007_baseball_ai_source_attribution",
+      "purpose": "Add source-ref + confidence attribution so AI/insight rows carry provenance (avoids 'AI without source refs' risk). Extends existing baseball_coach_insights; adds optional attribution to stat tables.",
+      "extends_existing": true,
+      "sql_sketch": "ALTER TABLE public.baseball_coach_insights\n  ADD COLUMN IF NOT EXISTS source_refs jsonb,\n  ADD COLUMN IF NOT EXISTS confidence_score numeric,\n  ADD COLUMN IF NOT EXISTS ai_model_version text,\n  ADD COLUMN IF NOT EXISTS lifecycle_state text DEFAULT 'detected',\n  ADD COLUMN IF NOT EXISTS metric_id text;\nALTER TABLE public.baseball_player_stats\n  ADD COLUMN IF NOT EXISTS import_run_id uuid REFERENCES public.baseball_import_runs(id),\n  ADD COLUMN IF NOT EXISTS match_confidence numeric;"
+    }
+  ],
+  "rls": [
+    {
+      "table": "baseball_stat_uploads (changed)",
+      "policy": "Staff/admin only. SELECT/INSERT/UPDATE require is_baseball_team_staff(team_id) AND has_baseball_staff_capability(team_id,'can_manage_imports'); no player access (import rows are staff/admin only per rls_policy_plan_v2)."
+    },
+    {
+      "table": "baseball_import_runs (new)",
+      "policy": "Team-scoped staff/admin only. All ops gated by is_baseball_team_staff(team_id) AND has_baseball_staff_capability(team_id,'can_manage_imports'). service_role bypass for cron only."
+    },
+    {
+      "table": "baseball_player_external_ids (new)",
+      "policy": "Team-scoped staff read/write with can_manage_imports; players may read only their own row (player_id = get_my_baseball_player_id()). UNIQUE(team_id,source,external_id) prevents dup mapping."
+    },
+    {
+      "table": "baseball_team_coach_staff (changed)",
+      "policy": "Read: any active team staff via is_baseball_team_staff(team_id). Write (role/capability/scope): only is_baseball_primary_coach(team_id) OR has_baseball_staff_capability(team_id,'can_invite_staff'). Never authorize from raw_user_meta_data."
+    },
+    {
+      "table": "baseball_staff_invitations (new)",
+      "policy": "INSERT/UPDATE/DELETE require is_baseball_primary_coach(team_id) OR can_invite_staff capability. SELECT by inviter or by invitee (email match / accepted_by_user_id = auth.uid()). Revoked/expired rows cannot be accepted (enforced in action + is_active/expires_at check)."
+    },
+    {
+      "table": "baseball_player_timeline_events (new)",
+      "policy": "Team staff read non-restricted via is_baseball_team_staff(team_id) AND can_view_baseball_player(team_id,player_id). Players read ONLY where visibility='player_visible' AND player_id = get_my_baseball_player_id(). 'restricted'/'staff_only' never appear in player queries. Writes: staff with relevant capability; system/AI writes via service_role."
+    },
+    {
+      "table": "baseball_event_acknowledgements (new)",
+      "policy": "User can SELECT/INSERT/UPDATE own rows (user_id = auth.uid()). Team staff can SELECT all team rows via is_baseball_team_staff(team_id). UNIQUE(event_id,user_id)."
+    },
+    {
+      "table": "baseball_practices (new)",
+      "policy": "Staff read/write via is_baseball_team_staff(team_id); write gated by has_baseball_staff_capability(team_id,'can_manage_practice'). Players read only when status='published' (player-visible schedule)."
+    },
+    {
+      "table": "baseball_practice_blocks (new)",
+      "policy": "Inherits practice visibility: staff read/write with can_manage_practice; players read blocks of published practices only."
+    },
+    {
+      "table": "baseball_practice_attendance (new)",
+      "policy": "Staff read/write via is_baseball_team_staff(team_id) + can_manage_practice. Player may read own attendance row (player_id = get_my_baseball_player_id())."
+    },
+    {
+      "table": "baseball_exercises (new)",
+      "policy": "is_global rows readable by any team staff; team rows scoped to is_baseball_team_staff(team_id). Write gated by has_baseball_staff_capability(team_id,'can_manage_lifting')."
+    },
+    {
+      "table": "baseball_lift_assignments (new)",
+      "policy": "Staff with can_manage_lifting create/edit for scoped groups/players (can_manage_baseball_lift_group). Player reads own assignments (player_id = get_my_baseball_player_id())."
+    },
+    {
+      "table": "baseball_lift_results (new)",
+      "policy": "Player INSERTs own results (player_id = get_my_baseball_player_id()). Strength coach + head coach read scoped results; other players cannot read others' loads (staff-restricted)."
+    },
+    {
+      "table": "baseball_readiness_checkins (new)",
+      "policy": "Player INSERTs/reads own check-ins. Staff read only with can_view_readiness; never framed as medical diagnosis; other players cannot read."
+    },
+    {
+      "table": "baseball_coach_insights (changed)",
+      "policy": "Inherits strictest source visibility among source_refs. Staff read team insights via is_baseball_team_staff(team_id); players read only insights explicitly marked player_visible. AI writes via service_role."
+    },
+    {
+      "table": "baseball_player_stats (changed)",
+      "policy": "Existing team-scoped policy retained; new import_run_id/match_confidence inherit it (no widening)."
+    }
+  ],
+  "error_tracking": [
+    "REUSE existing infra, do not rebuild: Sentry is already wired via src/instrumentation.ts + src/instrumentation-client.ts (client Replay 100% on error / 10% session prod / 0% dev, maskAllText on), and src/lib/server-error-logger.ts already captures to BOTH Sentry and an error_logs table with severity, source, fingerprint, tags, route/url/featureArea, userId/userEmail, and a suppressCapture flag.",
+    "Sentry scopes/tags (baseball): create src/lib/baseball/with-baseball-action.ts that wraps every new baseball server action and sets scope tags: sport='baseball', feature_area (command_center|player_today|import|practice|lifting|coachhelm|staff), active_team_id, active_staff_role, capability_checked. Adds breadcrumbs for each step (auth_resolved, capability_checked, validated_input, db_write, revalidated). On throw, calls logServerTrace (server-error-logger) with action name + tags + fingerprint=[feature_area, action, errorCode], then returns formatSafeErrorResponse — never leaks raw DB errors to the client.",
+    "Server-action wrapper contract: withBaseballAction(name, {featureArea, requiredCapability}, fn) -> resolves user, resolves active_baseball_context, enforces requiredCapability server-side (capabilities.ts), pushes breadcrumbs, runs fn, catches, logs to error_logs + Sentry, returns {success,error?,data?}. This is the single choke point so every Phase-1 action gets identical breadcrumbs + capability context.",
+    "Route-group error boundaries: 55 baseball error.tsx already exist; ADD error.tsx at the new feature folders created in Phase 1 (staff, import, stats-center, practice, performance, player/today) so a server-component throw renders a branded recoverable boundary, and each error.tsx calls Sentry.captureException with tags {feature_area, route} in a useEffect. Add a single (dashboard)/dashboard/error.tsx group-level fallback if not already covering the new routes.",
+    "Client boundary: reuse the existing client Sentry init; wrap the new heavy client surfaces (CommandCenterClient, ImportWizardClient, PerformanceDashboardClient) in a shared <BaseballErrorBoundary> client component that captures render errors with component-name + feature_area tags and shows the cream/green EmptyState error variant (no white crash screen).",
+    "Risk-feed bridge (the new piece): create src/lib/baseball/risk-feed-bridge.ts that, on every error_logs insert for sport='baseball', also emits a Command Center risk event (via scripts/baseballhelm-build-event.mjs contract: --type risk for build-time, and a runtime equivalent writing to the command-center telemetry/events store). Severity maps: critical/error -> Control Tower ping + Critical Risk Strip; warning -> Risk card. This satisfies v12 'risk events ping the Control Tower' and surfaces real runtime errors in the operations UI rather than only Sentry.",
+    "Honesty rules from v12: distinguish 'logged intent' vs 'active capture'; show skipped/not-run states; never hide failures. The bridge tags each risk with its source (sentry|error_logs|build_event) so the Control Tower shows provenance.",
+    "Migration safety telemetry: every Wave-1/9 migration emits a build-event (--type migration) and on RLS-test failure emits --type test failure into the repair bay, so schema risk is visible in Supabase Tower + Test & Proof Lab."
+  ],
+  "ui_reference": [
+    "REUSE GolfHelm primitives directly: Card (flat/raised/overlay/interactive variants, glow/noPadding props), Skeleton (line/block/card/list/chart variants, shimmer/pulse), EmptyState (type-driven configs + default/card/minimal/compact), Button (primary/secondary/ghost/destructive) from src/components/ui/*. All new baseball surfaces use these instead of bespoke cards.",
+    "REUSE design tokens + patterns: glass overlay (bg-cream-100/75 backdrop-blur-glass border border-warm-200/45 rounded-2xl shadow-glass), matte card (bg-white border border-warm-200 rounded-2xl p-6 md:p-8), gap-6 between cards, editorial type scale (h1 text-3xl / h2 text-2xl / h3 text-xl), tabular-nums for stats, text-eyebrow labels. Motion via framer-motion LazyMotion/domAnimation + useReducedMotion (respect prefers-reduced-motion).",
+    "REUSE baseball shell + analytics: BaseballDashboardShell (src/components/baseball/dashboard-shell.tsx), Sidebar nav registry, PeekPanelProvider/PeekPanel, command-center/analytics charts (recharts Line/CartesianGrid/ReferenceLine/Tooltip), TrendChart, PlayerProfileClient tab pattern. New surfaces (Player Today, Stats Center, Practice Planner, Performance) follow the CommandCenterClient tab + filtered grid pattern (grid-cols-1 sm:grid-cols-2 xl:grid-cols-3).",
+    "REUSE calendar via adapter: BaseballCalendarWrapper wraps golf PremiumCalendarClient — keep wrapping but add a thin type-adapter layer for practice/acknowledgement events to avoid breakage if golf calendar refactors (noted risk).",
+    "Baseball-specific overrides from the v12 zip: introduce baseball command-center / ops palette tokens (--bh-cream-50/100/200, --bh-ink, --bh-green-900..600, --bh-turf, --bh-gold, --bh-clay, --bh-warning, --bh-danger) layered ON TOP of GolfHelm cream/green — NOT replacing it. No-black rule: page bg never black; command output may use a small deep-green terminal surface only. Monospace ONLY for event IDs, file paths, table names, timestamps, command output.",
+    "Command Center artifact (tools/baseballhelm-command-center) is a separate operations UI (Agent City / Factory Floor / Mission Control / Supabase Tower / Test & Proof Lab tabs) consuming the build-event telemetry contract (scripts/baseballhelm-build-event.mjs); it reuses the same cream/green language but is desktop-first viewport-filling, not a marketing page, and must have honest empty/loading/disconnected/malformed/Chrome-gate states.",
+    "Fix the audited UI debts while building: sync mobile COACH_NAV/PLAYER_NAV with the new nav-registry single source of truth (currently missing stats/dev-plans/documents/travel); ensure showcase coach_type never falls back to college nav; persist tab/filter/sort state via URL query params (Command Center loses state on navigation today); add error boundaries to PlayerProfileClient data tabs."
+  ],
+  "risks": [
+    "PROD vs branch migrations: applying additive ALTERs to baseball_stat_uploads + new tables directly to PROD is the established repo pattern (additive IF NOT EXISTS, idempotent) but the stat_uploads reconcile touches a table the live stats.ts writes to — a Supabase branch is safer for the reconcile + RLS rewrite, with merge after RLS tests pass. See open_questions.",
+    "Capability RLS is the highest-risk surface: a wrong helper (e.g., players reading staff_only timeline or other players' lift loads) is a data-leak. Every new table needs a pgTAP role-impersonation test BEFORE any UI reads it (Wave 1 ships tests alongside policies).",
+    "SECURITY DEFINER + service_role: the existing pattern grants EXECUTE to service_role only with search_path pinned; new helpers (has_baseball_staff_capability etc.) must follow it exactly or the cron/AI write path bypasses RLS. Agents have repeatedly shipped GRANT ALL TO anon on RPCs — explicitly REVOKE anon and verify pg_class.relacl after any matview/table recreate.",
+    "Type drift: every migration must be followed by db:types regen + the docs:check guard; baseball_coach_recruiting_philosophy/player_percentiles already drifted (SQL exists, no TS). Reconciling BaseballPlayerAggregates type to the real schema may break components that read phantom fields (season_avg, career_obp/slg/ops) — audit call sites before trimming.",
+    "CoachHelm engine extraction: moving BaseGenerator/Diagnosis to @/lib/coachhelm/shared risks breaking 6+ live golf generators. Do it as a pure re-home with re-exports + run golf coachhelm tests (Stryker/unit) green before adding baseball generators. Metric DIRECTION mistakes learn backward (velo drop as improvement) — replicate the registry exactly.",
+    "Box-score-only data quality: baseball has no pitch-level events, so generators must use box-score heuristics (K/BB as command proxy) and honestly disclose lower confidence; small rosters (12-25) may never reach the golf 0.5 confidence floor for thin bands — recalibrate thresholds rather than emit false 'high' priority.",
+    "Import rollback correctness: rollback must reverse only records created by a run and require before/after snapshots for updates; the no-destructive-writes rule (upsert/stage-and-swap, never delete-then-reinsert) applies to commit/rollback paths.",
+    "Calendar coupling: BaseballCalendarWrapper depends on golf PremiumCalendarClient with no type adapter; practice/ack event injection could break it on a golf refactor.",
+    "Nav/route bypass: client-only useRecruitingRouteProtection is bypassable by direct URL; new staff/import/lifting routes MUST be server-gated in middleware + action capability checks, not just sidebar hiding."
+  ],
+  "open_questions": [
+    "PROD vs Supabase branch: Should Wave 1 (esp. the baseball_stat_uploads reconcile + capability RLS rewrite) be applied to a Supabase branch first (create_branch -> apply -> RLS tests -> merge_branch) or directly to PROD as additive migrations per the repo's established additive-IF-NOT-EXISTS pattern? Recommendation: branch for Waves 1+9 (schema-heavy + RLS), direct-additive for later column-only adds. Needs owner decision.",
+    "baseball_stat_uploads canonical shape: keep BOTH legacy session columns (row_count/processed_count) AND add lineage, or migrate fully to the archived SQL shape (total_rows/matched_rows/unmatched_data)? Plan assumes additive-keep-both to avoid breaking live stats.ts; confirm.",
+    "Capabilities storage: dedicated boolean columns (queryable, indexable, RLS-friendly) vs single capabilities jsonb? Plan uses BOTH (booleans for the 12 core caps used in RLS + jsonb for extensibility). Confirm acceptable redundancy.",
+    "active_baseball_context: cookie + server-validate (plan default) vs DB session row? Cookie is lighter and matches v11 doc; confirm no requirement for cross-device active-team persistence.",
+    "Player Today route group: belongs under (player-dashboard)/player/today (plan default) or as a tab inside the existing player role dashboard? Confirm route taxonomy.",
+    "Demo data: reuse/extend an existing seeded baseball demo team or create a new dedicated Phase-1 demo team? Need the demo team identity + login (parallels GolfHelm demo@ pattern).",
+    "CoachHelm baseline source: where do baseball benchmarks (chase rate, FIP/xwOBA, velo bands) come from for standing comparison — seed a baseball_metrics table with authored anchors now, or defer standing to Phase 1.5 and ship aggregation-only insights first? Plan defers standing to keep Phase-1 honest.",
+    "Command Center artifact scope: is tools/baseballhelm-command-center expected to consume LIVE runtime errors (via the risk-feed bridge) in Phase 1, or only build-time telemetry? Affects whether the runtime error->event emitter ships in Wave 2 or later."
+  ]
+}

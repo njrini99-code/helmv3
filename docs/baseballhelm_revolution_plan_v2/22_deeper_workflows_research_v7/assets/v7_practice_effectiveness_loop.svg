@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="920" viewBox="0 0 1500 920">
+  <rect width="1500" height="920" fill="#fbfaf7"/>
+  <text x="70" y="90" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700" fill="#17212b">Practice Effectiveness Loop</text>
+  <text x="72" y="130" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#5b6470">Measure whether what the team practices is actually improving game, scrimmage, and development metrics.</text>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="110" y="330" width="230" height="130" rx="18" fill="#fff" stroke="#ded8ce"/>
+    <text x="225" y="380" text-anchor="middle" font-size="24" font-weight="700" fill="#17212b">Problem</text>
+    <text x="225" y="414" text-anchor="middle" font-size="15" fill="#5b6470">two-strike chase</text>
+    <text x="225" y="438" text-anchor="middle" font-size="15" fill="#5b6470">command decay</text>
+
+    <rect x="430" y="330" width="230" height="130" rx="18" fill="#fff" stroke="#ded8ce"/>
+    <text x="545" y="380" text-anchor="middle" font-size="24" font-weight="700" fill="#17212b">Practice</text>
+    <text x="545" y="414" text-anchor="middle" font-size="15" fill="#5b6470">time block</text>
+    <text x="545" y="438" text-anchor="middle" font-size="15" fill="#5b6470">station + players</text>
+
+    <rect x="750" y="330" width="230" height="130" rx="18" fill="#17212b"/>
+    <text x="865" y="380" text-anchor="middle" font-size="24" font-weight="700" fill="#fff">Measure</text>
+    <text x="865" y="414" text-anchor="middle" font-size="15" fill="#cdd6df">reps + outcomes</text>
+    <text x="865" y="438" text-anchor="middle" font-size="15" fill="#cdd6df">before/after</text>
+
+    <rect x="1070" y="330" width="230" height="130" rx="18" fill="#fff" stroke="#ded8ce"/>
+    <text x="1185" y="380" text-anchor="middle" font-size="24" font-weight="700" fill="#17212b">Learn</text>
+    <text x="1185" y="414" text-anchor="middle" font-size="15" fill="#5b6470">repeat, adjust</text>
+    <text x="1185" y="438" text-anchor="middle" font-size="15" fill="#5b6470">or cut</text>
+
+    <rect x="430" y="640" width="640" height="90" rx="22" fill="#fff3ed" stroke="#f0b099"/>
+    <text x="750" y="680" text-anchor="middle" font-size="23" font-weight="700" fill="#a63a20">CoachHelm must be honest: improvement, no transfer yet, or insufficient sample.</text>
+    <text x="750" y="710" text-anchor="middle" font-size="16" fill="#6f3b2c">No fake causality. Every conclusion cites source, sample, and context.</text>
+  </g>
+  <g stroke="#d94f2b" stroke-width="5" fill="none" stroke-linecap="round">
+    <path d="M340 395 L430 395"/>
+    <path d="M660 395 L750 395"/>
+    <path d="M980 395 L1070 395"/>
+    <path d="M1185 460 C1150 560 345 560 225 460"/>
+    <path d="M865 460 C865 550 790 585 750 640"/>
+  </g>
+</svg>

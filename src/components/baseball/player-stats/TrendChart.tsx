@@ -108,9 +108,9 @@ function CustomTooltip({ active, payload }: {
 }
 
 const METRIC_CONFIG: Record<MetricKey, { label: string; color: string; format: (v: number) => string }> = {
-  avg: { label: 'AVG', color: '#22c55e', format: (v) => v.toFixed(3) },
-  exitVelo: { label: 'Exit Velo', color: '#3b82f6', format: (v) => `${v.toFixed(1)}` },
-  obp: { label: 'OBP', color: '#f59e0b', format: (v) => v.toFixed(3) },
+  avg: { label: 'AVG', color: '#16A34A', format: (v) => v.toFixed(3) },
+  exitVelo: { label: 'Exit Velo', color: '#0e7490', format: (v) => `${v.toFixed(1)}` },
+  obp: { label: 'OBP', color: '#d97706', format: (v) => v.toFixed(3) },
 };
 
 export function TrendChart({ stats, className }: TrendChartProps) {
@@ -234,7 +234,7 @@ export function TrendChart({ stats, className }: TrendChartProps) {
             {selectedMetric !== 'exitVelo' && (
               <ReferenceLine
                 y={0.300}
-                stroke="#94a3b8"
+                stroke="#a8a29e"
                 strokeDasharray="4 4"
                 strokeWidth={1}
               />
@@ -292,7 +292,7 @@ export function TrendChart({ stats, className }: TrendChartProps) {
         </div>
         {selectedMetric !== 'exitVelo' && (
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 bg-warm-400" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #94a3b8, #94a3b8 4px, transparent 4px, transparent 8px)' }} />
+            <div className="w-4 h-0.5 bg-warm-400" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #a8a29e, #a8a29e 4px, transparent 4px, transparent 8px)' }} />
             <span className="text-warm-600">.300 Line</span>
           </div>
         )}
