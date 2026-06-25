@@ -3896,6 +3896,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION "public"."is_baseball_team_coach_v2"("p_team_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
   SELECT EXISTS (
     SELECT 1 FROM baseball_team_coach_staff
@@ -20553,7 +20554,7 @@ GRANT ALL ON FUNCTION "public"."is_baseball_team_coach"("team_uuid" "uuid") TO "
 
 
 
-GRANT ALL ON FUNCTION "public"."is_baseball_team_coach_v2"("p_team_id" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."is_baseball_team_coach_v2"("p_team_id" "uuid") FROM "anon";
 GRANT ALL ON FUNCTION "public"."is_baseball_team_coach_v2"("p_team_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."is_baseball_team_coach_v2"("p_team_id" "uuid") TO "service_role";
 

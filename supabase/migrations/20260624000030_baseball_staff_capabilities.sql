@@ -140,16 +140,10 @@ CREATE POLICY baseball_staff_invitations_manage
   USING (public.baseball_can_invite_staff(team_id))
   WITH CHECK (public.baseball_can_invite_staff(team_id));
 
--- Invitee read: an authenticated user may view a pending, unexpired invitation
--- addressed to their own email (so they can accept it). Read-only.
+-- Invitee read: intentionally NOT created here. An earlier draft used
+-- auth.jwt() ->> 'email' which can lag up to the JWT TTL (~1 hour) after an
+-- email change, allowing a former email owner to read invitations addressed to
+-- the old address. The authoritative invitee-select policy is created in
+-- migration 20260624000050 using an auth.users subquery instead.
+-- Guard: ensure no stale jwt()-based policy survives a re-run.
 DROP POLICY IF EXISTS baseball_staff_invitations_invitee_select ON public.baseball_staff_invitations;
-CREATE POLICY baseball_staff_invitations_invitee_select
-  ON public.baseball_staff_invitations
-  AS PERMISSIVE
-  FOR SELECT
-  TO authenticated
-  USING (
-    status = 'pending'
-    AND expires_at > now()
-    AND lower(email) = lower(COALESCE((auth.jwt() ->> 'email'), ''))
-  );

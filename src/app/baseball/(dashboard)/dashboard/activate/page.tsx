@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageLoading } from '@/components/ui/loading';
-import { IconTarget, IconUsers, IconChart, IconCheck, IconEye } from '@/components/icons';
+import { IconTarget, IconUsers, IconChart, IconCheck, IconEye, IconLock } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { createClient } from '@/lib/supabase/client';
 
@@ -26,11 +26,17 @@ export default function ActivateRecruitingPage() {
 
   if (player?.player_type === 'college') {
     return (
-      <div className="p-8">
-        <Card variant="glass">
+      <div className="p-8 max-w-lg mx-auto">
+        <Card variant="glass" className="border border-warm-200">
           <CardContent className="p-12 text-center">
-            <h3 className="text-lg font-medium text-warm-900 mb-2">Not Available</h3>
-            <p className="text-warm-500">Recruiting features are not available for college players.</p>
+            <div className="w-14 h-14 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconLock size={28} className="text-warm-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">Not available for college players</h3>
+            <p className="text-sm leading-relaxed text-warm-500 max-w-xs mx-auto">
+              Recruiting activation is for high school, JUCO, and showcase players only.
+              As a college player, your team features are available from the main dashboard.
+            </p>
           </CardContent>
         </Card>
       </div>

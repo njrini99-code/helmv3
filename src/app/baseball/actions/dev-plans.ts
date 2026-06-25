@@ -82,23 +82,21 @@ export async function getActiveDevPlan(playerId: string): Promise<DevelopmentalP
       coach:baseball_coaches(id, full_name)
     `)
     .eq('player_id', playerId)
-    .eq('status', 'active')
+    .in('status', ['sent', 'in_progress'])
     .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+    .limit(1);
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      // No active plan found
-      return null;
-    }
     await logServerError(`Error fetching active dev plan: ${error instanceof Error ? error.message : String(error)}`, { action: 'dev_plans.getActiveDevPlan' });
     throw error;
   }
 
+  const row = data?.[0];
+  if (!row) return null;
+
   return {
-    ...data,
-    goals: parseGoals(data.goals),
+    ...row,
+    goals: parseGoals(row.goals),
   };
 }
 

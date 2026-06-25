@@ -1093,13 +1093,13 @@ export function ProgramSettingsClient({ data }: Props) {
           </div>
         </SectionCard>
 
-        {/* --- DATA RETENTION & DEMO ----------------------------------------- */}
+        {/* --- DATA RETENTION ------------------------------------------------- */}
         <SectionCard
           anchorId="data-retention"
           icon={<IconDatabase size={18} />}
           eyebrow="Lifecycle"
-          title="Data Retention & Demo"
-          subtitle="How long imports and audit records are kept, plus demo mode."
+          title="Data Retention"
+          subtitle="How long imports and audit records are kept."
           index={9}
           reduceMotion={reduceMotion}
         >
@@ -1127,15 +1127,6 @@ export function ProgramSettingsClient({ data }: Props) {
               ))}
             </div>
           </div>
-          {/* Inner anchor so /settings/demo-mode lands on the demo toggle. */}
-          <span id="demo-mode" className="block scroll-mt-24" aria-hidden="true" />
-          <ToggleRow
-            label="Demo mode"
-            description="Shows sample data and labels the program as a demo."
-            checked={settings.demo_mode_enabled}
-            disabled={!canEdit}
-            onChange={(v) => patch('demo_mode_enabled', v)}
-          />
         </SectionCard>
 
         {/* Sticky save affordance on mobile */}

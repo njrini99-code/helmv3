@@ -93,8 +93,19 @@ export default function CompleteSignupClient() {
 
   if (checking) {
     return (
-      <div className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-4 animate-pulse">
+          <div className="h-16 w-16 rounded-full bg-warm-200 mx-auto" />
+          <div className="h-6 w-48 rounded bg-warm-200 mx-auto" />
+          <div className="h-4 w-64 rounded bg-warm-100 mx-auto" />
+          <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-4">
+            <div className="h-4 w-24 rounded bg-warm-200" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-14 rounded-xl bg-warm-100" />
+              <div className="h-14 rounded-xl bg-warm-100" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

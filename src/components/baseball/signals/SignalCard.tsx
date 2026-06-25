@@ -11,19 +11,27 @@
 // HONESTY (binding):
 //   * Source chip is the shared SourceTrustBadge (real provenance + confidence,
 //     never a fabricated 100%; opens the source drawer).
+//   * A dedicated 'Source' trigger button (min 44px touch target, chevron icon)
+//     opens <SignalSourceDrawer> with the signal's sourceChips, confidence, and
+//     limitation. Per spec §3.4: no source data → "Source not yet attached —
+//     this signal cannot be acted upon".
 //   * `sampleTooSmall` renders a first-class "Sample too small" banner and the
 //     recommended action is shown as ADVISORY (not a directive) — a
 //     source-starved signal is never authoritative.
 //   * confidence shows "—" when null; never a fake 0%.
 //   * Interactions are capability-aware: when `canManage` is false the card is
 //     read-only (no triage / convert buttons).
+//   * Table fallback: if the signal has no chart data, `evidence` is rendered
+//     as a plain text list rather than leaving a blank chart area.
 // =============================================================================
 
+import * as React from 'react';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SourceTrustBadge } from '@/components/baseball/source-trust';
+import { SignalSourceDrawer } from '@/components/baseball/source-trust/SourceDrawer';
 import {
   IconCheck,
   IconX,
@@ -33,6 +41,8 @@ import {
   IconChevronRight,
   IconTrendingUp,
   IconTrendingDown,
+  IconInfo,
+  IconList,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import {
@@ -47,6 +57,45 @@ import {
   getCategoryLabel,
   getActionTypeLabel,
 } from './signal-presentation';
+
+/**
+ * Evidence table fallback (spec §4.x). When a signal has no chart or numeric
+ * data to display, render its evidence string as a plain readable list.
+ * Splits on semicolons or line breaks (common generator patterns), falls back
+ * to a single paragraph. Honest empty guard: returns null when evidence is
+ * absent — never a blank area.
+ */
+function EvidenceList({ evidence }: { evidence: string }) {
+  const trimmed = evidence.trim();
+  if (!trimmed) return null;
+
+  // Split on "; " or "\n" boundaries to detect a multi-item string.
+  const parts = trimmed
+    .split(/(?:;\s*|\n+)/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (parts.length <= 1) {
+    return (
+      <p className="mt-1.5 text-xs text-warm-500 leading-relaxed">{trimmed}</p>
+    );
+  }
+
+  return (
+    <ul className="mt-1.5 space-y-0.5" aria-label="Signal evidence">
+      {parts.map((item, i) => (
+        <li key={i} className="flex items-start gap-2 text-xs text-warm-500 leading-relaxed">
+          <IconList
+            size={11}
+            aria-hidden
+            className="mt-0.5 flex-shrink-0 text-warm-400"
+          />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /**
  * The did-it-move verdict pill for a converted action (V10 outcome ledger).
@@ -124,6 +173,7 @@ export function SignalCard({
   onConvert,
   onFeedback,
 }: SignalCardProps) {
+  const [sourceDrawerOpen, setSourceDrawerOpen] = React.useState(false);
   const reduce = useReducedMotionGuard();
   const sev = getSeverityPresentation(signal.severity);
   const disp = getDispositionPresentation(signal.disposition);
@@ -132,6 +182,11 @@ export function SignalCard({
     signal.disposition === 'acknowledged' ||
     signal.disposition === 'sample_too_small';
   const compact = variant === 'compact';
+
+  // Derive the limitation text from sample-too-small flag for the source drawer.
+  const limitation = signal.sampleTooSmall
+    ? `Sample too small${signal.sampleN != null ? ` (n=${signal.sampleN})` : ''}. Treat as a watch item, not a confident finding.`
+    : null;
 
   return (
     <LazyMotion features={domAnimation} strict>
@@ -186,13 +241,27 @@ export function SignalCard({
             )}
           </div>
 
-          {/* Source chip — the Foundations badge, with its own drawer. */}
-          <div className="flex-shrink-0">
+          {/* Source chip + Source drawer trigger (min 44px touch target). */}
+          <div className="flex-shrink-0 flex items-center gap-1.5">
             <SourceTrustBadge
               trust={signal.trust}
               provenance={signal.provenance}
               size="sm"
             />
+            {/* Dedicated 'Source' button per spec — opens SignalSourceDrawer
+                with sourceChips / confidence / limitation. 44px minimum. */}
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => setSourceDrawerOpen(true)}
+              aria-label="View signal source details"
+              aria-haspopup="dialog"
+              className="inline-flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center rounded-lg px-2 text-xs font-medium text-warm-500 hover:text-warm-900 hover:bg-warm-50"
+            >
+              <IconInfo size={13} aria-hidden />
+              <span className="hidden sm:inline">Source</span>
+              <IconChevronRight size={11} aria-hidden className="text-warm-400" />
+            </Button>
           </div>
         </div>
 
@@ -214,10 +283,11 @@ export function SignalCard({
             {signal.whyItMatters}
           </p>
         )}
+        {/* Evidence table fallback: no chart data → render evidence as a plain
+            text list per spec. If evidence is absent, render nothing rather than
+            leaving a blank area. */}
         {!compact && signal.evidence && (
-          <p className="mt-1.5 text-xs text-warm-500 leading-relaxed">
-            {signal.evidence}
-          </p>
+          <EvidenceList evidence={signal.evidence} />
         )}
 
         {/* ── Confidence + recommended action ─────────────────────── */}
@@ -332,6 +402,20 @@ export function SignalCard({
           </div>
         </Card>
       </m.div>
+
+      {/* Signal source drawer — opened by the 'Source' trigger button above.
+          Passes sourceChips, confidence, and limitation from the signal. Per
+          spec §3.4: when all three are null the drawer shows "Source not yet
+          attached — this signal cannot be acted upon". */}
+      <SignalSourceDrawer
+        open={sourceDrawerOpen}
+        onOpenChange={setSourceDrawerOpen}
+        trust={signal.trust}
+        provenance={signal.provenance}
+        sourceChips={signal.sourceRefs.length > 0 ? signal.sourceRefs : null}
+        signalConfidence={signal.confidence}
+        limitation={limitation}
+      />
     </LazyMotion>
   );
 }

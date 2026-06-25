@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
-import { IconEye, IconStar, IconTrendingUp } from '@/components/icons';
+import { IconEye, IconStar, IconTrendingUp, IconLock } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
+import { usePlayerRecruitingGate } from '@/hooks/use-route-protection';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName, formatRelativeTime } from '@/lib/utils';
 
@@ -56,6 +57,7 @@ interface PlayerInterest {
 
 export default function CollegeInterestClient() {
   const { user, coach, loading: authLoading } = useAuth();
+  const { playerType, isActivated, isLoading: gateLoading } = usePlayerRecruitingGate();
   const [interests, setInterests] = useState<PlayerInterest[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamId, setTeamId] = useState<string | null>(null);
@@ -231,12 +233,59 @@ export default function CollegeInterestClient() {
     setLoading(false);
   }
 
-  if (authLoading) return <PageLoading />;
+  if (authLoading || gateLoading) return <PageLoading />;
+
+  // Players who land on this coach surface see an appropriate gate state.
+  if (user?.role === 'player') {
+    // College players cannot activate recruiting at all — they use team features.
+    if (playerType === 'college') {
+      return (
+        <div className="p-8">
+          <Card variant="glass" className="border border-warm-200">
+            <CardContent className="p-12 text-center">
+              <div className="w-14 h-14 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                <IconLock size={28} className="text-warm-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-warm-900 mb-2">Not available for college players</h3>
+              <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
+                College interest tracking is a coach-facing tool. As a college player,
+                your team features are available from the team dashboard.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // Non-college players who haven't activated recruiting yet.
+    if (!isActivated) {
+      return (
+        <div className="p-8">
+          <Card variant="glass" className="border border-warm-200">
+            <CardContent className="p-12 text-center">
+              <div className="w-14 h-14 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                <IconLock size={28} className="text-warm-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-warm-900 mb-2">Activate recruiting first</h3>
+              <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
+                Once you activate recruiting, you&apos;ll be able to see which college programs
+                are viewing your profile.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // Activated non-college player — this is a coach surface; redirect is handled
+    // by the gate hook. Show nothing while redirect is in flight.
+    return null;
+  }
 
   if (user?.role !== 'coach') {
     return (
       <div className="p-8">
-        <Card variant="glass">
+        <Card variant="glass" className="border border-warm-200">
           <CardContent className="p-12 text-center">
             <p className="text-warm-500">Only coaches can access college interest tracking.</p>
           </CardContent>
@@ -390,8 +439,34 @@ export default function CollegeInterestClient() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
+              <div className="space-y-4 lg:space-y-6 py-2">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="border border-warm-200 rounded-lg p-3 lg:p-4 space-y-3"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                  >
+                    {/* Player avatar + name + position row */}
+                    <div className="flex items-start gap-3 lg:gap-4">
+                      <div className="w-10 h-10 rounded-full bg-warm-200/60 flex-shrink-0 skeleton-shimmer" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-2/5 bg-warm-200/60 rounded skeleton-shimmer" />
+                        <div className="h-3 w-1/3 bg-warm-100/60 rounded skeleton-shimmer" />
+                        <div className="h-3 w-1/2 bg-warm-100/60 rounded skeleton-shimmer" />
+                      </div>
+                    </div>
+                    {/* Recent activity rows */}
+                    <div className="border-t border-warm-100 pt-3 space-y-2">
+                      <div className="h-3 w-28 bg-warm-100/60 rounded skeleton-shimmer" />
+                      {[0, 1].map((j) => (
+                        <div key={j} className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded bg-warm-100/60 skeleton-shimmer flex-shrink-0" />
+                          <div className="h-3 bg-warm-100/60 rounded skeleton-shimmer" style={{ width: j === 0 ? '75%' : '60%' }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : interests.length === 0 ? (
               /* Empty State */

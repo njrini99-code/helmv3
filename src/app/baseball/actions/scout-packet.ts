@@ -412,6 +412,8 @@ export async function resolveScoutPacketByToken(token: string): Promise<ScoutPac
   // The admin (service-role) client is typed against the generated Database,
   // which lags the additive share-token migration. Use the untyped accessor for
   // the new table; assembleScoutPacket takes an untyped client by design.
+  // Instantiate after input validation so the elevated client is never created
+  // before the caller has passed the basic sanity gate.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let admin: any;
   try {

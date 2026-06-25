@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration: 20260624000082_baseball_stat_visual_views.sql
+-- Migration: 20260624000083_baseball_stat_visual_views.sql
 -- Packet: stat-visuals (BaseballHelm — stats-integrations)
 -- Purpose: ADDITIVE per-user persistence for the V10 stat-visual chart library.
 --          Stores a coach's/player's saved chart filter+tab state and which

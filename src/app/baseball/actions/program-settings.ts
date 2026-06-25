@@ -6,6 +6,12 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 //
 // Wave 4 / packet: settings-os
 //
+// NOTE: `demo_mode_enabled` is persisted in the DB schema and mapped in
+// mapSettingsRow, but the UI toggle has been removed (PKT-12) because the flag
+// has no runtime effect — demo access is unconditionally gated by the shared-
+// credential path in demo-access.ts. Re-add the toggle once a real demo-data
+// gate implementation reads this flag to branch behavior.
+//
 // Server actions for the BaseballHelm Settings OS:
 //   * getProgramSettings        — read team identity + settings document
 //                                 (auto-creates the settings doc with the
@@ -787,6 +793,10 @@ const FORBIDDEN_SETTINGS_KEYS = new Set([
   'created_at',
   'updated_at',
   'updated_by',
+  // demo_mode_enabled: removed from the UI (PKT-12) — no runtime effect until
+  // a real demo-data gate is wired. Blocked here so a stale client payload
+  // cannot accidentally toggle it on the DB row.
+  'demo_mode_enabled',
 ]);
 
 function sanitizeSettingsPatch(
@@ -912,7 +922,10 @@ function classifySettingsChange(patch: Record<string, unknown>): BaseballSetting
     return 'notification_settings_changed';
   if (keys.some((k) => k.includes('retention') || k.includes('archive')))
     return 'data_retention_changed';
-  if (keys.includes('demo_mode_enabled')) return 'demo_mode_changed';
+  // NOTE: demo_mode_changed is intentionally not classified here — the
+  // demo_mode_enabled toggle was removed from the UI (PKT-12) pending a real
+  // demo-data gate. The audit-event type is kept in the union so historical log
+  // rows still render correctly in SettingsAuditClient.
   return 'settings_changed';
 }
 

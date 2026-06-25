@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   IconArrowLeft,
   IconTrendingUp,
@@ -526,13 +526,23 @@ export function PlayerProfileClient({
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════
+            TAB PANELS — animated with AnimatePresence
+        ═══════════════════════════════════════════════════════════════ */}
+        <AnimatePresence mode="wait">
+
+        {/* ═══════════════════════════════════════════════════════════════
             OVERVIEW TAB
         ═══════════════════════════════════════════════════════════════ */}
-        <div
+        {activeTab === 'overview' && (
+        <motion.div
+          key="panel-overview"
           role="tabpanel"
           id="pp-panel-overview"
           aria-labelledby="pp-tab-overview"
-          hidden={activeTab !== 'overview'}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? {} : { opacity: 0, y: -6 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
         >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -624,12 +634,14 @@ export function PlayerProfileClient({
                 </div>
               )}
 
-              {/* Advanced metrics */}
-              {(pressureIndex ?? aggregates?.trend_magnitude) && (
-                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                  <h3 className="font-semibold text-warm-900 mb-4">Advanced Metrics</h3>
+              {/* Advanced metrics — always shown; individual cards appear when data exists */}
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+                <h3 className="font-semibold text-warm-900 mb-4">Advanced Metrics</h3>
+                {!pressureIndex && aggregates?.trend_magnitude == null && aggregates?.avg_exit_velocity == null ? (
+                  <p className="text-sm text-warm-400 italic">Trend data not yet available — metrics populate after multiple sessions are logged.</p>
+                ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {pressureIndex && (
+                    {pressureIndex ? (
                       <div className="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200/45 rounded-xl">
                         <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
                           <IconTarget size={18} className="text-warm-600" />
@@ -644,8 +656,18 @@ export function PlayerProfileClient({
                           )}
                         </div>
                       </div>
+                    ) : (
+                      <div className="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200/45 rounded-xl opacity-50">
+                        <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
+                          <IconTarget size={18} className="text-warm-400" />
+                        </div>
+                        <div>
+                          <p className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wide">Pressure</p>
+                          <p className="text-sm text-warm-400">Not yet available</p>
+                        </div>
+                      </div>
                     )}
-                    {aggregates?.trend_magnitude != null && (
+                    {aggregates?.trend_magnitude != null ? (
                       <div className="flex items-center gap-3 p-3.5 bg-amber-50 border border-amber-200/45 rounded-xl">
                         <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
                           <IconActivity size={18} className="text-amber-600" />
@@ -658,8 +680,18 @@ export function PlayerProfileClient({
                           <p className="text-eyebrow text-warm-400">Rate of change</p>
                         </div>
                       </div>
+                    ) : (
+                      <div className="flex items-center gap-3 p-3.5 bg-amber-50/50 border border-amber-200/25 rounded-xl opacity-50">
+                        <div className="w-10 h-10 rounded-xl bg-amber-100/60 flex items-center justify-center flex-shrink-0">
+                          <IconActivity size={18} className="text-amber-400" />
+                        </div>
+                        <div>
+                          <p className="text-eyebrow font-semibold text-amber-400 uppercase tracking-wide">Trend Velocity</p>
+                          <p className="text-sm text-warm-400">Not yet available</p>
+                        </div>
+                      </div>
                     )}
-                    {aggregates?.avg_exit_velocity != null && (
+                    {aggregates?.avg_exit_velocity != null ? (
                       <div className="flex items-center gap-3 p-3.5 bg-primary-50 border border-primary-200/45 rounded-xl">
                         <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
                           <IconBolt size={18} className="text-primary-600" />
@@ -676,10 +708,20 @@ export function PlayerProfileClient({
                           )}
                         </div>
                       </div>
+                    ) : (
+                      <div className="flex items-center gap-3 p-3.5 bg-primary-50/50 border border-primary-200/25 rounded-xl opacity-50">
+                        <div className="w-10 h-10 rounded-xl bg-primary-100/60 flex items-center justify-center flex-shrink-0">
+                          <IconBolt size={18} className="text-primary-400" />
+                        </div>
+                        <div>
+                          <p className="text-eyebrow font-semibold text-primary-400 uppercase tracking-wide">Exit Velocity</p>
+                          <p className="text-sm text-warm-400">Not yet available</p>
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Recent videos preview */}
               {videos.length > 0 && (
@@ -789,16 +831,22 @@ export function PlayerProfileClient({
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
+        )}
 
         {/* ═══════════════════════════════════════════════════════════════
             STATS TAB
         ═══════════════════════════════════════════════════════════════ */}
-        <div
+        {activeTab === 'stats' && (
+        <motion.div
+          key="panel-stats"
           role="tabpanel"
           id="pp-panel-stats"
           aria-labelledby="pp-tab-stats"
-          hidden={activeTab !== 'stats'}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? {} : { opacity: 0, y: -6 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
         >
           <div className="space-y-5">
 
@@ -935,16 +983,22 @@ export function PlayerProfileClient({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
+        )}
 
         {/* ═══════════════════════════════════════════════════════════════
             VIDEOS TAB
         ═══════════════════════════════════════════════════════════════ */}
-        <div
+        {activeTab === 'videos' && (
+        <motion.div
+          key="panel-videos"
           role="tabpanel"
           id="pp-panel-videos"
           aria-labelledby="pp-tab-videos"
-          hidden={activeTab !== 'videos'}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={prefersReducedMotion ? {} : { opacity: 0, y: -6 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' }}
         >
           <div className="space-y-5">
 
@@ -1046,7 +1100,10 @@ export function PlayerProfileClient({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
+        )}
+
+        </AnimatePresence>
 
       </div>
 
@@ -1071,7 +1128,7 @@ export function PlayerProfileClient({
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 400, damping: 32 })}
               className="relative w-full max-w-4xl bg-warm-900 rounded-2xl overflow-hidden shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               {/* Close button */}
               <IconButton variant="default" aria-label="Close"

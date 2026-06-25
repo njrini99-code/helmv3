@@ -102,7 +102,7 @@ All filenames relative to `supabase/migrations/`. These are WRITTEN but NOT appl
 20260624001200_baseball_import_source_external_id.sql
 20260624001300_baseball_coachhelm_insight_maturity_counters.sql
 20260624001400_baseball_readiness_select_gate_fix.sql
-20260624001401_baseball_public_player_stats_rpc.sql            ← renamed from 001400 (collision resolved)
+20260624001401_baseball_public_player_stats_rpc.sql            ← renamed to 001401 (was 001400; collision resolved by PKT-16)
 20260624001500_baseball_signup_creates_profile_row.sql
 20260624001600_baseball_replace_lineup_positions_rpc.sql
 20260624001700_baseball_task_reminder_sent.sql

@@ -259,8 +259,27 @@ export default function DevPlansPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
+              <div className="space-y-4 py-2">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="border border-warm-200 rounded-xl p-4 space-y-3"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2 flex-1">
+                        <div className="h-4 w-2/5 bg-warm-200/60 rounded skeleton-shimmer" />
+                        <div className="h-3 w-3/4 bg-warm-100/60 rounded skeleton-shimmer" />
+                      </div>
+                      <div className="h-6 w-16 bg-warm-100/60 rounded-full skeleton-shimmer" />
+                    </div>
+                    <div className="h-3 w-1/2 bg-warm-100/60 rounded skeleton-shimmer" />
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-20 bg-warm-100/60 rounded skeleton-shimmer" />
+                      <div className="h-5 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : plans.length === 0 ? (
               /* Empty State */

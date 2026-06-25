@@ -24,24 +24,18 @@ import type { DecisionRoomEffectivenessReview } from '@/app/baseball/actions/dec
 const RECENT_REVIEWS_LIMIT = 50;
 
 /**
- * Shape of the columns we select from `baseball_practice_effectiveness_reviews`.
- * Mirrors the live schema verified via information_schema (no guessed columns).
+ * Shape of the columns we select from `baseball_practice_effectiveness_reviews`
+ * joined with `baseball_practices` for the practice title.
+ * Mirrors the live schema from 20260624000094_baseball_practice_effectiveness.sql.
  */
 interface EffectivenessReviewRow {
   id: string;
-  practice_id: string;
-  team_id: string;
-  block_id: string | null;
-  reviewed_by_coach_id: string | null;
-  overall_grade: string | null;
-  reps_quality: number | null;
-  energy_level: number | null;
-  focus_level: number | null;
-  objective_completion_pct: number | null;
-  notes: string | null;
-  signal_raised: boolean;
-  reviewed_at: string;
-  created_at: string;
+  focus_area: string;
+  metric_id: string | null;
+  direction: string;
+  conclusion: string;
+  recommended_next_action: { label?: string; type?: string; owner_role?: string } | null;
+  baseball_practices: { title: string }[] | null;
 }
 
 /**
@@ -62,28 +56,37 @@ export async function loadEffectivenessReviews(
   const { data, error } = await supabase
     .from('baseball_practice_effectiveness_reviews')
     .select(
-      'id, practice_id, team_id, block_id, reviewed_by_coach_id, overall_grade, reps_quality, energy_level, focus_level, objective_completion_pct, notes, signal_raised, reviewed_at, created_at',
+      'id, focus_area, metric_id, direction, conclusion, recommended_next_action, baseball_practices(title)',
     )
     .eq('team_id', teamId)
-    .order('reviewed_at', { ascending: false })
+    .order('generated_at', { ascending: false })
     .limit(RECENT_REVIEWS_LIMIT);
 
   if (error || !data) return [];
 
-  return (data as EffectivenessReviewRow[]).map((row) => ({
-    id: row.id,
-    practiceId: row.practice_id,
-    teamId: row.team_id,
-    blockId: row.block_id,
-    reviewedByCoachId: row.reviewed_by_coach_id,
-    overallGrade: row.overall_grade,
-    repsQuality: row.reps_quality,
-    energyLevel: row.energy_level,
-    focusLevel: row.focus_level,
-    objectiveCompletionPct: row.objective_completion_pct,
-    notes: row.notes,
-    signalRaised: row.signal_raised,
-    reviewedAt: row.reviewed_at,
-    createdAt: row.created_at,
-  }));
+  return (data as EffectivenessReviewRow[]).map((row) => {
+    // Map DB direction values to the DecisionRoomEffectivenessReview union.
+    // DB: 'improved'|'stable'|'worse'|'insufficient_sample'|'too_early'|'not_tracked'
+    // Type: 'improved'|'regressed'|'no_change'|null
+    let direction: 'improved' | 'regressed' | 'no_change' | null;
+    if (row.direction === 'improved') {
+      direction = 'improved';
+    } else if (row.direction === 'worse') {
+      direction = 'regressed';
+    } else if (row.direction === 'stable') {
+      direction = 'no_change';
+    } else {
+      direction = null;
+    }
+
+    return {
+      id: row.id,
+      practiceTitle: row.baseball_practices?.[0]?.title ?? '',
+      focusArea: row.focus_area,
+      metricLabel: row.metric_id,
+      direction,
+      conclusion: row.conclusion,
+      recommendedLabel: row.recommended_next_action?.label ?? null,
+    };
+  });
 }

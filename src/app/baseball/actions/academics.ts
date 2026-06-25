@@ -398,3 +398,116 @@ export async function createEligibilityRecord(playerId: string, data: {
     return { success: false as const, error: 'An unexpected error occurred.' };
   }
 }
+
+// ============================================================================
+// COACH: UPSERT PLAYER ACADEMIC DATA (used by academics page edit flow)
+// ============================================================================
+
+const upsertAcademicsSchema = z.object({
+  player_id: z.string().uuid(),
+  team_id: z.string().uuid(),
+  gpa: z.number().min(0).max(4).nullable().optional(),
+  credits_completed: z.number().int().min(0).nullable().optional(),
+  credits_required: z.number().int().min(0).nullable().optional(),
+  is_eligible: z.boolean().optional(),
+  academic_standing: z.enum(['good', 'warning', 'probation']).nullable().optional(),
+  eligibility_id: z.string().uuid().nullable().optional(),
+});
+
+export type UpsertAcademicsInput = z.infer<typeof upsertAcademicsSchema>;
+
+export async function upsertPlayerAcademics(input: UpsertAcademicsInput): Promise<
+  { success: true; data: BaseballAcademicEligibility } | { success: false; error: string }
+> {
+  try {
+    const validated = upsertAcademicsSchema.parse(input);
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    // Verify coach profile
+    const { data: coach } = await supabase
+      .from('baseball_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) return { success: false, error: 'Coach profile not found.' };
+
+    // Verify coach is on this team
+    const { data: staffMember } = await supabase
+      .from('baseball_team_coach_staff')
+      .select('id')
+      .eq('team_id', validated.team_id)
+      .eq('coach_id', coach.id)
+      .single();
+
+    if (!staffMember) return { success: false, error: 'Not authorized for this team.' };
+
+    const payload = {
+      player_id: validated.player_id,
+      team_id: validated.team_id,
+      gpa: validated.gpa ?? null,
+      credits_completed: validated.credits_completed ?? null,
+      credits_required: validated.credits_required ?? null,
+      is_eligible: validated.is_eligible ?? true,
+      academic_standing: validated.academic_standing ?? null,
+      updated_by: user.id,
+    };
+
+    let result: BaseballAcademicEligibility | null = null;
+
+    if (validated.eligibility_id) {
+      // Update existing record
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: updated, error: updateError } = await (supabase as any)
+        .from('baseball_academic_eligibility')
+        .update(payload)
+        .eq('id', validated.eligibility_id)
+        .select()
+        .single();
+
+      if (updateError) {
+        await logServerError(
+          `[Baseball Academics] Upsert update error: ${updateError instanceof Error ? updateError.message : String(updateError)}`,
+          { action: 'academics.upsertPlayerAcademics' }
+        );
+        return { success: false, error: 'Failed to save academic data.' };
+      }
+      result = updated as BaseballAcademicEligibility;
+    } else {
+      // Insert new record — semester is NOT NULL in DB; default to current semester label
+      const now = new Date();
+      const semester = `${now.getFullYear()} ${now.getMonth() < 6 ? 'Spring' : 'Fall'}`;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: created, error: insertError } = await (supabase as any)
+        .from('baseball_academic_eligibility')
+        .insert({ ...payload, semester })
+        .select()
+        .single();
+
+      if (insertError) {
+        await logServerError(
+          `[Baseball Academics] Upsert insert error: ${insertError instanceof Error ? insertError.message : String(insertError)}`,
+          { action: 'academics.upsertPlayerAcademics' }
+        );
+        return { success: false, error: 'Failed to create academic record.' };
+      }
+      result = created as BaseballAcademicEligibility;
+    }
+
+    revalidatePath('/baseball/dashboard/academics');
+    return { success: true, data: result! };
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return { success: false, error: err.issues[0]?.message || 'Invalid data.' };
+    }
+    await logServerError(
+      `[Baseball Academics] Upsert unexpected error: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'academics.upsertPlayerAcademics' }
+    );
+    return { success: false, error: 'An unexpected error occurred.' };
+  }
+}

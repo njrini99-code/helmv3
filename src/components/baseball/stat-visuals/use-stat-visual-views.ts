@@ -17,10 +17,17 @@
 // this hook only orchestrates calls + local optimistic state. RLS (owner +
 // team-scoped) is the authorization boundary; the actions stamp owner/team from
 // the server context, so the client can never write another user's rows.
+//
+// ERROR HANDLING
+//   * Load failures toast a non-fatal warning and leave the gallery functional
+//     (charts render; saved state just isn't restored).
+//   * Save/pin failures toast an error, roll back the optimistic update, and
+//     rethrow so callers can handle if needed — nothing is silently swallowed.
 // =============================================================================
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { toast } from '@/components/ui/sonner';
 import type { Json } from '@/lib/types';
 import {
   getStatVisualViews,
@@ -51,21 +58,37 @@ export interface UseStatVisualViewsResult {
 export function useStatVisualViews(playerId?: string | null): UseStatVisualViewsResult {
   const [savedViews, setSavedViews] = useState<StatVisualSavedView[]>([]);
 
+  // Stable ref so rollback closures always see the current list without
+  // capturing a stale closure over `savedViews`.
+  const savedViewsRef = useRef<StatVisualSavedView[]>(savedViews);
+  useEffect(() => {
+    savedViewsRef.current = savedViews;
+  });
+
   useEffect(() => {
     let cancelled = false;
     void getStatVisualViews({ playerId: playerId ?? null })
       .then((res) => {
-        if (cancelled || !res.success || !res.data) return;
-        setSavedViews(
-          res.data.map((v) => ({
-            visual_key: v.visual_key,
-            view_state: v.view_state,
-            is_pinned: v.is_pinned,
-          })),
-        );
+        if (cancelled) return;
+        if (!res.success || !res.data) {
+          toast.warning(
+            'Saved views unavailable',
+            res.error ?? 'Could not load your saved chart settings.',
+          );
+          return;
+        }
+        const loaded: StatVisualSavedView[] = res.data.map((v) => ({
+          visual_key: v.visual_key,
+          view_state: v.view_state,
+          is_pinned: v.is_pinned,
+        }));
+        setSavedViews(loaded);
+        savedViewsRef.current = loaded;
       })
       .catch(() => {
-        // Non-fatal: the gallery still renders, just without restored tabs/pins.
+        if (cancelled) return;
+        // Network-level or unexpected throw — non-fatal, gallery still renders.
+        toast.warning('Saved views unavailable', 'Could not load your saved chart settings.');
       });
     return () => {
       cancelled = true;
@@ -74,7 +97,7 @@ export function useStatVisualViews(playerId?: string | null): UseStatVisualViews
 
   /** Merge a row into local state by visual_key (mirrors the upsert server-side). */
   const upsertLocal = useCallback(
-    (visualKey: string, patch: Partial<StatVisualSavedView>) => {
+    (visualKey: string, patch: Partial<StatVisualSavedView>): void => {
       setSavedViews((prev) => {
         const idx = prev.findIndex((v) => v.visual_key === visualKey);
         if (idx === -1) {
@@ -95,23 +118,61 @@ export function useStatVisualViews(playerId?: string | null): UseStatVisualViews
     [],
   );
 
+  /**
+   * Roll back an optimistic update to `visualKey` using a snapshot taken
+   * synchronously *before* the optimistic write.
+   */
+  const rollbackTo = useCallback(
+    (visualKey: string, snapshot: StatVisualSavedView | undefined): void => {
+      setSavedViews((curr) => {
+        if (!snapshot) {
+          // Row did not exist before — remove the optimistic entry.
+          return curr.filter((v) => v.visual_key !== visualKey);
+        }
+        const i = curr.findIndex((v) => v.visual_key === visualKey);
+        if (i === -1) return curr;
+        const next = [...curr];
+        next[i] = snapshot;
+        return next;
+      });
+    },
+    [],
+  );
+
   const onSaveView = useCallback<UseStatVisualViewsResult['onSaveView']>(
     async (input) => {
+      // Capture the pre-optimistic snapshot via the stable ref (synchronous).
+      const snapshot = savedViewsRef.current.find((v) => v.visual_key === input.visualKey);
       upsertLocal(input.visualKey, {
         view_state: input.viewState,
         ...(input.isPinned !== undefined ? { is_pinned: input.isPinned } : {}),
       });
-      await saveStatVisualView(input);
+      const res = await saveStatVisualView(input);
+      if (!res.success) {
+        rollbackTo(input.visualKey, snapshot);
+        toast.error('Could not save chart view', res.error ?? 'Please try again.');
+        throw new Error(res.error ?? 'saveStatVisualView failed');
+      }
     },
-    [upsertLocal],
+    [upsertLocal, rollbackTo],
   );
 
   const onSetPinned = useCallback<UseStatVisualViewsResult['onSetPinned']>(
     async (input) => {
+      // Capture the pre-optimistic snapshot via the stable ref (synchronous).
+      const snapshot = savedViewsRef.current.find((v) => v.visual_key === input.visualKey);
       upsertLocal(input.visualKey, { is_pinned: input.isPinned });
-      await setStatVisualPinned(input);
+      const res = await setStatVisualPinned(input);
+      if (!res.success) {
+        rollbackTo(input.visualKey, snapshot);
+        toast.error(
+          input.isPinned ? 'Could not pin chart' : 'Could not unpin chart',
+          res.error ?? 'Please try again.',
+        );
+        throw new Error(res.error ?? 'setStatVisualPinned failed');
+      }
     },
-    [upsertLocal],
+    [upsertLocal, rollbackTo],
   );
 
   return { savedViews, onSaveView, onSetPinned };

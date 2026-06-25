@@ -64,11 +64,16 @@ const CAPABILITY_DEFS: { key: string; label: string; help: string }[] = [
   { key: 'can_manage_stats', label: 'Manage stats', help: 'Enter and edit team statistics.' },
   { key: 'can_manage_imports', label: 'Manage imports', help: 'Run roster/stat data imports.' },
   { key: 'can_manage_calendar', label: 'Manage calendar', help: 'Create and edit team events.' },
-  { key: 'can_message_team', label: 'Message team', help: 'Send team-wide announcements.' },
+  { key: 'can_message_players', label: 'Message players', help: 'Send messages to players.' },
   { key: 'can_view_academics', label: 'View academics', help: 'See player academic records.' },
   { key: 'can_view_medical', label: 'View medical', help: 'See player injury/medical info.' },
   { key: 'can_manage_settings', label: 'Manage settings', help: 'Edit team configuration.' },
   { key: 'can_invite_staff', label: 'Invite staff', help: 'Invite and manage other coaches.' },
+  { key: 'can_manage_lineups', label: 'Manage lineups', help: 'Build and publish batting orders and lineups.' },
+  { key: 'can_view_readiness', label: 'View readiness', help: 'See player wellness and soreness summaries.' },
+  { key: 'can_modify_availability', label: 'Modify availability', help: 'Set player availability status and return-to-play.' },
+  { key: 'can_view_private_notes', label: 'View private notes', help: 'Read staff-only private notes.' },
+  { key: 'can_export_reports', label: 'Export reports', help: 'Export performance and team reports.' },
 ];
 
 const CAP_KEYS = CAPABILITY_DEFS.map((c) => c.key);
@@ -95,7 +100,7 @@ const ROLE_PRESETS: { label: string; role: string; caps: string[] }[] = [
   {
     label: 'Recruiting Coord.',
     role: 'Recruiting Coordinator',
-    caps: ['can_view_academics', 'can_message_team'],
+    caps: ['can_view_academics', 'can_message_players'],
   },
   {
     label: 'Full Access',
@@ -185,7 +190,6 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
             role: inviteRole.trim() || null,
             status: 'pending',
             token: res.data?.token ?? '',
-            capabilities: { ...inviteCaps },
             invitedByName: null,
             expiresAt: new Date(Date.now() + 14 * 864e5).toISOString(),
             acceptedAt: null,
@@ -307,7 +311,6 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
   };
 
   const pendingInvites = invitations.filter((i) => i.status === 'pending');
-  const otherInvites = invitations.filter((i) => i.status !== 'pending');
   const fadeIn = reduceMotion
     ? {}
     : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 } };
@@ -548,31 +551,6 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
           </section>
         )}
 
-        {/* Invitation history / audit */}
-        {canManage && otherInvites.length > 0 && (
-          <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-warm-400">
-              Invitation history
-            </h2>
-            <div className="overflow-hidden rounded-xl border border-warm-200 bg-cream-50">
-              {otherInvites.map((inv, idx) => (
-                <div
-                  key={inv.id}
-                  className={`flex items-center justify-between gap-3 px-4 py-3 text-sm ${
-                    idx > 0 ? 'border-t border-warm-100' : ''
-                  }`}
-                >
-                  <span className="truncate text-warm-700">{inv.email}</span>
-                  <div className="flex items-center gap-3 text-xs text-warm-400">
-                    {inv.invitedByName && <span>by {inv.invitedByName}</span>}
-                    <InviteStatusBadge status={inv.status} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         <ConfirmDialog
           open={confirm !== null}
           title={
@@ -798,15 +776,3 @@ function CapabilityMatrix({ value, onChange, disabled }: CapabilityMatrixProps) 
   );
 }
 
-function InviteStatusBadge({ status }: { status: StaffInvitationView['status'] }) {
-  switch (status) {
-    case 'accepted':
-      return <Badge variant="success">Accepted</Badge>;
-    case 'revoked':
-      return <Badge variant="secondary">Revoked</Badge>;
-    case 'expired':
-      return <Badge variant="warning">Expired</Badge>;
-    default:
-      return <Badge variant="secondary">Pending</Badge>;
-  }
-}

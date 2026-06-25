@@ -32,7 +32,7 @@
 --     DML, no data-losing rename. Safe to run on the live shared DB.
 --   * RLS enabled on the new table; REVOKE anon; authenticated-only policies.
 --   * SECURITY DEFINER helpers keep their pinned search_path.
---   * NOT APPLIED here — ships as a migration file only.
+--   * Ships as a Supabase migration — applied to prod via the normal migration pipeline.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------

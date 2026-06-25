@@ -1,16 +1,21 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { CommandPalette } from '@/components/CommandPalette';
 import { MobileBottomNav, type MobileNavItem } from '@/components/layout/mobile-bottom-nav';
 import { useSidebar } from '@/contexts/sidebar-context';
-import { useAuth } from '@/hooks/use-auth';
+import { useUnreadCount } from '@/hooks/use-unread-count';
 import { cn } from '@/lib/utils';
 import { HubSubNav } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
 import { resolveActiveHub } from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
-import type { BaseballNavContext } from '@/lib/baseball/nav-registry';
+import { useAuth } from '@/hooks/use-auth';
+import {
+  getVisibleBaseballNav,
+  BASEBALL_MESSAGES_NAV,
+  type BaseballNavContext,
+} from '@/lib/baseball/nav-registry';
 import {
   IconHome,
   IconUsers,
@@ -19,48 +24,98 @@ import {
   IconSettings,
 } from '@/components/icons';
 
-const COACH_NAV: MobileNavItem[] = [
+// ---------------------------------------------------------------------------
+// Fallback mobile nav (rendered while navContext is still resolving so the
+// bottom bar is never empty on first paint).
+// ---------------------------------------------------------------------------
+const COACH_NAV_FALLBACK: MobileNavItem[] = [
   { label: 'Home', href: '/baseball/dashboard', icon: IconHome },
   { label: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
   { label: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage },
   { label: 'More', href: '/baseball/dashboard/settings', icon: IconSettings },
 ];
 
-const PLAYER_NAV: MobileNavItem[] = [
+const PLAYER_NAV_FALLBACK: MobileNavItem[] = [
   { label: 'Home', href: '/baseball/dashboard', icon: IconHome },
   { label: 'Profile', href: '/baseball/dashboard/profile', icon: IconUser },
   { label: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage },
   { label: 'More', href: '/baseball/dashboard/settings', icon: IconSettings },
 ];
 
+/**
+ * Derive the 4 mobile bottom nav items from the resolved nav context.
+ *
+ * Strategy: take the first 3 visible PRIMARY entries from the registry (which
+ * are already role- and capability-filtered + program-type ordered), then
+ * insert Messages (always last, with live unread badge). This matches the
+ * spec's "4-item mobile nav" pattern and automatically reflects any registry
+ * changes — no manual sync needed.
+ */
+function buildMobileNavFromContext(
+  ctx: BaseballNavContext,
+  unreadCount: number,
+): MobileNavItem[] {
+  const primary = getVisibleBaseballNav(ctx).filter((e) => e.section === 'primary');
+  const top3 = primary.slice(0, 3);
+  const items: MobileNavItem[] = top3.map((e) => ({
+    label: e.label,
+    href: e.href,
+    icon: e.icon,
+    ...(e.showUnreadBadge && unreadCount > 0 ? { badge: unreadCount } : {}),
+  }));
+  // Messages is always the fourth slot, always present.
+  items.push({
+    label: BASEBALL_MESSAGES_NAV.label,
+    href: BASEBALL_MESSAGES_NAV.href,
+    icon: BASEBALL_MESSAGES_NAV.icon,
+    ...(unreadCount > 0 ? { badge: unreadCount } : {}),
+  });
+  return items;
+}
+
 type Props = {
   children: React.ReactNode;
-  role: 'coach' | 'player' | null;
+  role: 'coach' | 'player';
   /**
-   * Server-resolved nav context (role + capabilities + program type). Accepted
-   * but optional — the live layouts mount the shell without it, so the shell
-   * derives hub gating (coach_type) from useAuth instead. Kept in the prop
-   * surface so the BaseballShellLayout extraction (which resolves and passes a
-   * navContext) type-checks against the shell.
+   * Server-resolved nav context (role + capabilities + programType). When
+   * provided, the mobile bottom nav is derived from getVisibleBaseballNav() so
+   * nav registry changes propagate automatically. Falls back to the hardcoded
+   * role constants until the context resolves.
    */
   navContext?: BaseballNavContext;
 };
 
-export function BaseballDashboardShell({ children, role }: Props) {
+export function BaseballDashboardShell({ children, role, navContext }: Props) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
   const pathname = usePathname();
   const { coach } = useAuth();
-  const mobileNavItems = role === 'coach' ? COACH_NAV : PLAYER_NAV;
+  const { unreadCount } = useUnreadCount();
+
+  // Derive the mobile nav from the registry when the context is available;
+  // fall back to the role-specific constants while it is still resolving.
+  const mobileNavItems = useMemo<MobileNavItem[]>(() => {
+    if (navContext) {
+      return buildMobileNavFromContext(navContext, unreadCount);
+    }
+    const fallback = role === 'coach' ? COACH_NAV_FALLBACK : PLAYER_NAV_FALLBACK;
+    // Inject live unread badge into the Messages slot even for the fallback.
+    return fallback.map((item) =>
+      item.href === BASEBALL_MESSAGES_NAV.href && unreadCount > 0
+        ? { ...item, badge: unreadCount }
+        : item,
+    );
+  }, [navContext, role, unreadCount]);
 
   // Grouped-hubs sub-tab strip: resolve which hub (Team / Stats / Development /
   // Management / Recruiting / Academics) owns the current route and render its
   // sub-tabs above the page. Top-level surfaces (Dashboard, Profile, etc.) sit
-  // in no hub → activeHub is null → no strip, exactly like a flat tab.
+  // in no hub → activeHub is null → no strip.
   const activeHub = resolveActiveHub({
     pathname,
     role,
     coachType: coach?.coach_type ?? null,
   });
+
   const mobileSidebarRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
 

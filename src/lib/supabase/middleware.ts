@@ -43,9 +43,10 @@ export const STAFF_CAPABILITY_ROUTES: Array<[string, string]> = [
 /**
  * Determine which sport context from the URL
  */
-function getSportFromPath(pathname: string): 'baseball' | 'golf' | null {
+function getSportFromPath(pathname: string): 'baseball' | 'golf' | 'lifting' | null {
   if (pathname.startsWith('/baseball')) return 'baseball';
   if (pathname.startsWith('/golf')) return 'golf';
+  if (pathname.startsWith('/lifting')) return 'lifting';
   return null;
 }
 
@@ -236,7 +237,8 @@ export async function updateSession(request: NextRequest) {
 
   // Dashboard routes require full authentication (not onboarding routes)
   const isDashboardRoute = pathname.startsWith('/baseball/dashboard') ||
-                           pathname.startsWith('/golf/dashboard');
+                           pathname.startsWith('/golf/dashboard') ||
+                           pathname.startsWith('/lifting/dashboard');
   const isProtectedRoute = isDashboardRoute;
 
   // Redirect to login if accessing protected route without auth
@@ -244,14 +246,18 @@ export async function updateSession(request: NextRequest) {
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     // Redirect to the sport-specific login page
-    url.pathname = sport ? `/${sport}/login` : '/baseball/login';
+    if (sport === 'lifting') {
+      url.pathname = '/lifting/login';
+    } else {
+      url.pathname = sport ? `/${sport}/login` : '/baseball/login';
+    }
     url.searchParams.set('returnTo', pathname);
     return NextResponse.redirect(url);
   }
 
   // Check role-based authorization for authenticated users
-  // PERF: Only run for baseball routes — golf handles auth in its own layout.
-  // This avoids an unnecessary baseball_coaches DB query on every golf request.
+  // PERF: Only run for baseball routes — golf/lifting handle auth in their own layouts.
+  // This avoids an unnecessary baseball_coaches DB query on every golf/lifting request.
   if (user && isDashboardRoute && sport === 'baseball') {
     const authResult = await checkRouteAuthorization(
       supabase as unknown as SupabaseClient,

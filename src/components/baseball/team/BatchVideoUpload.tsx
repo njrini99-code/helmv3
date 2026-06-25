@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { IconUpload, IconVideo } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { batchUploadStaffVideos } from '@/app/baseball/actions/video-classes';
 
 interface RosterEntry {
   id: string;
@@ -21,6 +23,11 @@ interface RosterEntry {
 
 interface BatchVideoUploadProps {
   roster: RosterEntry[];
+}
+
+interface UploadSuccess {
+  playerNames: string[];
+  videoTitle: string;
 }
 
 const videoTypes = [
@@ -37,12 +44,12 @@ const videoTypes = [
 ];
 
 export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
-  const supabase = createClient();
   const { user } = useAuth();
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<UploadSuccess | null>(null);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -53,7 +60,7 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
     return roster
       .map((member) => ({
         id: member.player.id,
-        name: `${member.player.first_name || ''} ${member.player.last_name || ''}`.trim(),
+        name: `${member.player.first_name ?? ''} ${member.player.last_name ?? ''}`.trim(),
       }))
       .filter((player) => player.name.length > 0);
   }, [roster]);
@@ -75,8 +82,12 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
     if (!validateFile(selectedFile)) return;
     setFile(selectedFile);
     setError(null);
+    setSuccess(null);
     if (!form.title) {
-      const name = selectedFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+      const name = selectedFile.name
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, (l) => l.toUpperCase());
       setForm((prev) => ({ ...prev, title: name }));
     }
   };
@@ -90,17 +101,12 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
     setSelectedPlayers((prev) =>
       prev.includes(playerId)
         ? prev.filter((id) => id !== playerId)
-        : [...prev, playerId]
+        : [...prev, playerId],
     );
   };
 
-  const selectAll = () => {
-    setSelectedPlayers(players.map((player) => player.id));
-  };
-
-  const clearSelection = () => {
-    setSelectedPlayers([]);
-  };
+  const selectAll = () => setSelectedPlayers(players.map((p) => p.id));
+  const clearSelection = () => setSelectedPlayers([]);
 
   const handleUpload = async () => {
     if (!user) {
@@ -122,47 +128,57 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
 
     setUploading(true);
     setError(null);
+    setSuccess(null);
+
+    // Only the storage client is needed client-side; DB writes go through the server action.
+    const supabase = createClient();
+
+    const fileExt = file.name.split('.').pop()?.toLowerCase() ?? 'mp4';
+    const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${fileExt}`;
 
     try {
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'mp4';
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${fileExt}`;
+      const uploadResult = await supabase.storage
+        .from('baseball_videos')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
 
-      const uploadResult = await supabase.storage.from('baseball_videos').upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-      if (uploadResult.error) throw uploadResult.error;
-
-      const { data: urlData } = supabase.storage.from('baseball_videos').getPublicUrl(fileName);
-      const publicUrl = urlData.publicUrl;
-
-      const insertPayload = selectedPlayers.map((playerId) => ({
-        player_id: playerId,
-        title: form.title.trim(),
-        description: form.description.trim() || null,
-        video_type: form.video_type || null,
-        url: publicUrl,
-        is_primary: false,
-      }));
-
-      const { error: insertError } = await supabase.from('baseball_videos').insert(insertPayload);
-      if (insertError) throw insertError;
-
-      const { error: updateError } = await supabase
-        .from('baseball_players')
-        .update({ has_video: true })
-        .in('id', selectedPlayers);
-
-      if (updateError) {
-        console.error('Failed to update player video status:', updateError);
+      if (uploadResult.error) {
+        setError(uploadResult.error.message ?? 'Storage upload failed. Please try again.');
+        return;
       }
 
+      const { data: urlData } = supabase.storage
+        .from('baseball_videos')
+        .getPublicUrl(fileName);
+      const publicUrl = urlData.publicUrl;
+
+      const result = await batchUploadStaffVideos({
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        videoType: form.video_type || null,
+        url: publicUrl,
+        playerIds: selectedPlayers,
+      });
+
+      if (!result.success) {
+        // Server action failed — remove the just-uploaded storage object so it
+        // does not become an orphan.
+        await supabase.storage.from('baseball_videos').remove([fileName]);
+        setError(result.error ?? 'Could not save the video records. Please try again.');
+        return;
+      }
+
+      const uploadedPlayerNames = players
+        .filter((p) => selectedPlayers.includes(p.id))
+        .map((p) => p.name);
+
+      setSuccess({ playerNames: uploadedPlayerNames, videoTitle: form.title.trim() });
       setSelectedPlayers([]);
       setFile(null);
       setForm({ title: '', description: '', video_type: '' });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+    } catch {
+      // Clean up orphaned storage file if something unexpected threw.
+      await supabase.storage.from('baseball_videos').remove([fileName]).catch(() => undefined);
+      setError('Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -190,38 +206,79 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
           </div>
         )}
 
+        <AnimatePresence>
+          {success && (
+            <motion.div
+              key="upload-success"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 space-y-1"
+            >
+              <p className="text-sm font-medium text-green-800">
+                &ldquo;{success.videoTitle}&rdquo; saved for {success.playerNames.length}{' '}
+                {success.playerNames.length === 1 ? 'player' : 'players'}:
+              </p>
+              <ul className="text-sm text-green-700 list-disc list-inside space-y-0.5">
+                {success.playerNames.map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="space-y-4">
             <Input
               label="Video Title"
               value={form.title}
-              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, title: event.target.value }))
+              }
               placeholder="Spring game highlights"
               required
             />
             <div>
-              <label htmlFor="bvu-video-type" className="block text-sm font-medium text-warm-700 mb-1">Video Type</label>
+              <label
+                htmlFor="bvu-video-type"
+                className="block text-sm font-medium text-warm-700 mb-1"
+              >
+                Video Type
+              </label>
               <select
                 id="bvu-video-type"
                 value={form.video_type}
-                onChange={(event) => setForm((prev) => ({ ...prev, video_type: event.target.value }))}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, video_type: event.target.value }))
+                }
                 className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 bg-white transition-colors"
               >
                 <option value="">Select type</option>
                 {videoTypes.map((type) => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
                 ))}
               </select>
             </div>
             <Textarea
               label="Description (Optional)"
               value={form.description}
-              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, description: event.target.value }))
+              }
               placeholder="Notes about this video..."
               rows={3}
             />
             <div>
-              <label htmlFor="bvu-video-file" className="block text-sm font-medium text-warm-700 mb-1">Video File</label>
+              <label
+                htmlFor="bvu-video-file"
+                className="block text-sm font-medium text-warm-700 mb-1"
+              >
+                Video File
+              </label>
               <input
                 id="bvu-video-file"
                 type="file"
@@ -229,9 +286,7 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
                 onChange={handleInputChange}
                 className="w-full text-sm text-warm-600 file:mr-4 file:rounded-lg file:border-0 file:bg-warm-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-warm-700 hover:file:bg-warm-200"
               />
-              {file && (
-                <p className="text-xs text-warm-500 mt-1">{file.name}</p>
-              )}
+              {file && <p className="text-xs text-warm-500 mt-1">{file.name}</p>}
             </div>
           </div>
 
@@ -271,7 +326,7 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
                     key={player.id}
                     className={cn(
                       'flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-warm-50 active:bg-warm-100',
-                      selectedPlayers.includes(player.id) && 'bg-primary-50'
+                      selectedPlayers.includes(player.id) && 'bg-primary-50',
                     )}
                   >
                     <input

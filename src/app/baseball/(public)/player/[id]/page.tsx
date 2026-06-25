@@ -34,7 +34,8 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
   const supabase = await createClient();
 
   // Fetch player with all related data
-  const { data: player, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: player, error } = await (supabase as any)
     .from('baseball_players')
     .select(`
       *,
@@ -91,7 +92,7 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
       )
     `)
     .eq('id', id)
-    .single();
+    .single() as { data: ({ id: string; baseball_videos: unknown[]; baseball_team_members: unknown[] } & Record<string, unknown>) | null; error: { message: string } | null };
 
   // Fetch player settings separately (may not have relationship)
   const { data: playerSettings } = await supabase

@@ -374,6 +374,33 @@ CREATE UNIQUE INDEX IF NOT EXISTS helm_lifting_import_rows_legacy_uq
   WHERE legacy_baseball_id IS NOT NULL;
 
 -- ===========================================================================
+-- 5b. SECURITY DEFINER HELPER — head-coach-level visibility gate
+--
+-- Returns TRUE when the calling user is an active lifting coach for the given
+-- organization (i.e., has a row in helm_lifting_coaches that is not soft-
+-- deleted).  Org-viewers granted only read access via helm_lifting_org_viewers
+-- return FALSE, so rows with visibility = 'head_coach_only' are withheld from
+-- them by the hlrc_select and hlas_select policies below.
+-- ===========================================================================
+CREATE OR REPLACE FUNCTION public.helm_lifting_is_head_coach_viewer(p_org uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.helm_lifting_coaches c
+    WHERE c.organization_id = p_org
+      AND c.user_id = auth.uid()
+      AND (c.deleted_at IS NULL OR c.deleted_at > now())
+  );
+$$;
+REVOKE ALL ON FUNCTION public.helm_lifting_is_head_coach_viewer(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.helm_lifting_is_head_coach_viewer(uuid) TO authenticated;
+
+-- ===========================================================================
 -- 6. ROW LEVEL SECURITY
 -- ===========================================================================
 
@@ -527,7 +554,13 @@ DROP POLICY IF EXISTS hlrc_delete ON public.helm_lifting_readiness_checkins;
 CREATE POLICY hlrc_select ON public.helm_lifting_readiness_checkins FOR SELECT TO authenticated
   USING (
     public.helm_lifting_is_my_athlete(athlete_id)
-    OR public.helm_lifting_can_view_org(organization_id, sport)
+    OR (
+      public.helm_lifting_can_view_org(organization_id, sport)
+      AND (
+        visibility <> 'head_coach_only'
+        OR public.helm_lifting_is_head_coach_viewer(organization_id)
+      )
+    )
   );
 
 CREATE POLICY hlrc_insert ON public.helm_lifting_readiness_checkins FOR INSERT TO authenticated
@@ -623,7 +656,13 @@ DROP POLICY IF EXISTS hlas_delete ON public.helm_lifting_availability_statuses;
 CREATE POLICY hlas_select ON public.helm_lifting_availability_statuses FOR SELECT TO authenticated
   USING (
     public.helm_lifting_is_my_athlete(athlete_id)
-    OR public.helm_lifting_can_view_org(organization_id, sport)
+    OR (
+      public.helm_lifting_can_view_org(organization_id, sport)
+      AND (
+        visibility <> 'head_coach_only'
+        OR public.helm_lifting_is_head_coach_viewer(organization_id)
+      )
+    )
   );
 
 CREATE POLICY hlas_insert ON public.helm_lifting_availability_statuses FOR INSERT TO authenticated

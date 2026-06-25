@@ -216,6 +216,19 @@ export async function getBaseballStaff(
   const status =
     typeof row.status === 'string' ? (row.status as string) : null;
 
+  // Mirror the SQL is_baseball_team_staff lifecycle guard: suspended, removed,
+  // and invited staff are treated as non-members at the application layer so
+  // callers that hold a BaseballStaffMembership reference cannot accidentally
+  // treat pending invites as confirmed members.  The SQL helper
+  // is_baseball_team_staff() (migration 20260624000050) currently lacks this
+  // status filter — any caller that relies on that SQL function for practice
+  // table SELECT gates may still allow invited staff to read published practice
+  // plans.  This guard closes the application-side gap while the SQL migration
+  // fix is pending.
+  if (status !== null && REVOKED_STATUSES.has(status)) {
+    return null;
+  }
+
   const capability_columns: Record<string, boolean> = {};
   for (const col of BOOLEAN_CAPABILITY_COLUMNS) {
     // A capability is held if its own column is true OR any deprecated-alias

@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { Header } from '@/components/layout/header';
-import { PageLoading } from '@/components/ui/loading';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -19,6 +18,7 @@ import {
   IconClock,
   IconTrash,
 } from '@/components/icons';
+import { createBaseballEvent, deleteBaseballEvent } from '@/app/baseball/actions/calendar';
 
 interface Event {
   id: string;
@@ -63,6 +63,43 @@ const eventTypeOptions = [
   { value: 'other', label: 'Other' },
 ];
 
+// ---------------------------------------------------------------------------
+// Skeleton loader
+// ---------------------------------------------------------------------------
+
+function EventsSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading events">
+      {[0, 1].map((g) => (
+        <div key={g}>
+          <div className="h-4 w-40 bg-warm-200 rounded mb-3" />
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-white rounded-xl border border-warm-200 p-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-warm-200 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-48 bg-warm-200 rounded" />
+                    <div className="h-3 w-32 bg-warm-100 rounded" />
+                    <div className="flex gap-2">
+                      <div className="h-5 w-16 bg-warm-100 rounded-full" />
+                      <div className="h-5 w-20 bg-warm-100 rounded-full" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function EventsPage() {
   const { coach, loading: authLoading } = useAuth();
   const { isAllowed, isLoading: routeLoading } = useRouteProtection({
@@ -73,6 +110,7 @@ export default function EventsPage() {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filterTeam, setFilterTeam] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
@@ -87,7 +125,15 @@ export default function EventsPage() {
     location: '',
     description: '',
   });
-  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  // Per-event delete error (keyed by event id)
+  const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
+
+  // ---------------------------------------------------------------------------
+  // Fetch events (read-path — client SELECT is fine, RLS governs it)
+  // ---------------------------------------------------------------------------
 
   useEffect(() => {
     async function fetchEvents() {
@@ -97,9 +143,9 @@ export default function EventsPage() {
       }
 
       setLoading(true);
+      setFetchError(null);
       const supabase = createClient();
 
-      // Get all team IDs for this coach
       const teamIds = teams.map((t) => t.id);
 
       if (teamIds.length === 0) {
@@ -108,7 +154,7 @@ export default function EventsPage() {
         return;
       }
 
-      const query = supabase
+      const { data, error } = await supabase
         .from('baseball_events')
         .select(`
           *,
@@ -118,9 +164,8 @@ export default function EventsPage() {
         .gte('start_time', new Date().toISOString())
         .order('start_time', { ascending: true });
 
-      const { data, error } = await query;
-
       if (error) {
+        setFetchError('Unable to load events. Please refresh to try again.');
         setEvents([]);
       } else {
         setEvents((data || []) as Event[]);
@@ -134,72 +179,106 @@ export default function EventsPage() {
     }
   }, [authLoading, coach?.id, teams]);
 
-  const handleCreateEvent = async (e: React.FormEvent) => {
+  // ---------------------------------------------------------------------------
+  // Create event — server action
+  // ---------------------------------------------------------------------------
+
+  const handleCreateEvent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!coach?.id || !newEvent.title.trim() || !newEvent.team_id || !newEvent.start_time) return;
 
-    setCreating(true);
-    const supabase = createClient();
+    setCreateError(null);
+    startTransition(async () => {
+      // Derive date/time parts from the datetime-local value (YYYY-MM-DDTHH:mm)
+      const startParts = newEvent.start_time.split('T');
+      const startDate: string = startParts[0] ?? '';
+      const startTime: string | null = startParts[1] ?? null;
 
-    const { data, error } = await supabase
-      .from('baseball_events')
-      .insert({
-        team_id: newEvent.team_id,
+      const endParts = newEvent.end_time ? newEvent.end_time.split('T') : null;
+      const endDate: string | null = endParts ? (endParts[0] ?? null) : null;
+      const endTime: string | null = endParts ? (endParts[1] ?? null) : null;
+
+      const result = await createBaseballEvent({
+        teamId: newEvent.team_id,
         title: newEvent.title.trim(),
-        event_type: newEvent.event_type,
-        start_time: new Date(newEvent.start_time).toISOString(),
-        end_time: newEvent.end_time ? new Date(newEvent.end_time).toISOString() : null,
+        eventType: newEvent.event_type,
+        startDate,
+        startTime,
+        endDate,
+        endTime,
         location: newEvent.location || null,
         description: newEvent.description || null,
-      })
-      .select(`
-        *,
-        team:baseball_teams (id, name, primary_color)
-      `)
-      .single();
+      });
 
-    if (error) {
-      setCreating(false);
-      return;
-    }
+      if (!result.success) {
+        setCreateError(result.error ?? 'Failed to create event. Please try again.');
+        return;
+      }
 
-    setEvents([data as Event, ...events].sort((a, b) =>
-      new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-    ));
-    setShowCreateModal(false);
-    setNewEvent({
-      team_id: '',
-      title: '',
-      event_type: 'game',
-      start_time: '',
-      end_time: '',
-      location: '',
-      description: '',
+      // Optimistically add the new event to local state so UI updates instantly
+      // without waiting for a full re-fetch.
+      const created = result.data as Event | undefined;
+      if (created) {
+        const selectedTeam = teams.find((t) => t.id === newEvent.team_id);
+        const withTeam: Event = {
+          ...created,
+          team: selectedTeam
+            ? { id: selectedTeam.id, name: selectedTeam.name, primary_color: null }
+            : undefined,
+        };
+        setEvents((prev) =>
+          [...prev, withTeam].sort(
+            (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+          ),
+        );
+      }
+
+      setShowCreateModal(false);
+      setNewEvent({
+        team_id: '',
+        title: '',
+        event_type: 'game',
+        start_time: '',
+        end_time: '',
+        location: '',
+        description: '',
+      });
     });
-    setCreating(false);
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
+  // ---------------------------------------------------------------------------
+  // Delete event — server action
+  // ---------------------------------------------------------------------------
+
+  const handleDeleteEvent = (eventId: string) => {
     if (!confirm('Are you sure you want to delete this event?')) return;
 
-    const supabase = createClient();
-    const { error } = await supabase.from('baseball_events').delete().eq('id', eventId);
+    setDeleteErrors((prev) => ({ ...prev, [eventId]: '' }));
+    startTransition(async () => {
+      const result = await deleteBaseballEvent(eventId);
 
-    if (error) {
-      return;
-    }
+      if (!result.success) {
+        setDeleteErrors((prev) => ({
+          ...prev,
+          [eventId]: result.error ?? 'Failed to delete event.',
+        }));
+        return;
+      }
 
-    setEvents(events.filter((e) => e.id !== eventId));
+      setEvents((prev) => prev.filter((ev) => ev.id !== eventId));
+    });
   };
 
-  // Filter events
+  // ---------------------------------------------------------------------------
+  // Filter + group
+  // ---------------------------------------------------------------------------
+
   const filteredEvents = events.filter((event) => {
     if (filterTeam !== 'all' && event.team_id !== filterTeam) return false;
     if (filterType !== 'all' && event.event_type !== filterType) return false;
     return true;
   });
 
-  // Group events by date
   const groupedEvents = filteredEvents.reduce((groups, event) => {
     const date = format(new Date(event.start_time), 'yyyy-MM-dd');
     if (!groups[date]) {
@@ -209,12 +288,30 @@ export default function EventsPage() {
     return groups;
   }, {} as Record<string, Event[]>);
 
-  if (authLoading || routeLoading || loading) {
-    return <PageLoading />;
+  // ---------------------------------------------------------------------------
+  // Auth/route guards
+  // ---------------------------------------------------------------------------
+
+  if (authLoading || routeLoading) {
+    return (
+      <>
+        <Header title="Events" subtitle="Loading…" />
+        <div className="p-6">
+          <EventsSkeleton />
+        </div>
+      </>
+    );
   }
 
   if (!isAllowed) {
-    return <PageLoading />;
+    return (
+      <>
+        <Header title="Events" subtitle="Loading…" />
+        <div className="p-6">
+          <EventsSkeleton />
+        </div>
+      </>
+    );
   }
 
   if (!coach) {
@@ -230,11 +327,19 @@ export default function EventsPage() {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
   return (
     <>
       <Header
         title="Events"
-        subtitle={`${filteredEvents.length} upcoming event${filteredEvents.length !== 1 ? 's' : ''}`}
+        subtitle={
+          loading
+            ? 'Loading…'
+            : `${filteredEvents.length} upcoming event${filteredEvents.length !== 1 ? 's' : ''}`
+        }
       >
         <Button onClick={() => setShowCreateModal(true)}>
           <IconPlus size={16} />
@@ -269,14 +374,28 @@ export default function EventsPage() {
           </div>
         </div>
 
-        {filteredEvents.length === 0 ? (
+        {/* Fetch error */}
+        {fetchError && (
+          <div
+            role="alert"
+            className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {fetchError}
+          </div>
+        )}
+
+        {/* Skeleton while loading */}
+        {loading ? (
+          <EventsSkeleton />
+        ) : filteredEvents.length === 0 ? (
+          /* Honest empty state */
           <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
               <IconCalendar size={24} className="text-warm-400" />
             </div>
             <h3 className="text-lg font-medium text-warm-900 mb-2">No upcoming events</h3>
             <p className="text-warm-500 mb-6 max-w-sm mx-auto">
-              Create events to manage your team schedules, showcases, and tryouts.
+              No upcoming events — coaches can add events from the calendar.
             </p>
             <Button onClick={() => setShowCreateModal(true)}>
               <IconPlus size={16} />
@@ -292,51 +411,70 @@ export default function EventsPage() {
                 </h3>
                 <div className="space-y-3">
                   {dateEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="bg-white rounded-xl border border-warm-200 p-4 hover:border-warm-300 hover:shadow-sm transition-all"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4">
-                          <div
-                            className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-medium flex-shrink-0"
-                            style={{ backgroundColor: event.team?.primary_color || 'var(--color-primary-600)' }}
-                          >
-                            {event.team?.name?.charAt(0) || 'E'}
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-warm-900">{event.title}</h4>
-                            <div className="flex items-center gap-3 mt-1 text-sm text-warm-500">
-                              <span className="flex items-center gap-1">
-                                <IconClock size={14} />
-                                {format(new Date(event.start_time), 'h:mm a')}
-                                {event.end_time && ` - ${format(new Date(event.end_time), 'h:mm a')}`}
-                              </span>
-                              {event.location && (
+                    <div key={event.id}>
+                      <div className="bg-white rounded-xl border border-warm-200 p-4 hover:border-warm-300 hover:shadow-sm transition-all">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4">
+                            <div
+                              className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-medium flex-shrink-0"
+                              style={{
+                                backgroundColor:
+                                  event.team?.primary_color || 'var(--color-primary-600)',
+                              }}
+                            >
+                              {event.team?.name?.charAt(0) || 'E'}
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-warm-900">{event.title}</h4>
+                              <div className="flex items-center gap-3 mt-1 text-sm text-warm-500">
                                 <span className="flex items-center gap-1">
-                                  <IconMapPin size={14} />
-                                  {event.location}
+                                  <IconClock size={14} />
+                                  {format(new Date(event.start_time), 'h:mm a')}
+                                  {event.end_time &&
+                                    ` - ${format(new Date(event.end_time), 'h:mm a')}`}
                                 </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge className={eventTypeColors[event.event_type] || eventTypeColors.other}>
-                                {event.event_type.charAt(0).toUpperCase() + event.event_type.slice(1)}
-                              </Badge>
-                              <Badge variant="secondary">{event.team?.name}</Badge>
+                                {event.location && (
+                                  <span className="flex items-center gap-1">
+                                    <IconMapPin size={14} />
+                                    {event.location}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge
+                                  className={
+                                    eventTypeColors[event.event_type] || eventTypeColors.other
+                                  }
+                                >
+                                  {event.event_type.charAt(0).toUpperCase() +
+                                    event.event_type.slice(1)}
+                                </Badge>
+                                <Badge variant="secondary">{event.team?.name}</Badge>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <IconButton variant="default"
-                            onClick={() => handleDeleteEvent(event.id)}
-                            className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
-                            aria-label="Delete event"
-                          >
-                            <IconTrash size={16} aria-hidden="true" />
-                          </IconButton>
+                          <div className="flex items-center gap-1">
+                            <IconButton
+                              variant="default"
+                              onClick={() => handleDeleteEvent(event.id)}
+                              className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
+                              aria-label="Delete event"
+                              disabled={isPending}
+                            >
+                              <IconTrash size={16} aria-hidden="true" />
+                            </IconButton>
+                          </div>
                         </div>
                       </div>
+                      {/* Inline delete error for this event */}
+                      {deleteErrors[event.id] && (
+                        <p
+                          role="alert"
+                          className="mt-1 px-2 text-xs text-red-600"
+                        >
+                          {deleteErrors[event.id]}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -357,9 +495,20 @@ export default function EventsPage() {
           />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-warm-100 sticky top-0 bg-white">
-              <h2 className="text-lg font-semibold tracking-tight text-warm-900">Create New Event</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-warm-900">
+                Create New Event
+              </h2>
             </div>
             <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
+              {/* Inline create error */}
+              {createError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                  {createError}
+                </div>
+              )}
               <Select
                 label="Team"
                 placeholder="Select team"
@@ -382,7 +531,10 @@ export default function EventsPage() {
               />
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="event-start-time" className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label
+                    htmlFor="event-start-time"
+                    className="block text-sm font-medium text-warm-700 mb-1.5"
+                  >
                     Start Time
                   </label>
                   <input
@@ -395,7 +547,10 @@ export default function EventsPage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="event-end-time" className="block text-sm font-medium text-warm-700 mb-1.5">
+                  <label
+                    htmlFor="event-end-time"
+                    className="block text-sm font-medium text-warm-700 mb-1.5"
+                  >
                     End Time
                   </label>
                   <input
@@ -414,7 +569,10 @@ export default function EventsPage() {
                 onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
               />
               <div>
-                <label htmlFor="event-description" className="block text-sm font-medium text-warm-700 mb-1.5">
+                <label
+                  htmlFor="event-description"
+                  className="block text-sm font-medium text-warm-700 mb-1.5"
+                >
                   Description (Optional)
                 </label>
                 <textarea
@@ -435,7 +593,7 @@ export default function EventsPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1" isLoading={creating}>
+                <Button type="submit" className="flex-1" isLoading={isPending}>
                   Create Event
                 </Button>
               </div>

@@ -1,5 +1,5 @@
 -- ============================================================================
--- Migration: 20260624001400_baseball_public_player_stats_rpc.sql
+-- Migration: 20260624001401_baseball_public_player_stats_rpc.sql
 -- Packet: qa-screens (BaseballHelm — public recruiting profile)
 -- Purpose: Surface REAL baseball performance on the PUBLIC recruiting profile.
 --

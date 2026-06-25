@@ -32,17 +32,17 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
 
   // Form state
   const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
+  const [content, setContent] = useState('');
   const [urgency, setUrgency] = useState<'low' | 'normal' | 'high' | 'urgent'>('normal');
   const [recipientPlayerIds, setRecipientPlayerIds] = useState<string[] | null>(null);
-  const [requiresAcknowledgement, setRequiresAcknowledgement] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
 
   function resetForm() {
     setTitle('');
-    setBody('');
+    setContent('');
     setUrgency('normal');
     setRecipientPlayerIds(null);
-    setRequiresAcknowledgement(false);
+    setIsPinned(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -52,7 +52,7 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
       showToast('Title is required', 'error');
       return;
     }
-    if (!body.trim()) {
+    if (!content.trim()) {
       showToast('Message is required', 'error');
       return;
     }
@@ -68,9 +68,9 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
       const result = await createAnnouncement({
         teamId,
         title: title.trim(),
-        body: body.trim(),
+        content: content.trim(),
         urgency,
-        requiresAcknowledgement,
+        isPinned,
         recipientPlayerIds,
       });
 
@@ -116,15 +116,15 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
               required
             />
 
-            {/* Body */}
+            {/* Content */}
             <div>
-              <label htmlFor="caf-body" className="text-sm font-medium text-warm-700 block mb-1.5">
+              <label htmlFor="caf-content" className="text-sm font-medium text-warm-700 block mb-1.5">
                 Message
               </label>
               <textarea
-                id="caf-body"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
+                id="caf-content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
                 rows={3}
                 required
                 className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 transition-colors resize-y min-h-[72px] max-h-[200px] text-sm"
@@ -142,27 +142,27 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
               onChange={setRecipientPlayerIds}
             />
 
-            {/* Acknowledgement toggle */}
+            {/* Pin toggle */}
             <motion.div
               whileHover={{ scale: 1.005 }}
               className="flex items-start gap-3 p-3.5 bg-warm-50/80 rounded-xl border border-warm-200/60 cursor-pointer"
-              onClick={() => setRequiresAcknowledgement(!requiresAcknowledgement)}
+              onClick={() => setIsPinned(!isPinned)}
             >
               <div className="pt-0.5">
-                <div className={`w-9 h-5 rounded-full transition-colors relative ${requiresAcknowledgement ? 'bg-primary-500' : 'bg-warm-300'}`}>
+                <div className={`w-9 h-5 rounded-full transition-colors relative ${isPinned ? 'bg-primary-500' : 'bg-warm-300'}`}>
                   <motion.div
                     className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
-                    animate={{ left: requiresAcknowledgement ? 18 : 2 }}
+                    animate={{ left: isPinned ? 18 : 2 }}
                     transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
                   />
                 </div>
               </div>
               <div>
                 <p className="text-sm font-medium text-warm-700">
-                  Require player acknowledgement
+                  Pin announcement
                 </p>
                 <p className="text-xs text-warm-500 mt-0.5">
-                  Players will need to confirm they&apos;ve read this announcement
+                  Pinned announcements appear at the top of the list
                 </p>
               </div>
             </motion.div>

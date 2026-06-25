@@ -514,6 +514,7 @@ export async function completePlayerOnboarding(
   }
 
   revalidatePath('/baseball');
+  revalidatePath('/baseball/player');
 
   return { success: true, redirectTo: '/baseball/dashboard' };
 }

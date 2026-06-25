@@ -125,24 +125,14 @@ export async function loadInsights(
       (SEVERITY_WEIGHT[b.severity] ?? -1) - (SEVERITY_WEIGHT[a.severity] ?? -1),
   );
 
-  return sorted.map((row) => ({
+  return sorted.map((row): DecisionRoomInsight => ({
     id: row.id,
-    teamId: row.team_id,
-    playerId: row.player_id,
-    type: row.signal_type,
-    category: row.category,
     title: row.title,
     body: row.body,
-    severity: row.severity,
-    sourceKind: row.source_kind,
-    confidence: row.confidence,
+    insightType: row.signal_type,
+    priority: row.severity,
     status: row.status,
-    disposition: row.disposition,
+    authorName: null,
     createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    // The canonical `DecisionRoomInsight` type is owned by the (separately
-    // authored) decision-room action module; this mapped object is cast to it
-    // so we never redefine the type here. If that type carries additional or
-    // differently named fields, the owning agent should reconcile the mapping.
-  })) as DecisionRoomInsight[];
+  }));
 }

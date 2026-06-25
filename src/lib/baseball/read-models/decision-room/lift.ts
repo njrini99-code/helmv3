@@ -19,7 +19,10 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { DecisionRoomLiftSummary } from '@/app/baseball/actions/decision-room';
+import type {
+  DecisionRoomLiftSummary,
+  DecisionRoomSummaryPlayer,
+} from '@/app/baseball/actions/decision-room';
 
 /**
  * Recent window (in days) over which lifting activity is summarized for the
@@ -27,7 +30,6 @@ import type { DecisionRoomLiftSummary } from '@/app/baseball/actions/decision-ro
  * trend comparison without depending on locale week boundaries.
  */
 const RECENT_WINDOW_DAYS = 14;
-const TREND_HALF_WINDOW_DAYS = 7;
 
 /**
  * Real `baseball_lift_sessions.status` vocabulary (verified against the prod
@@ -40,7 +42,6 @@ const TREND_HALF_WINDOW_DAYS = 7;
  */
 const COMPLIANT_STATUSES = ['completed', 'modified'] as const;
 const NONCOMPLIANT_STATUSES = ['missed'] as const;
-const EXCUSED_STATUSES = ['excused'] as const;
 
 type LiftSessionRow = {
   id: string;
@@ -48,14 +49,6 @@ type LiftSessionRow = {
   player_id: string;
   scheduled_date: string | null;
   status: string | null;
-  completed_at: string | null;
-};
-
-type LiftSetResultRow = {
-  team_id: string;
-  player_id: string;
-  actual_reps: number | null;
-  actual_load: number | null;
   completed_at: string | null;
 };
 
@@ -76,16 +69,6 @@ function isNonCompliant(status: string | null): boolean {
   return (NONCOMPLIANT_STATUSES as readonly string[]).includes(status.toLowerCase());
 }
 
-function isExcused(status: string | null): boolean {
-  if (!status) return false;
-  return (EXCUSED_STATUSES as readonly string[]).includes(status.toLowerCase());
-}
-
-function safePct(numerator: number, denominator: number): number {
-  if (denominator <= 0) return 0;
-  return Math.round((numerator / denominator) * 1000) / 10; // 1 decimal place
-}
-
 /**
  * Loads a team-scoped recent lifting summary (volume / compliance / trend).
  *
@@ -97,7 +80,6 @@ export async function loadLiftSummary(
   teamId: string,
 ): Promise<DecisionRoomLiftSummary> {
   const windowStart = isoDateNDaysAgo(RECENT_WINDOW_DAYS);
-  const trendBoundary = isoDateNDaysAgo(TREND_HALF_WINDOW_DAYS);
 
   // --- Sessions: compliance + scheduling within the recent window ----------
   const { data: sessionData, error: sessionError } = await supabase
@@ -116,80 +98,34 @@ export async function loadLiftSummary(
   const sessions = (sessionData ?? []) as LiftSessionRow[];
 
   const scheduledCount = sessions.length;
-  const completedSessions = sessions.filter((s) => isCompliant(s.status));
-  const completedCount = completedSessions.length;
-  const missedCount = sessions.filter((s) => isNonCompliant(s.status)).length;
-  const excusedCount = sessions.filter((s) => isExcused(s.status)).length;
+  const completedCount = sessions.filter((s) => isCompliant(s.status)).length;
 
-  // Compliance over DUE sessions (compliant + missed); excused are excluded
-  // from the denominator, and assigned/started (no final outcome) are too.
-  const dueCount = completedCount + missedCount;
-  const compliancePct = safePct(completedCount, dueCount);
-
-  const activePlayerIds = new Set(completedSessions.map((s) => s.player_id));
-
-  // Trend: compliant sessions in the most-recent half-window vs the prior one.
-  const recentHalf = completedSessions.filter(
-    (s) => (s.scheduled_date ?? '') >= trendBoundary,
-  ).length;
-  const priorHalf = completedCount - recentHalf;
-  const trendDirection: 'up' | 'down' | 'flat' =
-    recentHalf > priorHalf ? 'up' : recentHalf < priorHalf ? 'down' : 'flat';
-  const trendDelta = recentHalf - priorHalf;
-
-  // --- Volume: tonnage from logged set results within the recent window ----
-  const windowStartTs = `${windowStart}T00:00:00.000Z`;
-  const { data: setData, error: setError } = await supabase
-    .from('baseball_lift_set_results')
-    .select('team_id, player_id, actual_reps, actual_load, completed_at')
-    .eq('team_id', teamId)
-    .gte('completed_at', windowStartTs)
-    .limit(1000);
-
-  let totalVolume = 0;
-  let loggedSetCount = 0;
-  if (!setError && setData) {
-    for (const row of setData as LiftSetResultRow[]) {
-      const reps = row.actual_reps ?? 0;
-      const load = row.actual_load ?? 0;
-      if (reps > 0 && load > 0) {
-        totalVolume += reps * load;
-        loggedSetCount += 1;
-      }
+  // Build non-compliant player list: group missed sessions by player_id.
+  const missedByPlayer = new Map<string, number>();
+  for (const s of sessions) {
+    if (isNonCompliant(s.status)) {
+      missedByPlayer.set(s.player_id, (missedByPlayer.get(s.player_id) ?? 0) + 1);
     }
   }
+  const nonCompliantPlayers: DecisionRoomSummaryPlayer[] = Array.from(
+    missedByPlayer.entries(),
+  ).map(([playerId, missed]) => ({
+    playerId,
+    playerName: null,
+    missedCount: missed,
+  }));
 
   return {
-    teamId,
-    windowStart,
-    windowDays: RECENT_WINDOW_DAYS,
-    scheduledSessions: scheduledCount,
-    completedSessions: completedCount,
-    missedSessions: missedCount,
-    excusedSessions: excusedCount,
-    compliancePct,
-    activePlayers: activePlayerIds.size,
-    totalVolume: Math.round(totalVolume),
-    loggedSets: loggedSetCount,
-    trendDirection,
-    trendDelta,
-  } as DecisionRoomLiftSummary;
+    scheduledCount,
+    completedCount,
+    nonCompliantPlayers,
+  } satisfies DecisionRoomLiftSummary;
 }
 
-function emptySummary(teamId: string, windowStart: string): DecisionRoomLiftSummary {
+function emptySummary(_teamId: string, _windowStart: string): DecisionRoomLiftSummary {
   return {
-    teamId,
-    windowStart,
-    windowDays: RECENT_WINDOW_DAYS,
-    scheduledSessions: 0,
-    completedSessions: 0,
-    missedSessions: 0,
-    excusedSessions: 0,
-    compliancePct: 0,
-    activePlayers: 0,
-    totalVolume: 0,
-    loggedSets: 0,
-    trendDirection: 'flat',
-    trendDelta: 0,
-  } as DecisionRoomLiftSummary;
+    scheduledCount: 0,
+    completedCount: 0,
+    nonCompliantPlayers: [],
+  } satisfies DecisionRoomLiftSummary;
 }

@@ -255,6 +255,7 @@ GRANT EXECUTE ON FUNCTION public.helm_lifting_is_my_athlete(uuid) TO service_rol
 ALTER TABLE public.helm_lifting_coaches ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS hlc_select ON public.helm_lifting_coaches;
+DROP POLICY IF EXISTS hlc_insert ON public.helm_lifting_coaches;
 DROP POLICY IF EXISTS hlc_update ON public.helm_lifting_coaches;
 DROP POLICY IF EXISTS hlc_delete ON public.helm_lifting_coaches;
 
@@ -265,6 +266,11 @@ CREATE POLICY hlc_select ON public.helm_lifting_coaches FOR SELECT TO authentica
     OR public.helm_lifting_can_view_org(organization_id, 'baseball')
     OR public.helm_lifting_can_view_org(organization_id, 'golf')
   );
+
+-- No client INSERT (seeded via accept RPC in service_role SECURITY DEFINER context);
+-- explicit deny makes the intent clear and catches any accidental direct-insert paths.
+CREATE POLICY hlc_insert ON public.helm_lifting_coaches FOR INSERT TO authenticated
+  WITH CHECK (false);
 
 -- A coach may update their OWN profile; no client INSERT (seeded via accept RPC)
 CREATE POLICY hlc_update ON public.helm_lifting_coaches FOR UPDATE TO authenticated
@@ -363,9 +369,12 @@ CREATE POLICY hlci_select ON public.helm_lifting_coach_invites FOR SELECT TO aut
     OR public.helm_lifting_coach_for_org(organization_id)
   );
 
--- HEAD coach inserts the invite via action (server-side validates they own a team in the org)
+-- HEAD coach inserts the invite; DB enforces both uid match and org membership (defense-in-depth).
 CREATE POLICY hlci_insert ON public.helm_lifting_coach_invites FOR INSERT TO authenticated
-  WITH CHECK (invited_by_user_id = auth.uid());
+  WITH CHECK (
+    invited_by_user_id = auth.uid()
+    AND public.helm_lifting_can_edit_org(organization_id)
+  );
 
 -- Status updates: inviting user may refresh/revoke; accept via definer RPC
 CREATE POLICY hlci_update ON public.helm_lifting_coach_invites FOR UPDATE TO authenticated

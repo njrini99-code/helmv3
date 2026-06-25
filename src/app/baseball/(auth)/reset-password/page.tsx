@@ -211,8 +211,10 @@ export default function ResetPasswordPage() {
           >
             {sessionValid === null ? (
               // Loading state while checking session
-              <div className="flex justify-center py-8">
-                <div className="animate-spin h-6 w-6 border-2 border-amber-600 border-t-transparent rounded-full" />
+              <div className="space-y-4 py-2" aria-busy="true" aria-label="Checking session">
+                <div className="h-11 w-full rounded-xl bg-warm-100/60 skeleton-shimmer" />
+                <div className="h-11 w-full rounded-xl bg-warm-100/60 skeleton-shimmer" />
+                <div className="h-11 w-full rounded-xl bg-warm-200/60 skeleton-shimmer" />
               </div>
             ) : sessionValid === false ? (
               // Invalid session state

@@ -5,25 +5,52 @@
 //
 // Wave 11 / packet: decision-room
 //
-// TYPED PLACEHOLDER backend for the Staff Decision Room + Staff Settings UIs.
+// Backend for the Staff Decision Room + Staff Settings UIs.
 //
-// These stubs exist so the Decision Room and Staff Settings surfaces COMPILE and
-// render HONEST EMPTY states ahead of the real DB pass. They define the accurate
-// shape the read/write API will take, return well-typed EMPTY/zero data, and
-// perform NO Supabase/DB work. Every body carries a `// TODO(db): ...` marker
-// pointing at the table(s) the real implementation will read/write.
+// Write mutations are fully wired to `baseball_meeting_items` (agenda CRUD) and
+// `baseball_decision_log` (append-only ledger). All writes are scoped to
+// ctx.targetTeamId — the server-resolved active team — and never trust a
+// client-supplied teamId.
 //
-// IMPORTANT: never fabricate rows. Empty arrays + zero counts only. The UI's
-// empty states are the intended render until the DB pass lands.
-//
-// SECURITY MODEL (to be enforced in the DB pass): every function here will run
-// through withBaseballAction with a requiredCapability (can_manage_settings for
-// the Decision Room read/writes; can_invite_staff for staff edits), resolving
-// auth + active-team context server-side. The placeholders are auth-free by
-// necessity (no DB) but the page.tsx entries already gate on auth.
+// SECURITY MODEL: every mutation runs through
+//   withBaseballAction({ requiredCapability: 'can_manage_settings' })
+// so auth + active-team context is resolved server-side before the body runs.
 // =============================================================================
 
+import { revalidatePath } from 'next/cache';
+
+import { createClient } from '@/lib/supabase/server';
+import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
+import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
+import { loadAgendaItems, loadDecisionLedger } from '@/lib/baseball/read-models/decision-room/agenda-ledger';
+import { loadInsights } from '@/lib/baseball/read-models/decision-room/insights';
+import { loadEffectivenessReviews } from '@/lib/baseball/read-models/decision-room/effectiveness';
+import { loadPlayerFocus, loadImportIssues } from '@/lib/baseball/read-models/decision-room/focus-imports';
+import { loadGameResults } from '@/lib/baseball/read-models/decision-room/games';
+import { loadAvailabilityConcerns, loadAttendanceSummary } from '@/lib/baseball/read-models/decision-room/readiness';
+import { loadLiftSummary } from '@/lib/baseball/read-models/decision-room/lift';
+import { loadOpenTasks, loadConflicts } from '@/lib/baseball/read-models/decision-room/tasks-conflicts';
+import { loadStaffSettings } from '@/lib/baseball/read-models/decision-room/staff-settings';
+import {
+  getBaseballMetricLabel,
+  getBaseballMetricUnit,
+  isBaseballMetricId,
+} from '@/lib/coachhelm/baseball/metrics/registry';
 import type { BaseballActionOutcomeVerdict } from '@/lib/types/baseball-coachhelm-v10';
+
+// -----------------------------------------------------------------------------
+// Loose Supabase client type — baseball_meeting_items and baseball_decision_log
+// are defined in unapplied migrations (shared prod DB). RLS still applies via
+// the authenticated client; this only loosens TS typing to allow .from() calls
+// on tables not yet in the generated DB types.
+// -----------------------------------------------------------------------------
+type LooseClient = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  from: (table: string) => any;
+};
+
+const DECISION_ROOM_PATH = '/baseball/dashboard/decision-room';
 
 // =============================================================================
 // DECISION ROOM — TYPES
@@ -232,138 +259,430 @@ export interface DecisionRoomMutationResult {
 }
 
 // =============================================================================
-// DECISION ROOM — READ (placeholder: honest-empty)
+// DECISION ROOM — READ
 // =============================================================================
 
-const EMPTY_ATTENDANCE_SUMMARY: DecisionRoomAttendanceSummary = {
-  totalPractices: 0,
-  totalAttended: 0,
-  totalMissed: 0,
-  concernedPlayers: [],
-};
+// -----------------------------------------------------------------------------
+// loadActionOutcomes — read model for "did-it-move" action outcome rows.
+//
+// Queries baseball_actions with outcome_metric set, joins baseball_players for
+// playerName, and maps metric ids to display labels/units via the registry.
+// An action is `measured` when outcome_observed_value is non-null.
+// -----------------------------------------------------------------------------
 
-const EMPTY_LIFT_SUMMARY: DecisionRoomLiftSummary = {
-  scheduledCount: 0,
-  completedCount: 0,
-  nonCompliantPlayers: [],
-};
+interface ActionOutcomeRow {
+  id: string;
+  title: string | null;
+  player_id: string | null;
+  outcome_metric: string | null;
+  outcome_baseline_value: number | null;
+  outcome_observed_value: number | null;
+  outcome_sample_n: number | null;
+  outcome_verdict: string | null;
+  baseball_players: {
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
+}
+
+async function loadActionOutcomes(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: { from: (table: string) => any },
+  teamId: string,
+): Promise<DecisionRoomActionOutcome[]> {
+  const { data, error } = await supabase
+    .from('baseball_actions')
+    .select(
+      `id, title, player_id,
+       outcome_metric, outcome_baseline_value, outcome_observed_value,
+       outcome_sample_n, outcome_verdict,
+       baseball_players:player_id ( first_name, last_name )`,
+    )
+    .eq('team_id', teamId)
+    .not('outcome_metric', 'is', null)
+    .in('status', ['open', 'in_progress', 'completed'])
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) return [];
+
+  return ((data ?? []) as unknown as ActionOutcomeRow[]).map((row) => {
+    const metric = row.outcome_metric ?? '';
+    const metricLabel = isBaseballMetricId(metric)
+      ? getBaseballMetricLabel(metric)
+      : metric || null;
+    const unit = isBaseballMetricId(metric)
+      ? getBaseballMetricUnit(metric)
+      : null;
+    const player = row.baseball_players;
+    const nameParts = [player?.first_name, player?.last_name].filter(
+      (p): p is string => Boolean(p && p.trim()),
+    );
+    const playerName = nameParts.length > 0 ? nameParts.join(' ') : null;
+    return {
+      id: row.id,
+      title: row.title ?? metric,
+      playerName,
+      metricLabel,
+      unit,
+      baselineValue: row.outcome_baseline_value ?? null,
+      observedValue: row.outcome_observed_value ?? null,
+      sampleN: row.outcome_sample_n ?? null,
+      measured: row.outcome_observed_value != null,
+      verdict: (row.outcome_verdict ?? null) as BaseballActionOutcomeVerdict | null,
+    };
+  });
+}
 
 /**
  * Resolve the Staff Decision Room read model for the viewer's active team.
  *
- * PLACEHOLDER: returns a fully-typed EMPTY workspace so the surface renders its
- * honest empty states. No rows are fabricated.
+ * Gated via withBaseballAction(requiredCapability:'can_manage_settings').
+ * Fans out to all read models in parallel via Promise.all, then assembles
+ * the DecisionRoomData shape. All reads are scoped to the server-resolved
+ * active teamId — the client never supplies the team.
  *
- * TODO(db): wire to baseball_meeting_items (agenda + status), baseball_signals
- * (open-signal agenda + import-quality issues), baseball_coach_insights
- * (insights), baseball_decision_ledger (ledger), baseball_action_outcomes
- * (did-it-move), baseball_games (recent results), baseball_player_availability
- * (availability), baseball_practice_attendance + baseball_lift_sessions
- * (attendance/lift summaries), baseball_tasks (open tasks), and the class/travel
- * conflict engine (conflicts). Gate via withBaseballAction(requiredCapability:
- * 'can_manage_settings').
+ * Readiness / availability data is gated on can_view_readiness so a staff
+ * member who holds can_manage_settings but NOT can_view_readiness receives
+ * honest empty arrays for those sections (mirrors the performance/live pages).
  */
 export async function getDecisionRoomData(): Promise<DecisionRoomData> {
-  return {
-    agenda: [],
-    insights: [],
-    ledger: [],
-    playersToDiscuss: [],
-    importIssues: [],
-    effectivenessReviews: [],
-    actionOutcomes: [],
-    recentGameResults: [],
-    availabilityConcerns: [],
-    attendanceSummary: EMPTY_ATTENDANCE_SUMMARY,
-    liftSummary: EMPTY_LIFT_SUMMARY,
-    openTasks: [],
-    conflicts: [],
-    staffCount: 0,
-    decisionCount: 0,
-    openAgendaCount: 0,
-    openInsightCount: 0,
-    outcomeMovedCount: 0,
-  };
+  const inner = withBaseballAction(
+    'getDecisionRoomData',
+    {
+      featureArea: 'baseball-decision-room',
+      requiredCapability: 'can_manage_settings',
+    },
+    async (ctx): Promise<DecisionRoomData> => {
+      const supabase = await createClient();
+      const teamId = ctx.targetTeamId;
+
+      // Resolve the caller's full capability map so we can conditionally gate
+      // readiness/availability data (can_view_readiness) independently of the
+      // can_manage_settings gate that admitted this caller.
+      const caps = await resolveBaseballCapabilities(teamId);
+      const canViewReadiness = caps.can_view_readiness || caps.is_head_coach;
+
+      // Honest empty values returned when the caller lacks can_view_readiness.
+      const EMPTY_AVAILABILITY: DecisionRoomAvailabilityConcern[] = [];
+      const EMPTY_ATTENDANCE: DecisionRoomAttendanceSummary = {
+        totalPractices: 0,
+        totalAttended: 0,
+        totalMissed: 0,
+        concernedPlayers: [],
+      };
+
+      const [
+        agenda,
+        ledger,
+        insights,
+        effectivenessReviews,
+        playersToDiscuss,
+        importIssues,
+        recentGameResults,
+        availabilityConcerns,
+        attendanceSummary,
+        liftSummary,
+        openTasks,
+        conflicts,
+        staffSettingsData,
+        actionOutcomes,
+      ] = await Promise.all([
+        loadAgendaItems(supabase, teamId),
+        loadDecisionLedger(supabase, teamId),
+        loadInsights(supabase, teamId),
+        loadEffectivenessReviews(supabase, teamId),
+        loadPlayerFocus(supabase, teamId),
+        loadImportIssues(supabase, teamId),
+        loadGameResults(supabase, teamId),
+        canViewReadiness
+          ? loadAvailabilityConcerns(supabase, teamId)
+          : Promise.resolve(EMPTY_AVAILABILITY),
+        canViewReadiness
+          ? loadAttendanceSummary(supabase, teamId)
+          : Promise.resolve(EMPTY_ATTENDANCE),
+        loadLiftSummary(supabase, teamId),
+        loadOpenTasks(supabase, teamId),
+        loadConflicts(supabase, teamId),
+        loadStaffSettings(supabase, teamId),
+        loadActionOutcomes(supabase, teamId),
+      ]);
+
+      const openAgendaCount = agenda.filter(
+        (item) => item.status === 'open',
+      ).length;
+      const openInsightCount = insights.filter(
+        (i) => i.status !== 'resolved' && i.status !== 'dismissed',
+      ).length;
+
+      const staffCount = staffSettingsData.staff.filter(
+        (s) => s.status !== 'removed',
+      ).length;
+
+      const outcomeMovedCount = actionOutcomes.filter(
+        (o) => o.verdict === 'improved',
+      ).length;
+
+      return {
+        agenda,
+        insights,
+        ledger,
+        playersToDiscuss,
+        importIssues,
+        effectivenessReviews,
+        actionOutcomes,
+        recentGameResults,
+        availabilityConcerns,
+        attendanceSummary,
+        liftSummary,
+        openTasks,
+        conflicts,
+        staffCount,
+        decisionCount: ledger.length,
+        openAgendaCount,
+        openInsightCount,
+        outcomeMovedCount,
+      };
+    },
+  );
+
+  return inner();
 }
 
 // =============================================================================
-// DECISION ROOM — WRITES (placeholder: no-op, honest failure)
+// DECISION ROOM — WRITES (real DB implementations)
 //
-// Each returns a typed mutation result. Until the DB pass wires the real writes,
-// they report `success: false` with a clear message so the UI never claims a
-// decision was persisted when nothing was written.
+// All five mutations:
+//   - run inside withBaseballAction({ requiredCapability: 'can_manage_settings' })
+//   - scope every write to ctx.targetTeamId (server-resolved, never from client)
+//   - call revalidatePath(DECISION_ROOM_PATH) after a successful write
 // =============================================================================
-
-const NOT_WIRED = 'Decision Room persistence is not enabled yet.';
-
-/**
- * Record a free-text decision note threaded to a subject (signal or meeting item).
- *
- * TODO(db): insert into baseball_decision_ledger (kind:'note') linked to
- * subjectTable/subjectId + optional sourceSignalId/playerId; gate on
- * can_manage_settings.
- */
-export async function recordDecisionNote(_args: {
-  title: string;
-  note: string;
-  subjectTable: string;
-  subjectId: string;
-  sourceSignalId: string | null;
-  playerId: string | null;
-}): Promise<DecisionRoomMutationResult> {
-  return { success: false, error: NOT_WIRED };
-}
 
 /**
  * Mark a meeting agenda item as discussed.
- *
- * TODO(db): update baseball_meeting_items.status -> 'discussed' for itemId and
- * append a 'discussed' ledger entry; gate on can_manage_settings.
+ * Updates baseball_meeting_items.status -> 'discussed' and records discussed_at
+ * / discussed_by. Also appends a 'discussed' entry to baseball_decision_log.
  */
-export async function markMeetingItemDiscussed(
-  _itemId: string,
-): Promise<DecisionRoomMutationResult> {
-  return { success: false, error: NOT_WIRED };
-}
+export const markMeetingItemDiscussed = withBaseballAction(
+  'markMeetingItemDiscussed',
+  {
+    featureArea: 'baseball-decision-room',
+    requiredCapability: 'can_manage_settings',
+  },
+  async (ctx, itemId: string): Promise<DecisionRoomMutationResult> => {
+    const supabase = (await createClient()) as unknown as LooseClient;
+
+    const { error: updateErr } = await supabase
+      .from('baseball_meeting_items')
+      .update({
+        status: 'discussed',
+        discussed_at: new Date().toISOString(),
+        discussed_by: ctx.user.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', itemId)
+      .eq('team_id', ctx.targetTeamId);
+
+    if (updateErr) {
+      return { success: false, error: updateErr.message };
+    }
+
+    const { error: logErr } = await supabase.from('baseball_decision_log').insert({
+      team_id: ctx.targetTeamId,
+      decision_kind: 'discussed',
+      title: 'Item marked as discussed',
+      subject_table: 'baseball_meeting_items',
+      subject_id: itemId,
+      decided_by: ctx.user.id,
+    });
+
+    if (logErr) {
+      return { success: false, error: logErr.message };
+    }
+
+    revalidatePath(DECISION_ROOM_PATH);
+    return { success: true };
+  },
+);
 
 /**
- * Reopen a previously-discussed/resolved meeting item.
- *
- * TODO(db): update baseball_meeting_items.status -> 'open' for itemId and append
- * a 'reopened' ledger entry; gate on can_manage_settings.
+ * Reopen a previously-discussed or resolved meeting item.
+ * Resets baseball_meeting_items.status -> 'open' and appends a 'reopened' ledger entry.
  */
-export async function reopenMeetingItem(
-  _itemId: string,
-): Promise<DecisionRoomMutationResult> {
-  return { success: false, error: NOT_WIRED };
-}
+export const reopenMeetingItem = withBaseballAction(
+  'reopenMeetingItem',
+  {
+    featureArea: 'baseball-decision-room',
+    requiredCapability: 'can_manage_settings',
+  },
+  async (ctx, itemId: string): Promise<DecisionRoomMutationResult> => {
+    const supabase = (await createClient()) as unknown as LooseClient;
+
+    const { error: updateErr } = await supabase
+      .from('baseball_meeting_items')
+      .update({
+        status: 'open',
+        discussed_at: null,
+        discussed_by: null,
+        resolution: null,
+        resolved_at: null,
+        resolved_by: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', itemId)
+      .eq('team_id', ctx.targetTeamId);
+
+    if (updateErr) {
+      return { success: false, error: updateErr.message };
+    }
+
+    const { error: logErr } = await supabase.from('baseball_decision_log').insert({
+      team_id: ctx.targetTeamId,
+      decision_kind: 'reopened',
+      title: 'Item reopened for discussion',
+      subject_table: 'baseball_meeting_items',
+      subject_id: itemId,
+      decided_by: ctx.user.id,
+    });
+
+    if (logErr) {
+      return { success: false, error: logErr.message };
+    }
+
+    revalidatePath(DECISION_ROOM_PATH);
+    return { success: true };
+  },
+);
 
 /**
  * Resolve a meeting item with a resolution note.
- *
- * TODO(db): update baseball_meeting_items (status:'resolved', resolution) and
- * append a 'resolved' ledger entry threaded to its evidence; gate on
- * can_manage_settings.
+ * Updates baseball_meeting_items to status='resolved' with the resolution text,
+ * then appends a 'resolved' ledger entry.
  */
-export async function resolveMeetingItem(_args: {
-  itemId: string;
-  resolution: string;
-}): Promise<DecisionRoomMutationResult> {
-  return { success: false, error: NOT_WIRED };
-}
+export const resolveMeetingItem = withBaseballAction(
+  'resolveMeetingItem',
+  {
+    featureArea: 'baseball-decision-room',
+    requiredCapability: 'can_manage_settings',
+  },
+  async (
+    ctx,
+    args: { itemId: string; resolution: string },
+  ): Promise<DecisionRoomMutationResult> => {
+    const supabase = (await createClient()) as unknown as LooseClient;
+    const now = new Date().toISOString();
+
+    const { error: updateErr } = await supabase
+      .from('baseball_meeting_items')
+      .update({
+        status: 'resolved',
+        resolution: args.resolution,
+        resolved_at: now,
+        resolved_by: ctx.user.id,
+        updated_at: now,
+      })
+      .eq('id', args.itemId)
+      .eq('team_id', ctx.targetTeamId);
+
+    if (updateErr) {
+      return { success: false, error: updateErr.message };
+    }
+
+    const { error: logErr } = await supabase.from('baseball_decision_log').insert({
+      team_id: ctx.targetTeamId,
+      decision_kind: 'resolved',
+      title: 'Item resolved',
+      detail: args.resolution,
+      subject_table: 'baseball_meeting_items',
+      subject_id: args.itemId,
+      decided_by: ctx.user.id,
+    });
+
+    if (logErr) {
+      return { success: false, error: logErr.message };
+    }
+
+    revalidatePath(DECISION_ROOM_PATH);
+    return { success: true };
+  },
+);
 
 /**
  * Create a new staff-authored agenda item.
- *
- * TODO(db): insert into baseball_meeting_items (title, detail, status:'open')
- * for the active team; gate on can_manage_settings.
+ * Inserts into baseball_meeting_items with status='open' scoped to the active team.
  */
-export async function createMeetingItem(_args: {
-  title: string;
-  detail: string | null;
-}): Promise<DecisionRoomMutationResult> {
-  return { success: false, error: NOT_WIRED };
-}
+export const createMeetingItem = withBaseballAction(
+  'createMeetingItem',
+  {
+    featureArea: 'baseball-decision-room',
+    requiredCapability: 'can_manage_settings',
+  },
+  async (
+    ctx,
+    args: { title: string; detail: string | null },
+  ): Promise<DecisionRoomMutationResult> => {
+    const supabase = (await createClient()) as unknown as LooseClient;
+
+    const { error } = await supabase.from('baseball_meeting_items').insert({
+      team_id: ctx.targetTeamId,
+      title: args.title,
+      detail: args.detail ?? null,
+      status: 'open',
+      created_by: ctx.user.id,
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath(DECISION_ROOM_PATH);
+    return { success: true };
+  },
+);
+
+/**
+ * Record a free-text decision note threaded to a subject (signal or meeting item).
+ * Inserts into baseball_decision_log with decision_kind='note'.
+ */
+export const recordDecisionNote = withBaseballAction(
+  'recordDecisionNote',
+  {
+    featureArea: 'baseball-decision-room',
+    requiredCapability: 'can_manage_settings',
+  },
+  async (
+    ctx,
+    args: {
+      title: string;
+      note: string;
+      subjectTable: string;
+      subjectId: string;
+      sourceSignalId: string | null;
+      playerId: string | null;
+    },
+  ): Promise<DecisionRoomMutationResult> => {
+    const supabase = (await createClient()) as unknown as LooseClient;
+
+    const { error } = await supabase.from('baseball_decision_log').insert({
+      team_id: ctx.targetTeamId,
+      decision_kind: 'note',
+      title: args.title,
+      detail: args.note,
+      subject_table: args.subjectTable,
+      subject_id: args.subjectId,
+      source_signal_id: args.sourceSignalId ?? null,
+      player_id: args.playerId ?? null,
+      decided_by: ctx.user.id,
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath(DECISION_ROOM_PATH);
+    return { success: true };
+  },
+);
 
 // =============================================================================
 // STAFF SETTINGS — TYPES
@@ -383,6 +702,22 @@ export interface StaffMemberView {
   isHeadCoach: boolean;
   /** capability_key -> granted. */
   capabilities: Record<string, boolean>;
+  /** The underlying baseball_coaches.id for this staff member (null for invited-but-not-joined). */
+  coachId: string | null;
+  /** Avatar / profile photo URL from the coach's profile, if set. */
+  avatarUrl: string | null;
+  /** Whether this staff member is visible on player-facing roster views. */
+  visibleToPlayers: boolean;
+  /** Optional bio shown on player-facing profile. */
+  bio: string | null;
+  /** Contact phone shown to players (when visibility allows). */
+  phone: string | null;
+  /** When non-empty, restricts this staff member's view to these player ids. */
+  scopePlayerIds: string[];
+  /** When non-empty, restricts this staff member's view to these group ids. */
+  scopeGroupIds: string[];
+  /** ISO timestamp when this staff record was created. */
+  createdAt: string | null;
 }
 
 /** A pending/used staff invitation. */
@@ -400,6 +735,10 @@ export interface StaffInvitationView {
   expiresAt: string;
   isExpired: boolean;
   invitedByName: string | null;
+  /** ISO timestamp when the invitee accepted the invitation (null while pending/revoked). */
+  acceptedAt?: string | null;
+  /** ISO timestamp when the invitation was created. */
+  createdAt?: string;
 }
 
 /** The full Staff Settings read model rendered by StaffSettingsClient. */
@@ -411,25 +750,22 @@ export interface StaffSettingsData {
 }
 
 // =============================================================================
-// STAFF SETTINGS — READ (placeholder: honest-empty)
+// STAFF SETTINGS — READ
 // =============================================================================
 
 /**
  * Resolve the Staff Settings read model for the viewer's active team.
  *
- * PLACEHOLDER: returns an EMPTY roster + no invitations and canManageStaff:false
- * so the surface renders its honest empty state without claiming any staff exist.
- *
- * TODO(db): wire to baseball_team_coach_staff (roster + per-member capabilities +
- * primary/head flags), baseball_staff_invitations (pending/used invites), and
- * resolve the viewer's own can_invite_staff/is_head_coach to set canManageStaff.
- * Gate via withBaseballAction(requiredCapability:'can_invite_staff') for the
- * editable surface (read is allowed for any staffer).
+ * Resolves the authenticated server client and the active teamId via
+ * getActiveBaseballContext(), then delegates entirely to loadStaffSettings.
+ * Returns an honest empty result when the user is unauthenticated or has no
+ * active baseball context — never fabricated rows.
  */
 export async function getStaffSettingsData(): Promise<StaffSettingsData> {
-  return {
-    staff: [],
-    invitations: [],
-    canManageStaff: false,
-  };
+  const supabase = await createClient();
+  const context = await getActiveBaseballContext();
+  if (!context) {
+    return { staff: [], invitations: [], canManageStaff: false };
+  }
+  return loadStaffSettings(supabase, context.activeTeamId);
 }

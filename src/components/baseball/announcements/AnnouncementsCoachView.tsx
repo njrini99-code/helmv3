@@ -38,10 +38,37 @@ const urgencyBadgeColors: Record<string, { bg: string; text: string }> = {
 
 interface AnnouncementsCoachViewProps {
   announcements: BaseballAnnouncementMeta[];
+  loading?: boolean;
 }
 
-export function AnnouncementsCoachView({ announcements }: AnnouncementsCoachViewProps) {
+function AnnouncementSkeleton() {
+  return (
+    <div className="glass-standard rounded-2xl border-l-[3px] border-l-warm-200 overflow-clip animate-pulse">
+      <div className="px-5 py-4 flex items-start gap-4">
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="h-4 bg-warm-100 rounded w-3/5" />
+          <div className="h-3 bg-warm-100 rounded w-4/5" />
+          <div className="h-3 bg-warm-100 rounded w-2/5" />
+        </div>
+        <div className="h-4 w-4 bg-warm-100 rounded flex-shrink-0 mt-1" />
+      </div>
+    </div>
+  );
+}
+
+export function AnnouncementsCoachView({ announcements, loading = false }: AnnouncementsCoachViewProps) {
   const prefersReducedMotion = useReducedMotion();
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <AnnouncementSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       variants={containerVariants}
@@ -107,15 +134,20 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
           className="w-full justify-start text-left px-5 py-4 flex items-start gap-4 min-h-0 rounded-none hover:bg-warm-50/50 focus-visible:ring-inset"
         >
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h3 className="text-sm font-semibold text-warm-900 truncate">{ann.title}</h3>
-              {isRecent && (
+              {ann.is_pinned && (
                 <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
+                  Pinned
+                </span>
+              )}
+              {isRecent && (
+                <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-warm-100 text-warm-600 flex-shrink-0">
                   New
                 </span>
               )}
             </div>
-            <p className="text-sm text-warm-500 line-clamp-2">{ann.body}</p>
+            <p className="text-sm text-warm-500 line-clamp-2">{ann.content}</p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className="text-xs text-warm-400">{publishedDate}</span>
               <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
@@ -132,7 +164,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
                   All team
                 </span>
               )}
-              {ann.requires_acknowledgement && (
+              {ann.acknowledged_count > 0 && (
                 <AcknowledgementPill count={ann.acknowledged_count} total={ann.total_recipients} />
               )}
             </div>
@@ -158,11 +190,11 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
             >
               <div className="px-5 pb-4 border-t border-warm-100">
                 <div className="pt-4 space-y-4">
-                  {/* Full body */}
-                  <p className="text-sm text-warm-700 whitespace-pre-wrap">{ann.body}</p>
+                  {/* Full content */}
+                  <p className="text-sm text-warm-700 whitespace-pre-wrap">{ann.content}</p>
 
                   {/* Acknowledgements progress */}
-                  {ann.requires_acknowledgement && (
+                  {ann.acknowledged_count > 0 && (
                     <div>
                       <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">
                         Acknowledgements ({ann.acknowledged_count}/{ann.total_recipients})

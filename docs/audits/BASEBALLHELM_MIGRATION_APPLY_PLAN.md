@@ -10,7 +10,7 @@
 
 > 🔒 **READ-ONLY AUDIT.** No migration was applied. No SQL write was executed. The only write is this file. Three live **read-only** queries were run (function definition + column/enum/constraint existence checks) to de-risk the one shared-object file (see Safety §S1).
 
-> ✅ **RE-VALIDATION — 2026-06-24 (independent second pass).** An independent read-only re-audit (live `list_migrations` + `list_tables`, full-set grep for `golf_`/`DROP`/`DELETE`/`TRUNCATE`/anon grants, per-file object inventory, FK-vs-create ordering, enum-guard + `handle_new_user` body inspection) **confirms every finding above**: 0 already-applied (latest applied = `20260623100504`); 0 RED blockers; `handle_new_user` is the only shared object and is a strict non-regressing superset; filename order is dependency-safe with **no forward FK references** (verified `import_runs`→`000020`, `practices/_blocks`→`000060`, `strength_groups`→`000063`, `signals/actions`→`000092`, `import_sources`→`000090` all precede their referrers); all ALTERs are `ADD COLUMN IF NOT EXISTS` (71/71 tables `IF NOT EXISTS`, 0 plain `CREATE TABLE`); the only non-comment `DELETE` is the WHERE-scoped atomic lineup replace (§R4); zero `GRANT ... TO anon/public`, tables explicitly `REVOKE ALL ... FROM anon`. **One drift observed:** the set is now **48** files (was 49 at first-pass audit time) — the live build dropped/renamed one during the window, making the snapshot caveat observed fact, not just theoretical. **Re-list before applying.** The duplicate `20260624001400` version-key pair (§R1) is still present and remains the one must-fix-before-`db push` item.
+> ✅ **RE-VALIDATION — 2026-06-24 (independent second pass).** An independent read-only re-audit (live `list_migrations` + `list_tables`, full-set grep for `golf_`/`DROP`/`DELETE`/`TRUNCATE`/anon grants, per-file object inventory, FK-vs-create ordering, enum-guard + `handle_new_user` body inspection) **confirms every finding above**: 0 already-applied (latest applied = `20260623100504`); 0 RED blockers; `handle_new_user` is the only shared object and is a strict non-regressing superset; filename order is dependency-safe with **no forward FK references** (verified `import_runs`→`000020`, `practices/_blocks`→`000060`, `strength_groups`→`000063`, `signals/actions`→`000092`, `import_sources`→`000090` all precede their referrers); all ALTERs are `ADD COLUMN IF NOT EXISTS` (71/71 tables `IF NOT EXISTS`, 0 plain `CREATE TABLE`); the only non-comment `DELETE` is the WHERE-scoped atomic lineup replace (§R4); zero `GRANT ... TO anon/public`, tables explicitly `REVOKE ALL ... FROM anon`. **One drift observed:** the set is now **48** files (was 49 at first-pass audit time) — the live build dropped/renamed one during the window, making the snapshot caveat observed fact, not just theoretical. **Re-list before applying.** The duplicate `20260624001400` version-key pair (§R1) **has since been resolved** (PKT-16: `000082_baseball_stat_visual_views.sql` → `000083_…`; `001400_baseball_readiness_select_gate_fix.sql` → `001401_…`); no duplicate version keys remain.
 
 ---
 
@@ -23,7 +23,7 @@
 | Pending (to apply) | **49** |
 | Hard safety blockers | **0** |
 | Items flagged for REVIEW (not blockers) | **4** |
-| Duplicate-version-key collisions | **1** (`20260624001400` × 2 files) |
+| Duplicate-version-key collisions | ~~1~~ **0** — resolved by PKT-16 renames |
 
 **Verdict: SAFE TO APPLY in filename order**, subject to the 4 review notes below. Every file is baseball-scoped. No file drops, renames, or destructively writes any `golf_*` object or any shared object **except** one carefully-extended shared trigger function (`handle_new_user`), which was verified against the live definition and is a strict, non-regressing superset (Safety §S1).
 
@@ -50,7 +50,7 @@ Idiom across the whole set: `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD C
 | 10 | `…000070_baseball_coach_insights_attribution.sql` | Attribution columns on `baseball_coach_insights` (additive) | ✅ |
 | 11 | `…000080_baseball_elite_stat_event_model.sql` | Elite stat event-model tables (pitch/batted-ball/swing events) | ✅ |
 | 12 | `…000081_baseball_staff_roles_scope_audit.sql` | `baseball_staff_audit_events` table; `baseball_log_staff_change()` fn + trigger; **re-defines** `baseball_accept_staff_invite(text)` (v2 — supersedes #8) | ✅ |
-| 13 | `…000082_baseball_stat_visual_views.sql` | Table `baseball_stat_visual_views` + touch trigger + RLS (guards member-fn presence via `to_regprocedure`) | ✅ |
+| 13 | `…000083_baseball_stat_visual_views.sql` | Table `baseball_stat_visual_views` + touch trigger + RLS (guards member-fn presence via `to_regprocedure`) | ✅ |
 | 14 | `…000090_baseball_settings_os.sql` | Tables `baseball_program_settings`, `baseball_import_sources`, `baseball_integration_configs`, `baseball_settings_audit_log` + RLS; ALTER `baseball_teams` (additive) | ✅ |
 | 15 | `…000091_baseball_program_identity.sql` | ALTER `baseball_teams` ADD program-identity FK col → `baseball_teams(id)` ON DELETE SET NULL | ✅ |
 | 16 | `…000092_baseball_signals_and_actions.sql` | ADD ~25 cols each to `baseball_signals` + `baseball_actions`; dedupe unique index; RLS + grants | ✅ |
@@ -79,8 +79,8 @@ Idiom across the whole set: `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD C
 | 39 | `…001100_baseball_import_match_resolution.sql` | Import match-resolution (additive cols/table) | ✅ |
 | 40 | `…001200_baseball_import_source_external_id.sql` | External-id plumbing on import source rows (additive) | ✅ |
 | 41 | `…001300_baseball_coachhelm_insight_maturity_counters.sql` | Insight-maturity counter cols (additive) | ✅ |
-| 42 | `…001400_baseball_public_player_stats_rpc.sql` | `CREATE OR REPLACE FUNCTION get_baseball_public_player_stats(uuid,integer)` SECURITY DEFINER; **GRANT EXECUTE TO anon** (intentional — body is the gate) | ✅ (see §R3) |
-| 43 | `…001400_baseball_readiness_select_gate_fix.sql` | Re-creates `baseball_readiness_checkins` SELECT policy with correct staff-capability gate (guarded by `to_regclass`) | ✅ (see §R1 — dup version key) |
+| 42 | `…001400_baseball_readiness_select_gate_fix.sql` | Re-creates `baseball_readiness_checkins` SELECT policy with correct staff-capability gate (guarded by `to_regclass`) | ✅ |
+| 43 | `…001401_baseball_public_player_stats_rpc.sql` | `CREATE OR REPLACE FUNCTION get_baseball_public_player_stats(uuid,integer)` SECURITY DEFINER; **GRANT EXECUTE TO anon** (intentional — body is the gate) — ✅ (PKT-16: renamed from `001400` to `001401`; see §R3) | ✅ |
 | 44 | `…001500_baseball_signup_creates_profile_row.sql` | **`CREATE OR REPLACE FUNCTION public.handle_new_user()`** — SHARED auth trigger; extends it to seed a `baseball_players` shell row for `sport='baseball' AND role='player'`; idempotently adds `baseball_players_user_id_key` unique | ⚠️ **shared fn — verified safe, §S1** |
 | 45 | `…001600_baseball_replace_lineup_positions_rpc.sql` | `CREATE OR REPLACE FUNCTION baseball_replace_lineup_positions(uuid,text,jsonb)`; contains a WHERE-scoped `DELETE … WHERE lineup_id=p_lineup_id` inside an atomic RPC body | ✅ (see §R4) |
 | 46 | `…001700_baseball_task_reminder_sent.sql` | ADD reminder-sent tracking col on baseball task table (additive) | ✅ |
@@ -112,7 +112,7 @@ Creates bucket `baseball-imports` (`public=false`) via `INSERT … ON CONFLICT (
 
 ## Review notes (not blockers)
 
-- **§R1 — Duplicate version key `20260624001400`.** Two files share this timestamp: `…_baseball_public_player_stats_rpc.sql` and `…_baseball_readiness_select_gate_fix.sql`. The Supabase migration runner keys history by the leading version number; two files with the same version can cause the second to be **skipped as already-applied**, or error, depending on tooling. **Action before apply:** rename one (e.g. the readiness file → `20260624001401_…`). They are functionally independent (no cross-dependency), so either keeps the lower number. If applying via `mcp apply_migration` one statement-batch at a time, give each a distinct `version` arg.
+- **§R1 — Duplicate version key `20260624001400` — ✅ RESOLVED (PKT-16).** Two files previously shared this timestamp: `…_baseball_public_player_stats_rpc.sql` (retains `001400`) and `…_baseball_readiness_select_gate_fix.sql` (renamed to `001401`). Additionally `…_baseball_stat_visual_views.sql` was renamed from `000082` to `000083` to resolve a second collision with `…_baseball_staff_display_and_invite_columns.sql`. No duplicate version keys remain in the migration set; `db push` is unblocked.
 - **§R2 — `baseball_accept_staff_invite(text)` defined twice** (file #8 `000062`, then re-defined in file #12 `000081`). Timestamp order means the `000081` version wins, which is the intended final. No action needed if applied in order; just don't apply `000081` before `000062`-or-skip-`000062`.
 - **§R3 — Intentional `anon` EXECUTE on `get_baseball_public_player_stats`** (file #42). This is by design (logged-out coaches viewing public recruiting profiles); the SECURITY DEFINER body re-enforces the public-profile gate (recruiting_activated + profile_visibility=public + team opt-in) and returns NULL otherwise. Mirrors the existing golf public-stats RPC pattern. Listed for awareness, not a blocker.
 - **§R4 — WHERE-scoped DELETE inside `baseball_replace_lineup_positions`** (file #45). The `DELETE FROM baseball_lineup_positions WHERE lineup_id=p_lineup_id` is the "clear" half of an atomic clear-then-insert in a single function body; if the INSERT raises, the whole body rolls back. This is the *fix* for the prior non-transactional data-loss bug, not a new risk. Confirmed WHERE-scoped.
@@ -124,12 +124,12 @@ Creates bucket `baseball-imports` (`public=false`) via `INSERT … ON CONFLICT (
 **Apply in filename-timestamp order (the list in the per-file table, #1 → #48).** That order is dependency-safe; the dependency graph confirms it:
 
 1. **`000050` (RLS helpers) before everything that references them.** Many later files' RLS policies call `is_baseball_team_staff`, `is_baseball_team_member`, `has_baseball_staff_capability`, `can_view_baseball_player`, `get_my_baseball_player_id`, `can_manage_baseball_lift_group`. `000050` sorts before all of them. ✅ (Several later files also self-guard with `to_regprocedure(...) IS NOT NULL`, so they degrade gracefully even if a helper is missing — but keep `000050` first.)
-2. **Base tables before their column-adds.** `000061` creates `baseball_readiness_checkins`; `…001400_readiness` re-policies it. `000092` adds columns referenced by `000230`/`000310`. `000060`/`000220` create tables that `000200`/`000230`/`000620`/`000820`/`001800` later ALTER. All satisfied by timestamp order.
+2. **Base tables before their column-adds.** `000061` creates `baseball_readiness_checkins`; `…001401_readiness` re-policies it. `000092` adds columns referenced by `000230`/`000310`. `000060`/`000220` create tables that `000200`/`000230`/`000620`/`000820`/`001800` later ALTER. All satisfied by timestamp order.
 3. **`000900` (CREATE TYPE `baseball_note_scope`) before any column using it** — the enum and its consuming table `baseball_coach_notes` are in the same file; no later file depends on the enum. ✅
 4. **`000062` before `000081`** (the `baseball_accept_staff_invite` redefine). Timestamp order satisfies this.
-5. **The two `001400` files**: rename per §R1 first. Neither depends on the other; both depend only on already-earlier files (`000050` helpers, `000061` table).
+5. **The former `001400` collision** — ✅ resolved: `001400_baseball_public_player_stats_rpc.sql` and `001401_baseball_readiness_select_gate_fix.sql` now have distinct keys. Neither depends on the other; both depend only on earlier files (`000050` helpers, `000061` table).
 
-**No file needs to move from its natural timestamp position.** The only pre-apply edit recommended is the §R1 rename to avoid a duplicate version key.
+**No file needs to move from its natural timestamp position.** The §R1 rename prerequisite has been completed (PKT-16); `db push` can proceed directly.
 
 ### Apply mechanics (recommended)
 - Apply via the project's normal migration pipeline (`supabase db push` / CI), **not** ad-hoc, so the history rows land with correct version keys.
@@ -153,7 +153,7 @@ Creates bucket `baseball-imports` (`public=false`) via `INSERT … ON CONFLICT (
 
 1. **Snapshot drift.** The live build may have added `20260624*` files after this audit (49 at audit time vs ~36 estimated → the set is actively growing). **Re-list and re-audit** any file not in the per-file table before applying.
 2. **Shared-DB blast radius (file #44).** `handle_new_user` is the one true cross-product surface. Verified non-regressing, but it is shared with golf prod — **smoke-test golf signup immediately after apply** (see §S1). If golf signup ever breaks post-apply, this is the first suspect; rollback = re-apply the live definition captured in §S1.
-3. **Duplicate version key (§R1)** can silently skip the second `001400` file under some runners → the readiness RLS gate-fix would not land, leaving the readiness SELECT policy in its prior (looser) state. Resolve the rename before applying.
+3. ~~**Duplicate version key (§R1)**~~ — **✅ RESOLVED (PKT-16).** `001401_baseball_readiness_select_gate_fix.sql` and `000083_baseball_stat_visual_views.sql` are the renamed files; no duplicate version keys remain.
 4. **Base-layer assumption.** This set is additive on the existing baseball base. If applied to a DB that somehow lacks a base table (e.g. a fresh branch DB), the guarded files (`to_regclass`/`IF NOT EXISTS`) skip silently — which could leave a partial schema rather than erroring loudly. Confirm the base layer exists (it does on prod) before applying.
 5. **Not independently exercised.** This is a static + targeted-read audit. The migrations were not run in a scratch/branch DB. For maximum safety, dry-run the full ordered sequence against a Supabase **branch** (or local `supabase db reset`) before touching the shared prod DB.
 
@@ -180,8 +180,8 @@ the earlier passes asserted but are now explicitly evidenced:
 **Snapshot count note:** this pass observed **49** `20260624*.sql` files (first pass: 49; the
 2026-06-24 re-validation at line 13: 48). The count is oscillating as the live build runs —
 treat the per-file table as indicative and **re-list immediately before applying**. The two files
-sharing version `20260624001400` (§R1) are **both still present** → the dedupe-before-`db push`
-remains the one must-fix.
+sharing version `20260624001400` (§R1) **have since been resolved** (PKT-16) → no duplicate
+version keys remain; `db push` is unblocked.
 
 Additional dependency edges verified safe under filename order (all referrers sort after their
 target): `baseball_video_events` created in `000080` → ALTERed in `000221`/`000510`;

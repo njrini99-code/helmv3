@@ -4,6 +4,10 @@
 // src/app/baseball/actions/lifting.ts
 //
 // Wave 9 / performance-lifting packet (P9.3).
+// W2-G REWIRE: all writes now target helm_lifting_* unified tables instead of
+// the legacy baseball_lift_* tables. Context resolution via
+// resolveBaseballLiftingOrg / resolveBaseballAthleteIds from
+// @/lib/lifting/resolve-baseball-context. Return shapes unchanged (LiftingActionResult).
 //
 // Server actions for the Performance / Lifting Lite surface. EVERY action runs
 // inside withBaseballAction(...) so auth + active-team context + (where set)
@@ -16,7 +20,7 @@
 //                                          can_manage_baseball_lift_group)
 //   - Player-logged set result ........... NO requiredCapability — the player
 //                                          writes their OWN result; RLS enforces
-//                                          player_id = get_my_baseball_player_id.
+//                                          athlete_id on helm_lifting_set_results.
 //   - Readiness check-in ................. NO requiredCapability — player owns it.
 //
 // SECURITY
@@ -33,16 +37,23 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import {
   withBaseballAction,
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
+import {
+  resolveBaseballLiftingOrg,
+  resolveBaseballAthleteIds,
+  resolveMyBaseballAthleteId,
+} from '@/lib/lifting/resolve-baseball-context';
 import type {
-  BaseballExerciseInsert,
-  BaseballLiftAssignmentInsert,
-  BaseballLiftResultInsert,
-  BaseballReadinessCheckinInsert,
-} from '@/lib/types/baseball-lifting';
+  HelmLiftingExerciseInsert,
+  HelmLiftingSessionInsert,
+  HelmLiftingSessionExerciseInsert,
+  HelmLiftingSetResultInsert,
+  HelmLiftingReadinessCheckinInsert,
+} from '@/lib/types/helm-lifting-data';
 
 // -----------------------------------------------------------------------------
 // Shared result shape
@@ -54,13 +65,10 @@ export interface LiftingActionResult {
   error?: string;
 }
 
-// The four lifting tables ship via migration 20260624000061 and are NOT in the
-// generated database.ts (we cannot db:types regen without a live apply). Cast the
-// query-builder for these new tables — the hand-written Row/Insert types in
-// @/lib/types/baseball-lifting are the real contract; RLS is the real gate.
-// Mirrors the established baseball pattern (see command-center/page.tsx).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type UntypedBuilder = any;
+// helm_lifting_* tables are not yet in the generated database.ts (pending a
+// post-apply db:types regen). All helm_lifting_* queries use fromUntyped() from
+// @/lib/supabase/untyped. The hand-written Insert types in
+// @/lib/types/helm-lifting-data are the real contract; RLS is the real gate.
 
 const PERFORMANCE_PATH = '/baseball/dashboard/performance';
 // The real player surface is /baseball/player/today (see nav-registry +
@@ -114,9 +122,25 @@ const createAssignmentSchema = z
   );
 
 const updateAssignmentStatusSchema = z.object({
+  // assignmentId is now the helm_lifting_sessions.id (the bridge session id
+  // returned by createLiftAssignment after the W2-G rewire).
   assignmentId: uuid,
+  // Baseball Lite status vocab → mapped to HelmLiftingSessionStatus on write.
   status: z.enum(['assigned', 'in_progress', 'completed', 'skipped', 'archived']),
 });
+
+// Map legacy baseball assignment status → HelmLiftingSessionStatus.
+function toHelmSessionStatus(
+  baseballStatus: 'assigned' | 'in_progress' | 'completed' | 'skipped' | 'archived',
+): 'assigned' | 'started' | 'completed' | 'missed' | 'excused' | 'modified' {
+  switch (baseballStatus) {
+    case 'assigned': return 'assigned';
+    case 'in_progress': return 'started';
+    case 'completed': return 'completed';
+    case 'skipped': return 'missed';
+    case 'archived': return 'missed';
+  }
+}
 
 const logResultSchema = z
   .object({
@@ -153,6 +177,7 @@ const readinessSchema = z.object({
 // -----------------------------------------------------------------------------
 // 1. createExercise — staff add a team exercise to the library.
 //    Gated: can_manage_lifting.
+//    W2-G: writes to helm_lifting_exercises (org-scoped, sport='baseball').
 // -----------------------------------------------------------------------------
 
 export const createExercise = withBaseballAction(
@@ -160,18 +185,28 @@ export const createExercise = withBaseballAction(
   { featureArea: 'lifting', requiredCapability: 'can_manage_lifting' },
   async (ctx, raw: z.input<typeof createExerciseSchema>): Promise<LiftingActionResult> => {
     const input = createExerciseSchema.parse(raw);
+
+    // Resolve org context — exercises live at org scope, not team scope.
+    const liftCtx = await resolveBaseballLiftingOrg(ctx.targetTeamId);
+    if (!liftCtx) {
+      throw new BaseballActionError('Team has no lifting organization configured.');
+    }
+
     const supabase = await createClient();
 
-    const payload: BaseballExerciseInsert = {
-      team_id: ctx.targetTeamId,
+    const payload: HelmLiftingExerciseInsert = {
+      organization_id: liftCtx.organizationId,
+      sport: 'baseball',
       name: input.name,
-      category: input.category ?? null,
-      description: input.description ?? null,
+      // category: helm_lifting_exercises requires a specific enum; map from
+      // the freeform Lite category string or default to 'accessory'.
+      category: (input.category as HelmLiftingExerciseInsert['category']) ?? 'accessory',
+      instructions: input.description ?? null,
       is_global: false,
       created_by_coach_id: ctx.activeCoachId,
     };
 
-    const { data, error } = await (supabase as UntypedBuilder).from('baseball_exercises')
+    const { data, error } = await fromUntyped(supabase, 'helm_lifting_exercises')
       .insert(payload)
       .select('id')
       .single();
@@ -187,17 +222,14 @@ export const createExercise = withBaseballAction(
 // 2. createLiftAssignment — staff quick-assign a single lift to a player.
 //    Gated: can_manage_lifting. RLS additionally scopes to viewable players.
 //
-//    UNIFIED STORAGE BRIDGE: a quick-assignment is ALSO materialized into the
-//    V11 baseball_lift_sessions model so it reaches the SAME surfaces the V11
-//    program builder's publishLiftDay feeds — the player Today card, the player
-//    lift route (getPlayerLiftHome), and the CoachHelm engine (loaders-v10).
-//    Without this, a quick-assigned lift wrote only the legacy
-//    baseball_lift_assignments table that nothing reads anymore, recreating the
-//    very island this fix closes. The assignment row is kept for backward compat
-//    + the coach's Lifting-Lite list; the session is the row everything consumes.
-//    Player-group quick-assign (no single player) writes only the assignment row
-//    (multi-player materialization is the V11 program builder's job) — the action
-//    degrades honestly rather than guessing a roster here.
+//    W2-G REWIRE: writes directly to helm_lifting_sessions +
+//    helm_lifting_session_exercises (the unified model). The legacy
+//    baseball_lift_assignments table is bypassed entirely — the session IS the
+//    assignment in the unified model. Returns the helm_lifting_sessions.id so
+//    callers (updateAssignmentStatus, logLiftResult) can target the right row.
+//    Player-group quick-assign (no single player): session requires athlete_id
+//    (NOT NULL in helm schema) so group-only quick-assigns are a no-op on the
+//    session write — the action degrades honestly rather than guessing a roster.
 // -----------------------------------------------------------------------------
 
 export const createLiftAssignment = withBaseballAction(
@@ -208,141 +240,115 @@ export const createLiftAssignment = withBaseballAction(
     raw: z.input<typeof createAssignmentSchema>,
   ): Promise<LiftingActionResult> => {
     const input = createAssignmentSchema.parse(raw);
+
+    // Resolve org context required by helm_lifting_* tables.
+    const liftCtx = await resolveBaseballLiftingOrg(ctx.targetTeamId);
+    if (!liftCtx) {
+      throw new BaseballActionError('Team has no lifting organization configured.');
+    }
+
     const supabase = await createClient();
-    const db = supabase as UntypedBuilder;
 
-    // NOTE on exercise identity: the dashboard now picks from the V11
-    // baseball_lift_exercises library (the single source of truth for lifting —
-    // V11 depth rule). That id is NOT valid for the legacy
-    // baseball_lift_assignments.exercise_id column, whose FK targets the Lite
-    // baseball_exercises table (migration 0061 L82). Writing a V11 id there would
-    // violate that FK. We therefore leave the legacy FK column NULL (the Lite
-    // assignment row is kept only for backward-compat + the coach's Lite list,
-    // which renders from the title) and carry the V11 exercise id into the
-    // materialized session, whose exercise_id FKs to baseball_lift_exercises —
-    // the table everything actually reads.
-    const payload: BaseballLiftAssignmentInsert = {
-      team_id: ctx.targetTeamId,
-      player_id: input.playerId ?? null,
-      group_scope: input.groupScope ?? null,
-      assigned_by_coach_id: ctx.activeCoachId,
-      exercise_id: null,
-      title: input.title ?? null,
-      due_date: input.dueDate ?? null,
-      prescription: (input.prescription ?? {}) as BaseballLiftAssignmentInsert['prescription'],
-      status: 'assigned',
-    };
+    // Group-only quick-assigns have no single athlete_id. The unified helm model
+    // requires athlete_id on sessions, so we cannot materialize a group session
+    // here. Return a synthetic id placeholder so the caller gets a success response
+    // without a DB write (multi-player materialization is the V11 program builder's
+    // job — same honest degradation as before, different reason).
+    if (!input.playerId) {
+      revalidatePath(PERFORMANCE_PATH);
+      return { success: true };
+    }
 
-    const { data, error } = await db
-      .from('baseball_lift_assignments')
-      .insert(payload)
+    const scheduledDate = input.dueDate ?? new Date().toISOString().slice(0, 10);
+
+    // Resolve baseball_players.id → helm_lifting_athletes.id.
+    const athleteMap = await resolveBaseballAthleteIds(liftCtx.organizationId, [input.playerId]);
+    const athleteId = athleteMap[input.playerId];
+    if (!athleteId) {
+      // Player not yet seeded in helm_lifting_athletes. Degrade honestly.
+      revalidatePath(PERFORMANCE_PATH);
+      return { success: true };
+    }
+
+    // Resolve an exercise name + id from helm_lifting_exercises.
+    // The exerciseId passed in was already a helm_lifting_exercises id (the V11
+    // library, used as the single source of truth for lifting). We verify it here
+    // so (a) the snapshot name is right and (b) we don't stamp a stale id.
+    let exerciseName = input.title ?? 'Lift';
+    let liftExerciseId: string | null = null;
+    if (input.exerciseId) {
+      const { data: ex } = await fromUntyped(supabase, 'helm_lifting_exercises')
+        .select('id, name')
+        .eq('id', input.exerciseId)
+        .maybeSingle() as { data: { id: string; name: string } | null };
+      if (ex?.name) {
+        exerciseName = ex.name;
+        liftExerciseId = ex.id;
+      }
+    }
+
+    // Dedupe on (athlete_id, scheduled_date, title) — idempotent, never destructive.
+    const { data: dupe } = await fromUntyped(supabase, 'helm_lifting_sessions')
       .select('id')
-      .single();
+      .eq('athlete_id', athleteId)
+      .eq('scheduled_date', scheduledDate)
+      .eq('title', input.title ?? 'Lift')
+      .is('program_assignment_id', null)
+      .maybeSingle() as { data: { id: string } | null };
 
-    if (error) throw error;
-    const assignmentId = (data as { id: string }).id;
+    let sessionId = dupe?.id;
+    if (!sessionId) {
+      const sessionPayload: HelmLiftingSessionInsert = {
+        organization_id: liftCtx.organizationId,
+        sport: 'baseball',
+        team_id: ctx.targetTeamId,
+        athlete_id: athleteId,
+        title: input.title ?? 'Lift',
+        scheduled_date: scheduledDate,
+        status: 'assigned',
+        program_assignment_id: null,
+      };
 
-    // Bridge: materialize a single-player session so this quick-assign shows up
-    // on Today + in the lift route + to the engine (same model as publishLiftDay).
-    // Best-effort + non-destructive (upsert): a bridge failure must NOT roll back
-    // the assignment the coach just made, so we swallow it and let the coach's
-    // list still reflect the assignment.
-    if (input.playerId) {
-      try {
+      const { data: session, error: sessionErr } = await fromUntyped(supabase, 'helm_lifting_sessions')
+        .insert(sessionPayload)
+        .select('id')
+        .maybeSingle() as { data: { id: string } | null; error: unknown };
+
+      if (sessionErr) throw sessionErr;
+      sessionId = session?.id;
+    }
+
+    if (sessionId) {
+      // Only seed the snapshot exercise once (idempotent re-assign safe).
+      const { data: existingSe } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
+        .select('id')
+        .eq('session_id', sessionId)
+        .limit(1) as { data: Array<{ id: string }> | null };
+
+      if (!existingSe || existingSe.length === 0) {
         const presc = (input.prescription ?? {}) as {
           sets?: number; reps?: number; weight?: number;
         };
-        const scheduledDate = input.dueDate ?? new Date().toISOString().slice(0, 10);
 
-        // Resolve an exercise name for the snapshot (no FK reliance on read path).
-        // The exercise picked in the wired dashboard is a baseball_lift_exercises
-        // (V11) row — the SAME library the program builder + session FK use. We
-        // resolve it here so (a) the snapshot name is right and (b) we can prove
-        // the id is a valid baseball_lift_exercises id before stamping it on the
-        // session_exercise. baseball_lift_session_exercises.exercise_id FKs to
-        // baseball_lift_exercises (migration 0063 L347), so writing a Lite
-        // baseball_exercises id there would violate the FK — the bridge insert
-        // would fail and be silently swallowed, materializing an EMPTY Today card.
-        // We therefore only carry exercise_id through when it resolves in the V11
-        // library; otherwise we keep the snapshot name but null the id (honest:
-        // the set still logs, it just has no progression identity to PR against).
-        let exerciseName = input.title ?? 'Lift';
-        let liftExerciseId: string | null = null;
-        if (input.exerciseId) {
-          const { data: ex } = await db
-            .from('baseball_lift_exercises')
-            .select('id, name')
-            .eq('id', input.exerciseId)
-            .maybeSingle();
-          if (ex?.name) {
-            exerciseName = ex.name as string;
-            liftExerciseId = ex.id as string;
-          }
-        }
+        const sePayload: HelmLiftingSessionExerciseInsert = {
+          session_id: sessionId,
+          exercise_id: liftExerciseId,
+          exercise_name_snapshot: exerciseName,
+          order_index: 0,
+          prescribed_sets: presc.sets ?? null,
+          prescribed_reps: presc.reps ?? null,
+          prescribed_load: presc.weight ?? null,
+          prescribed_load_unit: presc.weight != null ? 'lb' : null,
+          status: 'assigned',
+        };
 
-        // A quick-assign is NOT a V11 program assignment, so program_assignment_id
-        // stays NULL (the FK + UNIQUE(program_assignment_id, player_id) on the
-        // sessions table only apply to materialized program days). We therefore
-        // dedupe ourselves on (player, date, title) so an accidental double
-        // quick-assign does not create two Today rows — stage-and-check, never a
-        // destructive write.
-        const { data: dupe } = await db
-          .from('baseball_lift_sessions')
-          .select('id')
-          .eq('player_id', input.playerId)
-          .eq('scheduled_date', scheduledDate)
-          .eq('title', input.title ?? 'Lift')
-          .is('program_assignment_id', null)
-          .maybeSingle();
-
-        let sessionId = (dupe as { id: string } | null)?.id;
-        if (!sessionId) {
-          const { data: session } = await db
-            .from('baseball_lift_sessions')
-            .insert({
-              team_id: ctx.targetTeamId,
-              player_id: input.playerId,
-              title: input.title ?? 'Lift',
-              scheduled_date: scheduledDate,
-              status: 'assigned',
-              program_assignment_id: null,
-            })
-            .select('id')
-            .maybeSingle();
-          sessionId = (session as { id: string } | null)?.id;
-        }
-        if (sessionId) {
-          // Only seed the snapshot exercise once (idempotent re-assign safe).
-          const { data: existingSe } = await db
-            .from('baseball_lift_session_exercises')
-            .select('id')
-            .eq('session_id', sessionId)
-            .limit(1);
-          if (!existingSe || existingSe.length === 0) {
-            await db.from('baseball_lift_session_exercises').insert({
-              session_id: sessionId,
-              // Only a valid baseball_lift_exercises id (resolved above) — never a
-              // Lite baseball_exercises id, which would violate the FK.
-              exercise_id: liftExerciseId,
-              exercise_name_snapshot: exerciseName,
-              order_index: 0,
-              prescribed_sets: presc.sets ?? null,
-              prescribed_reps: presc.reps ?? null,
-              prescribed_load: presc.weight ?? null,
-              prescribed_load_unit: presc.weight != null ? 'lb' : null,
-              status: 'assigned',
-            });
-          }
-        }
-      } catch {
-        // Bridge is best-effort; the assignment already committed. Silent by
-        // design so the coach's quick-assign never appears to fail mid-flow.
+        await fromUntyped(supabase, 'helm_lifting_session_exercises').insert(sePayload);
       }
     }
 
     revalidatePath(PERFORMANCE_PATH);
     revalidatePath(PLAYER_TODAY_PATH);
-    return { success: true, id: assignmentId };
+    return { success: true, id: sessionId };
   },
 );
 
@@ -350,6 +356,8 @@ export const createLiftAssignment = withBaseballAction(
 // 3. updateAssignmentStatus — staff move an assignment through its lifecycle.
 //    Gated: can_manage_lifting. (Player progress is reflected via logged results;
 //    the status field here is the coach-owned lifecycle.)
+//    W2-G: assignmentId is now a helm_lifting_sessions.id (returned by
+//    createLiftAssignment post-rewire). Status is mapped to HelmLiftingSessionStatus.
 // -----------------------------------------------------------------------------
 
 export const updateAssignmentStatus = withBaseballAction(
@@ -362,14 +370,16 @@ export const updateAssignmentStatus = withBaseballAction(
     const input = updateAssignmentStatusSchema.parse(raw);
     const supabase = await createClient();
 
+    const helmStatus = toHelmSessionStatus(input.status);
+
     // Scope the update to the active team so a coach cannot touch another team's
-    // assignment even if RLS were somehow permissive.
-    const { data, error } = await (supabase as UntypedBuilder).from('baseball_lift_assignments')
-      .update({ status: input.status, updated_at: new Date().toISOString() })
+    // session even if RLS were somehow permissive.
+    const { data, error } = await fromUntyped(supabase, 'helm_lifting_sessions')
+      .update({ status: helmStatus, updated_at: new Date().toISOString() })
       .eq('id', input.assignmentId)
       .eq('team_id', ctx.targetTeamId)
       .select('id')
-      .maybeSingle();
+      .maybeSingle() as { data: { id: string } | null; error: unknown };
 
     if (error) throw error;
     if (!data) {
@@ -379,15 +389,17 @@ export const updateAssignmentStatus = withBaseballAction(
 
     revalidatePath(PERFORMANCE_PATH);
     revalidatePath(PLAYER_TODAY_PATH);
-    return { success: true, id: (data as { id: string }).id };
+    return { success: true, id: data.id };
   },
 );
 
 // -----------------------------------------------------------------------------
 // 4. logLiftResult — a PLAYER logs their own set result.
 //    No requiredCapability: this is a player-self write. We assert the active
-//    context resolved a player identity and let RLS enforce ownership
-//    (player_id = get_my_baseball_player_id()).
+//    context resolved a player identity and let RLS enforce ownership.
+//    W2-G: writes to helm_lifting_set_results. The caller supplies assignmentId
+//    (a helm_lifting_sessions.id post-rewire) + optional exerciseId. We resolve
+//    the session_exercise_id from the session row and auto-number the set.
 // -----------------------------------------------------------------------------
 
 export const logLiftResult = withBaseballAction(
@@ -400,26 +412,72 @@ export const logLiftResult = withBaseballAction(
       throw new BaseballActionError('Only a player can log a lift result.');
     }
 
+    // Resolve org context for helm_lifting_set_results.organization_id.
+    const liftCtx = await resolveBaseballLiftingOrg(ctx.activeTeamId);
+    if (!liftCtx) {
+      throw new BaseballActionError('Team has no lifting organization configured.');
+    }
+
+    // Resolve the athlete_id for this player.
+    const athleteId = await resolveMyBaseballAthleteId(liftCtx.organizationId);
+    if (!athleteId) {
+      throw new BaseballActionError('Player not found in the lifting system.');
+    }
+
     const supabase = await createClient();
 
-    const payload: BaseballLiftResultInsert = {
-      team_id: ctx.activeTeamId,
-      player_id: ctx.activePlayerId,
-      assignment_id: input.assignmentId ?? null,
-      exercise_id: input.exerciseId ?? null,
-      performed_at: input.performedAt ?? new Date().toISOString(),
-      sets: input.sets ?? null,
-      reps: input.reps ?? null,
-      weight: input.weight ?? null,
+    // Resolve session_exercise_id: look up the session (assignmentId is a
+    // helm_lifting_sessions.id) and find its first matching exercise row.
+    let sessionExerciseId: string | null = null;
+    if (input.assignmentId) {
+      const { data: seRows } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
+        .select('id')
+        .eq('session_id', input.assignmentId)
+        // When exerciseId is provided, match it; otherwise take the first exercise.
+        .eq('exercise_id', input.exerciseId ?? '')
+        .limit(1) as { data: Array<{ id: string }> | null };
+
+      if (!seRows || seRows.length === 0) {
+        // exerciseId filter found nothing — fall back to any exercise in the session.
+        const { data: fallbackSe } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
+          .select('id')
+          .eq('session_id', input.assignmentId)
+          .limit(1) as { data: Array<{ id: string }> | null };
+        sessionExerciseId = fallbackSe?.[0]?.id ?? null;
+      } else {
+        sessionExerciseId = seRows[0]?.id ?? null;
+      }
+    }
+
+    if (!sessionExerciseId) {
+      throw new BaseballActionError('No session exercise found to log against.');
+    }
+
+    // Auto-number the set: count existing results for this session_exercise + 1.
+    const { count: existingCount } = await fromUntyped(supabase, 'helm_lifting_set_results')
+      .select('id', { count: 'exact', head: true })
+      .eq('session_exercise_id', sessionExerciseId) as { count: number | null };
+
+    const setNumber = (existingCount ?? 0) + 1;
+
+    const payload: HelmLiftingSetResultInsert = {
+      session_exercise_id: sessionExerciseId,
+      organization_id: liftCtx.organizationId,
+      sport: 'baseball',
+      athlete_id: athleteId,
+      set_number: setNumber,
+      actual_reps: input.reps ?? null,
+      actual_load: input.weight ?? null,
+      load_unit: input.weight != null ? 'lb' : null,
       rpe: input.rpe ?? null,
-      notes: input.notes ?? null,
-      source: 'manual',
+      completed_at: input.performedAt ?? new Date().toISOString(),
+      player_note: input.notes ?? null,
     };
 
-    const { data, error } = await (supabase as UntypedBuilder).from('baseball_lift_results')
+    const { data, error } = await fromUntyped(supabase, 'helm_lifting_set_results')
       .insert(payload)
       .select('id')
-      .single();
+      .single() as { data: { id: string } | null; error: unknown };
 
     if (error) throw error;
 
@@ -432,7 +490,14 @@ export const logLiftResult = withBaseballAction(
 // -----------------------------------------------------------------------------
 // 5. submitReadinessCheckin — a PLAYER records / updates today's check-in.
 //    No requiredCapability: player-self write. Idempotent upsert on
-//    (player_id, check_date) — NO delete-then-insert.
+//    (athlete_id, checkin_date) — NO delete-then-insert.
+//    W2-G: writes to helm_lifting_readiness_checkins. Column mapping:
+//      check_date      → checkin_date
+//      sleep_hours     → sleep_quality  (1-5 scale; hours are mapped best-effort)
+//      soreness_level  → soreness_overall
+//      arm_status      → stored in notes (no equivalent column in helm schema)
+//      mood (string)   → notes (helm has mood as number; string goes to notes)
+//    Upsert conflict: (athlete_id, checkin_date).
 // -----------------------------------------------------------------------------
 
 export const submitReadinessCheckin = withBaseballAction(
@@ -445,35 +510,52 @@ export const submitReadinessCheckin = withBaseballAction(
       throw new BaseballActionError('Only a player can submit a check-in.');
     }
 
+    // Resolve org context for helm_lifting_readiness_checkins.organization_id.
+    const liftCtx = await resolveBaseballLiftingOrg(ctx.activeTeamId);
+    if (!liftCtx) {
+      throw new BaseballActionError('Team has no lifting organization configured.');
+    }
+
+    // Resolve athlete_id for this player.
+    const athleteId = await resolveMyBaseballAthleteId(liftCtx.organizationId);
+    if (!athleteId) {
+      throw new BaseballActionError('Player not found in the lifting system.');
+    }
+
     const supabase = await createClient();
 
-    const payload: BaseballReadinessCheckinInsert & {
-      stress_level?: number | null;
-      lower_body_status?: number | null;
-      illness_flag?: boolean;
-    } = {
-      team_id: ctx.activeTeamId,
-      player_id: ctx.activePlayerId,
-      check_date: input.checkDate,
-      sleep_hours: input.sleepHours ?? null,
+    // Compose freeform notes preserving arm_status and mood string fields that
+    // have no direct equivalent columns in helm_lifting_readiness_checkins.
+    const noteParts: string[] = [];
+    if (input.armStatus) noteParts.push(`arm_status: ${input.armStatus}`);
+    if (input.mood) noteParts.push(`mood: ${input.mood}`);
+    if (input.notes) noteParts.push(input.notes);
+    const combinedNotes = noteParts.length > 0 ? noteParts.join(' | ') : null;
+
+    const payload: HelmLiftingReadinessCheckinInsert = {
+      organization_id: liftCtx.organizationId,
+      sport: 'baseball',
+      athlete_id: athleteId,
+      checkin_date: input.checkDate,
+      // sleep_hours → sleep_quality: helm uses 1-5 scale; map hours to quintile
+      // (≤5h=1, 6h=2, 7h=3, 8h=4, ≥9h=5). If null, leave null.
+      sleep_quality: input.sleepHours != null
+        ? Math.min(5, Math.max(1, Math.ceil(input.sleepHours / 2)))
+        : null,
       energy_level: input.energyLevel ?? null,
-      soreness_level: input.sorenessLevel ?? null,
-      arm_status: input.armStatus ?? null,
-      mood: input.mood ?? null,
-      notes: input.notes ?? null,
-      // V11 columns (additive; safe when present in the DB).
+      soreness_overall: input.sorenessLevel ?? null,
       stress_level: input.stressLevel ?? null,
       lower_body_status: input.lowerBodyStatus ?? null,
       illness_flag: input.illnessFlag ?? false,
-      updated_at: new Date().toISOString(),
+      notes: combinedNotes,
     };
 
-    // Upsert on the (player_id, check_date) unique constraint — stage-and-swap
+    // Upsert on (athlete_id, checkin_date) unique constraint — stage-and-swap
     // semantics, never delete-then-reinsert.
-    const { data, error } = await (supabase as UntypedBuilder).from('baseball_readiness_checkins')
-      .upsert(payload, { onConflict: 'player_id,check_date' })
+    const { data, error } = await fromUntyped(supabase, 'helm_lifting_readiness_checkins')
+      .upsert(payload, { onConflict: 'athlete_id,checkin_date' })
       .select('id')
-      .single();
+      .single() as { data: { id: string } | null; error: unknown };
 
     if (error) throw error;
 

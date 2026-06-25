@@ -58,8 +58,8 @@ function formatFileSize(bytes: number): string {
 
 function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: string }) {
   if (mimeType === 'application/pdf') return <IconFileText className={cn('text-red-500', className)} />;
-  if (mimeType.startsWith('image/')) return <IconImage className={cn('text-blue-500', className)} />;
-  if (mimeType.startsWith('video/')) return <IconVideo className={cn('text-purple-500', className)} />;
+  if (mimeType.startsWith('image/')) return <IconImage className={cn('text-warm-500', className)} />;
+  if (mimeType.startsWith('video/')) return <IconVideo className={cn('text-primary-600', className)} />;
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') return <IconFileSpreadsheet className={cn('text-primary-500', className)} />;
   if (mimeType.startsWith('text/') || mimeType === 'application/json') return <IconFileText className={cn('text-warm-500', className)} />;
   return <IconFile className={cn('text-warm-400', className)} />;

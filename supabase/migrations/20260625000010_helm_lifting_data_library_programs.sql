@@ -67,13 +67,13 @@ CREATE TABLE IF NOT EXISTS public.helm_lifting_exercises (
   legacy_baseball_id     uuid,
   created_at             timestamptz NOT NULL DEFAULT now(),
   updated_at             timestamptz NOT NULL DEFAULT now(),
-  -- Global exercises: organization_id still required (the Lab org that manages it)
-  -- but is_global can be true for cross-org sharing within same org
-  CONSTRAINT helm_lifting_exercises_scope_ck
-    CHECK (
-      (is_global = true AND organization_id IS NOT NULL)
-      OR (is_global = false AND organization_id IS NOT NULL)
-    )
+  -- All exercises (global or not) are owned by exactly one organization.
+  -- Team-level scoping is handled via helm_lifting_coach_assignments, not a team_id here.
+  -- The is_global flag controls cross-team visibility within the org; it does not
+  -- relax the organization_id requirement. There is no additional scope invariant to
+  -- CHECK beyond what the NOT NULL column declaration already enforces.
+  CONSTRAINT helm_lifting_exercises_org_ck
+    CHECK (organization_id IS NOT NULL)
 );
 CREATE INDEX IF NOT EXISTS helm_lifting_exercises_org_sport_idx
   ON public.helm_lifting_exercises (organization_id, sport) WHERE is_active = true;

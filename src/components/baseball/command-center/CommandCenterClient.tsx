@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { BaseballInviteButton } from './BaseballInviteButton';
 import { TeamPlayerPeekPanel } from './TeamPlayerPeekPanel';
 import {
@@ -526,14 +526,26 @@ export function CommandCenterClient({
           </div>
 
           {/* ══════════════════════════════════════════════════════════════
-              ROSTER TAB
+              TAB PANELS — AnimatePresence fades out old, fades in new
           ══════════════════════════════════════════════════════════════ */}
-          <div
+          <LazyMotion features={domAnimation}>
+            <AnimatePresence mode="wait">
+          {activeTab === 'roster' && (
+          <m.div
+            key="roster"
             id="cc-panel-roster"
             role="tabpanel"
             aria-labelledby="cc-tab-roster"
-            hidden={activeTab !== 'roster'}
-            className={activeTab === 'roster' ? 'block' : 'hidden'}
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.18 }}
+            style={{ willChange: 'opacity, transform' }}
+            onAnimationComplete={() => {
+              // release GPU hint once settled
+              const el = document.getElementById('cc-panel-roster');
+              if (el) el.style.willChange = 'auto';
+            }}
           >
             <div className="space-y-5">
 
@@ -630,7 +642,6 @@ export function CommandCenterClient({
                   </Button>
                 </div>
               ) : (
-                <LazyMotion features={domAnimation}>
                   <m.div
                     className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
                     initial={reduceMotion ? false : 'hidden'}
@@ -649,20 +660,26 @@ export function CommandCenterClient({
                       </m.div>
                     ))}
                   </m.div>
-                </LazyMotion>
               )}
             </div>
-          </div>
+          </m.div>
+          )}
 
-          {/* ══════════════════════════════════════════════════════════════
-              STATS TAB
-          ══════════════════════════════════════════════════════════════ */}
-          <div
+          {activeTab === 'stats' && (
+          <m.div
+            key="stats"
             id="cc-panel-stats"
             role="tabpanel"
             aria-labelledby="cc-tab-stats"
-            hidden={activeTab !== 'stats'}
-            className={activeTab === 'stats' ? 'block' : 'hidden'}
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.18 }}
+            style={{ willChange: 'opacity, transform' }}
+            onAnimationComplete={() => {
+              const el = document.getElementById('cc-panel-stats');
+              if (el) el.style.willChange = 'auto';
+            }}
           >
             <div className="space-y-6">
 
@@ -854,7 +871,11 @@ export function CommandCenterClient({
                 )}
               </div>
             </div>
-          </div>
+          </m.div>
+          )}
+
+            </AnimatePresence>
+          </LazyMotion>
 
         </div>
       </div>

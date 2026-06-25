@@ -49,7 +49,10 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
   const fetchPlayer = async (id: string) => {
     setLoading(true);
 
-    const { data, error } = await supabase
+    // Break the excessively-deep Supabase generic chain (TS2589) by casting at the from() level
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { data, error } = (await db
       .from('baseball_players')
       .select(`
         *,
@@ -57,7 +60,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
         committed_to_org:organizations!players_committed_to_org_id_fkey(id, name, division, conference)
       `)
       .eq('id', id)
-      .single();
+      .single()) as { data: Player | null; error: { message: string } | null };
 
     if (error) {
       console.error('Error fetching player:', error);

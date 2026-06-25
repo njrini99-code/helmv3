@@ -10,6 +10,8 @@ import {
   completeCoachOnboarding,
   signupAndCompleteCoachOnboarding,
 } from '@/app/baseball/actions/onboarding';
+import { setLiftingMode } from '@/app/lifting/actions/onboarding';
+import type { LiftingMode } from '@/app/lifting/actions/onboarding';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
@@ -27,18 +29,20 @@ import { Check } from 'lucide-react';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
-type Step = 'type' | 'program' | 'account' | 'plan' | 'complete';
+type Step = 'type' | 'program' | 'account' | 'plan' | 'lifting' | 'complete';
 
 const STEPS_CONFIG_FULL = [
   { id: 'program' as const, label: 'Program', Icon: IconBuilding },
   { id: 'account' as const, label: 'Account', Icon: IconUser },
   { id: 'plan' as const, label: 'Plan', Icon: IconCheck },
+  { id: 'lifting' as const, label: 'Lifting', Icon: IconCheck },
   { id: 'complete' as const, label: 'Done', Icon: IconCheck },
 ];
 
 const STEPS_CONFIG_AUTH = [
   { id: 'program' as const, label: 'Program', Icon: IconBuilding },
   { id: 'plan' as const, label: 'Plan', Icon: IconCheck },
+  { id: 'lifting' as const, label: 'Lifting', Icon: IconCheck },
   { id: 'complete' as const, label: 'Done', Icon: IconCheck },
 ];
 
@@ -273,6 +277,11 @@ export default function BaseballCoachOnboarding() {
   // Plan data
   const [plan, setPlan] = useState<'free' | 'elite' | ''>('');
 
+  // Lifting step data
+  const [liftingInviteEmail, setLiftingInviteEmail] = useState('');
+  // Stored after plan submission so the lifting step can call setLiftingMode
+  const [pendingRedirect, setPendingRedirect] = useState('');
+
   // ─── Detect Existing Auth Session ─────────────────────────────────────
 
   useEffect(() => {
@@ -413,7 +422,9 @@ export default function BaseballCoachOnboarding() {
       }
 
       setLoading(false);
-      navigateAfterOnboarding(result.redirectTo || `/baseball/coach/${finalCoachType.replace('_', '-')}`);
+      // Store where to go after the lifting step, then show it
+      setPendingRedirect(result.redirectTo || `/baseball/coach/${finalCoachType.replace('_', '-')}`);
+      goForward('lifting');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
       setLoading(false);
@@ -427,8 +438,54 @@ export default function BaseballCoachOnboarding() {
     // for an already-authenticated email → "already registered" error → coach record never created.
     if (loading || !authChecked) return;
     setPlan(selectedPlan);
-    goForward('complete');
+    // handleSubmit navigates to 'lifting' on success (or stays on plan with error).
     handleSubmit();
+  }
+
+  // ─── Lifting Step Handler ────────────────────────────────────────────────
+
+  async function handleLiftingAnswer(mode: LiftingMode) {
+    if (loading) return;
+    setLoading(true);
+    setError('');
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // Resolve orgId + teamId from the coach profile created during onboarding
+        const { data: coach } = await supabase
+          .from('baseball_coaches')
+          .select('organization_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (coach?.organization_id) {
+          const { data: team } = await supabase
+            .from('baseball_teams')
+            .select('id')
+            .eq('organization_id', coach.organization_id)
+            .maybeSingle();
+
+          await setLiftingMode({
+            mode,
+            orgId: coach.organization_id,
+            sport: 'baseball',
+            teamId: team?.id ?? '',
+            inviteEmail: mode === 'yes' ? liftingInviteEmail || undefined : undefined,
+          });
+        }
+        // Non-fatal: if the coach/team lookup fails we still advance.
+      }
+    } catch {
+      // Non-fatal: lifting setup errors do not block onboarding completion.
+    } finally {
+      setLoading(false);
+    }
+
+    goForward('complete');
+    navigateAfterOnboarding(pendingRedirect || '/baseball/dashboard');
   }
 
   function handleGoToDashboard() {
@@ -823,7 +880,113 @@ export default function BaseballCoachOnboarding() {
               </m.div>
             )}
 
-            {/* ─── Step 4: Complete ────────────────────────────────────── */}
+            {/* ─── Step 4: Lifting Coach Question ─────────────────────── */}
+            {step === 'lifting' && (
+              <m.div
+                key="lifting"
+                custom={direction}
+                variants={slideVariants}
+                initial={prefersReducedMotion ? false : "initial"}
+                animate="animate"
+                exit="exit"
+                className="w-full max-w-[480px]"
+              >
+                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                      Do you have a strength &amp; conditioning coach?
+                    </h1>
+                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                      Helm Lifting Lab connects your coaching staff for integrated player development.
+                    </p>
+                  </m.div>
+
+                  <m.div variants={staggerItem} className="space-y-3">
+                    <Button
+                      variant="ghost"
+                      disabled={loading}
+                      onClick={() => handleLiftingAnswer('yes')}
+                      className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-100 transition-[transform,background-color]">
+                          <IconCheck size={24} className="text-primary-600" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold text-warm-900">Yes — invite them</p>
+                          <p className="text-sm text-warm-500">Send an invite to your S&amp;C coach</p>
+                        </div>
+                        <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
+                      </div>
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      disabled={loading}
+                      onClick={() => handleLiftingAnswer('no')}
+                      className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-100 transition-[transform,background-color]">
+                          <IconUser size={24} className="text-primary-600" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold text-warm-900">No — I manage lifting myself</p>
+                          <p className="text-sm text-warm-500">You&apos;ll have full access to Lifting Lab</p>
+                        </div>
+                        <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
+                      </div>
+                    </Button>
+                  </m.div>
+
+                  {/* Invite email — shown when user intends to invite an S&C coach */}
+                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8 space-y-4">
+                    <p className="text-sm font-medium text-warm-700">
+                      Invite by email (optional — you can do this later from settings)
+                    </p>
+                    <Input
+                      label="S&C Coach Email"
+                      type="email"
+                      value={liftingInviteEmail}
+                      onChange={(e) => setLiftingInviteEmail(e.target.value)}
+                      placeholder="coach@university.edu"
+                    />
+                    <Button
+                      disabled={loading || !liftingInviteEmail.trim()}
+                      onClick={() => handleLiftingAnswer('yes')}
+                      className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
+                      size="lg"
+                    >
+                      Send Invite &amp; Continue
+                      <IconArrowRight size={16} className="ml-2" />
+                    </Button>
+                  </m.div>
+
+                  <m.div variants={staggerItem} className="text-center">
+                    <Button
+                      variant="ghost"
+                      disabled={loading}
+                      onClick={() => handleLiftingAnswer('later')}
+                      className="text-sm text-warm-500 hover:text-warm-700 font-medium transition-colors"
+                    >
+                      Skip for now — set up later
+                    </Button>
+                  </m.div>
+
+                  {error && (
+                    <m.p
+                      initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
+                    >
+                      {error}
+                    </m.p>
+                  )}
+                </m.div>
+              </m.div>
+            )}
+
+            {/* ─── Step 5: Complete ────────────────────────────────────── */}
             {step === 'complete' && (
               <m.div
                 key="complete"

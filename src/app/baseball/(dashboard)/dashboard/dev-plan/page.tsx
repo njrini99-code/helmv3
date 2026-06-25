@@ -55,35 +55,6 @@ function getDaysUntil(dateStr: string): { days: number; label: string; isOverdue
   }
 }
 
-// Confetti celebration component
-function CelebrationConfetti({ show }: { show: boolean }) {
-  const prefersReducedMotion = useReducedMotion();
-  if (!show) return null;
-
-  const particles = Array.from({ length: 50 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 0.5,
-    duration: 1 + Math.random() * 0.5,
-    color: ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'][Math.floor(Math.random() * 5)],
-  }));
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {particles.map((p) => (
-        <motion.div
-          key={p.id}
-          className="absolute w-2 h-2 rounded-full"
-          style={{ left: `${p.x}%`, backgroundColor: p.color }}
-          initial={prefersReducedMotion ? false : ({ y: -20, opacity: 1, scale: 1 })}
-          animate={{ y: '100vh', opacity: 0, scale: 0, rotate: 360 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: p.duration, delay: p.delay, ease: 'easeIn' })}
-        />
-      ))}
-    </div>
-  );
-}
-
 // Goal card component
 function GoalCard({
   goal,
@@ -110,10 +81,10 @@ function GoalCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       className={cn(
-        'rounded-xl border p-4 transition-all',
+        'rounded-2xl border p-4 transition-all',
         isCompleted
-          ? 'bg-primary-50/50 border-primary-200'
-          : 'bg-white border-warm-200 hover:border-warm-300 hover:shadow-sm'
+          ? 'bg-primary-50/50 border-primary-200 backdrop-blur-xl'
+          : 'bg-white/70 backdrop-blur-xl border-white/20 shadow-glass hover:bg-white/80 hover:shadow-card-hover'
       )}
     >
       <div className="flex items-start gap-3">
@@ -316,7 +287,7 @@ function EmptyState() {
           No development plan yet
         </h3>
         <p className="text-sm leading-relaxed text-warm-500 max-w-md mx-auto mb-6">
-          Your coach hasn't assigned a development plan yet. Once they create one, you'll see your goals and track your progress here.
+          Your coach hasn't sent a development plan yet. Once they send one, you'll see your goals and track your progress here.
         </p>
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 text-primary-700 text-sm font-medium">
           <IconSparkles size={16} />
@@ -380,7 +351,6 @@ export default function PlayerDevPlanPage() {
   const [plan, setPlan] = useState<DevelopmentalPlanWithGoals | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCelebration, setShowCelebration] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState('active');
 
@@ -413,10 +383,6 @@ export default function PlayerDevPlanPage() {
       startTransition(async () => {
         try {
           await completeGoal(plan.id, goalId);
-          // Show celebration
-          setShowCelebration(true);
-          setTimeout(() => setShowCelebration(false), 2000);
-          // Refresh data
           await fetchPlan();
         } catch (err) {
           console.error('Error completing goal:', err);
@@ -504,8 +470,6 @@ export default function PlayerDevPlanPage() {
 
   return (
     <>
-      <CelebrationConfetti show={showCelebration} />
-
       <Header
         title="My Development Plan"
         subtitle={plan ? `Assigned by ${plan.coach?.full_name || 'Your Coach'}` : 'Track your progress and complete goals set by your coach'}
@@ -631,7 +595,21 @@ export default function PlayerDevPlanPage() {
                       <IconTarget size={20} className="text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-warm-900">{plan.title}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-warm-900">{plan.title}</h3>
+                        {plan.status && (
+                          <span
+                            className={cn(
+                              'text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0',
+                              plan.status === 'in_progress'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-primary-100 text-primary-700'
+                            )}
+                          >
+                            {plan.status === 'in_progress' ? 'In Progress' : 'Sent'}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-warm-600 mt-1">{plan.description}</p>
                       {(plan.start_date || plan.end_date) && (
                         <div className="flex items-center gap-2 mt-2 text-xs text-warm-500">

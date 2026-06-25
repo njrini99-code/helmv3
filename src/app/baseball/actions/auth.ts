@@ -274,11 +274,6 @@ export async function signupAction(
   if (!rateLimit.allowed) {
     const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
 
-    console.warn('[Security] Signup rate limit exceeded:', {
-      ip,
-      resetAt: new Date(rateLimit.resetAt),
-    });
-
     return {
       success: false,
       error: `Too many signup attempts. Please try again in ${remaining}.`,
@@ -339,13 +334,40 @@ export async function signupAction(
     };
   }
 
-  // Log successful signup
-  console.info('[Auth] Successful signup:', {
-    email: normalizedEmail,
-    userId: data.user.id,
-    role,
-    ip,
-  });
+  // Code-side backstop: seed baseball_players shell row for players so the
+  // onboarding update always finds a row, even when the DB trigger hasn't fired.
+  if (role === 'player') {
+    try {
+      const { error: playerSeedError } = await supabase
+        .from('baseball_players')
+        .upsert(
+          {
+            user_id: data.user.id,
+            player_type: 'high_school' as const,
+            email: normalizedEmail,
+            first_name: firstName ?? null,
+            last_name: lastName ?? null,
+            recruiting_activated: false,
+            onboarding_completed: false,
+            profile_completion_percent: 0,
+          },
+          { onConflict: 'user_id', ignoreDuplicates: true },
+        );
+
+      if (playerSeedError) {
+        // Non-fatal: auth succeeded; log but never surface DB failure to the user.
+        await logServerError(
+          `[Auth] Failed to seed baseball_players shell row: ${playerSeedError.message}`,
+          { action: 'auth.signupAction', metadata: { userId: data.user.id } },
+        );
+      }
+    } catch (seedErr) {
+      await logServerError(
+        `[Auth] Unexpected error seeding baseball_players: ${seedErr instanceof Error ? seedErr.message : String(seedErr)}`,
+        { action: 'auth.signupAction', metadata: { userId: data.user.id } },
+      );
+    }
+  }
 
   // Redirect based on role - coaches go to onboarding, players go to player onboarding
   const redirectTo = role === 'coach'

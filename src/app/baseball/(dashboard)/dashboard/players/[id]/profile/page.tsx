@@ -14,10 +14,14 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   const supabase = await createClient();
 
   // Parallel fetch: player + current user
-  const [{ data: player }, { data: { user } }] = await Promise.all([
-    supabase.from('baseball_players').select('*, player_settings (*)').eq('id', id).single(),
+  // Cast to any to avoid TS2589 from deep relational-select type instantiation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const [{ data: player }, authResult] = await Promise.all([
+    sb.from('baseball_players').select('*, player_settings (*)').eq('id', id).single() as Promise<{ data: Record<string, unknown> | null; error: unknown }>,
     supabase.auth.getUser(),
   ]);
+  const user = authResult.data.user;
 
   if (!player) notFound();
 

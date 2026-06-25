@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { sanitizeDbError } from '@/lib/db-error';
 import { revalidatePath } from 'next/cache';
+import { hasBaseballCapability } from '@/lib/baseball/capabilities';
 
 // ============================================================================
 // Types
@@ -27,6 +28,12 @@ interface CreateEventInput {
   // Game/scrimmage fields — auto-creates a baseball_game record when eventType is 'game' or 'scrimmage'
   opponentName?: string | null;
   homeAway?: 'home' | 'away' | 'neutral' | null;
+  /**
+   * When provided, the event is created for this explicit team and capability
+   * is checked against it. When omitted, team is resolved from the coach's
+   * organization (existing behaviour for attachPracticeToCalendar etc.).
+   */
+  teamId?: string;
 }
 
 interface UpdateEventInput {
@@ -110,13 +117,23 @@ export async function createBaseballEvent(input: CreateEventInput): Promise<Acti
   const coachTeam = await getCoachAndTeam(supabase, user.id);
   if (!coachTeam) return { success: false, error: 'Coach or team not found' };
 
+  // When an explicit teamId is provided (e.g. from the Events page multi-team
+  // selector), verify team membership and capability before writing.
+  const resolvedTeamId = input.teamId ?? coachTeam.teamId;
+  if (input.teamId) {
+    const allowed = await hasBaseballCapability(input.teamId, 'can_manage_practice');
+    if (!allowed) {
+      return { success: false, error: 'You do not have permission to create events for this team' };
+    }
+  }
+
   const startDateTime = buildDateTime(input.startDate, input.startTime);
   const endDateTime = buildEndDateTime(input.endDate, input.endTime, input.startDate);
 
   const { data, error } = await supabase
     .from('baseball_events')
     .insert({
-      team_id: coachTeam.teamId,
+      team_id: resolvedTeamId,
       created_by: coachTeam.coachId,
       title: input.title,
       event_type: input.eventType,
@@ -150,7 +167,7 @@ export async function createBaseballEvent(input: CreateEventInput): Promise<Acti
   if (data && (input.eventType === 'game' || input.eventType === 'scrimmage')) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('baseball_games').insert({
-      team_id: coachTeam.teamId,
+      team_id: resolvedTeamId,
       event_id: data.id,
       game_date: input.startDate,
       game_type: input.eventType,
@@ -163,6 +180,7 @@ export async function createBaseballEvent(input: CreateEventInput): Promise<Acti
   }
 
   revalidatePath(CALENDAR_PATH);
+  revalidatePath('/baseball/dashboard/events');
   return { success: true, data };
 }
 
@@ -230,16 +248,33 @@ export async function deleteBaseballEvent(eventId: string): Promise<ActionResult
 
   if (!coach) return { success: false, error: 'Coach profile not found' };
 
+  // Resolve the team this event belongs to so we can check capability.
+  const { data: eventRow } = await supabase
+    .from('baseball_events')
+    .select('id, team_id, created_by')
+    .eq('id', eventId)
+    .single();
+
+  if (!eventRow) {
+    return { success: false, error: 'Event not found or you do not have permission to delete it' };
+  }
+
+  // Verify team membership + can_manage_practice capability.
+  const allowed = await hasBaseballCapability(eventRow.team_id, 'can_manage_practice');
+  if (!allowed) {
+    return { success: false, error: 'You do not have permission to delete events for this team' };
+  }
+
   const { error, count } = await supabase
     .from('baseball_events')
     .delete({ count: 'exact' })
-    .eq('id', eventId)
-    .eq('created_by', coach.id);
+    .eq('id', eventId);
 
   if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
   if (count === 0) return { success: false, error: 'Event not found or you do not have permission to delete it' };
 
   revalidatePath(CALENDAR_PATH);
+  revalidatePath('/baseball/dashboard/events');
   return { success: true };
 }
 

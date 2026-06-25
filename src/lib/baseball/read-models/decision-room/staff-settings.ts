@@ -16,6 +16,8 @@
  * imported from the action module so this read-model always matches the exact
  * shape the UI consumes. Do not redefine them here.
  */
+import 'server-only';
+
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type {
@@ -56,8 +58,13 @@ interface StaffRow {
   can_invite_staff: boolean;
   can_manage_settings: boolean;
   can_view_medical: boolean;
-  can_message_team: boolean;
+  can_message_players: boolean;
   can_manage_calendar: boolean;
+  can_manage_lineups: boolean;
+  can_view_readiness: boolean;
+  can_modify_availability: boolean;
+  can_view_private_notes: boolean;
+  can_export_reports: boolean;
   // Joined coach profile (nullable if the coach row was removed).
   baseball_coaches: {
     id: string;
@@ -97,8 +104,13 @@ const CAPABILITY_COLUMNS = [
   'can_invite_staff',
   'can_manage_settings',
   'can_view_medical',
-  'can_message_team',
+  'can_message_players',
   'can_manage_calendar',
+  'can_manage_lineups',
+  'can_view_readiness',
+  'can_modify_availability',
+  'can_view_private_notes',
+  'can_export_reports',
 ] as const;
 
 /**
@@ -150,20 +162,13 @@ function mapInvitationRow(row: InvitationRow): StaffInvitationView {
   return {
     id: row.id,
     email: row.email,
-    inviteeName: row.invitee_name ?? null,
     role: row.role ?? null,
-    capabilities:
-      row.capabilities && typeof row.capabilities === 'object'
-        ? (row.capabilities as Record<string, boolean>)
-        : {},
+    token: row.status === 'accepted' || row.status === 'revoked' ? '' : row.token,
     status: row.status,
-    message: row.message ?? null,
-    invitedBy: row.invited_by ?? null,
-    invitedByCoachId: row.invited_by_coach_id ?? null,
     expiresAt: row.expires_at,
-    acceptedAt: row.accepted_at ?? null,
-    createdAt: row.created_at,
-  } as StaffInvitationView;
+    isExpired: new Date(row.expires_at) < new Date(),
+    invitedByName: row.invited_by ?? null,
+  };
 }
 
 /**
@@ -195,7 +200,9 @@ export async function loadStaffSettings(
        can_manage_roster, can_manage_practice, can_manage_lifting,
        can_view_academics, can_manage_imports, can_manage_stats,
        can_invite_staff, can_manage_settings, can_view_medical,
-       can_message_team, can_manage_calendar,
+       can_message_players, can_manage_calendar,
+       can_manage_lineups, can_view_readiness, can_modify_availability,
+       can_view_private_notes, can_export_reports,
        baseball_coaches:coach_id ( id, full_name, email, avatar_url, title )`,
     )
     .eq('team_id', teamId)

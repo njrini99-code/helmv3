@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,8 +15,12 @@ import { IconGraduationCap, IconUsers, IconEdit, IconCheck } from '@/components/
 import { useAuth } from '@/hooks/use-auth';
 import { useRouteProtection } from '@/hooks/use-route-protection';
 import { useTeamStore } from '@/stores/team-store';
-import { createClient } from '@/lib/supabase/client';
 import { getFullName } from '@/lib/utils';
+import { getTeamAcademics, upsertPlayerAcademics } from '@/app/baseball/actions/academics';
+
+// ============================================================================
+// TYPES
+// ============================================================================
 
 interface StudentAthlete {
   id: string;
@@ -28,26 +33,75 @@ interface StudentAthlete {
   gpa: number | null;
   credits_completed: number | null;
   credits_required: number | null;
+  is_eligible: boolean;
   academic_standing: 'good' | 'warning' | 'probation' | null;
-  eligibility_status: 'eligible' | 'ineligible' | 'pending' | null;
+  eligibility_id: string | null;
 }
 
-const academicStandingColors = {
+interface EditValues {
+  gpa: number | null;
+  credits_completed: number | null;
+  credits_required: number | null;
+  is_eligible: boolean;
+  academic_standing: 'good' | 'warning' | 'probation' | null;
+}
+
+// ============================================================================
+// STYLE MAPS
+// ============================================================================
+
+const academicStandingColors: Record<'good' | 'warning' | 'probation', string> = {
   good: 'bg-primary-100 text-primary-700',
   warning: 'bg-amber-100 text-amber-700',
   probation: 'bg-red-100 text-red-700',
 };
 
-const eligibilityColors = {
-  eligible: 'bg-primary-100 text-primary-700',
-  ineligible: 'bg-red-100 text-red-700',
-  pending: 'bg-warm-100 text-warm-700',
-};
+// ============================================================================
+// SKELETON ROW
+// ============================================================================
+
+function SkeletonRow() {
+  return (
+    <tr className="border-b border-warm-100">
+      {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+        <td key={i} className="px-6 py-4">
+          <div className="h-4 bg-warm-200 rounded animate-pulse" style={{ width: i === 1 ? '60%' : '40%' }} />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bg-cream-50 rounded-xl border border-warm-200 p-4 shadow-sm">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-10 h-10 rounded-full bg-warm-200 animate-pulse shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-warm-200 rounded animate-pulse w-3/4" />
+          <div className="h-3 bg-warm-100 rounded animate-pulse w-1/2" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        {[1, 2].map((i) => (
+          <div key={i} className="bg-warm-50 rounded-lg p-3">
+            <div className="h-6 bg-warm-200 rounded animate-pulse mb-1" />
+            <div className="h-3 bg-warm-100 rounded animate-pulse w-1/2 mx-auto" />
+          </div>
+        ))}
+      </div>
+      <div className="h-9 bg-warm-100 rounded-lg animate-pulse" />
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE
+// ============================================================================
 
 export default function AcademicsPage() {
   const { loading: authLoading } = useAuth();
   const { selectedTeamId } = useTeamStore();
-  // Only JUCO coaches can access this page
   const { isAllowed, isLoading: routeLoading } = useRouteProtection({
     allowedCoachTypes: ['juco'],
     redirectTo: '/baseball/dashboard/team',
@@ -57,154 +111,197 @@ export default function AcademicsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<Partial<StudentAthlete>>({});
-  const supabase = createClient();
+  const [editValues, setEditValues] = useState<EditValues>({
+    gpa: null,
+    credits_completed: null,
+    credits_required: null,
+    is_eligible: true,
+    academic_standing: null,
+  });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !routeLoading && isAllowed && selectedTeamId) {
-      fetchStudentAthletes();
-    } else if (!authLoading && !routeLoading && isAllowed && !selectedTeamId) {
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchStudentAthletes only depends on selectedTeamId already in deps
-  }, [authLoading, routeLoading, isAllowed, selectedTeamId]);
-
-  async function fetchStudentAthletes() {
+  const fetchStudentAthletes = useCallback(async () => {
     if (!selectedTeamId) return;
 
     setLoading(true);
     setError(null);
 
-    try {
-      // Get team members with player details
-      const { data: membersData, error: fetchError } = await supabase
-        .from('baseball_team_members')
-        .select(`
-          id,
-          player_id,
-          baseball_players (
-            id,
-            first_name,
-            last_name,
-            avatar_url,
-            primary_position,
-            grad_year,
-            gpa
-          )
-        `)
-        .eq('team_id', selectedTeamId);
+    const result = await getTeamAcademics(selectedTeamId);
 
-      if (fetchError) {
-        console.error('Error fetching students:', fetchError);
-        setError('Failed to load student data. Please try again.');
-        setStudents([]);
-        setLoading(false);
-        return;
-      }
-
-      // Transform data with player information
-      // Note: academic fields (credits_completed, academic_standing, eligibility_status)
-      // are not in DB schema yet, so we use defaults
-      type PlayerData = {
-        first_name?: string | null;
-        last_name?: string | null;
-        avatar_url?: string | null;
-        primary_position?: string | null;
-        grad_year?: number | null;
-        gpa?: number | null;
-      };
-      const transformedStudents: StudentAthlete[] = (membersData || []).map((member) => {
-        const player = member.baseball_players as PlayerData | null;
-        return {
-          id: member.id,
-          player_id: member.player_id,
-          first_name: player?.first_name || null,
-          last_name: player?.last_name || null,
-          avatar_url: player?.avatar_url || null,
-          primary_position: player?.primary_position || null,
-          grad_year: player?.grad_year || null,
-          gpa: player?.gpa || null,
-          credits_completed: 0,
-          credits_required: 60,
-          academic_standing: 'good' as const,
-          eligibility_status: 'eligible' as const,
-        };
-      });
-
-      setStudents(transformedStudents);
-      setLoading(false);
-    } catch (err) {
-      console.error('Unexpected error fetching students:', err);
-      setError('An unexpected error occurred. Please try again.');
+    if (!result.success) {
+      setError(result.error);
       setStudents([]);
       setLoading(false);
+      return;
     }
-  }
+
+    const transformed: StudentAthlete[] = result.data.map((row) => ({
+      id: row.member_id,
+      player_id: row.player_id,
+      first_name: row.first_name,
+      last_name: row.last_name,
+      avatar_url: row.avatar_url,
+      primary_position: row.primary_position,
+      grad_year: row.grad_year,
+      gpa: row.gpa,
+      credits_completed: row.credits_completed,
+      credits_required: row.credits_required,
+      is_eligible: row.is_eligible,
+      academic_standing: row.academic_standing,
+      eligibility_id: row.eligibility_id,
+    }));
+
+    setStudents(transformed);
+    setLoading(false);
+  }, [selectedTeamId]);
+
+  useEffect(() => {
+    if (!authLoading && !routeLoading && isAllowed && selectedTeamId) {
+      void fetchStudentAthletes();
+    } else if (!authLoading && !routeLoading && isAllowed && !selectedTeamId) {
+      setLoading(false);
+    }
+  }, [authLoading, routeLoading, isAllowed, selectedTeamId, fetchStudentAthletes]);
 
   const startEditing = (student: StudentAthlete) => {
     setEditingId(student.id);
     setEditValues({
       gpa: student.gpa,
       credits_completed: student.credits_completed,
+      credits_required: student.credits_required,
+      is_eligible: student.is_eligible,
       academic_standing: student.academic_standing,
-      eligibility_status: student.eligibility_status,
     });
   };
 
-  const saveEditing = async () => {
-    if (!editingId) return;
+  const handleSave = async () => {
+    if (!editingId || !selectedTeamId) return;
 
-    const student = students.find(s => s.id === editingId);
+    const student = students.find((s) => s.id === editingId);
     if (!student) return;
 
-    try {
-      // Update player record with GPA (only field available in DB)
-      // Note: credits_completed, academic_standing, eligibility_status are not in DB schema yet
-      const { error: updateError } = await supabase
-        .from('baseball_players')
-        .update({
-          gpa: editValues.gpa !== undefined ? editValues.gpa : student.gpa,
-        })
-        .eq('id', student.player_id);
+    setSaving(true);
+    setError(null);
 
-      if (updateError) {
-        console.error('Error saving academic data:', updateError);
-        setError('Failed to save academic data. Please try again.');
-        return;
-      }
+    const result = await upsertPlayerAcademics({
+      player_id: student.player_id,
+      team_id: selectedTeamId,
+      gpa: editValues.gpa,
+      credits_completed: editValues.credits_completed,
+      credits_required: editValues.credits_required,
+      is_eligible: editValues.is_eligible,
+      academic_standing: editValues.academic_standing,
+      eligibility_id: student.eligibility_id,
+    });
 
-      // Update local state
-      setStudents(students.map(s =>
-        s.id === editingId ? { ...s, ...editValues } : s
-      ));
-      setEditingId(null);
-      setEditValues({});
-      setError(null);
-    } catch (err) {
-      console.error('Unexpected error saving academic data:', err);
-      setError('An unexpected error occurred while saving. Please try again.');
+    setSaving(false);
+
+    if (!result.success) {
+      setError(result.error);
+      return;
     }
+
+    // Update local state with saved values and the new eligibility_id
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === editingId
+          ? {
+              ...s,
+              gpa: result.data.gpa,
+              credits_completed: result.data.credits_completed,
+              credits_required: result.data.credits_required,
+              is_eligible: result.data.is_eligible,
+              academic_standing: result.data.academic_standing,
+              eligibility_id: result.data.id,
+            }
+          : s
+      )
+    );
+    setEditingId(null);
+    setEditValues({ gpa: null, credits_completed: null, credits_required: null, is_eligible: true, academic_standing: null });
   };
 
   const cancelEditing = () => {
     setEditingId(null);
-    setEditValues({});
+    setEditValues({ gpa: null, credits_completed: null, credits_required: null, is_eligible: true, academic_standing: null });
   };
 
-  // Route protection check
+  // ── Route protection ──────────────────────────────────────────────────────
   if (authLoading || routeLoading || !isAllowed) {
     return <PageLoading />;
   }
 
-  if (loading) {
+  // ── No team selected ──────────────────────────────────────────────────────
+  if (!selectedTeamId) {
     return (
       <>
         <Header title="Academics" subtitle="Track student-athlete academic progress" />
-        <PageLoading />
+        <div className="p-8">
+          <EmptyState
+            icon={<IconGraduationCap size={24} />}
+            title="No team selected"
+            description="Select a team from the navigation to view academic records."
+          />
+        </div>
       </>
     );
   }
 
+  // ── Loading skeleton ──────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <>
+        <Header title="Academics" subtitle="Track student-athlete academic progress" />
+        <div className="p-4 lg:p-8 space-y-6">
+          {/* Summary skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} variant="glass">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-warm-200 animate-pulse shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 bg-warm-100 rounded animate-pulse w-3/4" />
+                      <div className="h-6 bg-warm-200 rounded animate-pulse w-1/2" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Table skeleton */}
+          <Card variant="glass">
+            <CardHeader>
+              <div className="h-5 bg-warm-200 rounded animate-pulse w-40" />
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="lg:hidden p-4 space-y-4">
+                {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+              </div>
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-warm-200 bg-warm-50">
+                      {['Player', 'Position', 'GPA', 'Credits', 'Standing', 'Eligible', 'Actions'].map((h) => (
+                        <th key={h} className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[1, 2, 3, 4, 5].map((i) => <SkeletonRow key={i} />)}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </>
+    );
+  }
+
+  // ── Empty roster ──────────────────────────────────────────────────────────
   if (students.length === 0) {
     return (
       <>
@@ -214,17 +311,36 @@ export default function AcademicsPage() {
             icon={<IconGraduationCap size={24} />}
             title="No student-athletes"
             description="Add players to your roster to track their academic progress."
-            action={<Button onClick={() => window.location.href = '/baseball/dashboard/roster'}>Manage Roster</Button>}
+            action={
+              <Button onClick={() => { window.location.href = '/baseball/dashboard/roster'; }}>
+                Manage Roster
+              </Button>
+            }
           />
         </div>
       </>
     );
   }
 
-  // Calculate summary stats
-  const avgGpa = students.reduce((sum, s) => sum + (s.gpa || 0), 0) / students.length;
-  const eligibleCount = students.filter(s => s.eligibility_status === 'eligible').length;
-  const atRiskCount = students.filter(s => s.academic_standing !== 'good').length;
+  // ── Summary stats (only count rows with real data) ─────────────────────
+  const withGpa = students.filter((s) => s.gpa !== null);
+  const avgGpa = withGpa.length > 0
+    ? withGpa.reduce((sum, s) => sum + (s.gpa ?? 0), 0) / withGpa.length
+    : null;
+  const eligibleCount = students.filter((s) => s.is_eligible).length;
+  const atRiskCount = students.filter((s) => s.academic_standing !== null && s.academic_standing !== 'good').length;
+
+  // ── Credits display helper ─────────────────────────────────────────────
+  const creditsDisplay = (student: StudentAthlete) => {
+    if (student.credits_completed === null) return 'Not on file';
+    const req = student.credits_required ?? 60;
+    return `${student.credits_completed}/${req}`;
+  };
+
+  const standingLabel = (standing: 'good' | 'warning' | 'probation' | null) => {
+    if (!standing) return 'Unknown';
+    return standing.charAt(0).toUpperCase() + standing.slice(1);
+  };
 
   return (
     <>
@@ -234,19 +350,29 @@ export default function AcademicsPage() {
       />
 
       <div className="p-4 lg:p-8 space-y-6">
-        {/* Error Alert */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
-            <span>{error}</span>
-            <Button variant="danger"
-              onClick={() => setError(null)}
-              className="text-red-600 hover:text-red-700 font-medium"
+        {/* Error alert */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between"
             >
-              Dismiss
-            </Button>
-          </div>
-        )}
-        {/* Summary Cards */}
+              <span>{error}</span>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setError(null)}
+                className="ml-4"
+              >
+                Dismiss
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
           <Card variant="glass">
             <CardContent className="p-4">
@@ -270,7 +396,9 @@ export default function AcademicsPage() {
                 </div>
                 <div>
                   <p className="text-sm leading-relaxed text-warm-500">Team GPA</p>
-                  <p className="text-2xl font-semibold tracking-tight text-warm-900 tabular-nums">{avgGpa.toFixed(2)}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-warm-900 tabular-nums">
+                    {avgGpa !== null ? avgGpa.toFixed(2) : '—'}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -305,7 +433,7 @@ export default function AcademicsPage() {
           </Card>
         </div>
 
-        {/* Student Table */}
+        {/* Student table */}
         <Card variant="glass">
           <CardHeader>
             <h2 className="font-semibold text-warm-900">Student-Athletes</h2>
@@ -314,8 +442,11 @@ export default function AcademicsPage() {
             {/* Mobile card view */}
             <div className="lg:hidden p-4 space-y-4">
               {students.map((student) => (
-                <div key={student.id} className="bg-white rounded-xl border border-warm-200 p-4 shadow-sm">
-                  {/* Student header */}
+                <motion.div
+                  key={student.id}
+                  layout
+                  className="glass-standard rounded-xl p-4 shadow-sm"
+                >
                   <div className="flex items-start gap-3 mb-3">
                     <Avatar
                       name={getFullName(student.first_name, student.last_name)}
@@ -327,57 +458,60 @@ export default function AcademicsPage() {
                         {getFullName(student.first_name, student.last_name)}
                       </h3>
                       <p className="text-sm text-warm-500">
-                        {student.primary_position || 'N/A'} {student.grad_year ? `\u2022 Class of ${student.grad_year}` : ''}
+                        {student.primary_position || 'N/A'}
+                        {student.grad_year ? ` • Class of ${student.grad_year}` : ''}
                       </p>
                     </div>
                   </div>
 
-                  {/* Stats grid */}
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div className="bg-warm-50 rounded-lg p-3 text-center">
-                      <p className="text-lg font-semibold text-warm-900">
-                        {editingId === student.id ? (
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="4"
-                            value={editValues.gpa || ''}
-                            onChange={(e) => setEditValues({ ...editValues, gpa: parseFloat(e.target.value) })}
-                            className="w-full text-center text-base"
-                          />
-                        ) : (
-                          student.gpa?.toFixed(2) || 'N/A'
-                        )}
-                      </p>
+                      {editingId === student.id ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="4"
+                          value={editValues.gpa ?? ''}
+                          onChange={(e) => setEditValues({ ...editValues, gpa: e.target.value ? parseFloat(e.target.value) : null })}
+                          className="w-full text-center text-base"
+                          aria-label="GPA"
+                        />
+                      ) : (
+                        <p className="text-lg font-semibold text-warm-900">
+                          {student.gpa !== null ? student.gpa.toFixed(2) : 'N/A'}
+                        </p>
+                      )}
                       <p className="text-label font-medium uppercase tracking-wide text-warm-500 mt-1">GPA</p>
                     </div>
                     <div className="bg-warm-50 rounded-lg p-3 text-center">
-                      <p className="text-lg font-semibold text-warm-900">
-                        {editingId === student.id ? (
-                          <Input
-                            type="number"
-                            min="0"
-                            value={editValues.credits_completed || ''}
-                            onChange={(e) => setEditValues({ ...editValues, credits_completed: parseInt(e.target.value) })}
-                            className="w-full text-center text-base"
-                          />
-                        ) : (
-                          `${student.credits_completed || 0}/${student.credits_required || 60}`
-                        )}
-                      </p>
+                      {editingId === student.id ? (
+                        <Input
+                          type="number"
+                          min="0"
+                          value={editValues.credits_completed ?? ''}
+                          onChange={(e) => setEditValues({ ...editValues, credits_completed: e.target.value ? parseInt(e.target.value, 10) : null })}
+                          className="w-full text-center text-base"
+                          aria-label="Credits completed"
+                        />
+                      ) : (
+                        <p className="text-lg font-semibold text-warm-900">{creditsDisplay(student)}</p>
+                      )}
                       <p className="text-label font-medium uppercase tracking-wide text-warm-500 mt-1">Credits</p>
                     </div>
                   </div>
 
-                  {/* Badges row */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     {editingId === student.id ? (
                       <>
                         <Select
-                          value={editValues.academic_standing || ''}
-                          onChange={(value) => setEditValues({ ...editValues, academic_standing: value as 'good' | 'warning' | 'probation' })}
+                          value={editValues.academic_standing ?? ''}
+                          onChange={(value) => setEditValues({
+                            ...editValues,
+                            academic_standing: value ? (value as 'good' | 'warning' | 'probation') : null,
+                          })}
                           options={[
+                            { value: '', label: 'Unknown' },
                             { value: 'good', label: 'Good Standing' },
                             { value: 'warning', label: 'Warning' },
                             { value: 'probation', label: 'Probation' },
@@ -385,11 +519,10 @@ export default function AcademicsPage() {
                           className="flex-1 text-base"
                         />
                         <Select
-                          value={editValues.eligibility_status || ''}
-                          onChange={(value) => setEditValues({ ...editValues, eligibility_status: value as 'eligible' | 'ineligible' | 'pending' })}
+                          value={editValues.is_eligible ? 'eligible' : 'ineligible'}
+                          onChange={(value) => setEditValues({ ...editValues, is_eligible: value === 'eligible' })}
                           options={[
                             { value: 'eligible', label: 'Eligible' },
-                            { value: 'pending', label: 'Pending' },
                             { value: 'ineligible', label: 'Ineligible' },
                           ]}
                           className="flex-1 text-base"
@@ -397,25 +530,30 @@ export default function AcademicsPage() {
                       </>
                     ) : (
                       <>
-                        {student.academic_standing && (
-                          <Badge className={academicStandingColors[student.academic_standing]}>
-                            {student.academic_standing.charAt(0).toUpperCase() + student.academic_standing.slice(1)} Standing
-                          </Badge>
-                        )}
-                        {student.eligibility_status && (
-                          <Badge className={eligibilityColors[student.eligibility_status]}>
-                            {student.eligibility_status.charAt(0).toUpperCase() + student.eligibility_status.slice(1)}
-                          </Badge>
-                        )}
+                        <Badge
+                          className={
+                            student.academic_standing
+                              ? academicStandingColors[student.academic_standing]
+                              : 'bg-warm-100 text-warm-500'
+                          }
+                        >
+                          {standingLabel(student.academic_standing)}
+                        </Badge>
+                        <Badge className={student.is_eligible ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700'}>
+                          {student.is_eligible ? 'Eligible' : 'Ineligible'}
+                        </Badge>
                       </>
                     )}
                   </div>
 
-                  {/* Actions */}
                   {editingId === student.id ? (
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={saveEditing} className="flex-1 min-h-[44px]">Save</Button>
-                      <Button size="sm" variant="secondary" onClick={cancelEditing} className="flex-1 min-h-[44px]">Cancel</Button>
+                      <Button size="sm" onClick={handleSave} disabled={saving} className="flex-1 min-h-[44px]">
+                        {saving ? 'Saving…' : 'Save'}
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={cancelEditing} disabled={saving} className="flex-1 min-h-[44px]">
+                        Cancel
+                      </Button>
                     </div>
                   ) : (
                     <Button
@@ -427,7 +565,7 @@ export default function AcademicsPage() {
                       <IconEdit size={14} className="mr-1" /> Edit
                     </Button>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
 
@@ -436,18 +574,22 @@ export default function AcademicsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-warm-200 bg-warm-50">
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Player</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Position</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">GPA</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Credits</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Standing</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Eligibility</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Actions</th>
+                    {['Player', 'Position', 'GPA', 'Credits', 'Standing', 'Eligible', 'Actions'].map((h) => (
+                      <th
+                        key={h}
+                        className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400"
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-warm-200">
                   {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-warm-50 transition-colors active:bg-warm-100">
+                    <tr
+                      key={student.id}
+                      className="hover:bg-warm-50 transition-colors active:bg-warm-100"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <Avatar
@@ -459,13 +601,17 @@ export default function AcademicsPage() {
                             <p className="font-medium text-warm-900">
                               {getFullName(student.first_name, student.last_name)}
                             </p>
-                            <p className="text-sm leading-relaxed text-warm-500">Class of {student.grad_year}</p>
+                            {student.grad_year && (
+                              <p className="text-sm leading-relaxed text-warm-500">Class of {student.grad_year}</p>
+                            )}
                           </div>
                         </div>
                       </td>
+
                       <td className="px-6 py-4">
                         <Badge>{student.primary_position || 'N/A'}</Badge>
                       </td>
+
                       <td className="px-6 py-4">
                         {editingId === student.id ? (
                           <Input
@@ -473,79 +619,92 @@ export default function AcademicsPage() {
                             step="0.01"
                             min="0"
                             max="4"
-                            value={editValues.gpa || ''}
-                            onChange={(e) => setEditValues({ ...editValues, gpa: parseFloat(e.target.value) })}
+                            value={editValues.gpa ?? ''}
+                            onChange={(e) => setEditValues({ ...editValues, gpa: e.target.value ? parseFloat(e.target.value) : null })}
                             className="w-20"
+                            aria-label="GPA"
                           />
                         ) : (
-                          <span className="font-medium">{student.gpa?.toFixed(2) || 'N/A'}</span>
+                          <span className="font-medium tabular-nums">
+                            {student.gpa !== null ? student.gpa.toFixed(2) : 'N/A'}
+                          </span>
                         )}
                       </td>
+
                       <td className="px-6 py-4">
                         {editingId === student.id ? (
                           <Input
                             type="number"
                             min="0"
-                            value={editValues.credits_completed || ''}
-                            onChange={(e) => setEditValues({ ...editValues, credits_completed: parseInt(e.target.value) })}
+                            value={editValues.credits_completed ?? ''}
+                            onChange={(e) => setEditValues({ ...editValues, credits_completed: e.target.value ? parseInt(e.target.value, 10) : null })}
                             className="w-20"
+                            aria-label="Credits completed"
                           />
                         ) : (
-                          <span className="text-warm-600">
-                            {student.credits_completed || 0}/{student.credits_required || 60}
+                          <span className={student.credits_completed === null ? 'text-warm-400 italic' : 'text-warm-600 tabular-nums'}>
+                            {creditsDisplay(student)}
                           </span>
                         )}
                       </td>
+
                       <td className="px-6 py-4">
                         {editingId === student.id ? (
                           <Select
-                            value={editValues.academic_standing || ''}
-                            onChange={(value) => setEditValues({ ...editValues, academic_standing: value as 'good' | 'warning' | 'probation' })}
+                            value={editValues.academic_standing ?? ''}
+                            onChange={(value) => setEditValues({
+                              ...editValues,
+                              academic_standing: value ? (value as 'good' | 'warning' | 'probation') : null,
+                            })}
                             options={[
+                              { value: '', label: 'Unknown' },
                               { value: 'good', label: 'Good' },
                               { value: 'warning', label: 'Warning' },
                               { value: 'probation', label: 'Probation' },
                             ]}
                           />
                         ) : (
-                          student.academic_standing && (
-                            <Badge className={academicStandingColors[student.academic_standing]}>
-                              {student.academic_standing.charAt(0).toUpperCase() + student.academic_standing.slice(1)}
-                            </Badge>
-                          )
+                          <Badge
+                            className={
+                              student.academic_standing
+                                ? academicStandingColors[student.academic_standing]
+                                : 'bg-warm-100 text-warm-500'
+                            }
+                          >
+                            {standingLabel(student.academic_standing)}
+                          </Badge>
                         )}
                       </td>
+
                       <td className="px-6 py-4">
                         {editingId === student.id ? (
                           <Select
-                            value={editValues.eligibility_status || ''}
-                            onChange={(value) => setEditValues({ ...editValues, eligibility_status: value as 'eligible' | 'ineligible' | 'pending' })}
+                            value={editValues.is_eligible ? 'eligible' : 'ineligible'}
+                            onChange={(value) => setEditValues({ ...editValues, is_eligible: value === 'eligible' })}
                             options={[
                               { value: 'eligible', label: 'Eligible' },
-                              { value: 'pending', label: 'Pending' },
                               { value: 'ineligible', label: 'Ineligible' },
                             ]}
                           />
                         ) : (
-                          student.eligibility_status && (
-                            <Badge className={eligibilityColors[student.eligibility_status]}>
-                              {student.eligibility_status.charAt(0).toUpperCase() + student.eligibility_status.slice(1)}
-                            </Badge>
-                          )
+                          <Badge className={student.is_eligible ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700'}>
+                            {student.is_eligible ? 'Eligible' : 'Ineligible'}
+                          </Badge>
                         )}
                       </td>
+
                       <td className="px-6 py-4">
                         {editingId === student.id ? (
                           <div className="flex items-center gap-2">
-                            <Button size="sm" onClick={saveEditing}>Save</Button>
-                            <Button size="sm" variant="secondary" onClick={cancelEditing}>Cancel</Button>
+                            <Button size="sm" onClick={handleSave} disabled={saving}>
+                              {saving ? 'Saving…' : 'Save'}
+                            </Button>
+                            <Button size="sm" variant="secondary" onClick={cancelEditing} disabled={saving}>
+                              Cancel
+                            </Button>
                           </div>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => startEditing(student)}
-                          >
+                          <Button size="sm" variant="secondary" onClick={() => startEditing(student)}>
                             <IconEdit size={14} className="mr-1" /> Edit
                           </Button>
                         )}

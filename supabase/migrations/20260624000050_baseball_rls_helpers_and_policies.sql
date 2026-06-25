@@ -556,7 +556,7 @@ BEGIN
       FOR SELECT TO authenticated
       USING (
         user_id = auth.uid()
-        OR public.is_baseball_team_staff(team_id)
+        OR EXISTS (SELECT 1 FROM public.baseball_events e WHERE e.id = event_id AND public.is_baseball_team_staff(e.team_id))
       )$p$;
     EXECUTE $p$CREATE POLICY "baseball_event_acknowledgements_insert" ON public.baseball_event_acknowledgements
       FOR INSERT TO authenticated
@@ -569,7 +569,7 @@ BEGIN
       FOR DELETE TO authenticated
       USING (
         user_id = auth.uid()
-        OR public.is_baseball_primary_coach(team_id)
+        OR EXISTS (SELECT 1 FROM public.baseball_events e WHERE e.id = event_id AND public.is_baseball_primary_coach(e.team_id))
       )$p$;
   END IF;
 END $$;

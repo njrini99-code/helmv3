@@ -28,12 +28,12 @@ export interface BaseballAnnouncementMeta {
   id: string;
   team_id: string;
   title: string;
-  body: string;
+  content: string;
   urgency: string | null;
-  requires_acknowledgement: boolean | null;
+  is_pinned: boolean;
   published_at: string | null;
   created_at: string | null;
-  created_by: string | null;
+  created_by_id: string | null;
   recipient_count: number;
   acknowledged_count: number;
   total_recipients: number;
@@ -72,9 +72,9 @@ function groupBy<T>(arr: T[], key: keyof T): Record<string, T[]> {
 export async function createAnnouncement(input: {
   teamId: string;
   title: string;
-  body: string;
+  content: string;
   urgency: 'low' | 'normal' | 'high' | 'urgent';
-  requiresAcknowledgement: boolean;
+  isPinned?: boolean;
   recipientPlayerIds: string[] | null; // null = all team
 }): Promise<ActionResult<{ announcementId: string }>> {
   try {
@@ -97,11 +97,11 @@ export async function createAnnouncement(input: {
       .insert({
         team_id: input.teamId,
         title: input.title,
-        body: input.body,
+        content: input.content,
         urgency: input.urgency,
-        requires_acknowledgement: input.requiresAcknowledgement,
+        is_pinned: input.isPinned ?? false,
         published_at: new Date().toISOString(),
-        created_by: coach.id,
+        created_by_id: coach.id,
       })
       .select()
       .single();
@@ -197,12 +197,12 @@ export async function getAnnouncementsWithMeta(
         id: ann.id as string,
         team_id: ann.team_id as string,
         title: ann.title as string,
-        body: ann.body as string,
+        content: ann.content as string,
         urgency: ann.urgency as string | null,
-        requires_acknowledgement: ann.requires_acknowledgement as boolean | null,
+        is_pinned: (ann.is_pinned as boolean | null) ?? false,
         published_at: ann.published_at as string | null,
         created_at: ann.created_at as string | null,
-        created_by: ann.created_by as string | null,
+        created_by_id: ann.created_by_id as string | null,
         recipient_count: recipients.length,
         acknowledged_count: acks.length,
         total_recipients: totalRecipients,
@@ -331,11 +331,11 @@ export async function deleteAnnouncement(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: ann } = await (supabase as any)
       .from('baseball_announcements')
-      .select('id, created_by')
+      .select('id, created_by_id')
       .eq('id', announcementId)
       .single();
 
-    if (!ann || ann.created_by !== coach.id) {
+    if (!ann || ann.created_by_id !== coach.id) {
       return { success: false, error: 'Not authorized to delete this announcement' };
     }
 

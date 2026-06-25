@@ -142,20 +142,13 @@ export async function loadAvailabilityConcerns(
     const status = row.status as string;
     concerns.push({
       id: `availability:${row.id}`,
-      source: 'availability',
       playerId: row.player_id,
       playerName: playerName(player),
-      position: player?.primary_position ?? null,
-      avatarUrl: player?.avatar_url ?? null,
-      status,
-      severity: status === 'unavailable' ? 'high' : status === 'hold' ? 'medium' : 'low',
-      reason: row.reason_category ?? null,
+      status: status === 'unavailable' ? 'out' : 'limited',
+      reasonCategory: row.reason_category ?? null,
       note: row.note ?? null,
-      startsAt: row.starts_at ?? null,
+      startsAt: row.starts_at ?? new Date().toISOString(),
       endsAt: row.ends_at ?? null,
-      readinessScore: null,
-      readinessBand: null,
-      recordedAt: row.created_at ?? row.starts_at ?? null,
     } as DecisionRoomAvailabilityConcern);
   }
 
@@ -187,20 +180,13 @@ export async function loadAvailabilityConcerns(
 
     concerns.push({
       id: `readiness:${row.id}`,
-      source: 'readiness',
       playerId: row.player_id,
       playerName: playerName(player),
-      position: player?.primary_position ?? null,
-      avatarUrl: player?.avatar_url ?? null,
-      status: band ?? (illness ? 'illness' : 'low_readiness'),
-      severity,
-      reason: illness ? 'illness' : row.arm_status ? `arm_${row.arm_status}` : null,
+      status: severity === 'high' ? 'out' : 'limited',
+      reasonCategory: illness ? 'illness' : row.arm_status ? `arm_${row.arm_status}` : null,
       note: row.notes ?? null,
-      startsAt: null,
+      startsAt: row.created_at ?? new Date().toISOString(),
       endsAt: null,
-      readinessScore: score,
-      readinessBand: band,
-      recordedAt: row.created_at ?? null,
     } as DecisionRoomAvailabilityConcern);
   }
 
@@ -227,11 +213,11 @@ export async function loadAttendanceSummary(
   teamId: string,
 ): Promise<DecisionRoomAttendanceSummary> {
   const empty: DecisionRoomAttendanceSummary = {
-    windowDays: ATTENDANCE_LOOKBACK_DAYS,
-    practice: { total: 0, present: 0, limited: 0, absent: 0, excused: 0, rate: null },
-    event: { total: 0, going: 0, maybe: 0, notGoing: 0, pending: 0, rate: null },
-    overallRate: null,
-  } as DecisionRoomAttendanceSummary;
+    totalPractices: 0,
+    totalAttended: 0,
+    totalMissed: 0,
+    concernedPlayers: [],
+  };
 
   if (!teamId) return empty;
 
@@ -287,42 +273,17 @@ export async function loadAttendanceSummary(
   }
   // "Attended" = present + limited (limited == showed up, partial participation).
   const practiceAttended = practice.present + practice.limited;
-  const practiceRate = practice.total > 0 ? practiceAttended / practice.total : null;
 
-  // --- Event tallies -------------------------------------------------------
-  const event = { total: 0, going: 0, maybe: 0, notGoing: 0, pending: 0 };
-  for (const row of (eventRes.data ?? []) as any[]) {
-    event.total += 1;
-    switch (row.status) {
-      case 'going':
-        event.going += 1;
-        break;
-      case 'maybe':
-        event.maybe += 1;
-        break;
-      case 'not_going':
-        event.notGoing += 1;
-        break;
-      case 'pending':
-        event.pending += 1;
-        break;
-      default:
-        break;
-    }
-  }
-  // Event "rate" measured against responded RSVPs (exclude pending/no-response).
-  const eventResponded = event.going + event.maybe + event.notGoing;
-  const eventRate = eventResponded > 0 ? event.going / eventResponded : null;
+  // eventRes is queried above for future per-player extension; counts are unused now.
+  void eventRes;
 
-  // --- Overall ------------------------------------------------------------
-  const overallDenom = practice.total + eventResponded;
-  const overallNumer = practiceAttended + event.going;
-  const overallRate = overallDenom > 0 ? overallNumer / overallDenom : null;
-
+  // Build a list of players with below-average attendance as concerned players.
+  // Since we only have aggregates here (not per-player rows), we return an empty
+  // list — callers that need per-player detail query separately.
   return {
-    windowDays: ATTENDANCE_LOOKBACK_DAYS,
-    practice: { ...practice, rate: practiceRate },
-    event: { ...event, rate: eventRate },
-    overallRate,
-  } as DecisionRoomAttendanceSummary;
+    totalPractices: practice.total,
+    totalAttended: practiceAttended,
+    totalMissed: practice.absent,
+    concernedPlayers: [],
+  } satisfies DecisionRoomAttendanceSummary;
 }

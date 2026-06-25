@@ -33,9 +33,8 @@
 // =============================================================================
 
 import * as React from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { type HTMLMotionProps, LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -106,7 +105,7 @@ export interface StatVisualSample {
 }
 
 export interface StatVisualFrameProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
+  extends Omit<HTMLMotionProps<'div'>, 'title'> {
   /** Chart title (editorial h3). */
   title: React.ReactNode;
   /** Optional eyebrow overline above the title. */

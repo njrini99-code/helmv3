@@ -9,6 +9,11 @@
 // audit history. For AI-derived values it splits FACTS from INTERPRETATION
 // honestly (V2 AI output contract).
 //
+// Also accepts signal-specific source data (sourceChips, confidence,
+// limitation) for use by SignalCard. Per spec §3.4: when sourceChips /
+// confidence / limitation are all null/undefined the drawer renders an explicit
+// "Source not yet attached — this signal cannot be acted upon" message.
+//
 // OWNED BY THE SOURCE-TRUST FOUNDATION PACKET. Fan-out surfaces only import it.
 //
 // Honesty (binding):
@@ -16,12 +21,14 @@
 //  - confidence shows "—" when null; low confidence (<60%) reads as a caution.
 //  - logged-intent / conflict / unreviewed surface their honest caption up top.
 //  - empty provenance => honest empty state (never a blank or fake panel).
+//  - null sourceChips / confidence / limitation renders an explicit unactionable
+//    warning (§3.4), never a silent blank.
 //
 // Built on the canonical <Drawer> primitive (vaul, cream/green). No golf labels.
 // =============================================================================
 
 import * as React from 'react';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
@@ -53,7 +60,9 @@ import { getTrustPresentation, formatConfidence, type TrustIconKey } from './tru
 import type {
   SourceDrawerProps,
   SourceProvenance,
+  SourceTrust,
 } from './source-trust-types';
+import type { BaseballSignalSourceRef } from '@/lib/types/baseball-signals';
 
 /**
  * Section wrapper that fades + rises into place on open, staggered behind its
@@ -398,6 +407,211 @@ function ProvenanceBody({
   );
 }
 
+/**
+ * Extended props for signal-specific source drawer sections.
+ * Per spec §3.4: when all three are null/undefined the drawer surfaces an
+ * explicit "Source not yet attached" message rather than hiding the section.
+ */
+export interface SignalSourceDrawerProps extends SourceDrawerProps {
+  /** Source-ref chips from the signal's source_refs field. */
+  sourceChips?: BaseballSignalSourceRef[] | null;
+  /** Overall confidence [0,1] from the signal row. */
+  signalConfidence?: number | null;
+  /** Limitation text — e.g. sample-too-small caveat. */
+  limitation?: string | null;
+}
+
+/**
+ * Signal-specific source summary section. Rendered above the existing
+ * ProvenanceBody when the drawer is opened from a SignalCard. Displays
+ * source chips, confidence percentage, and limitation text. Per §3.4, all
+ * absent fields render "Not provided" rather than hiding the section.
+ */
+function SignalSourceSection({
+  sourceChips,
+  signalConfidence,
+  limitation,
+}: {
+  sourceChips?: BaseballSignalSourceRef[] | null;
+  signalConfidence?: number | null;
+  limitation?: string | null;
+}) {
+  const hasAnyData =
+    (sourceChips != null && sourceChips.length > 0) ||
+    signalConfidence != null ||
+    limitation != null;
+
+  if (!hasAnyData) {
+    return (
+      <div className="p-4">
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200/80 px-3 py-2.5"
+        >
+          <IconWarning size={15} className="text-amber-600 mt-0.5 flex-shrink-0" aria-hidden />
+          <p className="text-body-sm text-amber-800 leading-relaxed">
+            Source not yet attached — this signal cannot be acted upon.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const confPct =
+    signalConfidence != null ? Math.round(signalConfidence * 100) : null;
+  const confText = confPct != null ? `${confPct}%` : '—';
+  const confLow = confPct != null && confPct < 60;
+  const confMissing = confPct == null;
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* Source chips */}
+      <div>
+        <SectionLabel>Sources</SectionLabel>
+        {sourceChips == null || sourceChips.length === 0 ? (
+          <div className="rounded-2xl border border-warm-200 bg-cream-50 px-4">
+            <DetailRow label="Sources" value="Not provided" muted />
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-warm-200 bg-cream-50 px-4">
+            {sourceChips.map((chip, i) => (
+              <DetailRow
+                key={i}
+                label={chip.source_table}
+                value={
+                  chip.label
+                    ? `${chip.label}${chip.sample_n != null ? ` (n=${chip.sample_n})` : ''}`
+                    : chip.column
+                      ? `.${chip.column}`
+                      : 'Recorded'
+                }
+                muted={!chip.label}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Confidence */}
+      <div>
+        <SectionLabel>Confidence</SectionLabel>
+        <div className="rounded-2xl border border-warm-200 bg-cream-50 px-4">
+          <DetailRow
+            label="Confidence"
+            value={
+              <span
+                className={cn(
+                  'tabular-nums inline-flex items-center justify-end gap-1',
+                  confMissing && 'text-warm-500 font-normal',
+                  confLow && 'text-amber-700 font-semibold',
+                )}
+              >
+                {confLow && (
+                  <IconWarning size={13} className="flex-shrink-0" aria-hidden="true" />
+                )}
+                <span>{confText}</span>
+                {confLow && (
+                  <span className="text-caption font-medium text-amber-700">Low</span>
+                )}
+              </span>
+            }
+            muted={confMissing}
+          />
+        </div>
+      </div>
+
+      {/* Limitation */}
+      <div>
+        <SectionLabel>Limitation</SectionLabel>
+        <div className="rounded-2xl border border-warm-200 bg-cream-50 px-4 py-3">
+          <p className={cn('text-body-sm leading-relaxed', limitation ? 'text-warm-800' : 'text-warm-500')}>
+            {limitation ?? 'Not provided'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Shared drawer inner content (header + provenance body or empty state). */
+function DrawerInner({
+  trust,
+  provenance,
+  viewerRole,
+  reduce,
+}: {
+  trust: SourceTrust | null;
+  provenance: SourceProvenance | null;
+  viewerRole?: 'coach' | 'player';
+  reduce: boolean;
+}) {
+  const presentation = trust ? getTrustPresentation(trust) : null;
+  const conf = formatConfidence(trust?.confidencePct ?? null);
+
+  if (trust && presentation) {
+    return (
+      <>
+        <DrawerHeader>
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                'inline-flex h-9 w-9 items-center justify-center rounded-xl flex-shrink-0',
+                presentation.tone === 'primary' && 'bg-primary-50 text-primary-600',
+                presentation.tone === 'red' && 'bg-red-50 text-red-600',
+                presentation.tone === 'amber' && 'bg-amber-50 text-amber-600',
+                presentation.tone === 'warm' && 'bg-warm-100 text-warm-500',
+              )}
+            >
+              <TrustIcon icon={presentation.icon} size={18} />
+            </span>
+            <div className="min-w-0">
+              <DrawerTitle className="text-title-3">
+                {presentation.trustLabel}
+              </DrawerTitle>
+              <DrawerDescription>{trust.label}</DrawerDescription>
+            </div>
+          </div>
+          <p className="text-body-sm text-warm-500 leading-relaxed mt-2">
+            {presentation.caption}
+          </p>
+        </DrawerHeader>
+
+        {provenance ? (
+          <ProvenanceBody
+            provenance={provenance}
+            presentation={presentation}
+            confText={conf.text}
+            confMissing={conf.missing}
+            confLow={conf.low}
+            viewerRole={viewerRole}
+            reduce={reduce}
+          />
+        ) : (
+          <div className="px-6 pb-8">
+            <EmptyState
+              variant="compact"
+              icon={<IconInfo size={28} />}
+              title="No further detail recorded"
+              description="This value carries a trust label but no additional provenance has been captured yet."
+            />
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <div className="px-6 pb-8 pt-2">
+      <EmptyState
+        variant="compact"
+        icon={<IconInfo size={28} />}
+        title="No source selected"
+        description="Open a source badge to see where a value came from."
+      />
+    </div>
+  );
+}
+
 export function SourceDrawer({
   open,
   onOpenChange,
@@ -406,75 +620,99 @@ export function SourceDrawer({
   viewerRole,
 }: SourceDrawerProps) {
   const reduce = useReducedMotionGuard();
-  const presentation = trust ? getTrustPresentation(trust) : null;
-  const conf = formatConfidence(trust?.confidencePct ?? null);
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="sm:max-w-md sm:mx-auto">
-        {trust && presentation ? (
-          <>
-            <DrawerHeader>
-              <div className="flex items-center gap-3">
-                <span
-                  className={cn(
-                    'inline-flex h-9 w-9 items-center justify-center rounded-xl flex-shrink-0',
-                    presentation.tone === 'primary' && 'bg-primary-50 text-primary-600',
-                    // Conflict (error) reads red — harder than amber caution.
-                    presentation.tone === 'red' && 'bg-red-50 text-red-600',
-                    presentation.tone === 'amber' && 'bg-amber-50 text-amber-600',
-                    // All non-verified / non-conflict provenance tiers are neutral
-                    // warm — they differ by ICON, never hue (binding palette).
-                    presentation.tone === 'warm' && 'bg-warm-100 text-warm-500',
-                  )}
-                >
-                  <TrustIcon icon={presentation.icon} size={18} />
-                </span>
-                <div className="min-w-0">
-                  <DrawerTitle className="text-title-3">
-                    {presentation.trustLabel}
-                  </DrawerTitle>
-                  <DrawerDescription>{trust.label}</DrawerDescription>
-                </div>
-              </div>
-              <p className="text-body-sm text-warm-500 leading-relaxed mt-2">
-                {presentation.caption}
-              </p>
-            </DrawerHeader>
-
-            {provenance ? (
-              <LazyMotion features={domAnimation} strict>
-                <ProvenanceBody
+        <LazyMotion features={domAnimation} strict>
+          <AnimatePresence mode="wait">
+            {open && (
+              <m.div
+                key="source-drawer-content"
+                initial={reduce ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}
+              >
+                <DrawerInner
+                  trust={trust}
                   provenance={provenance}
-                  presentation={presentation}
-                  confText={conf.text}
-                  confMissing={conf.missing}
-                  confLow={conf.low}
                   viewerRole={viewerRole}
                   reduce={reduce}
                 />
-              </LazyMotion>
-            ) : (
-              <div className="px-6 pb-8">
-                <EmptyState
-                  variant="compact"
-                  icon={<IconInfo size={28} />}
-                  title="No further detail recorded"
-                  description="This value carries a trust label but no additional provenance has been captured yet."
-                />
-              </div>
+              </m.div>
             )}
-          </>
-        ) : (
-          <div className="px-6 pb-8 pt-2">
-            <EmptyState
-              variant="compact"
-              icon={<IconInfo size={28} />}
-              title="No source selected"
-              description="Open a source badge to see where a value came from."
-            />
-          </div>
-        )}
+          </AnimatePresence>
+        </LazyMotion>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+/**
+ * Signal-specific variant of <SourceDrawer>. Renders signal source chips,
+ * confidence, and limitation in a first-class section above the base
+ * provenance body. Per spec §3.4: when all source data is absent the drawer
+ * shows an explicit "Source not yet attached" warning.
+ *
+ * Uses AnimatePresence for open/close with useReducedMotion guard.
+ */
+export function SignalSourceDrawer({
+  open,
+  onOpenChange,
+  trust,
+  provenance,
+  viewerRole,
+  sourceChips,
+  signalConfidence,
+  limitation,
+}: SignalSourceDrawerProps) {
+  const reduce = useReducedMotionGuard();
+
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="sm:max-w-md sm:mx-auto">
+        <LazyMotion features={domAnimation} strict>
+          <AnimatePresence mode="wait">
+            {open && (
+              <m.div
+                key="signal-source-drawer-content"
+                initial={reduce ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}
+              >
+                <DrawerHeader>
+                  <DrawerTitle className="text-title-3">Signal Source</DrawerTitle>
+                  <DrawerDescription>
+                    Where this signal came from and how much to rely on it.
+                  </DrawerDescription>
+                </DrawerHeader>
+
+                {/* Glass card wrapping the signal-specific section */}
+                <div className="px-6 pb-2">
+                  <div className="rounded-2xl border border-warm-200/40 bg-cream-50 shadow-glass overflow-hidden">
+                    <SignalSourceSection
+                      sourceChips={sourceChips}
+                      signalConfidence={signalConfidence}
+                      limitation={limitation}
+                    />
+                  </div>
+                </div>
+
+                {/* Standard provenance body below the signal section */}
+                {trust && (
+                  <DrawerInner
+                    trust={trust}
+                    provenance={provenance}
+                    viewerRole={viewerRole}
+                    reduce={reduce}
+                  />
+                )}
+              </m.div>
+            )}
+          </AnimatePresence>
+        </LazyMotion>
       </DrawerContent>
     </Drawer>
   );
