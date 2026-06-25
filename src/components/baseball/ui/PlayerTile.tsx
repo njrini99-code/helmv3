@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { StatusDot } from '@/components/ui/status-dot';
+import { Button } from '@/components/ui/button';
 import { IconNote, IconMessage, IconDumbbell } from '@/components/icons';
 
 // ============ TYPES ============
@@ -70,51 +71,54 @@ interface QuickActionMenuProps {
 function QuickActionMenu({ onQuickAction }: QuickActionMenuProps) {
   return (
     <div className="flex items-center gap-0.5 flex-shrink-0" role="group" aria-label="Quick actions">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon-sm"
         onClick={() => onQuickAction('note')}
         aria-label="Add note"
         className={cn(
-          'inline-flex items-center justify-center rounded-lg text-warm-400',
+          'rounded-lg text-warm-400',
           'min-h-[44px] min-w-[44px]',
           'hover:bg-warm-100 hover:text-warm-700',
           'active:bg-warm-200 active:duration-75',
-          'transition-colors duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+          'transition-colors duration-150'
         )}
       >
         <IconNote size={16} />
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
+        variant="ghost"
+        size="icon-sm"
         onClick={() => onQuickAction('message')}
         aria-label="Send message"
         className={cn(
-          'inline-flex items-center justify-center rounded-lg text-warm-400',
+          'rounded-lg text-warm-400',
           'min-h-[44px] min-w-[44px]',
           'hover:bg-warm-100 hover:text-warm-700',
           'active:bg-warm-200 active:duration-75',
-          'transition-colors duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+          'transition-colors duration-150'
         )}
       >
         <IconMessage size={16} />
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
+        variant="ghost"
+        size="icon-sm"
         onClick={() => onQuickAction('modify_lift')}
         aria-label="Modify lift"
         className={cn(
-          'inline-flex items-center justify-center rounded-lg text-warm-400',
+          'rounded-lg text-warm-400',
           'min-h-[44px] min-w-[44px]',
           'hover:bg-warm-100 hover:text-warm-700',
           'active:bg-warm-200 active:duration-75',
-          'transition-colors duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+          'transition-colors duration-150'
         )}
       >
         <IconDumbbell size={16} />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -275,7 +279,7 @@ function PlayerTileCompact({
  * All interactive elements meet the 44px iOS HIG touch target minimum.
  */
 export function PlayerTile({
-  playerId,
+  playerId: _playerId,
   variant = 'list',
   ...rest
 }: PlayerTileProps) {

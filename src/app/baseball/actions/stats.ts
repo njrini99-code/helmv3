@@ -11,6 +11,7 @@ import {
   type PlayerMatch,
 } from '@/lib/baseball/csv-utils';
 import { logServerError } from '@/lib/server-error-logger';
+import { fromUntyped } from '@/lib/supabase/untyped';
 
 // Re-export types and utilities for backward compatibility
 export { parseCSV, findBestPlayerMatch, type CSVRow, type PlayerMatch };
@@ -392,8 +393,7 @@ export async function reprocessUpload(
 
    
   const rawFileExists = upload.import_run_id
-    ? await (supabase as any)
-        .from('baseball_import_runs')
+    ? await fromUntyped(supabase, 'baseball_import_runs')
         .select('file_hash')
         .eq('id', upload.import_run_id)
         .maybeSingle()

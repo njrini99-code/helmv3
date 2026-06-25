@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PlayerPracticeLoading() {
   return (
-    <div className="min-h-dvh bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-cream-50">
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
         {/* Header */}
         <div className="mb-6">
@@ -21,7 +21,7 @@ export default function PlayerPracticeLoading() {
           {[0, 1].map((i) => (
             <div
               key={i}
-              className="rounded-2xl border border-warm-200 bg-white/70 p-5 shadow-glass"
+              className="rounded-2xl border border-warm-200 glass-standard p-5 shadow-glass"
               style={{ animationDelay: `${i * 80}ms` }}
             >
               <div className="mb-4 flex items-start justify-between gap-3">

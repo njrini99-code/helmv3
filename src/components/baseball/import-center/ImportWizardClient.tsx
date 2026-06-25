@@ -713,8 +713,9 @@ export function ImportWizardClient({
             {/* Shape badge — shows what the coach chose. */}
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">
               {shapeMeta.label}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 aria-label="Change data shape"
                 onClick={() => { setStep('choose'); setError(null); }}
                 className="ml-0.5 rounded-full p-0.5 hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
@@ -729,7 +730,7 @@ export function ImportWizardClient({
                 >
                   <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
                 </svg>
-              </button>
+              </Button>
             </span>
             <ol className="flex flex-wrap items-center gap-2" aria-label="Import steps">
               {VISIBLE_STEP_ORDER.map((s) => {
@@ -779,9 +780,10 @@ export function ImportWizardClient({
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 {(Object.values(DATA_SHAPE_META) as DataShapeMeta[]).map((meta) => (
-                  <button
+                  <Button
                     key={meta.shape}
                     type="button"
+                    variant="ghost"
                     onClick={() => {
                       setDataShape(meta.shape);
                       if (meta.redirectToEventLevel && onRequestEventLevel) {
@@ -791,7 +793,7 @@ export function ImportWizardClient({
                       }
                     }}
                     className={[
-                      'group relative flex flex-col gap-2 rounded-2xl border px-5 py-5 text-left transition-all',
+                      'group relative flex flex-col gap-2 rounded-2xl border px-5 py-5 text-left transition-all whitespace-normal items-start',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400',
                       dataShape === meta.shape
                         ? 'border-primary-300 bg-primary-50/60 shadow-sm'
@@ -823,7 +825,7 @@ export function ImportWizardClient({
                         Uses Event-level wizard
                       </span>
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
 
@@ -861,13 +863,13 @@ export function ImportWizardClient({
                   <span className="text-warm-400">·</span>
                   <span className="text-xs text-warm-600">
                     Writes to{' '}
-                    <code className="rounded bg-white/80 px-1 py-0.5 font-mono text-xs text-warm-700">
+                    <code className="rounded glass-standard px-1 py-0.5 font-mono text-xs text-warm-700">
                       {shapeMeta.targetTable.split(' / ')[0]}
                     </code>
                     {shapeMeta.targetTable.includes('/') && (
                       <>
                         {' '}
-                        <code className="rounded bg-white/80 px-1 py-0.5 font-mono text-xs text-warm-700">
+                        <code className="rounded glass-standard px-1 py-0.5 font-mono text-xs text-warm-700">
                           baseball_box_score_pitching
                         </code>
                       </>

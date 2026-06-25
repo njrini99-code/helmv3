@@ -22,7 +22,7 @@ export default function TodayLoading() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-4 space-y-2"
+            className="rounded-2xl border border-white/20 glass-standard p-4 space-y-2"
           >
             <div className="h-8 w-8 rounded-xl bg-warm-200" />
             <div className="h-6 w-12 rounded bg-warm-200" />
@@ -39,7 +39,7 @@ export default function TodayLoading() {
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-4 flex items-center gap-4"
+              className="rounded-2xl border border-white/20 glass-standard p-4 flex items-center gap-4"
             >
               <div className="h-10 w-10 rounded-full bg-warm-200 shrink-0" />
               <div className="flex-1 space-y-1.5">
@@ -57,7 +57,7 @@ export default function TodayLoading() {
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-4 flex items-center gap-3"
+              className="rounded-2xl border border-white/20 glass-standard p-4 flex items-center gap-3"
             >
               <div className="h-9 w-9 rounded-xl bg-warm-200 shrink-0" />
               <div className="flex-1 space-y-1.5">

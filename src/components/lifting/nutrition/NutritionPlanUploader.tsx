@@ -22,6 +22,8 @@ import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { NativeSelect } from '@/components/ui/select';
 import {
   IconFileText,
   IconLink,
@@ -29,7 +31,6 @@ import {
   IconUpload,
   IconX,
   IconCheck,
-  IconChevronDown,
 } from '@/components/icons';
 import { uploadNutritionPlan } from '@/app/lifting/actions/nutrition';
 
@@ -122,8 +123,9 @@ function TypePill({
   onSelect: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={onSelect}
       className={[
         'flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium border transition-all duration-150',
@@ -135,7 +137,7 @@ function TypePill({
     >
       {option.icon}
       {option.label}
-    </button>
+    </Button>
   );
 }
 
@@ -173,45 +175,50 @@ function FileDropZone({
           <p className="truncate text-sm font-medium text-warm-900">{file.name}</p>
           <p className="text-xs text-warm-400">{formatBytes(file.size)}</p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-sm"
           onClick={onClear}
-          className="shrink-0 rounded-lg p-1 text-warm-400 transition-colors hover:bg-white hover:text-warm-600"
+          className="shrink-0 rounded-lg p-1 text-warm-400 transition-colors hover:bg-cream-50 hover:text-warm-600"
           aria-label="Remove file"
         >
           <IconX size={14} />
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => inputRef.current?.click()}
-      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        handleFiles(e.dataTransfer.files);
-      }}
-      className={[
-        'w-full rounded-xl border-2 border-dashed px-6 py-8 transition-all duration-150',
-        'flex flex-col items-center gap-2 text-center',
-        dragging
-          ? 'border-primary-400 bg-primary-50'
-          : 'border-warm-200 bg-warm-50/50 hover:border-primary-300 hover:bg-primary-50/40',
-      ].join(' ')}
-    >
-      <span className={dragging ? 'text-primary-500' : 'text-warm-300'}>
-        <IconUpload size={24} />
-      </span>
-      <span className="text-sm font-medium text-warm-600">
-        {dragging ? 'Drop to upload' : 'Choose a file or drag it here'}
-      </span>
-      <span className="text-xs text-warm-400">PDF, image, doc, spreadsheet — up to 20 MB</span>
-      <input
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          handleFiles(e.dataTransfer.files);
+        }}
+        className={[
+          'w-full rounded-xl border-2 border-dashed px-6 py-8 transition-all duration-150',
+          'flex flex-col items-center gap-2 text-center',
+          dragging
+            ? 'border-primary-400 bg-primary-50'
+            : 'border-warm-200 bg-warm-50/50 hover:border-primary-300 hover:bg-primary-50/40',
+        ].join(' ')}
+      >
+        <span className={dragging ? 'text-primary-500' : 'text-warm-300'}>
+          <IconUpload size={24} />
+        </span>
+        <span className="text-sm font-medium text-warm-600">
+          {dragging ? 'Drop to upload' : 'Choose a file or drag it here'}
+        </span>
+        <span className="text-xs text-warm-400">PDF, image, doc, spreadsheet — up to 20 MB</span>
+      </Button>
+      <Input
         ref={inputRef}
         type="file"
         className="sr-only"
@@ -219,7 +226,7 @@ function FileDropZone({
         onChange={(e: ChangeEvent<HTMLInputElement>) => handleFiles(e.target.files)}
         tabIndex={-1}
       />
-    </button>
+    </>
   );
 }
 
@@ -311,9 +318,9 @@ export function NutritionPlanUploader({ orgId, onSuccess, onCancel }: Props) {
         <div className="space-y-6 p-6">
           {/* Plan type toggle */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-warm-500">
+            <p className="block text-xs font-semibold uppercase tracking-wide text-warm-500">
               Type
-            </label>
+            </p>
             <div className="flex flex-wrap gap-2">
               {PLAN_TYPE_OPTIONS.map((opt) => (
                 <TypePill
@@ -356,9 +363,9 @@ export function NutritionPlanUploader({ orgId, onSuccess, onCancel }: Props) {
                 transition={{ duration: 0.15 }}
                 className="space-y-1.5"
               >
-                <label className="block text-sm font-medium text-warm-700">
+                <p className="block text-sm font-medium text-warm-700">
                   File <span className="text-red-400">*</span>
-                </label>
+                </p>
                 <FileDropZone
                   file={file}
                   onChange={setFile}
@@ -408,18 +415,14 @@ export function NutritionPlanUploader({ orgId, onSuccess, onCancel }: Props) {
                 <label htmlFor="np-note" className="block text-sm font-medium text-warm-700">
                   Plan details <span className="text-red-400">*</span>
                 </label>
-                <textarea
+                <Textarea
                   id="np-note"
                   value={noteBody}
                   onChange={(e) => setNoteBody(e.target.value)}
                   placeholder="Write the nutrition plan directly here — macros, meal timing, guidelines…"
                   rows={6}
                   maxLength={5000}
-                  className={[
-                    'w-full rounded-xl border border-warm-200 bg-white px-3 py-2.5 text-sm text-warm-900',
-                    'placeholder:text-warm-300 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/20',
-                    'transition-colors duration-150 resize-y min-h-[120px]',
-                  ].join(' ')}
+                  className="resize-y min-h-[120px] text-sm"
                 />
                 <p className="text-xs text-warm-400 text-right">
                   {noteBody.length}/5000
@@ -434,18 +437,14 @@ export function NutritionPlanUploader({ orgId, onSuccess, onCancel }: Props) {
               <label htmlFor="np-desc" className="block text-sm font-medium text-warm-700">
                 Description <span className="text-warm-400 font-normal">(optional)</span>
               </label>
-              <textarea
+              <Textarea
                 id="np-desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Brief summary for athletes…"
                 rows={3}
                 maxLength={1000}
-                className={[
-                  'w-full rounded-xl border border-warm-200 bg-white px-3 py-2.5 text-sm text-warm-900',
-                  'placeholder:text-warm-300 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/20',
-                  'transition-colors duration-150 resize-y min-h-[80px]',
-                ].join(' ')}
+                className="resize-y min-h-[80px] text-sm"
               />
             </div>
           )}
@@ -455,27 +454,12 @@ export function NutritionPlanUploader({ orgId, onSuccess, onCancel }: Props) {
             <label htmlFor="np-visibility" className="block text-sm font-medium text-warm-700">
               Visibility
             </label>
-            <div className="relative">
-              <select
-                id="np-visibility"
-                value={visibility}
-                onChange={(e) => setVisibility(e.target.value as Visibility)}
-                className={[
-                  'w-full appearance-none rounded-xl border border-warm-200 bg-white py-2.5 pl-3 pr-8 text-sm text-warm-900',
-                  'focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/20',
-                  'transition-colors duration-150',
-                ].join(' ')}
-              >
-                {VISIBILITY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-warm-400">
-                <IconChevronDown size={14} />
-              </span>
-            </div>
+            <NativeSelect
+              id="np-visibility"
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as Visibility)}
+              options={VISIBILITY_OPTIONS}
+            />
           </div>
 
           {/* Publish toggle */}

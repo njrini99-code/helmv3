@@ -25,6 +25,7 @@ import {
 } from 'recharts';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconActivity, IconTrendingUp } from '@/components/icons';
@@ -124,7 +125,7 @@ function CustomTooltip({
   const annotationType = d?.annotationType;
 
   return (
-    <div className="rounded-2xl border border-white/40 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-xl text-xs">
+    <div className="rounded-2xl border border-white/40 glass-standard px-3 py-2 shadow-lg backdrop-blur-xl text-xs">
       <p className="font-semibold text-warm-900">{label}</p>
       {weight != null && (
         <p className="mt-0.5 text-warm-600">{fmtWeight(weight)}</p>
@@ -265,19 +266,20 @@ export function BodyweightChart({
             aria-label="Time range"
           >
             {RANGES.map((r) => (
-              <button
+              <Button
                 key={r.key}
                 type="button"
+                variant="ghost"
                 onClick={() => setRange(r.key)}
                 aria-pressed={range === r.key}
                 className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
                   range === r.key
-                    ? 'bg-white text-warm-900 shadow-sm'
+                    ? 'bg-cream-50 text-warm-900 shadow-sm'
                     : 'text-warm-500 hover:text-warm-700'
                 }`}
               >
                 {r.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -286,7 +288,7 @@ export function BodyweightChart({
         {filtered.length > 0 && (
           <div className="mt-3 flex flex-wrap items-end gap-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-warm-400">
+              <p className="text-micro font-semibold uppercase tracking-widest text-warm-400">
                 Current
               </p>
               <p className="text-xl font-bold text-warm-900">
@@ -296,7 +298,7 @@ export function BodyweightChart({
 
             {delta30d !== null && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-warm-400">
+                <p className="text-micro font-semibold uppercase tracking-widest text-warm-400">
                   30-day change
                 </p>
                 <div className="mt-0.5">
@@ -307,7 +309,7 @@ export function BodyweightChart({
 
             {avgWeight !== null && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-warm-400">
+                <p className="text-micro font-semibold uppercase tracking-widest text-warm-400">
                   Avg
                 </p>
                 <p className="font-semibold text-warm-700">{fmtWeight(avgWeight)}</p>
@@ -316,7 +318,7 @@ export function BodyweightChart({
 
             {goalWeightLbs != null && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-warm-400">
+                <p className="text-micro font-semibold uppercase tracking-widest text-warm-400">
                   Goal
                 </p>
                 <p className="font-semibold text-primary-600">{fmtWeight(goalWeightLbs)}</p>
@@ -329,13 +331,13 @@ export function BodyweightChart({
         {visibleAnnotations.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-3">
             {visibleAnnotations.some((a) => a.type === 'nutrition_assigned') && (
-              <span className="flex items-center gap-1.5 text-[10px] text-warm-400">
+              <span className="flex items-center gap-1.5 text-micro text-warm-400">
                 <span className="inline-block h-px w-4 border-t-2 border-dashed border-primary-400" />
                 Nutrition assigned
               </span>
             )}
             {visibleAnnotations.some((a) => a.type === 'missed_checkin') && (
-              <span className="flex items-center gap-1.5 text-[10px] text-warm-400">
+              <span className="flex items-center gap-1.5 text-micro text-warm-400">
                 <span className="inline-block h-px w-4 border-t-2 border-dashed border-amber-400" />
                 Missed check-in
               </span>
@@ -459,7 +461,7 @@ export function BodyweightChart({
 
         {/* Goal band legend */}
         {goalWeightLbs != null && filtered.length > 0 && (
-          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-warm-400">
+          <div className="mt-2 flex items-center gap-1.5 text-micro text-warm-400">
             <span className="inline-block h-3 w-3 rounded-sm bg-primary-100 ring-1 ring-primary-200" />
             Goal range ±2 lbs ({fmtWeight(goalBandLow!)} – {fmtWeight(goalBandHigh!)})
           </div>

@@ -475,7 +475,7 @@ function SessionRow({ session }: { session: TodaySession }) {
     [session.firstName?.[0], session.lastName?.[0]].filter(Boolean).join('').toUpperCase() || '?';
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl hover:bg-white/80 transition-all">
+    <div className="flex items-center gap-3 px-4 py-3 glass-standard backdrop-blur-xl border border-white/20 rounded-2xl hover:bg-cream-50 transition-all">
       {/* Avatar */}
       <div
         className="w-9 h-9 rounded-full bg-warm-100 flex items-center justify-center text-sm font-bold text-warm-600 shrink-0"
@@ -595,7 +595,7 @@ function ReadinessSidebar({
             return (
               <div
                 key={s.sessionId}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/50 border border-white/20"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl glass-standard border border-white/20"
               >
                 <ReadinessBandDot band={band} />
                 <span className="flex-1 text-sm text-warm-800 truncate font-medium">{name}</span>
@@ -629,7 +629,7 @@ function ReadinessSidebar({
               {uncheckedAthletes.slice(0, 8).map((a) => (
                 <div
                   key={a.athleteId}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/30 border border-white/10"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl glass-subtle border border-white/10"
                 >
                   <span
                     className="w-2.5 h-2.5 rounded-full bg-warm-200 shrink-0"

@@ -22,6 +22,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   IconDumbbell,
   IconSearch,
@@ -128,11 +129,11 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-warm-900">{exercise.name}</p>
-            <p className="text-[11px] text-warm-400">{exercise.category}</p>
+            <p className="text-eyebrow text-warm-400">{exercise.category}</p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
             {exercise.isPitcherSensitive && (
-              <span className="inline-flex items-center rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700">
+              <span className="inline-flex items-center rounded-full bg-red-50 px-1.5 py-0.5 text-micro font-medium text-red-700">
                 Pitcher ⚡
               </span>
             )}
@@ -158,7 +159,7 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
             {exercise.primaryBodyRegions.slice(0, 3).map((r) => (
               <span
                 key={r}
-                className="rounded-full bg-warm-100 px-1.5 py-0.5 text-[10px] text-warm-500"
+                className="rounded-full bg-warm-100 px-1.5 py-0.5 text-micro text-warm-500"
               >
                 {r}
               </span>
@@ -168,7 +169,9 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
       </div>
 
       {/* Quick-add button — visible on hover / keyboard focus, so non-drag users can add */}
-      <button
+      <Button
+        variant="ghost"
+        size="icon-sm"
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -178,7 +181,7 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
         aria-label={`Add ${exercise.name} to selected block`}
       >
         <IconPlus size={13} />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -269,31 +272,38 @@ export function ExerciseBin({
       {/* ── Safety toggles ───────────────────────────────────────────── */}
       <fieldset className="space-y-1.5">
         <legend className="sr-only">Safety filters</legend>
-        <label className="flex cursor-pointer items-center gap-2 text-xs text-warm-600">
+        <div className="flex cursor-pointer items-center gap-2">
           <Checkbox
+            id="pitcher-safe-filter"
             checked={pitcherSafeOnly}
             onChange={(e) =>
               onPitcherSafeChange((e.target as HTMLInputElement).checked)
             }
           />
-          <IconShieldCheck size={13} className="text-primary-500" aria-hidden />
-          Pitcher-safe only
-        </label>
-        <label className="flex cursor-pointer items-center gap-2 text-xs text-warm-600">
+          <label htmlFor="pitcher-safe-filter" className="flex cursor-pointer items-center gap-1 text-xs text-warm-600">
+            <IconShieldCheck size={13} className="text-primary-500" aria-hidden />
+            Pitcher-safe only
+          </label>
+        </div>
+        <div className="flex cursor-pointer items-center gap-2">
           <Checkbox
+            id="avoid-sore-filter"
             checked={avoidSoreRegions}
             onChange={(e) =>
               onAvoidSoreChange((e.target as HTMLInputElement).checked)
             }
           />
-          <IconWarning size={13} className="text-amber-500" aria-hidden />
-          Avoid sore regions
-        </label>
+          <label htmlFor="avoid-sore-filter" className="flex cursor-pointer items-center gap-1 text-xs text-warm-600">
+            <IconWarning size={13} className="text-amber-500" aria-hidden />
+            Avoid sore regions
+          </label>
+        </div>
       </fieldset>
 
       {/* ── Region group filter ──────────────────────────────────────── */}
       <div className="flex flex-wrap gap-1" role="group" aria-label="Filter by body region">
-        <button
+        <Button
+          variant="ghost"
           type="button"
           onClick={() => onRegionGroupChange(null)}
           aria-pressed={selectedRegionGroup === null}
@@ -306,10 +316,11 @@ export function ExerciseBin({
           ].join(' ')}
         >
           All
-        </button>
+        </Button>
         {REGION_GROUPS.map(({ group, label }) => (
-          <button
+          <Button
             key={group}
+            variant="ghost"
             type="button"
             onClick={() =>
               onRegionGroupChange(selectedRegionGroup === group ? null : group)
@@ -324,7 +335,7 @@ export function ExerciseBin({
             ].join(' ')}
           >
             {label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -348,7 +359,7 @@ export function ExerciseBin({
         )}
       </div>
 
-      <p className="text-center text-[11px] text-warm-400" aria-live="polite">
+      <p className="text-center text-eyebrow text-warm-400" aria-live="polite">
         {filtered.length} of {library.length} exercises
       </p>
     </div>

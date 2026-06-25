@@ -410,7 +410,7 @@ export function PerformanceDashboardClient({
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4 space-y-2"
+              className="glass-standard border border-white/20 rounded-2xl shadow-glass p-4 space-y-2"
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <Skeleton className="h-3 w-20" />
@@ -425,7 +425,7 @@ export function PerformanceDashboardClient({
               <Skeleton key={i} className="h-9 w-24 rounded-full" />
             ))}
           </div>
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 space-y-4">
+          <div className="glass-standard border border-white/20 rounded-2xl shadow-glass p-6 space-y-4">
             <Skeleton className="h-5 w-32" />
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3" style={{ animationDelay: `${i * 50}ms` }}>
@@ -651,30 +651,30 @@ export function PerformanceDashboardClient({
                     {/* Target mode toggle — only show if groups are available */}
                     {groups && groups.length > 0 && (
                       <div className="flex gap-1 rounded-xl bg-warm-50 p-1 w-fit" role="group" aria-label="Assign to">
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
                           onClick={() => setAssignMode('player')}
                           aria-pressed={assignMode === 'player'}
                           className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
                             assignMode === 'player'
-                              ? 'bg-white text-warm-900 shadow-sm'
+                              ? 'bg-cream-50 text-warm-900 shadow-sm'
                               : 'text-warm-500 hover:text-warm-700'
                           }`}
                         >
                           Player
-                        </button>
-                        <button
-                          type="button"
+                        </Button>
+                        <Button
+                          variant="ghost"
                           onClick={() => setAssignMode('group')}
                           aria-pressed={assignMode === 'group'}
                           className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
                             assignMode === 'group'
-                              ? 'bg-white text-warm-900 shadow-sm'
+                              ? 'bg-cream-50 text-warm-900 shadow-sm'
                               : 'text-warm-500 hover:text-warm-700'
                           }`}
                         >
                           Group
-                        </button>
+                        </Button>
                       </div>
                     )}
                     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -691,14 +691,14 @@ export function PerformanceDashboardClient({
                           ]}
                         />
                       ) : (
-                        <fieldset className="rounded-xl border border-warm-200 bg-white/60 px-3 py-2 space-y-1.5">
+                        <fieldset className="rounded-xl border border-warm-200 glass-standard px-3 py-2 space-y-1.5">
                           <legend className="px-1 text-xs font-medium text-warm-500">Groups</legend>
                           {(groups ?? []).map((g) => (
                             <label
                               key={g.id}
                               className="flex items-center gap-2.5 cursor-pointer group"
                             >
-                              <input
+                              <Input
                                 type="checkbox"
                                 className="h-4 w-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500/40"
                                 checked={assignGroupIds.includes(g.id)}

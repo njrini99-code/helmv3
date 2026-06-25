@@ -13,7 +13,7 @@
 //   • Honest empty state
 // =============================================================================
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import {
   ComposedChart,
@@ -33,7 +33,9 @@ import {
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { IconChart, IconAward, IconChevronDown, IconTrendingUp } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
+import { IconChart, IconAward, IconTrendingUp } from '@/components/icons';
 import type { ExerciseProgression } from '@/app/lifting/actions/performance-profile';
 
 // ---------------------------------------------------------------------------
@@ -128,7 +130,7 @@ function CustomTooltip({
   const v = d?.value;
 
   return (
-    <div className="rounded-2xl border border-white/40 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-xl text-xs">
+    <div className="rounded-2xl glass-standard px-3 py-2 shadow-lg text-xs">
       <p className="font-semibold text-warm-900">{label}</p>
       {v != null && (
         <p className="mt-0.5 text-warm-600">{fmtValue(v, metric)}</p>
@@ -244,13 +246,6 @@ export function LiftProgressionChart({ progressions, loading = false }: Props) {
   // RPE domain 0–10
   const yDomain: [number | 'auto', number | 'auto'] = isRpeMetric ? [0, 10] : ['auto', 'auto'];
 
-  const handleExerciseChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setSelectedExercise(e.target.value);
-    },
-    [],
-  );
-
   if (loading) {
     return (
       <Card variant="glass">
@@ -296,23 +291,11 @@ export function LiftProgressionChart({ progressions, loading = false }: Props) {
           </div>
 
           {/* Exercise selector */}
-          <div className="relative shrink-0">
-            <select
+          <div className="shrink-0 max-w-[180px]">
+            <Select
               value={exerciseId ?? ''}
-              onChange={handleExerciseChange}
-              className="appearance-none rounded-xl border border-warm-200 bg-white/80 pl-3 pr-8 py-1.5 text-xs font-semibold text-warm-900 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/30 max-w-[180px] truncate"
-              aria-label="Select exercise"
-            >
-              {progressions.map((p) => (
-                <option key={p.exercise_id} value={p.exercise_id}>
-                  {p.exercise_name}
-                </option>
-              ))}
-            </select>
-            <IconChevronDown
-              size={12}
-              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400"
-              aria-hidden="true"
+              onChange={(v) => setSelectedExercise(v)}
+              options={progressions.map((p) => ({ value: p.exercise_id, label: p.exercise_name }))}
             />
           </div>
         </div>
@@ -324,19 +307,20 @@ export function LiftProgressionChart({ progressions, loading = false }: Props) {
           aria-label="Metric"
         >
           {METRICS.map((m) => (
-            <button
+            <Button
               key={m.key}
               type="button"
+              variant="ghost"
               onClick={() => setMetric(m.key)}
               aria-pressed={metric === m.key}
               className={`flex-1 rounded-lg px-2 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
                 metric === m.key
-                  ? 'bg-white text-warm-900 shadow-sm'
+                  ? 'bg-cream-50 text-warm-900 shadow-sm'
                   : 'text-warm-500 hover:text-warm-700'
               }`}
             >
               {m.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -344,14 +328,14 @@ export function LiftProgressionChart({ progressions, loading = false }: Props) {
         {currentProgression && latestValue != null && (
           <div className="flex flex-wrap items-end gap-4">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-warm-400">
+              <p className="text-micro font-semibold uppercase tracking-widest text-warm-400">
                 Latest
               </p>
               <p className="text-xl font-bold text-warm-900">{fmtValue(latestValue, metric)}</p>
             </div>
             {change != null && (
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-warm-400">
+                <p className="text-micro font-semibold uppercase tracking-widest text-warm-400">
                   Change
                 </p>
                 <div className="mt-0.5">
@@ -361,7 +345,7 @@ export function LiftProgressionChart({ progressions, loading = false }: Props) {
             )}
             {currentProgression.prMarkers.length > 0 && (
               <div className="ml-auto">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-warm-400">
+                <p className="text-micro font-semibold uppercase tracking-widest text-warm-400">
                   PRs
                 </p>
                 <p className="flex items-center gap-1 font-semibold text-amber-600">
@@ -539,7 +523,7 @@ export function LiftProgressionChart({ progressions, loading = false }: Props) {
 
             {/* PR legend */}
             {currentProgression && currentProgression.prMarkers.length > 0 && (
-              <div className="mt-2 flex items-center gap-1.5 text-[10px] text-warm-400">
+              <div className="mt-2 flex items-center gap-1.5 text-micro text-warm-400">
                 <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400 ring-1 ring-amber-300" />
                 PR markers highlighted on chart
               </div>

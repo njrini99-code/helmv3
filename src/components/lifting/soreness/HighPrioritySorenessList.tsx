@@ -84,7 +84,7 @@ function AthleteCard({ summary }: { summary: AthleteRequestSummary }) {
           {topRegions.map((r, i) => (
             <span
               key={i}
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${severityColor(r.severity)} bg-white border border-warm-200`}
+              className={`rounded-full px-2.5 py-0.5 text-eyebrow font-medium ${severityColor(r.severity)} bg-cream-50 border border-warm-200`}
             >
               {r.body_region.replace(/_/g, ' ')} · {r.severity}/10
             </span>

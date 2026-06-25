@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconHeart, IconCheckCircle2 } from '@/components/icons';
 import type {
@@ -62,7 +63,7 @@ function maxSeverityBadge(max: number | null): React.ReactNode {
     max >= 3 ? 'bg-yellow-100 text-yellow-700' :
     'bg-warm-100 text-warm-500';
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-eyebrow font-semibold ${cls}`}>
       {max}/10
     </span>
   );
@@ -160,8 +161,9 @@ export function SorenessComplianceBoard({ dashboard }: Props) {
       {/* Count tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tiles.map((t) => (
-          <button
+          <Button
             key={t.key}
+            variant="ghost"
             onClick={() => setFilter(filter === t.key ? 'all' : t.key)}
             className={`rounded-2xl border px-4 py-3 text-left transition-all ${t.cls} ${
               filter === t.key ? 'ring-2 ring-offset-1 ring-primary-400' : 'hover:opacity-80'
@@ -169,7 +171,7 @@ export function SorenessComplianceBoard({ dashboard }: Props) {
           >
             <p className="text-2xl font-bold tabular-nums">{t.count}</p>
             <p className="text-xs font-medium mt-0.5">{t.label}</p>
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -184,7 +186,7 @@ export function SorenessComplianceBoard({ dashboard }: Props) {
               className="py-8"
             />
           ) : (
-            <ul role="list" aria-label="Athlete soreness statuses">
+            <ul aria-label="Athlete soreness statuses">
               {filtered.map((s) => (
                 <li key={s.request.id}>
                   <AthleteRow summary={s} />

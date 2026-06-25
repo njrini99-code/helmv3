@@ -14,6 +14,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { SORENESS_REGIONS } from '@/lib/lifting/soreness-regions';
 import type { SorenessRegionId } from '@/lib/lifting/soreness-regions';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconUsers } from '@/components/icons';
 import type { AthleteRequestSummary } from '@/app/lifting/actions/soreness';
@@ -72,7 +73,7 @@ function heatColor(value: number, max: number, mode: HeatMode): string {
 function Legend({ max, unit }: { max: number; unit: string }) {
   const stops = [0, 0.25, 0.5, 0.75, 1];
   return (
-    <div className="flex items-center gap-2 text-[11px] text-warm-500">
+    <div className="flex items-center gap-2 text-eyebrow text-warm-500">
       <span>Low</span>
       <div className="flex flex-1 h-2 rounded-full overflow-hidden">
         {stops.map((s, i) => (
@@ -197,15 +198,17 @@ export function TeamSorenessHeatmap({ summaries, dateLabel }: Props) {
           ['avg', 'Avg Severity'],
           ['high', 'High Only'],
         ] as Array<[HeatMode, string]>).map(([m, label]) => (
-          <button
+          <Button
             key={m}
+            type="button"
+            variant="ghost"
             onClick={() => setMode(m)}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-              mode === m ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
+              mode === m ? 'bg-cream-50 text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             {label}
-          </button>
+          </Button>
         ))}
       </div>
 

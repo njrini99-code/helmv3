@@ -95,7 +95,7 @@ const SESSION_STATUS_LABEL: Record<string, string> = {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-warm-400">
+    <h3 className="mb-2 text-eyebrow font-semibold uppercase tracking-wider text-warm-400">
       {children}
     </h3>
   );
@@ -226,7 +226,9 @@ export function PlayerInspectorPanel({
         )}
       >
         {/* ── Close button ─────────────────────────────────────────────── */}
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={onClose}
           aria-label="Close inspector"
           className={cn(
@@ -239,11 +241,11 @@ export function PlayerInspectorPanel({
           )}
         >
           <IconX size={18} />
-        </button>
+        </Button>
 
         {/* ── Header ───────────────────────────────────────────────────── */}
         <div className="border-b border-warm-100 p-5 pr-14">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary-600">
+          <p className="text-eyebrow font-semibold uppercase tracking-wider text-primary-600">
             Player Inspector
           </p>
           <h2 className="mt-0.5 text-xl font-semibold tracking-tight text-warm-900 truncate">
@@ -339,7 +341,7 @@ export function PlayerInspectorPanel({
                   An empty value ({}) renders the neutral body silhouette shape.
                   Region-level data requires a dedicated per-player fetch
                   (not available in the board-row payload). */}
-              <div className="overflow-hidden rounded-xl bg-white/60 border border-warm-100">
+              <div className="overflow-hidden rounded-xl glass-standard border border-warm-100">
                 <SorenessBodyMap
                   value={{}}
                   onChange={() => {}}
@@ -400,7 +402,7 @@ export function PlayerInspectorPanel({
                   → {readiness.suggested_action}
                 </p>
               )}
-              <div className="mt-2 text-[11px] text-warm-400">
+              <div className="mt-2 text-eyebrow text-warm-400">
                 Confidence: {readiness.confidence}
                 {readiness.stale && ' · stale data'}
                 {readiness.missing_inputs.length > 0 &&

@@ -92,13 +92,13 @@ function ProgramEditorSkeleton() {
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-8 w-14 rounded-lg" />
         </div>
-        <div className="rounded-xl bg-white/70 border border-white/20 p-3 space-y-2">
+        <div className="rounded-xl glass-standard border border-white/20 p-3 space-y-2">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-4 w-24 rounded-full" />
         </div>
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, wi) => (
-            <div key={wi} className="rounded-xl border border-warm-100 bg-white/70 overflow-hidden">
+            <div key={wi} className="rounded-xl border border-warm-100 glass-standard overflow-hidden">
               <div className="px-3 py-2 flex items-center justify-between bg-warm-50/50">
                 <Skeleton className="h-3.5 w-28" />
               </div>
@@ -124,7 +124,7 @@ function ProgramEditorSkeleton() {
           </div>
         </div>
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl overflow-hidden">
+          <div key={i} className="rounded-2xl border border-white/20 glass-standard overflow-hidden">
             <div className="border-b border-warm-100 px-5 py-3 flex items-center justify-between bg-warm-50/50">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-5 w-20 rounded-full" />
@@ -663,13 +663,13 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
         </div>
 
         {/* Program meta chip */}
-        <div className="mb-4 rounded-xl bg-white/70 border border-white/20 p-3">
+        <div className="mb-4 rounded-xl glass-standard border border-white/20 p-3">
           <p className="font-semibold text-warm-900 text-sm line-clamp-2">{program.name}</p>
           <div className="mt-1 flex items-center gap-1.5">
-            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${STATUS_META[program.status].cls}`}>
+            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-micro font-medium ${STATUS_META[program.status].cls}`}>
               {STATUS_META[program.status].label}
             </span>
-            <span className="text-[11px] text-warm-400">{program.phase}</span>
+            <span className="text-eyebrow text-warm-400">{program.phase}</span>
           </div>
         </div>
 
@@ -693,7 +693,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
         ) : (
           <div className="space-y-2">
             {weeks.map((week) => (
-              <div key={week.id} className="rounded-xl border border-warm-100 bg-white/70 overflow-hidden">
+              <div key={week.id} className="rounded-xl border border-warm-100 glass-standard overflow-hidden">
                 {/* Week header */}
                 <div className="px-3 py-2 flex items-center justify-between gap-1 group">
                   <span className="text-xs font-semibold text-warm-500 truncate">
@@ -702,23 +702,25 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                   </span>
                   {canEdit && (
                     <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         title="Duplicate week"
                         onClick={() => handleDuplicateWeek(week.id)}
                         disabled={isPending}
                         className="p-1 rounded text-warm-400 hover:text-warm-700 transition-colors"
                       >
                         <IconCopy size={11} />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="ghost"
                         title="Delete week"
                         onClick={() => setDeletingWeekId(week.id)}
                         className="p-1 rounded text-warm-400 hover:text-red-500 transition-colors"
                       >
                         <IconTrash size={11} />
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -727,10 +729,11 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                 <div className="pb-1">
                   {week.days.map((day) => (
                     <div key={day.id} className="group/day flex items-center gap-0.5">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={() => setSelectedDayId(day.id)}
-                        className={`flex-1 px-4 py-1.5 text-left text-xs transition-colors ${
+                        className={`flex-1 px-4 py-1.5 text-left text-xs transition-colors whitespace-normal ${
                           selectedDayId === day.id
                             ? 'bg-primary-50 text-primary-700 font-medium'
                             : 'text-warm-600 hover:bg-warm-50'
@@ -738,30 +741,32 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                       >
                         D{day.day_number} — {day.name ?? DAY_TYPE_LABEL[day.day_type] ?? day.day_type}
                         {day.estimated_minutes ? (
-                          <span className="ml-1.5 text-[10px] text-warm-400">
+                          <span className="ml-1.5 text-micro text-warm-400">
                             <IconClock size={10} className="inline mr-0.5" />{day.estimated_minutes}m
                           </span>
                         ) : null}
-                      </button>
+                      </Button>
                       {canEdit && (
                         <div className="flex items-center gap-0.5 pr-1.5 opacity-0 group-hover/day:opacity-100 transition-opacity">
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             title="Duplicate day"
                             onClick={() => handleDuplicateDay(day.id)}
                             disabled={isPending}
                             className="p-0.5 rounded text-warm-300 hover:text-warm-600 transition-colors"
                           >
                             <IconCopy size={10} />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
+                            variant="ghost"
                             title="Delete day"
                             onClick={() => setDeletingDayId(day.id)}
                             className="p-0.5 rounded text-warm-300 hover:text-red-500 transition-colors"
                           >
                             <IconTrash size={10} />
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -769,17 +774,18 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
 
                   {/* Add day button */}
                   {canEdit && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => {
                         setAddDayWeekId(week.id);
                         setDayName(''); setDayType('full_body'); setDayMinutes('');
                         setAddDayError(null);
                       }}
-                      className="w-full px-4 py-1 text-left text-[11px] text-warm-400 hover:text-primary-600 hover:bg-primary-50/50 transition-colors flex items-center gap-1"
+                      className="w-full px-4 py-1 text-left text-eyebrow text-warm-400 hover:text-primary-600 hover:bg-primary-50/50 transition-colors flex items-center gap-1 whitespace-normal"
                     >
                       <IconPlus size={10} /> Add day
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -789,13 +795,14 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
 
         {/* Add week CTA */}
         {canEdit && weeks.length > 0 && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => { setWeekName(''); setWeekTheme(''); setWeekDeload(false); setAddWeekError(null); setShowAddWeek(true); }}
             className="mt-3 w-full flex items-center justify-center gap-1 rounded-xl border border-dashed border-warm-200 py-2 text-xs text-warm-400 hover:text-primary-600 hover:border-primary-300 transition-colors"
           >
             <IconPlus size={12} /> Add week
-          </button>
+          </Button>
         )}
 
         {/* Publish */}
@@ -915,40 +922,44 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                         </div>
                         {canEdit && (
                           <div className="flex items-center gap-0.5">
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
                               title="Move section up"
                               onClick={() => handleMoveSectionUp(section)}
                               disabled={isPending || sIdx === 0}
                               className="p-1 rounded text-warm-300 hover:text-warm-700 disabled:opacity-30 transition-colors"
                             >
                               <IconChevronUp size={14} />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
+                              variant="ghost"
                               title="Move section down"
                               onClick={() => handleMoveSectionDown(section)}
                               disabled={isPending || sIdx === selectedDay.sections.length - 1}
                               className="p-1 rounded text-warm-300 hover:text-warm-700 disabled:opacity-30 transition-colors"
                             >
                               <IconChevronDown size={14} />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
+                              variant="ghost"
                               title="Edit section"
                               onClick={() => openEditSection(section)}
                               className="p-1 rounded text-warm-400 hover:text-warm-700 transition-colors"
                             >
                               <IconEdit size={14} />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
+                              variant="ghost"
                               title="Delete section"
                               onClick={() => setDeletingSectionId(section.id)}
                               className="p-1 rounded text-warm-400 hover:text-red-500 transition-colors"
                             >
                               <IconTrash size={14} />
-                            </button>
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -976,7 +987,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                                     ? (exerciseNameMap[presc.exercise_id] ?? 'Unknown exercise')
                                     : <span className="text-warm-400 italic">No exercise</span>}
                                   {presc.coaching_note && (
-                                    <p className="text-[11px] text-warm-400 mt-0.5 line-clamp-1">{presc.coaching_note}</p>
+                                    <p className="text-eyebrow text-warm-400 mt-0.5 line-clamp-1">{presc.coaching_note}</p>
                                   )}
                                 </td>
                                 <td className="py-2.5 px-2 text-center text-warm-600">{presc.sets ?? '—'}</td>
@@ -990,41 +1001,45 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                                 {canEdit && (
                                   <td className="py-2.5 pr-3">
                                     <div className="flex items-center justify-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                                      <button
+                                      <Button
                                         type="button"
+                                        variant="ghost"
                                         title="Move up"
                                         onClick={() => handleMovePrescUp(presc, section)}
                                         disabled={isPending || pIdx === 0}
                                         className="p-0.5 rounded text-warm-300 hover:text-warm-600 disabled:opacity-30 transition-colors"
                                       >
                                         <IconChevronUp size={12} />
-                                      </button>
-                                      <button
+                                      </Button>
+                                      <Button
                                         type="button"
+                                        variant="ghost"
                                         title="Move down"
                                         onClick={() => handleMovePrescDown(presc, section)}
                                         disabled={isPending || pIdx === section.prescriptions.length - 1}
                                         className="p-0.5 rounded text-warm-300 hover:text-warm-600 disabled:opacity-30 transition-colors"
                                       >
                                         <IconChevronDown size={12} />
-                                      </button>
-                                      <button
+                                      </Button>
+                                      <Button
                                         type="button"
+                                        variant="ghost"
                                         title="Edit"
                                         onClick={() => openEditPresc(presc)}
                                         className="p-0.5 rounded text-warm-300 hover:text-warm-600 transition-colors"
                                       >
                                         <IconEdit size={12} />
-                                      </button>
-                                      <button
+                                      </Button>
+                                      <Button
                                         type="button"
+                                        variant="ghost"
                                         title="Remove"
                                         onClick={() => handleDeletePresc(presc.id)}
                                         disabled={isPending}
                                         className="p-0.5 rounded text-warm-300 hover:text-red-500 transition-colors"
                                       >
                                         <IconX size={12} />
-                                      </button>
+                                      </Button>
                                     </div>
                                   </td>
                                 )}
@@ -1037,13 +1052,14 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                       {/* Add exercise button */}
                       {canEdit && (
                         <div className="px-5 py-2 border-t border-warm-50">
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             onClick={() => setPickerSectionId(section.id)}
                             className="flex items-center gap-1.5 text-xs text-warm-400 hover:text-primary-600 transition-colors"
                           >
                             <IconPlus size={12} /> Add exercise
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </CardContent>
@@ -1052,8 +1068,9 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
 
                 {/* Add section (bottom CTA) */}
                 {canEdit && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => {
                       setAddSectionDayId(selectedDay.id);
                       setSectionName(''); setSectionType('main_strength');
@@ -1062,7 +1079,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                     className="w-full flex items-center justify-center gap-2 rounded-xl border border-dashed border-warm-200 py-3 text-sm text-warm-400 hover:text-primary-600 hover:border-primary-300 transition-colors"
                   >
                     <IconPlus size={14} /> Add section
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -1080,19 +1097,16 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
         <Modal open={editingMeta} onClose={() => setEditingMeta(false)} title="Edit program">
           <div className="space-y-4 p-1">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Name</label>
-              <Input value={metaName} onChange={(e) => setMetaName(e.target.value)} />
+              <Input label="Name" value={metaName} onChange={(e) => setMetaName(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Phase</label>
-                <NativeSelect value={metaPhase} onChange={(e) => setMetaPhase(e.target.value as HelmLiftingProgramPhase)}>
+                <NativeSelect label="Phase" value={metaPhase} onChange={(e) => setMetaPhase(e.target.value as HelmLiftingProgramPhase)}>
                   {PHASE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </NativeSelect>
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Status</label>
-                <NativeSelect value={metaStatus} onChange={(e) => setMetaStatus(e.target.value as HelmLiftingProgramStatus)}>
+                <NativeSelect label="Status" value={metaStatus} onChange={(e) => setMetaStatus(e.target.value as HelmLiftingProgramStatus)}>
                   {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </NativeSelect>
               </div>
@@ -1118,15 +1132,14 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
         <Modal open={showAddWeek} onClose={() => setShowAddWeek(false)} title="Add week">
           <div className="space-y-4 p-1">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Week label (optional)</label>
-              <Input value={weekName} onChange={(e) => setWeekName(e.target.value)} placeholder="e.g. Heavy Load" autoFocus />
+              <Input label="Week label (optional)" value={weekName} onChange={(e) => setWeekName(e.target.value)} placeholder="e.g. Heavy Load" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Theme (optional)</label>
-              <Input value={weekTheme} onChange={(e) => setWeekTheme(e.target.value)} placeholder="e.g. Strength emphasis" />
+              <Input label="Theme (optional)" value={weekTheme} onChange={(e) => setWeekTheme(e.target.value)} placeholder="e.g. Strength emphasis" />
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
+            <label htmlFor="week-deload" className="flex items-center gap-2 cursor-pointer">
+              <Input
+                id="week-deload"
                 type="checkbox"
                 checked={weekDeload}
                 onChange={(e) => setWeekDeload(e.target.checked)}
@@ -1148,19 +1161,17 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
         <Modal open={!!addDayWeekId} onClose={() => setAddDayWeekId(null)} title="Add day">
           <div className="space-y-4 p-1">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Day name (optional)</label>
-              <Input value={dayName} onChange={(e) => setDayName(e.target.value)} placeholder="e.g. Upper A" autoFocus />
+              <Input label="Day name (optional)" value={dayName} onChange={(e) => setDayName(e.target.value)} placeholder="e.g. Upper A" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Day type</label>
-                <NativeSelect value={dayType} onChange={(e) => setDayType(e.target.value as HelmLiftingDayType)}>
+                <NativeSelect label="Day type" value={dayType} onChange={(e) => setDayType(e.target.value as HelmLiftingDayType)}>
                   {DAY_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </NativeSelect>
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Est. minutes</label>
                 <Input
+                  label="Est. minutes"
                   type="number"
                   min={0}
                   max={300}
@@ -1184,19 +1195,17 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
         <Modal open={!!editingDay} onClose={() => setEditingDay(null)} title="Edit day">
           <div className="space-y-4 p-1">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Day name</label>
-              <Input value={editDayName} onChange={(e) => setEditDayName(e.target.value)} placeholder="e.g. Upper A" autoFocus />
+              <Input label="Day name" value={editDayName} onChange={(e) => setEditDayName(e.target.value)} placeholder="e.g. Upper A" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Day type</label>
-                <NativeSelect value={editDayType} onChange={(e) => setEditDayType(e.target.value as HelmLiftingDayType)}>
+                <NativeSelect label="Day type" value={editDayType} onChange={(e) => setEditDayType(e.target.value as HelmLiftingDayType)}>
                   {DAY_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </NativeSelect>
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Est. minutes</label>
                 <Input
+                  label="Est. minutes"
                   type="number"
                   min={0}
                   max={300}
@@ -1220,14 +1229,12 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
         <Modal open={!!addSectionDayId} onClose={() => setAddSectionDayId(null)} title="Add section">
           <div className="space-y-4 p-1">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Section type</label>
-              <NativeSelect value={sectionType} onChange={(e) => setSectionType(e.target.value as HelmLiftingSectionType)}>
+              <NativeSelect label="Section type" value={sectionType} onChange={(e) => setSectionType(e.target.value as HelmLiftingSectionType)}>
                 {SECTION_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </NativeSelect>
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Name (optional override)</label>
-              <Input value={sectionName} onChange={(e) => setSectionName(e.target.value)} placeholder="Leave blank to use type label" autoFocus />
+              <Input label="Name (optional override)" value={sectionName} onChange={(e) => setSectionName(e.target.value)} placeholder="Leave blank to use type label" />
             </div>
             {addSectionError && <p className="text-sm text-red-600">{addSectionError}</p>}
             <div className="flex justify-end gap-2 pt-2">
@@ -1243,12 +1250,10 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
         <Modal open={!!editingSection} onClose={() => setEditingSection(null)} title="Edit section">
           <div className="space-y-4 p-1">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Name</label>
-              <Input value={editSectionName} onChange={(e) => setEditSectionName(e.target.value)} autoFocus />
+              <Input label="Name" value={editSectionName} onChange={(e) => setEditSectionName(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Section type</label>
-              <NativeSelect value={editSectionType} onChange={(e) => setEditSectionType(e.target.value as HelmLiftingSectionType)}>
+              <NativeSelect label="Section type" value={editSectionType} onChange={(e) => setEditSectionType(e.target.value as HelmLiftingSectionType)}>
                 {SECTION_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </NativeSelect>
             </div>
@@ -1267,31 +1272,25 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
           <div className="space-y-4 p-1">
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Sets</label>
-                <Input type="number" min={0} max={50} value={editSets} onChange={(e) => setEditSets(e.target.value)} placeholder="3" />
+                <Input label="Sets" type="number" min={0} max={50} value={editSets} onChange={(e) => setEditSets(e.target.value)} placeholder="3" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Reps</label>
-                <Input type="number" min={0} max={500} value={editReps} onChange={(e) => setEditReps(e.target.value)} placeholder="8" />
+                <Input label="Reps" type="number" min={0} max={500} value={editReps} onChange={(e) => setEditReps(e.target.value)} placeholder="8" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">RPE</label>
-                <Input type="number" min={0} max={10} step={0.5} value={editRpe} onChange={(e) => setEditRpe(e.target.value)} placeholder="7" />
+                <Input label="RPE" type="number" min={0} max={10} step={0.5} value={editRpe} onChange={(e) => setEditRpe(e.target.value)} placeholder="7" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Load</label>
-                <Input type="number" min={0} value={editLoad} onChange={(e) => setEditLoad(e.target.value)} placeholder="135" />
+                <Input label="Load" type="number" min={0} value={editLoad} onChange={(e) => setEditLoad(e.target.value)} placeholder="135" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Unit</label>
-                <Input value={editLoadUnit} onChange={(e) => setEditLoadUnit(e.target.value)} placeholder="lb" />
+                <Input label="Unit" value={editLoadUnit} onChange={(e) => setEditLoadUnit(e.target.value)} placeholder="lb" />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Coaching note</label>
-              <Input value={editNote} onChange={(e) => setEditNote(e.target.value)} placeholder="e.g. Control the eccentric" />
+              <Input label="Coaching note" value={editNote} onChange={(e) => setEditNote(e.target.value)} placeholder="e.g. Control the eccentric" />
             </div>
             {editPrescError && <p className="text-sm text-red-600">{editPrescError}</p>}
             <div className="flex justify-end gap-2 pt-2">
@@ -1374,8 +1373,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
             ) : (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-warm-700 mb-1">Assign to</label>
-                  <NativeSelect value={publishTargetType} onChange={(e) => setPublishTargetType(e.target.value as 'team' | 'group' | 'player')}>
+                  <NativeSelect label="Assign to" value={publishTargetType} onChange={(e) => setPublishTargetType(e.target.value as 'team' | 'group' | 'player')}>
                     <option value="team">Whole team (all active athletes)</option>
                     <option value="group">A strength group</option>
                     <option value="player">A single athlete</option>
@@ -1383,8 +1381,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                 </div>
                 {publishTargetType === 'group' && (
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1">Group</label>
-                    <NativeSelect value={publishGroupId} onChange={(e) => setPublishGroupId(e.target.value)}>
+                    <NativeSelect label="Group" value={publishGroupId} onChange={(e) => setPublishGroupId(e.target.value)}>
                       <option value="">Select group…</option>
                       {assignContext.groups.map((g) => (
                         <option key={g.id} value={g.id}>{g.name}</option>
@@ -1394,8 +1391,7 @@ export function ProgramEditorClient({ programTree, assignContext, orgId, canEdit
                 )}
                 {publishTargetType === 'player' && (
                   <div>
-                    <label className="block text-sm font-medium text-warm-700 mb-1">Athlete</label>
-                    <NativeSelect value={publishAthleteId} onChange={(e) => setPublishAthleteId(e.target.value)}>
+                    <NativeSelect label="Athlete" value={publishAthleteId} onChange={(e) => setPublishAthleteId(e.target.value)}>
                       <option value="">Select athlete…</option>
                       {assignContext.athletes.map((a) => (
                         <option key={a.id} value={a.id}>

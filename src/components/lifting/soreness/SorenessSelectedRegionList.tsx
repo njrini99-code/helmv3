@@ -8,6 +8,7 @@
 // =============================================================================
 
 import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 import { SORENESS_REGIONS } from '@/lib/lifting/soreness-regions';
 import type { SorenessRegionId } from '@/lib/lifting/soreness-regions';
 import type { RegionEntry } from './SorenessRegionBottomSheet';
@@ -23,7 +24,7 @@ interface Props {
 function SeverityBadge({ severity }: { severity: number }) {
   const { cls, label } = severityBadge(severity);
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-eyebrow font-semibold ${cls}`}>
       {severity}/10 · {label}
     </span>
   );
@@ -38,10 +39,10 @@ export function SorenessSelectedRegionList({ entries, onEdit, onRemove }: Props)
 
   return (
     <div className="space-y-2.5">
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-warm-500 px-0.5">
+      <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-500 px-0.5">
         {ids.length === 1 ? '1 area marked' : `${ids.length} areas marked`}
       </p>
-      <ul className="space-y-2" role="list">
+      <ul className="space-y-2">
         <AnimatePresence initial={false}>
           {ids.map((id) => {
             const entry = entries[id]!;
@@ -55,10 +56,11 @@ export function SorenessSelectedRegionList({ entries, onEdit, onRemove }: Props)
                 exit={{ opacity: 0, x: 12, transition: { duration: 0.15 } }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="flex items-center gap-3 rounded-2xl bg-white/80 backdrop-blur-sm
-                  border border-white/30 px-4 py-3 shadow-glass-sm">
+                <div className="flex items-center gap-3 rounded-2xl glass-standard px-4 py-3 shadow-glass-sm">
                   {/* Edit button */}
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
                     className="flex-1 text-left min-w-0 group"
                     onClick={() => onEdit(id)}
                     aria-label={`Edit soreness for ${region.label}`}
@@ -75,7 +77,7 @@ export function SorenessSelectedRegionList({ entries, onEdit, onRemove }: Props)
                       {(entry.tags ?? []).map((t) => (
                         <span
                           key={t}
-                          className="rounded-full bg-warm-100 px-2 py-0.5 text-[11px] text-warm-600"
+                          className="rounded-full bg-warm-100 px-2 py-0.5 text-eyebrow text-warm-600"
                         >
                           {t}
                         </span>
@@ -84,18 +86,20 @@ export function SorenessSelectedRegionList({ entries, onEdit, onRemove }: Props)
                     {entry.note ? (
                       <p className="mt-1 text-xs text-warm-400 line-clamp-1">{entry.note}</p>
                     ) : null}
-                  </button>
+                  </Button>
 
                   {/* Remove */}
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
                     onClick={() => onRemove(id)}
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full
                       text-warm-400 hover:bg-warm-100 hover:text-warm-600 transition-colors
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                      focus-visible:ring-primary-400"
                     aria-label={`Remove ${region.label}`}
                   >
                     <IconX size={13} />
-                  </button>
+                  </Button>
                 </div>
               </motion.li>
             );

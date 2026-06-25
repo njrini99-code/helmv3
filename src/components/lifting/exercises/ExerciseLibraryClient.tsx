@@ -158,7 +158,7 @@ interface Props {
 
 function CategoryPill({ category }: { category: string }) {
   return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${CATEGORY_PILL[category] ?? 'bg-warm-50 text-warm-500 border-warm-200'}`}>
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-micro font-medium ${CATEGORY_PILL[category] ?? 'bg-warm-50 text-warm-500 border-warm-200'}`}>
       {CATEGORY_LABEL[category] ?? category}
     </span>
   );
@@ -185,18 +185,19 @@ function ExerciseForm({ form, onChange, error, isPending, onSubmit, onCancel, su
   return (
     <div className="space-y-4 p-1">
       <div>
-        <label className="block text-sm font-medium text-warm-700 mb-1">Name <span className="text-red-500">*</span></label>
+        <label htmlFor="ex-name" className="block text-sm font-medium text-warm-700 mb-1">Name <span className="text-red-500">*</span></label>
         <Input
+          id="ex-name"
           value={form.name}
           onChange={(e) => set('name', e.target.value)}
           placeholder="e.g. Back Squat"
-          autoFocus
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-warm-700 mb-1">Category</label>
+          <label htmlFor="ex-category" className="block text-sm font-medium text-warm-700 mb-1">Category</label>
           <NativeSelect
+            id="ex-category"
             value={form.category}
             onChange={(e) => set('category', e.target.value as HelmLiftingExerciseCategory)}
           >
@@ -204,8 +205,9 @@ function ExerciseForm({ form, onChange, error, isPending, onSubmit, onCancel, su
           </NativeSelect>
         </div>
         <div>
-          <label className="block text-sm font-medium text-warm-700 mb-1">Default unit</label>
+          <label htmlFor="ex-default-unit" className="block text-sm font-medium text-warm-700 mb-1">Default unit</label>
           <NativeSelect
+            id="ex-default-unit"
             value={form.defaultUnit}
             onChange={(e) => set('defaultUnit', e.target.value as HelmLiftingUnit)}
           >
@@ -215,8 +217,9 @@ function ExerciseForm({ form, onChange, error, isPending, onSubmit, onCancel, su
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-warm-700 mb-1">Movement pattern</label>
+          <label htmlFor="ex-pattern" className="block text-sm font-medium text-warm-700 mb-1">Movement pattern</label>
           <NativeSelect
+            id="ex-pattern"
             value={form.primaryPattern}
             onChange={(e) => set('primaryPattern', e.target.value as HelmLiftingPrimaryPattern | '')}
           >
@@ -225,8 +228,9 @@ function ExerciseForm({ form, onChange, error, isPending, onSubmit, onCancel, su
           </NativeSelect>
         </div>
         <div>
-          <label className="block text-sm font-medium text-warm-700 mb-1">Body region</label>
+          <label htmlFor="ex-region" className="block text-sm font-medium text-warm-700 mb-1">Body region</label>
           <NativeSelect
+            id="ex-region"
             value={form.bodyRegion}
             onChange={(e) => set('bodyRegion', e.target.value as HelmLiftingBodyRegion | '')}
           >
@@ -237,16 +241,18 @@ function ExerciseForm({ form, onChange, error, isPending, onSubmit, onCancel, su
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-warm-700 mb-1">Equipment</label>
+          <label htmlFor="ex-equipment" className="block text-sm font-medium text-warm-700 mb-1">Equipment</label>
           <Input
+            id="ex-equipment"
             value={form.equipment}
             onChange={(e) => set('equipment', e.target.value)}
             placeholder="e.g. Barbell, Dumbbell…"
           />
         </div>
         <div className="flex items-end pb-0.5">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
+          <label htmlFor="ex-unilateral" className="flex items-center gap-2 cursor-pointer select-none">
+            <Input
+              id="ex-unilateral"
               type="checkbox"
               checked={form.unilateral}
               onChange={(e) => set('unilateral', e.target.checked)}
@@ -257,8 +263,9 @@ function ExerciseForm({ form, onChange, error, isPending, onSubmit, onCancel, su
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-warm-700 mb-1">Instructions</label>
+        <label htmlFor="ex-instructions" className="block text-sm font-medium text-warm-700 mb-1">Instructions</label>
         <Textarea
+          id="ex-instructions"
           value={form.instructions}
           onChange={(e) => set('instructions', e.target.value)}
           placeholder="Optional coaching cues or setup notes…"
@@ -433,13 +440,14 @@ export function ExerciseLibraryClient({ exercises: initial, orgId: _orgId, canEd
           {CATEGORY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </NativeSelect>
         {archivedCount > 0 && (
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={() => setShowArchived((v) => !v)}
             className={`text-sm rounded-full border px-3 py-1 transition-colors ${showArchived ? 'bg-warm-200 border-warm-300 text-warm-700' : 'border-warm-100 text-warm-400 hover:text-warm-600'}`}
           >
             {showArchived ? `Showing archived (${archivedCount})` : `View archived (${archivedCount})`}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -483,27 +491,30 @@ export function ExerciseLibraryClient({ exercises: initial, orgId: _orgId, canEd
                     </p>
                     <div className="flex items-center gap-1 shrink-0">
                       {canEdit && ex.is_active && (
-                        <button
+                        <Button
+                          variant="ghost"
                           type="button"
                           title="Edit"
                           onClick={() => openEdit(ex)}
                           className="p-1 rounded-lg text-warm-400 hover:text-warm-700 hover:bg-warm-100 transition-colors"
                         >
                           <IconEdit size={14} />
-                        </button>
+                        </Button>
                       )}
                       {canEdit && ex.is_active && (
-                        <button
+                        <Button
+                          variant="ghost"
                           type="button"
                           title="Archive"
                           onClick={() => { setArchivingId(ex.id); setArchiveError(null); }}
                           className="p-1 rounded-lg text-warm-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                         >
                           <IconTrash size={14} />
-                        </button>
+                        </Button>
                       )}
                       {canEdit && !ex.is_active && (
-                        <button
+                        <Button
+                          variant="ghost"
                           type="button"
                           title="Restore"
                           onClick={() => handleRestore(ex.id)}
@@ -511,7 +522,7 @@ export function ExerciseLibraryClient({ exercises: initial, orgId: _orgId, canEd
                           className="p-1 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                         >
                           <IconCheck size={14} />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -519,12 +530,12 @@ export function ExerciseLibraryClient({ exercises: initial, orgId: _orgId, canEd
                   <div className="flex flex-wrap gap-1.5">
                     <CategoryPill category={ex.category} />
                     {ex.primary_pattern && (
-                      <span className="inline-flex items-center rounded-full border border-warm-100 bg-warm-50 px-2 py-0.5 text-[10px] text-warm-500">
+                      <span className="inline-flex items-center rounded-full border border-warm-100 bg-warm-50 px-2 py-0.5 text-micro text-warm-500">
                         {ex.primary_pattern.replace('_', ' ')}
                       </span>
                     )}
                     {ex.unilateral && (
-                      <span className="inline-flex items-center rounded-full border border-warm-100 bg-warm-50 px-2 py-0.5 text-[10px] text-warm-500">
+                      <span className="inline-flex items-center rounded-full border border-warm-100 bg-warm-50 px-2 py-0.5 text-micro text-warm-500">
                         Unilateral
                       </span>
                     )}
@@ -535,7 +546,7 @@ export function ExerciseLibraryClient({ exercises: initial, orgId: _orgId, canEd
                   )}
 
                   {!ex.is_active && (
-                    <p className="text-[11px] text-warm-400 italic">Archived</p>
+                    <p className="text-eyebrow text-warm-400 italic">Archived</p>
                   )}
                 </CardContent>
               </Card>

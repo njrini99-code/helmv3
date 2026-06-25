@@ -18,6 +18,7 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 
 import { haptic } from '@/lib/lifting/haptics';
 import { regionsForView } from '@/lib/lifting/soreness-regions';
@@ -115,8 +116,10 @@ export function SorenessBodyMap({ value, onChange, allowedRegions, readOnly = fa
           {(['front', 'back'] as const).map((v) => {
             const active = view === v;
             return (
-              <button
+              <Button
                 key={v}
+                type="button"
+                variant="ghost"
                 onClick={() => {
                   haptic('tap');
                   setView(v);
@@ -130,7 +133,7 @@ export function SorenessBodyMap({ value, onChange, allowedRegions, readOnly = fa
                   }`}
               >
                 {v === 'front' ? 'Front' : 'Back'}
-              </button>
+              </Button>
             );
           })}
         </div>

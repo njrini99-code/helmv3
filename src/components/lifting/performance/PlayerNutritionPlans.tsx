@@ -107,7 +107,7 @@ export function PlayerNutritionPlans({
             <h3 className="font-semibold text-warm-900">Nutrition Plan</h3>
           </div>
           {plan && acknowledgedAt && (
-            <Badge className="bg-primary-50 text-primary-700 border border-primary-200 text-[10px] px-2 py-0.5">
+            <Badge className="bg-primary-50 text-primary-700 border border-primary-200 text-micro px-2 py-0.5">
               <IconCheck size={10} className="mr-1" />
               Acknowledged
             </Badge>
@@ -125,7 +125,7 @@ export function PlayerNutritionPlans({
         ) : (
           <div className="space-y-3">
             {/* Plan card */}
-            <div className="rounded-2xl border border-white/40 bg-white/60 p-4 shadow-sm hover:bg-white/80 transition-colors duration-150">
+            <div className="rounded-2xl border border-white/40 glass-standard p-4 shadow-sm hover:bg-cream-50 transition-colors duration-150">
               <div className="flex items-start gap-3">
                 {/* Icon container */}
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-50 ring-1 ring-primary-100">
@@ -138,7 +138,7 @@ export function PlayerNutritionPlans({
                       {plan.title}
                     </p>
                     <span
-                      className={`shrink-0 rounded-md border px-2 py-0.5 text-[10px] font-semibold ${planTypeBadge(plan.plan_type)}`}
+                      className={`shrink-0 rounded-md border px-2 py-0.5 text-micro font-semibold ${planTypeBadge(plan.plan_type)}`}
                     >
                       {planTypeLabel(plan.plan_type)}
                     </span>
@@ -172,7 +172,7 @@ export function PlayerNutritionPlans({
                     href={plan.external_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-warm-200 bg-white px-3 py-1.5 text-xs font-semibold text-warm-800 shadow-sm transition-all hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-warm-200 bg-cream-50 px-3 py-1.5 text-xs font-semibold text-warm-800 shadow-sm transition-all hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                   >
                     <IconExternalLink size={14} />
                     Open plan

@@ -171,7 +171,7 @@ export function PRTimeline({ progressions, loading = false }: Props) {
                 </span>
 
                 {/* Card */}
-                <div className="rounded-2xl border border-white/30 bg-white/50 px-4 py-3 shadow-sm hover:bg-white/70 transition-colors duration-150">
+                <div className="rounded-2xl border border-white/30 glass-standard px-4 py-3 shadow-sm hover:bg-cream-50 transition-colors duration-150">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     {/* Left: exercise + date */}
                     <div className="min-w-0 flex-1">
@@ -196,7 +196,7 @@ export function PRTimeline({ progressions, loading = false }: Props) {
                         {pr.value} {pr.unit}
                       </p>
                       <span
-                        className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold ${prTypeBadgeClass(pr.pr_type)}`}
+                        className={`inline-flex items-center rounded-md border px-2 py-0.5 text-micro font-semibold ${prTypeBadgeClass(pr.pr_type)}`}
                       >
                         {prTypeLabel(pr.pr_type)}
                       </span>

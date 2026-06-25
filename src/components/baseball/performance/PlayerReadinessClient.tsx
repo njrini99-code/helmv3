@@ -50,22 +50,23 @@ function ScaleRow({ label, value, onChange, lowLabel, highLabel }: {
     <div>
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-warm-800">{label}</span>
-        <span className="text-[11px] text-warm-400">{lowLabel} → {highLabel}</span>
+        <span className="text-eyebrow text-warm-400">{lowLabel} → {highLabel}</span>
       </div>
       <div className="mt-1.5 flex gap-2">
         {SCALE.map((n) => (
-          <button
+          <Button
             key={n}
             type="button"
+            variant="ghost"
             onClick={() => onChange(n)}
             className={`h-9 flex-1 rounded-lg border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1 ${
-              value === n ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'
+              value === n ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-300'
             }`}
             aria-pressed={value === n}
             aria-label={`${label}: ${n}`}
           >
             {n}
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -227,22 +228,22 @@ export function PlayerReadinessClient({ checkDate, existing, isLoading = false }
           <ScaleRow label="Overall soreness" value={soreness} onChange={setSoreness} lowLabel="none" highLabel="severe" />
           <ScaleRow label="Lower body" value={lowerBody} onChange={setLowerBody} lowLabel="fresh" highLabel="very sore" />
           <div>
-            <label className="text-sm font-medium text-warm-800">Throwing arm</label>
+            <p className="text-sm font-medium text-warm-800">Throwing arm</p>
             <div className="mt-1.5 flex flex-wrap gap-2">
               {ARM_OPTIONS.map((opt) => (
-                <button
-                  key={opt} type="button" onClick={() => setArm(opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1 ${arm === opt ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'}`}
+                <Button
+                  key={opt} type="button" variant="ghost" onClick={() => setArm(opt)}
+                  className={`rounded-full border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1 ${arm === opt ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-primary-300'}`}
                   aria-pressed={arm === opt}
                   aria-label={`Throwing arm: ${opt}`}
                 >
                   {opt}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-warm-700">
-            <input type="checkbox" checked={illness} onChange={(e) => setIllness(e.target.checked)} className="h-4 w-4 rounded border-warm-300 accent-primary-600" />
+          <label htmlFor="illness-checkbox" className="flex cursor-pointer items-center gap-2 text-sm text-warm-700">
+            <Input id="illness-checkbox" type="checkbox" checked={illness} onChange={(e) => setIllness(e.target.checked)} className="h-4 w-4 rounded border-warm-300 accent-primary-600" />
             Feeling sick / under the weather
           </label>
         </CardContent>

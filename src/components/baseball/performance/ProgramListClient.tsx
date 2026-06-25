@@ -70,11 +70,11 @@ function StatusChip({ status, template }: { status: BaseballLiftProgramStatus; t
   const meta = STATUS_META[status];
   return (
     <span className="inline-flex items-center gap-1">
-      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${meta.cls}`}>
+      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-medium ${meta.cls}`}>
         {meta.label}
       </span>
       {template && (
-        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-eyebrow font-medium text-amber-700">
           Template
         </span>
       )}
@@ -86,7 +86,7 @@ function ProgramCard({ program }: { program: LiftProgramListItem }) {
   return (
     <Link
       href={`/baseball/dashboard/performance/programs/${program.id}`}
-      className="group block rounded-2xl border border-warm-100 bg-white/70 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:bg-white hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 motion-reduce:hover:translate-y-0"
+      className="group block rounded-2xl border border-warm-100 glass-standard p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:bg-cream-50 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 motion-reduce:hover:translate-y-0"
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-base font-semibold text-warm-900 group-hover:text-primary-700">
@@ -165,7 +165,7 @@ export function ProgramListClient({ programs, isLoading = false }: Props) {
           {Array.from({ length: 2 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-warm-100 bg-white/70 p-4 space-y-2"
+              className="rounded-2xl border border-warm-100 glass-standard p-4 space-y-2"
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="flex items-start justify-between">
@@ -187,7 +187,7 @@ export function ProgramListClient({ programs, isLoading = false }: Props) {
           {Array.from({ length: 1 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-warm-100 bg-white/70 p-4 space-y-2"
+              className="rounded-2xl border border-warm-100 glass-standard p-4 space-y-2"
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="flex items-start justify-between">

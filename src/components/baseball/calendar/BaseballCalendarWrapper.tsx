@@ -105,7 +105,7 @@ const baseballActionHandlers = {
 export function BaseballCalendarSkeleton() {
   return (
     <div
-      className="flex flex-col h-full w-full rounded-2xl bg-white/70 backdrop-blur-xl border border-white/20 shadow-glass overflow-hidden"
+      className="flex flex-col h-full w-full rounded-2xl glass-standard backdrop-blur-xl border border-white/20 shadow-glass overflow-hidden"
       role="status"
       aria-label="Loading calendar"
       aria-busy="true"
@@ -163,7 +163,7 @@ export function BaseballCalendarSkeleton() {
 export function GameSourceChip() {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide bg-primary-50 text-primary-700 border border-primary-200"
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro font-semibold tracking-wide bg-primary-50 text-primary-700 border border-primary-200"
       aria-label="Schedule import"
     >
       <span

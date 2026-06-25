@@ -107,7 +107,8 @@ interface ThumbProps {
 
 function VideoThumb({ src, thumbnail, title, duration, onClick }: ThumbProps) {
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       className="relative group w-full text-left appearance-none bg-transparent border-0 p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-xl"
       onClick={onClick}
@@ -133,7 +134,7 @@ function VideoThumb({ src, thumbnail, title, duration, onClick }: ThumbProps) {
         {/* Play overlay */}
         {(src || thumbnail) && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
-            <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+            <div className="w-14 h-14 rounded-full glass-standard flex items-center justify-center shadow-lg">
               <IconPlay size={24} className="text-warm-900 ml-0.5" />
             </div>
           </div>
@@ -146,7 +147,7 @@ function VideoThumb({ src, thumbnail, title, duration, onClick }: ThumbProps) {
           {formatDuration(duration)}
         </div>
       )}
-    </button>
+    </Button>
   );
 }
 

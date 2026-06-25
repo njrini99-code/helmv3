@@ -75,7 +75,7 @@ function StrengthGroupsSkeleton() {
           </div>
           <Skeleton className="h-8 w-20 rounded-lg" />
         </div>
-        <div className="rounded-2xl border border-warm-100 bg-white/70 overflow-hidden">
+        <div className="rounded-2xl border border-warm-100 glass-standard overflow-hidden">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-warm-50 last:border-0">
               <Skeleton className="h-4 w-32" />
@@ -268,25 +268,26 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
                     exit={{ opacity: 0, x: -8 }}
                     transition={{ duration: 0.18, delay: i * 0.04 }}
                   >
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => setSelectedGroupId(group.id)}
-                      className={`w-full rounded-xl p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
-                        isSelected ? 'bg-primary-50 border border-primary-100' : 'hover:bg-white/60'
+                      className={`w-full rounded-xl p-3 text-left transition-colors focus-visible:ring-primary-500/50 ${
+                        isSelected ? 'bg-primary-50 border border-primary-100' : 'hover:bg-cream-50'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-1">
                         <p className={`text-sm font-medium truncate ${isSelected ? 'text-primary-800' : 'text-warm-800'}`}>
                           {group.name}
                         </p>
-                        <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${typeMeta.cls}`}>
+                        <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-microbadge font-medium ${typeMeta.cls}`}>
                           {typeMeta.label}
                         </span>
                       </div>
-                      <p className="text-[11px] text-warm-400 mt-0.5">
+                      <p className="text-eyebrow text-warm-400 mt-0.5">
                         {group.member_count} member{group.member_count !== 1 ? 's' : ''}
                       </p>
-                    </button>
+                    </Button>
                   </motion.div>
                 );
               })}
@@ -413,17 +414,16 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
         <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New group">
           <div className="space-y-4 p-1">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Name</label>
               <Input
+                label="Name"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="e.g. Pitchers, Catchers…"
-                autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Description</label>
               <Textarea
+                label="Description"
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
                 placeholder="Optional"
@@ -431,19 +431,20 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Type</label>
+              <p className="block text-sm font-medium text-warm-700 mb-1">Type</p>
               <div className="flex gap-2 flex-wrap">
                 {Object.entries(TYPE_META).map(([val, meta]) => (
-                  <button
+                  <Button
                     key={val}
                     type="button"
+                    variant="ghost"
                     onClick={() => setNewType(val as HelmLiftingGroupType)}
                     className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                       newType === val ? `${meta.cls} ring-1 ring-primary-400` : meta.cls
                     }`}
                   >
                     {meta.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -451,7 +452,7 @@ export function StrengthGroupsClient({ groups: initialGroups, athletes, orgId, c
             {/* Initial members */}
             {athletes.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Initial members (optional)</label>
+                <p className="block text-sm font-medium text-warm-700 mb-1">Initial members (optional)</p>
                 <div className="max-h-40 overflow-y-auto rounded-xl border border-warm-100 divide-y divide-warm-50">
                   {athletes.map((a) => (
                     <label key={a.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-warm-50">

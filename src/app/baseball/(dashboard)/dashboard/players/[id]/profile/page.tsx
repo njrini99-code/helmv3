@@ -147,7 +147,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
             {/* Season Stats Card */}
             {hasStats ? (
-              <div className="bg-white rounded-2xl border border-warm-200 p-5">
+              <div className="bg-cream-50 rounded-2xl border border-warm-200 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide">
                     {new Date().getFullYear()} Stats
@@ -213,7 +213,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
               </div>
             ) : (
               /* Fallback: real profile engagement data when no box score data */
-              <div className="bg-white rounded-2xl border border-warm-200 p-5">
+              <div className="bg-cream-50 rounded-2xl border border-warm-200 p-5">
                 <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
                   Quick Stats
                 </h3>
@@ -252,7 +252,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
         {liftingOrgId && liftingAthleteId ? (
           <PlayerPerformanceTab orgId={liftingOrgId} athleteId={liftingAthleteId} />
         ) : (
-          <div className="rounded-2xl border border-warm-200 bg-white/60 px-6 py-8 text-center">
+          <div className="rounded-2xl border border-warm-200 glass-standard px-6 py-8 text-center">
             <p className="text-sm text-warm-500">
               No performance data yet for this player.
             </p>

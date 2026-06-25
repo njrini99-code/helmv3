@@ -10,6 +10,7 @@
 
 import { useCallback } from 'react';
 import { haptic } from '@/lib/lifting/haptics';
+import { Input } from '@/components/ui/input';
 import {
   severityTrackClass,
   severityThumbClass,
@@ -54,11 +55,11 @@ export function SorenessSeveritySlider({ value, onChange }: Props) {
       {/* Label pill */}
       <div className="flex justify-end">
         <span
-          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide transition-colors duration-200 ${
+          className={`rounded-full px-2.5 py-0.5 text-eyebrow font-semibold uppercase tracking-wide transition-colors duration-200 ${
             value === 0
               ? 'bg-warm-100 text-warm-400'
               : value <= 2
-              ? 'bg-green-100 text-green-700'
+              ? 'bg-primary-100 text-primary-700'
               : value <= 4
               ? 'bg-yellow-100 text-yellow-700'
               : value <= 6
@@ -83,20 +84,22 @@ export function SorenessSeveritySlider({ value, onChange }: Props) {
         </div>
 
         {/* Native range input — invisible, layered over the custom track */}
-        <input
-          type="range"
-          min={0}
-          max={10}
-          step={1}
-          value={value}
-          onChange={(e) => handleChange(parseFloat(e.target.value))}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          aria-label="Soreness severity 0 to 10"
-          aria-valuenow={value}
-          aria-valuemin={0}
-          aria-valuemax={10}
-          aria-valuetext={`${value} — ${SEVERITY_LABELS[value]}`}
-        />
+        <div className="absolute inset-0 flex items-center">
+          <Input
+            type="range"
+            min={0}
+            max={10}
+            step={1}
+            value={value}
+            onChange={(e) => handleChange(parseFloat(e.target.value))}
+            className="w-full opacity-0 cursor-pointer"
+            aria-label="Soreness severity 0 to 10"
+            aria-valuenow={value}
+            aria-valuemin={0}
+            aria-valuemax={10}
+            aria-valuetext={`${value} — ${SEVERITY_LABELS[value]}`}
+          />
+        </div>
 
         {/* Custom thumb */}
         <div
@@ -109,7 +112,7 @@ export function SorenessSeveritySlider({ value, onChange }: Props) {
       </div>
 
       {/* Scale ticks */}
-      <div className="flex justify-between text-[10px] font-medium text-warm-300 px-1">
+      <div className="flex justify-between text-micro font-medium text-warm-300 px-1">
         <span>0</span>
         <span>2</span>
         <span>4</span>

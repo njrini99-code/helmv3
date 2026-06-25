@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export type RibbonStatus = 'ready' | 'watch' | 'limited' | 'missing' | 'complete';
 
@@ -100,8 +101,9 @@ export function StatusRibbon({ value, onChange, readonly = false, className }: S
         }
 
         return (
-          <button
+          <Button
             key={status}
+            variant="ghost"
             type="button"
             onClick={() => onChange?.(status)}
             aria-pressed={isSelected}
@@ -115,7 +117,7 @@ export function StatusRibbon({ value, onChange, readonly = false, className }: S
             )}
           >
             {cfg.label}
-          </button>
+          </Button>
         );
       })}
     </div>

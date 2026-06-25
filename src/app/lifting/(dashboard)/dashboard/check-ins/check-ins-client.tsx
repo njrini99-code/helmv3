@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Scale, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { SorenessScheduleBuilder } from '@/components/lifting/soreness/SorenessScheduleBuilder';
 import { WeightCheckInScheduleBuilder } from '@/components/lifting/weight/WeightCheckInScheduleBuilder';
 import { NutritionPlanUploader } from '@/components/lifting/nutrition/NutritionPlanUploader';
@@ -72,11 +73,12 @@ export function CheckInsPageClient({ orgId, sport, groups, athletes }: Props) {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
           return (
-            <button
+            <Button
               key={tab.key}
               role="tab"
               aria-selected={isActive}
               type="button"
+              variant="ghost"
               onClick={() => {
                 setActiveTab(tab.key);
                 setLastCreated(null);
@@ -84,20 +86,20 @@ export function CheckInsPageClient({ orgId, sport, groups, athletes }: Props) {
               className={cn(
                 'relative flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60',
                 isActive
-                  ? 'bg-white text-warm-900 shadow-sm'
+                  ? 'bg-cream-50 text-warm-900 shadow-sm'
                   : 'text-warm-500 hover:text-warm-700',
               )}
             >
               {isActive && (
                 <motion.span
                   layoutId="check-in-tab-indicator"
-                  className="absolute inset-0 rounded-xl bg-white shadow-sm"
+                  className="absolute inset-0 rounded-xl bg-cream-50 shadow-sm"
                   transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                 />
               )}
               <Icon className="relative z-10 h-4 w-4" />
               <span className="relative z-10">{tab.label}</span>
-            </button>
+            </Button>
           );
         })}
       </div>

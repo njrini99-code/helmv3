@@ -75,14 +75,15 @@ export function PrescriptionChip({
       }}
     >
       <PopoverTrigger asChild>
-        <button
+        <Button
+          variant="ghost"
           type="button"
           disabled={disabled}
           className="inline-flex h-9 items-center gap-1 rounded-lg border border-primary-200 bg-primary-50 px-2.5 text-xs font-semibold tabular-nums text-primary-800 transition-colors hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-40"
           aria-label={`Edit prescription: ${formatPrescription(prescription)}`}
         >
           {formatPrescription(prescription)}
-        </button>
+        </Button>
       </PopoverTrigger>
 
       <PopoverContent className="w-72 space-y-3">

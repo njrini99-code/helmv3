@@ -20,6 +20,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { toast } from 'sonner';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconFileText,
@@ -118,7 +119,7 @@ export function NutritionPlanAssignmentsTableSkeleton() {
   return (
     <div className="space-y-3">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="animate-pulse rounded-2xl border border-warm-200 bg-white p-4">
+        <div key={i} className="animate-pulse rounded-2xl border border-warm-200 bg-cream-50 p-4">
           <div className="flex items-center gap-4">
             <div className="h-4 w-1/3 rounded bg-warm-100" />
             <div className="h-4 w-16 rounded bg-warm-100" />
@@ -176,9 +177,10 @@ export function NutritionPlanAssignmentsTable({ orgId, rows, includeArchived = f
           const count = s === 'all' ? rows.filter((r) => includeArchived || r.plan.status !== 'archived').length
             : rows.filter((r) => r.plan.status === s).length;
           return (
-            <button
+            <Button
               key={s}
               type="button"
+              variant="ghost"
               onClick={() => setStatusFilter(s)}
               className={[
                 'flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
@@ -193,7 +195,7 @@ export function NutritionPlanAssignmentsTable({ orgId, rows, includeArchived = f
               }`}>
                 {count}
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -269,25 +271,28 @@ export function NutritionPlanAssignmentsTable({ orgId, rows, includeArchived = f
                           {isConfirming ? (
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-warm-500">Archive?</span>
-                              <button
+                              <Button
                                 type="button"
+                                variant="danger"
                                 onClick={() => handleArchive(plan.id)}
                                 disabled={isArchiving}
                                 className="rounded-lg px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
                               >
                                 Yes
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 type="button"
+                                variant="ghost"
                                 onClick={() => setConfirmArchiveId(null)}
                                 className="rounded-lg px-2 py-1 text-xs text-warm-400 hover:bg-warm-50 transition-colors"
                               >
                                 No
-                              </button>
+                              </Button>
                             </div>
                           ) : (
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
                               onClick={() => setConfirmArchiveId(plan.id)}
                               disabled={isArchiving || isPending}
                               title="Archive plan"
@@ -298,7 +303,7 @@ export function NutritionPlanAssignmentsTable({ orgId, rows, includeArchived = f
                               ) : (
                                 <IconTrash size={14} />
                               )}
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )}

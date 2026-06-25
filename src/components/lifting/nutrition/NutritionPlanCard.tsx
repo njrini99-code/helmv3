@@ -194,15 +194,16 @@ export function NutritionPlanCard({ card, orgId, onAcknowledged }: Props) {
 
             {/* Note: collapsible text */}
             {plan.plan_type === 'note' && plan.description && (
-              <div className="rounded-xl border border-warm-200 bg-white/70 overflow-hidden">
-                <button
+              <div className="rounded-xl border border-warm-200 glass-standard overflow-hidden">
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setNoteExpanded((v) => !v)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-warm-700 hover:bg-warm-50/50 transition-colors"
+                  className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-warm-700 hover:bg-warm-50/50"
                 >
                   <span>View plan details</span>
                   {noteExpanded ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
-                </button>
+                </Button>
                 {noteExpanded && (
                   <motion.div
                     initial={prefersReducedMotion ? false : { height: 0, opacity: 0 }}
@@ -267,7 +268,7 @@ export function NutritionPlanCard({ card, orgId, onAcknowledged }: Props) {
 
 export function NutritionPlanCardSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-2xl border border-warm-200 bg-white">
+    <div className="animate-pulse overflow-hidden rounded-2xl border border-warm-200 bg-cream-50">
       <div className="h-0.5 w-full bg-warm-100" />
       <div className="p-5">
         <div className="flex items-start gap-3">

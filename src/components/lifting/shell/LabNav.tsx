@@ -61,7 +61,7 @@ export function LabNav() {
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
               isActive
                 ? 'text-primary-700'
-                : 'text-warm-600 hover:text-warm-900 hover:bg-white/60'
+                : 'text-warm-600 hover:text-warm-900 hover:glass-subtle'
             )}
             aria-current={isActive ? 'page' : undefined}
           >
@@ -87,7 +87,7 @@ export function LabNav() {
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
             pathname.startsWith('/lifting/dashboard/settings')
               ? 'text-primary-700'
-              : 'text-warm-600 hover:text-warm-900 hover:bg-white/60'
+              : 'text-warm-600 hover:text-warm-900 hover:glass-subtle'
           )}
           aria-current={pathname.startsWith('/lifting/dashboard/settings') ? 'page' : undefined}
         >

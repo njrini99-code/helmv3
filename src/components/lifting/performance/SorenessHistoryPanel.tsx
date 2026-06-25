@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -145,8 +146,8 @@ function SevenDayHeatSummary({ checkins }: { checkins: SorenessCheckinSummary[] 
   if (recent.length === 0 || regionFreq.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-white/30 bg-white/40 px-4 py-3 space-y-2">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-warm-400">
+    <div className="rounded-2xl border border-white/30 glass-standard px-4 py-3 space-y-2">
+      <p className="text-micro font-semibold uppercase tracking-widest text-warm-400">
         7-day recurring regions
       </p>
       <div className="flex flex-wrap gap-1.5">
@@ -258,11 +259,12 @@ function CheckinRow({ checkin }: { checkin: SorenessCheckinSummary }) {
 
   return (
     <div className="border-b border-warm-100 last:border-0">
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => hasDetail && setExpanded((p) => !p)}
         disabled={!hasDetail}
-        className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors lg:px-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 ${
+        className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors lg:px-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 whitespace-normal ${
           hasDetail ? 'hover:bg-warm-50/60 cursor-pointer' : 'cursor-default'
         }`}
         aria-expanded={hasDetail ? expanded : undefined}
@@ -279,12 +281,12 @@ function CheckinRow({ checkin }: { checkin: SorenessCheckinSummary }) {
               {fmtDate(checkin.checkin_date)}
             </span>
             {isReady ? (
-              <Badge className="bg-primary-50 text-primary-700 text-[10px] px-2 py-0.5">
+              <Badge className="bg-primary-50 text-primary-700 text-micro px-2 py-0.5">
                 <IconCheck size={9} className="mr-1" />
                 Ready to go
               </Badge>
             ) : (
-              <Badge className="bg-amber-50 text-amber-700 text-[10px] px-2 py-0.5">
+              <Badge className="bg-amber-50 text-amber-700 text-micro px-2 py-0.5">
                 Soreness reported
               </Badge>
             )}
@@ -306,7 +308,7 @@ function CheckinRow({ checkin }: { checkin: SorenessCheckinSummary }) {
             {expanded ? <IconChevronUp size={15} /> : <IconChevronDown size={15} />}
           </span>
         )}
-      </button>
+      </Button>
 
       <AnimatePresence initial={false}>
         {expanded && (
@@ -387,7 +389,7 @@ export function SorenessHistoryPanel({ checkins, loading = false }: Props) {
             <SevenDayHeatSummary checkins={checkins} />
 
             {/* Timeline */}
-            <div className="overflow-hidden rounded-2xl border border-white/30 bg-white/40">
+            <div className="overflow-hidden rounded-2xl border border-white/30 glass-standard">
               {sorted.map((c) => (
                 <CheckinRow key={c.checkin_date} checkin={c} />
               ))}

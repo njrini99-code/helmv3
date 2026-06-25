@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { sanitizeDbError } from '@/lib/db-error';
 import { revalidatePath } from 'next/cache';
 import {
@@ -135,7 +136,7 @@ export async function createGame(
     if (event) eventId = event.id;
   }
 
-  const { data: game, error } = await (supabase as any)
+  const { data: game, error } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .insert({
       team_id: teamId,
@@ -172,7 +173,7 @@ export async function updateGame(
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
-  const { data: game } = await (supabase as any)
+  const { data: game } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .select('team_id')
     .eq('id', gameId)
@@ -196,7 +197,7 @@ export async function updateGame(
   if (input.opponent_score !== undefined) updateData.opponent_score = input.opponent_score;
   if (input.status !== undefined) updateData.status = input.status;
 
-  const { error } = await (supabase as any)
+  const { error } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .update(updateData)
     .eq('id', gameId);
@@ -212,7 +213,7 @@ export async function deleteGame(gameId: string): Promise<{ success: boolean; er
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
-  const { data: game } = await (supabase as any)
+  const { data: game } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .select('team_id')
     .eq('id', gameId)
@@ -223,7 +224,7 @@ export async function deleteGame(gameId: string): Promise<{ success: boolean; er
   const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
-  const { error } = await (supabase as any).from('baseball_games').delete().eq('id', gameId);
+  const { error } = await (supabase as unknown as SupabaseClient).from('baseball_games').delete().eq('id', gameId);
 
   if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
@@ -257,8 +258,7 @@ export async function getTeamGames(
   const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase as any)
+  let query = (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .select(`
       *,
@@ -308,7 +308,7 @@ export async function getGameBoxScore(gameId: string): Promise<GetGameBoxScoreRe
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
-  const { data: game, error: gameError } = await (supabase as any)
+  const { data: game, error: gameError } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .select('*')
     .eq('id', gameId)
@@ -319,8 +319,7 @@ export async function getGameBoxScore(gameId: string): Promise<GetGameBoxScoreRe
   const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dbAny = supabase as any;
+  const dbAny = supabase as unknown as SupabaseClient;
   const [battingResult, pitchingResult] = await Promise.all([
     dbAny
       .from('baseball_box_score_batting')
@@ -405,7 +404,7 @@ export async function saveBoxScoreBatting(
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
-  const { data: game } = await (supabase as any)
+  const { data: game } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .select('team_id')
     .eq('id', gameId)
@@ -417,7 +416,7 @@ export async function saveBoxScoreBatting(
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
   // Delete existing batting lines for this game before re-inserting
-  await (supabase as any).from('baseball_box_score_batting').delete().eq('game_id', gameId);
+  await (supabase as unknown as SupabaseClient).from('baseball_box_score_batting').delete().eq('game_id', gameId);
 
   const rows = battingLines.map((line) => {
     const rates = computeBattingRates(line);
@@ -448,7 +447,7 @@ export async function saveBoxScoreBatting(
     };
   });
 
-  const { error } = await (supabase as any).from('baseball_box_score_batting').insert(rows);
+  const { error } = await (supabase as unknown as SupabaseClient).from('baseball_box_score_batting').insert(rows);
 
   if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
@@ -463,7 +462,7 @@ export async function saveBoxScorePitching(
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
-  const { data: game } = await (supabase as any)
+  const { data: game } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .select('team_id')
     .eq('id', gameId)
@@ -474,7 +473,7 @@ export async function saveBoxScorePitching(
   const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
-  await (supabase as any).from('baseball_box_score_pitching').delete().eq('game_id', gameId);
+  await (supabase as unknown as SupabaseClient).from('baseball_box_score_pitching').delete().eq('game_id', gameId);
 
   const rows = pitchingLines.map((line) => {
     const rates = computePitchingRates(line);
@@ -499,7 +498,7 @@ export async function saveBoxScorePitching(
     };
   });
 
-  const { error } = await (supabase as any).from('baseball_box_score_pitching').insert(rows);
+  const { error } = await (supabase as unknown as SupabaseClient).from('baseball_box_score_pitching').insert(rows);
 
   if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
@@ -515,7 +514,7 @@ export async function markGameCompleted(
   if ('error' in authResult) return { success: false, error: authResult.error };
   const { coach, supabase } = authResult;
 
-  const { data: game } = await (supabase as any)
+  const { data: game } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .select('team_id')
     .eq('id', gameId)
@@ -526,7 +525,7 @@ export async function markGameCompleted(
   const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
-  const { error } = await (supabase as any)
+  const { error } = await (supabase as unknown as SupabaseClient)
     .from('baseball_games')
     .update({
       status: 'completed',
@@ -539,12 +538,12 @@ export async function markGameCompleted(
   if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   // Recalculate season stats for all players who appeared in this game
-  const { data: battingPlayers } = await (supabase as any)
+  const { data: battingPlayers } = await (supabase as unknown as SupabaseClient)
     .from('baseball_box_score_batting')
     .select('player_id')
     .eq('game_id', gameId);
 
-  const { data: pitchingPlayers } = await (supabase as any)
+  const { data: pitchingPlayers } = await (supabase as unknown as SupabaseClient)
     .from('baseball_box_score_pitching')
     .select('player_id')
     .eq('game_id', gameId);
@@ -558,8 +557,7 @@ export async function markGameCompleted(
 
   const currentYear = new Date().getFullYear();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db2 = supabase as any;
+  const db2 = supabase as unknown as SupabaseClient;
   await Promise.all(
     allPlayerIds.map((playerId) =>
       db2.rpc('recalculate_baseball_season_stats', {
@@ -725,7 +723,7 @@ export async function uploadBoxScoreCSV(
   const allMatched = unmatched.length === 0;
 
   // Track the upload
-  const { data: upload } = await (supabase as any)
+  const { data: upload } = await (supabase as unknown as SupabaseClient)
     .from('baseball_box_score_uploads')
     .insert({
       team_id: teamId,
@@ -838,7 +836,7 @@ export async function resolveBoxScoreUpload(
   const { supabase } = authResult;
 
   // Get the original upload
-  const { data: upload } = await (supabase as any)
+  const { data: upload } = await (supabase as unknown as SupabaseClient)
     .from('baseball_box_score_uploads')
     .select('*')
     .eq('id', uploadId)
@@ -882,7 +880,7 @@ export async function resolveBoxScoreUpload(
   }
 
   if (result.success) {
-    await (supabase as any)
+    await (supabase as unknown as SupabaseClient)
       .from('baseball_box_score_uploads')
       .update({ status: 'completed' })
       .eq('id', uploadId);
@@ -914,7 +912,7 @@ export async function getTeamSeasonStats(
 
   const year = seasonYear ?? new Date().getFullYear();
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (supabase as unknown as SupabaseClient)
     .from('baseball_player_season_stats')
     .select(`
       *,
@@ -950,8 +948,7 @@ export async function getPlayerSeasonStats(
 
   const year = seasonYear ?? new Date().getFullYear();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
+  const db = supabase as unknown as SupabaseClient;
 
   const [statsResult, battingLogResult, pitchingLogResult] = await Promise.all([
     db
@@ -1009,7 +1006,7 @@ export async function getMySeasonStats(
 
   const year = seasonYear ?? new Date().getFullYear();
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (supabase as unknown as SupabaseClient)
     .from('baseball_player_season_stats')
     .select('*')
     .eq('player_id', player.id)
@@ -1077,8 +1074,7 @@ export async function recalculateAllSeasonStats(
 
   const year = seasonYear ?? new Date().getFullYear();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any).rpc('recalculate_team_baseball_season_stats', {
+  const { error } = await (supabase as unknown as SupabaseClient).rpc('recalculate_team_baseball_season_stats', {
     p_team_id: teamId,
     p_season_year: year,
   });
@@ -1163,8 +1159,7 @@ export async function importSchedule(
 
   // ── Fetch existing games for this team to enable idempotent dedup ──────────
   // Natural key: (team_id, game_date, opponent_name)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
+  const db = supabase as unknown as SupabaseClient;
   const { data: existingGames } = await db
     .from('baseball_games')
     .select('game_date, opponent_name')

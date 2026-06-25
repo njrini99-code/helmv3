@@ -32,6 +32,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { IconCheckCircle2, IconAlertCircle, IconArrowLeft } from '@/components/icons';
 import {
   logSetResult,
@@ -98,7 +99,7 @@ export function PlayerLiftSessionClient({ session, readinessSubmittedToday }: Pr
       map.set(key, arr);
     }
     return Array.from(map.entries());
-  }, [session.exercises]);
+  }, [session]);
 
   const totalSets = useMemo(
     () => session.exercises.reduce((n, ex) => n + (ex.prescribed_sets ?? 1), 0),
@@ -379,8 +380,9 @@ function OfflinePill({
 }) {
   if (pending === 0 && isOnline) return null;
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={onRetry}
       className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
       title={
@@ -396,7 +398,7 @@ function OfflinePill({
       {isOnline
         ? `Syncing · ${pending} set${pending === 1 ? '' : 's'} pending`
         : `Offline${pending > 0 ? ` · ${pending} pending` : ''}`}
-    </button>
+    </Button>
   );
 }
 
@@ -415,15 +417,16 @@ function IncrementButton({
   disabled: boolean;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={onPress}
       disabled={disabled}
       aria-label={delta > 0 ? `Add ${delta}` : `Subtract ${Math.abs(delta)}`}
-      className="flex min-h-[44px] min-w-[36px] items-center justify-center rounded-lg border border-warm-200 bg-white text-xs font-semibold text-warm-700 transition-colors hover:bg-warm-50 disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+      className="flex min-h-[44px] min-w-[36px] items-center justify-center rounded-lg border border-warm-200 bg-cream-50 text-xs font-semibold text-warm-700 transition-colors hover:bg-warm-50 disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
     >
       {delta > 0 ? `+${delta}` : delta}
-    </button>
+    </Button>
   );
 }
 
@@ -476,7 +479,7 @@ function ExerciseBlock({
       <div className="flex items-center justify-between">
         <p className="font-medium text-warm-900">{name}</p>
         {modified && (
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-eyebrow font-medium text-amber-700">
             Modified
           </span>
         )}
@@ -500,7 +503,7 @@ function ExerciseBlock({
                   Set {setNum}
                 </span>
                 {/* Reps */}
-                <input
+                <Input
                   inputMode="numeric"
                   placeholder="reps"
                   aria-label={`${name} set ${setNum} reps`}
@@ -509,7 +512,7 @@ function ExerciseBlock({
                     setDrafts((p) => ({ ...p, [setNum]: { ...d, reps: e.target.value } }))
                   }
                   disabled={isInputDisabled}
-                  className="w-16 rounded-lg border border-warm-200 bg-white px-2 py-1.5 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400 disabled:opacity-60"
+                  className="w-16 rounded-lg border border-warm-200 bg-cream-50 px-2 py-1.5 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400 disabled:opacity-60"
                 />
                 {/* H1: Load with +5/-5 steppers */}
                 <IncrementButton
@@ -523,7 +526,7 @@ function ExerciseBlock({
                     })
                   }
                 />
-                <input
+                <Input
                   inputMode="decimal"
                   placeholder={prescribedLoadUnit ?? 'lb'}
                   aria-label={`${name} set ${setNum} load`}
@@ -532,7 +535,7 @@ function ExerciseBlock({
                     setDrafts((p) => ({ ...p, [setNum]: { ...d, load: e.target.value } }))
                   }
                   disabled={isInputDisabled}
-                  className="w-16 rounded-lg border border-warm-200 bg-white px-2 py-1.5 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400 disabled:opacity-60"
+                  className="w-16 rounded-lg border border-warm-200 bg-cream-50 px-2 py-1.5 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400 disabled:opacity-60"
                 />
                 <IncrementButton
                   delta={5}
@@ -549,7 +552,7 @@ function ExerciseBlock({
               {/* Row 2: RPE + Log (indented past the Set label) */}
               <div className="flex items-center gap-1.5 pl-11">
                 {/* RPE */}
-                <input
+                <Input
                   inputMode="decimal"
                   placeholder="RPE"
                   aria-label={`${name} set ${setNum} RPE`}
@@ -558,7 +561,7 @@ function ExerciseBlock({
                     setDrafts((p) => ({ ...p, [setNum]: { ...d, rpe: e.target.value } }))
                   }
                   disabled={isInputDisabled}
-                  className="w-16 rounded-lg border border-warm-200 bg-white px-2 py-1.5 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400 disabled:opacity-60"
+                  className="w-16 rounded-lg border border-warm-200 bg-cream-50 px-2 py-1.5 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400 disabled:opacity-60"
                 />
                 <Button
                   size="sm"
@@ -583,8 +586,9 @@ function ExerciseBlock({
                   a prior logged set to copy from. Copies weight + reps only. */}
               {!saved && hasPriorLoggedSet && (lastLoad || lastReps) && (
                 <div className="pl-[3.25rem]">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() =>
                       setDrafts((p) => ({
                         ...p,
@@ -595,12 +599,12 @@ function ExerciseBlock({
                         },
                       }))
                     }
-                    className="text-[11px] font-medium text-warm-400 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-400 transition-colors"
+                    className="text-eyebrow font-medium text-warm-400 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-400 transition-colors"
                     aria-label={`Repeat last set: ${lastLoad}${prescribedLoadUnit ?? 'lb'} × ${lastReps}`}
                   >
                     Repeat {lastLoad ? `${lastLoad}${prescribedLoadUnit ?? 'lb'}` : ''}
                     {lastReps ? ` × ${lastReps}` : ''}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

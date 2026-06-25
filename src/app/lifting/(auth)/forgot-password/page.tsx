@@ -7,6 +7,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function LiftingForgotPasswordPage() {
   const prefersReducedMotion = useReducedMotion();
@@ -57,12 +58,12 @@ export default function LiftingForgotPasswordPage() {
       {/* Animated orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute w-[500px] h-[500px] -top-32 -right-32 rounded-full bg-gradient-to-br from-green-400/30 to-green-600/20 blur-3xl"
+          className="absolute w-[500px] h-[500px] -top-32 -right-32 rounded-full bg-gradient-to-br from-primary-400/30 to-primary-600/20 blur-3xl"
           animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.05, 1] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 15, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute w-[400px] h-[400px] -bottom-24 -left-24 rounded-full bg-gradient-to-tr from-emerald-400/25 to-green-400/20 blur-3xl"
+          className="absolute w-[400px] h-[400px] -bottom-24 -left-24 rounded-full bg-gradient-to-tr from-primary-400/25 to-primary-400/20 blur-3xl"
           animate={{ x: [0, -25, 0], y: [0, 25, 0], scale: [1, 0.95, 1] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
         />
@@ -81,7 +82,7 @@ export default function LiftingForgotPasswordPage() {
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
+          className="glass-standard rounded-3xl p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
         >
           {/* Logo */}
           <motion.div
@@ -144,7 +145,7 @@ export default function LiftingForgotPasswordPage() {
                 <Link href="/lifting/login">
                   <Button
                     variant="ghost"
-                    className="w-full py-3 bg-white text-warm-700 font-medium text-sm rounded-xl border border-warm-200 hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300 active:scale-[0.98] transition-all"
+                    className="w-full py-3 bg-cream-50 text-warm-700 font-medium text-sm rounded-xl border border-warm-200 hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300 active:scale-[0.98] transition-all"
                   >
                     Back to Sign In
                   </Button>
@@ -164,17 +165,15 @@ export default function LiftingForgotPasswordPage() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="forgot-email" className="text-sm font-medium text-warm-700">Email</label>
-                  <input
+                  <Input
                     id="forgot-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     required
-                    // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on a single-field auth page
-                    autoFocus
                     autoComplete="email"
-                    className="w-full px-4 py-3 bg-white border border-warm-200 rounded-xl text-warm-900 text-base lg:text-sm placeholder:text-warm-400 transition-all focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10"
+                    className="w-full px-4 py-3 bg-cream-50 border border-warm-200 rounded-xl text-warm-900 text-base lg:text-sm placeholder:text-warm-400 transition-all focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10"
                   />
                 </div>
 
@@ -186,9 +185,9 @@ export default function LiftingForgotPasswordPage() {
                 >
                   {loading ? (
                     <div className="flex items-center gap-1" role="status" aria-label="Sending reset link">
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 bg-cream-50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                       <span className="sr-only">Sending reset link...</span>
                     </div>
                   ) : (

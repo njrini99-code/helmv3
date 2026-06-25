@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -56,7 +57,7 @@ function ReadinessBoardSkeleton() {
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border border-warm-100 bg-white/70 backdrop-blur-xl px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center"
+            className="rounded-2xl border border-warm-100 glass-standard px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center"
             style={{ animationDelay: `${i * 40}ms` }}
           >
             <div className="w-44 shrink-0 space-y-1">
@@ -173,18 +174,19 @@ export function ReadinessBoardClient({ summaries, date, loading = false }: Props
           />
         </div>
         {(['all', 'green', 'yellow', 'flagged', 'no_checkin'] as const).map((f) => (
-          <button
+          <Button
             key={f}
             type="button"
+            variant="ghost"
             onClick={() => setBandFilter(f)}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
               bandFilter === f
                 ? 'border-primary-400 bg-primary-50 text-primary-700'
-                : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300'
+                : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300'
             }`}
           >
             {f === 'all' ? 'All' : f === 'flagged' ? 'Flagged' : f === 'no_checkin' ? 'No check-in' : BAND_META[f as HelmLiftingReadinessBand]?.label ?? f}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -285,12 +287,12 @@ export function ReadinessBoardClient({ summaries, date, loading = false }: Props
                     {soreness.length > 0 && (
                       <div className="flex flex-wrap gap-1 ml-auto">
                         {soreness.slice(0, 4).map((s) => (
-                          <span key={s.id} className="rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] text-orange-600">
+                          <span key={s.id} className="rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-micro text-orange-600">
                             {s.body_region}{s.side !== 'center' ? ` (${s.side})` : ''} {s.severity}/5
                           </span>
                         ))}
                         {soreness.length > 4 && (
-                          <span className="rounded border border-warm-200 bg-warm-50 px-2 py-0.5 text-[10px] text-warm-500">
+                          <span className="rounded border border-warm-200 bg-warm-50 px-2 py-0.5 text-micro text-warm-500">
                             +{soreness.length - 4} more
                           </span>
                         )}
@@ -300,7 +302,7 @@ export function ReadinessBoardClient({ summaries, date, loading = false }: Props
                     {/* Today's session status */}
                     {session_today && (
                       <div className="shrink-0 ml-auto">
-                        <span className="text-[11px] text-warm-400">
+                        <span className="text-eyebrow text-warm-400">
                           {session_today.title ?? 'Session'} · {session_today.status}
                         </span>
                       </div>

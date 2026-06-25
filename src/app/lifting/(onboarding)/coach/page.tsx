@@ -8,6 +8,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
 import { completeLiftingCoachOnboarding, type CompleteLiftingCoachOnboardingArgs } from '@/app/lifting/actions/onboarding';
 import { fromUntyped } from '@/lib/supabase/untyped';
 
@@ -104,12 +105,12 @@ export default function LiftingCoachOnboardingPage() {
       {/* Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute w-[500px] h-[500px] -top-32 -right-32 rounded-full bg-gradient-to-br from-green-400/30 to-green-600/20 blur-3xl"
+          className="absolute w-[500px] h-[500px] -top-32 -right-32 rounded-full bg-gradient-to-br from-primary-400/30 to-primary-600/20 blur-3xl"
           animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 15, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute w-[400px] h-[400px] -bottom-24 -left-24 rounded-full bg-gradient-to-tr from-emerald-400/25 to-green-400/20 blur-3xl"
+          className="absolute w-[400px] h-[400px] -bottom-24 -left-24 rounded-full bg-gradient-to-tr from-primary-400/25 to-primary-400/20 blur-3xl"
           animate={{ x: [0, -25, 0], y: [0, 25, 0] }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
         />
@@ -120,7 +121,7 @@ export default function LiftingCoachOnboardingPage() {
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
+          className="glass-standard backdrop-blur-xl border border-white/20 rounded-3xl p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
         >
           {done ? (
             <motion.div
@@ -200,7 +201,7 @@ export default function LiftingCoachOnboardingPage() {
                     Organization <span className="text-red-500">*</span>
                   </label>
                   {orgsLoading ? (
-                    <div className="flex items-center gap-2 px-4 py-3 bg-white border border-warm-200 rounded-xl">
+                    <div className="flex items-center gap-2 px-4 py-3 bg-cream-50 border border-warm-200 rounded-xl">
                       <Loader2 className="w-4 h-4 text-primary-600 animate-spin flex-shrink-0" />
                       <span className="text-warm-400 text-sm">Loading organizations…</span>
                     </div>
@@ -213,18 +214,14 @@ export default function LiftingCoachOnboardingPage() {
                       </p>
                     </div>
                   ) : (
-                    <select
+                    <NativeSelect
                       id="onboard-org"
                       value={orgId}
                       onChange={(e) => setOrgId(e.target.value)}
                       required
-                      className="w-full px-4 py-3 bg-white border border-warm-200 rounded-xl text-warm-900 text-sm focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10 transition-all"
-                    >
-                      <option value="" disabled>Select your school / organization</option>
-                      {orgs.map((o) => (
-                        <option key={o.id} value={o.id}>{o.name}</option>
-                      ))}
-                    </select>
+                      placeholder="Select your school / organization"
+                      options={orgs.map((o) => ({ value: o.id, label: o.name }))}
+                    />
                   )}
                 </div>
 

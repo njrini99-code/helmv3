@@ -57,7 +57,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
+    <div className="glass-standard border border-white/20 rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
       <div className="flex items-center gap-2.5 mb-6">
         <div className="w-8 h-8 bg-primary-50 rounded-xl flex items-center justify-center">
           <Icon className="w-4 h-4 text-primary-600" />
@@ -150,13 +150,14 @@ function TeamPicker({ orgId, value, onChange, disabled }: TeamPickerProps) {
 
   return (
     <div ref={containerRef} className="relative">
-      <button
+      <Button
         type="button"
+        variant="ghost"
         disabled={disabled || loading}
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-warm-200 bg-white/80 text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-warm-200 glass-standard text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
       >
         {loading ? (
           <Loader2 className="w-4 h-4 animate-spin text-warm-400 flex-shrink-0" />
@@ -167,24 +168,26 @@ function TeamPicker({ orgId, value, onChange, disabled }: TeamPickerProps) {
           {value ? `${sportEmoji(value.sport)} ${value.name}` : 'Search teams…'}
         </span>
         {value ? (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-sm"
             onClick={(e) => {
               e.stopPropagation();
               onChange(null);
               setQuery('');
             }}
             aria-label="Clear selection"
-            className="w-4 h-4 text-warm-400 hover:text-warm-700 flex-shrink-0"
+            className="w-4 h-4 text-warm-400 hover:text-warm-700 flex-shrink-0 !h-auto !w-auto !min-h-0 !p-0"
           >
             <X className="w-4 h-4" />
-          </button>
+          </Button>
         ) : (
           <ChevronDown
             className={`w-4 h-4 text-warm-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
           />
         )}
-      </button>
+      </Button>
 
       <AnimatePresence>
         {open && (
@@ -193,17 +196,16 @@ function TeamPicker({ orgId, value, onChange, disabled }: TeamPickerProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.12 }}
-            className="absolute z-50 top-full mt-1.5 left-0 right-0 bg-white/95 backdrop-blur-xl border border-white/30 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden"
+            className="absolute z-50 top-full mt-1.5 left-0 right-0 glass-standard border border-white/30 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] overflow-hidden"
           >
             {/* Search input */}
             <div className="px-3 pt-2.5 pb-1.5 border-b border-warm-100">
-              <input
+              <Input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Filter teams…"
-                autoFocus
-                className="w-full text-sm text-warm-900 bg-transparent placeholder-warm-400 focus:outline-none"
+                className="min-h-0 h-8 bg-transparent border-0 shadow-none text-sm text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-0 focus-visible:ring-0 px-0 py-0"
               />
             </div>
 
@@ -219,10 +221,19 @@ function TeamPicker({ orgId, value, onChange, disabled }: TeamPickerProps) {
                     key={t.id}
                     role="option"
                     aria-selected={value?.id === t.id}
+                    tabIndex={0}
                     onClick={() => {
                       onChange(t);
                       setOpen(false);
                       setQuery('');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onChange(t);
+                        setOpen(false);
+                        setQuery('');
+                      }
                     }}
                     className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-primary-50 transition-colors"
                   >
@@ -287,7 +298,7 @@ function InviteCard({ invite, onRevoked, onResent }: InviteCardProps) {
   }
 
   return (
-    <div className="bg-white/50 border border-white/20 rounded-xl p-4 space-y-3">
+    <div className="glass-standard border border-white/20 rounded-xl p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 space-y-0.5">
           <p className="text-sm font-semibold text-warm-900 truncate">{invite.email}</p>
@@ -765,7 +776,7 @@ export function LiftingSettingsClient({
 
           {/* Organization (read-only) */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-warm-700">Organization</label>
+            <p className="text-sm font-medium text-warm-700">Organization</p>
             <div className="px-4 py-3 bg-warm-50 border border-warm-200 rounded-xl text-sm text-warm-700">
               {org?.name ?? 'Unknown organization'}
             </div>
@@ -818,7 +829,7 @@ export function LiftingSettingsClient({
               {assignments.map((a) => (
                 <div
                   key={a.id}
-                  className="flex items-center gap-3 px-4 py-3 bg-white/50 rounded-xl border border-white/20"
+                  className="flex items-center gap-3 px-4 py-3 glass-standard rounded-xl border border-white/20"
                 >
                   <span className="text-lg flex-shrink-0" aria-hidden="true">
                     {sportEmoji(a.sport)}
@@ -871,9 +882,9 @@ export function LiftingSettingsClient({
               {assignSuccess && <AlertBanner type="success">{assignSuccess}</AlertBanner>}
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-warm-700">
+                <p className="text-xs font-medium text-warm-700">
                   Team <span className="text-red-500">*</span>
-                </label>
+                </p>
                 {org ? (
                   <TeamPicker
                     orgId={org.id}

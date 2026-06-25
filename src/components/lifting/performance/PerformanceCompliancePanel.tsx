@@ -130,12 +130,12 @@ function RadialRing({
         </div>
       </div>
       {label && (
-        <p className="max-w-[70px] text-center text-[10px] font-medium leading-tight text-warm-600">
+        <p className="max-w-[70px] text-center text-micro font-medium leading-tight text-warm-600">
           {label}
         </p>
       )}
       {sublabel && (
-        <p className="text-[10px] text-warm-400">{sublabel}</p>
+        <p className="text-micro text-warm-400">{sublabel}</p>
       )}
     </div>
   );
@@ -190,7 +190,7 @@ function OverallRing({ pct }: { pct: number | null }) {
         <span className={`text-xl font-bold leading-none ${pctColor(pct)}`}>
           {pct != null ? `${pct}%` : '—'}
         </span>
-        <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wider text-warm-400">
+        <span className="mt-0.5 text-microbadge font-semibold uppercase tracking-wider text-warm-400">
           Overall
         </span>
       </div>
@@ -357,7 +357,7 @@ export function PerformanceCompliancePanel({ compliance, loading = false }: Prop
         </div>
 
         {/* Legend */}
-        <div className="flex flex-wrap gap-3 text-[10px] text-warm-400 border-t border-warm-100 pt-3">
+        <div className="flex flex-wrap gap-3 text-micro text-warm-400 border-t border-warm-100 pt-3">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2 w-2 rounded-full bg-primary-500" />
             ≥80% on-track

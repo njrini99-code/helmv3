@@ -21,6 +21,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { NativeSelect } from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getFullName } from '@/lib/utils';
@@ -208,7 +210,7 @@ export function PerformanceCommandCenter({
           {Array.from({ length: 7 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4 space-y-2 border-l-4 border-l-warm-200"
+              className="glass-standard backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4 space-y-2 border-l-4 border-l-warm-200"
               style={{ animationDelay: `${i * 40}ms` }}
             >
               <Skeleton className="h-3 w-24" />
@@ -217,7 +219,7 @@ export function PerformanceCommandCenter({
           ))}
         </div>
         {/* Board skeleton */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+        <div className="glass-standard backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
           <div className="px-6 py-4 border-b border-warm-100">
             <Skeleton className="h-5 w-40" />
           </div>
@@ -236,7 +238,7 @@ export function PerformanceCommandCenter({
           </div>
         </div>
         {/* Readiness queue skeleton */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+        <div className="glass-standard backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
           <div className="px-6 py-4 border-b border-warm-100">
             <Skeleton className="h-5 w-48" />
           </div>
@@ -282,19 +284,19 @@ export function PerformanceCommandCenter({
           </Link>
           <Link
             href="/baseball/dashboard/performance/programs"
-            className="rounded-xl border border-warm-200 bg-white/70 px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+            className="rounded-xl border border-warm-200 glass-standard px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
           >
             Programs
           </Link>
           <Link
             href="/baseball/dashboard/performance/groups"
-            className="rounded-xl border border-warm-200 bg-white/70 px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+            className="rounded-xl border border-warm-200 glass-standard px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
           >
             Groups
           </Link>
           <Link
             href="/baseball/dashboard/performance/builder"
-            className="rounded-xl border border-warm-200 bg-white/70 px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+            className="rounded-xl border border-warm-200 glass-standard px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
           >
             Builder
           </Link>
@@ -321,7 +323,7 @@ export function PerformanceCommandCenter({
                 {k.value}
               </div>
               <div className="mt-1 text-xs font-medium text-warm-500">{k.label}</div>
-              {k.sub ? <div className="mt-0.5 text-[11px] text-warm-400">{k.sub}</div> : null}
+              {k.sub ? <div className="mt-0.5 text-eyebrow text-warm-400">{k.sub}</div> : null}
             </Card>
           </motion.li>
         ))}
@@ -336,17 +338,17 @@ export function PerformanceCommandCenter({
                 <h2 className="text-xl font-semibold text-warm-900">Today Weight Room</h2>
                 <p className="text-xs text-warm-500">Who is lifting, status, readiness, and the main lift.</p>
               </div>
-              <select
+              <NativeSelect
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-warm-200 bg-white px-2 py-1 text-sm text-warm-700 transition-colors focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                className="text-sm"
                 aria-label="Filter board by session status"
               >
                 <option value="all">All statuses</option>
                 {Object.entries(SESSION_STATUS_LABEL).map(([v, l]) => (
                   <option key={v} value={v}>{l}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </CardHeader>
             <CardContent>
               {board.length === 0 ? (
@@ -384,7 +386,7 @@ export function PerformanceCommandCenter({
                             >
                               {getFullName(b.first_name, b.last_name)}
                             </Link>
-                            <div className="text-[11px] text-warm-400">{b.primary_position ?? '—'}</div>
+                            <div className="text-eyebrow text-warm-400">{b.primary_position ?? '—'}</div>
                           </td>
                           <td className="px-2 py-2 text-warm-600">{b.group_names[0] ?? '—'}</td>
                           <td className="px-2 py-2">
@@ -442,17 +444,18 @@ export function PerformanceCommandCenter({
                     const isSelected = selectedPlayerId === r.player_id;
                     return (
                       <li key={r.player_id}>
-                        <button
+                        <Button
+                          variant="ghost"
                           type="button"
                           onClick={() => handleRowClick(r.player_id)}
                           aria-pressed={isSelected}
                           aria-label={`Inspect ${playerNameById[r.player_id] ?? 'player'}`}
                           className={cn(
-                            'w-full rounded-xl border p-3 text-left transition-all duration-150',
+                            'w-full flex-col items-start rounded-xl border p-3 text-left transition-all duration-150 whitespace-normal',
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
                             isSelected
                               ? 'border-primary-300 bg-primary-50/60 shadow-sm ring-1 ring-primary-200'
-                              : 'border-warm-100 bg-white/60 hover:border-warm-200 hover:bg-white/80',
+                              : 'border-warm-100 glass-standard hover:border-warm-200 hover:bg-cream-50',
                           )}
                         >
                           <div className="flex items-center justify-between gap-2">
@@ -478,14 +481,14 @@ export function PerformanceCommandCenter({
                               → {r.suggested_action}
                             </p>
                           )}
-                          <div className="mt-1 flex items-center gap-2 text-[11px] text-warm-400">
+                          <div className="mt-1 flex items-center gap-2 text-eyebrow text-warm-400">
                             <span>Confidence: {r.confidence}</span>
                             {r.stale && <span className="text-amber-600">· stale data</span>}
                             {r.missing_inputs.length > 0 && (
                               <span>· missing: {r.missing_inputs.join(', ')}</span>
                             )}
                           </div>
-                        </button>
+                        </Button>
                       </li>
                     );
                   })}

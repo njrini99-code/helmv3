@@ -238,7 +238,7 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
           {/* Reviews column */}
           <section className="lg:col-span-2">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-warm-500">
+              <h2 className="text-body-sm font-semibold uppercase tracking-[0.08em] text-warm-500">
                 Measurements
               </h2>
               <div
@@ -254,9 +254,10 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
                     ['needs_more', 'Need data'],
                   ] as [ReviewFilter, string][]
                 ).map(([f, lbl]) => (
-                  <button
+                  <Button
                     key={f}
                     type="button"
+                    variant="ghost"
                     role="tab"
                     aria-selected={filter === f}
                     onClick={() => setFilter(f)}
@@ -267,7 +268,7 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
                     }`}
                   >
                     {lbl}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -303,7 +304,7 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
 
           {/* Focus roll-up column */}
           <section>
-            <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-warm-500">
+            <h2 className="mb-3 text-body-sm font-semibold uppercase tracking-[0.08em] text-warm-500">
               By focus area
             </h2>
             {focusRollup.length === 0 ? (

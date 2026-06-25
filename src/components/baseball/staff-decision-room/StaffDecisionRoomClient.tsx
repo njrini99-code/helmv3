@@ -385,7 +385,7 @@ export function StaffDecisionRoomClient({ data }: StaffDecisionRoomClientProps) 
                   setNewItemDetail('');
                 }}
                 aria-label={newItemOpen ? 'Cancel new item' : 'Add agenda item'}
-                className="inline-flex items-center gap-1 rounded-lg border border-warm-200 bg-white px-2.5 py-1 text-xs font-medium text-warm-700 shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                className="inline-flex items-center gap-1 rounded-lg border border-warm-200 bg-cream-50 px-2.5 py-1 text-xs font-medium text-warm-700 shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               >
                 {newItemOpen ? (
                   <><IconX size={13} /> Cancel</>
@@ -417,16 +417,15 @@ export function StaffDecisionRoomClient({ data }: StaffDecisionRoomClientProps) 
                       value={newItemTitle}
                       onChange={(e) => setNewItemTitle(e.target.value)}
                       disabled={creatingItem}
-                      className="bg-white"
+                      className="bg-cream-50"
                       maxLength={200}
-                      autoFocus
                     />
                     <Textarea
                       placeholder="Optional detail or context (visible in meeting view)"
                       value={newItemDetail}
                       onChange={(e) => setNewItemDetail(e.target.value)}
                       disabled={creatingItem}
-                      className="min-h-[72px] bg-white text-sm"
+                      className="min-h-[72px] bg-cream-50 text-sm"
                       maxLength={1000}
                     />
                   </div>
@@ -543,14 +542,15 @@ export function StaffDecisionRoomClient({ data }: StaffDecisionRoomClientProps) 
               <h2 className="text-sm font-semibold uppercase tracking-wide text-warm-400">
                 Practice effectiveness
               </h2>
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 onClick={() => router.push('/baseball/dashboard/practice-effectiveness')}
                 className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700"
               >
                 Open effectiveness
                 <IconChevronRight className="h-3.5 w-3.5" />
-              </button>
+              </Button>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {data.effectivenessReviews.map((rev) => (

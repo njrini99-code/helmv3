@@ -52,7 +52,6 @@ import {
   IconLayoutGrid,
   IconLink,
   IconEye,
-  IconX,
 } from '@/components/icons';
 import { cn, formatRelativeTime, getFullName } from '@/lib/utils';
 import {
@@ -139,19 +138,20 @@ function TabBar({
       {VIEWS.map(({ id, label, icon }) => {
         const active = id === activeView;
         return (
-          <button
+          <Button
             key={id}
             role="tab"
             aria-selected={active}
             aria-controls={`video-panel-${id}`}
             id={`video-tab-${id}`}
             type="button"
+            variant="ghost"
             onClick={() => onChange(id)}
             className={cn(
               'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
               active
-                ? 'bg-white text-warm-900 shadow-sm'
-                : 'text-warm-500 hover:text-warm-800 hover:bg-white/60',
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
+                : 'text-warm-500 hover:text-warm-800',
             )}
           >
             {icon}
@@ -168,7 +168,7 @@ function TabBar({
                 {counts[id]}
               </span>
             )}
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -201,44 +201,33 @@ function FilterBar({
     <Card variant="glass" className="mb-5">
       <CardContent className="p-3">
         <div className="flex items-center gap-2">
-          <div className="flex-1 relative">
-            <IconSearch
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none"
-            />
-            <input
+          <div className="flex-1">
+            <Input
               type="text"
               value={search}
               onChange={(e) => onSearch(e.target.value)}
               placeholder={placeholder}
-              className="w-full pl-9 pr-8 py-2 text-sm rounded-xl border border-warm-200 bg-white/60 text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              leftIcon={<IconSearch size={16} />}
+              clearable
+              onClear={() => onSearch('')}
             />
-            {search && (
-              <button
-                type="button"
-                onClick={() => onSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
-                aria-label="Clear search"
-              >
-                <IconX size={14} />
-              </button>
-            )}
           </div>
           {showTypeFilter && onTypeFilter && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setShowPanel((p) => !p)}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border transition-all',
                 hasFilter
                   ? 'bg-primary-50 text-primary-700 border-primary-200'
-                  : 'bg-white/60 text-warm-600 border-warm-200 hover:border-warm-300',
+                  : 'glass-subtle text-warm-600 hover:border-warm-300',
               )}
               aria-expanded={showPanel}
             >
               <IconFilter size={14} />
               {hasFilter ? 'Filtered' : 'Filter'}
-            </button>
+            </Button>
           )}
         </div>
 
@@ -246,32 +235,34 @@ function FilterBar({
           <div className="mt-3 pt-3 border-t border-warm-100">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-xs font-medium text-warm-500 mr-0.5">Type:</span>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => onTypeFilter('')}
                 className={cn(
                   'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors',
                   !typeFilter
                     ? 'bg-primary-100 text-primary-700 border-primary-200'
-                    : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300',
+                    : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300',
                 )}
               >
                 All
-              </button>
+              </Button>
               {VIDEO_TYPES.map((vt) => (
-                <button
+                <Button
                   key={vt.value}
                   type="button"
+                  variant="ghost"
                   onClick={() => onTypeFilter(vt.value)}
                   className={cn(
                     'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors',
                     typeFilter === vt.value
                       ? 'bg-primary-100 text-primary-700 border-primary-200'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300',
+                      : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300',
                   )}
                 >
                   {vt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -691,8 +682,9 @@ function PlayerView({ data }: { data: PlayerReadModel }) {
               <Card key={group.player.id} variant="glass">
                 <CardContent className="p-0">
                   {/* Group header */}
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     className="w-full flex items-center gap-3 p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-2xl"
                     onClick={() => toggle(group.player.id)}
                     aria-expanded={isOpen}
@@ -726,7 +718,7 @@ function PlayerView({ data }: { data: PlayerReadModel }) {
                         <IconChevronDown size={16} className="text-warm-400" />
                       )}
                     </div>
-                  </button>
+                  </Button>
 
                   {/* Expanded grid */}
                   <AnimatePresence>
@@ -855,8 +847,9 @@ function EventView({ data }: { data: EventReadModel }) {
             return (
               <Card key={group.game_id} variant="glass">
                 <CardContent className="p-0">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     className="w-full flex items-center gap-3 p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-2xl"
                     onClick={() => toggle(group.game_id)}
                     aria-expanded={isOpen}
@@ -890,7 +883,7 @@ function EventView({ data }: { data: EventReadModel }) {
                         <IconChevronDown size={16} className="text-warm-400" />
                       )}
                     </div>
-                  </button>
+                  </Button>
 
                   <AnimatePresence>
                     {isOpen && (
@@ -1013,32 +1006,34 @@ function TaggedView({ data }: { data: TaggedReadModel }) {
       <Card variant="glass" className="mb-5">
         <CardContent className="p-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex-1 min-w-[200px] relative">
-              <IconSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none" />
-              <input
+            <div className="flex-1 min-w-[200px]">
+              <Input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by player, title, or tag…"
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-warm-200 bg-white/60 text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                leftIcon={<IconSearch size={15} />}
+                clearable
+                onClear={() => setSearch('')}
               />
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-warm-500 font-medium">Anchored to:</span>
               {(['', 'at_bat', 'pitch'] as const).map((f) => (
-                <button
+                <Button
                   key={f}
                   type="button"
+                  variant="ghost"
                   onClick={() => setTypeFilter(f)}
                   className={cn(
                     'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors',
                     typeFilter === f
                       ? 'bg-primary-100 text-primary-700 border-primary-200'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300',
+                      : 'bg-cream-50 text-warm-600 border-warm-200 hover:border-warm-300',
                   )}
                 >
                   {f === '' ? 'All' : f === 'at_bat' ? 'At-bat' : 'Pitch'}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

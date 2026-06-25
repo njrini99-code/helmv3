@@ -23,6 +23,8 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   IconX,
   IconCheckCircle2,
@@ -185,14 +187,16 @@ export function WeightEntryModal({
                     </p>
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={onClose}
-                  className="flex h-8 w-8 items-center justify-center rounded-xl text-warm-400 transition-colors hover:bg-warm-100 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-warm-400 hover:bg-warm-100 hover:text-warm-700"
                   aria-label="Close"
                 >
                   <IconX size={16} />
-                </button>
+                </Button>
               </div>
 
               {/* Form */}
@@ -206,7 +210,7 @@ export function WeightEntryModal({
                     Bodyweight
                   </label>
                   <div className="relative">
-                    <input
+                    <Input
                       ref={inputRef}
                       id="weight-input"
                       type="number"
@@ -221,7 +225,7 @@ export function WeightEntryModal({
                         setError(null);
                       }}
                       disabled={saving}
-                      className="w-full rounded-2xl border border-warm-200 bg-white py-4 pl-5 pr-16 text-2xl font-semibold text-warm-900 placeholder:text-warm-300 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="rounded-2xl border border-warm-200 bg-cream-50 py-4 pl-5 pr-16 text-2xl font-semibold text-warm-900 placeholder:text-warm-300 focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20"
                       aria-describedby={error ? 'weight-error' : undefined}
                       aria-invalid={error ? 'true' : 'false'}
                     />
@@ -239,7 +243,7 @@ export function WeightEntryModal({
                   >
                     Note <span className="normal-case text-warm-400">(optional)</span>
                   </label>
-                  <textarea
+                  <Textarea
                     id="weight-note"
                     placeholder="Felt heavy after travel…"
                     value={note}
@@ -247,7 +251,7 @@ export function WeightEntryModal({
                     disabled={saving}
                     rows={2}
                     maxLength={300}
-                    className="w-full resize-none rounded-2xl border border-warm-200 bg-white px-4 py-3 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="resize-none rounded-2xl border border-warm-200 bg-cream-50 px-4 py-3 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20"
                   />
                 </div>
 

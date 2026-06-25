@@ -23,6 +23,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { IconArrowUpDown, IconCopy, IconX } from '@/components/icons';
 import { PrescriptionChip } from './PrescriptionChip';
 import { hoverLift } from '@/lib/baseball/motion';
@@ -113,19 +114,20 @@ function SortableRow({
       ].join(' ')}
     >
       {/* ── Drag handle ────────────────────────────────────────────── */}
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-sm"
         className="flex-shrink-0 cursor-grab touch-none rounded p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-warm-300 hover:text-warm-500 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
         aria-label="Drag to reorder exercise"
         {...listeners}
         {...attributes}
       >
         <IconArrowUpDown size={14} />
-      </button>
+      </Button>
 
       {/* ── Name (click to select → shows detail pane) ─────────────── */}
-      <button
-        type="button"
+      <Button
+        variant="ghost"
         onClick={onSelect}
         className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded"
         aria-pressed={isSelected}
@@ -134,7 +136,7 @@ function SortableRow({
         <p className="truncate text-sm font-medium text-warm-900">
           {exercise?.name ?? <span className="text-warm-400 italic">Unknown exercise</span>}
         </p>
-      </button>
+      </Button>
 
       {/* ── Prescription chip ─────────────────────────────────────── */}
       <PrescriptionChip
@@ -144,22 +146,24 @@ function SortableRow({
 
       {/* ── Quick actions ─────────────────────────────────────────── */}
       <div className="flex shrink-0 items-center">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={onDuplicate}
           className="rounded p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-warm-300 transition-colors hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
           aria-label={`Duplicate ${exercise?.name ?? 'exercise'}`}
         >
           <IconCopy size={13} />
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={onRemove}
           className="rounded p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-warm-300 transition-colors hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
           aria-label={`Remove ${exercise?.name ?? 'exercise'} from block`}
         >
           <IconX size={13} />
-        </button>
+        </Button>
       </div>
     </m.div>
   );
@@ -225,7 +229,7 @@ export function SessionBlock({
       {/* ── Block header ──────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 border-b border-warm-100 px-3 py-2.5">
         <span
-          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${meta.cls}`}
+          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold ${meta.cls}`}
         >
           {meta.label}
         </span>

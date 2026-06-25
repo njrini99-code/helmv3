@@ -44,6 +44,7 @@ import {
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CommandCard } from '@/components/baseball/ui/CommandCard';
 import {
@@ -174,7 +175,7 @@ function DetailPane({
           evidence={conflict.affectedRegions.slice(0, 3).map((r) => (
             <span
               key={r}
-              className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700"
+              className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-eyebrow font-medium text-red-700"
             >
               {r}
             </span>
@@ -201,7 +202,7 @@ function DetailPane({
       <Card className="space-y-4 p-4">
         {/* Identity */}
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-warm-400">
+          <p className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
             Exercise detail
           </p>
           <h3 className="mt-0.5 text-base font-semibold text-warm-900">{exercise.name}</h3>
@@ -284,7 +285,7 @@ function DetailPane({
               {exercise.equipment.map((eq) => (
                 <span
                   key={eq}
-                  className="rounded-full border border-warm-200 bg-white px-2 py-0.5 text-xs text-warm-600"
+                  className="rounded-full border border-warm-200 bg-cream-50 px-2 py-0.5 text-xs text-warm-600"
                 >
                   {eq}
                 </span>
@@ -306,7 +307,7 @@ function DetailPane({
                   className="flex items-center justify-between rounded-lg border border-warm-100 bg-warm-50 px-2.5 py-1.5"
                 >
                   <span className="text-xs font-medium text-warm-800">{s.name}</span>
-                  <span className="text-[10px] text-warm-400">{s.category}</span>
+                  <span className="text-micro text-warm-400">{s.category}</span>
                 </div>
               ))}
             </div>
@@ -321,7 +322,7 @@ function DetailPane({
 
 function DragPreviewCard({ exercise }: { exercise: BuilderExercise }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-primary-200 bg-white px-3 py-2 shadow-xl">
+    <div className="flex items-center gap-2 rounded-xl border border-primary-200 bg-cream-50 px-3 py-2 shadow-xl">
       <IconDumbbell size={14} className="text-primary-500" />
       <span className="text-sm font-medium text-warm-900">{exercise.name}</span>
     </div>
@@ -718,8 +719,9 @@ export function LiftCanvas({
             { id: 'details', label: 'Details' },
           ] as const
         ).map(({ id, label }) => (
-          <button
+          <Button
             key={id}
+            variant="ghost"
             type="button"
             role="tab"
             aria-selected={activeTab === id}
@@ -732,7 +734,7 @@ export function LiftCanvas({
             ].join(' ')}
           >
             {label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -790,7 +792,8 @@ export function LiftCanvas({
             <div key={block.id} className="relative">
               {/* Block reorder controls */}
               <div className="absolute -left-8 top-1/2 flex -translate-y-1/2 flex-col gap-0.5">
-                <button
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={() => moveBlockUp(block.id)}
                   disabled={idx === 0}
@@ -798,8 +801,9 @@ export function LiftCanvas({
                   aria-label={`Move ${block.title} block up`}
                 >
                   <IconChevronUp size={14} />
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
                   type="button"
                   onClick={() => moveBlockDown(block.id)}
                   disabled={idx === blocks.length - 1}
@@ -807,7 +811,7 @@ export function LiftCanvas({
                   aria-label={`Move ${block.title} block down`}
                 >
                   <IconChevronDown size={14} />
-                </button>
+                </Button>
               </div>
 
               <SessionBlock

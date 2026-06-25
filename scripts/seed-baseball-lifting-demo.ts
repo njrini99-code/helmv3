@@ -104,7 +104,7 @@ function p1Id(key: string): string {
 // Phase-1 stable ids (mirrored from seed-baseball-demo.ts).
 const ORG_ID = p1Id('org');
 const TEAM_ID = p1Id('team');
-const COACH_ID = p1Id('coach'); // existing head coach
+const _COACH_ID = p1Id('coach'); // existing head coach (unused; retained for reference)
 
 // Phase-1 roster (same order as ROSTER in seed-baseball-demo.ts).
 const ROSTER_KEYS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'] as const;
@@ -680,7 +680,7 @@ async function main() {
         title: isCompleted
           ? `${dayMap.exercises[0].name} day — ${paDate}`
           : pi === 2
-            ? `Today\'s lift — ${dayMap.exercises[0].name} day`
+            ? `Today's lift — ${dayMap.exercises[0].name} day`
             : `Upcoming — ${dayMap.exercises[0].name} day (${paDate})`,
         day_type: pi % 2 === 0 ? 'lower' : 'upper',
         scheduled_date: paDate,

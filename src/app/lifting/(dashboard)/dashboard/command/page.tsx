@@ -110,7 +110,7 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3 rounded-2xl border border-white/20 bg-white/50 px-4 py-4 transition-all hover:bg-white/80 hover:shadow-sm"
+      className="group flex items-center gap-3 rounded-2xl border border-white/20 glass-standard px-4 py-4 transition-all hover:bg-cream-50 hover:shadow-sm"
     >
       <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${colorClass}`}>
         <Icon className="h-5 w-5" />

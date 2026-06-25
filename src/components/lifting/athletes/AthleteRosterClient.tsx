@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -62,7 +63,7 @@ function AthleteRosterSkeleton() {
         {Array.from({ length: 9 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-4 space-y-3"
+            className="rounded-2xl border border-white/20 glass-standard p-4 space-y-3"
             style={{ animationDelay: `${i * 40}ms` }}
           >
             <div className="flex items-center gap-3">
@@ -142,14 +143,15 @@ export function AthleteRosterClient({ athletes, assignments, orgId, canEdit, loa
           </p>
         </div>
         {canEdit && (
-          <button
+          <Button
+            variant="primary"
             onClick={handleSync}
             disabled={syncing}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-60"
           >
             <IconRefresh size={16} className={syncing ? 'animate-spin' : ''} />
             {syncing ? 'Syncing…' : 'Sync athletes'}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -176,17 +178,18 @@ export function AthleteRosterClient({ athletes, assignments, orgId, canEdit, loa
       {activeSports.length > 1 && (
         <div className="flex gap-2">
           {(['all', ...activeSports] as Tab[]).map((tab) => (
-            <button
+            <Button
               key={tab}
+              variant="ghost"
               onClick={() => setActiveTab(tab)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus-visible:ring-primary-500/50 ${
                 activeTab === tab
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-white/70 text-warm-600 hover:bg-white/90 hover:text-warm-900'
+                  : 'glass-standard text-warm-600 hover:bg-cream-50 hover:text-warm-900'
               }`}
             >
               {tab === 'all' ? 'All' : SPORT_LABELS[tab as HelmLiftingSport]}
-            </button>
+            </Button>
           ))}
         </div>
       )}

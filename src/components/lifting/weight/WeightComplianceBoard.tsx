@@ -268,20 +268,21 @@ export function WeightComplianceBoard({ dashboard, orgId, onRefresh }: WeightCom
           </div>
           <div className="flex gap-1 overflow-x-auto pb-1">
             {tabs.map(({ key, label, count }) => (
-              <button
+              <Button
                 key={key}
                 type="button"
+                variant="ghost"
                 onClick={() => setActiveTab(key)}
                 className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                   activeTab === key
                     ? 'border-primary-400 bg-primary-50 text-primary-700'
-                    : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300'
+                    : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300'
                 }`}
               >
                 {label}
                 {count != null && count > 0 && (
                   <span
-                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                    className={`rounded-full px-1.5 py-0.5 text-micro font-semibold tabular-nums ${
                       activeTab === key
                         ? 'bg-primary-100 text-primary-700'
                         : 'bg-warm-100 text-warm-600'
@@ -290,7 +291,7 @@ export function WeightComplianceBoard({ dashboard, orgId, onRefresh }: WeightCom
                     {count}
                   </span>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
         </CardHeader>

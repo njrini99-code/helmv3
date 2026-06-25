@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 
 import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
 import type { PlayerPracticeView } from '@/app/baseball/actions/practice';
 
 interface Props {
@@ -176,11 +177,12 @@ function PracticeCard({
   const conflictCount = practice.blocks.filter((b) => b.hasClassConflict).length;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-white/20 bg-white/70 shadow-glass backdrop-blur-xl">
+    <article className="overflow-hidden rounded-2xl border border-white/20 glass-standard shadow-glass backdrop-blur-xl">
       {/* Card header — always visible, tap to expand */}
-      <button
+      <Button
         type="button"
-        className="flex w-full items-start justify-between gap-3 px-5 py-4 text-left transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+        variant="ghost"
+        className="flex w-full items-start justify-between gap-3 px-5 py-4 text-left transition-colors hover:glass-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
         aria-expanded={expanded}
         aria-controls={`practice-body-${practice.id}`}
         onClick={onToggle}
@@ -245,7 +247,7 @@ function PracticeCard({
             )}
           </span>
         </div>
-      </button>
+      </Button>
 
       {/* Expanded body */}
       <AnimatePresence initial={false}>
@@ -317,7 +319,7 @@ function PracticeBlockRow({
         <div className="flex items-start gap-3">
           {/* Block number */}
           <span
-            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-[10px] font-bold text-primary-700"
+            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-micro font-bold text-primary-700"
             aria-hidden
           >
             {index}
@@ -328,12 +330,12 @@ function PracticeBlockRow({
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-semibold text-warm-900">{block.activity}</span>
               {block.stationType && (
-                <span className="rounded bg-warm-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warm-600">
+                <span className="rounded bg-warm-100 px-1.5 py-0.5 text-micro font-medium uppercase tracking-wide text-warm-600">
                   {block.stationType}
                 </span>
               )}
               {block.isMeasured && (
-                <span className="inline-flex items-center gap-0.5 rounded bg-primary-50 px-1.5 py-0.5 text-[10px] font-medium text-primary-600">
+                <span className="inline-flex items-center gap-0.5 rounded bg-primary-50 px-1.5 py-0.5 text-micro font-medium text-primary-600">
                   <BarChart2 className="h-2.5 w-2.5" />
                   Measured
                 </span>
@@ -375,9 +377,11 @@ function PracticeBlockRow({
 
           {/* Detail toggle (if there's extra info) */}
           {hasDetail && (
-            <button
+            <Button
               type="button"
-              className="ml-auto shrink-0 rounded-lg p-1 text-warm-400 transition-colors hover:bg-warm-100 hover:text-warm-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/40"
+              variant="ghost"
+              size="icon-sm"
+              className="ml-auto shrink-0 rounded-lg p-1 text-warm-400 hover:bg-warm-100 hover:text-warm-600"
               aria-expanded={detailOpen}
               aria-label={`${detailOpen ? 'Hide' : 'Show'} details for ${block.activity}`}
               onClick={() => setDetailOpen((v) => !v)}
@@ -387,7 +391,7 @@ function PracticeBlockRow({
               ) : (
                 <ChevronDown className="h-4 w-4" />
               )}
-            </button>
+            </Button>
           )}
         </div>
 

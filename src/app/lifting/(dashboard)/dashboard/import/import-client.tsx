@@ -30,6 +30,9 @@ import {
 
 import { initiateImportRun, commitImportRun, rollbackImportRun } from '@/app/lifting/actions/imports';
 import type { ImportActionResult } from '@/app/lifting/actions/imports';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -316,7 +319,7 @@ export function ImportClient({ orgId, sport, canEdit, recentRuns }: ImportClient
     return (
       <div className="space-y-6">
         <ImportPageHeader step={step} />
-        <div className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-10 text-center">
+        <div className="rounded-2xl border border-white/20 glass-standard backdrop-blur-xl p-10 text-center">
           <FileUp className="w-8 h-8 text-warm-300 mx-auto mb-3" />
           <p className="text-warm-700 font-semibold">View-only access</p>
           <p className="text-sm text-warm-400 mt-1">You can view import history but cannot upload new data.</p>
@@ -355,9 +358,9 @@ export function ImportClient({ orgId, sport, canEdit, recentRuns }: ImportClient
         <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{actionError}</span>
-          <button onClick={() => setActionError(null)} className="ml-auto shrink-0 text-red-400 hover:text-red-600">
+          <Button variant="ghost" type="button" onClick={() => setActionError(null)} className="ml-auto shrink-0 text-red-400 hover:text-red-600">
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -461,36 +464,36 @@ function UploadStep({
   return (
     <div className="space-y-5">
       {/* Source + kind selectors */}
-      <div className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-5 space-y-4">
+      <div className="rounded-2xl border border-white/20 glass-standard backdrop-blur-xl p-5 space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-warm-700 uppercase tracking-wide mb-1.5">
+            <label htmlFor="import-source" className="block text-xs font-semibold text-warm-700 uppercase tracking-wide mb-1.5">
               Data source
             </label>
-            <select
+            <NativeSelect
+              id="import-source"
               value={source}
               onChange={(e) => onSourceChange(e.target.value as ImportSource)}
-              className="w-full rounded-xl border border-warm-200 bg-white/80 px-3 py-2 text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
             >
               {SOURCE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-warm-700 uppercase tracking-wide mb-1.5">
+            <label htmlFor="import-kind" className="block text-xs font-semibold text-warm-700 uppercase tracking-wide mb-1.5">
               Import type
             </label>
-            <select
+            <NativeSelect
+              id="import-kind"
               value={importKind}
               onChange={(e) => onKindChange(e.target.value as ImportKind)}
-              className="w-full rounded-xl border border-warm-200 bg-white/80 px-3 py-2 text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400"
             >
               {KIND_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label} — {o.description}</option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
         </div>
       </div>
@@ -500,7 +503,7 @@ function UploadStep({
         className={`rounded-2xl border-2 border-dashed transition-all p-10 flex flex-col items-center gap-3 cursor-pointer ${
           isDragOver
             ? 'border-primary-400 bg-primary-50/50'
-            : 'border-warm-200 bg-white/50 hover:border-warm-300 hover:bg-white/70'
+            : 'border-warm-200 glass-subtle hover:border-warm-300 hover:bg-cream-50'
         }`}
         onDrop={onDrop}
         onDragOver={onDragOver}
@@ -524,7 +527,7 @@ function UploadStep({
           </p>
           <p className="text-xs text-warm-400 mt-0.5">or click to browse · max 10 MB · .csv only</p>
         </div>
-        <input
+        <Input
           ref={fileInputRef}
           type="file"
           accept=".csv,text/csv"
@@ -572,7 +575,7 @@ function PreviewStep({
   return (
     <div className="space-y-5">
       {/* Summary card */}
-      <div className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-5">
+      <div className="rounded-2xl border border-white/20 glass-standard backdrop-blur-xl p-5">
         <h2 className="text-sm font-bold text-warm-900 uppercase tracking-wide mb-3">Import summary</h2>
         <div className="grid sm:grid-cols-3 gap-3">
           {[
@@ -591,7 +594,7 @@ function PreviewStep({
       </div>
 
       {/* Preview table */}
-      <div className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-5 space-y-3">
+      <div className="rounded-2xl border border-white/20 glass-standard backdrop-blur-xl p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-warm-900 uppercase tracking-wide">
             Preview (first {previewRows.length} rows)
@@ -647,14 +650,18 @@ function PreviewStep({
 
       {/* Actions */}
       <div className="flex items-center justify-between gap-3">
-        <button
+        <Button
+          variant="ghost"
+          type="button"
           onClick={onBack}
           disabled={isSubmitting}
           className="px-4 py-2 text-sm font-semibold text-warm-700 bg-warm-100 rounded-xl hover:bg-warm-200 transition-all disabled:opacity-50"
         >
           ← Back
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="primary"
+          type="button"
           onClick={onConfirm}
           disabled={isSubmitting}
           className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-all shadow-sm shadow-primary-600/20 disabled:opacity-60"
@@ -670,7 +677,7 @@ function PreviewStep({
               Stage import ({rows.length.toLocaleString()} rows)
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -698,7 +705,7 @@ function ResultStep({
   return (
     <div className="space-y-5">
       {/* Result card */}
-      <div className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-6 space-y-4">
+      <div className="rounded-2xl border border-white/20 glass-standard backdrop-blur-xl p-6 space-y-4">
         <div className="flex items-center gap-3">
           {isCommitted ? (
             <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center">
@@ -746,15 +753,19 @@ function ResultStep({
       {/* Actions */}
       {!isCommitted && stagedRunId ? (
         <div className="flex items-center justify-between gap-3">
-          <button
+          <Button
+            variant="danger"
+            type="button"
             onClick={() => onRollback('User cancelled from import preview')}
             disabled={isSubmitting}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-all disabled:opacity-50"
           >
             <RotateCcw className="w-4 h-4" />
             Roll back
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
+            type="button"
             onClick={onCommit}
             disabled={isSubmitting}
             className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition-all shadow-sm shadow-primary-600/20 disabled:opacity-60"
@@ -770,16 +781,18 @@ function ResultStep({
                 Commit import
               </>
             )}
-          </button>
+          </Button>
         </div>
       ) : (
-        <button
+        <Button
+          variant="outline"
+          type="button"
           onClick={onNewImport}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-primary-700 bg-primary-50 rounded-xl hover:bg-primary-100 transition-all"
         >
           <Upload className="w-4 h-4" />
           New import
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -787,13 +800,13 @@ function ResultStep({
 
 function RecentRunsTable({ runs }: { runs: RecentImportRun[] }) {
   return (
-    <div className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-5 space-y-3">
+    <div className="rounded-2xl border border-white/20 glass-standard backdrop-blur-xl p-5 space-y-3">
       <h2 className="text-sm font-bold text-warm-900 uppercase tracking-wide">Recent imports</h2>
       <div className="space-y-2">
         {runs.map((run) => (
           <div
             key={run.id}
-            className="flex items-center gap-4 px-4 py-3 bg-white/40 rounded-xl border border-white/10"
+            className="flex items-center gap-4 px-4 py-3 glass-subtle rounded-xl border border-white/10"
           >
             <div className="w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center text-warm-500 shrink-0">
               <FileUp className="w-4 h-4" />

@@ -69,7 +69,7 @@ function LiveWeightRoomSkeleton() {
   return (
     <div className="flex h-screen flex-col bg-[#FFFEFA]">
       {/* Sticky header skeleton */}
-      <header className="sticky top-0 z-20 border-b border-warm-100 bg-white/90 backdrop-blur-xl px-6 py-3">
+      <header className="sticky top-0 z-20 border-b border-warm-100 glass-standard backdrop-blur-xl px-6 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ function LiveWeightRoomSkeleton() {
           {Array.from({ length: 12 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-warm-100 bg-white/70 p-4 space-y-3"
+              className="rounded-2xl border border-warm-100 glass-standard p-4 space-y-3"
               style={{ animationDelay: `${i * 40}ms` }}
             >
               <div className="flex items-start justify-between gap-2">
@@ -292,7 +292,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
   return (
     <div className="flex h-screen flex-col bg-[#FFFEFA]">
       {/* Sticky top bar */}
-      <header className="sticky top-0 z-20 border-b border-warm-100 bg-white/90 backdrop-blur-xl px-6 py-3">
+      <header className="sticky top-0 z-20 border-b border-warm-100 glass-standard backdrop-blur-xl px-6 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
@@ -321,40 +321,44 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
             </div>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => {
               window.location.reload();
             }}
-            className="flex items-center gap-1.5 rounded-lg border border-warm-200 bg-white px-3 py-1.5 text-xs text-warm-600 hover:border-warm-300 transition-colors"
+            className="flex items-center gap-1.5 rounded-lg border border-warm-200 bg-cream-50 px-3 py-1.5 text-xs text-warm-600 hover:border-warm-300 transition-colors"
           >
             <IconRefresh size={12} /> Refresh
-          </button>
+          </Button>
         </div>
 
         {/* Group filter tabs */}
         {allGroups.length > 0 && (
           <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-1">
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => setGroupFilter(null)}
               className={`shrink-0 rounded-full border px-3 py-0.5 text-xs font-medium transition-colors ${
                 !groupFilter ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-warm-200 text-warm-600 hover:border-warm-300'
               }`}
             >
               All
-            </button>
+            </Button>
             {allGroups.map((g) => (
-              <button
+              <Button
                 key={g}
                 type="button"
+                variant="ghost"
                 onClick={() => setGroupFilter(g === groupFilter ? null : g)}
                 className={`shrink-0 rounded-full border px-3 py-0.5 text-xs font-medium transition-colors ${
                   groupFilter === g ? 'border-primary-400 bg-primary-50 text-primary-700' : 'border-warm-200 text-warm-600 hover:border-warm-300'
                 }`}
               >
                 {g}
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -386,15 +390,16 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.15 }}
                   >
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() =>
                         setSelectedAthleteId(isSelected ? null : athlete.athlete_id)
                       }
                       className={`w-full text-left rounded-2xl border p-4 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 ${
                         isSelected
                           ? 'border-primary-400 bg-primary-50 shadow-md'
-                          : 'border-warm-100 bg-white/70 hover:border-warm-200 hover:shadow-sm'
+                          : 'border-warm-100 glass-standard hover:border-warm-200 hover:shadow-sm'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -405,7 +410,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                             {athlete.group_names.length > 0 ? ` · ${athlete.group_names[0]}` : ''}
                           </p>
                         </div>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusMeta.cls}`}>
+                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-micro font-medium ${statusMeta.cls}`}>
                           {statusMeta.label}
                         </span>
                       </div>
@@ -413,7 +418,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                       {/* Progress bar */}
                       {athlete.total_exercises > 0 && (
                         <div className="mt-3">
-                          <div className="flex items-center justify-between text-[11px] text-warm-400 mb-1">
+                          <div className="flex items-center justify-between text-eyebrow text-warm-400 mb-1">
                             <span>{athlete.current_exercise ?? 'Ready'}</span>
                             <span>{athlete.completed_exercises}/{athlete.total_exercises}</span>
                           </div>
@@ -429,12 +434,12 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                       {/* Readiness + load */}
                       <div className="mt-2.5 flex items-center gap-2">
                         {band && (
-                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${band.cls}`}>
+                          <span className={`rounded-full border px-2 py-0.5 text-micro font-medium ${band.cls}`}>
                             {band.label}
                           </span>
                         )}
                         {athlete.actual_load != null && (
-                          <span className="text-[11px] text-warm-500">
+                          <span className="text-eyebrow text-warm-500">
                             {athlete.actual_load}
                             {athlete.prescribed_load != null && athlete.has_load_change ? (
                               <span className="text-amber-600"> (Δ{athlete.prescribed_load})</span>
@@ -443,7 +448,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                           </span>
                         )}
                       </div>
-                    </button>
+                    </Button>
                   </motion.div>
                 );
               })}
@@ -455,20 +460,21 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
         {selectedAthlete && (
           <aside
             className="w-80 shrink-0 border-l border-warm-100 bg-warm-50/50 overflow-y-auto p-4 space-y-4"
-            onKeyDown={(e) => { if (e.key === 'Escape') setSelectedAthleteId(null); }}
-            role="complementary"
             aria-label="Athlete detail"
           >
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-warm-900">{getFullName(selectedAthlete)}</h2>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setSelectedAthleteId(null)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-700 hover:bg-white/60 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                onKeyDown={(e) => { if (e.key === 'Escape') setSelectedAthleteId(null); }}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-700 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                 aria-label="Close drawer"
               >
                 <span aria-hidden className="text-lg leading-none">×</span>
-              </button>
+              </Button>
             </div>
 
             {/* Readiness band */}
@@ -486,7 +492,7 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
               ) : (
                 <div className="space-y-2">
                   {selectedAthlete.exercises.map((ex) => (
-                    <div key={ex.id} className="rounded-xl bg-white border border-warm-100 p-3">
+                    <div key={ex.id} className="rounded-xl bg-cream-50 border border-warm-100 p-3">
                       <p className="text-sm font-medium text-warm-800">{ex.exercise_name_snapshot}</p>
                       <p className="text-xs text-warm-400 mt-0.5">
                         {[
@@ -507,8 +513,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-primary-700">Log set #{setNum}</h3>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[11px] text-warm-500 mb-1">Reps</label>
+                    <label htmlFor="log-reps" className="block text-eyebrow text-warm-500 mb-1">Reps</label>
                     <Input
+                      id="log-reps"
                       type="number"
                       min={0}
                       value={actualReps}
@@ -518,8 +525,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-warm-500 mb-1">Load</label>
+                    <label htmlFor="log-load" className="block text-eyebrow text-warm-500 mb-1">Load</label>
                     <Input
+                      id="log-load"
                       type="number"
                       min={0}
                       value={actualLoad}
@@ -529,8 +537,9 @@ export function LiveWeightRoomClient({ initialAthletes, orgId, canEdit, loading 
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-warm-500 mb-1">RPE</label>
+                    <label htmlFor="log-rpe" className="block text-eyebrow text-warm-500 mb-1">RPE</label>
                     <Input
+                      id="log-rpe"
                       type="number"
                       min={0}
                       max={10}

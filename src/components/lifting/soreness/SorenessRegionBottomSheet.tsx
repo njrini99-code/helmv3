@@ -18,6 +18,8 @@ import { SORENESS_REGIONS } from '@/lib/lifting/soreness-regions';
 import type { SorenessRegionId } from '@/lib/lifting/soreness-regions';
 import { SorenessSeveritySlider } from './SorenessSeveritySlider';
 import { IconX, IconShield } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -107,7 +109,7 @@ export function SorenessRegionBottomSheet({ regionId, existing, onSave, onClose 
             key="sheet"
             ref={sheetRef}
             className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-lg
-              rounded-t-[28px] bg-white/92 backdrop-blur-xl
+              rounded-t-[28px] glass-standard backdrop-blur-xl
               border-t border-white/40 shadow-2xl"
             initial={prefersReducedMotion ? false : { y: '100%' }}
             animate={{ y: 0 }}
@@ -126,22 +128,24 @@ export function SorenessRegionBottomSheet({ regionId, existing, onSave, onClose 
               {/* Header */}
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-600">
+                  <p className="text-eyebrow font-semibold uppercase tracking-widest text-primary-600">
                     Soreness
                   </p>
                   <h2 className="text-xl font-semibold text-warm-900 mt-0.5 leading-tight">
                     {label}
                   </h2>
                 </div>
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={onClose}
                   className="flex h-9 w-9 items-center justify-center rounded-full bg-warm-100 text-warm-500
-                    hover:bg-warm-200 transition-colors focus-visible:outline-none focus-visible:ring-2
-                    focus-visible:ring-primary-400"
+                    hover:bg-warm-200 transition-colors"
                   aria-label="Close"
                 >
                   <IconX size={16} />
-                </button>
+                </Button>
               </div>
 
               {/* Severity slider */}
@@ -154,19 +158,20 @@ export function SorenessRegionBottomSheet({ regionId, existing, onSave, onClose 
                   {SORENESS_TAGS.map((tag) => {
                     const active = tags.includes(tag);
                     return (
-                      <button
+                      <Button
                         key={tag}
+                        type="button"
+                        variant="ghost"
                         onClick={() => toggleTag(tag)}
                         aria-pressed={active}
                         className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-150
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400
                           ${active
                             ? 'bg-primary-600 text-white shadow-sm'
                             : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
                           }`}
                       >
                         {tag}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -181,7 +186,7 @@ export function SorenessRegionBottomSheet({ regionId, existing, onSave, onClose 
                   Note{' '}
                   <span className="font-normal text-warm-400">(optional)</span>
                 </label>
-                <textarea
+                <Textarea
                   id="soreness-note"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
@@ -196,19 +201,20 @@ export function SorenessRegionBottomSheet({ regionId, existing, onSave, onClose 
               </div>
 
               {/* Save button */}
-              <button
+              <Button
+                type="button"
+                variant="primary"
                 onClick={handleSave}
                 className="w-full rounded-2xl bg-primary-600 px-6 py-4 text-base font-semibold text-white
-                  shadow-sm transition-all duration-150 hover:bg-primary-700 active:scale-[0.98]
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2"
+                  shadow-sm transition-all duration-150 hover:bg-primary-700 active:scale-[0.98]"
               >
                 Save Area
-              </button>
+              </Button>
 
               {/* Privacy footer */}
               <div className="flex items-center justify-center gap-1.5 pb-1">
                 <IconShield size={12} className="text-warm-400 shrink-0" />
-                <p className="text-[11px] text-warm-400">
+                <p className="text-eyebrow text-warm-400">
                   Visible to performance staff only
                 </p>
               </div>

@@ -24,6 +24,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import {
   IconActivity,
   IconChart,
@@ -405,13 +406,14 @@ export function PlayerPerformanceTab({ orgId, athleteId }: Props) {
         >
           <IconAlertCircle size={16} className="shrink-0" />
           <span className="flex-1">{error}</span>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setError(null)}
             className="font-medium text-red-700 hover:text-red-800"
           >
             Dismiss
-          </button>
+          </Button>
         </div>
       )}
 
@@ -425,21 +427,22 @@ export function PlayerPerformanceTab({ orgId, athleteId }: Props) {
         aria-label="Performance sections"
       >
         {TABS.map((tab) => (
-          <button
+          <Button
             key={tab.key}
             role="tab"
             aria-selected={activeTab === tab.key}
             aria-controls={`perf-tab-${tab.key}`}
             type="button"
+            variant="ghost"
             onClick={() => setActiveTab(tab.key)}
             className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 ${
               activeTab === tab.key
-                ? 'bg-white text-warm-900 shadow-sm'
+                ? 'bg-cream-50 text-warm-900 shadow-sm'
                 : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             {tab.shortLabel}
-          </button>
+          </Button>
         ))}
       </div>
 

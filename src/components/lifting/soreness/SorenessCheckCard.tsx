@@ -23,6 +23,7 @@
 import { useState, useCallback, useTransition } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
+import { Button } from '@/components/ui/button';
 import { haptic } from '@/lib/lifting/haptics';
 import {
   submitReadyToGo,
@@ -146,11 +147,11 @@ export function SorenessCheckCard({
   const mapCount = Object.keys(mapState).length;
 
   return (
-    <div className="rounded-3xl bg-white/70 backdrop-blur-xl border border-white/20 shadow-glass overflow-hidden">
+    <div className="rounded-3xl glass-standard border border-white/20 shadow-glass overflow-hidden">
       {/* ── Header ── */}
       <div className="px-6 pt-6 pb-5 border-b border-warm-100/60">
         {/* Eyebrow */}
-        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary-600 mb-1">
+        <p className="text-micro font-semibold uppercase tracking-[0.15em] text-primary-600 mb-1">
           Helm Lifting Lab
         </p>
 
@@ -207,14 +208,16 @@ export function SorenessCheckCard({
             >
               <ReadyToGoButton onConfirm={handleReadyToGo} />
 
-              <button
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleReportSoreness}
                 className="w-full rounded-2xl border border-warm-200 bg-transparent px-6 py-3.5
                   text-sm font-semibold text-warm-700 hover:bg-warm-50 transition-colors duration-150
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
               >
                 Report Soreness
-              </button>
+              </Button>
             </motion.div>
           )}
 
@@ -238,15 +241,19 @@ export function SorenessCheckCard({
               )}
 
               <div className="flex gap-3 pt-1">
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={() => setMode('prompt')}
                   className="flex-1 rounded-2xl border border-warm-200 bg-warm-50 px-4 py-3
                     text-sm font-semibold text-warm-600 hover:bg-warm-100 transition-colors duration-150
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
                 >
                   Back
-                </button>
-                <button
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
                   onClick={handleSubmitMap}
                   disabled={mapCount === 0 || isPending}
                   className="flex-[2] rounded-2xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white
@@ -264,7 +271,7 @@ export function SorenessCheckCard({
                   ) : (
                     `Submit ${mapCount === 1 ? '1 area' : `${mapCount} areas`}`
                   )}
-                </button>
+                </Button>
               </div>
             </motion.div>
           )}

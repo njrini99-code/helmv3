@@ -69,7 +69,7 @@ function ProgramListSkeleton() {
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-white/20 bg-white/70 backdrop-blur-xl p-5 space-y-3"
+                className="rounded-2xl border border-white/20 glass-standard backdrop-blur-xl p-5 space-y-3"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -114,11 +114,11 @@ function StatusChip({ status, template }: { status: HelmLiftingProgramStatus; te
   const meta = STATUS_META[status];
   return (
     <span className="inline-flex items-center gap-1">
-      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${meta.cls}`}>
+      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-medium ${meta.cls}`}>
         {meta.label}
       </span>
       {template && (
-        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+        <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-eyebrow font-medium text-amber-700">
           Template
         </span>
       )}
@@ -310,17 +310,18 @@ export function ProgramListClient({ programs, orgId, canEdit, loading = false }:
         >
           <div className="space-y-4 p-1">
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Name</label>
+              <label htmlFor="program-name" className="block text-sm font-medium text-warm-700 mb-1">Name</label>
               <Input
+                id="program-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Fall Strength Block"
-                autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-warm-700 mb-1">Description</label>
+              <label htmlFor="program-description" className="block text-sm font-medium text-warm-700 mb-1">Description</label>
               <Textarea
+                id="program-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional overview…"
@@ -329,8 +330,9 @@ export function ProgramListClient({ programs, orgId, canEdit, loading = false }:
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Phase</label>
+                <label htmlFor="program-phase" className="block text-sm font-medium text-warm-700 mb-1">Phase</label>
                 <NativeSelect
+                  id="program-phase"
                   value={phase}
                   onChange={(e) => setPhase(e.target.value as HelmLiftingProgramPhase)}
                 >
@@ -338,8 +340,9 @@ export function ProgramListClient({ programs, orgId, canEdit, loading = false }:
                 </NativeSelect>
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">Goal</label>
+                <label htmlFor="program-goal" className="block text-sm font-medium text-warm-700 mb-1">Goal</label>
                 <NativeSelect
+                  id="program-goal"
                   value={goal}
                   onChange={(e) => setGoal(e.target.value as HelmLiftingProgramGoal)}
                 >

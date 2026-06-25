@@ -22,6 +22,9 @@ import type {
   BodyFocus,
   SorenessVisibility,
 } from '@/lib/types/helm-lifting-checkins';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { IconX, IconCheck, IconCalendar, IconClock } from '@/components/icons';
 
 // ---------------------------------------------------------------------------
@@ -236,7 +239,7 @@ export function SorenessScheduleBuilder({
           transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         >
           <div
-            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white/95 backdrop-blur-xl border border-white/30 shadow-2xl"
+            className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl glass-standard border border-white/30 shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-label="Schedule Soreness Check"
@@ -244,20 +247,22 @@ export function SorenessScheduleBuilder({
             {/* Header */}
             <div className="flex items-center justify-between border-b border-warm-100 px-6 py-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-600">
+                <p className="text-eyebrow font-semibold uppercase tracking-widest text-primary-600">
                   Soreness Check
                 </p>
                 <h2 className="text-lg font-semibold text-warm-900">
                   {existing ? 'Edit Schedule' : 'New Schedule'}
                 </h2>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={onClose}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-warm-100 text-warm-500 hover:bg-warm-200 transition-colors"
                 aria-label="Close"
               >
                 <IconX size={16} />
-              </button>
+              </Button>
             </div>
 
             <div className="px-6 py-5 space-y-5">
@@ -269,13 +274,14 @@ export function SorenessScheduleBuilder({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {PRESETS.map((p) => (
-                      <button
+                      <Button
                         key={p.label}
+                        variant="ghost"
                         onClick={() => applyPreset(p)}
                         className="rounded-full border border-warm-200 bg-warm-50 px-3 py-1.5 text-xs font-medium text-warm-700 hover:bg-warm-100 transition-colors"
                       >
                         {p.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -286,7 +292,7 @@ export function SorenessScheduleBuilder({
                 <label className="mb-1.5 block text-sm font-medium text-warm-800" htmlFor="sch-title">
                   Title
                 </label>
-                <input
+                <Input
                   id="sch-title"
                   type="text"
                   value={form.title}
@@ -302,8 +308,9 @@ export function SorenessScheduleBuilder({
                 <p className="mb-1.5 text-sm font-medium text-warm-800">Assign to</p>
                 <div className="flex gap-2">
                   {(['team', 'group', 'athlete'] as AssignmentType[]).map((t) => (
-                    <button
+                    <Button
                       key={t}
+                      variant="ghost"
                       onClick={() => set('assignmentType', t)}
                       className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium capitalize transition-all ${
                         form.assignmentType === t
@@ -312,7 +319,7 @@ export function SorenessScheduleBuilder({
                       }`}
                     >
                       {t === 'athlete' ? 'Individual' : t.charAt(0).toUpperCase() + t.slice(1)}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -322,8 +329,9 @@ export function SorenessScheduleBuilder({
                 <p className="mb-1.5 text-sm font-medium text-warm-800">Frequency</p>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {(['once', 'daily', 'weekly', 'custom'] as FrequencyType[]).map((f) => (
-                    <button
+                    <Button
                       key={f}
+                      variant="ghost"
                       onClick={() => set('frequencyType', f)}
                       className={`rounded-xl border px-3 py-2 text-sm font-medium capitalize transition-all ${
                         form.frequencyType === f
@@ -332,7 +340,7 @@ export function SorenessScheduleBuilder({
                       }`}
                     >
                       {f.charAt(0).toUpperCase() + f.slice(1)}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -343,8 +351,9 @@ export function SorenessScheduleBuilder({
                   <p className="mb-1.5 text-sm font-medium text-warm-800">Days</p>
                   <div className="flex gap-1.5">
                     {DAY_LABELS.map((label, i) => (
-                      <button
+                      <Button
                         key={i}
+                        variant="ghost"
                         onClick={() => toggleDay(i)}
                         className={`flex-1 rounded-lg border py-2 text-xs font-semibold transition-all ${
                           form.daysOfWeek.includes(i)
@@ -353,7 +362,7 @@ export function SorenessScheduleBuilder({
                         }`}
                       >
                         {label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -366,7 +375,7 @@ export function SorenessScheduleBuilder({
                     <IconCalendar size={13} className="inline mr-1" />
                     Start date
                   </label>
-                  <input
+                  <Input
                     id="sch-start"
                     type="date"
                     value={form.startDate}
@@ -379,7 +388,7 @@ export function SorenessScheduleBuilder({
                     <IconCalendar size={13} className="inline mr-1" />
                     End date <span className="font-normal text-warm-400">(optional)</span>
                   </label>
-                  <input
+                  <Input
                     id="sch-end"
                     type="date"
                     value={form.endDate}
@@ -396,7 +405,7 @@ export function SorenessScheduleBuilder({
                   Due window <span className="font-normal text-warm-400">(optional)</span>
                 </p>
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     type="time"
                     value={form.dueWindowStart}
                     onChange={(e) => set('dueWindowStart', e.target.value)}
@@ -404,7 +413,7 @@ export function SorenessScheduleBuilder({
                     className="flex-1 rounded-xl border border-warm-200 bg-warm-50 px-3 py-2.5 text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-400"
                   />
                   <span className="text-warm-400 text-sm">to</span>
-                  <input
+                  <Input
                     type="time"
                     value={form.dueWindowEnd}
                     onChange={(e) => set('dueWindowEnd', e.target.value)}
@@ -419,8 +428,9 @@ export function SorenessScheduleBuilder({
                 <p className="mb-1.5 text-sm font-medium text-warm-800">Body focus</p>
                 <div className="grid grid-cols-2 gap-2">
                   {(['full_body', 'throwing_arm', 'lower_body', 'custom'] as BodyFocus[]).map((f) => (
-                    <button
+                    <Button
                       key={f}
+                      variant="ghost"
                       onClick={() => set('bodyFocus', f)}
                       className={`rounded-xl border px-3 py-2 text-sm font-medium transition-all text-left ${
                         form.bodyFocus === f
@@ -431,7 +441,7 @@ export function SorenessScheduleBuilder({
                       {f === 'full_body' ? 'Full Body' :
                        f === 'throwing_arm' ? 'Throwing Arm' :
                        f === 'lower_body' ? 'Lower Body' : 'Custom'}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -446,7 +456,7 @@ export function SorenessScheduleBuilder({
                     ['head_coach_only', 'Head coach only'],
                   ] as Array<[SorenessVisibility, string]>).map(([v, label]) => (
                     <label key={v} className="flex items-center gap-3 cursor-pointer">
-                      <input
+                      <Input
                         type="radio"
                         name="visibility"
                         value={v}
@@ -465,7 +475,7 @@ export function SorenessScheduleBuilder({
                 <label className="mb-1.5 block text-sm font-medium text-warm-800" htmlFor="sch-instructions">
                   Instructions <span className="font-normal text-warm-400">(optional)</span>
                 </label>
-                <textarea
+                <Textarea
                   id="sch-instructions"
                   value={form.instructions}
                   onChange={(e) => set('instructions', e.target.value)}
@@ -477,8 +487,9 @@ export function SorenessScheduleBuilder({
               </div>
 
               {/* Publish toggle */}
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
+              <label htmlFor="sch-publish" className="flex items-center gap-3 cursor-pointer">
+                <Input
+                  id="sch-publish"
                   type="checkbox"
                   checked={form.publishImmediately}
                   onChange={(e) => set('publishImmediately', e.target.checked)}
@@ -496,13 +507,15 @@ export function SorenessScheduleBuilder({
 
               {/* Actions */}
               <div className="flex gap-3 pt-1">
-                <button
+                <Button
+                  variant="outline"
                   onClick={onClose}
                   className="flex-1 rounded-2xl border border-warm-200 bg-warm-50 py-3.5 text-sm font-semibold text-warm-600 hover:bg-warm-100 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="primary"
                   onClick={handleSubmit}
                   disabled={isPending}
                   className="flex-[2] flex items-center justify-center gap-2 rounded-2xl bg-primary-600 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-all disabled:opacity-60"
@@ -515,7 +528,7 @@ export function SorenessScheduleBuilder({
                       {form.publishImmediately ? 'Publish Check' : 'Save Draft'}
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

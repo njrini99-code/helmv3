@@ -63,7 +63,7 @@ function SessionListSkeleton() {
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-warm-100 bg-white/70 backdrop-blur-xl px-4 py-3 flex items-center justify-between"
+                className="rounded-2xl border border-warm-100 glass-standard px-4 py-3 flex items-center justify-between"
                 style={{ animationDelay: `${(g * 3 + i) * 50}ms` }}
               >
                 <div className="space-y-1.5">
@@ -164,18 +164,19 @@ export function SessionListClient({ sessions, orgId, canEdit, loading = false }:
           />
         </div>
         {(['all', 'assigned', 'started', 'completed', 'missed', 'excused'] as const).map((st) => (
-          <button
+          <Button
             key={st}
             type="button"
+            variant="ghost"
             onClick={() => setStatusFilter(st)}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
               statusFilter === st
                 ? 'border-primary-400 bg-primary-50 text-primary-700'
-                : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300'
+                : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300'
             }`}
           >
             {st === 'all' ? 'All' : STATUS_META[st as HelmLiftingSessionStatus]?.label ?? st}
-          </button>
+          </Button>
         ))}
       </div>
 

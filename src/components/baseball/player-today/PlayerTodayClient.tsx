@@ -1323,13 +1323,13 @@ function CoachNotesSection({ feed }: { feed: PlayerTodayReadModel['coachNotes'] 
                       {note.body}
                     </p>
                     {isLong && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
                         onClick={() => toggleNote(note.id)}
                         className="mt-1 text-eyebrow font-semibold text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                       >
                         {isOpen ? 'Show less' : 'Read more'}
-                      </button>
+                      </Button>
                     )}
                     <p className="mt-1.5 text-eyebrow text-warm-400">
                       {new Date(note.createdAt).toLocaleDateString([], {
@@ -1520,7 +1520,7 @@ function PrimaryCtaRow({
             ? '/baseball/dashboard/practice'
             : '/baseball/dashboard/calendar'
         }
-        className="inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-white px-4 py-2 text-sm font-semibold text-warm-700 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+        className="inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-cream-50 px-4 py-2 text-sm font-semibold text-warm-700 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
       >
         <IconCalendar size={15} />
         {practiceId ? 'View Today Plan' : 'View Schedule'}

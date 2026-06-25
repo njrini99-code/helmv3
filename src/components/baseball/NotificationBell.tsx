@@ -77,7 +77,8 @@ function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
   const isUnread = notification.read_at === null;
 
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       onClick={() => {
         if (isUnread) onMarkRead(notification.id);
@@ -117,7 +118,7 @@ function NotificationRow({ notification, onMarkRead }: NotificationRowProps) {
           </p>
         </div>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -241,7 +242,8 @@ export function NotificationBell({ className }: NotificationBellProps) {
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <button
+        <Button
+          variant="ghost"
           type="button"
           aria-label={
             hasUnread
@@ -263,7 +265,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
               <CountBadge count={unreadCount} variant="danger" />
             </span>
           )}
-        </button>
+        </Button>
       </PopoverTrigger>
 
       <PopoverContent

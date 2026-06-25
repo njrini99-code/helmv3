@@ -113,7 +113,7 @@ export function SignalDrillDown({
             'fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col',
             'sm:max-w-md',
             // Glass surface.
-            'bg-white/90 backdrop-blur-2xl border-l border-white/20',
+            'glass-standard border-l',
             // Shadow — depth cue for the overlay pattern.
             'shadow-[−24px_0_64px_rgba(28,25,23,0.14)]',
             // Radix slide transitions.

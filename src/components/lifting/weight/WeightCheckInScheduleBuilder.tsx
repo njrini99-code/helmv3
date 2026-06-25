@@ -23,6 +23,8 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   IconCalendar,
   IconClock,
@@ -334,18 +336,19 @@ export function WeightCheckInScheduleBuilder({
 
           <div className="flex flex-wrap gap-2">
             {(['team', 'group', 'athlete'] as AssignmentType[]).map((t) => (
-              <button
+              <Button
                 key={t}
                 type="button"
+                variant="ghost"
                 onClick={() => { haptic('tap'); setAssignmentType(t); }}
                 className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
                   assignmentType === t
                     ? 'border-primary-400 bg-primary-50 text-primary-700'
-                    : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300'
+                    : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300'
                 }`}
               >
                 {t === 'team' ? 'Entire Team' : t === 'group' ? 'Group' : 'Individual'}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -354,17 +357,16 @@ export function WeightCheckInScheduleBuilder({
               {groups.length === 0 ? (
                 <p className="text-sm text-warm-400 italic">No groups configured yet.</p>
               ) : (
-                <select
+                <NativeSelect
                   value={groupId}
                   onChange={(e) => setGroupId(e.target.value)}
-                  className="w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm text-warm-900 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
                   required
                 >
                   <option value="">Select a group…</option>
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
-                </select>
+                </NativeSelect>
               )}
             </Field>
           )}
@@ -374,10 +376,9 @@ export function WeightCheckInScheduleBuilder({
               {athletes.length === 0 ? (
                 <p className="text-sm text-warm-400 italic">No athletes found.</p>
               ) : (
-                <select
+                <NativeSelect
                   value={athleteId}
                   onChange={(e) => setAthleteId(e.target.value)}
-                  className="w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm text-warm-900 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
                   required
                 >
                   <option value="">Select an athlete…</option>
@@ -386,7 +387,7 @@ export function WeightCheckInScheduleBuilder({
                       {[a.firstName, a.lastName].filter(Boolean).join(' ') || a.id}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               )}
             </Field>
           )}
@@ -403,18 +404,19 @@ export function WeightCheckInScheduleBuilder({
                   ? daysOfWeek.length === 0
                   : JSON.stringify(p.days) === JSON.stringify(daysOfWeek));
               return (
-                <button
+                <Button
                   key={p.label}
                   type="button"
+                  variant="ghost"
                   onClick={() => applyPreset(p)}
                   className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                     isActive
                       ? 'border-primary-400 bg-primary-50 text-primary-700'
-                      : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300'
+                      : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300'
                   }`}
                 >
                   {p.label}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -422,24 +424,25 @@ export function WeightCheckInScheduleBuilder({
           {/* Custom day picker — visible when custom or weekly */}
           {(frequencyType === 'custom' || frequencyType === 'weekly') && (
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium uppercase tracking-wide text-warm-500">
+              <p className="block text-xs font-medium uppercase tracking-wide text-warm-500">
                 Days
-              </label>
+              </p>
               <div className="flex gap-2">
                 {ALL_DOW.map((d) => (
-                  <button
+                  <Button
                     key={d}
                     type="button"
+                    variant="ghost"
                     onClick={() => toggleDow(d)}
                     aria-pressed={daysOfWeek.includes(d)}
                     className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-medium transition-colors ${
                       daysOfWeek.includes(d)
                         ? 'bg-primary-600 text-white shadow-sm'
-                        : 'border border-warm-200 bg-white text-warm-600 hover:border-warm-300'
+                        : 'border border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300'
                     }`}
                   >
                     {DAY_LABELS[d]}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -448,21 +451,19 @@ export function WeightCheckInScheduleBuilder({
           {/* Start / end date */}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Start Date">
-              <input
+              <Input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
-                className="w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm text-warm-900 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
               />
             </Field>
             <Field label="End Date" note="(optional)">
-              <input
+              <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate}
-                className="w-full rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm text-warm-900 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
               />
             </Field>
           </div>
@@ -472,26 +473,20 @@ export function WeightCheckInScheduleBuilder({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="From">
-              <div className="relative">
-                <IconClock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-                <input
-                  type="time"
-                  value={dueWindowStart}
-                  onChange={(e) => setDueWindowStart(e.target.value)}
-                  className="w-full rounded-xl border border-warm-200 bg-white py-2 pl-8 pr-3 text-sm text-warm-900 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
-                />
-              </div>
+              <Input
+                type="time"
+                value={dueWindowStart}
+                onChange={(e) => setDueWindowStart(e.target.value)}
+                leftIcon={<IconClock size={13} />}
+              />
             </Field>
             <Field label="To">
-              <div className="relative">
-                <IconClock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-                <input
-                  type="time"
-                  value={dueWindowEnd}
-                  onChange={(e) => setDueWindowEnd(e.target.value)}
-                  className="w-full rounded-xl border border-warm-200 bg-white py-2 pl-8 pr-3 text-sm text-warm-900 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
-                />
-              </div>
+              <Input
+                type="time"
+                value={dueWindowEnd}
+                onChange={(e) => setDueWindowEnd(e.target.value)}
+                leftIcon={<IconClock size={13} />}
+              />
             </Field>
           </div>
 
@@ -508,14 +503,13 @@ export function WeightCheckInScheduleBuilder({
                 For athletes <span className="normal-case text-warm-400">(optional)</span>
               </label>
             </div>
-            <textarea
+            <Textarea
               id="weight-instructions"
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
               placeholder="Submit morning bodyweight before breakfast."
               rows={2}
               maxLength={1000}
-              className="w-full resize-none rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-1 focus:ring-primary-400"
             />
           </div>
 
@@ -524,18 +518,19 @@ export function WeightCheckInScheduleBuilder({
 
           <div className="flex gap-3">
             {([true, false] as const).map((pub) => (
-              <button
+              <Button
                 key={pub ? 'publish' : 'draft'}
                 type="button"
+                variant="ghost"
                 onClick={() => { haptic('tap'); setPublishNow(pub); }}
                 className={`flex-1 rounded-xl border py-2.5 text-sm font-medium transition-colors ${
                   publishNow === pub
                     ? 'border-primary-400 bg-primary-50 text-primary-700'
-                    : 'border-warm-200 bg-white text-warm-600 hover:border-warm-300'
+                    : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300'
                 }`}
               >
                 {pub ? 'Publish now' : 'Save as draft'}
-              </button>
+              </Button>
             ))}
           </div>
 

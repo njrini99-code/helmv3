@@ -165,10 +165,11 @@ export function ExercisePicker({ open, onClose, onSelect, orgId: _orgId, sport }
             <ul className="divide-y divide-warm-50">
               {exercises.map((ex) => (
                 <li key={ex.id}>
-                  <button
+                  <Button
+                    variant="ghost"
                     type="button"
                     onClick={() => handleSelect(ex)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 transition-colors text-left group"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50 transition-colors text-left group whitespace-normal"
                   >
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm font-medium text-warm-900 group-hover:text-primary-700 truncate">
@@ -179,12 +180,12 @@ export function ExercisePicker({ open, onClose, onSelect, orgId: _orgId, sport }
                       )}
                     </span>
                     {ex.category && (
-                      <span className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${CATEGORY_PILL[ex.category] ?? 'bg-warm-50 text-warm-500 border-warm-200'}`}>
+                      <span className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-micro font-medium ${CATEGORY_PILL[ex.category] ?? 'bg-warm-50 text-warm-500 border-warm-200'}`}>
                         {CATEGORY_LABELS[ex.category] ?? ex.category}
                       </span>
                     )}
                     <IconPlus size={14} className="shrink-0 text-warm-300 group-hover:text-primary-500 transition-colors" />
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>

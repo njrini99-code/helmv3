@@ -408,19 +408,19 @@ export function SpeedDecisionBoard({
       <div className="flex h-full flex-col">
         {/* Column headers */}
         <div className="mb-1.5 grid grid-cols-[1fr_4.5rem_4.5rem_4.5rem_5rem] items-center gap-2 px-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-warm-400">
+          <span className="text-micro font-semibold uppercase tracking-wide text-warm-400">
             Player
           </span>
-          <span className="text-right text-[10px] font-semibold uppercase tracking-wide text-warm-400">
+          <span className="text-right text-micro font-semibold uppercase tracking-wide text-warm-400">
             60
           </span>
-          <span className="text-right text-[10px] font-semibold uppercase tracking-wide text-warm-400">
+          <span className="text-right text-micro font-semibold uppercase tracking-wide text-warm-400">
             H–1B
           </span>
-          <span className="text-right text-[10px] font-semibold uppercase tracking-wide text-warm-400">
+          <span className="text-right text-micro font-semibold uppercase tracking-wide text-warm-400">
             1B–3B
           </span>
-          <span className="text-right text-[10px] font-semibold uppercase tracking-wide text-warm-400">
+          <span className="text-right text-micro font-semibold uppercase tracking-wide text-warm-400">
             Decision
           </span>
         </div>
@@ -514,7 +514,7 @@ export function SpeedDecisionBoard({
                         height={4}
                       />
                       {sbTotal > 0 ? (
-                        <span className="text-[10px] text-warm-400">
+                        <span className="text-micro text-warm-400">
                           {r.stolenBases ?? 0}/{sbTotal} sb
                         </span>
                       ) : null}
@@ -539,7 +539,7 @@ export function SpeedDecisionBoard({
 
         {/* Footer note when some players lack efficiency data */}
         {playersWithEff.length < rows.length && rows.length > 0 ? (
-          <p className="mt-1.5 px-1 text-[10px] leading-snug text-warm-400">
+          <p className="mt-1.5 px-1 text-micro leading-snug text-warm-400">
             Decision % shown only when ≥{MIN_DECISIONS_FOR_EFFICIENCY} attempts captured.
           </p>
         ) : null}
