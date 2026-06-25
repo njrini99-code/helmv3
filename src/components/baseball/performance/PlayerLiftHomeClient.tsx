@@ -13,6 +13,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { IconHeart, IconDumbbell, IconChevronRight } from '@/components/icons';
 import type { BaseballLiftSessionRow } from '@/lib/types/baseball-lifting-v11';
 
 interface Props {
@@ -45,19 +46,28 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
       transition={{ duration: 0.22 }}
     >
       <div>
-        <h1 className="text-3xl font-semibold text-warm-900">Lift</h1>
-        <p className="text-sm text-warm-500">What to do today, log your sets, and track progress.</p>
+        <p className="text-eyebrow uppercase text-primary-700">Strength &amp; conditioning</p>
+        <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-warm-900">Lift</h1>
+        <p className="mt-1 text-sm text-warm-500">What to do today, log your sets, and track progress.</p>
       </div>
 
       {/* Readiness prompt */}
       {!readinessSubmittedToday && (
         <Card className="border-amber-200 bg-amber-50/60">
           <CardContent className="flex items-center justify-between gap-3 py-4">
-            <div>
-              <p className="text-sm font-medium text-warm-900">Daily check-in</p>
-              <p className="text-xs text-warm-500">Tell the staff how you feel before training.</p>
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700" aria-hidden>
+                <IconHeart size={18} />
+              </span>
+              <div>
+                <p className="text-sm font-medium text-warm-900">Daily check-in</p>
+                <p className="text-xs text-warm-500">Tell the staff how you feel before training.</p>
+              </div>
             </div>
-            <Link href="/baseball/dashboard/readiness" className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+            <Link
+              href="/baseball/dashboard/readiness"
+              className="shrink-0 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+            >
               Check in
             </Link>
           </CardContent>
@@ -81,13 +91,17 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
               </div>
               <Link
                 href={`/baseball/dashboard/lift/${todaysSession.id}`}
-                className="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700"
+                className="shrink-0 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
               >
                 {todaysSession.status === 'started' ? 'Continue' : 'Start'}
               </Link>
             </div>
           ) : (
-            <EmptyState title="No lift today" description="You have no scheduled lift today. Rest up." />
+            <EmptyState
+              icon={<IconDumbbell size={28} />}
+              title="No lift today"
+              description="You have no scheduled lift today. Rest up and recover — your coach will publish your next session here."
+            />
           )}
         </CardContent>
       </Card>
@@ -99,12 +113,20 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
           <CardContent>
             <ul className="space-y-2">
               {upcoming.filter((s) => s.scheduled_date !== today).map((s) => (
-                <li key={s.id} className="flex items-center justify-between rounded-lg border border-warm-100 px-3 py-2">
-                  <div>
-                    <p className="text-sm font-medium text-warm-800">{s.title ?? 'Lift'}</p>
-                    <p className="text-xs text-warm-400">{formatDate(s.scheduled_date)}</p>
-                  </div>
-                  <Link href={`/baseball/dashboard/lift/${s.id}`} className="text-sm text-primary-700 hover:underline">View</Link>
+                <li key={s.id}>
+                  <Link
+                    href={`/baseball/dashboard/lift/${s.id}`}
+                    className="group flex items-center justify-between gap-3 rounded-lg border border-warm-100 px-3 py-2 transition-colors hover:border-primary-200 hover:bg-cream-100/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-warm-800">{s.title ?? 'Lift'}</p>
+                      <p className="text-xs text-warm-400">{formatDate(s.scheduled_date)}</p>
+                    </div>
+                    <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary-700">
+                      View
+                      <IconChevronRight size={15} className="transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -117,16 +139,28 @@ export function PlayerLiftHomeClient({ upcoming, recent, readinessSubmittedToday
         <CardHeader><h2 className="text-xl font-semibold text-warm-900">Recent</h2></CardHeader>
         <CardContent>
           {recent.length === 0 ? (
-            <EmptyState title="No completed lifts yet" description="Your finished sessions will show up here." />
+            <EmptyState
+              icon={<IconDumbbell size={28} />}
+              title="No completed lifts yet"
+              description="Once you finish a session, it'll show up here so you can review what you logged."
+            />
           ) : (
             <ul className="space-y-2">
               {recent.map((s) => (
-                <li key={s.id} className="flex items-center justify-between rounded-lg border border-warm-50 px-3 py-2">
-                  <div>
-                    <p className="text-sm font-medium text-warm-700">{s.title ?? 'Lift'}</p>
-                    <p className="text-xs text-warm-400">{s.completed_at ? formatDate(s.completed_at.slice(0, 10)) : formatDate(s.scheduled_date)}</p>
-                  </div>
-                  <Link href={`/baseball/dashboard/lift/${s.id}`} className="text-sm text-warm-500 hover:text-primary-700">Review</Link>
+                <li key={s.id}>
+                  <Link
+                    href={`/baseball/dashboard/lift/${s.id}`}
+                    className="group flex items-center justify-between gap-3 rounded-lg border border-warm-50 px-3 py-2 transition-colors hover:border-warm-200 hover:bg-cream-100/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-warm-700">{s.title ?? 'Lift'}</p>
+                      <p className="text-xs text-warm-400">{s.completed_at ? formatDate(s.completed_at.slice(0, 10)) : formatDate(s.scheduled_date)}</p>
+                    </div>
+                    <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-warm-500 transition-colors group-hover:text-primary-700">
+                      Review
+                      <IconChevronRight size={15} className="transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>

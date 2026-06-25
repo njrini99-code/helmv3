@@ -19,6 +19,7 @@
 
 import * as React from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -31,6 +32,11 @@ import {
   IconRefresh,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import {
+  DURATION,
+  EASE_CINEMATIC,
+  useReducedMotionGuard,
+} from '@/lib/coachhelm/v3/motion';
 import { SignalCard } from './SignalCard';
 import {
   ConvertToActionDialog,
@@ -87,6 +93,7 @@ export function SignalInboxClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const reduce = useReducedMotionGuard();
 
   // ── URL-backed view + grouping + severity filter ─────────────────────────
   const isView = (v: string | null): v is SignalView =>
@@ -241,38 +248,53 @@ export function SignalInboxClient({
   const summary = model.summary;
 
   return (
+    <LazyMotion features={domAnimation} strict>
     <div className="min-h-dvh bg-cream-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* ── Header ───────────────────────────────────────────────── */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <m.div
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          animate={reduce ? false : { opacity: 1, y: 0 }}
+          transition={{ duration: DURATION.medium, ease: EASE_CINEMATIC }}
+          className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+        >
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-warm-900">Signals</h1>
-            <p className="text-warm-500 mt-0.5 text-sm">
+            <p className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-primary-600/90">
+              Coaching intelligence
+            </p>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+              Signals
+            </h1>
+            <p className="text-warm-500 mt-1 text-sm leading-relaxed">
               Source-backed triage. Convert a signal into an assignable action.
             </p>
           </div>
           {canManage && (
-            <div className="flex flex-col items-stretch gap-1 sm:items-end">
+            <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
               <Button
                 variant="secondary"
                 onClick={handleScan}
                 disabled={scanState.busy}
+                aria-busy={scanState.busy}
                 className="flex items-center gap-2 whitespace-nowrap"
               >
                 <IconRefresh
                   size={15}
                   className={cn(scanState.busy && 'animate-spin')}
+                  aria-hidden
                 />
                 {scanState.busy ? 'Scanning…' : 'Scan for signals'}
               </Button>
-              {scanState.note && (
-                <span className="text-xs text-warm-500 sm:text-right" role="status">
-                  {scanState.note}
-                </span>
-              )}
+              <span
+                className="min-h-[1rem] text-xs leading-relaxed text-warm-500 sm:text-right"
+                role="status"
+                aria-live="polite"
+              >
+                {scanState.note}
+              </span>
             </div>
           )}
-        </div>
+        </m.div>
 
         {/* ── Summary strip (no generic KPI wall — counts only) ────── */}
         <div className="flex flex-wrap items-center gap-2 mb-5">
@@ -323,27 +345,35 @@ export function SignalInboxClient({
 
         {/* ── Honest degraded-feed error ───────────────────────────── */}
         {model.error && (
-          <div className="mb-4 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
-            <IconWarning size={15} className="text-amber-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-amber-700">{model.error}</p>
+          <div
+            role="alert"
+            className="mb-4 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200/80 px-3 py-2.5"
+          >
+            <IconWarning size={15} className="text-amber-500 mt-0.5 flex-shrink-0" aria-hidden />
+            <p className="text-sm leading-relaxed text-amber-800">{model.error}</p>
           </div>
         )}
 
         {/* ── View toggle ──────────────────────────────────────────── */}
-        <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-2xl p-1 gap-1 shadow-sm mb-5 w-fit">
+        <div
+          role="group"
+          aria-label="Signal view"
+          className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-2xl p-1 gap-1 shadow-sm mb-5 w-fit"
+        >
           {VIEWS.map(({ id, label, icon }) => (
             <Button
               key={id}
               variant="ghost"
               onClick={() => updateParams({ view: id === 'feed' ? null : id })}
+              aria-pressed={view === id}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow]',
+                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 ease-out',
                 view === id
                   ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600'
                   : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50',
               )}
             >
-              {icon}
+              <span aria-hidden>{icon}</span>
               {label}
             </Button>
           ))}
@@ -378,17 +408,22 @@ export function SignalInboxClient({
             {/* GROUPED */}
             {view === 'grouped' && (
               <div>
-                <div className="flex flex-wrap gap-1.5 mb-4">
+                <div
+                  role="group"
+                  aria-label="Group signals by"
+                  className="flex flex-wrap gap-1.5 mb-4"
+                >
                   {GROUPINGS.map((g) => (
                     <Button
                       key={g.id}
                       variant="ghost"
                       onClick={() => updateParams({ group: g.id === 'player' ? null : g.id })}
+                      aria-pressed={grouping === g.id}
                       className={cn(
-                        'h-8 px-3 rounded-lg text-xs font-medium transition-colors',
+                        'h-8 px-3 rounded-lg text-xs font-medium transition-colors duration-200 ease-out',
                         grouping === g.id
                           ? 'bg-primary-50 text-primary-700 border border-primary-200'
-                          : 'text-warm-500 hover:text-warm-800 border border-transparent',
+                          : 'text-warm-500 hover:text-warm-800 border border-transparent hover:border-warm-200',
                       )}
                     >
                       By {g.label}
@@ -438,9 +473,9 @@ export function SignalInboxClient({
                         {col.ids.length}
                       </Badge>
                     </div>
-                    <div className="flex flex-col gap-3 min-h-[60px] rounded-2xl bg-warm-50/50 p-2">
+                    <div className="flex flex-col gap-3 min-h-[60px] rounded-2xl border border-warm-200/40 bg-warm-50/50 p-2">
                       {col.ids.length === 0 ? (
-                        <p className="text-xs text-warm-400 text-center py-6">
+                        <p className="text-xs text-warm-500 text-center py-6">
                           Nothing here
                         </p>
                       ) : (
@@ -469,6 +504,7 @@ export function SignalInboxClient({
         onConvert={handleConvert}
       />
     </div>
+    </LazyMotion>
   );
 }
 
@@ -492,19 +528,28 @@ function SummaryChip({
       ? 'ring-red-300'
       : tone === 'amber'
         ? 'ring-amber-300'
-        : tone === 'warm'
-          ? 'ring-warm-300'
-          : 'ring-primary-300';
+        : 'ring-warm-300';
+  const toneDot =
+    tone === 'red'
+      ? 'bg-red-500'
+      : tone === 'amber'
+        ? 'bg-amber-500'
+        : 'bg-warm-400';
   return (
     <Button
       variant="ghost"
       onClick={onClick}
       aria-pressed={active}
+      aria-label={`${label}: ${count}${active ? ' (filter active)' : ''}`}
       className={cn(
-        'h-9 gap-1.5 rounded-xl border border-warm-200/70 bg-cream-100/75 px-3 text-sm font-medium text-warm-700 hover:bg-cream-50',
+        'h-9 gap-1.5 rounded-xl border border-warm-200/70 bg-cream-100/75 px-3 text-sm font-medium text-warm-700 transition-[box-shadow,background-color,border-color] duration-200 ease-out hover:bg-cream-50 hover:border-warm-200',
         active && cn('ring-2 ring-offset-1 ring-offset-cream-50', toneRing),
       )}
     >
+      <span
+        aria-hidden
+        className={cn('h-1.5 w-1.5 rounded-full', toneDot)}
+      />
       {label}
       <span className="tabular-nums font-semibold text-warm-900">{count}</span>
     </Button>

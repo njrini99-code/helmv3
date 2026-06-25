@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Input, Textarea } from '@/components/ui/input';
 import { IconAlertCircle, IconBolt } from '@/components/icons';
+import { cn } from '@/lib/utils';
 import type { SignalInboxRow } from '@/lib/baseball/read-models/signal-inbox';
 import type {
   BaseballActionType,
@@ -139,25 +140,34 @@ export function ConvertToActionDialog({
         </DialogHeader>
 
         {/* Signal context (evidence in view while converting) */}
-        <div className="rounded-xl bg-warm-50 border border-warm-200/70 px-3 py-2.5">
-          <p className="text-sm font-semibold text-warm-900 leading-snug">
+        <div className="rounded-xl bg-warm-50 border border-warm-200/70 px-3.5 py-3">
+          <p className="text-eyebrow font-semibold uppercase tracking-wide text-warm-500">
+            Converting
+          </p>
+          <p className="mt-1 text-sm font-semibold text-warm-900 leading-snug">
             {signal.title}
           </p>
-          <p className="mt-1 text-xs text-warm-500">
-            Confidence{' '}
-            <span className="font-medium text-warm-700 tabular-nums">
-              {signal.confidence === null
-                ? '—'
-                : `${Math.round(signal.confidence * 100)}%`}
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-warm-500">
+            <span>
+              Confidence{' '}
+              <span className="font-medium text-warm-700 tabular-nums">
+                {signal.confidence === null
+                  ? '—'
+                  : `${Math.round(signal.confidence * 100)}%`}
+              </span>
             </span>
-            {' · '}
-            {signal.sourceRefs.length} source
-            {signal.sourceRefs.length === 1 ? '' : 's'}
+            <span aria-hidden className="text-warm-300">
+              ·
+            </span>
+            <span>
+              {signal.sourceRefs.length} source
+              {signal.sourceRefs.length === 1 ? '' : 's'}
+            </span>
           </p>
           {signal.sampleTooSmall && (
-            <div className="mt-2 flex items-start gap-1.5">
-              <IconAlertCircle size={13} className="text-amber-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-amber-700">
+            <div className="mt-2.5 flex items-start gap-1.5 rounded-lg bg-amber-50/70 border border-amber-200/60 px-2.5 py-2">
+              <IconAlertCircle size={13} className="text-amber-500 mt-0.5 flex-shrink-0" aria-hidden />
+              <p className="text-xs leading-relaxed text-amber-800">
                 Sample too small — convert as a watch item, not a firm directive.
               </p>
             </div>
@@ -190,7 +200,7 @@ export function ConvertToActionDialog({
             rows={2}
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={cn('grid gap-3', playerScoped ? 'grid-cols-2' : 'grid-cols-1')}>
             {playerScoped && (
               <Select
                 label="Assign to player"
@@ -231,12 +241,14 @@ export function ConvertToActionDialog({
           </div>
 
           {visibility !== 'staff_only' && (
-            <p className="flex items-start gap-1.5 text-xs text-warm-500">
-              <Badge tone="warm" appearance="soft" size="sm">
+            <div className="flex items-center gap-2 rounded-lg bg-primary-50/50 px-2.5 py-2">
+              <Badge tone="primary" appearance="soft" size="sm">
                 Player-visible
               </Badge>
-              This action will appear on the player&apos;s timeline.
-            </p>
+              <p className="text-xs leading-relaxed text-warm-600">
+                This action will appear on the player&apos;s timeline.
+              </p>
+            </div>
           )}
         </div>
 

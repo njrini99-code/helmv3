@@ -29,6 +29,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import type { Json } from '@/lib/types';
+import { IconStar, IconStarFilled, IconBookmark } from '@/components/icons';
 import { TabStrip } from './chart-primitives';
 import {
   // hitting
@@ -301,12 +302,17 @@ export function StatVisualsSection({
                   aria-pressed={isPinned}
                   aria-label={isPinned ? 'Unpin this chart group' : 'Pin this chart group'}
                   className={cn(
-                    'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+                    'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-200 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                     isPinned
-                      ? 'border-primary-600 bg-primary-50 text-primary-700'
-                      : 'border-warm-200 bg-cream-50 text-warm-600 hover:bg-warm-100',
+                      ? 'border-primary-600/40 bg-primary-50 text-primary-700 shadow-sm'
+                      : 'border-warm-200 bg-cream-50 text-warm-600 hover:bg-warm-100 hover:text-warm-800',
                   )}
                 >
+                  {isPinned ? (
+                    <IconStarFilled size={13} className="text-primary-600" aria-hidden />
+                  ) : (
+                    <IconStar size={13} aria-hidden />
+                  )}
                   {isPinned ? 'Pinned' : 'Pin'}
                 </button>
               )}
@@ -315,8 +321,9 @@ export function StatVisualsSection({
                 type="button"
                 onClick={handleSave}
                 aria-label="Save this chart view"
-                className="rounded-full border border-warm-200 bg-cream-50 px-3 py-1.5 text-xs font-medium text-warm-700 transition-colors hover:bg-warm-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                className="inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-cream-50 px-3 py-1.5 text-xs font-medium text-warm-700 transition-[color,background-color,box-shadow] duration-200 active:translate-y-px hover:bg-warm-100 hover:text-warm-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
               >
+                <IconBookmark size={13} aria-hidden />
                 Save view
               </button>
             </div>

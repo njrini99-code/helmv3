@@ -212,7 +212,7 @@ export function TabStrip<T extends string>({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className="inline-flex flex-wrap rounded-xl border border-warm-200 bg-cream-50 p-0.5"
+      className="inline-flex flex-wrap rounded-xl border border-warm-200/80 bg-cream-50 p-0.5 shadow-[inset_0_1px_1px_rgba(0,0,0,0.02)]"
     >
       {options.map((opt) => {
         const active = opt.value === value;
@@ -227,12 +227,15 @@ export function TabStrip<T extends string>({
             type="button"
             role="tab"
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
             disabled={opt.disabled}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:cursor-not-allowed disabled:opacity-40',
+              'rounded-lg font-medium transition-[color,background-color,box-shadow] duration-200',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-1 focus-visible:ring-offset-cream-50',
+              'active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40',
               size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm',
-              active ? 'bg-primary-600 text-white shadow-sm' : 'text-warm-600 hover:bg-warm-100',
+              active ? 'bg-primary-600 text-white shadow-sm' : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800',
             )}
           >
             {opt.label}
@@ -274,7 +277,7 @@ export function ContextSplitFilter({
 }) {
   if (available.length <= 1) return null;
   return (
-    <div className="inline-flex flex-wrap rounded-xl border border-warm-200 bg-cream-50 p-0.5" role="group" aria-label="Data context">
+    <div className="inline-flex flex-wrap rounded-xl border border-warm-200/80 bg-cream-50 p-0.5 shadow-[inset_0_1px_1px_rgba(0,0,0,0.02)]" role="group" aria-label="Data context">
       {/* Raw <button> intentional: segmented chart-toolbar control, same
           precedent as the Foundations frame ViewToggle / TabStrip above. */}
       {/* eslint-disable-next-line helm/no-raw-button */}
@@ -283,8 +286,8 @@ export function ContextSplitFilter({
         aria-pressed={value === null}
         onClick={() => onChange(null)}
         className={cn(
-          'rounded-lg px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
-          value === null ? 'bg-primary-600 text-white shadow-sm' : 'text-warm-600 hover:bg-warm-100',
+          'rounded-lg px-2.5 py-1 text-xs font-medium transition-[color,background-color,box-shadow] duration-200 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-1 focus-visible:ring-offset-cream-50',
+          value === null ? 'bg-primary-600 text-white shadow-sm' : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800',
         )}
       >
         All
@@ -297,8 +300,8 @@ export function ContextSplitFilter({
           aria-pressed={value === ctx}
           onClick={() => onChange(ctx)}
           className={cn(
-            'rounded-lg px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
-            value === ctx ? 'bg-primary-600 text-white shadow-sm' : 'text-warm-600 hover:bg-warm-100',
+            'rounded-lg px-2.5 py-1 text-xs font-medium transition-[color,background-color,box-shadow] duration-200 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-1 focus-visible:ring-offset-cream-50',
+            value === ctx ? 'bg-primary-600 text-white shadow-sm' : 'text-warm-600 hover:bg-warm-100 hover:text-warm-800',
           )}
         >
           {CONTEXT_SHORT[ctx]}

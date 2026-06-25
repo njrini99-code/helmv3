@@ -116,6 +116,7 @@ export function SourceTrustBadge({
       )}
       onClick={interactive ? handleClick : undefined}
       type={interactive ? 'button' : undefined}
+      aria-haspopup={interactive ? 'dialog' : undefined}
       aria-label={ariaLabel}
       title={presentation.caption}
     >

@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Player, Team } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconUser,
   IconActivity,
@@ -17,8 +19,17 @@ import {
   IconPhone,
   IconMapPin,
   IconCheck,
+  IconAlertCircle,
   IconUsers,
 } from '@/components/icons';
+
+// Shared field-input classes — keeps the focus ring on the brand-green token
+// (the previous `focus:ring-brand-600` resolved to no color and silently
+// dropped the focus-visible affordance) and uses the canonical glass field fill.
+const FIELD_CLS =
+  'w-full px-3 py-2.5 border border-border rounded-lg bg-cream-100/60 text-warm-900 ' +
+  'placeholder:text-warm-400 transition-shadow ' +
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/45 focus-visible:border-primary-400';
 
 interface CollegeProfileEditorProps {
   player: Player;
@@ -88,6 +99,7 @@ function calculateProfileCompletion(player: Player): { percentage: number; missi
 }
 
 export function CollegeProfileEditor({ player, onUpdate, className }: CollegeProfileEditorProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<TabId>('personal');
   const [formData, setFormData] = useState<Partial<Player>>(player);
   const [isSaving, setIsSaving] = useState(false);
@@ -160,6 +172,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
   };
 
   return (
+    <LazyMotion features={domAnimation}>
     <div className={cn('space-y-6', className)}>
       {/* Profile Completion & Team Affiliation Header */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -216,9 +229,16 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
           </div>
           
           {loadingTeams ? (
-            <div className="animate-pulse space-y-2">
-              <div className="h-4 bg-warm-200 rounded w-3/4"></div>
-              <div className="h-4 bg-warm-200 rounded w-1/2"></div>
+            <div className="space-y-3" aria-hidden="true">
+              {[0, 1].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton variant="block" className="w-8 h-8 rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton variant="line" className="h-3.5 w-2/3" />
+                    <Skeleton variant="line" className="h-3 w-1/3" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : teamMemberships.length === 0 ? (
             <p className="text-sm text-warm-500">No team affiliations yet</p>
@@ -228,6 +248,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {membership.team.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- arbitrary team logo URLs (any remote host); next/image would need per-host remotePatterns
                       <img
                         src={membership.team.logo_url}
                         alt={membership.team.name}
@@ -272,29 +293,45 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
         
         {/* Tab Navigation */}
         <div className="border-b border-border">
-          <div className="flex gap-1 p-2 overflow-x-auto">
-            {TABS.map((tab) => (
-              <Button variant="ghost"
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap',
-                  activeTab === tab.id
-                    ? 'bg-brand-600 text-white'
-                    : 'text-warm-600 hover:bg-cream-100 active:bg-cream-200'
-                )}
-              >
-                {tab.icon}
-                <span className="hidden sm:inline">{tab.label}</span>
-              </Button>
-            ))}
+          <div className="flex gap-1 p-2 overflow-x-auto scrollbar-hide" role="tablist" aria-label="Profile sections">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <Button variant="ghost"
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`cpe-panel-${tab.id}`}
+                  id={`cpe-tab-${tab.id}`}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap',
+                    isActive
+                      ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600'
+                      : 'text-warm-600 hover:bg-cream-100 active:bg-cream-200'
+                  )}
+                >
+                  {tab.icon}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </Button>
+              );
+            })}
           </div>
         </div>
 
         {/* Tab Content */}
         <div className="p-4 sm:p-6">
           {activeTab === 'personal' && (
-            <div className="space-y-4">
+            <m.div
+              key="personal"
+              role="tabpanel"
+              id="cpe-panel-personal"
+              aria-labelledby="cpe-tab-personal"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeOut' }}
+              className="space-y-4"
+            >
               <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
                 <IconUser size={20} className="text-warm-400" />
                 Personal Information
@@ -308,7 +345,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="text"
                     value={formData.first_name || ''}
                     onChange={(e) => handleInputChange('first_name', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                     required
                   />
                 </div>
@@ -320,7 +357,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="text"
                     value={formData.last_name || ''}
                     onChange={(e) => handleInputChange('last_name', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                     required
                   />
                 </div>
@@ -339,7 +376,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="text"
                     value={formData.city || ''}
                     onChange={(e) => handleInputChange('city', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                   />
                 </div>
 
@@ -349,7 +386,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     id="cpe-state"
                     value={formData.state || ''}
                     onChange={(e) => handleInputChange('state', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                     required
                   >
                     <option value="">Select State</option>
@@ -367,16 +404,25 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   value={formData.about_me || ''}
                   onChange={(e) => handleInputChange('about_me', e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 resize-none"
+                  className={cn(FIELD_CLS, "resize-none")}
                   placeholder="Share your story, goals, and what drives you as a player..."
                 />
                 <p className="text-xs text-warm-500 mt-1">This appears on your public profile</p>
               </div>
-            </div>
+            </m.div>
           )}
 
           {activeTab === 'athletic' && (
-            <div className="space-y-4">
+            <m.div
+              key="athletic"
+              role="tabpanel"
+              id="cpe-panel-athletic"
+              aria-labelledby="cpe-tab-athletic"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeOut' }}
+              className="space-y-4"
+            >
               <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
                 <IconActivity size={20} className="text-warm-400" />
                 Athletic Information
@@ -389,7 +435,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     id="cpe-primary-pos"
                     value={formData.primary_position || ''}
                     onChange={(e) => handleInputChange('primary_position', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                     required
                   >
                     <option value="">Select Position</option>
@@ -405,7 +451,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     id="cpe-secondary-pos"
                     value={formData.secondary_position || ''}
                     onChange={(e) => handleInputChange('secondary_position', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                   >
                     <option value="">Select Position</option>
                     {POSITIONS.map((pos) => (
@@ -422,7 +468,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     id="cpe-bats"
                     value={formData.bats || ''}
                     onChange={(e) => handleInputChange('bats', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                   >
                     <option value="">-</option>
                     <option value="R">Right</option>
@@ -437,7 +483,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     id="cpe-throws"
                     value={formData.throws || ''}
                     onChange={(e) => handleInputChange('throws', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                   >
                     <option value="">-</option>
                     <option value="R">Right</option>
@@ -456,7 +502,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       max="7"
                       value={formData.height_feet || ''}
                       onChange={(e) => handleInputChange('height_feet', e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-1/2 px-2 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 text-center"
+                      className={cn(FIELD_CLS, "w-1/2 px-2 text-center")}
                     />
                     <input
                       aria-label="Height inches"
@@ -466,7 +512,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       max="11"
                       value={formData.height_inches || ''}
                       onChange={(e) => handleInputChange('height_inches', e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-1/2 px-2 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 text-center"
+                      className={cn(FIELD_CLS, "w-1/2 px-2 text-center")}
                     />
                   </div>
                 </div>
@@ -479,7 +525,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       type="number"
                       value={formData.weight_lbs || ''}
                       onChange={(e) => handleInputChange('weight_lbs', e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
+                      className={cn(FIELD_CLS, "pr-10")}
                       placeholder="185"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">lbs</span>
@@ -498,7 +544,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         type="number"
                         value={formData.pitch_velo || ''}
                         onChange={(e) => handleInputChange('pitch_velo', e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-12"
+                        className={cn(FIELD_CLS, "pr-12")}
                         placeholder="85"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">mph</span>
@@ -513,7 +559,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         type="number"
                         value={formData.exit_velo || ''}
                         onChange={(e) => handleInputChange('exit_velo', e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-12"
+                        className={cn(FIELD_CLS, "pr-12")}
                         placeholder="90"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">mph</span>
@@ -529,7 +575,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         step="0.01"
                         value={formData.sixty_time || ''}
                         onChange={(e) => handleInputChange('sixty_time', e.target.value ? parseFloat(e.target.value) : null)}
-                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
+                        className={cn(FIELD_CLS, "pr-10")}
                         placeholder="7.2"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">sec</span>
@@ -545,7 +591,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         step="0.01"
                         value={formData.pop_time || ''}
                         onChange={(e) => handleInputChange('pop_time', e.target.value ? parseFloat(e.target.value) : null)}
-                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
+                        className={cn(FIELD_CLS, "pr-10")}
                         placeholder="2.0"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">sec</span>
@@ -553,11 +599,20 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   </div>
                 </div>
               </div>
-            </div>
+            </m.div>
           )}
 
           {activeTab === 'academic' && (
-            <div className="space-y-4">
+            <m.div
+              key="academic"
+              role="tabpanel"
+              id="cpe-panel-academic"
+              aria-labelledby="cpe-tab-academic"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeOut' }}
+              className="space-y-4"
+            >
               <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
                 <IconGraduationCap size={20} className="text-warm-400" />
                 Academic Information
@@ -574,7 +629,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     max="4.0"
                     value={formData.gpa || ''}
                     onChange={(e) => handleInputChange('gpa', e.target.value ? parseFloat(e.target.value) : null)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                     placeholder="3.50"
                   />
                   <p className="text-xs text-warm-500 mt-1">Current cumulative GPA</p>
@@ -587,7 +642,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="number"
                     value={formData.grad_year || ''}
                     onChange={(e) => handleInputChange('grad_year', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                     placeholder={String(new Date().getFullYear() + 1)}
                     min={new Date().getFullYear()}
                     max={new Date().getFullYear() + 6}
@@ -607,11 +662,20 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   </p>
                 </div>
               )}
-            </div>
+            </m.div>
           )}
 
           {activeTab === 'social' && (
-            <div className="space-y-4">
+            <m.div
+              key="social"
+              role="tabpanel"
+              id="cpe-panel-social"
+              aria-labelledby="cpe-tab-social"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.22, ease: 'easeOut' }}
+              className="space-y-4"
+            >
               <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
                 <IconMail size={20} className="text-warm-400" />
                 Contact & Social
@@ -630,7 +694,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="email"
                     value={formData.email || ''}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                     required
                   />
                 </div>
@@ -647,7 +711,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="tel"
                     value={formData.phone || ''}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                    className={FIELD_CLS}
                     placeholder="(555) 123-4567"
                   />
                 </div>
@@ -668,7 +732,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       type="text"
                       value={formData.twitter || ''}
                       onChange={(e) => handleInputChange('twitter', e.target.value)}
-                      className="flex-1 px-3 py-2.5 border border-border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                      className={cn(FIELD_CLS, "flex-1 rounded-l-none rounded-r-lg")}
                       placeholder="username"
                     />
                   </div>
@@ -688,41 +752,50 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       type="text"
                       value={formData.instagram || ''}
                       onChange={(e) => handleInputChange('instagram', e.target.value)}
-                      className="flex-1 px-3 py-2.5 border border-border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
+                      className={cn(FIELD_CLS, "flex-1 rounded-l-none rounded-r-lg")}
                       placeholder="username"
                     />
                   </div>
                 </div>
               </div>
-            </div>
+            </m.div>
           )}
 
           {/* Save Button */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-border">
-            <div className="order-2 sm:order-1">
+            <div className="order-2 sm:order-1 min-h-[20px]">
               {saveMessage && (
-                <p className={cn(
-                  'text-sm font-medium flex items-center gap-1.5',
-                  saveMessage.includes('successfully') ? 'text-primary-600' : 'text-red-600'
-                )}>
-                  {saveMessage.includes('successfully') && <IconCheck size={14} />}
+                <m.p
+                  key={saveMessage}
+                  role={saveMessage.includes('successfully') ? 'status' : 'alert'}
+                  aria-live="polite"
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+                  className={cn(
+                    'text-sm font-medium flex items-center gap-1.5',
+                    saveMessage.includes('successfully') ? 'text-primary-600' : 'text-red-600'
+                  )}
+                >
+                  {saveMessage.includes('successfully')
+                    ? <IconCheck size={14} className="shrink-0" />
+                    : <IconAlertCircle size={14} className="shrink-0" />}
                   {saveMessage}
-                </p>
+                </m.p>
               )}
             </div>
-            <Button variant="ghost"
+            <Button
+              variant="primary"
               onClick={handleSave}
-              disabled={isSaving}
-              className={cn(
-                'w-full sm:w-auto order-1 sm:order-2 px-6 py-2.5 bg-brand-600 text-white font-medium rounded-lg transition-all',
-                isSaving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-brand-700 active:scale-[0.98]'
-              )}
+              isLoading={isSaving}
+              className="w-full sm:w-auto order-1 sm:order-2"
             >
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving ? 'Saving…' : 'Save Changes'}
             </Button>
           </div>
         </div>
       </div>
     </div>
+    </LazyMotion>
   );
 }

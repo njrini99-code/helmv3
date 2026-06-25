@@ -356,11 +356,28 @@ export function PerformanceDashboardClient({
   }
 
   return (
-    <div className="p-4 lg:p-8 space-y-6">
+    <motion.div
+      className="p-4 lg:p-8 space-y-6"
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+    >
+        {/* Header */}
+        <div>
+          <p className="text-eyebrow uppercase text-primary-700">Strength &amp; conditioning</p>
+          <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-warm-900">Performance</h1>
+          <p className="mt-1 text-sm text-warm-500">
+            Track readiness, prescribe lifts, and keep your exercise library in one place.
+          </p>
+        </div>
+
         {/* Notices */}
         {error && (
-          <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <IconAlertCircle size={16} />
+          <div
+            role="alert"
+            className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            <IconAlertCircle size={16} className="shrink-0" />
             <span className="flex-1">{error}</span>
             <Button
               variant="ghost"
@@ -373,8 +390,12 @@ export function PerformanceDashboardClient({
           </div>
         )}
         {notice && (
-          <div className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700">
-            <IconCheckCircle2 size={16} />
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700"
+          >
+            <IconCheckCircle2 size={16} className="shrink-0" />
             <span>{notice}</span>
           </div>
         )}
@@ -802,9 +823,9 @@ export function PerformanceDashboardClient({
                           {filtered.map((e) => (
                             <div
                               key={e.id}
-                              className="flex items-center gap-3 px-4 py-3 lg:px-6"
+                              className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-warm-50/60 lg:px-6"
                             >
-                              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-100">
                                 <IconDumbbell size={18} className="text-primary-600" />
                               </div>
                               <div className="min-w-0 flex-1">
@@ -846,7 +867,7 @@ export function PerformanceDashboardClient({
             </TabsContent>
           )}
         </Tabs>
-    </div>
+    </motion.div>
   );
 }
 
@@ -862,17 +883,21 @@ function SummaryCard({
   value: number;
 }) {
   return (
-    <Card variant="glass">
+    <Card variant="glass" className="transition-shadow duration-200 hover:shadow-glass-hover">
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
           <div
-            className={`flex h-10 w-10 items-center justify-center rounded-xl ${tint}`}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tint}`}
+            aria-hidden
           >
             {icon}
           </div>
-          <div>
-            <p className="text-sm leading-relaxed text-warm-500">{label}</p>
-            <p className="text-2xl font-semibold tracking-tight tabular-nums text-warm-900">
+          <div className="min-w-0">
+            <p className="truncate text-sm leading-relaxed text-warm-500">{label}</p>
+            <p
+              className="text-2xl font-semibold tracking-tight tabular-nums text-warm-900"
+              aria-label={`${value} ${label}`}
+            >
               {value}
             </p>
           </div>

@@ -126,45 +126,67 @@ export function PerformanceCommandCenter({
   );
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-6"
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+    >
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold text-warm-900">Performance</h1>
-          <p className="text-sm text-warm-500">
+          <p className="text-eyebrow uppercase text-primary-700">Weight room</p>
+          <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-warm-900">Performance</h1>
+          <p className="mt-1 text-sm text-warm-500">
             {teamName} · {trainingWeekLabel} · {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/baseball/dashboard/performance/live" className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors">
+          <Link
+            href="/baseball/dashboard/performance/live"
+            className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+          >
             Live Weight Room
           </Link>
-          <Link href="/baseball/dashboard/performance/programs" className="rounded-xl border border-warm-200 bg-white/70 px-4 py-2 text-sm font-medium text-warm-700 hover:bg-white transition-colors">
+          <Link
+            href="/baseball/dashboard/performance/programs"
+            className="rounded-xl border border-warm-200 bg-white/70 px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+          >
             Programs
           </Link>
-          <Link href="/baseball/dashboard/performance/groups" className="rounded-xl border border-warm-200 bg-white/70 px-4 py-2 text-sm font-medium text-warm-700 hover:bg-white transition-colors">
+          <Link
+            href="/baseball/dashboard/performance/groups"
+            className="rounded-xl border border-warm-200 bg-white/70 px-4 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+          >
             Groups
           </Link>
         </div>
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {kpiItems.map((k, i) => (
-          <motion.div
+          <motion.li
             key={k.label}
             initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: prefersReducedMotion ? 0 : i * 0.04 }}
           >
-            <Card className={`p-4 ${KPI_BORDER_CLASS[k.tone as keyof typeof KPI_BORDER_CLASS]}`}>
-              <div className={`text-2xl font-semibold tabular-nums ${KPI_VALUE_CLASS[k.tone as keyof typeof KPI_VALUE_CLASS]}`}>{k.value}</div>
+            <Card
+              className={`p-4 transition-shadow duration-200 hover:shadow-card-hover ${KPI_BORDER_CLASS[k.tone as keyof typeof KPI_BORDER_CLASS]}`}
+            >
+              <div
+                className={`text-2xl font-semibold tabular-nums ${KPI_VALUE_CLASS[k.tone as keyof typeof KPI_VALUE_CLASS]}`}
+                aria-label={`${k.value} ${k.label}`}
+              >
+                {k.value}
+              </div>
               <div className="mt-1 text-xs font-medium text-warm-500">{k.label}</div>
               {k.sub ? <div className="mt-0.5 text-[11px] text-warm-400">{k.sub}</div> : null}
             </Card>
-          </motion.div>
+          </motion.li>
         ))}
-      </div>
+      </ul>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Today Weight Room board */}
@@ -178,8 +200,8 @@ export function PerformanceCommandCenter({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-warm-200 bg-white px-2 py-1 text-sm text-warm-700"
-                aria-label="Filter by status"
+                className="rounded-lg border border-warm-200 bg-white px-2 py-1 text-sm text-warm-700 transition-colors focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                aria-label="Filter board by session status"
               >
                 <option value="all">All statuses</option>
                 {Object.entries(SESSION_STATUS_LABEL).map(([v, l]) => (
@@ -188,11 +210,17 @@ export function PerformanceCommandCenter({
               </select>
             </CardHeader>
             <CardContent>
-              {filteredBoard.length === 0 ? (
+              {board.length === 0 ? (
                 <EmptyState
                   title="No lifts scheduled today"
                   description="Publish a training day from a program to materialize today's weight-room board."
                   action={{ label: 'Open programs', href: '/baseball/dashboard/performance/programs' }}
+                />
+              ) : filteredBoard.length === 0 ? (
+                <EmptyState
+                  title="No athletes match this status"
+                  description={`Nothing on today's board is "${SESSION_STATUS_LABEL[statusFilter] ?? statusFilter}". Clear the filter to see everyone.`}
+                  action={{ label: 'Show all statuses', onClick: () => setStatusFilter('all') }}
                 />
               ) : (
                 <div className="-mx-2 overflow-x-auto">
@@ -209,9 +237,12 @@ export function PerformanceCommandCenter({
                     </thead>
                     <tbody>
                       {filteredBoard.map((b) => (
-                        <tr key={b.session.id} className="border-b border-warm-50 hover:bg-cream-100/50">
+                        <tr key={b.session.id} className="border-b border-warm-50 transition-colors hover:bg-cream-100/50">
                           <td className="px-2 py-2">
-                            <Link href={`/baseball/dashboard/performance/players/${b.player_id}`} className="font-medium text-warm-900 hover:text-primary-700">
+                            <Link
+                              href={`/baseball/dashboard/performance/players/${b.player_id}`}
+                              className="rounded font-medium text-warm-900 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                            >
                               {getFullName(b.first_name, b.last_name)}
                             </Link>
                             <div className="text-[11px] text-warm-400">{b.primary_position ?? '—'}</div>
@@ -264,16 +295,19 @@ export function PerformanceCommandCenter({
               ) : (
                 <ul className="space-y-3">
                   {queue.map((r) => (
-                    <li key={r.player_id} className="rounded-xl border border-warm-100 bg-white/60 p-3">
+                    <li key={r.player_id} className="rounded-xl border border-warm-100 bg-white/60 p-3 transition-colors hover:border-warm-200 hover:bg-white/80">
                       <div className="flex items-center justify-between gap-2">
-                        <Link href={`/baseball/dashboard/performance/players/${r.player_id}`} className="text-sm font-medium text-warm-900 hover:text-primary-700">
+                        <Link
+                          href={`/baseball/dashboard/performance/players/${r.player_id}`}
+                          className="rounded text-sm font-medium text-warm-900 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                        >
                           {playerNameById[r.player_id] ?? 'Player'}
                         </Link>
                         <BandChip band={r.band} />
                       </div>
                       {r.reasons.length > 0 && (
                         <ul className="mt-1 list-inside list-disc text-xs text-warm-500">
-                          {r.reasons.slice(0, 3).map((reason, i) => <li key={i}>{reason}</li>)}
+                          {r.reasons.slice(0, 3).map((reason) => <li key={reason}>{reason}</li>)}
                         </ul>
                       )}
                       {r.suggested_action && (
@@ -292,7 +326,7 @@ export function PerformanceCommandCenter({
           </Card>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

@@ -177,17 +177,24 @@ export function PostgameReviewClient({
       <div className="min-h-dvh bg-cream-100">
         <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
           {/* Header */}
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <m.div
+            {...fadeIn}
+            transition={reduceMotion ? undefined : { duration: 0.3 }}
+            className="mb-6 flex flex-wrap items-end justify-between gap-3"
+          >
             <div>
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary-600">
+                CoachHelm
+              </p>
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
                   <IconBrain size={20} />
-                </div>
-                <h1 className="text-2xl font-semibold text-warm-900 sm:text-3xl">
+                </span>
+                <h1 className="text-2xl font-semibold tracking-tight text-warm-900 sm:text-3xl">
                   Postgame Action Review
                 </h1>
               </div>
-              <p className="mt-1 text-sm text-warm-500">
+              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-warm-500">
                 {teamName} — every recommendation cites the stat it rests on. Single-game
                 signals are watch-level, not proven trends.
               </p>
@@ -203,22 +210,28 @@ export function PostgameReviewClient({
                 {review ? 'Regenerate' : 'Generate review'}
               </Button>
             )}
-          </div>
+          </m.div>
 
           {/* Game picker */}
           {recentGames.length > 0 && (
-            <div className="mb-6 flex flex-wrap gap-2">
+            <div
+              className="mb-6 flex flex-wrap gap-2"
+              role="tablist"
+              aria-label="Recent games"
+            >
               {recentGames.slice(0, 12).map((g) => {
                 const active = review?.gameId === g.gameId || selectedGameId === g.gameId;
                 return (
                   <button
                     key={g.gameId}
                     type="button"
+                    role="tab"
+                    aria-selected={active}
                     onClick={() => router.replace(`/baseball/dashboard/postgame?game=${g.gameId}`)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-1 focus-visible:ring-offset-cream-100 ${
                       active
-                        ? 'border-primary-600 bg-primary-600 text-white'
-                        : 'border-warm-200 bg-cream-50 text-warm-600 hover:bg-warm-100'
+                        ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                        : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300 hover:bg-warm-100'
                     }`}
                   >
                     <span>{g.opponentName ?? 'Game'}</span>
@@ -240,10 +253,23 @@ export function PostgameReviewClient({
           {/* States */}
           {error ? (
             <Card variant="flat" padding="lg" className="text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-warm-100 text-warm-500">
-                <IconAlertCircle size={20} />
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-error/10 text-error">
+                <IconAlertCircle size={22} />
               </div>
-              <p className="text-sm text-warm-600">{error}</p>
+              <h3 className="text-base font-semibold tracking-tight text-warm-900">
+                We couldn&rsquo;t load this review
+              </h3>
+              <p className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-warm-500">{error}</p>
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<IconRefresh size={15} />}
+                  onClick={() => router.refresh()}
+                >
+                  Try again
+                </Button>
+              </div>
             </Card>
           ) : !authorized ? (
             unauthorizedReason === 'forbidden' ? (
@@ -325,39 +351,42 @@ function ReviewBody({
   return (
     <div className="space-y-6">
       {/* Review header card — source status + confidence (NOT a recap) */}
-      <Card variant="raised" padding="lg">
-        <CardContent className="p-0">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-lg font-semibold text-warm-900">{review.title}</h2>
-              {review.summary && (
-                <p className="mt-1 text-sm leading-relaxed text-warm-600">{review.summary}</p>
+      <m.div {...fadeIn} transition={reduceMotion ? undefined : { duration: 0.3 }}>
+        <Card variant="raised" padding="lg" glow="subtle">
+          <CardContent className="p-0">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold tracking-tight text-warm-900">{review.title}</h2>
+                {review.summary && (
+                  <p className="mt-1 text-sm leading-relaxed text-warm-600">{review.summary}</p>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {scoreTxt && <Badge variant="secondary">{scoreTxt}</Badge>}
+                <Badge variant={review.sourceStatus === 'official' ? 'success' : 'warning'}>
+                  <IconDatabase size={12} className="mr-1" />
+                  {review.sourceStatus} box score
+                </Badge>
+                <Badge variant="secondary">
+                  {review.confidencePct == null ? '—' : `${review.confidencePct}%`} confidence
+                </Badge>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-warm-100 pt-3 text-xs text-warm-400">
+              <span className="tabular-nums">{review.battingLinesN} batting · {review.pitchingLinesN} pitching lines</span>
+              <span className="flex items-center gap-1">
+                <IconClock size={12} /> generated {fmtDate(review.generatedAt)}
+              </span>
+              {review.importWarnings.length > 0 && (
+                <span className="flex items-center gap-1 text-amber-600">
+                  <IconAlertCircle size={12} />
+                  {review.importWarnings.length} import warning{review.importWarnings.length === 1 ? '' : 's'}
+                </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {scoreTxt && <Badge variant="secondary">{scoreTxt}</Badge>}
-              <Badge variant={review.sourceStatus === 'official' ? 'success' : 'warning'}>
-                <IconDatabase size={12} className="mr-1" />
-                {review.sourceStatus} box score
-              </Badge>
-              <Badge variant="secondary">
-                {review.confidencePct == null ? '—' : `${review.confidencePct}%`} confidence
-              </Badge>
-            </div>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-warm-400">
-            <span>{review.battingLinesN} batting · {review.pitchingLinesN} pitching lines</span>
-            <span className="flex items-center gap-1">
-              <IconClock size={12} /> generated {fmtDate(review.generatedAt)}
-            </span>
-            {review.importWarnings.length > 0 && (
-              <span className="text-amber-600">
-                {review.importWarnings.length} import warning{review.importWarnings.length === 1 ? '' : 's'}
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </m.div>
 
       {review.itemCount === 0 ? (
         <EmptyState
@@ -441,12 +470,17 @@ function Section({
   if (items.length === 0) return null;
   return (
     <section>
-      <div className="mb-3 flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-50 text-primary-600 ring-1 ring-primary-100">
           {icon}
         </span>
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-warm-500">{title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-warm-700">{title}</h3>
+            <span className="rounded-full bg-warm-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-warm-500">
+              {items.length}
+            </span>
+          </div>
           <p className="text-xs text-warm-400">{subtitle}</p>
         </div>
       </div>
@@ -506,12 +540,16 @@ function ItemCard({
     item.actionLabel ?? (convertKind === 'practice' ? 'Add to practice plan' : 'Log to timeline');
 
   return (
-    <Card variant="raised" padding="md" className={done ? 'opacity-70' : undefined}>
+    <Card
+      variant="raised"
+      padding="md"
+      className={done ? 'opacity-70 transition-opacity' : 'transition-shadow hover:shadow-card'}
+    >
       <CardContent className="p-0">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <h4 className="font-semibold text-warm-900">{item.title}</h4>
+              <h4 className="font-semibold tracking-tight text-warm-900">{item.title}</h4>
               <Badge variant={priorityTone(item.priority)}>{item.priority}</Badge>
               {item.oneGame && <Badge variant="secondary">watch · 1 game</Badge>}
               {convertedTimeline && <Badge variant="success">Logged</Badge>}

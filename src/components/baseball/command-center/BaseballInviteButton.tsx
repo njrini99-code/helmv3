@@ -40,6 +40,24 @@ export function BaseballInviteButton({
     }
   }, [existingCode]);
 
+  // Close on Escape + lock body scroll while the modal is open.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        setError(null);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
@@ -141,7 +159,7 @@ export function BaseballInviteButton({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(15, 23, 42, 0.5)',
+        backgroundColor: 'rgba(28, 25, 23, 0.45)',
         backdropFilter: 'blur(4px)',
         WebkitBackdropFilter: 'blur(4px)',
         zIndex: 9999,
@@ -190,10 +208,10 @@ export function BaseballInviteButton({
 
           {/* Loading State */}
           {loading && (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
+            <div className="flex items-center justify-center py-8" role="status" aria-live="polite">
+              <div className="animate-spin motion-reduce:animate-none h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
               <span className="ml-3 text-sm text-warm-500">
-                Generating invite link...
+                Generating invite link…
               </span>
             </div>
           )}

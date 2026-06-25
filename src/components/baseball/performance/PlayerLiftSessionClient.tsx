@@ -15,6 +15,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { IconCheckCircle2, IconAlertCircle, IconArrowLeft } from '@/components/icons';
 import { logSetResult, startLiftSession, completeLiftSession } from '@/app/baseball/actions/lifting-v11';
 import type { BaseballLiftSessionWithExercises } from '@/lib/types/baseball-lifting-v11';
 
@@ -107,18 +108,37 @@ export function PlayerLiftSessionClient({ session, readinessSubmittedToday }: Pr
 
   if (status === 'completed') {
     return (
-      <div className="space-y-6">
+      <motion.div
+        className="space-y-6"
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.24 }}
+      >
         <BackLink />
         <Card className="border-primary-200 bg-primary-50/50">
-          <CardContent className="py-8 text-center">
-            <p className="text-2xl font-semibold text-warm-900">Lift complete</p>
-            <p className="mt-1 text-sm text-warm-500">{doneSets} of {totalSets} sets logged.</p>
-            <Link href="/baseball/dashboard/lift" className="mt-4 inline-block rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700">
+          <CardContent className="py-10 text-center">
+            <motion.div
+              className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 text-primary-600"
+              initial={prefersReducedMotion ? false : { scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+              aria-hidden
+            >
+              <IconCheckCircle2 size={30} />
+            </motion.div>
+            <p className="mt-4 text-2xl font-semibold tracking-tight text-warm-900">Lift complete</p>
+            <p className="mt-1 text-sm text-warm-500">
+              Nice work — {doneSets} of {totalSets} sets logged.
+            </p>
+            <Link
+              href="/baseball/dashboard/lift"
+              className="mt-5 inline-block rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+            >
               Back to Lift
             </Link>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     );
   }
 
@@ -131,8 +151,26 @@ export function PlayerLiftSessionClient({ session, readinessSubmittedToday }: Pr
     >
       <BackLink />
       <div>
-        <h1 className="text-2xl font-semibold text-warm-900">{session.title ?? 'Lift'}</h1>
-        <p className="text-sm text-warm-500">{doneSets} / {totalSets} sets · {status === 'started' ? 'in progress' : 'not started'}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-warm-900">{session.title ?? 'Lift'}</h1>
+        <p className="mt-0.5 text-sm text-warm-500">
+          <span className="tabular-nums">{doneSets} / {totalSets}</span> sets · {status === 'started' ? 'in progress' : 'not started'}
+        </p>
+        {/* Progress bar — calm, transform-free fill */}
+        <div
+          className="mt-2 h-1.5 overflow-hidden rounded-full bg-warm-100"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={totalSets}
+          aria-valuenow={doneSets}
+          aria-label="Sets logged"
+        >
+          <motion.div
+            className="h-full rounded-full bg-primary-500"
+            initial={false}
+            animate={{ width: `${totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0}%` }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </div>
       </div>
 
       {/* Readiness gate (spec L480-485) */}
@@ -140,14 +178,20 @@ export function PlayerLiftSessionClient({ session, readinessSubmittedToday }: Pr
         <Card className="border-amber-200 bg-amber-50/60">
           <CardContent className="flex items-center justify-between gap-3 py-4">
             <p className="text-sm text-warm-700">Complete your daily check-in first.</p>
-            <Link href="/baseball/dashboard/readiness" className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors">Check in</Link>
+            <Link
+              href="/baseball/dashboard/readiness"
+              className="shrink-0 rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+            >
+              Check in
+            </Link>
           </CardContent>
         </Card>
       )}
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
+        <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <IconAlertCircle size={15} className="shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -205,7 +249,13 @@ export function PlayerLiftSessionClient({ session, readinessSubmittedToday }: Pr
 
 function BackLink() {
   return (
-    <Link href="/baseball/dashboard/lift" className="text-sm text-warm-500 hover:text-primary-700">← Back to Lift</Link>
+    <Link
+      href="/baseball/dashboard/lift"
+      className="inline-flex items-center gap-1 rounded text-sm text-warm-500 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+    >
+      <IconArrowLeft size={15} />
+      Back to Lift
+    </Link>
   );
 }
 

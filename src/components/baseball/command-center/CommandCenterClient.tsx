@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { BaseballInviteButton } from './BaseballInviteButton';
 import { TeamPlayerPeekPanel } from './TeamPlayerPeekPanel';
 import {
@@ -15,6 +16,8 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
+  IconFilter,
+  IconChevronDown,
 } from '@/components/icons';
 import type { BaseballRosterPlayer, BaseballCoachInsight } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -82,28 +85,43 @@ function getWeekDays(): Array<{ date: Date; dayNum: number; dayLabel: string; is
 function TrendIndicator({ trend }: { trend: string | null | undefined }) {
   if (trend === 'improving') {
     return (
-      <span className="flex items-center gap-0.5 text-primary-600 text-eyebrow font-medium">
-        <IconTrendingUp size={12} />↑
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-1.5 py-0.5 text-eyebrow font-semibold text-primary-700"
+        title="Improving"
+      >
+        <IconTrendingUp size={11} aria-hidden />
+        <span className="sr-only">Trending up</span>
+        Up
       </span>
     );
   }
   if (trend === 'declining') {
     return (
-      <span className="flex items-center gap-0.5 text-red-500 text-eyebrow font-medium">
-        <IconTrendingDown size={12} />↓
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-red-50 px-1.5 py-0.5 text-eyebrow font-semibold text-red-600"
+        title="Declining"
+      >
+        <IconTrendingDown size={11} aria-hidden />
+        <span className="sr-only">Trending down</span>
+        Down
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-0.5 text-warm-400 text-eyebrow font-medium">
-      <IconMinus size={12} />—
+    <span
+      className="inline-flex items-center gap-1 rounded-full bg-warm-50 px-1.5 py-0.5 text-eyebrow font-semibold text-warm-500"
+      title="Stable"
+    >
+      <IconMinus size={11} aria-hidden />
+      <span className="sr-only">Stable</span>
+      Steady
     </span>
   );
 }
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col items-center px-2 py-1 bg-warm-50 rounded-lg">
+    <div className="flex flex-col items-center px-2.5 py-1.5 bg-warm-50/80 rounded-lg ring-1 ring-warm-100/60">
       <span className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wide">{label}</span>
       <span className="text-xs font-bold text-warm-800 tabular-nums">{value}</span>
     </div>
@@ -126,8 +144,11 @@ function PlayerRosterCard({
   return (
     <Button variant="ghost"
       onClick={onClick}
-      className="w-full text-left bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4
-                 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 group"
+      aria-label={`View ${fullName || 'player'} details`}
+      className="w-full text-left bg-cream-100/75 backdrop-blur-glass border border-white/20 rounded-2xl p-4
+                 shadow-glass hover:shadow-card-hover hover:-translate-y-0.5 hover:border-primary-200/60
+                 focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-100
+                 transition-[transform,box-shadow,border-color] duration-200 group motion-reduce:hover:translate-y-0 motion-reduce:transition-none"
     >
       <div className="flex items-start gap-3">
         {/* Avatar */}
@@ -182,11 +203,61 @@ function PlayerRosterCard({
 
 function TeamStatCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
-    <div className={`rounded-2xl p-4 ${accent ? 'bg-primary-600 text-white' : 'bg-cream-100/75 backdrop-blur-xl border border-white/20 shadow-sm'}`}>
+    <div
+      className={`rounded-2xl p-4 transition-shadow duration-200 ${
+        accent
+          ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-glass'
+          : 'bg-cream-100/75 backdrop-blur-glass border border-white/20 shadow-glass hover:shadow-card-hover'
+      }`}
+    >
       <p className={`text-eyebrow font-semibold uppercase tracking-wide mb-1 ${accent ? 'text-primary-100' : 'text-warm-400'}`}>{label}</p>
       <p className={`text-2xl font-bold tabular-nums leading-none ${accent ? 'text-white' : 'text-warm-900'}`}>{value}</p>
       {sub && <p className={`text-xs mt-1 ${accent ? 'text-primary-200' : 'text-warm-400'}`}>{sub}</p>}
     </div>
+  );
+}
+
+// ─── Sortable table header ────────────────────────────────────────────────────
+
+type StatSortKey = 'name' | 'avg' | 'hr' | 'ops' | 'trend';
+
+function SortableHeader({
+  label,
+  sortKey,
+  activeKey,
+  onSort,
+  align = 'center',
+  className = '',
+}: {
+  label: string;
+  sortKey: StatSortKey;
+  activeKey: StatSortKey;
+  onSort: (k: StatSortKey) => void;
+  align?: 'left' | 'center';
+  className?: string;
+}) {
+  const isActive = activeKey === sortKey;
+  return (
+    <th
+      scope="col"
+      aria-sort={isActive ? 'descending' : 'none'}
+      className={`py-0 ${align === 'left' ? 'text-left' : 'text-center'} ${className}`}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`group inline-flex w-full items-center gap-1 py-3 text-eyebrow font-semibold uppercase tracking-wide transition-colors rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${
+          align === 'left' ? 'justify-start' : 'justify-center'
+        } ${isActive ? 'text-primary-600' : 'text-warm-500 hover:text-warm-700'}`}
+      >
+        {label}
+        <IconChevronDown
+          size={12}
+          aria-hidden
+          className={`transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'}`}
+        />
+      </button>
+    </th>
   );
 }
 
@@ -199,13 +270,14 @@ export function CommandCenterClient({
   calendarEvents = [],
 }: CommandCenterClientProps) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<MainTab>('roster');
   const [searchQuery, setSearchQuery] = useState('');
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [sortOption, setSortOption] = useState<SortOption>('name');
   const [peekPlayer, setPeekPlayer] = useState<BaseballRosterPlayer | null>(null);
   const [statTypeFilter, setStatTypeFilter] = useState<StatTypeFilter>('all');
-  const [statSortKey, setStatSortKey] = useState<'name' | 'avg' | 'hr' | 'ops' | 'trend'>('avg');
+  const [statSortKey, setStatSortKey] = useState<StatSortKey>('avg');
 
   // ── Week calendar data ──────────────────────────────────────────────────────
   const weekDays = useMemo(() => getWeekDays(), []);
@@ -338,9 +410,12 @@ export function CommandCenterClient({
           {/* ── Header ─────────────────────────────────────────────────── */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-warm-900">Command Center</h1>
-              <p className="text-warm-500 mt-0.5 text-sm">
-                {team.name} · {players.length} player{players.length !== 1 ? 's' : ''}
+              <p className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-primary-600 mb-1">
+                {team.name}
+              </p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-warm-900 tracking-tight">Command Center</h1>
+              <p className="text-warm-500 mt-1 text-sm">
+                {players.length} player{players.length !== 1 ? 's' : ''} on your roster
               </p>
             </div>
             <div className="flex items-center gap-2.5">
@@ -363,15 +438,15 @@ export function CommandCenterClient({
           </div>
 
           {/* ── Mini Week Calendar Strip ────────────────────────────────── */}
-          <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4 mb-5">
+          <div className="bg-cream-100/75 backdrop-blur-glass border border-white/20 rounded-2xl shadow-glass p-4 mb-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <IconCalendar size={15} className="text-warm-400" />
-                <span className="text-xs font-semibold text-warm-500 uppercase tracking-wide">This Week</span>
+                <IconCalendar size={15} className="text-warm-400" aria-hidden />
+                <span className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">This Week</span>
               </div>
               <Link
                 href="/baseball/dashboard/calendar"
-                className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
+                className="rounded-md text-xs font-medium text-primary-600 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 transition-colors"
               >
                 View Calendar →
               </Link>
@@ -380,11 +455,19 @@ export function CommandCenterClient({
             <div className="grid grid-cols-7 gap-1.5">
               {weekDays.map((day) => {
                 const dayEvents = eventsByDay.get(day.date.toDateString()) ?? [];
+                const eventCount = dayEvents.length;
+                const dateLabel = day.date.toLocaleDateString(undefined, {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                });
                 return (
                   <Button variant="ghost"
                     key={day.date.toISOString()}
                     onClick={() => router.push('/baseball/dashboard/calendar')}
-                    className="flex flex-col items-center py-2.5 px-1 rounded-xl transition-colors group hover:bg-warm-50"
+                    aria-label={`${dateLabel}${day.isToday ? ' (today)' : ''}${eventCount > 0 ? `, ${eventCount} event${eventCount !== 1 ? 's' : ''}` : ', no events'}`}
+                    aria-current={day.isToday ? 'date' : undefined}
+                    className="flex flex-col items-center py-2.5 px-1 rounded-xl transition-colors group hover:bg-warm-50 focus-visible:ring-2 focus-visible:ring-primary-300"
                   >
                     <span className={`text-eyebrow font-semibold uppercase tracking-wide mb-1.5 ${
                       day.isToday ? 'text-primary-600' : 'text-warm-400'
@@ -399,10 +482,10 @@ export function CommandCenterClient({
                       {day.dayNum}
                     </span>
                     {/* Event dots */}
-                    <div className="flex gap-0.5 mt-1.5 h-1.5">
-                      {dayEvents.slice(0, 3).map((_, i) => (
+                    <div className="flex gap-0.5 mt-1.5 h-1.5" aria-hidden>
+                      {dayEvents.slice(0, 3).map((ev, i) => (
                         <span
-                          key={i}
+                          key={ev.id ?? `dot-${i}`}
                           className={`w-1.5 h-1.5 rounded-full ${day.isToday ? 'bg-primary-400' : 'bg-warm-300'}`}
                         />
                       ))}
@@ -414,15 +497,23 @@ export function CommandCenterClient({
           </div>
 
           {/* ── Tab Toggle ─────────────────────────────────────────────── */}
-          <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-2xl p-1 gap-1 shadow-sm mb-6 w-fit">
+          <div
+            role="tablist"
+            aria-label="Command Center views"
+            className="flex bg-cream-100/75 backdrop-blur-glass border border-warm-200/45 rounded-2xl p-1 gap-1 shadow-glass mb-6 w-fit"
+          >
             {([
-              { id: 'roster' as const, label: 'Roster', icon: <IconUsers size={15} /> },
-              { id: 'stats' as const, label: 'Stats', icon: <IconChartBar size={15} /> },
+              { id: 'roster' as const, label: 'Roster', icon: <IconUsers size={15} aria-hidden /> },
+              { id: 'stats' as const, label: 'Stats', icon: <IconChartBar size={15} aria-hidden /> },
             ]).map(({ id, label, icon }) => (
               <Button variant="primary"
                 key={id}
+                role="tab"
+                id={`cc-tab-${id}`}
+                aria-selected={activeTab === id}
+                aria-controls={`cc-panel-${id}`}
                 onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] focus-visible:ring-2 focus-visible:ring-primary-300 ${
                   activeTab === id
                     ? 'bg-primary-600 text-white shadow-sm'
                     : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
@@ -437,16 +528,24 @@ export function CommandCenterClient({
           {/* ══════════════════════════════════════════════════════════════
               ROSTER TAB
           ══════════════════════════════════════════════════════════════ */}
-          <div className={activeTab === 'roster' ? 'block' : 'hidden'}>
+          <div
+            id="cc-panel-roster"
+            role="tabpanel"
+            aria-labelledby="cc-tab-roster"
+            hidden={activeTab !== 'roster'}
+            className={activeTab === 'roster' ? 'block' : 'hidden'}
+          >
             <div className="space-y-5">
 
               {/* Search + filters row */}
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* Search */}
                 <div className="relative flex-1 max-w-xs">
-                  <IconSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+                  <label htmlFor="cc-roster-search" className="sr-only">Search players</label>
+                  <IconSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none" aria-hidden />
                   <input
-                    type="text"
+                    id="cc-roster-search"
+                    type="search"
                     placeholder="Search players…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -457,7 +556,9 @@ export function CommandCenterClient({
                 </div>
 
                 {/* Position filter */}
+                <label htmlFor="cc-roster-position" className="sr-only">Filter by position</label>
                 <select
+                  id="cc-roster-position"
                   value={positionFilter}
                   onChange={(e) => setPositionFilter(e.target.value as PositionFilter)}
                   className="px-3 py-2.5 bg-cream-100/82 border border-warm-200/80 rounded-xl text-sm text-warm-700
@@ -469,7 +570,9 @@ export function CommandCenterClient({
                 </select>
 
                 {/* Sort */}
+                <label htmlFor="cc-roster-sort" className="sr-only">Sort players</label>
                 <select
+                  id="cc-roster-sort"
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
                   className="px-3 py-2.5 bg-cream-100/82 border border-warm-200/80 rounded-xl text-sm text-warm-700
@@ -484,7 +587,7 @@ export function CommandCenterClient({
                 <Link href="/baseball/dashboard/stats/upload" className="sm:ml-auto">
                   <Button variant="ghost" className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-warm-500
                                      bg-cream-100/68 border border-warm-200/60 rounded-xl hover:bg-white transition-colors whitespace-nowrap">
-                    <IconUpload size={14} />
+                    <IconUpload size={14} aria-hidden />
                     Upload Stats
                   </Button>
                 </Link>
@@ -492,13 +595,14 @@ export function CommandCenterClient({
 
               {/* Empty state */}
               {players.length === 0 ? (
-                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-14 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-                    <IconUsers size={24} className="text-warm-400" />
+                <div className="bg-cream-100/75 backdrop-blur-glass border border-white/20 rounded-2xl shadow-glass p-14 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-primary-50 ring-1 ring-primary-100 flex items-center justify-center mx-auto mb-4">
+                    <IconUsers size={24} className="text-primary-500" aria-hidden />
                   </div>
-                  <h3 className="text-lg font-semibold text-warm-900 mb-2">No Players Yet</h3>
-                  <p className="text-warm-500 mb-6 max-w-sm mx-auto text-sm">
-                    Share your join code to invite players to your roster.
+                  <h3 className="text-lg font-semibold text-warm-900 mb-2">No players yet</h3>
+                  <p className="text-warm-500 mb-6 max-w-sm mx-auto text-sm leading-relaxed">
+                    Share your join code and players will appear here the moment they
+                    sign up. Stats and trends populate automatically after that.
                   </p>
                   {team.id && (
                     <BaseballInviteButton
@@ -509,25 +613,43 @@ export function CommandCenterClient({
                   )}
                 </div>
               ) : filteredPlayers.length === 0 ? (
-                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
-                  <p className="text-warm-500">No players match your search.</p>
+                <div className="bg-cream-100/75 backdrop-blur-glass border border-white/20 rounded-2xl shadow-glass p-12 text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-3.5">
+                    <IconFilter size={20} className="text-warm-400" aria-hidden />
+                  </div>
+                  <h3 className="text-sm font-semibold text-warm-800 mb-1">No players match these filters</h3>
+                  <p className="text-warm-500 text-sm mb-4 max-w-xs mx-auto">
+                    Try a different search term or position, or clear everything to see
+                    the full roster.
+                  </p>
                   <Button variant="ghost"
                     onClick={() => { setSearchQuery(''); setPositionFilter('all'); }}
-                    className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    className="text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 font-medium px-3 py-1.5 rounded-lg"
                   >
                     Clear filters
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredPlayers.map((player) => (
-                    <PlayerRosterCard
-                      key={player.id}
-                      player={player}
-                      onClick={() => setPeekPlayer(player)}
-                    />
-                  ))}
-                </div>
+                <LazyMotion features={domAnimation}>
+                  <m.div
+                    className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
+                    initial={reduceMotion ? false : 'hidden'}
+                    animate="show"
+                    variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
+                  >
+                    {filteredPlayers.map((player) => (
+                      <m.div
+                        key={player.id}
+                        variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
+                      >
+                        <PlayerRosterCard
+                          player={player}
+                          onClick={() => setPeekPlayer(player)}
+                        />
+                      </m.div>
+                    ))}
+                  </m.div>
+                </LazyMotion>
               )}
             </div>
           </div>
@@ -535,12 +657,18 @@ export function CommandCenterClient({
           {/* ══════════════════════════════════════════════════════════════
               STATS TAB
           ══════════════════════════════════════════════════════════════ */}
-          <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
+          <div
+            id="cc-panel-stats"
+            role="tabpanel"
+            aria-labelledby="cc-tab-stats"
+            hidden={activeTab !== 'stats'}
+            className={activeTab === 'stats' ? 'block' : 'hidden'}
+          >
             <div className="space-y-6">
 
               {/* Team overview cards */}
               <div>
-                <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Team Overview</h3>
+                <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide mb-3">Team Overview</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                   <TeamStatCard label="Players" value={String(players.length)} accent />
                   <TeamStatCard label="Team AVG" value={formatAvg(teamStats.teamAvg)} />
@@ -553,7 +681,7 @@ export function CommandCenterClient({
 
               {/* Game vs Scrimmage comparison */}
               <div>
-                <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">
+                <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide mb-3">
                   Game vs Scrimmage
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -566,20 +694,26 @@ export function CommandCenterClient({
                       ? withData.reduce((s, p) => s + (isGame ? (p.aggregates?.game_avg ?? 0) : (p.aggregates?.practice_avg ?? 0)), 0) / withData.length
                       : null;
                     return (
-                      <div key={type} className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5">
+                      <div key={type} className="bg-cream-100/75 backdrop-blur-glass border border-white/20 rounded-2xl shadow-glass hover:shadow-card-hover transition-shadow duration-200 p-5">
                         <div className="flex items-center gap-2 mb-3">
-                          <span className={`w-2 h-2 rounded-full ${isGame ? 'bg-primary-500' : 'bg-amber-500'}`} />
+                          <span className={`w-2 h-2 rounded-full ${isGame ? 'bg-primary-500' : 'bg-amber-500'}`} aria-hidden />
                           <span className="text-sm font-semibold text-warm-900">
                             {isGame ? 'Game' : 'Scrimmage'}
                           </span>
                         </div>
-                        <p className="text-3xl font-bold text-warm-900 tabular-nums">
+                        <p className="text-3xl font-bold text-warm-900 tabular-nums leading-none">
                           {formatAvg(avgVal)}
                         </p>
-                        <p className="text-xs text-warm-400 mt-1">Team batting average</p>
-                        <p className="text-xs text-warm-500 mt-3">
-                          {withData.length} of {players.length} players with {isGame ? 'game' : 'scrimmage'} data
-                        </p>
+                        <p className="text-xs text-warm-400 mt-1.5">Team batting average</p>
+                        {withData.length > 0 ? (
+                          <p className="text-xs text-warm-500 mt-3">
+                            {withData.length} of {players.length} player{players.length !== 1 ? 's' : ''} with {isGame ? 'game' : 'scrimmage'} data
+                          </p>
+                        ) : (
+                          <p className="text-xs text-warm-400 mt-3 italic">
+                            No {isGame ? 'game' : 'scrimmage'} data uploaded yet
+                          </p>
+                        )}
                       </div>
                     );
                   })}
@@ -589,18 +723,19 @@ export function CommandCenterClient({
               {/* Player performance table */}
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                  <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wide">Player Performance</h3>
+                  <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Player Performance</h3>
                   <div className="flex items-center gap-2 sm:ml-auto">
                     {/* Stat type filter */}
-                    <div className="flex bg-cream-100/75 border border-warm-200/60 rounded-xl p-0.5 gap-0.5">
+                    <div role="group" aria-label="Stat type" className="flex bg-cream-100/75 border border-warm-200/60 rounded-xl p-0.5 gap-0.5">
                       {(['all', 'game', 'scrimmage'] as const).map((t) => (
                         <Button variant="primary"
                           key={t}
+                          aria-pressed={statTypeFilter === t}
                           onClick={() => setStatTypeFilter(t)}
-                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-[color,background-color] ${
+                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-[color,background-color] focus-visible:ring-2 focus-visible:ring-primary-300 ${
                             statTypeFilter === t
                               ? 'bg-primary-600 text-white'
-                              : 'text-warm-600 hover:text-warm-900'
+                              : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
                           }`}
                         >
                           {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -608,11 +743,13 @@ export function CommandCenterClient({
                       ))}
                     </div>
                     {/* Position filter */}
+                    <label htmlFor="cc-stats-position" className="sr-only">Filter by position</label>
                     <select
+                      id="cc-stats-position"
                       value={positionFilter}
                       onChange={(e) => setPositionFilter(e.target.value as PositionFilter)}
                       className="px-2.5 py-1.5 bg-cream-100/82 border border-warm-200/60 rounded-xl text-xs text-warm-700
-                                 focus:outline-none focus:border-primary-400 transition-colors"
+                                 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors"
                     >
                       {positions.map((p) => (
                         <option key={p} value={p}>{p === 'all' ? 'All Pos' : p}</option>
@@ -622,41 +759,36 @@ export function CommandCenterClient({
                 </div>
 
                 {players.length === 0 ? (
-                  <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
-                    <p className="text-warm-500 text-sm">No player data available yet.</p>
+                  <div className="bg-cream-100/75 backdrop-blur-glass border border-white/20 rounded-2xl shadow-glass p-12 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-3.5">
+                      <IconChartBar size={22} className="text-warm-400" aria-hidden />
+                    </div>
+                    <h4 className="text-sm font-semibold text-warm-800 mb-1">No performance data yet</h4>
+                    <p className="text-warm-500 text-sm max-w-xs mx-auto">
+                      Upload game and scrimmage stats and per-player batting numbers
+                      will fill this table.
+                    </p>
                   </div>
                 ) : (
-                  <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+                  <div className="bg-cream-100/75 backdrop-blur-glass border border-white/20 rounded-2xl shadow-glass overflow-clip">
                     <div className="overflow-x-auto">
                       <table className="w-full">
+                        <caption className="sr-only">Player batting performance, sortable by column</caption>
                         <thead>
                           <tr className="border-b border-warm-100 bg-warm-50/60">
-                            <th
-                              className="px-4 py-3 text-left text-eyebrow font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
-                              onClick={() => setStatSortKey('name')}
-                            >
-                              Player {statSortKey === 'name' && '↓'}
-                            </th>
-                            <th className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Pos</th>
-                            <th
-                              className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
-                              onClick={() => setStatSortKey('avg')}
-                            >
-                              AVG {statSortKey === 'avg' && '↓'}
-                            </th>
-                            <th
-                              className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
-                              onClick={() => setStatSortKey('ops')}
-                            >
-                              OPS {statSortKey === 'ops' && '↓'}
-                            </th>
-                            <th className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Sessions</th>
-                            <th
-                              className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
-                              onClick={() => setStatSortKey('trend')}
-                            >
-                              Trend {statSortKey === 'trend' && '↓'}
-                            </th>
+                            <SortableHeader
+                              label="Player"
+                              align="left"
+                              sortKey="name"
+                              activeKey={statSortKey}
+                              onSort={setStatSortKey}
+                              className="px-4"
+                            />
+                            <th scope="col" className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Pos</th>
+                            <SortableHeader label="AVG" sortKey="avg" activeKey={statSortKey} onSort={setStatSortKey} />
+                            <SortableHeader label="OPS" sortKey="ops" activeKey={statSortKey} onSort={setStatSortKey} />
+                            <th scope="col" className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Sessions</th>
+                            <SortableHeader label="Trend" sortKey="trend" activeKey={statSortKey} onSort={setStatSortKey} />
                           </tr>
                         </thead>
                         <tbody>
@@ -671,8 +803,17 @@ export function CommandCenterClient({
                             return (
                               <tr
                                 key={player.id}
-                                className="border-b border-warm-50 last:border-0 hover:bg-warm-50/80 cursor-pointer transition-colors"
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`View ${fullName || 'player'} details`}
+                                className="border-b border-warm-50 last:border-0 hover:bg-warm-50/80 cursor-pointer transition-colors focus:outline-none focus-visible:bg-primary-50/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-300"
                                 onClick={() => setPeekPlayer(player)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setPeekPlayer(player);
+                                  }
+                                }}
                               >
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-2.5">

@@ -26,6 +26,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { toast } from 'sonner';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -242,11 +243,12 @@ export function LiveWeightRoom({
           <div className="flex items-center gap-3">
             <Link
               href="/baseball/dashboard/performance"
-              className="rounded-lg border border-warm-200 bg-white/70 px-2.5 py-1 text-xs font-medium text-warm-600 hover:bg-white"
+              className="rounded-lg border border-warm-200 bg-white/70 px-2.5 py-1 text-xs font-medium text-warm-600 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
             >
               ← Command center
             </Link>
             <div>
+              <p className="text-eyebrow uppercase text-primary-700">Live</p>
               <h1 className="text-lg font-semibold leading-tight text-warm-900">Live Weight Room</h1>
               <p className="text-xs text-warm-500">
                 {tb.team_name} · {tb.lift_day_label}
@@ -274,7 +276,7 @@ export function LiveWeightRoom({
                 name="group"
                 defaultValue={groupFilter ?? ''}
                 onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                className="rounded-lg border border-warm-200 bg-white px-2 py-1.5 text-sm text-warm-700"
+                className="rounded-lg border border-warm-200 bg-white px-2 py-1.5 text-sm text-warm-700 transition-colors focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
               >
                 <option value="">All groups</option>
                 {data.groups.map((g) => (
@@ -287,9 +289,11 @@ export function LiveWeightRoom({
               {clock.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
             <button
+              type="button"
               onClick={refresh}
               disabled={refreshing}
-              className="rounded-lg border border-warm-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-warm-700 hover:bg-white disabled:opacity-60"
+              aria-busy={refreshing}
+              className="rounded-lg border border-warm-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-warm-700 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 disabled:opacity-60"
             >
               {refreshing ? 'Refreshing…' : 'Refresh'}
             </button>
@@ -386,8 +390,11 @@ export function LiveWeightRoom({
                         <td className="px-3 py-2.5 text-right text-[11px] text-warm-400">{relTime(a.last_update)}</td>
                         <td className="px-3 py-2.5 text-right">
                           <button
+                            type="button"
                             onClick={() => setSelectedId(isSel ? null : a.session_id)}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                            aria-expanded={isSel}
+                            aria-label={isSel ? `Close ${getFullName(a.first_name, a.last_name)}` : `Manage ${getFullName(a.first_name, a.last_name)}`}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1 ${
                               isSel
                                 ? 'bg-primary-700 text-white'
                                 : 'bg-primary-600 text-white hover:bg-primary-700'
@@ -512,7 +519,7 @@ function SyncPill({ pending, isOnline, onRetry }: { pending: number; isOnline: b
       type="button"
       onClick={onRetry}
       title={pending > 0 ? 'Saved on this device — tap to sync now.' : 'No connection — tap to retry.'}
-      className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
+      className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
     >
       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" aria-hidden />
       {isOnline ? `Syncing · ${label}` : `Offline · ${label}`}
@@ -551,9 +558,10 @@ function QueueCard({
             {items.map((it) => (
               <li key={it.key}>
                 <button
+                  type="button"
                   onClick={() => it.athleteId && onSelect(it.athleteId)}
                   disabled={!it.athleteId}
-                  className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-cream-100/70 disabled:cursor-default disabled:hover:bg-transparent"
+                  className="flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-cream-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:cursor-default disabled:hover:bg-transparent"
                 >
                   <span className="font-medium text-warm-800">{it.name}</span>
                   <span className="truncate text-right text-[11px] text-warm-500">{it.detail}</span>
@@ -614,9 +622,18 @@ function AthleteDrawer({
       ?? null,
   );
   const activeEx = athlete.exercises.find((e) => e.session_exercise_id === activeExId) ?? null;
+  const prefersReducedMotion = useReducedMotion();
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-warm-200 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl">
+    <motion.div
+      role="dialog"
+      aria-modal="false"
+      aria-label={`Manage ${playerName}`}
+      initial={prefersReducedMotion ? false : { y: 24, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-warm-200 bg-white/95 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl"
+    >
       <div className="mx-auto max-w-[1600px] px-4 py-4">
         {/* Drawer header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -626,7 +643,11 @@ function AthleteDrawer({
             <StatusChip status={athlete.session_status} />
             <BandChip band={athlete.readiness_band} />
           </div>
-          <button onClick={onClose} className="rounded-lg border border-warm-200 px-3 py-1.5 text-sm text-warm-600 hover:bg-cream-100">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-warm-200 px-3 py-1.5 text-sm text-warm-600 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+          >
             Close
           </button>
         </div>
@@ -643,9 +664,11 @@ function AthleteDrawer({
             ) : (
               athlete.exercises.map((ex) => (
                 <button
+                  type="button"
                   key={ex.session_exercise_id}
                   onClick={() => setActiveExId(ex.session_exercise_id)}
-                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors ${
+                  aria-pressed={ex.session_exercise_id === activeExId}
+                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
                     ex.session_exercise_id === activeExId ? 'bg-primary-100 text-primary-800' : 'hover:bg-white'
                   }`}
                 >
@@ -681,7 +704,7 @@ function AthleteDrawer({
         {/* Athlete-level actions (mark limited / message / task) */}
         <AthleteActions athlete={athlete} playerName={playerName} runOptimistic={runOptimistic} onClose={onClose} />
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -894,8 +917,9 @@ function ExercisePanel({
         <Field label="Load (lb)" value={load} onChange={setLoad} placeholder="load" />
         <Field label="RPE" value={rpe} onChange={setRpe} placeholder="0–10" />
         <button
+          type="button"
           onClick={logSet}
-          className="mt-auto h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white hover:bg-primary-700"
+          className="mt-auto h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1"
         >
           Log set
         </button>
@@ -908,15 +932,16 @@ function ExercisePanel({
           value={adjReason}
           onChange={(e) => setAdjReason(e.target.value)}
           placeholder="reason"
-          className="h-[42px] min-w-[140px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800"
+          aria-label="Reason for load adjustment"
+          className="h-[42px] min-w-[140px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
         />
-        <button onClick={adjustLoad} className="h-[42px] rounded-xl border border-warm-300 bg-white px-3 text-sm font-medium text-warm-700 hover:bg-cream-100">
+        <button type="button" onClick={adjustLoad} className="h-[42px] rounded-xl border border-warm-300 bg-white px-3 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
           Adjust
         </button>
-        <button onClick={() => setSubOpen((v) => !v)} className="h-[42px] rounded-xl border border-warm-300 bg-white px-3 text-sm font-medium text-warm-700 hover:bg-cream-100">
+        <button type="button" onClick={() => setSubOpen((v) => !v)} aria-expanded={subOpen} className="h-[42px] rounded-xl border border-warm-300 bg-white px-3 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
           Substitute
         </button>
-        <button onClick={markObserved} className="h-[42px] rounded-xl border border-warm-300 bg-white px-3 text-sm font-medium text-warm-700 hover:bg-cream-100">
+        <button type="button" onClick={markObserved} className="h-[42px] rounded-xl border border-warm-300 bg-white px-3 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
           Mark observed
         </button>
       </div>
@@ -929,7 +954,7 @@ function ExercisePanel({
               id="lwr-sub-exercise"
               value={subId}
               onChange={(e) => setSubId(e.target.value)}
-              className="h-[42px] min-w-[200px] rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800"
+              className="h-[42px] min-w-[200px] rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
             >
               <option value="">Select exercise…</option>
               {exerciseLibrary.map((e) => (
@@ -941,9 +966,10 @@ function ExercisePanel({
             value={subReason}
             onChange={(e) => setSubReason(e.target.value)}
             placeholder="reason (e.g. shoulder soreness)"
-            className="h-[42px] min-w-[160px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800"
+            aria-label="Reason for substitution"
+            className="h-[42px] min-w-[160px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
           />
-          <button onClick={substitute} className="h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white hover:bg-primary-700">
+          <button type="button" onClick={substitute} className="h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1">
             Confirm swap
           </button>
         </div>
@@ -1013,18 +1039,18 @@ function AthleteActions({
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-warm-100 pt-3">
-      <button onClick={markLimited} className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-100">
+      <button type="button" onClick={markLimited} className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50">
         Mark limited
       </button>
-      <button onClick={() => setMsgOpen((v) => !v)} className="rounded-xl border border-warm-300 bg-white px-3 py-1.5 text-sm font-medium text-warm-700 hover:bg-cream-100">
+      <button type="button" onClick={() => setMsgOpen((v) => !v)} aria-expanded={msgOpen} className="rounded-xl border border-warm-300 bg-white px-3 py-1.5 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
         Quick message
       </button>
-      <button onClick={() => setTaskOpen((v) => !v)} className="rounded-xl border border-warm-300 bg-white px-3 py-1.5 text-sm font-medium text-warm-700 hover:bg-cream-100">
+      <button type="button" onClick={() => setTaskOpen((v) => !v)} aria-expanded={taskOpen} className="rounded-xl border border-warm-300 bg-white px-3 py-1.5 text-sm font-medium text-warm-700 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50">
         Follow-up task
       </button>
       <Link
         href={`/baseball/dashboard/performance/players/${athlete.player_id}`}
-        className="ml-auto rounded-xl border border-warm-200 bg-white px-3 py-1.5 text-sm font-medium text-warm-600 hover:bg-cream-100"
+        className="ml-auto rounded-xl border border-warm-200 bg-white px-3 py-1.5 text-sm font-medium text-warm-600 transition-colors hover:bg-cream-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
         onClick={onClose}
       >
         Full profile →
@@ -1036,10 +1062,11 @@ function AthleteActions({
             value={msg}
             onChange={(e) => setMsg(e.target.value)}
             placeholder={`Message to ${playerName}…`}
-            className="h-[42px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800"
+            aria-label={`Quick message to ${playerName}`}
+            className="h-[42px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           />
-          <button onClick={sendMessage} className="h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white hover:bg-primary-700">
+          <button type="button" onClick={sendMessage} className="h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1">
             Send
           </button>
         </div>
@@ -1051,10 +1078,11 @@ function AthleteActions({
             value={taskTitle}
             onChange={(e) => setTaskTitle(e.target.value)}
             placeholder={`e.g. Re-test ${playerName}'s back squat next week`}
-            className="h-[42px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800"
+            aria-label="Follow-up task title"
+            className="h-[42px] flex-1 rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
             onKeyDown={(e) => e.key === 'Enter' && createTask()}
           />
-          <button onClick={createTask} className="h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white hover:bg-primary-700">
+          <button type="button" onClick={createTask} className="h-[42px] rounded-xl bg-primary-600 px-4 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/60 focus-visible:ring-offset-1">
             Create
           </button>
         </div>
@@ -1083,7 +1111,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-[42px] rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800"
+        className="h-[42px] rounded-xl border border-warm-200 bg-white px-3 text-sm text-warm-800 transition-colors placeholder:text-warm-400 focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
       />
     </div>
   );

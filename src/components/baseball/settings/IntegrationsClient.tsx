@@ -136,16 +136,22 @@ function IntegrationFormBody({
         />
       </div>
       <div>
-        <span className="block text-sm font-medium text-warm-700 mb-2">
+        <span id="integration-level-label" className="block text-sm font-medium text-warm-700 mb-2">
           Connection level
         </span>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+          role="radiogroup"
+          aria-labelledby="integration-level-label"
+        >
           {LEVELS.map((l) => (
             <Button
               key={l.value}
               type="button"
               variant="ghost"
               size="sm"
+              role="radio"
+              aria-checked={draft.integration_level === l.value}
               onClick={() => setField('integration_level', l.value)}
               className={cn(
                 'text-left rounded-lg border px-3 py-2 text-sm font-medium transition-colors',
@@ -170,14 +176,16 @@ function IntegrationFormBody({
       </div>
       {/* Status picker in edit mode */}
       <div>
-        <span className="block text-sm font-medium text-warm-700 mb-2">Status</span>
-        <div className="flex flex-wrap gap-2">
+        <span id="integration-status-label" className="block text-sm font-medium text-warm-700 mb-2">Status</span>
+        <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="integration-status-label">
           {STATUSES.map((s) => (
             <Button
               key={s.value}
               type="button"
               variant="ghost"
               size="sm"
+              role="radio"
+              aria-checked={draft.status === s.value}
               onClick={() => setField('status', s.value)}
               className={cn(
                 'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
@@ -449,6 +457,7 @@ export function IntegrationsClient({ teamName, canManage, integrations }: Props)
                                 size="sm"
                                 onClick={() => handleToggleStatus(i)}
                                 disabled={isPending || i.integration_level === 4}
+                                aria-pressed={i.status !== 'disabled'}
                                 aria-label={
                                   i.status === 'disabled'
                                     ? `Enable ${i.display_name}`

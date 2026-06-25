@@ -208,15 +208,34 @@ export default function PlayerLiftToday({
 
   if (loading) {
     return (
-      <Card variant="glass">
-        <CardHeader>
-          <h2 className="font-semibold text-warm-900">Today&apos;s Lift</h2>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-16 w-full rounded-xl" />
-          <Skeleton className="h-16 w-full rounded-xl" />
-        </CardContent>
-      </Card>
+      <div className="space-y-4" aria-busy="true" aria-label="Loading today's lift">
+        <Card variant="glass">
+          <CardHeader>
+            <h2 className="font-semibold text-warm-900">Today&apos;s Lift</h2>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+          </CardContent>
+        </Card>
+        <Card variant="glass">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <IconHeart size={18} className="text-primary-600" />
+              <h2 className="font-semibold text-warm-900">Daily Check-in</h2>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+            </div>
+            <Skeleton className="h-10 w-32 rounded-xl" />
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -229,8 +248,11 @@ export default function PlayerLiftToday({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <IconAlertCircle size={16} />
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          <IconAlertCircle size={16} className="shrink-0" />
           <span className="flex-1">{error}</span>
           <Button
             variant="ghost"
@@ -283,7 +305,7 @@ export default function PlayerLiftToday({
                   <Link
                     key={s.id}
                     href={`/baseball/dashboard/lift/${s.id}`}
-                    className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-warm-50 lg:px-6"
+                    className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 lg:px-6"
                   >
                     <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary-100">
                       <IconDumbbell size={18} className="text-primary-600" />
@@ -310,7 +332,7 @@ export default function PlayerLiftToday({
                     </Badge>
                     <IconChevronRight
                       size={16}
-                      className="mt-2.5 flex-shrink-0 text-warm-400"
+                      className="mt-2.5 flex-shrink-0 text-warm-400 transition-transform group-hover:translate-x-0.5"
                     />
                   </Link>
                 );
@@ -370,12 +392,12 @@ export default function PlayerLiftToday({
             onChange={(e) => setReadinessNotes(e.target.value)}
             rows={2}
           />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" aria-live="polite">
             <Button onClick={handleReadiness} isLoading={savingReadiness}>
               {checkin ? 'Update check-in' : 'Submit check-in'}
             </Button>
             {readinessDone && (
-              <span className="flex items-center gap-1 text-sm text-primary-700">
+              <span className="flex items-center gap-1 text-sm font-medium text-primary-700">
                 <IconCheckCircle2 size={16} /> Saved
               </span>
             )}

@@ -251,7 +251,11 @@ export function EvLaContactMatrix({
                     fillOpacity={0.85}
                     stroke="white"
                     strokeWidth={0.5}
-                    className={onPointActivate ? 'cursor-pointer' : undefined}
+                    className={
+                      onPointActivate
+                        ? 'cursor-pointer transition-[stroke] duration-150 hover:stroke-warm-900'
+                        : undefined
+                    }
                     onClick={onPointActivate ? () => onPointActivate(b.ids) : undefined}
                   >
                     <title>{`${b.count} balls`}</title>
@@ -268,7 +272,11 @@ export function EvLaContactMatrix({
                   fillOpacity={0.85}
                   stroke="white"
                   strokeWidth={0.5}
-                  className={p.source && onPointActivate ? 'cursor-pointer' : undefined}
+                  className={
+                    p.source && onPointActivate
+                      ? 'cursor-pointer transition-[stroke] duration-150 hover:stroke-warm-900'
+                      : undefined
+                  }
                   onClick={
                     onPointActivate && p.source ? () => onPointActivate([p.id]) : undefined
                   }
@@ -572,7 +580,11 @@ export function SprayChart({
                 fillOpacity={0.85}
                 stroke="white"
                 strokeWidth={0.5}
-                className={p.source && onPointActivate ? 'cursor-pointer' : undefined}
+                className={
+                  p.source && onPointActivate
+                    ? 'cursor-pointer transition-[stroke] duration-150 hover:stroke-warm-900'
+                    : undefined
+                }
                 onClick={onPointActivate && p.source ? () => onPointActivate([p.id]) : undefined}
               >
                 <title>{`${OUTCOME_LABEL[p.outcome]} · ${num(p.distance, 0)} ft`}</title>

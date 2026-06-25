@@ -154,7 +154,7 @@ function FieldSelect<T extends string>({
 }) {
   return (
     <div className="block">
-      <span className="block text-sm font-medium text-warm-700 mb-1">{label}</span>
+      <span className="block text-sm font-medium text-warm-700 mb-1.5">{label}</span>
       <Select
         options={options as { value: string; label: string }[]}
         value={value}
@@ -582,6 +582,7 @@ export function ImportSourcesClient({ teamName, canManage, sources }: Props) {
                                 size="sm"
                                 onClick={() => handleToggleEnabled(s)}
                                 disabled={isPending}
+                                aria-pressed={s.enabled}
                                 aria-label={s.enabled ? `Disable ${s.source_name}` : `Enable ${s.source_name}`}
                                 title={s.enabled ? 'Disable source' : 'Enable source'}
                                 className={cn(

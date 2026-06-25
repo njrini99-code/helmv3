@@ -210,7 +210,11 @@ export function TeamSettingsClient({ data }: Props) {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div
+              className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+              role="radiogroup"
+              aria-label="Invite policy"
+            >
               {BASEBALL_INVITE_POLICIES.map((policy) => {
                 const active = settings.invite_policy === policy;
                 const copy = POLICY_COPY[policy];
@@ -219,6 +223,8 @@ export function TeamSettingsClient({ data }: Props) {
                     key={policy}
                     type="button"
                     variant="ghost"
+                    role="radio"
+                    aria-checked={active}
                     disabled={isPending}
                     onClick={() => setPolicy(policy)}
                     className={cn(

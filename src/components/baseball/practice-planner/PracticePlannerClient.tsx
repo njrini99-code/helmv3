@@ -34,13 +34,14 @@ import {
   UserCircle2,
   Ruler,
   Inbox,
+  X,
+  AlertCircle,
 } from 'lucide-react';
 
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ListSkeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
@@ -113,6 +114,36 @@ function fmtOffset(startMin: number, durationMin: number) {
     return `${h}:${mm}`;
   };
   return `${fmt(startMin)} – ${fmt(startMin + durationMin)} (+${startMin}m)`;
+}
+
+/**
+ * Practice-card-shaped skeleton — mirrors the real PracticeCard layout (title +
+ * status pill, focus line, two block rows) so the loading state has no layout
+ * shift when real content arrives.
+ */
+function PracticeCardSkeleton({ delay = 0 }: { delay?: number }) {
+  return (
+    <div
+      className="relative overflow-clip rounded-2xl border border-warm-200 bg-white p-5"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
+      <div className="relative space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
+            <div className="h-5 w-48 rounded bg-warm-200/60 skeleton-shimmer" />
+            <div className="h-3 w-32 rounded bg-warm-100/60 skeleton-shimmer" />
+          </div>
+          <div className="h-7 w-20 rounded-lg bg-warm-100/60 skeleton-shimmer" />
+        </div>
+        <div className="space-y-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-9 w-full rounded-xl bg-cream-50 skeleton-shimmer" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function PracticePlannerClient() {
@@ -481,8 +512,10 @@ export function PracticePlannerClient() {
     return (
       <>
         <Header title="Practice Planner" subtitle="Plan timed practices, stations & attendance" />
-        <div className="p-6 lg:p-8">
-          <ListSkeleton items={3} />
+        <div className="space-y-4 p-6 lg:p-8">
+          {[0, 1, 2].map((i) => (
+            <PracticeCardSkeleton key={i} delay={i * 70} />
+          ))}
         </div>
       </>
     );
@@ -503,9 +536,29 @@ export function PracticePlannerClient() {
 
       <div className="p-6 lg:p-8 space-y-6">
         {error && (
-          <Card className="border-error/30 bg-error/5">
-            <CardContent className="py-4 text-sm text-error">{error}</CardContent>
-          </Card>
+          <m.div
+            initial={prefersReduced ? false : { opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            role="alert"
+          >
+            <Card className="border-error/30 bg-error/5">
+              <CardContent className="flex items-start justify-between gap-3 py-4">
+                <p className="flex items-start gap-2 text-sm text-error">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  aria-label="Dismiss error"
+                  className="-mr-1 -mt-0.5 shrink-0 rounded-md p-1 text-error/70 transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error/40"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </CardContent>
+            </Card>
+          </m.div>
         )}
 
         {/* ---------- Editor (coach only) ---------- */}
@@ -564,9 +617,12 @@ export function PracticePlannerClient() {
 
                     {/* Selected block detail editor */}
                     {selectedBlock && (
-                      <div className="rounded-2xl border border-warm-200 bg-cream-50/70 p-4">
+                      <div className="rounded-2xl border border-warm-200 bg-cream-50/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                         <div className="mb-3 flex items-center justify-between">
-                          <span className="text-xs font-semibold text-warm-700">Block details</span>
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.06em] text-warm-600">
+                            <ClipboardList className="h-3.5 w-3.5 text-primary-600" />
+                            Block details
+                          </span>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -803,18 +859,26 @@ export function PracticePlannerClient() {
           />
         ) : (
           <div className="space-y-4">
-            {practices.map((p) => (
-              <PracticeCard
+            {practices.map((p, idx) => (
+              <m.div
                 key={p.id}
-                practice={p}
-                isCoach={isCoach}
-                roster={roster}
-                ownPlayerId={ownPlayerId}
-                onEdit={() => startEdit(p)}
-                onPublishToggle={(publish, cal) => handlePublishToggle(p, publish, cal)}
-                onAttendanceSaved={loadPractices}
-                onError={setError}
-              />
+                initial={prefersReduced ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={
+                  prefersReduced ? undefined : { duration: 0.25, delay: Math.min(idx * 0.04, 0.2) }
+                }
+              >
+                <PracticeCard
+                  practice={p}
+                  isCoach={isCoach}
+                  roster={roster}
+                  ownPlayerId={ownPlayerId}
+                  onEdit={() => startEdit(p)}
+                  onPublishToggle={(publish, cal) => handlePublishToggle(p, publish, cal)}
+                  onAttendanceSaved={loadPractices}
+                  onError={setError}
+                />
+              </m.div>
             ))}
           </div>
         )}
@@ -910,7 +974,13 @@ function PracticeCard({
   };
 
   return (
-    <Card className={isBacklog ? 'border-primary-200 bg-primary-50/30' : undefined}>
+    <Card
+      className={
+        isBacklog
+          ? 'border-primary-200 bg-primary-50/30 transition-shadow hover:shadow-card-hover'
+          : 'transition-shadow hover:shadow-card-hover'
+      }
+    >
       <CardContent className="space-y-4 py-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -1034,7 +1104,7 @@ function PracticeCard({
             practice.blocks.map((b) => (
               <li
                 key={b.id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-warm-100 bg-cream-50/60 px-3 py-2 text-sm"
+                className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-warm-100 bg-cream-50/60 px-3 py-2 text-sm transition-colors hover:border-warm-200 hover:bg-cream-50"
               >
                 <span className="inline-flex items-center gap-1.5 font-medium text-warm-800">
                   <Clock className="h-3.5 w-3.5 text-primary-600" />
@@ -1194,7 +1264,8 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
             >
               <button
                 type="button"
-                className="flex w-full items-center justify-between gap-2 text-left"
+                className="flex w-full items-center justify-between gap-2 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                aria-expanded={isExpanded}
                 onClick={() => setExpanded(isExpanded ? null : s.id)}
               >
                 <div>
@@ -1209,7 +1280,9 @@ function PublishedScrimmageViewer({ practiceId }: { practiceId: string }) {
                     )}
                   </span>
                 </div>
-                <span className="text-xs text-warm-400">{isExpanded ? '▲' : '▼'}</span>
+                <span className="text-xs text-warm-400" aria-hidden>
+                  {isExpanded ? '▲' : '▼'}
+                </span>
               </button>
 
               {isExpanded && s.slots.length > 0 && (

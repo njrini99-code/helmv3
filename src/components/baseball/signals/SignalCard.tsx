@@ -19,6 +19,7 @@
 //     read-only (no triage / convert buttons).
 // =============================================================================
 
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,11 @@ import {
   IconTrendingDown,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import {
+  DURATION,
+  EASE_CINEMATIC,
+  useReducedMotionGuard,
+} from '@/lib/coachhelm/v3/motion';
 import type { SignalInboxRow, SignalActionRow } from '@/lib/baseball/read-models/signal-inbox';
 import {
   getSeverityPresentation,
@@ -118,6 +124,7 @@ export function SignalCard({
   onConvert,
   onFeedback,
 }: SignalCardProps) {
+  const reduce = useReducedMotionGuard();
   const sev = getSeverityPresentation(signal.severity);
   const disp = getDispositionPresentation(signal.disposition);
   const isOpen =
@@ -127,19 +134,29 @@ export function SignalCard({
   const compact = variant === 'compact';
 
   return (
-    <Card
-      variant="overlay"
-      hover={false}
-      padding="none"
-      className="relative overflow-hidden border-warm-200/60"
-    >
-      {/* Severity accent bar */}
-      <span
-        aria-hidden
-        className={cn('absolute left-0 top-0 bottom-0 w-1', sev.accentClass)}
-      />
+    <LazyMotion features={domAnimation} strict>
+      <m.div
+        initial={reduce ? false : { opacity: 0, y: 6 }}
+        animate={reduce ? false : { opacity: 1, y: 0 }}
+        transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}
+      >
+        <Card
+          variant="overlay"
+          hover={false}
+          padding="none"
+          aria-busy={pending || undefined}
+          className={cn(
+            'relative overflow-hidden border-warm-200/60 transition-[box-shadow,border-color,opacity] duration-200 ease-out hover:border-warm-200 hover:shadow-glass-hover',
+            pending && 'opacity-60',
+          )}
+        >
+          {/* Severity accent bar */}
+          <span
+            aria-hidden
+            className={cn('absolute left-0 top-0 bottom-0 w-1', sev.accentClass)}
+          />
 
-      <div className={cn('pl-4', compact ? 'p-3 pl-4' : 'p-4 pl-5')}>
+          <div className={cn('pl-4', compact ? 'p-3 pl-4' : 'p-4 pl-5')}>
         {/* ── Header row ──────────────────────────────────────────── */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -281,7 +298,11 @@ export function SignalCard({
             )}
 
             {/* useful / not-useful / wrong feedback */}
-            <div className="ml-auto flex items-center gap-1">
+            <div
+              role="group"
+              aria-label="Was this signal useful?"
+              className="ml-auto flex items-center gap-1"
+            >
               {(['useful', 'not_useful', 'wrong'] as const).map((f) => (
                 <Button
                   key={f}
@@ -290,10 +311,10 @@ export function SignalCard({
                   disabled={pending}
                   aria-pressed={signal.feedback === f}
                   className={cn(
-                    'h-7 px-2 text-eyebrow font-medium uppercase tracking-wide',
+                    'h-7 px-2 text-eyebrow font-medium uppercase tracking-wide transition-colors',
                     signal.feedback === f
                       ? 'text-primary-700'
-                      : 'text-warm-400 hover:text-warm-700',
+                      : 'text-warm-500 hover:text-warm-800',
                   )}
                 >
                   {f === 'useful' ? 'Useful' : f === 'not_useful' ? 'Not useful' : 'Wrong'}
@@ -303,12 +324,14 @@ export function SignalCard({
           </div>
         )}
 
-        {!canManage && signal.actions.length === 0 && (
-          <p className="mt-3 flex items-center gap-1 text-eyebrow uppercase tracking-wide text-warm-400">
-            Read-only <IconChevronRight size={11} />
-          </p>
-        )}
-      </div>
-    </Card>
+            {!canManage && signal.actions.length === 0 && (
+              <p className="mt-3 flex items-center gap-1 text-eyebrow uppercase tracking-wide text-warm-500">
+                Read-only <IconChevronRight size={11} />
+              </p>
+            )}
+          </div>
+        </Card>
+      </m.div>
+    </LazyMotion>
   );
 }

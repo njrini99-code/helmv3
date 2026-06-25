@@ -11,6 +11,8 @@ import {
   IconSettings,
   IconCheck,
   IconWarning,
+  IconAlertCircle,
+  IconRefresh,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { WatchlistWithPlayer } from '@/lib/types';
@@ -25,6 +27,43 @@ interface PositionNeedsMatrixProps {
   gradYear?: number;
   loading?: boolean;
   onSetGoals?: () => void;
+  /** Truthy when the watchlist hook failed. Renders the recoverable error face. */
+  error?: boolean;
+  /** Retry handler — typically the hook's `refetch`. */
+  onRetry?: () => void;
+}
+
+/** Shared header so loading / error / content read identically. */
+function MatrixHeader({
+  gradYear,
+  onSetGoals,
+}: {
+  gradYear: number;
+  onSetGoals?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
+          <IconTarget size={18} className="text-primary-600" />
+        </div>
+        <div>
+          <h2 className="font-semibold text-warm-900 tracking-tight">Position Needs</h2>
+          <p className="text-xs text-warm-500">Class of {gradYear}</p>
+        </div>
+      </div>
+      {onSetGoals && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onSetGoals}
+          className="text-xs text-warm-500 hover:text-warm-700 gap-1"
+        >
+          <IconSettings size={14} /> Set Goals
+        </Button>
+      )}
+    </div>
+  );
 }
 
 // Default position needs for a typical recruiting class
@@ -110,6 +149,8 @@ export function PositionNeedsMatrix({
   gradYear = new Date().getFullYear() + 2, // Default to class 2 years out
   loading,
   onSetGoals,
+  error,
+  onRetry,
 }: PositionNeedsMatrixProps) {
   const [showAllPositions, setShowAllPositions] = useState(false);
   const [positionGoals, setPositionGoals] = useState<PositionGoal[]>(DEFAULT_POSITION_GOALS);
@@ -214,12 +255,42 @@ export function PositionNeedsMatrix({
             </div>
           </div>
         </div>
+        <div className="px-6 py-3 border-b border-warm-100/50">
+          <Skeleton variant="rectangular" className="w-full h-2 rounded-full" />
+        </div>
         <div className="p-6">
           <div className="space-y-3">
-            {[1, 2, 3, 4].map(i => (
+            {[0, 1, 2, 3].map(i => (
               <Skeleton key={i} variant="rectangular" className="w-full h-10 rounded-lg" />
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="relative glass-standard rounded-2xl overflow-clip">
+        <ShineEffect />
+        <MatrixHeader gradYear={gradYear} onSetGoals={onSetGoals} />
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="flex flex-col items-center justify-center py-12 px-6 text-center"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center mb-4">
+            <IconAlertCircle size={24} className="text-destructive" />
+          </div>
+          <h3 className="text-base font-medium text-warm-900 mb-1">We couldn&apos;t load position needs</h3>
+          <p className="text-sm text-warm-500 max-w-xs mb-4">
+            Something went wrong reading your pipeline. This is usually temporary — your goals are safe.
+          </p>
+          {onRetry && (
+            <Button variant="secondary" size="sm" onClick={onRetry} leftIcon={<IconRefresh size={15} />}>
+              Try again
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -230,27 +301,7 @@ export function PositionNeedsMatrix({
       <ShineEffect />
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
-            <IconTarget size={18} className="text-primary-600" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-warm-900 tracking-tight">Position Needs</h2>
-            <p className="text-xs text-warm-500">Class of {gradYear}</p>
-          </div>
-        </div>
-        {onSetGoals && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onSetGoals}
-            className="text-xs text-warm-500 hover:text-warm-700 gap-1"
-          >
-            <IconSettings size={14} /> Set Goals
-          </Button>
-        )}
-      </div>
+      <MatrixHeader gradYear={gradYear} onSetGoals={onSetGoals} />
 
       {/* Summary bar */}
       <div className="px-6 py-3 bg-warm-50/50 border-b border-warm-100/50">
@@ -282,9 +333,16 @@ export function PositionNeedsMatrix({
           </div>
         </div>
         {/* Progress bar */}
-        <div className="mt-2 h-2 bg-warm-200 rounded-full overflow-hidden">
+        <div
+          className="mt-2 h-2 bg-warm-200 rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuenow={summary.percentFilled}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`Recruiting class ${summary.percentFilled}% filled`}
+        >
           <div
-            className="h-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-500"
+            className="h-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-500 motion-reduce:transition-none"
             style={{ width: `${summary.percentFilled}%` }}
           />
         </div>
@@ -294,21 +352,24 @@ export function PositionNeedsMatrix({
       {/* Position table */}
       <div className="overflow-x-auto">
         <table className="w-full">
+          <caption className="sr-only">
+            Position needs for the class of {gradYear}: roster need, pipeline depth, commitments, and coverage status per position.
+          </caption>
           <thead>
             <tr className="border-b border-warm-100/50 bg-warm-50/30">
-              <th className="px-6 py-2.5 text-left text-xs font-semibold text-warm-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-2.5 text-left text-eyebrow text-warm-500 uppercase">
                 Position
               </th>
-              <th className="px-4 py-2.5 text-center text-xs font-semibold text-warm-500 uppercase tracking-wider">
+              <th scope="col" className="px-4 py-2.5 text-center text-eyebrow text-warm-500 uppercase">
                 Need
               </th>
-              <th className="px-4 py-2.5 text-center text-xs font-semibold text-warm-500 uppercase tracking-wider">
+              <th scope="col" className="px-4 py-2.5 text-center text-eyebrow text-warm-500 uppercase">
                 Pipeline
               </th>
-              <th className="px-4 py-2.5 text-center text-xs font-semibold text-warm-500 uppercase tracking-wider">
+              <th scope="col" className="px-4 py-2.5 text-center text-eyebrow text-warm-500 uppercase">
                 Committed
               </th>
-              <th className="px-6 py-2.5 text-right text-xs font-semibold text-warm-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-2.5 text-right text-eyebrow text-warm-500 uppercase">
                 Status
               </th>
             </tr>
@@ -375,6 +436,7 @@ export function PositionNeedsMatrix({
         {positionData.length > 6 && (
           <Button variant="ghost"
             onClick={() => setShowAllPositions(!showAllPositions)}
+            aria-expanded={showAllPositions}
             className="text-sm text-warm-600 hover:text-primary-600 transition-colors"
           >
             {showAllPositions ? 'Show less' : `Show all ${positionData.length} positions`}
@@ -382,9 +444,10 @@ export function PositionNeedsMatrix({
         )}
         <Link
           href={`/baseball/dashboard/discover?grad_year=${gradYear}`}
-          className="text-sm text-warm-600 hover:text-primary-600 transition-colors flex items-center gap-1 ml-auto"
+          className="text-sm text-warm-600 hover:text-primary-600 transition-colors flex items-center gap-1 ml-auto rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 group"
         >
-          Find players <IconChevronRight size={14} />
+          Find players
+          <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform motion-reduce:transition-none" />
         </Link>
       </div>
     </div>

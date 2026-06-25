@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import {
   IconArrowLeft,
   IconTrendingUp,
@@ -136,13 +136,25 @@ function SortHeader({
   const active = sortKey === currentKey;
   return (
     <th
-      className={`px-3 py-3 text-${align} text-xs font-semibold text-warm-500 uppercase tracking-wide cursor-pointer select-none hover:text-warm-700 transition-colors`}
-      onClick={() => onSort(sortKey)}
+      scope="col"
+      aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className={`text-${align} text-xs font-semibold text-warm-500 uppercase tracking-wide`}
     >
-      {label}
-      {active && (
-        <span className="ml-1 inline-block">{dir === 'asc' ? '↑' : '↓'}</span>
-      )}
+      {/* A header-sized sort control; the Button primitive's fixed min-height + ripple
+          would not fit a table heading row. */}
+      {/* eslint-disable-next-line helm/no-raw-button */}
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`w-full px-3 py-3 inline-flex items-center gap-1 select-none transition-colors hover:text-warm-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-md ${
+          align === 'left' ? 'justify-start' : 'justify-center'
+        } ${active ? 'text-warm-800' : ''}`}
+      >
+        {label}
+        <span aria-hidden="true" className={`inline-block transition-opacity ${active ? 'opacity-100' : 'opacity-0'}`}>
+          {dir === 'asc' ? '↑' : '↓'}
+        </span>
+      </button>
     </th>
   );
 }
@@ -485,31 +497,43 @@ export function PlayerProfileClient({
         </div>
 
         {/* ── Tabs ─────────────────────────────────────────────────────── */}
-        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 scrollbar-hide" role="tablist" aria-label="Player sections">
           {([
             { id: 'overview' as const, label: 'Overview', icon: <IconChart size={15} /> },
             { id: 'stats' as const, label: 'Stats', icon: <IconActivity size={15} /> },
             { id: 'videos' as const, label: `Videos${videos.length > 0 ? ` (${videos.length})` : ''}`, icon: <IconVideo size={15} /> },
-          ]).map((tab) => (
-            <Button variant="primary"
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-cream-100/75 backdrop-blur-sm text-warm-600 hover:bg-cream-50 border border-warm-200/45 hover:shadow-sm'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </Button>
-          ))}
+          ]).map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <Button variant="ghost"
+                key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`pp-panel-${tab.id}`}
+                id={`pp-tab-${tab.id}`}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 whitespace-nowrap ${
+                  isActive
+                    ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600 hover:text-white'
+                    : 'bg-cream-100/75 backdrop-blur-sm text-warm-600 hover:bg-cream-50 border border-warm-200/45 hover:shadow-sm'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </Button>
+            );
+          })}
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════
             OVERVIEW TAB
         ═══════════════════════════════════════════════════════════════ */}
-        <div className={activeTab === 'overview' ? 'block' : 'hidden'}>
+        <div
+          role="tabpanel"
+          id="pp-panel-overview"
+          aria-labelledby="pp-tab-overview"
+          hidden={activeTab !== 'overview'}
+        >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {/* Main column */}
@@ -674,7 +698,8 @@ export function PlayerProfileClient({
                       <Button variant="ghost"
                         key={v.id}
                         onClick={() => { setSelectedVideo(v); setActiveTab('videos'); }}
-                        className="group relative aspect-video rounded-xl overflow-hidden bg-warm-100 hover:ring-2 hover:ring-primary-500 transition-shadow"
+                        aria-label={`Play ${v.title ?? 'video'}`}
+                        className="group relative aspect-video rounded-xl overflow-hidden bg-warm-100 p-0 min-h-0 hover:ring-2 hover:ring-primary-500 transition-shadow"
                       >
                         {v.thumbnail_url ? (
                           <Image src={v.thumbnail_url} alt={v.title ?? 'Video'} fill className="object-cover" />
@@ -769,7 +794,12 @@ export function PlayerProfileClient({
         {/* ═══════════════════════════════════════════════════════════════
             STATS TAB
         ═══════════════════════════════════════════════════════════════ */}
-        <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
+        <div
+          role="tabpanel"
+          id="pp-panel-stats"
+          aria-labelledby="pp-tab-stats"
+          hidden={activeTab !== 'stats'}
+        >
           <div className="space-y-5">
 
             {/* Season stats banner — links to box score stats page */}
@@ -792,14 +822,15 @@ export function PlayerProfileClient({
 
             {/* Filter toggle */}
             <div className="flex items-center gap-2">
-              <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm">
+              <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm" role="group" aria-label="Filter sessions by type">
                 {(['all', 'game', 'practice'] as const).map((f) => (
-                  <Button variant="primary"
+                  <Button variant="ghost"
                     key={f}
                     onClick={() => setStatFilter(f)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] ${
+                    aria-pressed={statFilter === f}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium min-h-0 transition-[color,background-color,box-shadow] ${
                       statFilter === f
-                        ? 'bg-primary-600 text-white shadow-sm'
+                        ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600 hover:text-white'
                         : 'text-warm-600 hover:text-warm-900'
                     }`}
                   >
@@ -909,20 +940,26 @@ export function PlayerProfileClient({
         {/* ═══════════════════════════════════════════════════════════════
             VIDEOS TAB
         ═══════════════════════════════════════════════════════════════ */}
-        <div className={activeTab === 'videos' ? 'block' : 'hidden'}>
+        <div
+          role="tabpanel"
+          id="pp-panel-videos"
+          aria-labelledby="pp-tab-videos"
+          hidden={activeTab !== 'videos'}
+        >
           <div className="space-y-5">
 
             {/* Sub-tabs */}
             {videoTabs.length > 1 && (
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm">
+                <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm" role="group" aria-label="Filter videos by type">
                   {videoTabs.map(({ key, label }) => (
-                    <Button variant="primary"
+                    <Button variant="ghost"
                       key={key}
                       onClick={() => setVideoFilter(key)}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] whitespace-nowrap ${
+                      aria-pressed={videoFilter === key}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium min-h-0 transition-[color,background-color,box-shadow] whitespace-nowrap ${
                         videoFilter === key
-                          ? 'bg-primary-600 text-white shadow-sm'
+                          ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600 hover:text-white'
                           : 'text-warm-600 hover:text-warm-900'
                       }`}
                     >
@@ -964,7 +1001,8 @@ export function PlayerProfileClient({
                   <Button variant="ghost"
                     key={video.id}
                     onClick={() => setSelectedVideo(video)}
-                    className="group relative aspect-video rounded-2xl overflow-hidden bg-warm-100
+                    aria-label={`Play ${video.title ?? 'video'}`}
+                    className="group relative aspect-video rounded-2xl overflow-hidden bg-warm-100 p-0 min-h-0
                                hover:ring-2 hover:ring-primary-500 hover:shadow-md transition-shadow duration-200"
                   >
                     {video.thumbnail_url ? (

@@ -1,49 +1,16 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { IconX, IconTrendingUp, IconTrendingDown, IconMinus } from '@/components/icons';
+import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { IconX, IconTrendingUp, IconTrendingDown, IconMinus, IconArrowRight } from '@/components/icons';
 import type { BaseballRosterPlayer } from '@/lib/types';
 import { IconButton } from '@/components/ui/button';
 
 interface TeamPlayerPeekPanelProps {
   player: BaseballRosterPlayer | null;
   onClose: () => void;
-}
-
-function SkeletonBlock({ className }: { className?: string }) {
-  return (
-    <div className={`animate-pulse bg-warm-200 rounded-lg ${className ?? ''}`} />
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="p-6 space-y-6">
-      {/* hero */}
-      <div className="flex items-center gap-4">
-        <SkeletonBlock className="w-24 h-24 rounded-2xl flex-shrink-0" />
-        <div className="flex-1 space-y-2">
-          <SkeletonBlock className="h-5 w-3/4" />
-          <SkeletonBlock className="h-4 w-1/2" />
-          <SkeletonBlock className="h-4 w-2/3" />
-        </div>
-      </div>
-      {/* bio */}
-      <div className="grid grid-cols-3 gap-3">
-        {[0, 1, 2].map((i) => (
-          <SkeletonBlock key={i} className="h-14 rounded-xl" />
-        ))}
-      </div>
-      {/* stats */}
-      <div className="grid grid-cols-2 gap-3">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <SkeletonBlock key={i} className="h-16 rounded-xl" />
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function formatAvg(v: number | null | undefined): string {
@@ -53,6 +20,22 @@ function formatAvg(v: number | null | undefined): string {
 
 export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProps) {
   const prefersReducedMotion = useReducedMotion();
+
+  // Close on Escape + lock body scroll while the panel is open.
+  useEffect(() => {
+    if (!player) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [player, onClose]);
+
   const fullName = player
     ? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()
     : '';
@@ -96,48 +79,50 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
   const insights = player?.insights?.slice(0, 2) ?? [];
 
   return (
-    <AnimatePresence>
-      {player && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
-            className="fixed inset-0 bg-black/40 z-40"
-            onClick={onClose}
-          />
+    <LazyMotion features={domAnimation}>
+      <AnimatePresence>
+        {player && (
+          <>
+            {/* Backdrop */}
+            <m.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
+              className="fixed inset-0 bg-warm-900/40 backdrop-blur-[2px] z-40"
+              onClick={onClose}
+              aria-hidden
+            />
 
-          {/* Panel — slide-in from right on desktop, slide-up on mobile */}
-          <motion.div
-            key="panel"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 380, damping: 36 })}
-            className="fixed right-0 top-0 h-full w-full sm:w-[400px] bg-cream-100
-                       shadow-2xl z-50 flex flex-col overflow-hidden"
-          >
-            {/* Close button */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-warm-200/80">
-              <span className="text-sm font-medium text-warm-500">Player Details</span>
-              <IconButton variant="default"
-                onClick={onClose}
-                aria-label="Close panel"
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-warm-400
-                           hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200 transition-colors"
-              >
-                <IconX size={18} />
-              </IconButton>
-            </div>
+            {/* Panel — slide-in from right on desktop, slide-up on mobile */}
+            <m.div
+              key="panel"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="peek-panel-title"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 380, damping: 36 })}
+              className="fixed right-0 top-0 h-full w-full sm:w-[420px] bg-cream-100
+                         shadow-2xl z-50 flex flex-col overflow-hidden border-l border-white/30"
+            >
+              {/* Close button */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-warm-200/80">
+                <span id="peek-panel-title" className="text-eyebrow font-semibold uppercase tracking-wide text-warm-500">Player Details</span>
+                <IconButton variant="default"
+                  onClick={onClose}
+                  aria-label="Close player details"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-warm-400
+                             hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200 focus-visible:ring-2 focus-visible:ring-primary-300 transition-colors"
+                >
+                  <IconX size={18} />
+                </IconButton>
+              </div>
 
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto">
-              {!player ? (
-                <Skeleton />
-              ) : (
+              {/* Scrollable content */}
+              <div className="flex-1 overflow-y-auto">
                 <div className="p-5 space-y-5">
                   {/* Hero */}
                   <div className="flex items-start gap-4">
@@ -230,7 +215,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
 
                   {/* Career Stats */}
                   <div>
-                    <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2.5">
+                    <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide mb-2.5">
                       Career Stats
                     </h3>
                     <div className="grid grid-cols-2 gap-2">
@@ -244,7 +229,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                       ].map(({ label, value }) => (
                         <div
                           key={label}
-                          className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-3 shadow-sm"
+                          className="bg-cream-100/75 border border-white/20 backdrop-blur-glass rounded-xl p-3 shadow-glass"
                         >
                           <p className="text-eyebrow text-warm-400 uppercase tracking-wide mb-0.5">{label}</p>
                           <p className="text-lg font-bold text-warm-900 tabular-nums">{value}</p>
@@ -262,7 +247,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                   {/* Insights */}
                   {insights.length > 0 && (
                     <div>
-                      <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2.5">
+                      <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide mb-2.5">
                         Insights
                       </h3>
                       <div className="space-y-2">
@@ -283,25 +268,26 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                     </div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Footer CTA */}
-            {player && (
+              {/* Footer CTA */}
               <div className="p-4 border-t border-warm-200/80 bg-cream-100/68 backdrop-blur-sm">
                 <Link
                   href={`/baseball/dashboard/players/${player.id}`}
-                  className="flex items-center justify-center w-full py-3 px-4
+                  className="group flex items-center justify-center gap-1.5 w-full py-3 px-4
                              bg-primary-600 hover:bg-primary-700 active:bg-primary-800
-                             text-white font-semibold rounded-xl transition-colors"
+                             text-white font-semibold rounded-xl shadow-sm hover:shadow-md
+                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-100
+                             transition-[background-color,box-shadow]"
                 >
-                  View Full Profile →
+                  View Full Profile
+                  <IconArrowRight size={16} className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
                 </Link>
               </div>
-            )}
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+            </m.div>
+          </>
+        )}
+      </AnimatePresence>
+    </LazyMotion>
   );
 }

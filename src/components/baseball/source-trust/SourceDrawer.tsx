@@ -21,6 +21,7 @@
 // =============================================================================
 
 import * as React from 'react';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
@@ -42,11 +43,46 @@ import {
   IconWarning,
 } from '@/components/icons';
 import { cn, formatDateTime } from '@/lib/utils';
+import {
+  DURATION,
+  EASE_CINEMATIC,
+  STAGGER_STEP,
+  useReducedMotionGuard,
+} from '@/lib/coachhelm/v3/motion';
 import { getTrustPresentation, formatConfidence, type TrustIconKey } from './trust-presentation';
 import type {
   SourceDrawerProps,
   SourceProvenance,
 } from './source-trust-types';
+
+/**
+ * Section wrapper that fades + rises into place on open, staggered behind its
+ * siblings. Reduced-motion users get an instant render (no travel). Keeps the
+ * drawer feeling composed rather than dumped on screen.
+ */
+function MotionSection({
+  index,
+  reduce,
+  children,
+}: {
+  index: number;
+  reduce: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <m.div
+      initial={reduce ? false : { opacity: 0, y: 8 }}
+      animate={reduce ? false : { opacity: 1, y: 0 }}
+      transition={{
+        duration: DURATION.medium,
+        ease: EASE_CINEMATIC,
+        delay: index * STAGGER_STEP,
+      }}
+    >
+      {children}
+    </m.div>
+  );
+}
 
 function TrustIcon({ icon, size }: { icon: TrustIconKey; size: number }) {
   switch (icon) {
@@ -135,6 +171,7 @@ function ProvenanceBody({
   confMissing,
   confLow,
   viewerRole,
+  reduce,
 }: {
   provenance: SourceProvenance;
   presentation: ReturnType<typeof getTrustPresentation>;
@@ -143,10 +180,16 @@ function ProvenanceBody({
   confLow: boolean;
   /** When 'player', staff-internal visibility classification is omitted. */
   viewerRole?: 'coach' | 'player';
+  reduce: boolean;
 }) {
   const p = provenance;
   const isAi = presentation.icon === 'sparkles';
   const isConflict = presentation.tone === 'red';
+
+  // Monotonic index so each rendered section staggers in behind the previous,
+  // regardless of which optional sections are present.
+  let sectionIndex = 0;
+  const nextIndex = () => sectionIndex++;
 
   return (
     <div className="px-6 pb-8 space-y-6 overflow-y-auto">
@@ -154,17 +197,19 @@ function ProvenanceBody({
           (not just the header subtitle) so it cannot be skimmed past. Mirrors
           StatVisualFrame's Priority-4 caveat pattern, but red for error. */}
       {isConflict && (
-        <div
-          role="alert"
-          className="flex items-start gap-2 rounded-xl bg-red-50/70 px-3 py-2.5 text-body-sm text-red-800 ring-1 ring-red-600/20"
-        >
-          <IconShieldAlert size={16} className="mt-0.5 flex-shrink-0 text-red-600" />
-          <span className="leading-relaxed">{presentation.caption}</span>
-        </div>
+        <MotionSection index={nextIndex()} reduce={reduce}>
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-xl bg-red-50/70 px-3 py-2.5 text-body-sm text-red-800 ring-1 ring-red-600/20"
+          >
+            <IconShieldAlert size={16} className="mt-0.5 flex-shrink-0 text-red-600" />
+            <span className="leading-relaxed">{presentation.caption}</span>
+          </div>
+        </MotionSection>
       )}
 
       {/* Provenance core */}
-      <div>
+      <MotionSection index={nextIndex()} reduce={reduce}>
         <SectionLabel>Provenance</SectionLabel>
         <div className="rounded-2xl border border-warm-200 bg-cream-50 px-4">
           <DetailRow label="Source" value={fmt(p.sourceName ?? p.ref.label)} />
@@ -217,11 +262,11 @@ function ProvenanceBody({
             />
           )}
         </div>
-      </div>
+      </MotionSection>
 
       {/* Import detail — only when this came from a file */}
       {(p.rawFileName || p.rowNumber != null || p.mappedField) && (
-        <div>
+        <MotionSection index={nextIndex()} reduce={reduce}>
           <SectionLabel>Import detail</SectionLabel>
           <div className="rounded-2xl border border-warm-200 bg-cream-50 px-4">
             <DetailRow label="File" value={fmt(p.rawFileName)} muted={!p.rawFileName} />
@@ -236,7 +281,7 @@ function ProvenanceBody({
               muted={!p.mappedField}
             />
           </div>
-        </div>
+        </MotionSection>
       )}
 
       {/* AI honesty: facts vs interpretation.
@@ -244,10 +289,10 @@ function ProvenanceBody({
           captured, the empty state is more honest than silence ("no facts
           recorded" is itself meaningful to a coach reviewing an AI output). */}
       {isAi && (
-        <div>
+        <MotionSection index={nextIndex()} reduce={reduce}>
           <SectionLabel>What this is built on</SectionLabel>
           {(!p.facts || p.facts.length === 0) && !p.interpretation && (
-            <p className="text-body-sm text-warm-400 leading-relaxed">
+            <p className="text-body-sm text-warm-500 leading-relaxed">
               No source facts were recorded for this AI output.
             </p>
           )}
@@ -274,12 +319,12 @@ function ProvenanceBody({
               </p>
             </div>
           )}
-        </div>
+        </MotionSection>
       )}
 
       {/* Related objects */}
       {p.relatedObjects && p.relatedObjects.length > 0 && (
-        <div>
+        <MotionSection index={nextIndex()} reduce={reduce}>
           <SectionLabel>Related</SectionLabel>
           <div className="rounded-2xl border border-warm-200 bg-cream-50 divide-y divide-warm-100 overflow-clip">
             {p.relatedObjects.map((obj, i) => {
@@ -294,7 +339,10 @@ function ProvenanceBody({
                     </p>
                   </div>
                   {obj.href && (
-                    <IconChevronRight size={16} className="text-warm-300 flex-shrink-0" />
+                    <IconChevronRight
+                      size={16}
+                      className="flex-shrink-0 text-warm-300 transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:text-warm-400"
+                    />
                   )}
                 </>
               );
@@ -302,7 +350,7 @@ function ProvenanceBody({
                 <a
                   key={i}
                   href={obj.href}
-                  className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-warm-50 transition-colors"
+                  className="group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40"
                 >
                   {inner}
                 </a>
@@ -313,12 +361,12 @@ function ProvenanceBody({
               );
             })}
           </div>
-        </div>
+        </MotionSection>
       )}
 
       {/* Audit history */}
       {p.auditHistory && p.auditHistory.length > 0 && (
-        <div>
+        <MotionSection index={nextIndex()} reduce={reduce}>
           <SectionLabel>History</SectionLabel>
           <ol className="space-y-3">
             {p.auditHistory.map((entry, i) => (
@@ -344,7 +392,7 @@ function ProvenanceBody({
               </li>
             ))}
           </ol>
-        </div>
+        </MotionSection>
       )}
     </div>
   );
@@ -357,6 +405,7 @@ export function SourceDrawer({
   provenance,
   viewerRole,
 }: SourceDrawerProps) {
+  const reduce = useReducedMotionGuard();
   const presentation = trust ? getTrustPresentation(trust) : null;
   const conf = formatConfidence(trust?.confidencePct ?? null);
 
@@ -394,14 +443,17 @@ export function SourceDrawer({
             </DrawerHeader>
 
             {provenance ? (
-              <ProvenanceBody
-                provenance={provenance}
-                presentation={presentation}
-                confText={conf.text}
-                confMissing={conf.missing}
-                confLow={conf.low}
-                viewerRole={viewerRole}
-              />
+              <LazyMotion features={domAnimation} strict>
+                <ProvenanceBody
+                  provenance={provenance}
+                  presentation={presentation}
+                  confText={conf.text}
+                  confMissing={conf.missing}
+                  confLow={conf.low}
+                  viewerRole={viewerRole}
+                  reduce={reduce}
+                />
+              </LazyMotion>
             ) : (
               <div className="px-6 pb-8">
                 <EmptyState

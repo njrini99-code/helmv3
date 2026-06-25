@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { IconCheckCircle2, IconAlertCircle } from '@/components/icons';
 import { submitReadinessCheckin } from '@/app/baseball/actions/lifting';
 import { logBodyweight, saveSorenessMap } from '@/app/baseball/actions/lifting-v11';
 
@@ -55,10 +56,11 @@ function ScaleRow({ label, value, onChange, lowLabel, highLabel }: {
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className={`h-9 flex-1 rounded-lg border text-sm font-medium transition-colors ${
+            className={`h-9 flex-1 rounded-lg border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1 ${
               value === n ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'
             }`}
             aria-pressed={value === n}
+            aria-label={`${label}: ${n}`}
           >
             {n}
           </button>
@@ -116,15 +118,33 @@ export function PlayerReadinessClient({ checkDate, existing }: Props) {
 
   if (done) {
     return (
-      <Card className="border-primary-200 bg-primary-50/50">
-        <CardContent className="py-8 text-center">
-          <p className="text-2xl font-semibold text-warm-900">Check-in saved</p>
-          <p className="mt-1 text-sm text-warm-500">Thanks — the staff has what they need before training.</p>
-          <Link href="/baseball/dashboard/lift" className="mt-4 inline-block rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700">
-            Go to Lift
-          </Link>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.24 }}
+      >
+        <Card className="border-primary-200 bg-primary-50/50">
+          <CardContent className="py-10 text-center">
+            <motion.div
+              className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 text-primary-600"
+              initial={prefersReducedMotion ? false : { scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+              aria-hidden
+            >
+              <IconCheckCircle2 size={30} />
+            </motion.div>
+            <p className="mt-4 text-2xl font-semibold tracking-tight text-warm-900">Check-in saved</p>
+            <p className="mt-1 text-sm text-warm-500">Thanks — the staff has what they need before training.</p>
+            <Link
+              href="/baseball/dashboard/lift"
+              className="mt-5 inline-block rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+            >
+              Go to Lift
+            </Link>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 
@@ -136,13 +156,15 @@ export function PlayerReadinessClient({ checkDate, existing }: Props) {
       transition={{ duration: 0.2 }}
     >
       <div>
-        <h1 className="text-2xl font-semibold text-warm-900">Daily check-in</h1>
-        <p className="text-sm text-warm-500">Tell the staff how you feel today. This is not a medical form.</p>
+        <p className="text-eyebrow uppercase text-primary-700">Readiness</p>
+        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-warm-900">Daily check-in</h1>
+        <p className="mt-1 text-sm text-warm-500">Tell the staff how you feel today. This is not a medical form.</p>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
+        <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <IconAlertCircle size={15} className="shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
@@ -166,8 +188,9 @@ export function PlayerReadinessClient({ checkDate, existing }: Props) {
               {ARM_OPTIONS.map((opt) => (
                 <button
                   key={opt} type="button" onClick={() => setArm(opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm capitalize transition-colors ${arm === opt ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'}`}
+                  className={`rounded-full border px-3 py-1.5 text-sm capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1 ${arm === opt ? 'border-primary-500 bg-primary-600 text-white' : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'}`}
                   aria-pressed={arm === opt}
+                  aria-label={`Throwing arm: ${opt}`}
                 >
                   {opt}
                 </button>

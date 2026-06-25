@@ -26,6 +26,7 @@
 // =============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 
 import { Card } from '@/components/ui/card';
@@ -170,12 +171,12 @@ function Header({
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <div className="flex items-center gap-2 text-xs font-medium text-warm-400">
-          <a href="/baseball/dashboard/performance" className="hover:text-primary-700">Performance</a>
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-warm-400">
+          <Link href="/baseball/dashboard/performance" className="rounded transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40">Performance</Link>
           <span aria-hidden>/</span>
-          <span className="text-warm-600">Groups</span>
-        </div>
-        <h1 className="mt-1 text-3xl font-semibold text-warm-900">Strength groups</h1>
+          <span className="text-warm-600" aria-current="page">Groups</span>
+        </nav>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-warm-900">Strength groups</h1>
         <p className="text-sm text-warm-500">
           Segment the room by position, role, readiness, or workload — then publish lifts to a whole
           group at once. {groupCount} active · {roster.length} athletes.
@@ -270,7 +271,7 @@ function GroupListPane({
               <button
                 type="button"
                 onClick={() => onSelect(g.id)}
-                className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors ${
+                className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500/40 ${
                   active ? 'bg-primary-50/60' : 'hover:bg-warm-50'
                 }`}
                 aria-current={active ? 'true' : undefined}
@@ -352,8 +353,8 @@ function AthletePane({ group, roster }: { group: StrengthGroupListItem; roster: 
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-warm-100 px-4 py-3">
         <div>
           <h2 className="text-base font-semibold text-warm-900">{group.name}</h2>
-          <p className="text-xs text-warm-500">
-            {memberIds.size} in group · {roster.length} on roster
+          <p className="text-xs text-warm-500" aria-live="polite">
+            <span className="tabular-nums">{memberIds.size}</span> in group · <span className="tabular-nums">{roster.length}</span> on roster
             {pending && <span className="ml-2 text-primary-600">Saving…</span>}
             {error && <span className="ml-2 text-red-600">{error}</span>}
           </p>
@@ -361,7 +362,7 @@ function AthletePane({ group, roster }: { group: StrengthGroupListItem; roster: 
       </div>
 
       {/* Filter bar (spec L194) */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-warm-50 bg-warm-25/40 px-4 py-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-warm-50 bg-cream-100/40 px-4 py-2">
         <span className="inline-flex items-center gap-1 text-xs font-medium text-warm-400"><IconFilter size={14} /> Filter</span>
         <Input className="h-8 w-40" placeholder="Search name…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <Select
@@ -441,7 +442,11 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
   const [preview, setPreview] = useState<{ matches: RuleMatch[]; empty: boolean } | null>(null);
   const [previewing, startPreview] = useTransition();
   const [saving, startSave] = useTransition();
-  const [msg, setMsg] = useState<string | null>(null);
+  // Message carries a tone so a failure reads red and a success reads green —
+  // the old single string rendered every message (including errors) in green.
+  const [msg, setMsg] = useState<{ text: string; tone: 'success' | 'error' } | null>(null);
+  const ok = (text: string) => setMsg({ text, tone: 'success' });
+  const fail = (text: string) => setMsg({ text, tone: 'error' });
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const isDynamic = group.group_type === 'dynamic';
@@ -476,12 +481,12 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
     startSave(async () => {
       try {
         const upd = await updateStrengthGroup({ groupId: group.id, ruleJson: rule as Record<string, unknown> });
-        if (!upd.success) { setMsg(upd.error ?? 'Could not save the rule.'); return; }
+        if (!upd.success) { fail(upd.error ?? 'Could not save the rule.'); return; }
         const rec = await recomputeDynamicGroup({ groupId: group.id });
-        if (!rec.success) { setMsg(rec.error ?? 'Saved rule, but recompute failed.'); return; }
-        setMsg(`Saved · ${rec.count ?? 0} athletes now match.`);
+        if (!rec.success) { fail(rec.error ?? 'Saved rule, but recompute failed.'); return; }
+        ok(`Saved · ${rec.count ?? 0} athletes now match.`);
       } catch {
-        setMsg('Could not save the rule. Please try again.');
+        fail('Could not save the rule. Please try again.');
       }
     });
   }
@@ -490,8 +495,8 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
     startSave(async () => {
       try {
         const res = await deleteStrengthGroup({ groupId: group.id });
-        if (!res.success) setMsg(res.error ?? 'Could not archive the group.');
-      } catch { setMsg('Could not archive the group.'); }
+        if (!res.success) fail(res.error ?? 'Could not archive the group.');
+      } catch { fail('Could not archive the group.'); }
     });
   }
 
@@ -499,9 +504,9 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
     startSave(async () => {
       try {
         const res = await updateStrengthGroup({ groupId: group.id, groupType: 'dynamic', ruleJson: rule as Record<string, unknown> });
-        if (!res.success) setMsg(res.error ?? 'Could not switch to dynamic.');
-        else setMsg('Now a dynamic group — set a rule and save to populate.');
-      } catch { setMsg('Could not switch to dynamic.'); }
+        if (!res.success) fail(res.error ?? 'Could not switch to dynamic.');
+        else ok('Now a dynamic group — set a rule and save to populate.');
+      } catch { fail('Could not switch to dynamic.'); }
     });
   }
 
@@ -547,7 +552,8 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
                     key={pos}
                     type="button"
                     onClick={() => toggleArray('positions', pos)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                    aria-pressed={Boolean(on)}
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
                       on ? 'border-primary-300 bg-primary-100 text-primary-800' : 'border-warm-200 bg-white text-warm-600 hover:bg-warm-50'
                     }`}
                   >
@@ -569,7 +575,8 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
                     key={opt.value}
                     type="button"
                     onClick={() => toggleArray('availability_statuses', opt.value)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                    aria-pressed={Boolean(on)}
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
                       on ? 'border-primary-300 bg-primary-100 text-primary-800' : 'border-warm-200 bg-white text-warm-600 hover:bg-warm-50'
                     }`}
                   >
@@ -611,7 +618,7 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
           />
 
           {/* Live preview */}
-          <div className="rounded-xl border border-warm-100 bg-warm-25/50 p-3">
+          <div className="rounded-xl border border-warm-100 bg-cream-100/50 p-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wide text-warm-400">Live preview</span>
               <span className="text-xs font-medium text-warm-600">
@@ -634,7 +641,15 @@ function RulePane({ group }: { group: StrengthGroupListItem }) {
             )}
           </div>
 
-          {msg && <p className="text-xs font-medium text-primary-700">{msg}</p>}
+          {msg && (
+            <p
+              role="status"
+              aria-live="polite"
+              className={`text-xs font-medium ${msg.tone === 'error' ? 'text-red-600' : 'text-primary-700'}`}
+            >
+              {msg.text}
+            </p>
+          )}
 
           <div className="flex items-center justify-between gap-2 pt-1">
             <Button variant="ghost" size="sm" leftIcon={<IconTrash size={14} />} onClick={() => setConfirmDelete(true)} disabled={saving}>

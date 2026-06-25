@@ -204,7 +204,7 @@ export function ProgramEditorClient({ tree, assign }: Props) {
         </div>
       )}
       {notice && (
-        <div className="rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 text-sm text-primary-700">
+        <div role="status" aria-live="polite" className="rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 text-sm text-primary-700">
           {notice}
         </div>
       )}
@@ -312,13 +312,13 @@ function ProgramHeader({
   return (
     <Card>
       <CardContent className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-medium text-warm-400">
-          <Link href="/baseball/dashboard/performance" className="hover:text-primary-700">Performance</Link>
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-warm-400">
+          <Link href="/baseball/dashboard/performance" className="rounded transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40">Performance</Link>
           <span aria-hidden>/</span>
-          <Link href="/baseball/dashboard/performance/programs" className="hover:text-primary-700">Programs</Link>
+          <Link href="/baseball/dashboard/performance/programs" className="rounded transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40">Programs</Link>
           <span aria-hidden>/</span>
-          <span className="text-warm-600">{p.name}</span>
-        </div>
+          <span className="text-warm-600" aria-current="page">{p.name}</span>
+        </nav>
 
         {editing ? (
           <div className="space-y-3">
@@ -348,7 +348,8 @@ function ProgramHeader({
         ) : (
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold text-warm-900">{p.name}</h1>
+              <p className="text-eyebrow uppercase text-primary-700">Program</p>
+              <h1 className="mt-0.5 text-2xl font-semibold tracking-tight text-warm-900">{p.name}</h1>
               {p.description && <p className="mt-0.5 max-w-xl text-sm text-warm-500">{p.description}</p>}
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-warm-500">
                 <span className="font-medium text-warm-700">{PHASE_OPTIONS.find((o) => o.value === p.phase)?.label}</span>
@@ -446,7 +447,7 @@ function WeekRail({
                       type="button"
                       title="Duplicate week"
                       aria-label={`Duplicate ${w.name ?? `week ${w.week_number}`}`}
-                      className="rounded-md p-1 text-warm-400 hover:bg-warm-50 hover:text-warm-700 disabled:opacity-50"
+                      className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-50"
                       onClick={() => onDuplicateWeek(w.id)}
                       disabled={pending}
                     >
@@ -456,7 +457,7 @@ function WeekRail({
                       type="button"
                       title="Delete week"
                       aria-label={`Delete ${w.name ?? `week ${w.week_number}`}`}
-                      className="rounded-md p-1 text-warm-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                      className="rounded-md p-1 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:opacity-50"
                       onClick={() => setConfirmWeek(w)}
                       disabled={pending}
                     >
@@ -473,7 +474,8 @@ function WeekRail({
                         <button
                           type="button"
                           onClick={() => onSelectDay(d.id)}
-                          className={`flex-1 truncate rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${
+                          aria-current={active ? 'true' : undefined}
+                          className={`flex-1 truncate rounded-lg px-2 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
                             active
                               ? 'bg-primary-50 font-medium text-primary-700'
                               : 'text-warm-600 hover:bg-warm-50'
@@ -486,7 +488,7 @@ function WeekRail({
                           type="button"
                           title="Duplicate day"
                           aria-label={`Duplicate ${d.name ?? `day ${d.day_number}`}`}
-                          className="rounded-md p-1 text-warm-300 opacity-0 hover:bg-warm-50 hover:text-warm-700 group-hover:opacity-100 disabled:opacity-50"
+                          className="rounded-md p-1 text-warm-300 opacity-0 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 group-hover:opacity-100 disabled:opacity-50"
                           onClick={() => onDuplicateDay(d.id)}
                           disabled={pending}
                         >
@@ -496,7 +498,7 @@ function WeekRail({
                           type="button"
                           title="Delete day"
                           aria-label={`Delete ${d.name ?? `day ${d.day_number}`}`}
-                          className="rounded-md p-1 text-warm-300 opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 disabled:opacity-50"
+                          className="rounded-md p-1 text-warm-300 opacity-0 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 group-hover:opacity-100 disabled:opacity-50"
                           onClick={() => setConfirmDay(d)}
                           disabled={pending}
                         >
@@ -510,7 +512,7 @@ function WeekRail({
                       type="button"
                       onClick={() => onAddDay(w)}
                       disabled={pending || w.days.length >= 7}
-                      className="w-full rounded-lg border border-dashed border-warm-200 px-2 py-1.5 text-left text-xs font-medium text-warm-500 hover:border-primary-200 hover:text-primary-700 disabled:opacity-50"
+                      className="w-full rounded-lg border border-dashed border-warm-200 px-2 py-1.5 text-left text-xs font-medium text-warm-500 transition-colors hover:border-primary-200 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-50"
                     >
                       + Add day{w.days.length >= 7 ? ' (max 7)' : ''}
                     </button>
@@ -791,28 +793,28 @@ function SectionEditor({
             <div className="flex items-center gap-0.5">
               <button
                 type="button" title="Move section up" aria-label="Move section up"
-                className="rounded-md p-1 text-warm-400 hover:bg-warm-50 hover:text-warm-700 disabled:opacity-30"
+                className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-30"
                 onClick={() => moveSection(-1)} disabled={pending || index === 0}
               >
                 <IconChevronUp size={15} />
               </button>
               <button
                 type="button" title="Move section down" aria-label="Move section down"
-                className="rounded-md p-1 text-warm-400 hover:bg-warm-50 hover:text-warm-700 disabled:opacity-30"
+                className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-30"
                 onClick={() => moveSection(1)} disabled={pending || index === count - 1}
               >
                 <IconChevronDown size={15} />
               </button>
               <button
                 type="button" title="Edit section" aria-label="Edit section"
-                className="rounded-md px-2 py-1 text-xs font-medium text-warm-500 hover:bg-warm-50 hover:text-warm-700"
+                className="rounded-md px-2 py-1 text-xs font-medium text-warm-500 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                 onClick={() => setEditing(true)} disabled={pending}
               >
                 Edit
               </button>
               <button
                 type="button" title="Delete section" aria-label="Delete section"
-                className="rounded-md p-1 text-warm-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                className="rounded-md p-1 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:opacity-50"
                 onClick={() => setConfirmDelete(true)} disabled={pending}
               >
                 <IconTrash size={15} />
@@ -940,21 +942,21 @@ function PrescriptionRow({
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
         <button type="button" title="Move up" aria-label="Move exercise up"
-          className="rounded-md p-1 text-warm-400 hover:bg-warm-50 disabled:opacity-30"
+          className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-30"
           onClick={() => move(-1)} disabled={pending || index === 0}>
           <IconChevronUp size={14} />
         </button>
         <button type="button" title="Move down" aria-label="Move exercise down"
-          className="rounded-md p-1 text-warm-400 hover:bg-warm-50 disabled:opacity-30"
+          className="rounded-md p-1 text-warm-400 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 disabled:opacity-30"
           onClick={() => move(1)} disabled={pending || index === count - 1}>
           <IconChevronDown size={14} />
         </button>
-        <button type="button" className="rounded-md px-2 py-1 text-xs font-medium text-warm-500 hover:bg-warm-50 hover:text-warm-700"
+        <button type="button" aria-label="Edit exercise" className="rounded-md px-2 py-1 text-xs font-medium text-warm-500 transition-colors hover:bg-warm-50 hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
           onClick={() => setEditOpen(true)} disabled={pending}>
           Edit
         </button>
         <button type="button" title="Delete exercise" aria-label="Delete exercise"
-          className="rounded-md p-1 text-warm-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+          className="rounded-md p-1 text-warm-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:opacity-50"
           onClick={() => run(() => deleteLiftPrescription({ id: p.id }))} disabled={pending}>
           <IconTrash size={14} />
         </button>

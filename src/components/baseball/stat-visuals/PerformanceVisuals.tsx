@@ -346,7 +346,7 @@ export function PitcherWorkloadOverlay({
               </g>
             );
           })}
-          {readyPath ? <path d={readyPath} fill="none" stroke="#0e7490" strokeWidth={2} /> : null}
+          {readyPath ? <path d={readyPath} fill="none" stroke="#44403c" strokeWidth={2} strokeDasharray="2 2.5" /> : null}
           <AxisX
             y={PLOT_MARGIN.top + innerH}
             x0={PLOT_MARGIN.left}
@@ -360,7 +360,7 @@ export function PitcherWorkloadOverlay({
             { key: 'game', label: 'Game pitches', color: '#16A34A', shape: 'square' },
             { key: 'pen', label: 'Bullpen', color: '#86efac', shape: 'square' },
             { key: 'intent', label: 'High-intent', color: '#d97706', shape: 'square' },
-            { key: 'ready', label: 'Readiness', color: '#0e7490' },
+            { key: 'ready', label: 'Readiness', color: '#44403c' },
           ]}
           className="mt-1 px-1"
         />

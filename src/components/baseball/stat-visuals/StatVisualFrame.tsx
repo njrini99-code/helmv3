@@ -33,11 +33,19 @@
 // =============================================================================
 
 import * as React from 'react';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { IconDatabase, IconInfo, IconLayers } from '@/components/icons';
+import {
+  IconDatabase,
+  IconInfo,
+  IconLayers,
+  IconChartBar,
+  IconCircleDot,
+  IconWarning,
+} from '@/components/icons';
 import { SourceTrustBadge } from '@/components/baseball/source-trust';
 import type {
   SourceTrust,
@@ -208,6 +216,7 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
     const [showTable, setShowTable] = React.useState(false);
     const titleId = React.useId();
     const captionId = React.useId();
+    const reduceMotion = useReducedMotion();
 
     const hasTable = Boolean(tableData && tableData.rows.length > 0);
 
@@ -235,35 +244,39 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
       .join('. ');
 
     return (
-      <Card
-        ref={ref}
-        variant="flat"
-        padding="none"
-        data-slot="stat-visual-frame"
-        data-state={resolvedState}
-        aria-labelledby={titleId}
-        className={cn(
-          // Cream/green glass surface — matches the baseball Stats Center cards.
-          'group/stat relative flex flex-col gap-4 rounded-2xl bg-cream-100/75 backdrop-blur-glass',
-          'border border-warm-200/70 shadow-sm',
-          padding === 'hero' ? 'p-8' : 'p-6',
-          className,
-        )}
-        {...rest}
-      >
+      <LazyMotion features={domAnimation}>
+        <m.div
+          ref={ref}
+          data-slot="stat-visual-frame"
+          data-state={resolvedState}
+          aria-labelledby={titleId}
+          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+          whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className={cn(
+            // Cream/green glass surface — matches the baseball Stats Center cards.
+            'group/stat relative flex flex-col gap-4 rounded-2xl bg-cream-100/75 backdrop-blur-glass',
+            'border border-warm-200/60 shadow-glass',
+            'transition-shadow duration-300 hover:shadow-card-hover',
+            padding === 'hero' ? 'p-8' : 'p-6',
+            className,
+          )}
+          {...rest}
+        >
         {/* Header — title cluster + actions/toggle */}
         <header className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {overline ? (
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-warm-500">
+              <p className="mb-1 text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
                 {overline}
               </p>
             ) : null}
-            <h3 id={titleId} className="truncate text-lg font-semibold text-warm-900">
+            <h3 id={titleId} className="truncate text-lg font-semibold tracking-tight text-warm-900">
               {title}
             </h3>
             {subtitle ? (
-              <p className="mt-0.5 text-sm text-warm-500">{subtitle}</p>
+              <p className="mt-0.5 text-sm leading-snug text-warm-500">{subtitle}</p>
             ) : null}
           </div>
 
@@ -281,7 +294,7 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
             {dataContexts?.map((ctx) => (
               <span
                 key={ctx}
-                className="inline-flex items-center gap-1 rounded-full bg-warm-100 px-2.5 py-1 text-xs font-medium text-warm-700 ring-1 ring-warm-200"
+                className="inline-flex items-center gap-1 rounded-full bg-warm-100/80 px-2.5 py-1 text-xs font-medium text-warm-700 ring-1 ring-warm-200/70"
               >
                 <IconLayers size={12} aria-hidden />
                 {CONTEXT_LABEL[ctx]}
@@ -296,7 +309,7 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
 
             {sample ? (
               <span
-                className="inline-flex items-center gap-1 rounded-full bg-warm-100 px-2.5 py-1 text-xs font-medium text-warm-700 ring-1 ring-warm-200 tabular-nums"
+                className="inline-flex items-center gap-1 rounded-full bg-warm-100/80 px-2.5 py-1 text-xs font-medium text-warm-700 ring-1 ring-warm-200/70 tabular-nums"
                 aria-label={`Sample size ${sample.size} ${sample.unitLabel}`}
               >
                 <IconDatabase size={12} aria-hidden />
@@ -339,7 +352,7 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
         ) : null}
 
         {/* Body — chart / table fallback / state surface */}
-        <div className="relative">
+        <div className="relative" aria-busy={resolvedState === 'loading'}>
           {resolvedState === 'loading' ? (
             <ChartSkeleton height={height} />
           ) : resolvedState !== 'ready' ? (
@@ -365,7 +378,8 @@ export const StatVisualFrame = React.forwardRef<HTMLDivElement, StatVisualFrameP
             </figure>
           )}
         </div>
-      </Card>
+        </m.div>
+      </LazyMotion>
     );
   },
 );
@@ -407,11 +421,47 @@ function ViewToggle({
 }
 
 function ChartSkeleton({ height }: { height: number }) {
-  // Shape-matched shimmer reserving the final chart height (no CLS).
+  // Chart-shaped shimmer: a reserved plot area (no CLS) with faux axis + legend
+  // hints so the loading state reads as "a chart is arriving", not a blank box.
   return (
-    <Skeleton variant="chart" height={height} animation="shimmer" className="w-full rounded-xl" />
+    <div style={{ height }} className="flex w-full flex-col gap-2" aria-hidden>
+      <Skeleton
+        variant="chart"
+        animation="shimmer"
+        className="w-full flex-1 rounded-xl"
+      />
+      <div className="flex items-center gap-3 px-1">
+        <Skeleton variant="line" animation="shimmer" className="h-2.5 w-16 rounded-full" />
+        <Skeleton variant="line" animation="shimmer" className="h-2.5 w-12 rounded-full" />
+        <Skeleton variant="line" animation="shimmer" className="h-2.5 w-20 rounded-full" />
+      </div>
+    </div>
   );
 }
+
+const STATE_META: Record<
+  Exclude<StatVisualState, 'ready' | 'loading'>,
+  { Icon: typeof IconChartBar; iconWrap: string; iconColor: string; tone: string }
+> = {
+  empty: {
+    Icon: IconChartBar,
+    iconWrap: 'bg-warm-100',
+    iconColor: 'text-warm-400',
+    tone: 'border-warm-200 bg-warm-50/60',
+  },
+  'insufficient-data': {
+    Icon: IconCircleDot,
+    iconWrap: 'bg-primary-600/10',
+    iconColor: 'text-primary-600',
+    tone: 'border-warm-200 bg-cream-50/70',
+  },
+  error: {
+    Icon: IconWarning,
+    iconWrap: 'bg-amber-500/12',
+    iconColor: 'text-amber-600',
+    tone: 'border-amber-200/70 bg-amber-50/40',
+  },
+};
 
 function StateSurface({
   height,
@@ -424,25 +474,61 @@ function StateSurface({
   message: string;
   sample?: StatVisualSample;
 }) {
+  const meta = STATE_META[state];
+  const { Icon } = meta;
+
   // Insufficient-data carries the concrete shortfall so the coach knows the bar.
   const detail =
     state === 'insufficient-data' && sample?.minForRead
-      ? `${sample.size.toLocaleString()} of ${sample.minForRead.toLocaleString()} ${sample.unitLabel} captured. More data appears here as it lands.`
+      ? `${sample.size.toLocaleString()} of ${sample.minForRead.toLocaleString()} ${sample.unitLabel} captured. More appears here as it lands.`
       : state === 'error'
-        ? 'Try again, or check the source coverage board.'
+        ? 'Try again, or check the source coverage board for a gap.'
         : 'Data appears here once it’s captured from a connected source.';
+
+  // For insufficient-data, render an honest progress bar toward the read bar.
+  const progress =
+    state === 'insufficient-data' && sample?.minForRead && sample.minForRead > 0
+      ? Math.max(0, Math.min(1, sample.size / sample.minForRead))
+      : null;
 
   return (
     <div
       style={{ minHeight: height }}
-      role="status"
+      role={state === 'error' ? 'alert' : 'status'}
       className={cn(
-        'flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-6 text-center',
-        'border border-dashed border-warm-200 bg-warm-50/60',
+        'flex w-full flex-col items-center justify-center gap-2 rounded-xl px-6 py-8 text-center',
+        'border border-dashed',
+        meta.tone,
       )}
     >
-      <span className="text-sm font-medium text-warm-700">{message}</span>
-      <span className="max-w-sm text-xs text-warm-500">{detail}</span>
+      <span
+        className={cn(
+          'mb-0.5 inline-flex h-10 w-10 items-center justify-center rounded-full',
+          meta.iconWrap,
+        )}
+      >
+        <Icon size={18} className={meta.iconColor} aria-hidden />
+      </span>
+      <span className="text-sm font-semibold text-warm-800">{message}</span>
+      <span className="max-w-sm text-xs leading-relaxed text-warm-500">{detail}</span>
+
+      {progress !== null ? (
+        <div className="mt-1 w-full max-w-[200px]">
+          <div
+            className="h-1.5 w-full overflow-hidden rounded-full bg-warm-200/70"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress * 100)}
+            aria-label="Progress toward a reliable read"
+          >
+            <div
+              className="h-full rounded-full bg-primary-500 transition-[width] duration-500 ease-out"
+              style={{ width: `${progress * 100}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

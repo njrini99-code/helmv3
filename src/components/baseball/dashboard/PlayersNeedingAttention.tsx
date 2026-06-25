@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShineEffect } from '@/components/ui/shine-effect';
+import { Button } from '@/components/ui/button';
 import {
   IconWarning,
   IconChevronRight,
@@ -11,12 +13,37 @@ import {
   IconClock,
   IconVideo,
   IconCheck,
+  IconAlertCircle,
+  IconRefresh,
 } from '@/components/icons';
 import type { AttentionItem } from '@/app/baseball/actions/team-dashboard';
 
 interface PlayersNeedingAttentionProps {
   data: AttentionItem[];
   loading?: boolean;
+  /** Truthy when the dashboard hook failed. Renders the recoverable error face. */
+  error?: boolean;
+  /** Retry handler — typically the hook's `refetch`. */
+  onRetry?: () => void;
+}
+
+/** Shared header so loading / error / empty / content read identically. */
+function AttentionHeader({ totalCount }: { totalCount?: number }) {
+  return (
+    <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100/50">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+          <IconWarning size={16} className="text-amber-600" />
+        </div>
+        <h3 className="font-semibold text-warm-900 tracking-tight">Needs Attention</h3>
+      </div>
+      {totalCount != null && totalCount > 0 && (
+        <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full tabular-nums">
+          {totalCount} total
+        </span>
+      )}
+    </div>
+  );
 }
 
 const typeConfig: Record<AttentionItem['type'], {
@@ -66,9 +93,9 @@ function AttentionCard({ item }: { item: AttentionItem }) {
   const Icon = config.icon;
 
   return (
-    <Link 
+    <Link
       href={config.href}
-      className="flex items-center gap-3 p-3 rounded-xl border border-warm-100 bg-white hover:border-warm-200 hover:shadow-sm transition-all group"
+      className="flex items-center gap-3 p-3 rounded-xl border border-warm-100 bg-cream-50 hover:border-warm-200 hover:shadow-sm transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
     >
       <div className={`w-10 h-10 rounded-lg ${config.bgColor} flex items-center justify-center shrink-0`}>
         <Icon size={18} className={config.color} />
@@ -82,27 +109,24 @@ function AttentionCard({ item }: { item: AttentionItem }) {
         </div>
         <p className="text-xs text-warm-500 truncate mt-0.5">{item.description}</p>
       </div>
-      <IconChevronRight 
-        size={16} 
-        className="text-warm-300 group-hover:text-warm-500 transition-colors shrink-0" 
+      <IconChevronRight
+        size={16}
+        className="text-warm-300 group-hover:text-warm-500 group-hover:translate-x-0.5 transition-all motion-reduce:transition-none shrink-0"
       />
     </Link>
   );
 }
 
-export function PlayersNeedingAttention({ data, loading }: PlayersNeedingAttentionProps) {
+export function PlayersNeedingAttention({ data, loading, error, onRetry }: PlayersNeedingAttentionProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   if (loading) {
     return (
       <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
-        <div className="px-5 py-4 border-b border-warm-100/50">
-          <div className="flex items-center gap-2">
-            <Skeleton variant="rectangular" width={20} height={20} className="rounded" />
-            <Skeleton variant="text" width={120} height={18} />
-          </div>
-        </div>
+        <AttentionHeader />
         <div className="p-4 space-y-3">
-          {[1, 2, 3, 4].map(i => (
+          {[0, 1, 2, 3].map(i => (
             <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-warm-100">
               <Skeleton variant="rectangular" width={40} height={40} className="rounded-lg" />
               <div className="flex-1">
@@ -116,22 +140,39 @@ export function PlayersNeedingAttention({ data, loading }: PlayersNeedingAttenti
     );
   }
 
+  if (error) {
+    return (
+      <div className="relative glass-standard rounded-2xl overflow-clip">
+        <ShineEffect />
+        <AttentionHeader />
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="flex flex-col items-center justify-center py-10 px-4 text-center"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-destructive/10 flex items-center justify-center mb-3">
+            <IconAlertCircle size={22} className="text-destructive" />
+          </div>
+          <h4 className="text-sm font-medium text-warm-900 mb-1">Couldn&apos;t load alerts</h4>
+          <p className="text-xs text-warm-500 max-w-[220px] mb-3">
+            This is usually temporary — your roster is safe. Try again in a moment.
+          </p>
+          {onRetry && (
+            <Button variant="secondary" size="sm" onClick={onRetry} leftIcon={<IconRefresh size={14} />}>
+              Try again
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const total = data.reduce((acc, item) => acc + item.count, 0);
+
   return (
     <div className="relative glass-standard rounded-2xl overflow-clip">
       <ShineEffect />
-      <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100/50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-            <IconWarning size={16} className="text-amber-600" />
-          </div>
-          <h3 className="font-semibold text-warm-900 tracking-tight">Needs Attention</h3>
-        </div>
-        {data.length > 0 && (
-          <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-            {data.reduce((acc, item) => acc + item.count, 0)} total
-          </span>
-        )}
-      </div>
+      <AttentionHeader totalCount={total} />
 
       <div className="p-4">
         {data.length === 0 ? (
@@ -139,17 +180,26 @@ export function PlayersNeedingAttention({ data, loading }: PlayersNeedingAttenti
             <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mb-3">
               <IconCheck size={24} className="text-primary-600" />
             </div>
-            <h4 className="text-sm font-medium text-warm-900 mb-1">All clear!</h4>
+            <h4 className="text-sm font-medium text-warm-900 mb-1">All clear</h4>
             <p className="text-xs text-warm-500 max-w-[200px]">
-              No players need immediate attention right now
+              No players need immediate attention right now.
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {data.map(item => (
-              <AttentionCard key={item.type} item={item} />
-            ))}
-          </div>
+          <LazyMotion features={domAnimation} strict>
+            <ul className="space-y-2">
+              {data.map((item, index) => (
+                <m.li
+                  key={item.type}
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: prefersReducedMotion ? 0 : index * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <AttentionCard item={item} />
+                </m.li>
+              ))}
+            </ul>
+          </LazyMotion>
         )}
       </div>
     </div>

@@ -19,6 +19,7 @@
 // =============================================================================
 
 import { useState, useTransition } from 'react';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -128,12 +129,16 @@ function Field({
 
 function SectionCard({
   icon,
+  eyebrow,
   title,
   subtitle,
   children,
   anchorId,
+  index = 0,
+  reduceMotion,
 }: {
   icon: React.ReactNode;
+  eyebrow?: string;
   title: string;
   subtitle?: string;
   children: React.ReactNode;
@@ -144,22 +149,38 @@ function SectionCard({
    * scroll-mt keeps the section clear of the sticky header on jump.
    */
   anchorId?: string;
+  index?: number;
+  reduceMotion?: boolean | null;
 }) {
   return (
-    <Card variant="glass" id={anchorId} className={anchorId ? 'scroll-mt-24' : undefined}>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <span className="text-warm-600">{icon}</span>
-          <div>
-            <h2 className="font-semibold text-warm-900">{title}</h2>
-            {subtitle && (
-              <p className="text-sm leading-relaxed text-warm-500">{subtitle}</p>
-            )}
+    <m.div
+      initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.18, delay: reduceMotion ? 0 : Math.min(index * 0.04, 0.2) }}
+    >
+      <Card variant="glass" id={anchorId} className={anchorId ? 'scroll-mt-24' : undefined}>
+        <CardHeader>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary-200 bg-primary-50 text-primary-600">
+              {icon}
+            </span>
+            <div className="min-w-0">
+              {eyebrow && (
+                <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-warm-400">
+                  {eyebrow}
+                </p>
+              )}
+              <h2 className="font-semibold text-warm-900">{title}</h2>
+              {subtitle && (
+                <p className="text-sm leading-relaxed text-warm-500">{subtitle}</p>
+              )}
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">{children}</CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="space-y-3">{children}</CardContent>
+      </Card>
+    </m.div>
   );
 }
 
@@ -169,6 +190,7 @@ function SectionCard({
 
 export function ProgramSettingsClient({ data }: Props) {
   const { showToast } = useToast();
+  const reduceMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
   const [settings, setSettings] = useState<BaseballProgramSettings>(data.settings);
   const [programType, setProgramType] = useState<BaseballProgramType>(
@@ -290,7 +312,7 @@ export function ProgramSettingsClient({ data }: Props) {
   }
 
   return (
-    <>
+    <LazyMotion features={domAnimation}>
       <Header
         title="Program Settings"
         subtitle={`${data.teamName} • ${data.variant.label} mode`}
@@ -314,9 +336,12 @@ export function ProgramSettingsClient({ data }: Props) {
         {/* --- PROGRAM IDENTITY ---------------------------------------------- */}
         <SectionCard
           anchorId="program-identity"
-          icon={<IconFlag size={20} />}
+          icon={<IconFlag size={18} />}
+          eyebrow="Identity"
           title="Program Identity"
           subtitle="The name, location, season, and access posture for your program. Used across reports, schedules, and (when enabled) the public profile."
+          index={0}
+          reduceMotion={reduceMotion}
         >
           <Field label="Program name">
             <Input
@@ -450,9 +475,12 @@ export function ProgramSettingsClient({ data }: Props) {
 
         {/* --- PROGRAM TYPE (the controlling setting) -------------------------- */}
         <SectionCard
-          icon={<IconBuilding size={20} />}
+          icon={<IconBuilding size={18} />}
+          eyebrow="Mode"
           title="Program Type"
           subtitle="Controls default navigation, terminology, feature defaults, and onboarding. Switching modes never overwrites settings you've already saved."
+          index={1}
+          reduceMotion={reduceMotion}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {variants.map((v) => {
@@ -490,9 +518,12 @@ export function ProgramSettingsClient({ data }: Props) {
         {/* --- PLAYER ACCESS -------------------------------------------------- */}
         <SectionCard
           anchorId="player-access"
-          icon={<IconUsers size={20} />}
+          icon={<IconUsers size={18} />}
+          eyebrow="Access"
           title="Player Access"
           subtitle={`What ${term.rosterNoun.toLowerCase()} members can do in their account.`}
+          index={2}
+          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="Require invite to join"
@@ -541,9 +572,12 @@ export function ProgramSettingsClient({ data }: Props) {
 
         {/* --- MODULES ------------------------------------------------------- */}
         <SectionCard
-          icon={<IconGraduationCap size={20} />}
+          icon={<IconGraduationCap size={18} />}
+          eyebrow="Surfaces"
           title="Modules"
           subtitle="Turn the major surfaces on or off for this program."
+          index={3}
+          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="Academics & class conflicts"
@@ -599,9 +633,12 @@ export function ProgramSettingsClient({ data }: Props) {
         {/* --- GUARDIAN ACCESS ----------------------------------------------- */}
         <SectionCard
           anchorId="guardian-access"
-          icon={<IconShield size={20} />}
+          icon={<IconShield size={18} />}
+          eyebrow="Family"
           title="Guardian Access"
           subtitle="Optional family communication. Guardians never see staff notes, staff AI, or other players' data."
+          index={4}
+          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="Enable guardian access"
@@ -632,9 +669,12 @@ export function ProgramSettingsClient({ data }: Props) {
         {/* --- SCOUT / SHOWCASE ACCESS --------------------------------------- */}
         <SectionCard
           anchorId="showcase-profile"
-          icon={<IconUsers size={20} />}
+          icon={<IconUsers size={18} />}
+          eyebrow="Exposure"
           title="Scout & Showcase Access"
           subtitle="Controls for scout packets, verified-metric display, and exports."
+          index={5}
+          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="Enable scout access"
@@ -685,9 +725,12 @@ export function ProgramSettingsClient({ data }: Props) {
         {/* --- AI SETTINGS --------------------------------------------------- */}
         <SectionCard
           anchorId="ai"
-          icon={<IconBrain size={20} />}
+          icon={<IconBrain size={18} />}
+          eyebrow="Intelligence"
           title="AI Settings"
           subtitle="Every AI output cites its sources, stores a confidence, and respects visibility. Player-visible AI requires staff approval."
+          index={6}
+          reduceMotion={reduceMotion}
         >
           <ToggleRow
             label="AI enabled"
@@ -751,8 +794,9 @@ export function ProgramSettingsClient({ data }: Props) {
                   value={settings.ai_confidence_threshold}
                   disabled={!canEdit || !settings.ai_enabled}
                   onChange={(e) => patch('ai_confidence_threshold', Number(e.target.value))}
-                  className="flex-1 accent-primary-600 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="flex-1 cursor-pointer accent-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-70"
                   aria-label="AI confidence threshold"
+                  aria-valuetext={`${Math.round(settings.ai_confidence_threshold * 100)} percent`}
                 />
                 <span className="w-12 shrink-0 text-right text-sm font-semibold tabular-nums text-warm-900">
                   {Math.round(settings.ai_confidence_threshold * 100)}%
@@ -800,9 +844,12 @@ export function ProgramSettingsClient({ data }: Props) {
         {/* --- NOTIFICATIONS -------------------------------------------------- */}
         <SectionCard
           anchorId="notifications"
-          icon={<IconBell size={20} />}
+          icon={<IconBell size={18} />}
+          eyebrow="Alerts"
           title="Notifications"
           subtitle="Program-level notification defaults. Members can refine their own preferences. In-app channel is live; email and push arrive in a later wave."
+          index={7}
+          reduceMotion={reduceMotion}
         >
           {/* Quiet hours */}
           <div className="p-3 rounded-lg bg-warm-50 space-y-3">
@@ -886,23 +933,34 @@ export function ProgramSettingsClient({ data }: Props) {
         {/* --- APPEARANCE & BRAND -------------------------------------------- */}
         <SectionCard
           anchorId="appearance"
-          icon={<IconPalette size={20} />}
+          icon={<IconPalette size={18} />}
+          eyebrow="Brand"
           title="Appearance & Brand"
           subtitle="Your logo and brand colors, plus a single accent and theme. The product keeps its readable cream-and-green base — brand color is used sparingly and status colors never change."
+          index={8}
+          reduceMotion={reduceMotion}
         >
           {/* Logo + brand colors live on the team record, so they save with the
               identity action. Brand accent + theme live on the settings doc. */}
           <Field label="Logo URL" hint="A square PNG/SVG reads best.">
             <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-warm-200 bg-cream-50 text-warm-400">
-                {identity.logo_url ? (
+              <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-warm-200 bg-cream-50 text-warm-400">
+                {/* Placeholder sits underneath; a broken URL reveals it because the
+                    <img> hides itself on error rather than showing a broken glyph. */}
+                <IconImage size={20} aria-hidden />
+                {identity.logo_url && (
                   <img
+                    key={identity.logo_url}
                     src={identity.logo_url}
                     alt="Program logo preview"
-                    className="h-full w-full object-contain"
+                    className="absolute inset-0 h-full w-full bg-cream-50 object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                    onLoad={(e) => {
+                      e.currentTarget.style.display = 'block';
+                    }}
                   />
-                ) : (
-                  <IconImage size={20} />
                 )}
               </span>
               <Input
@@ -1038,9 +1096,12 @@ export function ProgramSettingsClient({ data }: Props) {
         {/* --- DATA RETENTION & DEMO ----------------------------------------- */}
         <SectionCard
           anchorId="data-retention"
-          icon={<IconDatabase size={20} />}
+          icon={<IconDatabase size={18} />}
+          eyebrow="Lifecycle"
           title="Data Retention & Demo"
           subtitle="How long imports and audit records are kept, plus demo mode."
+          index={9}
+          reduceMotion={reduceMotion}
         >
           <div className="p-3 rounded-lg bg-warm-50">
             <p className="font-medium text-warm-900 mb-2">Season archive policy</p>
@@ -1086,6 +1147,6 @@ export function ProgramSettingsClient({ data }: Props) {
           </div>
         )}
       </div>
-    </>
+    </LazyMotion>
   );
 }

@@ -17,6 +17,7 @@
 // =============================================================================
 
 import { useState, useTransition } from 'react';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -55,6 +56,7 @@ export function SeasonSettingsClient({ data }: Props) {
   const [newPhase, setNewPhase] = useState<BaseballSeasonPhase>('preseason');
 
   const canEdit = data.viewerCanManageSettings;
+  const reduceMotion = useReducedMotion();
 
   const refreshLocal = (updater: (prev: BaseballSeason[]) => BaseballSeason[]) =>
     setSeasons(updater);
@@ -165,7 +167,7 @@ export function SeasonSettingsClient({ data }: Props) {
   };
 
   return (
-    <>
+    <LazyMotion features={domAnimation}>
       <Header
         title="Season Settings"
         subtitle="Phases, the current season, and what each season runs."
@@ -194,14 +196,16 @@ export function SeasonSettingsClient({ data }: Props) {
                 onChange={(e) => setNewLabel(e.target.value)}
               />
               <div>
-                <p className="font-medium text-warm-900 mb-2 text-sm">Phase</p>
-                <div className="flex flex-wrap gap-2">
+                <p id="new-season-phase-label" className="font-medium text-warm-900 mb-2 text-sm">Phase</p>
+                <div className="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="new-season-phase-label">
                   {BASEBALL_SEASON_PHASES.map((phase) => (
                     <Button
                       key={phase}
                       type="button"
                       variant="ghost"
                       size="sm"
+                      role="radio"
+                      aria-checked={newPhase === phase}
                       onClick={() => setNewPhase(phase)}
                       className={cn(
                         'rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors',
@@ -238,8 +242,14 @@ export function SeasonSettingsClient({ data }: Props) {
             }
           />
         ) : (
-          seasons.map((season) => (
-            <Card key={season.id} variant="glass">
+          seasons.map((season, i) => (
+            <m.div
+              key={season.id}
+              initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.18, delay: reduceMotion ? 0 : Math.min(i * 0.04, 0.2) }}
+            >
+            <Card variant="glass">
               <CardHeader>
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -289,13 +299,19 @@ export function SeasonSettingsClient({ data }: Props) {
                 {canEdit && season.status !== 'archived' && (
                   <div>
                     <p className="font-medium text-warm-900 mb-2 text-sm">Phase</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div
+                      className="flex flex-wrap gap-2"
+                      role="radiogroup"
+                      aria-label={`Phase for ${season.label}`}
+                    >
                       {BASEBALL_SEASON_PHASES.map((phase) => (
                         <Button
                           key={phase}
                           type="button"
                           variant="ghost"
                           size="sm"
+                          role="radio"
+                          aria-checked={season.phase === phase}
                           disabled={isPending}
                           onClick={() => handlePhase(season.id, phase)}
                           className={cn(
@@ -333,9 +349,10 @@ export function SeasonSettingsClient({ data }: Props) {
                 </div>
               </CardContent>
             </Card>
+            </m.div>
           ))
         )}
       </div>
-    </>
+    </LazyMotion>
   );
 }

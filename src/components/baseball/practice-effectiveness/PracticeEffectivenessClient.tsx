@@ -117,6 +117,7 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
   const [filter, setFilter] = useState<ReviewFilter>('all');
   const [isPending, startTransition] = useTransition();
   const [runMsg, setRunMsg] = useState<string | null>(null);
+  const [runFailed, setRunFailed] = useState(false);
 
   const filtered = useMemo(() => {
     return reviews.filter((r) => {
@@ -134,9 +135,11 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
 
   const handleRun = () => {
     setRunMsg(null);
+    setRunFailed(false);
     startTransition(async () => {
       const res = await runPracticeEffectiveness();
       if (!res.success) {
+        setRunFailed(true);
         setRunMsg(res.error ?? 'Could not run the engine. Try again.');
         return;
       }
@@ -158,31 +161,51 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
     <LazyMotion features={domAnimation}>
       <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         {/* Header */}
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <m.div
+          {...fadeIn}
+          transition={reduceMotion ? undefined : { duration: 0.3 }}
+          className="mb-6 flex flex-wrap items-start justify-between gap-3"
+        >
           <div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary-600">
+              CoachHelm
+            </p>
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-50 text-primary-600 ring-1 ring-primary-100">
                 <IconGauge size={20} />
-              </div>
-              <h1 className="text-2xl font-semibold text-warm-900 sm:text-3xl">
+              </span>
+              <h1 className="text-2xl font-semibold tracking-tight text-warm-900 sm:text-3xl">
                 Practice Effectiveness
               </h1>
             </div>
-            <p className="mt-1 max-w-2xl text-sm text-warm-500">
+            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-warm-500">
               Did what you practiced transfer to performance? CoachHelm measures
               each focus area against later game, scrimmage, and practice movement —
               and tells you honestly when it can&rsquo;t know yet.
             </p>
           </div>
-          <Button onClick={handleRun} disabled={isPending} variant="primary" size="sm">
-            <IconSparkles size={16} className="mr-1.5" />
+          <Button onClick={handleRun} isLoading={isPending} variant="primary" size="sm">
+            {!isPending && <IconSparkles size={16} className="mr-1.5" />}
             {isPending ? 'Measuring…' : 'Re-measure'}
           </Button>
-        </div>
+        </m.div>
 
         {runMsg && (
-          <div className="mb-4 rounded-xl border border-primary-100 bg-primary-50/60 px-4 py-2.5 text-sm text-primary-800">
-            {runMsg}
+          <div
+            role="status"
+            aria-live="polite"
+            className={`mb-4 flex items-start gap-2 rounded-xl border px-4 py-2.5 text-sm ${
+              runFailed
+                ? 'border-error/30 bg-error/5 text-error'
+                : 'border-primary-100 bg-primary-50/60 text-primary-800'
+            }`}
+          >
+            {runFailed ? (
+              <IconXCircle size={16} className="mt-0.5 shrink-0" />
+            ) : (
+              <IconCheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary-500" />
+            )}
+            <span>{runMsg}</span>
           </div>
         )}
 
@@ -200,21 +223,29 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
         </Card>
 
         {/* Stat strip */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <m.div
+          {...fadeIn}
+          transition={reduceMotion ? undefined : { duration: 0.3, delay: 0.05 }}
+          className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4"
+        >
           <StatTile icon={<IconActivity size={18} />} label="Reviews" value={summary.totalReviews} />
           <StatTile icon={<IconTrendingUp size={18} />} label="Improved" value={summary.improved} tone="success" />
           <StatTile icon={<IconClock size={18} />} label="Too early" value={summary.tooEarly} tone="warning" />
           <StatTile icon={<IconInfo size={18} />} label="Need more sample" value={summary.insufficient + summary.notTracked} />
-        </div>
+        </m.div>
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Reviews column */}
           <section className="lg:col-span-2">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-warm-400">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-warm-500">
                 Measurements
               </h2>
-              <div className="flex items-center gap-1 rounded-lg border border-warm-200 bg-cream-50 p-0.5">
+              <div
+                className="flex items-center gap-1 rounded-lg border border-warm-200 bg-cream-50 p-0.5"
+                role="tablist"
+                aria-label="Filter measurements"
+              >
                 {(
                   [
                     ['all', 'All'],
@@ -226,9 +257,13 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
                   <button
                     key={f}
                     type="button"
+                    role="tab"
+                    aria-selected={filter === f}
                     onClick={() => setFilter(f)}
-                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                      filter === f ? 'bg-primary-600 text-white' : 'text-warm-600 hover:bg-warm-100'
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 ${
+                      filter === f
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'text-warm-600 hover:bg-warm-100'
                     }`}
                   >
                     {lbl}
@@ -268,17 +303,30 @@ export function PracticeEffectivenessClient({ reviews, focusRollup, summary }: P
 
           {/* Focus roll-up column */}
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-warm-400">
+            <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-warm-500">
               By focus area
             </h2>
             {focusRollup.length === 0 ? (
               <Card variant="flat" padding="lg" className="text-center">
-                <p className="text-sm text-warm-500">No focus areas measured yet.</p>
+                <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-warm-100 text-warm-400">
+                  <IconActivity size={20} />
+                </div>
+                <p className="text-sm font-medium text-warm-700">No focus areas yet</p>
+                <p className="mx-auto mt-1 max-w-[14rem] text-xs leading-relaxed text-warm-400">
+                  Once you measure objectives, each focus area rolls up here with its
+                  transfer signal.
+                </p>
               </Card>
             ) : (
               <ol className="space-y-2">
-                {focusRollup.map((f) => (
-                  <FocusRollupItem key={`${f.focusArea}-${f.metricId ?? ''}`} focus={f} />
+                {focusRollup.map((f, idx) => (
+                  <m.li
+                    key={`${f.focusArea}-${f.metricId ?? ''}`}
+                    {...fadeIn}
+                    transition={reduceMotion ? undefined : { delay: Math.min(idx * 0.03, 0.3) }}
+                  >
+                    <FocusRollupItem focus={f} />
+                  </m.li>
                 ))}
               </ol>
             )}
@@ -304,17 +352,19 @@ function StatTile({
 }) {
   const accent =
     tone === 'success'
-      ? 'bg-primary-50 text-primary-600'
+      ? 'bg-primary-50 text-primary-600 ring-1 ring-primary-100'
       : tone === 'warning'
-        ? 'bg-amber-50 text-amber-600'
-        : 'bg-warm-100 text-warm-500';
+        ? 'bg-amber-50 text-amber-600 ring-1 ring-amber-100'
+        : 'bg-warm-100 text-warm-500 ring-1 ring-warm-200/60';
   return (
-    <Card variant="raised" padding="md">
+    <Card variant="raised" padding="md" className="transition-shadow hover:shadow-card">
       <div className="flex items-center gap-3">
-        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${accent}`}>{icon}</div>
-        <div>
-          <p className="text-xl font-semibold tabular-nums text-warm-900">{value}</p>
-          <p className="text-xs text-warm-500">{label}</p>
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${accent}`}>
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xl font-semibold tabular-nums tracking-tight text-warm-900">{value}</p>
+          <p className="truncate text-xs text-warm-500">{label}</p>
         </div>
       </div>
     </Card>
@@ -346,7 +396,11 @@ function ReviewCard({
   };
 
   return (
-    <Card variant="raised" padding="md" className={resolved ? 'opacity-70' : undefined}>
+    <Card
+      variant="raised"
+      padding="md"
+      className={resolved ? 'opacity-70 transition-opacity' : 'transition-shadow hover:shadow-card'}
+    >
       <CardContent className="p-0">
         <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <Badge variant={dir.tone}>
@@ -359,7 +413,7 @@ function ReviewCard({
           )}
         </div>
 
-        <h3 className="font-semibold text-warm-900">{review.focus_area}</h3>
+        <h3 className="font-semibold tracking-tight text-warm-900">{review.focus_area}</h3>
         <p className="mt-0.5 text-xs text-warm-400">
           {review.metricLabel}
           {review.practice_title ? ` · ${review.practice_title}` : ''} ·{' '}
@@ -443,7 +497,7 @@ function FocusRollupItem({ focus }: { focus: EffectivenessFocusRollupView }) {
       : 'border-warm-100 bg-cream-50';
 
   return (
-    <li className={`rounded-xl border p-3 ${tone}`}>
+    <div className={`rounded-xl border p-3 transition-colors ${tone}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-warm-800">{focus.focusArea}</p>
@@ -469,6 +523,6 @@ function FocusRollupItem({ focus }: { focus: EffectivenessFocusRollupView }) {
           <span>avg {Math.round(focus.meanConfidence * 100)}%</span>
         )}
       </div>
-    </li>
+    </div>
   );
 }

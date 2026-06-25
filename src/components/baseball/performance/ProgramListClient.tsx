@@ -85,7 +85,7 @@ function ProgramCard({ program }: { program: LiftProgramListItem }) {
   return (
     <Link
       href={`/baseball/dashboard/performance/programs/${program.id}`}
-      className="group block rounded-2xl border border-warm-100 bg-white/70 p-4 transition-all hover:border-primary-200 hover:bg-white hover:shadow-card-hover"
+      className="group block rounded-2xl border border-warm-100 bg-white/70 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-200 hover:bg-white hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 motion-reduce:hover:translate-y-0"
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-base font-semibold text-warm-900 group-hover:text-primary-700">
@@ -182,14 +182,14 @@ export function ProgramListClient({ programs }: Props) {
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-xs font-medium text-warm-400">
-            <Link href="/baseball/dashboard/performance" className="hover:text-primary-700">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-warm-400">
+            <Link href="/baseball/dashboard/performance" className="rounded transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40">
               Performance
             </Link>
             <span aria-hidden>/</span>
-            <span className="text-warm-600">Programs</span>
-          </div>
-          <h1 className="mt-1 text-3xl font-semibold text-warm-900">Training programs</h1>
+            <span className="text-warm-600" aria-current="page">Programs</span>
+          </nav>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-warm-900">Training programs</h1>
           <p className="text-sm text-warm-500">
             Build macrocycles, weeks, and lift days. Publish a day to materialize the weight-room board.
           </p>

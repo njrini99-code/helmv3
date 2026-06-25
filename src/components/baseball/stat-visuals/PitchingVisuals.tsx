@@ -237,7 +237,11 @@ export function PitchShapeMap({
                   fillOpacity={0.85}
                   stroke="white"
                   strokeWidth={0.5}
-                  className={onPointActivate ? 'cursor-pointer' : undefined}
+                  className={
+                    onPointActivate
+                      ? 'cursor-pointer transition-[stroke] duration-150 hover:stroke-warm-900'
+                      : undefined
+                  }
                   onClick={onPointActivate ? () => onPointActivate(b.ids) : undefined}
                 >
                   <title>{`${b.count} pitches`}</title>
@@ -403,7 +407,16 @@ export function CommandHeatmap({
                   strokeWidth={1}
                   strokeOpacity={0.7}
                 />
-                <circle cx={nx(v.targetX as number)} cy={ny(v.targetY as number)} r={2} fill="#0e7490" />
+                {/* Intended target as a small diamond (shape-distinct from the
+                    round actual-location dots — never color-only). */}
+                <rect
+                  x={nx(v.targetX as number) - 2.5}
+                  y={ny(v.targetY as number) - 2.5}
+                  width={5}
+                  height={5}
+                  fill="#44403c"
+                  transform={`rotate(45 ${nx(v.targetX as number)} ${ny(v.targetY as number)})`}
+                />
               </g>
             ))}
         </svg>
@@ -413,7 +426,7 @@ export function CommandHeatmap({
           { key: 'loc', label: 'Actual location', color: greenHeat(0.6) },
           ...(showMissVectors && withTarget.length > 0
             ? ([
-                { key: 'target', label: 'Intended target', color: '#0e7490' },
+                { key: 'target', label: 'Intended target', color: '#44403c', shape: 'diamond' },
                 { key: 'miss', label: 'Miss vector', color: '#d97706' },
               ] as LegendItem[])
             : []),
@@ -668,15 +681,18 @@ export function ReleaseConsistencyPlot({
 
   const types = React.useMemo(() => [...new Set(points.map((p) => p.pitchType))], [points]);
   const colors = React.useMemo(() => pitchColorMap(types), [types]);
+  // Guard against a stale selection: if the data refreshes and the chosen pitch
+  // type disappears, fall back to 'all' (derived — no setState-during-render).
+  const effectiveType = activeType !== 'all' && !types.includes(activeType) ? 'all' : activeType;
   const valid = React.useMemo(
     () =>
       points.filter(
         (p) =>
           p.releaseSide !== null &&
           p.releaseHeight !== null &&
-          (activeType === 'all' || p.pitchType === activeType),
+          (effectiveType === 'all' || p.pitchType === effectiveType),
       ),
-    [points, activeType],
+    [points, effectiveType],
   );
   const gate = gateSample(valid.length, SAMPLE_THRESHOLDS.release);
 
@@ -719,7 +735,7 @@ export function ReleaseConsistencyPlot({
         types.length > 1 ? (
           <TabStrip
             ariaLabel="Pitch type"
-            value={activeType}
+            value={effectiveType}
             onChange={setActiveType}
             options={[{ value: 'all' as const, label: 'All' }, ...types.map((t) => ({ value: t, label: t }))]}
           />
