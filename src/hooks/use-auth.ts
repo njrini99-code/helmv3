@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@/lib/supabase/client';
@@ -8,93 +8,151 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Player, CoachWithOrganization } from '@/lib/types';
 
-export function useAuth() {
-  const router = useRouter();
-  // useRef prevents createClient() from being called on every render.
-  // Without this, supabase is a new object each render → fetchUser useCallback
-  // recreates each render → onAuthStateChange resubscribes each render → flicker/loop.
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
-  const isMounted = useRef(true);
-  const { user, coach, player, loading, coachMode, setUser, setCoach, setPlayer, setLoading, setCoachMode, clear } = useAuthStore();
+// ---------------------------------------------------------------------------
+// Module-level auth coordination.
+//
+// `loading`/`user`/`coach` live in a single shared zustand store, but EVERY
+// component that calls useAuth() (the dashboard shell, the page body, the
+// notification bell, the unread-count badge, …) used to independently run its
+// own fetchUser() → setLoading(true), subscribe to onAuthStateChange, and
+// re-run its effect whenever the router identity changed. With several
+// instances racing on one global flag — and mount-guard early-returns that
+// could skip setLoading(false) — the flag thrashed (visible flicker) and could
+// get stranded `true` forever (pages stuck on the loading skeleton).
+//
+// The fix: one deduped fetch and one subscription, shared across all callers.
+// `loading` only flips to the skeleton state on the genuine first load (when we
+// have no user yet); background refreshes (token refresh, tab navigation) keep
+// the current UI. `loading` is ALWAYS resolved in `finally`, independent of any
+// component's mount state, so it can never strand.
+// ---------------------------------------------------------------------------
 
-  const fetchUser = useCallback(async () => {
-    setLoading(true);
+let inFlight: Promise<void> | null = null;
+let subscriberCount = 0;
+let authSubscription: { unsubscribe: () => void } | null = null;
+// Updated on every render so the single shared SIGNED_OUT handler can navigate
+// with the freshest router instance without re-subscribing per render.
+let latestRouter: ReturnType<typeof useRouter> | null = null;
+
+type Client = ReturnType<typeof createClient>;
+
+async function loadAuthUser(supabase: Client): Promise<void> {
+  // Dedupe: concurrent callers share one in-flight fetch.
+  if (inFlight) return inFlight;
+
+  inFlight = (async () => {
+    const store = useAuthStore.getState();
+    // Only show the skeleton-loading state when we have nothing to render yet.
+    // Background refreshes must NOT flip the UI back to a skeleton.
+    if (!store.user) store.setLoading(true);
+
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-
-      if (!isMounted.current) return;
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
 
       if (!authUser) {
         Sentry.setUser(null);
-        setLoading(false);
         return;
       }
 
-      // Fetch user record and both profiles in parallel to avoid waterfall
+      // Fetch user record and both profiles in parallel to avoid a waterfall.
       const [{ data: userData }, { data: coachData }, { data: playerData }] = await Promise.all([
         supabase.from('users').select('*').eq('id', authUser.id).single(),
-        supabase.from('baseball_coaches').select('*, organization:organizations(id, name)').eq('user_id', authUser.id).maybeSingle(),
+        supabase
+          .from('baseball_coaches')
+          .select('*, organization:organizations(id, name)')
+          .eq('user_id', authUser.id)
+          .maybeSingle(),
         supabase.from('baseball_players').select('*').eq('user_id', authUser.id).maybeSingle(),
       ]);
 
-      if (!isMounted.current) return;
-
+      const s = useAuthStore.getState();
       if (userData) {
-        setUser(userData);
-        if (coachData) setCoach(coachData);
-        if (playerData) setPlayer(playerData);
+        s.setUser(userData);
+        if (coachData) s.setCoach(coachData);
+        if (playerData) s.setPlayer(playerData);
         // Attribute Sentry events to this user. Email is intentionally NOT
-        // sent — id + org_id + user_role tags below give us all the triage
-        // signal we need without shipping personal contact info to Sentry.
+        // sent — id + org_id + user_role tags give us all the triage signal
+        // we need without shipping personal contact info to Sentry.
         const role = coachData ? 'coach' : playerData ? 'player' : 'user';
-        Sentry.setUser({
-          id: authUser.id,
-          segment: role,
-        });
-        // Tags make triage 10x faster — "filter to coach errors in org X"
-        // is a one-click query in the Sentry UI.
+        Sentry.setUser({ id: authUser.id, segment: role });
         Sentry.setTag('user_role', role);
         if (coachData?.organization?.id) {
           Sentry.setTag('org_id', coachData.organization.id);
           Sentry.setTag('org_name', coachData.organization.name);
         }
       }
-
-      if (isMounted.current) setLoading(false);
     } catch (error) {
       console.error('[useAuth] Error fetching user:', error);
-      if (isMounted.current) setLoading(false);
+    } finally {
+      // ALWAYS resolve loading — this is a global flag, never gated on the mount
+      // state of whichever component happened to kick off the fetch.
+      useAuthStore.getState().setLoading(false);
+      inFlight = null;
     }
-  }, [supabase, setUser, setCoach, setPlayer, setLoading]);
+  })();
+
+  return inFlight;
+}
+
+export function useAuth() {
+  const router = useRouter();
+  latestRouter = router;
+
+  // useRef prevents createClient() from being called on every render.
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
+
+  const {
+    user,
+    coach,
+    player,
+    loading,
+    coachMode,
+    setPlayer,
+    setCoach,
+    setCoachMode,
+    clear,
+  } = useAuthStore();
 
   useEffect(() => {
-    isMounted.current = true;
-    fetchUser();
+    subscriberCount += 1;
+    // Kick off (or join) the shared auth fetch.
+    loadAuthUser(supabase);
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (!isMounted.current) return;
-
-      if (event === 'SIGNED_OUT') {
-        Sentry.setUser(null);
-        Sentry.getCurrentScope().setTags({
-          user_role: undefined,
-          org_id: undefined,
-          org_name: undefined,
-        });
-        clear();
-        router.push('/baseball/login');
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        fetchUser();
-      }
-    });
+    // Exactly ONE auth-state subscription across all hook instances.
+    if (!authSubscription) {
+      const { data } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') {
+          Sentry.setUser(null);
+          Sentry.getCurrentScope().setTags({
+            user_role: undefined,
+            org_id: undefined,
+            org_name: undefined,
+          });
+          useAuthStore.getState().clear();
+          latestRouter?.push('/baseball/login');
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          loadAuthUser(supabase);
+        }
+      });
+      authSubscription = data.subscription;
+    }
 
     return () => {
-      isMounted.current = false;
-      subscription.unsubscribe();
+      subscriberCount -= 1;
+      // Tear the shared subscription down only when the last consumer unmounts.
+      if (subscriberCount <= 0 && authSubscription) {
+        authSubscription.unsubscribe();
+        authSubscription = null;
+        subscriberCount = 0;
+      }
     };
-  }, [fetchUser, supabase, clear, router]);
+    // supabase is a stable ref; intentionally not depending on router/clear so
+    // the subscription is not torn down + rebuilt on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -116,14 +174,23 @@ export function useAuth() {
 
   const updatePlayer = async (updates: Partial<Player>) => {
     if (!player) return;
-    const { data, error } = await supabase.from('baseball_players').update(updates).eq('id', player.id).select().single();
+    const { data, error } = await supabase
+      .from('baseball_players')
+      .update(updates)
+      .eq('id', player.id)
+      .select()
+      .single();
     if (!error && data) setPlayer(data);
     return { data, error };
   };
 
   const updateCoach = async (updates: Partial<CoachWithOrganization>) => {
     if (!coach) return;
-    const { data, error } = await fromUntyped(supabase, 'baseball_coaches').update(updates).eq('id', coach.id).select().single();
+    const { data, error } = await fromUntyped(supabase, 'baseball_coaches')
+      .update(updates)
+      .eq('id', coach.id)
+      .select()
+      .single();
     if (!error && data) setCoach(data);
     return { data, error };
   };
