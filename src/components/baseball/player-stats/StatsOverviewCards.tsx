@@ -82,20 +82,20 @@ export function StatsOverviewCards({ aggregates, className }: StatsOverviewCards
     }
 
     return {
-      avg: aggregates.career_avg !== null ? aggregates.career_avg.toFixed(3) : null,
-      obp: aggregates.career_obp !== null ? aggregates.career_obp.toFixed(3) : null,
-      slg: aggregates.career_slg !== null ? aggregates.career_slg.toFixed(3) : null,
-      ops: aggregates.career_ops !== null ? aggregates.career_ops.toFixed(3) : null,
-      exitVelo: aggregates.avg_exit_velocity !== null ? `${aggregates.avg_exit_velocity.toFixed(1)}` : null,
-      maxExitVelo: aggregates.max_exit_velocity !== null ? `${aggregates.max_exit_velocity.toFixed(1)}` : null,
-      practiceAvg: aggregates.practice_avg !== null ? aggregates.practice_avg.toFixed(3) : null,
-      gameAvg: aggregates.game_avg !== null ? aggregates.game_avg.toFixed(3) : null,
-      pressureGap: aggregates.pressure_gap !== null 
+      avg: aggregates.career_avg != null ? aggregates.career_avg.toFixed(3) : null,
+      obp: aggregates.career_obp != null ? aggregates.career_obp.toFixed(3) : null,
+      slg: aggregates.career_slg != null ? aggregates.career_slg.toFixed(3) : null,
+      ops: aggregates.career_ops != null ? aggregates.career_ops.toFixed(3) : null,
+      exitVelo: aggregates.avg_exit_velocity != null ? `${aggregates.avg_exit_velocity.toFixed(1)}` : null,
+      maxExitVelo: aggregates.max_exit_velocity != null ? `${aggregates.max_exit_velocity.toFixed(1)}` : null,
+      practiceAvg: aggregates.practice_avg != null ? aggregates.practice_avg.toFixed(3) : null,
+      gameAvg: aggregates.game_avg != null ? aggregates.game_avg.toFixed(3) : null,
+      pressureGap: aggregates.pressure_gap != null
         ? `${aggregates.pressure_gap > 0 ? '+' : ''}${(aggregates.pressure_gap * 100).toFixed(0)} pts` 
         : null,
       trend: aggregates.recent_trend,
-      last5Avg: aggregates.last_5_avg !== null ? aggregates.last_5_avg.toFixed(3) : null,
-      last10Avg: aggregates.last_10_avg !== null ? aggregates.last_10_avg.toFixed(3) : null,
+      last5Avg: aggregates.last_5_avg != null ? aggregates.last_5_avg.toFixed(3) : null,
+      last10Avg: aggregates.last_10_avg != null ? aggregates.last_10_avg.toFixed(3) : null,
       sessions: aggregates.total_sessions,
     };
   }, [aggregates]);
