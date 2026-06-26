@@ -286,18 +286,26 @@ describe('program-type variant engine — live runtime behavior', () => {
 
   it('every spec player nav surface (Today, Schedule, Tasks, Performance, My Profile) is reachable', () => {
     // The five spec ids: player-today, calendar(=Schedule), player-tasks,
-    // performance, player-profile. All present in the resolved player nav.
+    // player-lift(=Performance), player-profile. All present in the resolved
+    // player nav. The player Performance slot must point at the player lift
+    // home, not the coach-only /dashboard/performance page.
     const SPEC_PLAYER_IDS = [
       'player-today',
       'calendar',
       'player-tasks',
-      'performance',
+      'player-lift',
       'player-profile',
     ];
     const player = primaryIds(playerCtx('college'));
     for (const id of SPEC_PLAYER_IDS) {
       expect(player, `player nav must surface spec item "${id}"`).toContain(id);
     }
+
+    const performance = getPrimaryBaseballNav(playerCtx('college')).find(
+      (e) => e.id === 'player-lift',
+    );
+    expect(performance?.label).toBe('Performance');
+    expect(performance?.href).toBe('/baseball/dashboard/lift');
   });
 
   it('player landing is the single consolidated home for EVERY program_type', () => {

@@ -755,7 +755,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
   },
   {
     id: 'player-lift',
-    label: 'My Lifts',
+    label: 'Performance',
     href: '/baseball/dashboard/lift',
     icon: IconBolt,
     // Player's lift session home — upcoming sessions, recent history, readiness
