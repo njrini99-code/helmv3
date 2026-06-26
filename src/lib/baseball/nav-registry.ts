@@ -664,11 +664,12 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
   },
   {
     id: 'team',
-    label: 'Team Info',
-    href: '/baseball/dashboard/team',
+    label: 'Dashboard',
+    href: '/baseball/dashboard/command-center',
+    playerHref: '/baseball/player/today',
     icon: IconUsers,
-    // Team dashboard — name, logo, join code, roster overview. TeamDashboardClient
-    // detects role. Ungated; coaches can edit, players read via RLS.
+    // Backward-compatible secondary landing. The old team dashboard route now
+    // redirects here for coaches and to Player Today for players.
     role: 'both',
     requiredCapability: null,
     section: 'secondary',

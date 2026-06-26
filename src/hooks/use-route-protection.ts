@@ -35,7 +35,7 @@ export function useRouteProtection(options: RouteProtectionOptions = {}) {
   const {
     allowedCoachTypes = ['college', 'high_school', 'juco', 'showcase'],
     // requireRecruiting is reserved for future use
-    redirectTo = '/baseball/dashboard/team',
+    redirectTo = '/baseball/dashboard/command-center',
   } = options;
 
   const isLoading = authLoading;
@@ -65,7 +65,7 @@ export function useRouteProtection(options: RouteProtectionOptions = {}) {
 export function useRecruitingRouteProtection() {
   return useRouteProtection({
     allowedCoachTypes: ['college', 'juco'],
-    redirectTo: '/baseball/dashboard/team',
+    redirectTo: '/baseball/dashboard/command-center',
   });
 }
 

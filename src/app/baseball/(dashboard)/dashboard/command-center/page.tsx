@@ -43,12 +43,7 @@ export default async function CommandCenterPage() {
   if (!session) redirect('/baseball/login');
 
   const coach = session.coach;
-  if (!coach) redirect('/baseball/coach');
-
-  // Only college and JUCO coaches have access to command center
-  if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') {
-    redirect('/baseball/dashboard');
-  }
+  if (!coach) redirect('/baseball/player/today');
 
   if (!coach.organization_id) {
     // No organization - show setup prompt
@@ -82,35 +77,12 @@ export default async function CommandCenterPage() {
     .eq('organization_id', coach.organization_id)
     .single() as { data: { id: string; name: string; team_type: string; join_code: string | null } | null; error: unknown };
 
-  // No team found — college coaches still get the full CommandCenterClient
-  // (with empty roster/stats and a setup banner). Non-college coaches get a create-team prompt.
+  // No team found — render the full Command Center with an empty setup state.
   if (teamError || !team) {
-    if (coach.coach_type !== 'college') {
-      return (
-        <div className="min-h-dvh bg-cream-100">
-          <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-12">
-            <div className="glass-standard rounded-2xl p-8 text-center">
-              <h1 className="text-2xl font-semibold text-warm-900 mb-4">Create Your Team</h1>
-              <p className="text-warm-600 mb-6">
-                You need to create a team before you can start managing players.
-              </p>
-              <a
-                href="/baseball/dashboard/team"
-                className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-lg font-medium transition-colors"
-              >
-                Create Team
-              </a>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // College coach with no team — render the full Command Center with empty state.
     // team.id = '' signals the client to hide invite/team-specific actions.
     return (
       <CommandCenterClient
-        team={{ id: '', name: 'Your Program', teamType: 'college', inviteCode: null }}
+        team={{ id: '', name: 'Your Program', teamType: coach.coach_type, inviteCode: null }}
         players={[]}
         insights={[]}
         coachId={coach.id}

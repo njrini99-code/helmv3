@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getSessionProfile } from '@/lib/auth/session';
 
 /**
  * BaseballHelm landing route.
@@ -9,14 +9,11 @@ import { createClient } from '@/lib/supabase/server';
  * users go to the dashboard (which role-routes coach vs player internally).
  */
 export default async function BaseballLandingPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const session = await getSessionProfile();
 
-  if (!user) {
+  if (!session) {
     redirect('/baseball/login');
   }
 
-  redirect('/baseball/dashboard');
+  redirect(session.coach ? '/baseball/dashboard/command-center' : '/baseball/player/today');
 }

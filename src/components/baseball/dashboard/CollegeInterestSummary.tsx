@@ -16,7 +16,7 @@ import {
   IconAlertCircle,
   IconRefresh,
 } from '@/components/icons';
-import type { CollegeInterestSummary as CollegeInterestData, CollegeInterestItem } from '@/app/baseball/actions/team-dashboard';
+import type { CollegeInterestSummary as CollegeInterestData, CollegeInterestItem } from './dashboard-types';
 
 interface CollegeInterestSummaryProps {
   data: CollegeInterestData;

@@ -8,13 +8,9 @@ import { PageLoading } from '@/components/ui/loading';
 /**
  * Backward-compatible redirect page.
  *
- * Previously this page rendered different dashboards based on coach/player type
- * with client-side detection. Now each type has its own route:
- *   - /baseball/coach/{college|juco|high-school|showcase}
- *   - /baseball/player/{college|juco|high-school|showcase}
- *
- * This page detects the user's role + type and redirects accordingly,
- * so any old links or bookmarks to /baseball/dashboard still work.
+ * Backward-compatible redirect for old links/bookmarks to /baseball/dashboard.
+ * Completed users now land inside the BaseballHelm dashboard shell instead of
+ * the legacy /baseball/coach/* or /baseball/player/* route families.
  */
 export default function DashboardRedirect() {
   const router = useRouter();
@@ -24,11 +20,9 @@ export default function DashboardRedirect() {
     if (loading) return;
 
     if (user?.role === 'coach' && coach?.coach_type) {
-      const type = coach.coach_type.replace('_', '-');
-      router.replace(`/baseball/coach/${type}`);
+      router.replace('/baseball/dashboard/command-center');
     } else if (user?.role === 'player' && player?.player_type) {
-      const type = player.player_type.replace('_', '-');
-      router.replace(`/baseball/player/${type}`);
+      router.replace('/baseball/player/today');
     } else if (!user) {
       router.replace('/baseball/login');
     }

@@ -146,10 +146,10 @@ export default async function JoinTeamPage({ params }: PageProps) {
               You&apos;re already a member of <span className="font-medium">{team.name}</span>.
             </p>
             <Link
-              href="/baseball/dashboard/team"
+              href="/baseball/player/today"
               className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors"
             >
-              Go to Team Dashboard
+              Go to Player Today
               <IconArrowRight size={18} />
             </Link>
           </div>

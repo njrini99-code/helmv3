@@ -29,14 +29,14 @@ import {
 // bottom bar is never empty on first paint).
 // ---------------------------------------------------------------------------
 const COACH_NAV_FALLBACK: MobileNavItem[] = [
-  { label: 'Home', href: '/baseball/dashboard', icon: IconHome },
+  { label: 'Home', href: '/baseball/dashboard/command-center', icon: IconHome },
   { label: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
   { label: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage },
   { label: 'More', href: '/baseball/dashboard/settings', icon: IconSettings },
 ];
 
 const PLAYER_NAV_FALLBACK: MobileNavItem[] = [
-  { label: 'Home', href: '/baseball/dashboard', icon: IconHome },
+  { label: 'Home', href: '/baseball/player/today', icon: IconHome },
   { label: 'Profile', href: '/baseball/dashboard/profile', icon: IconUser },
   { label: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage },
   { label: 'More', href: '/baseball/dashboard/settings', icon: IconSettings },

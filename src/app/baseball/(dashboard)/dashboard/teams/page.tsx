@@ -381,7 +381,7 @@ export default function TeamsPage() {
                         size="sm"
                         variant="secondary"
                         className="flex-1"
-                        onClick={() => router.push(`/dashboard/roster?team=${team.id}`)}
+                        onClick={() => router.push(`/baseball/dashboard/roster?team=${team.id}`)}
                       >
                         <IconUsers size={14} />
                         Roster
@@ -390,7 +390,7 @@ export default function TeamsPage() {
                         size="sm"
                         variant="secondary"
                         className="flex-1"
-                        onClick={() => router.push(`/dashboard/videos?team=${team.id}`)}
+                        onClick={() => router.push(`/baseball/dashboard/videos?team=${team.id}`)}
                       >
                         <IconVideo size={14} />
                         Videos

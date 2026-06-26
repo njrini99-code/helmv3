@@ -30,7 +30,7 @@ export default async function ReadinessPage() {
   if (!user) redirect('/lifting/login');
 
   const orgId = await getOrgId(user.id);
-  if (!orgId) redirect('/lifting/onboarding');
+  if (!orgId) redirect('/lifting/coach');
 
   const access = await resolveLiftingAccess(orgId);
   if (!access.canView) redirect('/lifting/login');

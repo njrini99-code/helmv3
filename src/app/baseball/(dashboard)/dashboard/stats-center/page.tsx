@@ -85,12 +85,12 @@ export default async function StatsCenterPage({
   // 1. Resolve the active baseball context (server-validated against memberships).
   const context = await getActiveBaseballContext();
   if (!context) {
-    redirect('/baseball/dashboard');
+    redirect('/baseball/login');
   }
 
   // Stats Center is a coaching surface; players are routed to their own views.
   if (context.activeRole !== 'coach') {
-    redirect('/baseball/dashboard');
+    redirect('/baseball/dashboard/my-stats');
   }
 
   // 2. Seed filters from the URL (display-scoping only; re-enforced downstream).

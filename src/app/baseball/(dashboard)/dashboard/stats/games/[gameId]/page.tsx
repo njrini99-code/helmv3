@@ -23,8 +23,8 @@ export default async function GameDetailPage({ params }: PageProps) {
     .eq('user_id', user.id)
     .single();
 
-  if (!coach) redirect('/baseball/coach');
-  if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') redirect('/baseball/dashboard');
+  if (!coach) redirect('/baseball/dashboard/command-center');
+  if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') redirect('/baseball/dashboard/command-center');
   if (!coach.organization_id) redirect('/baseball/dashboard/program');
 
   const { data: team } = await supabase
@@ -33,7 +33,7 @@ export default async function GameDetailPage({ params }: PageProps) {
     .eq('organization_id', coach.organization_id)
     .single() as { data: { id: string; name: string } | null };
 
-  if (!team) redirect('/baseball/dashboard/team');
+  if (!team) redirect('/baseball/dashboard/program');
 
   // Get game + box score
   const boxScoreResult = await getGameBoxScore(gameId);

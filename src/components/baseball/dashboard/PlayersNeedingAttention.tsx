@@ -16,7 +16,7 @@ import {
   IconAlertCircle,
   IconRefresh,
 } from '@/components/icons';
-import type { AttentionItem } from '@/app/baseball/actions/team-dashboard';
+import type { AttentionItem } from './dashboard-types';
 
 interface PlayersNeedingAttentionProps {
   data: AttentionItem[];

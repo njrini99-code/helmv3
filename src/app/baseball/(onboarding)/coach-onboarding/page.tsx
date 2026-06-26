@@ -423,7 +423,7 @@ export default function BaseballCoachOnboarding() {
 
       setLoading(false);
       // Store where to go after the lifting step, then show it
-      setPendingRedirect(result.redirectTo || `/baseball/coach/${finalCoachType.replace('_', '-')}`);
+      setPendingRedirect(result.redirectTo || '/baseball/dashboard/command-center');
       goForward('lifting');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
@@ -489,8 +489,7 @@ export default function BaseballCoachOnboarding() {
   }
 
   function handleGoToDashboard() {
-    const dashboardPath = coachType ? `/baseball/coach/${coachType.replace('_', '-')}` : '/baseball/dashboard';
-    router.push(dashboardPath);
+    router.push('/baseball/dashboard/command-center');
     router.refresh();
   }
 

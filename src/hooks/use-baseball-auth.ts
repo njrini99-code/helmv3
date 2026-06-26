@@ -120,7 +120,7 @@ export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
 
       // If a specific role is required, check it matches
       if (requiredRole && resolvedRole !== requiredRole) {
-        router.push('/baseball/dashboard');
+        router.push(resolvedRole === 'coach' ? '/baseball/dashboard/command-center' : '/baseball/player/today');
         return;
       }
 

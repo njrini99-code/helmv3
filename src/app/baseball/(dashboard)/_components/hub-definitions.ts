@@ -144,14 +144,14 @@ export const PLAYER_TEAM_TABS: readonly HubSubNavTab[] = [
 // -----------------------------------------------------------------------------
 
 export const HUB_LANDING = {
-  coachDashboard: '/baseball/dashboard/team',
+  coachDashboard: '/baseball/dashboard/command-center',
   coachTeam: COACH_TEAM_TABS[0]!.href,
   coachStats: COACH_STATS_TABS[0]!.href,
   coachDevelopment: COACH_DEVELOPMENT_TABS[0]!.href,
   coachManagement: COACH_MANAGEMENT_TABS[0]!.href,
   coachRecruiting: COACH_RECRUITING_TABS[0]!.href,
   coachAcademics: COACH_ACADEMICS_TABS[0]!.href,
-  playerDashboard: '/baseball/dashboard/team',
+  playerDashboard: '/baseball/player/today',
   playerProfile: '/baseball/dashboard/profile',
   playerStats: PLAYER_STATS_TABS[0]!.href,
   playerDevelopment: PLAYER_DEVELOPMENT_TABS[0]!.href,

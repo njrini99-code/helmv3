@@ -147,7 +147,7 @@ export function JoinTeamClient({
     
     // Redirect after celebration
     setTimeout(() => {
-      router.push('/baseball/dashboard/team');
+      router.push('/baseball/player/today');
     }, 1500);
   }
 
@@ -278,7 +278,7 @@ export function JoinTeamClient({
               )}
             </Button>
             <Button variant="ghost"
-              onClick={() => router.push('/baseball/dashboard')}
+              onClick={() => router.push('/baseball/player/today')}
               disabled={state === 'loading'}
               className="w-full px-6 py-3 bg-white text-warm-700 font-medium rounded-lg border border-warm-200 hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >

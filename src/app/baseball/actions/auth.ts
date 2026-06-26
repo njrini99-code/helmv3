@@ -208,15 +208,13 @@ export async function loginAction(
     if (!coachProfile || !coachProfile.onboarding_completed) {
       redirectTo = '/baseball/coach-onboarding';
     } else {
-      const type = (coachProfile.coach_type || 'college').replace('_', '-');
-      redirectTo = `/baseball/coach/${type}`;
+      redirectTo = '/baseball/dashboard/command-center';
     }
   } else if (resolvedRole === 'player') {
     if (!playerProfile || !playerProfile.onboarding_completed) {
       redirectTo = '/baseball/player';
     } else {
-      const type = (playerProfile.player_type || 'high-school').replace('_', '-');
-      redirectTo = `/baseball/player/${type}`;
+      redirectTo = '/baseball/player/today';
     }
   } else {
     // No role or profile found — send to complete-signup to create a profile

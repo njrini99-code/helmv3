@@ -29,7 +29,7 @@ export default async function CoachScoutPacketPreviewPage({ params }: PageProps)
   if (!id) notFound();
 
   const context = await getActiveBaseballContext();
-  if (!context) redirect('/baseball/dashboard');
+  if (!context) redirect('/baseball/dashboard/command-center');
   if (context.activeRole !== 'coach') redirect('/baseball/player/passport');
 
   // Capability is enforced inside getScoutPacketPreview (can_export_reports).

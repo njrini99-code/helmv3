@@ -35,11 +35,11 @@ export default async function PostgameReviewPage({ searchParams }: PostgamePageP
   const session = await getSessionProfile();
   if (!session) redirect('/baseball/login');
   const coach = session.coach;
-  if (!coach) redirect('/baseball/coach');
+  if (!coach) redirect('/baseball/dashboard/command-center');
 
   // Postgame review is a staff product for college/JUCO programs.
   if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') {
-    redirect('/baseball/dashboard');
+    redirect('/baseball/dashboard/command-center');
   }
   if (!coach.organization_id) {
     redirect('/baseball/dashboard/program');

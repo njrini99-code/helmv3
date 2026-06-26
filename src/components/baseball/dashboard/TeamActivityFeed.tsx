@@ -16,7 +16,7 @@ import {
   IconRefresh,
 } from '@/components/icons';
 import { formatRelativeTime } from '@/lib/utils';
-import type { TeamActivity } from '@/app/baseball/actions/team-dashboard';
+import type { TeamActivity } from './dashboard-types';
 
 interface TeamActivityFeedProps {
   data: TeamActivity[];

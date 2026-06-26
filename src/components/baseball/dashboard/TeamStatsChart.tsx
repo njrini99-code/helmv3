@@ -20,7 +20,7 @@ import {
   IconAlertCircle,
   IconRefresh,
 } from '@/components/icons';
-import type { TeamStatsTrendPoint } from '@/app/baseball/actions/team-dashboard';
+import type { TeamStatsTrendPoint } from './dashboard-types';
 import { Button } from '@/components/ui/button';
 
 interface TeamStatsChartProps {

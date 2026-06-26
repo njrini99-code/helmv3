@@ -21,12 +21,12 @@ export default async function StatsUploadPage() {
     .single();
 
   if (coachError || !coach) {
-    redirect('/baseball/coach');
+    redirect('/baseball/dashboard/command-center');
   }
 
   // Only college and JUCO coaches have access
   if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') {
-    redirect('/baseball/dashboard');
+    redirect('/baseball/dashboard/command-center');
   }
 
   if (!coach.organization_id) {

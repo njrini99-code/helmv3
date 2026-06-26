@@ -49,7 +49,7 @@ export default async function CoachPlayerPassportPage({ params }: PageProps) {
 
   const context = await getActiveBaseballContext();
   if (!context) {
-    redirect('/baseball/dashboard');
+    redirect('/baseball/dashboard/command-center');
   }
   // Coaches/staff only — players reach their own passport via /baseball/player/passport.
   if (context.activeRole !== 'coach') {

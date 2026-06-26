@@ -16,7 +16,7 @@ export default async function PrivacySettingsPage() {
   if (!session) redirect('/baseball/login');
 
   const player = session.player;
-  if (!player) redirect('/baseball/dashboard');
+  if (!player) redirect('/baseball/dashboard/command-center');
 
   // Get existing privacy settings
   const { data: settings } = await supabase

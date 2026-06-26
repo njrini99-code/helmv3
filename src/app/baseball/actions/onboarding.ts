@@ -116,7 +116,7 @@ export async function completeCoachOnboarding(
     // Already onboarded — redirect to dashboard
     return {
       success: true,
-      redirectTo: `/baseball/coach/${coachType.replace('_', '-')}`,
+      redirectTo: '/baseball/dashboard/command-center',
     };
   }
 
@@ -223,7 +223,7 @@ export async function completeCoachOnboarding(
 
   return {
     success: true,
-    redirectTo: `/baseball/coach/${coachType.replace('_', '-')}`,
+    redirectTo: '/baseball/dashboard/command-center',
   };
 }
 

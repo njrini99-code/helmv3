@@ -71,13 +71,13 @@ export default async function ImportCenterPage() {
   if (!user) redirect('/baseball/login');
 
   const context = await getActiveBaseballContext();
-  if (!context) redirect('/baseball/dashboard');
+  if (!context) redirect('/baseball/dashboard/command-center');
 
   const teamId = context.activeTeamId;
 
   // SERVER-SIDE capability gate (not just nav hiding).
   const canImport = await hasBaseballCapability(teamId, 'can_manage_imports');
-  if (!canImport) redirect('/baseball/dashboard');
+  if (!canImport) redirect('/baseball/dashboard/command-center');
 
   // Team name for the header.
   const { data: team } = await supabase

@@ -11,7 +11,7 @@ import {
   IconAlertCircle,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import type { TeamHealthData } from '@/app/baseball/actions/team-dashboard';
+import type { TeamHealthData } from './dashboard-types';
 
 interface TeamHealthHeroProps {
   data: TeamHealthData;

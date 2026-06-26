@@ -179,7 +179,7 @@ export default function BaseballPlayerOnboarding() {
     if (!user || user.role !== 'player') {
       router.push('/baseball/login');
     } else if (player?.onboarding_completed) {
-      router.push('/baseball/dashboard');
+      router.push('/baseball/player/today');
     }
   }, [authLoading, user, player, router]);
 
@@ -287,8 +287,7 @@ export default function BaseballPlayerOnboarding() {
         sessionStorage.removeItem('baseball_signup_returnTo');
         router.push(storedReturnTo);
       } else {
-        const dashboardPath = playerType ? `/baseball/player/${playerType.replace('_', '-')}` : '/baseball/dashboard';
-        router.push(dashboardPath);
+        router.push('/baseball/player/today');
       }
       router.refresh();
     } catch {

@@ -68,7 +68,7 @@ const PlayerQuickActionsComponent = function PlayerQuickActions({
 
   const handleViewVideos = useCallback(() => {
     onClose?.();
-    router.push(`/baseball/dashboard/players/${playerId}/videos`);
+    router.push(`/baseball/dashboard/videos?player=${playerId}`);
   }, [playerId, router, onClose]);
 
   return (

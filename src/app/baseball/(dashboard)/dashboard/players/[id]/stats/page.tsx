@@ -23,7 +23,7 @@ export default async function PlayerStatsPage({ params }: PageProps) {
     .eq('user_id', user.id)
     .single();
 
-  if (!coach) redirect('/baseball/coach');
+  if (!coach) redirect('/baseball/dashboard/command-center');
   if (!coach.organization_id) redirect('/baseball/dashboard/program');
 
   const { data: team } = await supabase
@@ -32,7 +32,7 @@ export default async function PlayerStatsPage({ params }: PageProps) {
     .eq('organization_id', coach.organization_id)
     .single() as { data: { id: string; name: string } | null };
 
-  if (!team) redirect('/baseball/dashboard/team');
+  if (!team) redirect('/baseball/dashboard/program');
 
   // Verify player is on team
   const { data: membership } = await supabase

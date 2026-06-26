@@ -41,7 +41,7 @@ export default async function CoachScoutPacketPage({ params }: PageProps) {
   if (!id) notFound();
 
   const context = await getActiveBaseballContext();
-  if (!context) redirect('/baseball/dashboard');
+  if (!context) redirect('/baseball/dashboard/command-center');
   if (context.activeRole !== 'coach') redirect('/baseball/player/passport');
 
   // Export capability gate (head/primary coach implicitly hold it).

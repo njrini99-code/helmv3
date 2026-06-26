@@ -28,12 +28,12 @@ export const metadata = {
 
 export default async function ScoutPacketsHubPage() {
   const context = await getActiveBaseballContext();
-  if (!context) redirect('/baseball/dashboard');
+  if (!context) redirect('/baseball/dashboard/command-center');
   if (context.activeRole !== 'coach') redirect('/baseball/player/passport');
 
   const caps = await resolveBaseballCapabilities(context.activeTeamId);
   if (!(caps.can_export_reports || caps.is_head_coach)) {
-    redirect('/baseball/dashboard');
+    redirect('/baseball/dashboard/command-center');
   }
 
   const roster = await getScoutPacketRoster();

@@ -79,7 +79,7 @@ export default async function PerformancePage() {
   // grant) was a real bug that hid readiness from the performance coach.
   const canViewReadiness = caps.can_view_readiness;
   if (!canManageLifting && !canViewReadiness) {
-    redirect('/baseball/dashboard');
+    redirect('/baseball/dashboard/command-center');
   }
 
   const supabase = await createClient();

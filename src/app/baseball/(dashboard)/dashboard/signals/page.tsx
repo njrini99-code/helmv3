@@ -25,7 +25,7 @@ export default async function SignalsPage() {
   if (!session) redirect('/baseball/login');
 
   const coach = session.coach;
-  if (!coach) redirect('/baseball/coach');
+  if (!coach) redirect('/baseball/dashboard/command-center');
   if (!coach.organization_id) redirect('/baseball/dashboard/program');
 
   // Resolve the team for this program.

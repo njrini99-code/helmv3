@@ -44,7 +44,7 @@ export default function ConversationPage() {
 
   return (
     <>
-      <Header title={otherName} subtitle={otherSubtitle} backHref="/dashboard/messages" />
+      <Header title={otherName} subtitle={otherSubtitle} backHref="/baseball/dashboard/messages" />
       <div className="flex flex-col h-[calc(100dvh-4rem)]">
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.map((msg) => {

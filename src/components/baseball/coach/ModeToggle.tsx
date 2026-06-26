@@ -13,9 +13,9 @@ export function JUCOModeToggle() {
   const handleModeChange = (mode: Mode) => {
     setCoachMode(mode as 'recruiting' | 'team');
     if (mode === 'team') {
-      router.push('/baseball/dashboard/team');
+      router.push('/baseball/dashboard/command-center');
     } else {
-      router.push('/baseball/dashboard');
+      router.push('/baseball/dashboard/command-center');
     }
   };
 

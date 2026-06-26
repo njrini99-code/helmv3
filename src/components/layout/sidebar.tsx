@@ -117,7 +117,7 @@ const COACH_MESSAGES_ITEM: SidebarHubItem = {
 
 // College Coach — grouped hubs (Dashboard, Team, Stats, Development, Management).
 const collegeTeamNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
   COACH_TEAM_HUB,
   COACH_STATS_HUB,
   COACH_DEVELOPMENT_HUB,
@@ -126,7 +126,7 @@ const collegeTeamNav: SidebarHubItem[] = [
 
 // HS Coach — same hubs, HS-specific dashboard landing.
 const hsCoachTeamNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/dashboard/team/high-school', icon: IconHome },
+  { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
   COACH_TEAM_HUB,
   COACH_STATS_HUB,
   COACH_DEVELOPMENT_HUB,
@@ -135,7 +135,7 @@ const hsCoachTeamNav: SidebarHubItem[] = [
 
 // JUCO Coach — adds the Academics hub (JUCO-only).
 const jucoTeamNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'Dashboard', href: '/baseball/dashboard/command-center', icon: IconHome },
   COACH_TEAM_HUB,
   COACH_STATS_HUB,
   COACH_DEVELOPMENT_HUB,
@@ -163,7 +163,7 @@ const showcaseTeamNav: SidebarHubItem[] = [
 // Player — grouped hubs: Dashboard, My Profile, My Stats hub, Development hub,
 // Calendar, Messages, and a Team hub (Announcements / Tasks / Documents).
 const playerTeamNav: SidebarHubItem[] = [
-  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'Dashboard', href: '/baseball/player/today', icon: IconHome },
   { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
   {
     name: 'My Stats',
@@ -218,9 +218,8 @@ const playerSecondaryNav = [
  */
 const EXACT_MATCH_HREFS = new Set<string>([
   '/baseball/dashboard',
-  '/baseball/dashboard/team',
-  '/baseball/dashboard/team/high-school',
-  '/baseball/coach/high-school',
+  '/baseball/dashboard/command-center',
+  '/baseball/player/today',
   '/baseball/dashboard/organization',
   '/golf/dashboard',
 ]);
@@ -275,9 +274,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
       } else if (coach?.coach_type === 'showcase') {
         return showcaseOrgNav;
       } else if (coach?.coach_type === 'high_school') {
-        return hsCoachTeamNav.map(item =>
-          item.href === '/baseball/dashboard/team/high-school' ? { ...item, href: '/baseball/coach/high-school' } : item
-        );
+        return hsCoachTeamNav;
       } else {
         return hsCoachTeamNav;
       }

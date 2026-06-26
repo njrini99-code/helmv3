@@ -20,7 +20,7 @@ export default function ActivateRecruitingPage() {
   if (authLoading) return <PageLoading />;
 
   if (user?.role !== 'player') {
-    router.push('/baseball/dashboard');
+    router.push('/baseball/dashboard/command-center');
     return null;
   }
 
@@ -44,7 +44,7 @@ export default function ActivateRecruitingPage() {
   }
 
   if (player?.recruiting_activated) {
-    router.push('/baseball/dashboard');
+    router.push('/baseball/player/today');
     return null;
   }
 
@@ -80,8 +80,7 @@ export default function ActivateRecruitingPage() {
         recruiting_activated_at: new Date().toISOString(),
       });
 
-      // Redirect to recruiting dashboard
-      router.push('/baseball/dashboard');
+      router.push('/baseball/player/today');
     } catch {
       setError('An error occurred. Please try again.');
       setActivating(false);

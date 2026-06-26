@@ -127,13 +127,10 @@ export function PlayerTodayTeamless() {
         // Non-fatal — fall back to the generic confirmation copy.
       }
 
-      // Success — confirm, then route through the landing dispatcher. The player
-      // now has a membership, so getActiveBaseballContext() resolves and
-      // /baseball/dashboard lands on a real surface (no loop). router.refresh()
-      // re-reads the now-valid server context.
+      // Success — confirm, then route directly to the player daily loop.
       setJoinedTeamName(teamName);
       router.refresh();
-      router.replace('/baseball/dashboard');
+      router.replace('/baseball/player/today');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setJoining(false);

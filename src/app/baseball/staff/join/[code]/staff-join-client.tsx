@@ -48,7 +48,7 @@ export function StaffJoinClient({ token, teamName }: StaffJoinClientProps) {
         }
         setAccepted(true);
         showToast(`Welcome to ${teamName}`, 'success');
-        router.push('/baseball/dashboard');
+        router.push('/baseball/dashboard/command-center');
         router.refresh();
       } catch {
         showToast('Something went wrong. Please try again.', 'error');

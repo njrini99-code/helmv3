@@ -118,7 +118,7 @@ export async function resolvePlayerRecordAccess(
     .single()) as { data: PlayerRecordTeam | null };
 
   if (!team) {
-    return { authorized: false, redirectTo: '/baseball/dashboard/team' };
+    return { authorized: false, redirectTo: '/baseball/dashboard/program' };
   }
 
   const { data: membership } = await supabase

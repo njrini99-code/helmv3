@@ -12,11 +12,11 @@ export default async function PhilosophySettingsPage() {
   if (!session) redirect('/baseball/login');
 
   const coach = session.coach;
-  if (!coach) redirect('/baseball/coach');
+  if (!coach) redirect('/baseball/dashboard/command-center');
 
   // Only college and JUCO coaches have access
   if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') {
-    redirect('/baseball/dashboard');
+    redirect('/baseball/dashboard/command-center');
   }
 
   // Get existing philosophy settings

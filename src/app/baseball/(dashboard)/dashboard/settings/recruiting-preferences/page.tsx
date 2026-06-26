@@ -23,7 +23,7 @@ async function getCoachAndPhilosophy() {
 
   // Only college and JUCO coaches can use recruiting
   if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') {
-    redirect('/baseball/dashboard');
+    redirect('/baseball/dashboard/command-center');
   }
 
   // Get existing philosophy (table added by migration 20260111000002)
