@@ -11,16 +11,6 @@ import { getSessionProfile } from '@/lib/auth/session';
 export default async function DashboardRedirectPage() {
   const session = await getSessionProfile();
 
-  // #region agent log
-  console.error('[debug-ee78e2] /baseball/dashboard', JSON.stringify({
-    hasSession: !!session,
-    hasCoach: !!session?.coach,
-    hasPlayer: !!session?.player,
-    coachType: session?.coach?.coach_type ?? null,
-    orgId: session?.coach?.organization_id ?? null,
-  }));
-  // #endregion
-
   if (!session) {
     redirect('/baseball/login');
   }
