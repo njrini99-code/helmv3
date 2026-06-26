@@ -214,7 +214,7 @@ function LoginContent() {
                   You&apos;re already signed in
                 </div>
                 <Button variant="primary"
-                  onClick={() => router.push(returnTo || '/baseball/dashboard')}
+                  onClick={() => router.push(returnTo || '/baseball/dashboard/command-center')}
                   className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
                 >
                   {returnTo ? 'Continue' : 'Continue to Dashboard'}

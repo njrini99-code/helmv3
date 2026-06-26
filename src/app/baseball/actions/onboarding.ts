@@ -408,10 +408,10 @@ export async function completeBaseballSignup(data: {
   ]);
 
   if (coachCheck.data) {
-    return { success: true, redirectTo: '/baseball/coach' };
+    return { success: true, redirectTo: '/baseball/dashboard/command-center' };
   }
   if (playerCheck.data) {
-    return { success: true, redirectTo: '/baseball/player' };
+    return { success: true, redirectTo: '/baseball/player/today' };
   }
 
   // Upsert user record
@@ -439,7 +439,7 @@ export async function completeBaseballSignup(data: {
     }
 
     revalidatePath('/baseball');
-    return { success: true, redirectTo: '/baseball/coach' };
+    return { success: true, redirectTo: '/baseball/coach-onboarding' };
   } else {
     const playerType = data.playerType as PlayerType;
     if (!playerType || !VALID_PLAYER_TYPES.includes(playerType)) {
