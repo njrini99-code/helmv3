@@ -1,32 +1,37 @@
-'use client';
-
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
-import { PageLoading } from '@/components/ui/loading';
+import { redirect } from 'next/navigation';
+import { getSessionProfile } from '@/lib/auth/session';
 
 /**
- * Backward-compatible redirect page.
+ * Backward-compatible dispatcher for /baseball/dashboard bookmarks.
  *
- * Backward-compatible redirect for old links/bookmarks to /baseball/dashboard.
- * Completed users now land inside the BaseballHelm dashboard shell instead of
- * the legacy /baseball/coach/* or /baseball/player/* route families.
+ * Server-redirects immediately — the old client-only version could strand users
+ * on an infinite PageLoading spinner when useAuth settled without matching
+ * coach_type / user.role guards.
  */
-export default function DashboardRedirect() {
-  const router = useRouter();
-  const { user, coach, player, loading } = useAuth();
+export default async function DashboardRedirectPage() {
+  const session = await getSessionProfile();
 
-  useEffect(() => {
-    if (loading) return;
+  // #region agent log
+  console.error('[debug-ee78e2] /baseball/dashboard', JSON.stringify({
+    hasSession: !!session,
+    hasCoach: !!session?.coach,
+    hasPlayer: !!session?.player,
+    coachType: session?.coach?.coach_type ?? null,
+    orgId: session?.coach?.organization_id ?? null,
+  }));
+  // #endregion
 
-    if (user?.role === 'coach' && coach?.coach_type) {
-      router.replace('/baseball/dashboard/command-center');
-    } else if (user?.role === 'player' && player?.player_type) {
-      router.replace('/baseball/player/today');
-    } else if (!user) {
-      router.replace('/baseball/login');
-    }
-  }, [loading, user, coach, player, router]);
+  if (!session) {
+    redirect('/baseball/login');
+  }
 
-  return <PageLoading />;
+  if (session.coach) {
+    redirect('/baseball/dashboard/command-center');
+  }
+
+  if (session.player) {
+    redirect('/baseball/player/today');
+  }
+
+  redirect('/baseball/complete-signup');
 }

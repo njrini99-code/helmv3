@@ -153,6 +153,18 @@ export default async function CommandCenterPage() {
     };
   });
 
+  // #region agent log
+  console.error('[debug-ee78e2] command-center', JSON.stringify({
+    coachId: coach.id,
+    teamId: team.id,
+    playerCount: players.length,
+    ccAuthorized: commandCenter.authorized,
+    riskCount: commandCenter.riskFeed.length,
+    rosterPulseCount: commandCenter.rosterPulse.length,
+    ccError: commandCenter.error,
+  }));
+  // #endregion
+
   return (
     <CommandCenterClient
       team={{
