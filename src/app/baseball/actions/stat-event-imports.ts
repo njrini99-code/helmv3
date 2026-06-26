@@ -509,7 +509,7 @@ export const commitEventImport = withBaseballAction(
     });
 
     revalidatePath('/baseball/dashboard/import');
-    revalidatePath('/baseball/dashboard/stats');
+    revalidatePath('/baseball/dashboard/stats-center');
     revalidatePath('/baseball/dashboard/command-center');
 
     return {
@@ -888,7 +888,7 @@ export const rollbackEventImport = withBaseballAction(
       .eq('team_id', teamId);
 
     revalidatePath('/baseball/dashboard/import');
-    revalidatePath('/baseball/dashboard/stats');
+    revalidatePath('/baseball/dashboard/stats-center');
     revalidatePath('/baseball/dashboard/command-center');
 
     return { reverted, restored };
@@ -1015,7 +1015,7 @@ export const reviewEventImportRun = withBaseballAction(
       .eq('id', importRunId);
 
     revalidatePath('/baseball/dashboard/import');
-    revalidatePath('/baseball/dashboard/stats');
+    revalidatePath('/baseball/dashboard/stats-center');
     revalidatePath('/baseball/dashboard/command-center');
 
     return {

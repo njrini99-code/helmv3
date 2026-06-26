@@ -282,7 +282,7 @@ export async function uploadStatsCSV(
   }
 
   revalidatePath('/baseball/dashboard/command-center');
-  revalidatePath('/baseball/dashboard/stats');
+  revalidatePath('/baseball/dashboard/stats-center');
 
   return {
     success: true,
@@ -544,7 +544,7 @@ export async function recalculatePlayerAggregates(
   }
 
   revalidatePath('/baseball/dashboard/command-center');
-  revalidatePath('/baseball/dashboard/stats');
+  revalidatePath('/baseball/dashboard/stats-center');
   revalidatePath(`/baseball/dashboard/players/${playerId}`);
   return { success: true };
 }

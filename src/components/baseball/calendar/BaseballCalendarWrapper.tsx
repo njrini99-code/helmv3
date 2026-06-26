@@ -1,6 +1,11 @@
 'use client';
 
-import { PremiumCalendarClient, type TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
+import {
+  PremiumCalendarClient,
+  type CalendarActionHandlers,
+  type CalendarCapabilities,
+  type TeamMember,
+} from '@/components/shared/calendar/PremiumCalendarClient';
 import {
   createBaseballEvent,
   updateBaseballEvent,
@@ -18,6 +23,7 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 interface BaseballCalendarWrapperProps {
   initialEvents: CalendarEvent[];
   teamMembers: TeamMember[];
+  teamId: string | null;
   isCoach?: boolean;
   currentUserId?: string;
   /** Show a full-calendar skeleton instead of the calendar — for Suspense / loading states */
@@ -41,7 +47,8 @@ const BASEBALL_CALENDAR_CAPABILITIES = {
   recurring: false,
   rsvpRead: false,
   availability: false,
-} as const;
+  rsvpWrite: true,
+} satisfies Required<CalendarCapabilities>;
 
 // ── RSVP vocabulary bridge ─────────────────────────────────────────────────────
 //
@@ -84,13 +91,10 @@ const baseballActionHandlers = {
   deleteEvent: deleteBaseballEvent,
   /**
    * Injected RSVP handler — routes to `baseball_event_attendance`, NEVER to
-   * the golf RSVP action. The shared PremiumCalendarClient will call this
-   * once the `respondToEvent` key is read from `actionHandlers` (currently
-   * the shared component hard-wires golf; this is ready for when it is
-   * parameterised).
+   * the golf RSVP action.
    */
   respondToEvent: respondToBaseballEvent,
-} as const;
+} satisfies CalendarActionHandlers;
 
 // ── Loading skeleton ───────────────────────────────────────────────────────────
 
@@ -206,6 +210,7 @@ export function getDisplayDescription(event: CalendarEvent): string | null {
 export function BaseballCalendarWrapper({
   initialEvents,
   teamMembers,
+  teamId,
   isCoach = true,
   currentUserId,
   loading = false,
@@ -214,20 +219,15 @@ export function BaseballCalendarWrapper({
     return <BaseballCalendarSkeleton />;
   }
 
-  // Pass both the standard action handlers AND the extended baseball-specific
-  // handlers (respondToEvent, capabilities) to the shared PremiumCalendarClient.
-  // The extra props are accepted by the shared component via a permissive
-  // intersection — future updates to PremiumCalendarClient will plumb them
-  // through to the respective UI callbacks.
-  const clientProps = {
-    initialEvents,
-    teamMembers,
-    isCoach,
-    currentUserId,
-    actionHandlers: baseballActionHandlers,
-    capabilities: BASEBALL_CALENDAR_CAPABILITIES,
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return <PremiumCalendarClient {...(clientProps as any)} />;
+  return (
+    <PremiumCalendarClient
+      initialEvents={initialEvents}
+      teamMembers={teamMembers}
+      teamId={teamId ?? undefined}
+      isCoach={isCoach}
+      currentUserId={currentUserId}
+      actionHandlers={baseballActionHandlers}
+      capabilities={BASEBALL_CALENDAR_CAPABILITIES}
+    />
+  );
 }

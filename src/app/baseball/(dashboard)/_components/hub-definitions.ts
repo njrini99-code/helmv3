@@ -62,10 +62,10 @@ export const COACH_STATS_TABS: readonly HubSubNavTab[] = [
   {
     id: 'overview',
     label: 'Overview',
-    href: '/baseball/dashboard/stats',
+    href: '/baseball/dashboard/stats-center',
     icon: IconChartBar,
-    // /stats is the overview; its nested /games, /season, /upload are separate
-    // tabs below, so the overview tab matches the bare /stats route only.
+    // /stats-center is the canonical overview; legacy /stats children remain
+    // below for games, season, and upload routes.
   },
   { id: 'games', label: 'Games', href: '/baseball/dashboard/stats/games', icon: IconClipboardList },
   { id: 'season', label: 'Season', href: '/baseball/dashboard/stats/season', icon: IconTrendingUp },
@@ -102,6 +102,10 @@ export const COACH_MANAGEMENT_TABS: readonly HubSubNavTab[] = [
  * Defined here so the layout + future un-hide is a one-line sidebar change.
  */
 export const COACH_RECRUITING_TABS: readonly HubSubNavTab[] = [
+  { id: 'pipeline', label: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconTarget, matchPrefixes: ['/baseball/dashboard/pipeline'] },
+  { id: 'discover', label: 'Discover', href: '/baseball/dashboard/discover', icon: IconStar },
+  { id: 'watchlist', label: 'Watchlist', href: '/baseball/dashboard/watchlist', icon: IconStar },
+  { id: 'compare', label: 'Compare', href: '/baseball/dashboard/compare', icon: IconChartBar },
   { id: 'college-interest', label: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconStar },
   { id: 'scout-packets', label: 'Scout Packets', href: '/baseball/dashboard/scout-packets', icon: IconNote },
   { id: 'import', label: 'Import', href: '/baseball/dashboard/import', icon: IconUpload },

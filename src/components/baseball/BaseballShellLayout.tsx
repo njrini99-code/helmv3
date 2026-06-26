@@ -25,7 +25,6 @@ import { PageLoading } from '@/components/ui/loading';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { PeekPanelProvider } from '@/components/baseball/peek-panel';
 import { BaseballDashboardShell } from '@/components/baseball/dashboard-shell';
-import { NotificationBell } from '@/components/baseball/NotificationBell';
 import { useBaseballAuth } from '@/hooks/use-baseball-auth';
 import { useBaseballNavContext } from '@/hooks/use-baseball-nav-context';
 import type { ActiveBaseballRole } from '@/lib/baseball/active-context-shared';
@@ -73,10 +72,6 @@ export function BaseballShellLayout({
           <BaseballDashboardShell role={resolvedRole} navContext={navContext ?? undefined}>
             {children}
           </BaseballDashboardShell>
-          {/* Notification bell — fixed in the top-right corner of the viewport,
-              above the main content area and outside any overflow-hidden containers.
-              z-30 keeps it below mobile sidebars (z-40/z-50) and modals. */}
-          <NotificationBell className="fixed top-3 right-4 z-30" />
         </PeekPanelProvider>
       </SessionActivityProvider>
     </SidebarProvider>

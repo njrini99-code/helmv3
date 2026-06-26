@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Fragment, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -26,6 +26,12 @@ import {
   IconBaseball,
 } from '@/components/icons';
 import { Check } from 'lucide-react';
+import {
+  StepIndicator,
+  slideVariants,
+  staggerContainer,
+  staggerItem,
+} from '@/components/baseball/onboarding/StepIndicator';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
@@ -58,91 +64,6 @@ type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
 const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA'];
 
 const STORAGE_KEY = 'baseballhelm_coach_onboarding';
-
-// ─── Animation Variants ─────────────────────────────────────────────────────
-
-const slideVariants = {
-  initial: (direction: number) => ({
-    x: direction > 0 ? 60 : -60,
-    opacity: 0,
-  }),
-  animate: {
-    x: 0,
-    opacity: 1,
-    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
-  },
-  exit: (direction: number) => ({
-    x: direction > 0 ? -60 : 60,
-    opacity: 0,
-    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const },
-  }),
-};
-
-const staggerContainer = {
-  animate: { transition: { staggerChildren: 0.06 } },
-};
-
-const staggerItem = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } },
-};
-
-// ─── Step Indicator ─────────────────────────────────────────────────────────
-
-function StepIndicator({ currentStep, steps }: { currentStep: Step; steps: typeof STEPS_CONFIG_FULL }) {
-  const currentIndex = steps.findIndex((s) => s.id === currentStep);
-
-  return (
-    <nav aria-label="Onboarding progress" className="flex items-center justify-center gap-0 mb-8 sm:mb-10">
-      {steps.map((step, index) => {
-        const isCompleted = index < currentIndex;
-        const isCurrent = index === currentIndex;
-
-        return (
-          <Fragment key={step.id}>
-            {index > 0 && (
-              <div
-                aria-hidden="true"
-                className={cn(
-                  'h-[2px] w-8 sm:w-12 transition-colors duration-500',
-                  isCompleted ? 'bg-primary-500' : 'bg-warm-200'
-                )}
-              />
-            )}
-            <div
-              className="flex flex-col items-center gap-1.5"
-              role="listitem"
-              aria-current={isCurrent ? 'step' : undefined}
-            >
-              <div
-                className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500 text-sm font-semibold',
-                  isCompleted && 'bg-primary-600 text-white shadow-sm shadow-primary-600/30',
-                  isCurrent && 'bg-white border-2 border-primary-600 text-primary-600 shadow-sm',
-                  !isCompleted && !isCurrent && 'bg-warm-100 text-warm-400'
-                )}
-                aria-hidden="true"
-              >
-                {isCompleted ? <IconCheck size={14} /> : index + 1}
-              </div>
-              <span
-                className={cn(
-                  'text-label font-medium transition-colors duration-500',
-                  isCurrent ? 'text-warm-900' : isCompleted ? 'text-primary-600' : 'text-warm-400'
-                )}
-              >
-                {step.label}
-              </span>
-              <span className="sr-only">
-                {isCompleted ? '(completed)' : isCurrent ? '(current step)' : '(upcoming)'}
-              </span>
-            </div>
-          </Fragment>
-        );
-      })}
-    </nav>
-  );
-}
 
 // ─── Plan Comparison Modal ──────────────────────────────────────────────────
 

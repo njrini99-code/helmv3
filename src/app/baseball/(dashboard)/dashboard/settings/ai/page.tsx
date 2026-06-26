@@ -11,11 +11,12 @@
 // =============================================================================
 
 import { permanentRedirect } from 'next/navigation';
+import { getBaseballSettingsAliasHref } from '@/lib/baseball/settings-route-aliases';
 
 export const metadata = {
   title: 'AI Settings | Helm Baseball',
 };
 
 export default function Page() {
-  permanentRedirect('/baseball/dashboard/settings/program#ai');
+  permanentRedirect(getBaseballSettingsAliasHref('ai'));
 }

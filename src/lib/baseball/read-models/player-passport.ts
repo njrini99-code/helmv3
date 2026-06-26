@@ -484,10 +484,7 @@ export async function getPassportSettingsForEditor(
   const canEdit = isSelf || viewer.isStaff;
   if (!canEdit) return empty(targetPlayerId, false, null);
 
-  // TODO(types): baseball_player_passport_settings is not in the generated database.ts
-  // yet (migration applied; regen needed). Leave cast until next types regeneration.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('baseball_player_passport_settings')
     .select('visibility_state, field_visibility, headline')
     .eq('player_id', targetPlayerId)

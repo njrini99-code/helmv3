@@ -11,11 +11,12 @@
 // =============================================================================
 
 import { permanentRedirect } from 'next/navigation';
+import { getBaseballSettingsAliasHref } from '@/lib/baseball/settings-route-aliases';
 
 export const metadata = {
   title: 'Data Retention Settings | Helm Baseball',
 };
 
 export default function Page() {
-  permanentRedirect('/baseball/dashboard/settings/program#data-retention');
+  permanentRedirect(getBaseballSettingsAliasHref('data-retention'));
 }

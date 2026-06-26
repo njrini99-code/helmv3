@@ -30,6 +30,7 @@ import {
   DrawerContent,
   DrawerTitle,
 } from '@/components/ui/drawer';
+import type { CalendarCapabilities } from './PremiumCalendarClient';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -176,6 +177,7 @@ interface EventDetailModalProps {
   teamPlayers?: TeamPlayer[]; // Available for RSVP invitations
   currentUserId?: string; // Current user's player/coach ID to exclude from attendee list
   timezone?: string; // Team timezone for display purposes
+  capabilities?: Required<CalendarCapabilities>;
 }
 
 // Premium event type pill configuration
@@ -271,6 +273,12 @@ export function EventDetailModal({
   teamPlayers = [],
   currentUserId,
   timezone,
+  capabilities = {
+    recurring: true,
+    rsvpRead: true,
+    availability: true,
+    rsvpWrite: true,
+  },
 }: EventDetailModalProps) {
   const uid = useId();
   // Filter out current user from attendee list - you shouldn't be able to add yourself
@@ -312,7 +320,7 @@ export function EventDetailModal({
   const [existingAttendeeIds, setExistingAttendeeIds] = useState<string[] | null>(null);
   const [attendeeHydration, setAttendeeHydration] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const rsvpEnabled = Boolean(event?.id && formData.requiresRsvp && !isCreating);
+  const rsvpEnabled = Boolean(capabilities.rsvpRead && event?.id && formData.requiresRsvp && !isCreating);
   const {
     status: playerResponse,
     isLoading: playerResponseLoading,
@@ -429,7 +437,7 @@ export function EventDetailModal({
   // then deleted every invitee that wasn't re-selected). Toggles stay
   // disabled until this resolves so the selection always reflects reality.
   useEffect(() => {
-    if (!isOpen || !event?.id || isCreating || !isCoach) {
+    if (!capabilities.rsvpRead || !isOpen || !event?.id || isCreating || !isCoach) {
       setExistingAttendeeIds(null);
       setAttendeeHydration('idle');
       return;
@@ -462,12 +470,12 @@ export function EventDetailModal({
     // a fresh event object re-runs BOTH effects together. Keying this one on
     // event.id alone would let the reset wipe the selection while the loaded
     // baseline survives — turning every invitee into a phantom "removal".
-  }, [isOpen, event, isCreating, isCoach]);
+  }, [capabilities.rsvpRead, isOpen, event, isCreating, isCoach]);
 
   // Series-root edits: prefill the recurrence pattern from the stored rule so
   // the series can be extended (more occurrences / later end date) or
   // re-shaped (e.g. add Wednesdays to a M/F practice).
-  const isSeriesRoot = !isCreating && Boolean(event?.recurrence_rule) && !event?.parent_event_id;
+  const isSeriesRoot = capabilities.recurring && !isCreating && Boolean(event?.recurrence_rule) && !event?.parent_event_id;
   useEffect(() => {
     if (!isOpen || !isSeriesRoot || !event?.recurrence_rule) return;
     const rule = parseRecurrenceRule(event.recurrence_rule);
@@ -508,7 +516,7 @@ export function EventDetailModal({
   useEffect(() => {
     async function checkConflicts() {
       // Check conflicts when attendees are selected (regardless of RSVP toggle)
-      if (conflictCheckIds.length === 0 || !formData.startDate) {
+      if (!capabilities.availability || conflictCheckIds.length === 0 || !formData.startDate) {
         setConflicts(null);
         return;
       }
@@ -548,13 +556,13 @@ export function EventDetailModal({
 
     const debounce = setTimeout(checkConflicts, 500);
     return () => clearTimeout(debounce);
-  }, [conflictCheckIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
+  }, [capabilities.availability, conflictCheckIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
 
   // Series detection: an event is part of a recurring series if it has a
   // recurrence_rule (root) or a parent_event_id (child). Edit + delete then
   // surface a scope picker so the change can apply to one occurrence,
   // future occurrences, or the full series.
-  const isInSeries = !isCreating && Boolean(
+  const isInSeries = capabilities.recurring && !isCreating && Boolean(
     event && (event.parent_event_id || event.recurrence_rule),
   );
   const [pendingScopeAction, setPendingScopeAction] = useState<null | 'edit' | 'delete'>(null);
@@ -568,7 +576,7 @@ export function EventDetailModal({
    *   as an add and NO removals are sent (additive-only fail-safe).
    */
   const buildSubmitData = (): GolfEventFormData => {
-    const rule = (isCreating || isSeriesRoot)
+    const rule = capabilities.recurring && (isCreating || isSeriesRoot)
       ? buildRecurrenceRule(formData, formData.startDate)
       : null;
     const data: GolfEventFormData = { ...formData, recurrenceRule: rule };
@@ -1112,7 +1120,7 @@ export function EventDetailModal({
               to add occurrences, or re-shape the weekday pattern). Child
               occurrences don't carry the pattern; their edits go through
               the scope picker instead. */}
-          {canEdit && !isCancelled && (isCreating || isSeriesRoot) && (
+          {canEdit && capabilities.recurring && !isCancelled && (isCreating || isSeriesRoot) && (
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <label
@@ -1241,7 +1249,7 @@ export function EventDetailModal({
           )}
 
           {/* RSVP Toggle */}
-          {canEdit && (
+          {canEdit && capabilities.rsvpWrite && (
             <div className="flex items-center justify-between py-2">
               <span className="text-sm font-medium text-warm-700">Require RSVP</span>
               <label className="cursor-pointer">
@@ -1267,7 +1275,7 @@ export function EventDetailModal({
           )}
 
           {/* RSVP Settings (when enabled) */}
-          {canEdit && formData.requiresRsvp && (
+          {canEdit && capabilities.rsvpWrite && formData.requiresRsvp && (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor={`${uid}-rsvp-deadline`} className="block text-xs font-medium text-warm-500 mb-1">RSVP Deadline</label>
@@ -1298,7 +1306,7 @@ export function EventDetailModal({
           )}
 
           {/* Player RSVP Card */}
-          {!isCreating && event && formData.requiresRsvp && !isCoach && (
+          {!isCreating && event && capabilities.rsvpRead && capabilities.rsvpWrite && formData.requiresRsvp && !isCoach && (
             <div className="border-t border-warm-200 -mx-6 px-6 pt-4">
               <PlayerRSVPCard
                 event={{
@@ -1329,7 +1337,7 @@ export function EventDetailModal({
           )}
 
           {/* RSVP Status Section */}
-          {!isCreating && event?.id && formData.requiresRsvp && (
+          {!isCreating && event?.id && capabilities.rsvpRead && formData.requiresRsvp && (
             <div className="border-t border-warm-200 -mx-6 px-6 pt-4">
               <h4 className="text-sm font-medium text-warm-900 mb-3">RSVP Status</h4>
               {rsvpSummaryError && (

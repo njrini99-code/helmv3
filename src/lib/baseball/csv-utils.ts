@@ -436,7 +436,7 @@ function isNegativeBlockingField(field: string): boolean {
  * Run the 3-tier VALIDATE pass. Pure: deterministic over its inputs, no DB, no
  * I/O. See the file-level comment for the severity model.
  *
- * TODO(db): the SOURCE of `rows`/`mapping`/`matches` is wired in the DB pass
+ * The SOURCE of `rows`/`mapping`/`matches` is wired in the DB pass
  * (loadRosterPlayers + matchRows in imports.ts); this validator itself stays
  * pure and DB-free by design.
  */

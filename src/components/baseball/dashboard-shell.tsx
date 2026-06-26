@@ -10,18 +10,17 @@ import { useUnreadCount } from '@/hooks/use-unread-count';
 import { cn } from '@/lib/utils';
 import { HubSubNav } from '@/app/baseball/(dashboard)/_components/hub-sub-nav';
 import { resolveActiveHub } from '@/app/baseball/(dashboard)/_components/resolve-active-hub';
-import { useAuth } from '@/hooks/use-auth';
+import { NotificationBell } from '@/components/baseball/NotificationBell';
 import {
   getVisibleBaseballNav,
-  BASEBALL_MESSAGES_NAV,
   type BaseballNavContext,
 } from '@/lib/baseball/nav-registry';
 import {
   IconHome,
   IconUsers,
   IconUser,
-  IconMessage,
-  IconSettings,
+  IconCalendar,
+  IconMenu,
 } from '@/components/icons';
 
 // ---------------------------------------------------------------------------
@@ -30,44 +29,47 @@ import {
 // ---------------------------------------------------------------------------
 const COACH_NAV_FALLBACK: MobileNavItem[] = [
   { label: 'Home', href: '/baseball/dashboard/command-center', icon: IconHome },
+  { label: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { label: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
-  { label: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage },
-  { label: 'More', href: '/baseball/dashboard/settings', icon: IconSettings },
 ];
 
 const PLAYER_NAV_FALLBACK: MobileNavItem[] = [
   { label: 'Home', href: '/baseball/player/today', icon: IconHome },
+  { label: 'Schedule', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { label: 'Profile', href: '/baseball/dashboard/profile', icon: IconUser },
-  { label: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage },
-  { label: 'More', href: '/baseball/dashboard/settings', icon: IconSettings },
 ];
 
 /**
  * Derive the 4 mobile bottom nav items from the resolved nav context.
  *
- * Strategy: take the first 3 visible PRIMARY entries from the registry (which
- * are already role- and capability-filtered + program-type ordered), then
- * insert Messages (always last, with live unread badge). This matches the
- * spec's "4-item mobile nav" pattern and automatically reflects any registry
- * changes — no manual sync needed.
+ * Strategy: keep the three everyday mobile destinations stable, then make the
+ * fourth slot open the full drawer. The registry still decides whether the
+ * preferred ids exist for the current role/program, and the drawer carries the
+ * rest of the product surface without pretending Settings is "More".
  */
 function buildMobileNavFromContext(
   ctx: BaseballNavContext,
   unreadCount: number,
+  openMenu: () => void,
 ): MobileNavItem[] {
   const primary = getVisibleBaseballNav(ctx).filter((e) => e.section === 'primary');
-  const top3 = primary.slice(0, 3);
-  const items: MobileNavItem[] = top3.map((e) => ({
+  const preferredIds = ctx.role === 'coach'
+    ? ['command-center', 'calendar', 'roster']
+    : ['player-today', 'calendar', 'player-profile'];
+  const top3 = preferredIds
+    .map((id) => primary.find((e) => e.id === id))
+    .filter((e): e is NonNullable<typeof e> => Boolean(e));
+  const fill = primary.filter((e) => !top3.some((selected) => selected.id === e.id));
+  const items: MobileNavItem[] = [...top3, ...fill].slice(0, 3).map((e) => ({
     label: e.label,
     href: e.href,
     icon: e.icon,
     ...(e.showUnreadBadge && unreadCount > 0 ? { badge: unreadCount } : {}),
   }));
-  // Messages is always the fourth slot, always present.
   items.push({
-    label: BASEBALL_MESSAGES_NAV.label,
-    href: BASEBALL_MESSAGES_NAV.href,
-    icon: BASEBALL_MESSAGES_NAV.icon,
+    label: 'Menu',
+    icon: IconMenu,
+    onClick: openMenu,
     ...(unreadCount > 0 ? { badge: unreadCount } : {}),
   });
   return items;
@@ -88,23 +90,25 @@ type Props = {
 export function BaseballDashboardShell({ children, role, navContext }: Props) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
   const pathname = usePathname();
-  const { coach } = useAuth();
   const { unreadCount } = useUnreadCount();
 
   // Derive the mobile nav from the registry when the context is available;
   // fall back to the role-specific constants while it is still resolving.
   const mobileNavItems = useMemo<MobileNavItem[]>(() => {
     if (navContext) {
-      return buildMobileNavFromContext(navContext, unreadCount);
+      return buildMobileNavFromContext(navContext, unreadCount, () => setMobileOpen(true));
     }
     const fallback = role === 'coach' ? COACH_NAV_FALLBACK : PLAYER_NAV_FALLBACK;
-    // Inject live unread badge into the Messages slot even for the fallback.
-    return fallback.map((item) =>
-      item.href === BASEBALL_MESSAGES_NAV.href && unreadCount > 0
-        ? { ...item, badge: unreadCount }
-        : item,
-    );
-  }, [navContext, role, unreadCount]);
+    return [
+      ...fallback,
+      {
+        label: 'Menu',
+        icon: IconMenu,
+        onClick: () => setMobileOpen(true),
+        ...(unreadCount > 0 ? { badge: unreadCount } : {}),
+      },
+    ];
+  }, [navContext, role, unreadCount, setMobileOpen]);
 
   // Grouped-hubs sub-tab strip: resolve which hub (Team / Stats / Development /
   // Management / Recruiting / Academics) owns the current route and render its
@@ -113,7 +117,7 @@ export function BaseballDashboardShell({ children, role, navContext }: Props) {
   const activeHub = resolveActiveHub({
     pathname,
     role,
-    coachType: coach?.coach_type ?? null,
+    programType: navContext?.programType ?? null,
   });
 
   const mobileSidebarRef = useRef<HTMLDivElement>(null);
@@ -183,10 +187,10 @@ export function BaseballDashboardShell({ children, role, navContext }: Props) {
         Skip to main content
       </a>
 
-      <CommandPalette />
+      <CommandPalette isCoach={role === 'coach'} />
 
       <div className="hidden lg:block">
-        <Sidebar />
+        <Sidebar navContext={navContext} />
       </div>
 
       {/* Mobile Sidebar Overlay */}
@@ -212,7 +216,7 @@ export function BaseballDashboardShell({ children, role, navContext }: Props) {
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <Sidebar isMobile />
+        <Sidebar isMobile navContext={navContext} />
       </div>
 
       <div
@@ -233,12 +237,17 @@ export function BaseballDashboardShell({ children, role, navContext }: Props) {
             overscrollBehaviorY: 'contain',
           }}
         >
+          <div className="sticky top-0 z-30 flex min-h-14 items-center justify-end border-b border-warm-200/70 bg-cream-50/82 px-4 py-2 backdrop-blur-xl sm:px-6 lg:px-8">
+            <NotificationBell />
+          </div>
+
           {/* Grouped-hub sub-tab strip (only on hub-owned routes). */}
           {activeHub && (
             <HubSubNav
               key={activeHub.id}
               tabs={activeHub.tabs}
               ariaLabel={activeHub.ariaLabel}
+              className="hidden md:block md:top-14"
             />
           )}
           {children}

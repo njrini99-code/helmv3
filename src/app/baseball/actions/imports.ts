@@ -1379,7 +1379,7 @@ async function applyImportPlan(
   }
 
   revalidatePath('/baseball/dashboard/import');
-  revalidatePath('/baseball/dashboard/stats');
+  revalidatePath('/baseball/dashboard/stats-center');
 
   // AUTOMATIC IMPORT -> INSIGHT LOOP. Swallow engine failures (data is saved).
   if (createdCount + updatedCount > 0) {
@@ -1493,7 +1493,7 @@ export const rollbackImport = withBaseballAction(
     }
 
     revalidatePath('/baseball/dashboard/import');
-    revalidatePath('/baseball/dashboard/stats');
+    revalidatePath('/baseball/dashboard/stats-center');
     revalidatePath('/baseball/dashboard/command-center');
 
     void affectedPlayers;

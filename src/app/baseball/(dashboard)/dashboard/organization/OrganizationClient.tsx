@@ -5,7 +5,7 @@ import { Header } from '@/components/layout/header';
 import { TeamSelector } from '@/components/baseball/showcase/TeamSelector';
 import { OrgDashboard } from '@/components/baseball/showcase/OrgDashboard';
 
-export function OrganizationDashboardClient() {
+export default function OrganizationDashboardPage() {
   const [teamFilterId, setTeamFilterId] = useState('all');
 
   return (

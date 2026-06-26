@@ -87,10 +87,34 @@ export interface TeamMember {
 type CalendarActionResult<T = unknown> = Promise<{ success: boolean; error?: string; data?: T }>;
 
 // Action handler types for different sports - use generic types for flexibility
-interface CalendarActionHandlers {
+export interface CalendarActionHandlers {
   createEvent: (data: unknown) => CalendarActionResult<unknown>;
   updateEvent: (id: string, data: unknown) => CalendarActionResult<unknown>;
   deleteEvent: (id: string) => CalendarActionResult<unknown>;
+  respondToEvent?: (eventId: string, response: RSVPResponse) => CalendarActionResult<unknown>;
+  getPlayerAvailability?: (
+    playerId: string,
+    startDate: string,
+    endDate: string,
+  ) => CalendarActionResult<unknown>;
+  getCurrentUserBusyPeriods?: (
+    startDate: string,
+    endDate: string,
+  ) => CalendarActionResult<unknown>;
+  createRecurringEvent?: (data: unknown) => CalendarActionResult<unknown>;
+  editRecurringEvent?: (data: unknown) => CalendarActionResult<unknown>;
+  deleteRecurringEvent?: (
+    eventId: string,
+    originalStartDate: string,
+    scope: 'this' | 'thisAndFuture' | 'all',
+  ) => CalendarActionResult<unknown>;
+}
+
+export interface CalendarCapabilities {
+  recurring?: boolean;
+  rsvpRead?: boolean;
+  availability?: boolean;
+  rsvpWrite?: boolean;
 }
 
 async function loadGolfCalendarActions() {
@@ -111,6 +135,37 @@ const defaultActionHandlers: CalendarActionHandlers = {
     const { deleteGolfEvent } = await loadGolfCalendarActions();
     return deleteGolfEvent(id);
   },
+  respondToEvent: async (eventId: string, response: RSVPResponse) => {
+    const { respondToEvent } = await loadGolfCalendarActions();
+    return respondToEvent(eventId, response as 'accepted' | 'tentative' | 'declined' | 'pending');
+  },
+  getPlayerAvailability: async (playerId: string, startDate: string, endDate: string) => {
+    const { getPlayerAvailability } = await loadGolfCalendarActions();
+    return getPlayerAvailability(playerId, startDate, endDate);
+  },
+  getCurrentUserBusyPeriods: async (startDate: string, endDate: string) => {
+    const { getCurrentUserBusyPeriods } = await loadGolfCalendarActions();
+    return getCurrentUserBusyPeriods(startDate, endDate);
+  },
+  createRecurringEvent: async (data: unknown) => {
+    const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+    return createRecurringEvent(data as never);
+  },
+  editRecurringEvent: async (data: unknown) => {
+    const { editRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+    return editRecurringEvent(data as never);
+  },
+  deleteRecurringEvent: async (eventId: string, originalStartDate: string, scope: 'this' | 'thisAndFuture' | 'all') => {
+    const { deleteRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+    return deleteRecurringEvent(eventId, originalStartDate, scope);
+  },
+};
+
+const defaultCapabilities: Required<CalendarCapabilities> = {
+  recurring: true,
+  rsvpRead: true,
+  availability: true,
+  rsvpWrite: true,
 };
 
 interface PremiumCalendarClientProps {
@@ -121,6 +176,7 @@ interface PremiumCalendarClientProps {
   onSyncSettings?: () => void;
   // Optional custom action handlers (defaults to golf actions)
   actionHandlers?: CalendarActionHandlers;
+  capabilities?: CalendarCapabilities;
   teamTimezone?: string | null;
   teamId?: string;
   /**
@@ -143,6 +199,7 @@ export function PremiumCalendarClient({
   currentUserId,
   onSyncSettings,
   actionHandlers = defaultActionHandlers,
+  capabilities,
   teamTimezone,
   teamId: teamIdProp,
   initialView,
@@ -156,6 +213,7 @@ export function PremiumCalendarClient({
   const isMobile = isMobileQuery || (isMobileDevice && preferMobileUI);
   const showMobileUI = isMobile || (isTablet && preferMobileUI);
   const prefersReducedMotion = useReducedMotion();
+  const resolvedCapabilities = { ...defaultCapabilities, ...capabilities };
 
   const [view, setView] = useState<CalendarView>(initialView ?? 'week');
   // Initialize to midnight today so server and client produce identical HTML
@@ -199,14 +257,14 @@ export function PremiumCalendarClient({
   // Get RSVP status for selected event (for mobile sheet) — players only
   const { status: selectedEventRsvpStatus } = usePlayerEventRSVP(
     selectedEvent?.id,
-    !isCoach && !!selectedEvent
+    resolvedCapabilities.rsvpRead && !isCoach && !!selectedEvent
   );
 
   // Get RSVP summary for coaches viewing an event — gated by role so the
   // player-only invitations fetch never fires from the coach grid (audit #31).
   const { rsvpSummary: selectedEventRsvpSummary } = useEventRSVP(
     selectedEvent?.id ?? '',
-    isCoach && !!selectedEvent
+    resolvedCapabilities.rsvpRead && isCoach && !!selectedEvent
   );
 
   // Drag-and-drop state
@@ -236,8 +294,10 @@ export function PremiumCalendarClient({
   // Handle RSVP for a specific event (used by mobile list view)
   const handleRsvp = useCallback(async (eventId: string, response: RSVPResponse): Promise<{ success: boolean; error?: string }> => {
     try {
-      const { respondToEvent } = await loadGolfCalendarActions();
-      const result = await respondToEvent(eventId, response as 'accepted' | 'tentative' | 'declined' | 'pending');
+      if (!resolvedCapabilities.rsvpWrite || !actionHandlers.respondToEvent) {
+        return { success: false, error: 'RSVP is not available for this calendar.' };
+      }
+      const result = await actionHandlers.respondToEvent(eventId, response);
       if (result.success) {
         // Update local state optimistically
         setUserRsvpStatuses((prev) => {
@@ -251,7 +311,7 @@ export function PremiumCalendarClient({
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
-  }, []);
+  }, [actionHandlers, resolvedCapabilities.rsvpWrite]);
 
   // Handle RSVP from mobile sheet for selected event
   const handleMobileSheetRsvp = useCallback(async (response: RSVPResponse): Promise<{ success: boolean; error?: string }> => {
@@ -264,7 +324,7 @@ export function PremiumCalendarClient({
 
   // Fetch player availability when players are selected (multi-select) — debounced 300ms
   useEffect(() => {
-    if (selectedPlayerIds.length === 0) {
+    if (!resolvedCapabilities.availability || selectedPlayerIds.length === 0) {
       setMultiPlayerBusyPeriods(new Map());
       return;
     }
@@ -291,14 +351,16 @@ export function PremiumCalendarClient({
             endDate = endOfMonth(currentDate);
           }
 
-          // Import and use the action
-          const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
+          if (!actionHandlers.getPlayerAvailability) {
+            setMultiPlayerBusyPeriods(new Map());
+            return;
+          }
 
           // Fetch availability for all selected players in parallel
           const results = await Promise.all(
             selectedPlayerIds.map(async (playerId, index) => {
               try {
-                const result = await getPlayerAvailability(
+                const result = await actionHandlers.getPlayerAvailability!(
                   playerId,
                   format(startDate, 'yyyy-MM-dd'),
                   format(endDate, 'yyyy-MM-dd')
@@ -345,13 +407,13 @@ export function PremiumCalendarClient({
         clearTimeout(availabilityDebounceRef.current);
       }
     };
-  }, [selectedPlayerIds, currentDate, view]);
+  }, [selectedPlayerIds, currentDate, view, actionHandlers, resolvedCapabilities.availability]);
 
   // Fetch current user's busy periods (works for both coaches and players)
   // This shows YOUR schedule when comparing availability with selected team members
   useEffect(() => {
     // Only fetch if team members are selected (comparing availability)
-    if (selectedPlayerIds.length === 0) {
+    if (!resolvedCapabilities.availability || selectedPlayerIds.length === 0) {
       setCoachBusyPeriods([]);
       return;
     }
@@ -373,9 +435,11 @@ export function PremiumCalendarClient({
           endDate = endOfMonth(currentDate);
         }
 
-        // Import and use the action - this gets YOUR busy periods (events + classes)
-        const { getCurrentUserBusyPeriods } = await import('@/app/golf/actions/golf');
-        const result = await getCurrentUserBusyPeriods(
+        if (!actionHandlers.getCurrentUserBusyPeriods) {
+          setCoachBusyPeriods([]);
+          return;
+        }
+        const result = await actionHandlers.getCurrentUserBusyPeriods(
           format(startDate, 'yyyy-MM-dd'),
           format(endDate, 'yyyy-MM-dd')
         );
@@ -399,7 +463,7 @@ export function PremiumCalendarClient({
     };
 
     fetchCurrentUserAvailability();
-  }, [currentDate, view, selectedPlayerIds, isCoach]);
+  }, [currentDate, view, selectedPlayerIds, isCoach, actionHandlers, resolvedCapabilities.availability]);
 
   // Derive a VALUE-stable teamId (string) so realtime/range effects below
   // don't churn when the server hands us fresh array identities on refresh
@@ -593,7 +657,7 @@ export function PremiumCalendarClient({
     const timezoneOffset = new Date().getTimezoneOffset();
     try {
       if (isCreatingEvent) {
-        if (data.recurrence && data.recurrence !== 'none') {
+        if (data.recurrence && data.recurrence !== 'none' && resolvedCapabilities.recurring) {
           // Serialize the editor's STRUCTURED rule (weekday sets, biweekly,
           // until-a-date) — rebuilding a minimal FREQ/COUNT rule here dropped
           // every pattern beyond "every N". Falls back to the legacy minimal
@@ -602,8 +666,10 @@ export function PremiumCalendarClient({
           const recurrenceRule = data.recurrenceRule
             ? serializeRecurrenceRule(data.recurrenceRule)
             : `RRULE:FREQ=${data.recurrence.toUpperCase()};INTERVAL=1;COUNT=${data.recurrenceCount}`;
-          const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
-          const result = await createRecurringEvent({
+          if (!actionHandlers.createRecurringEvent) {
+            throw new Error('Recurring events are not available for this calendar.');
+          }
+          const result = await actionHandlers.createRecurringEvent({
             title: data.title,
             eventType: data.eventType,
             startDate: data.startDate,
@@ -649,10 +715,12 @@ export function PremiumCalendarClient({
         // updated together. 'this' (or no scope) takes the regular update
         // path so the action's existing logic for attendees / RSVP / etc.
         // continues to apply.
-        if (data.editScope && data.editScope !== 'this') {
+        if (data.editScope && data.editScope !== 'this' && resolvedCapabilities.recurring) {
           const { serializeRecurrenceRule } = await import('@/lib/golf/recurrence');
-          const { editRecurringEvent } = await import('@/app/golf/actions/recurring-events');
-          const result = await editRecurringEvent({
+          if (!actionHandlers.editRecurringEvent) {
+            throw new Error('Recurring events are not available for this calendar.');
+          }
+          const result = await actionHandlers.editRecurringEvent({
             eventId: selectedEvent.id,
             originalStartDate: selectedEvent.start_date,
             scope: data.editScope,
@@ -730,9 +798,11 @@ export function PremiumCalendarClient({
     if (!selectedEvent) return;
     setIsSavingEvent(true);
     try {
-      if (scope && scope !== 'this') {
-        const { deleteRecurringEvent } = await import('@/app/golf/actions/recurring-events');
-        const result = await deleteRecurringEvent(
+      if (scope && scope !== 'this' && resolvedCapabilities.recurring) {
+        if (!actionHandlers.deleteRecurringEvent) {
+          throw new Error('Recurring events are not available for this calendar.');
+        }
+        const result = await actionHandlers.deleteRecurringEvent(
           selectedEvent.id,
           selectedEvent.start_date,
           scope,
@@ -1193,6 +1263,7 @@ export function PremiumCalendarClient({
         isSaving={isSavingEvent}
         teamPlayers={teamMembers}
         currentUserId={currentUserId}
+        capabilities={resolvedCapabilities}
       />
       )}
 
@@ -1213,11 +1284,13 @@ export function PremiumCalendarClient({
           const timezoneOffset = new Date().getTimezoneOffset();
           try {
             if (isCreatingEvent) {
-              if (data.recurrence && data.recurrence !== 'none') {
+              if (data.recurrence && data.recurrence !== 'none' && resolvedCapabilities.recurring) {
                 const freq = data.recurrence.toUpperCase();
                 const recurrenceRule = `RRULE:FREQ=${freq};INTERVAL=1;COUNT=${data.recurrenceCount}`;
-                const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
-                const result = await createRecurringEvent({
+                if (!actionHandlers.createRecurringEvent) {
+                  throw new Error('Recurring events are not available for this calendar.');
+                }
+                const result = await actionHandlers.createRecurringEvent({
                   title: data.title,
                   eventType: data.eventType,
                   startDate: data.startDate,
@@ -1307,7 +1380,7 @@ export function PremiumCalendarClient({
           }
         } : undefined}
         userRsvpStatus={selectedEventRsvpStatus as RSVPResponse | null}
-        onRsvp={!isCoach ? handleMobileSheetRsvp : undefined}
+        onRsvp={!isCoach && resolvedCapabilities.rsvpWrite ? handleMobileSheetRsvp : undefined}
         rsvpSummary={isCoach ? selectedEventRsvpSummary : null}
         initialEventType={initialEventType as 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | undefined}
       />

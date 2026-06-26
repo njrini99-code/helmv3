@@ -11,11 +11,12 @@
 // =============================================================================
 
 import { permanentRedirect } from 'next/navigation';
+import { getBaseballSettingsAliasHref } from '@/lib/baseball/settings-route-aliases';
 
 export const metadata = {
   title: 'Demo Mode Settings | Helm Baseball',
 };
 
 export default function Page() {
-  permanentRedirect('/baseball/dashboard/settings/program#demo-mode');
+  permanentRedirect(getBaseballSettingsAliasHref('demo-mode'));
 }

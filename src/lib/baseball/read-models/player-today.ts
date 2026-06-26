@@ -61,13 +61,9 @@ import type {
   BaseballReadinessComputation,
 } from '@/lib/types/baseball-lifting-v11';
 
-// The V11 lifting + readiness tables ship via migrations 20260624000061/63 and
-// are NOT in the generated database.ts (no db:types regen without a live apply).
-// Cast the query-builder for these tables — the hand-written Row types in
-// @/lib/types/baseball-lifting-v11 are the contract; RLS is the gate. Mirrors the
-// established baseball pattern (player-lift.ts / performance-command.ts).
-// TODO(types): regenerate Supabase types after migrations 20260624000061/63 are
-// confirmed applied to prod, then remove UntypedClient and cast for baseball_event_acknowledgements.
+// Some lifting/readiness result shapes are narrowed through hand-written V11
+// domain types after selection. Keep this alias only for query-builder edges
+// that still need local result shaping.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UntypedClient = any;
 
@@ -508,9 +504,8 @@ export async function getPlayerToday(
   horizon.setUTCDate(horizon.getUTCDate() + 6);
   const horizonYmd = horizon.toISOString().slice(0, 10);
 
-  // The lifting/readiness tables are not in the generated types; use the cast
-  // client for those reads (see UntypedClient note above). The events/stats reads
-  // stay on the typed client.
+  // Keep a narrowed alias for V11 reads whose result shape is asserted into
+  // hand-written domain contracts below.
   const db = supabase as UntypedClient;
 
   const [
@@ -531,9 +526,8 @@ export async function getPlayerToday(
       .lte('start_time', dayEnd)
       .order('start_time', { ascending: true }),
     // GAP 3 — also select the import-stamped provenance columns so each recent
-    // stat carries the same SourceTrust chip + drawer the event path has. The
-    // stamped columns aren't in generated database.ts, so use the untyped client.
-    (supabase as UntypedClient)
+    // stat carries the same SourceTrust chip + drawer the event path has.
+    supabase
       .from('baseball_player_stats')
       .select(
         'id, stat_type, session_date, session_name, source, source_trust_level, source_match_tier, source_match_confidence, source_external_id, import_run_id',
@@ -652,19 +646,11 @@ export async function getPlayerToday(
     error = 'Your schedule could not be loaded.';
   } else if (eventRows.length > 0 && me.userId) {
     const eventIds = eventRows.map((e) => e.id);
-    // baseball_event_acknowledgements ships in migration 20260624000040 but the
-    // generated database.ts types lag the migration (no db:types regen on a
-    // shared prod DB). Use the established `as any` table-accessor pattern; the
-    // row shape is asserted to the hand-written ack columns below.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: acks, error: ackErr } = (await (supabase as any)
+    const { data: acks, error: ackErr } = await supabase
       .from('baseball_event_acknowledgements')
       .select('event_id, acknowledged_at')
       .eq('user_id', me.userId)
-      .in('event_id', eventIds)) as {
-      data: { event_id: string; acknowledged_at: string }[] | null;
-      error: unknown;
-    };
+      .in('event_id', eventIds);
     if (ackErr) {
       error = error ?? 'Acknowledgement status could not be loaded.';
     } else {
@@ -707,7 +693,7 @@ export async function getPlayerToday(
     const runIds = [...new Set(statRows.map((s) => s.import_run_id).filter(Boolean))] as string[];
     const reviewByRun = new Map<string, string | null>();
     if (runIds.length > 0) {
-      const { data: runs } = await (supabase as UntypedClient)
+      const { data: runs } = await supabase
         .from('baseball_import_runs')
         .select('id, review_state')
         .in('id', runIds);

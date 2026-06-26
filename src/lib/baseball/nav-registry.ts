@@ -473,7 +473,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
   // Previously orphaned routes — wired into nav 2026-06-24.
   //
   // Methodology: each page was inspected to determine its intended audience
-  // (role check, useRecruitingRouteProtection, allowedCoachTypes, etc.) and
+  // (server route guard, role check, capability gate, etc.) and
   // assigned the narrowest correct role + capability gate. Routes that are
   // intentionally deep-linked detail pages (players/[id], dev-plans/[id],
   // lift/[sessionId], videos/[id]) are NOT registered here — they must be
@@ -486,11 +486,9 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     label: 'Pipeline',
     href: '/baseball/dashboard/pipeline',
     icon: IconTarget,
-    // Recruiting pipeline — college / showcase / juco coaches only. The page
-    // enforces useRecruitingRouteProtection which gates on coach_type. We
-    // surface it to any coach (no capability gate) because program-type
-    // routing already hides it for HS coaches; program variants control
-    // ordering so it rises to the top for college/showcase/juco.
+    // Recruiting pipeline — server-gated for recruiting program modes. We
+    // surface it to coaches here because program variants control ordering
+    // and the page guard performs the real route decision.
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
@@ -500,8 +498,8 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     label: 'Discover',
     href: '/baseball/dashboard/discover',
     icon: IconStar,
-    // Player discovery search — recruiting coaches. Same useRecruitingRouteProtection
-    // gate as pipeline. Visibility ungated by capability; the page self-guards.
+    // Player discovery search — recruiting coaches. Visibility is ungated by
+    // capability here; the server page guard owns route access.
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
@@ -511,7 +509,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     label: 'Watchlist',
     href: '/baseball/dashboard/watchlist',
     icon: IconBookmark,
-    // Saved player shortlist — recruiting coaches. useRecruitingRouteProtection.
+    // Saved player shortlist — recruiting coaches. Server-gated at the route.
     role: 'coach',
     requiredCapability: null,
     section: 'primary',
@@ -589,10 +587,9 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     label: 'Organization',
     href: '/baseball/dashboard/organization',
     icon: IconLayoutGrid,
-    // Showcase multi-team org dashboard. useRouteProtection({ allowedCoachTypes:
-    // ['showcase'] }) is the page's own gate; can_manage_settings is a
-    // reasonable capability proxy so this entry stays hidden for non-head staff
-    // even within showcase orgs.
+    // Showcase multi-team org dashboard. A server route guard handles
+    // showcase/academy/club access; can_manage_settings keeps this hidden for
+    // non-head staff even within those orgs.
     role: 'coach',
     requiredCapability: 'can_manage_settings',
     section: 'secondary',
@@ -602,8 +599,8 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     label: 'Teams',
     href: '/baseball/dashboard/teams',
     icon: IconUsers,
-    // Showcase multi-team list (useRouteProtection). Same capability guard as
-    // organization — surfaces only to head staff in showcase programs.
+    // Showcase multi-team list. Same capability guard as organization —
+    // surfaces only to head staff in showcase-style programs.
     role: 'coach',
     requiredCapability: 'can_manage_settings',
     section: 'secondary',
@@ -693,14 +690,12 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
   },
   {
     id: 'analytics',
-    label: 'Analytics',
+    label: 'My Analytics',
     href: '/baseball/dashboard/analytics',
     icon: IconTrendingUp,
-    // Coaches: placeholder (their analytics live in Command Center; the page
-    // says so). Players: profile-view / recruiting analytics (useAnalytics).
-    // Shared route; the page renders role-appropriate content via useAuthStore.
-    playerLabel: 'My Analytics',
-    role: 'both',
+    // Player profile-view / recruiting analytics. Coaches are intentionally
+    // redirected to Command Center, so this is not advertised in coach nav.
+    role: 'player',
     requiredCapability: null,
     section: 'primary',
   },
