@@ -1,0 +1,100 @@
+ 28G	./.next
+2.8G	./node_modules
+490M	./helm-website-ui
+194M	./.git
+ 71M	./tools
+ 68M	./ui-intelligence
+ 59M	./.helmdev
+ 56M	./.claude
+ 56M	./.agents
+ 48M	./.playwright-mcp
+ 46M	./golfhelm-creative-engine.zip
+ 45M	./.skills
+ 42M	./.vercel
+ 36M	./docs
+ 34M	./src
+ 32M	./.ultracode
+ 27M	./.ds-sync
+ 23M	./playwright-report
+ 13M	./ds-bundle
+ 11M	./ios
+ 11M	./archive
+8.4M	./public
+7.9M	./design
+6.1M	./supabase
+5.7M	./.bugtest-screens
+5.6M	./images
+4.8M	./baseballhelm_revolution_plan_v2_ultracode_ready.zip
+4.4M	./GolfHelm-CoachHelm-Showcase.pdf
+4.2M	./.tmp-screenshots
+3.1M	./.remember
+2.2M	./GolfHelm-Fairway-Guide.pdf
+1.8M	./mockup-v2-screenshot.png
+1.6M	./scripts
+1.6M	./mockup-instagram-ad-screenshot.png
+1.6M	./.design-sync
+1.4M	./tsconfig.tsbuildinfo
+1.4M	./GolfHelm-Prospect-Deck.pptx
+1.1M	./package-lock.json
+1.1M	./.cleanup
+792K	./coachhelm-instagram-ad.png
+744K	./.production-team
+736K	./routes
+736K	./.helm
+612K	./crm-detail-panels.png
+568K	./helm-intelligence
+496K	./rounds-current.png
+488K	./pat-coach-dashboard.png
+488K	./hub-plinth.png
+488K	./hub-plinth-v3.png
+480K	./hub-plinth-v2.png
+436K	./coachhelm-plinth.png
+436K	./coachhelm-plinth-v3.png
+408K	./coach-patterns-scrolled.png
+404K	./stats-plinth-v3.png
+400K	./stats-plinth.png
+400K	./stats-plinth-primary.png
+396K	./admin-overview.png
+388K	./whats-new-loaded.png
+388K	./analytics-fixed.png
+376K	./coach-patterns.png
+376K	./coach-patterns-reload.png
+376K	./coach-patterns-fresh.png
+376K	./coach-patterns-fixed2.png
+376K	./coach-patterns-fixed.png
+376K	./coach-patterns-final2.png
+376K	./coach-patterns-final.png
+376K	./coach-patterns-cold.png
+372K	./coach-analytics.png
+372K	./.full-review
+368K	./analytics-coachhelm.png
+356K	./intelligence-plinth-v3.png
+356K	./ben-stats-ipad-fullpage.png
+352K	./coach-dashboard.png
+348K	./coach-insights-final.png
+336K	./round-card-hover.png
+332K	./statsfixresults.pdf
+332K	./round-review-final-3.png
+332K	./coach-coachhelm.png
+328K	./round-review-final-2.png
+328K	./round-library-final.png
+328K	./coach-roster.png
+316K	./coach-development.png
+312K	./memory
+308K	./coach-patterns-forced.png
+304K	./round-review.png
+304K	./pat-player-dashboard.png
+304K	./analytics-fixed-2.png
+304K	./analytics-coachhelm-2.png
+300K	./whats-new.png
+292K	./coach-insights.png
+292K	./.full-review-archive-2026-03-07
+280K	./round-detail-recap.png
+272K	./coach-home.png
+240K	./coach-insights-loaded.png
+236K	./coach-insights-loaded2.png
+220K	./coach-intelligence-final.png
+208K	./coach-intelligence-2.png
+208K	./calendar-editorial.png
+200K	./coach-intel-final2.png
+188K	./vizlab-trends.png

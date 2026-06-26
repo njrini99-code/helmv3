@@ -1,0 +1,5 @@
+scripts
+scripts/__tests__
+scripts/knowledge
+scripts/knowledge/lib
+scripts/ui-intelligence

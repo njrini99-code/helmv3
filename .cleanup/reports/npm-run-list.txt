@@ -1,0 +1,92 @@
+Lifecycle scripts included in helmv3@1.0.0:
+  start
+    next start
+  test
+    vitest --project unit
+available via `npm run`:
+  dev
+    next dev
+  check:env
+    node scripts/check-required-env.mjs
+  check:ledger
+    node scripts/check-migration-ledger.mjs
+  check:types-drift
+    bash scripts/check-types-drift.sh
+  check:stats
+    tsx -r dotenv/config scripts/verify-stats-consistency.ts
+  coachhelm:refresh
+    bash scripts/coachhelm-refresh-all.sh
+  coachhelm:regen
+    DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/regen-coachhelm-from-corrected-stats.ts
+  prebuild
+    node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs
+  build
+    next build --webpack
+  lint
+    eslint "src/**/*.{ts,tsx}" --max-warnings 6000
+  lint:ratchet
+    node scripts/lint-ratchet.mjs
+  typecheck
+    tsc --noEmit
+  db:types
+    npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/types/database.ts
+  db:types:check
+    npm run db:types && git diff --exit-code src/lib/types/database.ts || (echo '❌ Types are out of date. Run npm run db:types and commit changes.' && exit 1)
+  docs:regen
+    node scripts/regen-docs.mjs
+  docs:check
+    npm run docs:regen && git diff --exit-code memory/glossary.md memory/projects/golfhelm.md || (echo '❌ Inventory docs are out of date. Run npm run docs:regen and commit changes.' && exit 1)
+  knowledge:map
+    node scripts/knowledge/map-changed-files.mjs
+  knowledge:context
+    node scripts/knowledge/generate-context-pack.mjs
+  knowledge:check
+    node scripts/knowledge/check.mjs
+  knowledge:report
+    node scripts/knowledge/workflow-report.mjs
+  evals
+    promptfoo eval -c evals/round-review.yaml
+  evals:view
+    promptfoo view
+  lighthouse
+    lhci autorun --config=lighthouserc.cjs
+  check
+    npm run typecheck && npm run lint
+  test:run
+    vitest run --project unit
+  test:all
+    vitest run
+  test:integration
+    vitest run --project integration
+  test:rls
+    vitest run --project rls
+  test:ui
+    vitest --ui
+  test:coverage
+    vitest run --coverage
+  test:e2e
+    playwright test
+  test:e2e:ui
+    playwright test --ui
+  test:e2e:headed
+    playwright test --headed
+  test:e2e:debug
+    playwright test --debug
+  analyze
+    ANALYZE=true npm run build
+  ui:routes
+    tsx scripts/ui-intelligence/normalize-devin-routes.ts
+  ui:auth
+    playwright test --config playwright/screenshots.config.ts
+  ui:screenshots:capture
+    tsx scripts/ui-intelligence/capture-desktop-screenshots.ts
+  ui:screenshots:index
+    tsx scripts/ui-intelligence/generate-screenshot-index.ts
+  ui:screenshots
+    npm run ui:routes && npm run ui:auth && npm run ui:screenshots:capture && npm run ui:screenshots:index
+  ui:atlas
+    tsx scripts/ui-intelligence/generate-atlas.ts
+  ui:refresh
+    node scripts/ui-intelligence/refresh-landed.mjs
+  ui:dataflow
+    tsx scripts/ui-intelligence/generate-data-flow.ts

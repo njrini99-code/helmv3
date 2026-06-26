@@ -1,0 +1,304 @@
+
+> helmv3@1.0.0 prebuild
+> node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs
+
+[check-required-env] OK
+[stamp-sw] Set CACHE_VERSION to golfhelm-va1da6406
+
+> helmv3@1.0.0 build
+> next build --webpack
+
+▲ Next.js 16.2.7 (webpack)
+- Environments: .env.production.local, .env.local, .env
+- Experiments (use with caution):
+  · clientTraceMetadata
+  · optimizePackageImports
+  · serverActions
+
+  Creating an optimized production build ...
+
+warn - The class `ease-[cubic-bezier(0.32,0.72,0,1)]` is ambiguous and matches multiple utilities.
+warn - If this is content and not a class, replace it with `ease-&lsqb;cubic-bezier(0.32,0.72,0,1)&rsqb;` to silence this warning.
+✓ Compiled successfully in 72s
+  Running TypeScript ...
+  Finished TypeScript in 44s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/187) ...
+  Generating static pages using 9 workers (46/187) 
+  Generating static pages using 9 workers (93/187) 
+  Generating static pages using 9 workers (140/187) 
+✓ Generating static pages using 9 workers (187/187) in 1239ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /about
+├ ƒ /api/account/delete
+├ ƒ /api/admin/crm/send-email
+├ ƒ /api/admin/debug-rollup
+├ ƒ /api/admin/log-event
+├ ƒ /api/baseball/staff/context
+├ ƒ /api/calendar/coach/[token]
+├ ƒ /api/calendar/events
+├ ƒ /api/calendar/feeds/[token]
+├ ƒ /api/coachhelm/v3/chat/conversations
+├ ƒ /api/coachhelm/v3/chat/conversations/[id]
+├ ƒ /api/coachhelm/v3/chat/send
+├ ƒ /api/coachhelm/v3/genome/compute
+├ ƒ /api/crm/google-calendar/auth
+├ ƒ /api/crm/google-calendar/callback
+├ ƒ /api/crm/google-calendar/sync
+├ ƒ /api/crm/unsubscribe
+├ ƒ /api/cron/coach-morning-digest
+├ ƒ /api/cron/coachhelm-calibration
+├ ƒ /api/cron/coachhelm-insight-lifecycle
+├ ƒ /api/cron/coachhelm-roster-sweep
+├ ƒ /api/cron/coachhelm-safety-net
+├ ƒ /api/cron/coachhelm-validation
+├ ƒ /api/cron/event-reminders
+├ ƒ /api/cron/process-sequences
+├ ƒ /api/cron/refresh-engagement
+├ ƒ /api/cron/task-reminders
+├ ƒ /api/cron/v3/causality-attribute
+├ ƒ /api/cron/v3/genome-backfill
+├ ƒ /api/cron/v3/genome-nightly
+├ ƒ /api/cron/v3/goal-suggestions-evaluate
+├ ƒ /api/cron/v3/goal-suggestions-write
+├ ƒ /api/cron/v3/ingest-sync
+├ ƒ /api/cron/v3/standing-backfill
+├ ƒ /api/cron/v3/standing-refresh
+├ ƒ /api/cron/v3/weekly-coach-email
+├ ƒ /api/golf/auth/login
+├ ƒ /api/golf/players/[playerId]/putt-tendencies
+├ ƒ /api/golf/rounds/generate-review
+├ ƒ /api/golf/rounds/partial-save
+├ ƒ /api/health
+├ ƒ /api/inngest
+├ ƒ /api/log-error
+├ ƒ /api/push-subscriptions
+├ ƒ /api/webhooks/resend
+├ ƒ /api/webhooks/resend-inbound
+├ ƒ /auth/callback
+├ ƒ /baseball
+├ ○ /baseball/coach
+├ ○ /baseball/coach-onboarding
+├ ○ /baseball/coach/college
+├ ○ /baseball/coach/high-school
+├ ○ /baseball/coach/juco
+├ ○ /baseball/coach/showcase
+├ ƒ /baseball/complete-signup
+├ ƒ /baseball/dashboard
+├ ○ /baseball/dashboard/academics
+├ ○ /baseball/dashboard/activate
+├ ○ /baseball/dashboard/analytics
+├ ○ /baseball/dashboard/announcements
+├ ƒ /baseball/dashboard/calendar
+├ ○ /baseball/dashboard/camps
+├ ƒ /baseball/dashboard/camps/[id]
+├ ƒ /baseball/dashboard/college-interest
+├ ○ /baseball/dashboard/colleges
+├ ƒ /baseball/dashboard/command-center
+├ ○ /baseball/dashboard/compare
+├ ƒ /baseball/dashboard/comparisons
+├ ƒ /baseball/dashboard/decision-room
+├ ○ /baseball/dashboard/dev-plan
+├ ○ /baseball/dashboard/dev-plans
+├ ƒ /baseball/dashboard/dev-plans/[id]
+├ ○ /baseball/dashboard/discover
+├ ƒ /baseball/dashboard/documents
+├ ○ /baseball/dashboard/events
+├ ƒ /baseball/dashboard/import
+├ ○ /baseball/dashboard/journey
+├ ƒ /baseball/dashboard/lift
+├ ƒ /baseball/dashboard/lift/[sessionId]
+├ ○ /baseball/dashboard/messages
+├ ƒ /baseball/dashboard/messages/[id]
+├ ƒ /baseball/dashboard/my-stats
+├ ○ /baseball/dashboard/organization
+├ ƒ /baseball/dashboard/performance
+├ ƒ /baseball/dashboard/performance/builder
+├ ƒ /baseball/dashboard/performance/groups
+├ ƒ /baseball/dashboard/performance/live
+├ ƒ /baseball/dashboard/performance/players/[id]
+├ ƒ /baseball/dashboard/performance/programs
+├ ƒ /baseball/dashboard/performance/programs/[programId]
+├ ○ /baseball/dashboard/pipeline
+├ ƒ /baseball/dashboard/players/[id]
+├ ƒ /baseball/dashboard/players/[id]/passport
+├ ƒ /baseball/dashboard/players/[id]/profile
+├ ƒ /baseball/dashboard/players/[id]/scout-packet
+├ ƒ /baseball/dashboard/players/[id]/scout-packet/preview
+├ ƒ /baseball/dashboard/players/[id]/stats
+├ ƒ /baseball/dashboard/postgame
+├ ○ /baseball/dashboard/practice
+├ ƒ /baseball/dashboard/practice-effectiveness
+├ ○ /baseball/dashboard/profile
+├ ○ /baseball/dashboard/program
+├ ƒ /baseball/dashboard/readiness
+├ ○ /baseball/dashboard/roster
+├ ƒ /baseball/dashboard/scout-packets
+├ ○ /baseball/dashboard/settings
+├ ○ /baseball/dashboard/settings/ai
+├ ○ /baseball/dashboard/settings/appearance
+├ ƒ /baseball/dashboard/settings/audit
+├ ○ /baseball/dashboard/settings/data-retention
+├ ○ /baseball/dashboard/settings/demo-mode
+├ ○ /baseball/dashboard/settings/guardian-access
+├ ƒ /baseball/dashboard/settings/imports
+├ ƒ /baseball/dashboard/settings/integrations
+├ ○ /baseball/dashboard/settings/notifications
+├ ƒ /baseball/dashboard/settings/permissions
+├ ƒ /baseball/dashboard/settings/philosophy
+├ ○ /baseball/dashboard/settings/player-access
+├ ƒ /baseball/dashboard/settings/privacy
+├ ƒ /baseball/dashboard/settings/program
+├ ƒ /baseball/dashboard/settings/recruiting-preferences
+├ ƒ /baseball/dashboard/settings/roles
+├ ƒ /baseball/dashboard/settings/season
+├ ○ /baseball/dashboard/settings/showcase-profile
+├ ƒ /baseball/dashboard/settings/staff
+├ ƒ /baseball/dashboard/settings/teams
+├ ƒ /baseball/dashboard/signals
+├ ○ /baseball/dashboard/stats
+├ ƒ /baseball/dashboard/stats-center
+├ ƒ /baseball/dashboard/stats/games
+├ ƒ /baseball/dashboard/stats/games/[gameId]
+├ ƒ /baseball/dashboard/stats/games/new
+├ ƒ /baseball/dashboard/stats/season
+├ ƒ /baseball/dashboard/stats/upload
+├ ○ /baseball/dashboard/tasks
+├ ƒ /baseball/dashboard/team
+├ ○ /baseball/dashboard/team/high-school
+├ ○ /baseball/dashboard/teams
+├ ○ /baseball/dashboard/travel
+├ ƒ /baseball/dashboard/videos
+├ ƒ /baseball/dashboard/videos/[id]
+├ ƒ /baseball/dashboard/videos/[id]/edit
+├ ○ /baseball/dashboard/watchlist
+├ ○ /baseball/demo
+├ ○ /baseball/forgot-password
+├ ƒ /baseball/join/[code]
+├ ○ /baseball/login
+├ ƒ /baseball/packet/[token]
+├ ƒ /baseball/packet/[token]/csv
+├ ○ /baseball/player
+├ ƒ /baseball/player/[id]
+├ ○ /baseball/player/college
+├ ○ /baseball/player/high-school
+├ ○ /baseball/player/juco
+├ ƒ /baseball/player/passport
+├ ƒ /baseball/player/practice
+├ ○ /baseball/player/showcase
+├ ƒ /baseball/player/timeline
+├ ƒ /baseball/player/today
+├ ƒ /baseball/program/[id]
+├ ○ /baseball/reset-password
+├ ○ /baseball/signup
+├ ƒ /baseball/staff/join/[code]
+├ ƒ /baseball/team/[id]
+├ ○ /fairway-preview
+├ ƒ /golf
+├ ƒ /golf/admin
+├ ƒ /golf/admin/crm
+├ ƒ /golf/admin/crm/coach/[id]
+├ ƒ /golf/admin/demo-sessions
+├ ○ /golf/coach
+├ ƒ /golf/dashboard
+├ ƒ /golf/dashboard/alerts
+├ ƒ /golf/dashboard/analytics/coachhelm
+├ ƒ /golf/dashboard/announcements
+├ ƒ /golf/dashboard/calendar
+├ ƒ /golf/dashboard/classes
+├ ƒ /golf/dashboard/coachhelm
+├ ƒ /golf/dashboard/coachhelm/chat
+├ ƒ /golf/dashboard/coachhelm/genome/[playerId]
+├ ƒ /golf/dashboard/coachhelm/genome/compare
+├ ƒ /golf/dashboard/coachhelm/qualifying/[id]
+├ ƒ /golf/dashboard/courses
+├ ƒ /golf/dashboard/development
+├ ƒ /golf/dashboard/documents
+├ ƒ /golf/dashboard/hub
+├ ƒ /golf/dashboard/insights
+├ ƒ /golf/dashboard/intelligence
+├ ƒ /golf/dashboard/messages
+├ ƒ /golf/dashboard/my-development
+├ ƒ /golf/dashboard/my-game-profile
+├ ƒ /golf/dashboard/my-insights
+├ ƒ /golf/dashboard/my-qualifiers
+├ ƒ /golf/dashboard/my-standing
+├ ƒ /golf/dashboard/patterns
+├ ƒ /golf/dashboard/players/[playerId]
+├ ƒ /golf/dashboard/players/[playerId]/game
+├ ƒ /golf/dashboard/players/[playerId]/game/print
+├ ƒ /golf/dashboard/qualifiers
+├ ƒ /golf/dashboard/qualifiers/[id]
+├ ƒ /golf/dashboard/qualifiers/new
+├ ƒ /golf/dashboard/recruiting
+├ ƒ /golf/dashboard/roster
+├ ƒ /golf/dashboard/roster/[id]
+├ ƒ /golf/dashboard/rounds
+├ ƒ /golf/dashboard/rounds/[id]
+├ ƒ /golf/dashboard/rounds/[id]/review
+├ ƒ /golf/dashboard/rounds/continue/[id]
+├ ƒ /golf/dashboard/rounds/new
+├ ƒ /golf/dashboard/rounds/recover
+├ ƒ /golf/dashboard/settings
+├ ƒ /golf/dashboard/settings/coaching-intelligence
+├ ƒ /golf/dashboard/settings/notifications
+├ ƒ /golf/dashboard/stats
+├ ƒ /golf/dashboard/stats/team
+├ ƒ /golf/dashboard/tasks
+├ ƒ /golf/dashboard/team
+├ ƒ /golf/dashboard/team-hub
+├ ƒ /golf/dashboard/travel
+├ ƒ /golf/dashboard/whats-new
+├ ○ /golf/demo
+├ ○ /golf/forgot-password
+├ ○ /golf/join
+├ ƒ /golf/join/[code]
+├ ○ /golf/login
+├ ○ /golf/player
+├ ○ /golf/reset-password
+├ ○ /golf/signup
+├ ○ /golf/welcome
+├ ○ /help
+├ ○ /lifting/coach
+├ ƒ /lifting/dashboard
+├ ƒ /lifting/dashboard/athletes
+├ ƒ /lifting/dashboard/athletes/[athleteId]
+├ ƒ /lifting/dashboard/check-ins
+├ ƒ /lifting/dashboard/command
+├ ƒ /lifting/dashboard/exercises
+├ ƒ /lifting/dashboard/groups
+├ ƒ /lifting/dashboard/import
+├ ƒ /lifting/dashboard/lift
+├ ƒ /lifting/dashboard/lift/[sessionId]
+├ ƒ /lifting/dashboard/programs
+├ ƒ /lifting/dashboard/programs/[programId]
+├ ƒ /lifting/dashboard/readiness
+├ ƒ /lifting/dashboard/sessions
+├ ƒ /lifting/dashboard/sessions/live
+├ ƒ /lifting/dashboard/settings
+├ ƒ /lifting/dashboard/today
+├ ○ /lifting/forgot-password
+├ ƒ /lifting/join/[token]
+├ ○ /lifting/login
+├ ○ /lifting/reset-password
+├ ○ /lifting/signup
+├ ○ /privacy
+├ ○ /products
+├ ○ /sitemap.xml
+├ ○ /soreness-preview
+├ ○ /splash
+├ ○ /support
+├ ○ /terms
+└ ƒ /vizlab
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

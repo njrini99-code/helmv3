@@ -1,0 +1,1116 @@
+supabase/demo/README.md:96:SELECT policyname, cmd FROM pg_policies
+supabase/demo/01_demo_sessions_table.sql:9:-- Idempotent: CREATE TABLE IF NOT EXISTS; policy guards wrapped in DO blocks.
+supabase/demo/01_demo_sessions_table.sql:36:-- RESTRICTIVE deny-all policy so the table's access model is unambiguous and to
+supabase/demo/01_demo_sessions_table.sql:37:-- satisfy the project rule that every RLS-enabled table defines >= 1 policy.
+supabase/demo/01_demo_sessions_table.sql:44:      AND policyname = 'golf_demo_sessions_deny_all'
+supabase/migrations/20260624001401_baseball_public_player_stats_rpc.sql:38:--   * ADDITIVE ONLY. New function, no schema/table/policy/column change. Safe to
+supabase/migrations/20260624000083_baseball_stat_visual_views.sql:14:--   * No policy targets anon. EXECUTE/privileges never granted to anon.
+supabase/migrations/20260624000083_baseball_stat_visual_views.sql:78:DO $rls$
+supabase/migrations/20260624000083_baseball_stat_visual_views.sql:129:$rls$;
+supabase/migrations/20260625000050_baseball_anon_revoke_wave1.sql:14:-- at CREATE time. An explicit REVOKE closes that gap regardless of policy state.
+supabase/migrations/20260621230000_focus_areas_timeframe.sql:5:-- columns (no policy change needed).
+supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql:37:--     team-scoped, TO authenticated policy. NO grant to anon. service_role
+supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql:41:--     so policy text stays consistent with the rest of the schema. Every table
+supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql:705:-- Generic event-table policy emitter: STAFF read+write scoped by the named
+supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql:11:-- says "Engine writes via service_role; no authenticated INSERT policy"
+supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql:25:--   SELECT polname FROM pg_policy
+supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql:28:--   SELECT polname FROM pg_policy
+supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql:54:-- forward migration 20260528010000_reapply_v3_goals_suggestions_rls.sql, after
+supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql:60:    'Skipping superseded pre-baseline v3 goals/suggestions RLS patch; see 20260528010000_reapply_v3_goals_suggestions_rls.sql';
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:2:-- 20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:6:--   (1) baseball_videos — coach INSERT policy
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:7:--       The existing "baseball_videos_insert_own" policy only allows a player to
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:10:--       and the already-uploaded storage object was left orphaned.  This policy
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:27:-- (1) Coach INSERT policy on baseball_videos
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:29:-- Guard: only add the policy if it does not already exist (idempotent).
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:37:      AND policyname = 'baseball_videos_insert_staff'
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:39:    EXECUTE $policy$
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:47:          -- defined in 20260624000050_baseball_rls_helpers_and_policies.sql and
+supabase/migrations/20260624002000_baseball_videos_coach_rls_and_recruiting_check.sql:55:    $policy$;
+supabase/migrations/20260624000430_baseball_timeline_event_acks.sql:18:--   policy (coach/staff of the team, OR the subject player for non-staff_only
+supabase/migrations/20260624000081_baseball_staff_roles_scope_audit.sql:140:-- No INSERT/UPDATE/DELETE policy for authenticated: audit rows are written ONLY
+supabase/migrations/20260624000440_baseball_strength_group_audit.sql:14:-- APPEND-ONLY: no UPDATE/DELETE policy is granted — an audit row is immutable
+supabase/migrations/20260624000440_baseball_strength_group_audit.sql:62:-- No UPDATE / DELETE policy: the ledger is immutable history.
+supabase/migrations/20260624000220_baseball_player_passport_and_daily_contract.sql:277:-- (No policy targets anon; this also removes any default table-level grant.)
+supabase/migrations/20260624000070_baseball_coach_insights_attribution.sql:16:-- defensive policy block so the player-visible read path is enabled now.
+supabase/migrations/20260624000070_baseball_coach_insights_attribution.sql:25:--     users only ever READ through the policy below.
+supabase/migrations/20260624000620_baseball_daily_contract_coach_ack.sql:6:-- intentions, honors them, completes the day. The SELECT policy on
+supabase/migrations/20260624000620_baseball_daily_contract_coach_ack.sql:17:--   2. A new UPDATE policy lets a team coach write ONLY those two ack columns on
+supabase/migrations/20260624000620_baseball_daily_contract_coach_ack.sql:19:--      player-owned UPDATE policy is unchanged, so a coach can never edit a
+supabase/migrations/20260624000620_baseball_daily_contract_coach_ack.sql:30:--   * RLS stays enabled; the player-owned UPDATE policy is untouched. The new
+supabase/migrations/20260624000620_baseball_daily_contract_coach_ack.sql:31:--     coach UPDATE policy is column-effectively scoped by the app layer (which
+supabase/migrations/20260624000620_baseball_daily_contract_coach_ack.sql:44:-- 2. Coach UPDATE policy (ack-only, shared rows only) ---------------------------
+supabase/migrations/20260624000620_baseball_daily_contract_coach_ack.sql:49:-- a coach can neither hide nor re-home it. The player-owned UPDATE policy
+supabase/migrations/20260624000620_baseball_daily_contract_coach_ack.sql:55:-- coach_acknowledged_at/by). This policy's job is the ROW boundary: a coach can
+supabase/migrations/20260624000620_baseball_daily_contract_coach_ack.sql:80:  'auth.users id of the coach who acknowledged this shared day. Set only via the ack-only coach UPDATE policy.';
+supabase/migrations/20260624000060_baseball_practices.sql:15:--     before the policy migration (20260624000050) attaches its policies. The
+supabase/migrations/20260624000060_baseball_practices.sql:16:--     0050 policy blocks are guarded with to_regclass() and will activate for
+supabase/migrations/20260624000060_baseball_practices.sql:89:-- 20260624000050_baseball_rls_helpers_and_policies.sql (to_regclass-guarded):
+supabase/migrations/20260624000060_baseball_practices.sql:95:-- before/independent of the policy migration running.
+supabase/migrations/20260624000820_baseball_daily_contract_missed_rollover.sql:30:--   * RLS unchanged: the existing player-owned UPDATE policy already authorizes a
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:9:--   * TEAM settings  — join policy controls that the program_type-level
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:11:--                      TEAM grain: invite policy, player self-join, and
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:15:--                      were added by 20260624000090.) We add the join-policy
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:48:-- join_code already exists. These add the policy that governs how the code is
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:49:-- used (v4 §Team Settings: invite policy / player self-join allowed / coach
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:50:-- approval required). invite_policy is the controlling enum; the two booleans
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:52:--   invite_policy = 'invite_only'      -> code shares but every join needs a
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:54:--   invite_policy = 'code_self_join'   -> a valid code self-joins immediately.
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:55:--   invite_policy = 'closed'           -> no new joins (roster locked).
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:58:  ADD COLUMN IF NOT EXISTS invite_policy text NOT NULL DEFAULT 'invite_only'
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:59:    CHECK (invite_policy IN ('invite_only', 'code_self_join', 'closed')),
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:63:COMMENT ON COLUMN public.baseball_teams.invite_policy IS
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:66:  'Convenience flag: a valid join code lets a player self-join without an explicit invite row. Mirrors invite_policy = code_self_join.';
+supabase/migrations/20260624000095_baseball_team_and_season_settings.sql:68:  'When true, a self-joined / invited player lands in a pending state until a coach approves. Independent of invite_policy so coaches can require approval even on code_self_join.';
+supabase/migrations/20260624000020_baseball_import_lineage.sql:50:  -- staff member who started it (the RLS insert policy already proves they are a
+supabase/migrations/20260624000061_baseball_lifting_performance.sql:41:--     20260624000050_baseball_rls_helpers_and_policies.sql:
+supabase/migrations/20260624000061_baseball_lifting_performance.sql:174:-- (cron / AI / import writes). No policy ever targets anon.
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:2:-- Migration: 20260624000050_baseball_rls_helpers_and_policies.sql
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:3:-- Packet: schema-rls (BaseballHelm Wave 1)
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:15:--   * Every table policy block is guarded with to_regclass() so this file is
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:31:-- (Mirrors get_my_player_id() so the baseball policy set is self-describing.)
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:248:-- baseball policy set is self-contained and re-runnable. Body is identical to
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:846:--   we do not weaken any existing policy; we (re)assert the staff/player split
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:898:--   / credits are PRIVATE academic details. The baseline staff SELECT policy
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:903:--   same defense-in-depth posture readiness uses. The player self-read policy
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:937:-- baseball_player_stats  (CHANGED — existing team-scoped policy retained; the
+supabase/migrations/20260611000000_create_golf_demo_sessions.sql:9:-- Idempotent: CREATE TABLE IF NOT EXISTS; policy guards wrapped in DO blocks.
+supabase/migrations/20260611000000_create_golf_demo_sessions.sql:36:-- RESTRICTIVE deny-all policy so the table's access model is unambiguous and to
+supabase/migrations/20260611000000_create_golf_demo_sessions.sql:37:-- satisfy the project rule that every RLS-enabled table defines >= 1 policy.
+supabase/migrations/20260611000000_create_golf_demo_sessions.sql:44:      AND policyname = 'golf_demo_sessions_deny_all'
+supabase/migrations/20260614020000_recruit_documents.sql:4:--   table + 4 coach-only RLS policies (no player policy), private bucket + 4
+supabase/migrations/20260614020000_recruit_documents.sql:13:-- its select policy `golf_documents_select_team` lets ANY team player read every row,
+supabase/migrations/20260614020000_recruit_documents.sql:79:alter table public.golf_recruit_documents enable row level security;
+supabase/migrations/20260614020000_recruit_documents.sql:81:drop policy if exists golf_recruit_documents_select_coach on public.golf_recruit_documents;
+supabase/migrations/20260614020000_recruit_documents.sql:82:create policy golf_recruit_documents_select_coach on public.golf_recruit_documents
+supabase/migrations/20260614020000_recruit_documents.sql:86:drop policy if exists golf_recruit_documents_insert_coach on public.golf_recruit_documents;
+supabase/migrations/20260614020000_recruit_documents.sql:87:create policy golf_recruit_documents_insert_coach on public.golf_recruit_documents
+supabase/migrations/20260614020000_recruit_documents.sql:89:  with check (public.is_golf_team_coach(team_id));
+supabase/migrations/20260614020000_recruit_documents.sql:91:drop policy if exists golf_recruit_documents_update_coach on public.golf_recruit_documents;
+supabase/migrations/20260614020000_recruit_documents.sql:92:create policy golf_recruit_documents_update_coach on public.golf_recruit_documents
+supabase/migrations/20260614020000_recruit_documents.sql:95:  with check (public.is_golf_team_coach(team_id));
+supabase/migrations/20260614020000_recruit_documents.sql:97:drop policy if exists golf_recruit_documents_delete_coach on public.golf_recruit_documents;
+supabase/migrations/20260614020000_recruit_documents.sql:98:create policy golf_recruit_documents_delete_coach on public.golf_recruit_documents
+supabase/migrations/20260614020000_recruit_documents.sql:128:drop policy if exists recruit_documents_coach_select on storage.objects;
+supabase/migrations/20260614020000_recruit_documents.sql:129:create policy recruit_documents_coach_select on storage.objects
+supabase/migrations/20260614020000_recruit_documents.sql:136:drop policy if exists recruit_documents_coach_insert on storage.objects;
+supabase/migrations/20260614020000_recruit_documents.sql:137:create policy recruit_documents_coach_insert on storage.objects
+supabase/migrations/20260614020000_recruit_documents.sql:139:  with check (
+supabase/migrations/20260614020000_recruit_documents.sql:144:drop policy if exists recruit_documents_coach_update on storage.objects;
+supabase/migrations/20260614020000_recruit_documents.sql:145:create policy recruit_documents_coach_update on storage.objects
+supabase/migrations/20260614020000_recruit_documents.sql:151:  with check (
+supabase/migrations/20260614020000_recruit_documents.sql:156:drop policy if exists recruit_documents_coach_delete on storage.objects;
+supabase/migrations/20260614020000_recruit_documents.sql:157:create policy recruit_documents_coach_delete on storage.objects
+supabase/migrations/20260614020000_recruit_documents.sql:169:--   drop policy if exists recruit_documents_coach_select on storage.objects;
+supabase/migrations/20260614020000_recruit_documents.sql:170:--   drop policy if exists recruit_documents_coach_insert on storage.objects;
+supabase/migrations/20260614020000_recruit_documents.sql:171:--   drop policy if exists recruit_documents_coach_update on storage.objects;
+supabase/migrations/20260614020000_recruit_documents.sql:172:--   drop policy if exists recruit_documents_coach_delete on storage.objects;
+supabase/migrations/20260624000500_baseball_import_raw_file_and_hash.sql:17:--      segment is the team uuid the RLS policy scopes by.
+supabase/migrations/20260624000500_baseball_import_raw_file_and_hash.sql:145:--   drop policy if exists baseball_imports_staff_select on storage.objects;
+supabase/migrations/20260624000500_baseball_import_raw_file_and_hash.sql:146:--   drop policy if exists baseball_imports_staff_insert on storage.objects;
+supabase/migrations/20260624000500_baseball_import_raw_file_and_hash.sql:147:--   drop policy if exists baseball_imports_staff_update on storage.objects;
+supabase/migrations/20260624000500_baseball_import_raw_file_and_hash.sql:148:--   drop policy if exists baseball_imports_staff_delete on storage.objects;
+supabase/migrations/20260624000420_baseball_passport_scout_packet_share_tokens.sql:117:-- public route resolves tokens with the SERVER role, not via this policy.
+supabase/migrations/20260624000420_baseball_passport_scout_packet_share_tokens.sql:136:-- under the SERVER role from the public route, bypassing this policy.
+supabase/migrations/20260602191000_round_reviews_insert_coach_policy.sql:7:-- (round_reviews_write_coach) policies, but NO coach INSERT policy — only
+supabase/migrations/20260602191000_round_reviews_insert_coach_policy.sql:12:-- This adds the missing INSERT policy, scoped identically to the existing
+supabase/migrations/20260602191000_round_reviews_insert_coach_policy.sql:20:-- path). DROP ... IF EXISTS keeps a second apply from failing "policy already
+supabase/migrations/20260624000091_baseball_program_identity.sql:14:--   * player_account_policy   — the program's stance on player self-accounts
+supabase/migrations/20260624000091_baseball_program_identity.sql:25:  ADD COLUMN IF NOT EXISTS player_account_policy text NOT NULL DEFAULT 'invite_only'
+supabase/migrations/20260624000091_baseball_program_identity.sql:26:    CHECK (player_account_policy IN ('invite_only', 'approval_required', 'open_join')),
+supabase/migrations/20260624000091_baseball_program_identity.sql:32:COMMENT ON COLUMN public.baseball_teams.player_account_policy IS
+supabase/migrations/20260624000091_baseball_program_identity.sql:33:  'Program player-account policy (v4 §Program Settings): invite_only | approval_required | open_join. Distinct from the per-feature player-access toggles in baseball_program_settings; this is the program-level stance.';
+supabase/migrations/20260624000030_baseball_staff_capabilities.sql:146:-- the old address. The authoritative invitee-select policy is created in
+supabase/migrations/20260624000030_baseball_staff_capabilities.sql:148:-- Guard: ensure no stale jwt()-based policy survives a re-run.
+supabase/migrations/20260613160000_course_library_phase1.sql:195:-- (no DELETE policy — soft-delete via deleted_at UPDATE)
+supabase/migrations/20260624000310_baseball_decision_log.sql:106:-- Append-only: no UPDATE policy. Only the primary coach may prune history.
+supabase/migrations/20260527000000_prod_public_baseline.sql:4028:COMMENT ON FUNCTION "public"."is_in_team"("team_uuid" "uuid") IS 'v3 RLS helper: either-or convenience. True if the current user is a coach OR an active player on the given team. Use for team-scoped shared-read policies (Pattern 3 in docs/v3-rls-template.md).';
+supabase/migrations/20260527000000_prod_public_baseline.sql:18850:CREATE POLICY "golf_calendar_notifications_insert_policy" ON "public"."golf_calendar_notifications" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+supabase/migrations/20260624000210_baseball_coachhelm_v10_ranking_and_outcome_ledger.sql:29:--     AI writes go through service_role, authenticated users only READ via policy.
+supabase/migrations/20260614010000_course_library_update_policy.sql:2:-- Course Library — restore the missing UPDATE RLS policy on golf_courses
+supabase/migrations/20260614010000_course_library_update_policy.sql:6:-- (golf_courses_select_all). Under Postgres RLS a command with NO matching policy
+supabase/migrations/20260614010000_course_library_update_policy.sql:16:-- FIX: add the missing UPDATE policy, mirroring the existing INSERT gate
+supabase/migrations/20260614010000_course_library_update_policy.sql:19:-- its own auth.getUser() check. We do NOT add a hard-DELETE policy: golf_courses
+supabase/migrations/20260614010000_course_library_update_policy.sql:21:-- and a DELETE policy would only matter for the deprecated legacy hard-delete path.
+supabase/migrations/20260609210000_golf_rounds_update_with_check_and_penalty_backfill.sql:3:-- 1) golf_rounds_update WITH CHECK: the player self-update policy had
+supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql:12:-- bypassrls superuser, an unauthenticated caller could invoke them through
+supabase/migrations/20260624000450_baseball_ai_audit_log.sql:10:-- row per generated output describing how the policy resolved it (approved /
+supabase/migrations/20260624000450_baseball_ai_audit_log.sql:20:--     (the coach approval path) — enforced at the action layer. No DELETE policy
+supabase/migrations/20260624000450_baseball_ai_audit_log.sql:49:  -- Governance outcome of THIS generation under the team's AI policy.
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:42:--     20260624000050_baseball_rls_helpers_and_policies.sql.
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:197:-- not yet defined the helpers (the policy creation is skipped until they exist).
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:205:    RAISE NOTICE 'baseball staff capability helper not present yet; skipping policy creation (re-run after 0050).';
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:217:      AND policyname='bpbo_staff_manage'
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:230:      AND policyname='bpbo_player_read_published'
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:254:      AND policyname='bpe_staff_read'
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:266:      AND policyname='bpe_staff_write'
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:279:  -- layer). This policy is additive; default visibility is staff_only.
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:283:      AND policyname='bpe_player_read_visible'
+supabase/migrations/20260621231000_qualifier_round_courses.sql:10:-- The qualifier's team_id lives on golf_qualifiers, so every policy on the child
+supabase/migrations/20260621231000_qualifier_round_courses.sql:19:-- Idempotent: ADD COLUMN IF NOT EXISTS / CREATE TABLE IF NOT EXISTS / policy
+supabase/migrations/20260621231000_qualifier_round_courses.sql:66:      AND policyname = 'golf_qualifier_round_courses_select_team'
+supabase/migrations/20260621231000_qualifier_round_courses.sql:87:      AND policyname = 'golf_qualifier_round_courses_insert_coach'
+supabase/migrations/20260621231000_qualifier_round_courses.sql:108:      AND policyname = 'golf_qualifier_round_courses_update_coach'
+supabase/migrations/20260621231000_qualifier_round_courses.sql:129:      AND policyname = 'golf_qualifier_round_courses_delete_coach'
+supabase/migrations/20260610070000_calendar_integrity_and_self_rsvp.sql:3:-- without a coach-seeded attendance row cannot RSVP — INSERT policy was
+supabase/migrations/20260610070000_calendar_integrity_and_self_rsvp.sql:33:-- did not pre-seed invitees). Coach INSERT policy unchanged; the existing
+supabase/migrations/20260610070000_calendar_integrity_and_self_rsvp.sql:34:-- update policy already lets a player modify their own row, so PostgREST
+supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql:535:--    Convention: every policy TO authenticated; service_role bypasses by design.
+supabase/migrations/20260624001300_baseball_coachhelm_insight_maturity_counters.sql:38:--     service_role, authenticated users only READ via policy.
+supabase/migrations/20260613180000_course_images_storage.sql:26:-- NOTE: no SELECT policy on storage.objects for this bucket. Because the bucket
+supabase/migrations/20260613180000_course_images_storage.sql:30:-- policy is least-privilege (clears the public_bucket_allows_listing advisory).
+supabase/migrations/20260624000460_baseball_import_registry_load_bearing.sql:71:--   whose policy drove it, for the Source drawer + audit.
+supabase/migrations/20260624000460_baseball_import_registry_load_bearing.sql:96:  'The baseball_import_sources registry row whose policy (trust/visibility/review/dedupe/match-strategy) drove this run. NULL when the chosen source was not registered (hardcoded adapter default used).';
+supabase/migrations/20260624000900_baseball_coach_notes.sql:21:-- SCOPE -> WHO CAN READ (enforced in the SELECT policy below):
+supabase/migrations/20260624000900_baseball_coach_notes.sql:58:-- holds the named boolean capability column). SECURITY DEFINER so the policy can
+supabase/migrations/20260624000900_baseball_coach_notes.sql:159:-- audit/history reads), so the policy does not hide deleted_at rows by itself.
+supabase/migrations/20260624000900_baseball_coach_notes.sql:205:-- deleted_at. No hard delete policy exists by design.
+supabase/migrations/20260624000900_baseball_coach_notes.sql:222:-- No DELETE policy: notes are soft-deleted (deleted_at) only. A hard row delete
+supabase/migrations/20260624001400_baseball_readiness_select_gate_fix.sql:18:-- that SELECT policy gated on can_view_medical instead — so the strength coach
+supabase/migrations/20260624001400_baseball_readiness_select_gate_fix.sql:33:-- This forward migration re-creates ONLY the SELECT policy, restoring the ...050
+supabase/migrations/20260624001400_baseball_readiness_select_gate_fix.sql:50:    -- Re-create the SELECT policy with the CORRECT performance-tier gate.
+supabase/migrations/20260624000211_baseball_scrimmage_result.sql:25:--   * RLS is UNCHANGED — the existing baseball_practice_scrimmages policy set
+supabase/migrations/20260624000093_baseball_postgame_reviews.sql:192:  -- coach has explicitly shared an item). The item-level policy is the real
+supabase/migrations/20260528010000_reapply_v3_goals_suggestions_rls.sql:4:-- The original hotfix was 20260526180000_fix_v3_goals_suggestions_rls.sql, but
+supabase/migrations/20260528010000_reapply_v3_goals_suggestions_rls.sql:58:  'Player may read their own suggestions. Split from the prior FOR ALL policy; '
+supabase/migrations/20260624000010_baseball_stat_uploads_reconcile.sql:118:--    Matches the prod baseline policy shape; adds an UPDATE policy because
+supabase/migrations/20260624000090_baseball_settings_os.sql:95:-- One row per team. Holds the v4 feature toggles, default visibility policy,
+supabase/migrations/20260624000090_baseball_settings_os.sql:106:  -- Player access policy (v4 §Player Access Settings)
+supabase/migrations/20260624000090_baseball_settings_os.sql:138:  -- Default visibility policy for new staff-authored records
+supabase/migrations/20260624000090_baseball_settings_os.sql:166:  season_archive_policy       text NOT NULL DEFAULT 'keep'
+supabase/migrations/20260624000090_baseball_settings_os.sql:167:                                CHECK (season_archive_policy IN ('keep', 'archive_after_season')),
+supabase/migrations/20260624000090_baseball_settings_os.sql:180:  'One settings document per team: player/guardian/scout access policy, module enablement, AI settings (source-ref + confidence + approval), notification + appearance + data-retention + demo settings. Distinct defaults per program_type are applied by the TS variant engine at first creation; this is a SETTING surface, not a hard fork.';
+supabase/migrations/20260624000090_baseball_settings_os.sql:259:-- before/after diff. Append-only by design (no UPDATE/DELETE policy for staff).
+supabase/migrations/20260621041839_focus_areas_player_self_update.sql:3:-- UPDATE policy. A player's "Log progress"/"Mark complete" UPDATE matched 0 rows
+supabase/migrations/20260621041839_focus_areas_player_self_update.sql:7:-- Fix: add a player-self UPDATE policy mirroring the existing self-SELECT branch
+supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql:724:--   drop policy if exists lifting_nutrition_coach_select  on storage.objects;
+supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql:725:--   drop policy if exists lifting_nutrition_coach_insert  on storage.objects;
+supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql:726:--   drop policy if exists lifting_nutrition_coach_update  on storage.objects;
+supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql:727:--   drop policy if exists lifting_nutrition_coach_delete  on storage.objects;
+supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql:728:--   drop policy if exists lifting_nutrition_athlete_select on storage.objects;
+supabase/tests/rls/baseball_lifting_visibility.sql:12:-- Schema-light: asserts the contract over pg_policy / pg_class / pg_constraint
+supabase/tests/rls/baseball_lifting_visibility.sql:57:-- No policy on any lifting table targets the anon role.
+supabase/tests/rls/baseball_lifting_visibility.sql:64:  'no lifting policy targets the anon role'
+supabase/tests/rls/baseball_lifting_visibility.sql:70:-- The SELECT policy ties access to the player's OWN identity (or a managing
+supabase/tests/rls/baseball_lifting_visibility.sql:75:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:87:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:94:-- The SELECT policy must NOT contain any broad team-membership read path that
+supabase/tests/rls/baseball_lifting_visibility.sql:99:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:110:    SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:118:-- Exactly one SELECT policy exists (no second permissive policy widening reads).
+supabase/tests/rls/baseball_lifting_visibility.sql:123:  'baseball_lift_results has exactly one SELECT policy'
+supabase/tests/rls/baseball_lifting_visibility.sql:132:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:142:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:153:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:164:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:175:  'baseball_readiness_checkins has exactly one SELECT policy'
+supabase/tests/rls/baseball_lifting_visibility.sql:180:    SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:190:    SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:217:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:226:    SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:238:    SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:244:  'no INSERT policy lets a player self-assign a lift'
+supabase/tests/rls/baseball_lifting_visibility.sql:252:    SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:263:    SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:273:    SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:286:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_lifting_visibility.sql:295:-- 6. Each lifting table has a full policy set (no implicit-deny gaps for staff).
+supabase/tests/rls/baseball_settings_os.sql:6:--      policy targets the anon role.
+supabase/tests/rls/baseball_settings_os.sql:16:--          (no team-member read policy).
+supabase/tests/rls/baseball_settings_os.sql:17:--   4. The audit log is APPEND-ONLY: a SELECT and INSERT policy exist, but NO
+supabase/tests/rls/baseball_settings_os.sql:18:--        UPDATE or DELETE policy (staff can never rewrite history; service_role
+supabase/tests/rls/baseball_settings_os.sql:69:-- 2. anon locked out — no table privileges, no policy targets anon.
+supabase/tests/rls/baseball_settings_os.sql:87:  'no settings-os policy targets the anon role'
+supabase/tests/rls/baseball_settings_os.sql:91:-- 3. Write policies are capability-gated (assert the policy qual mentions the
+supabase/tests/rls/baseball_settings_os.sql:196:-- 5. audit log is APPEND-ONLY (SELECT + INSERT only; no UPDATE/DELETE policy).
+supabase/tests/rls/baseball_settings_os.sql:201:  'audit log has a SELECT policy'
+supabase/tests/rls/baseball_settings_os.sql:205:  'audit log has an INSERT policy'
+supabase/tests/rls/baseball_settings_os.sql:210:  'audit log has NO UPDATE policy (append-only)'
+supabase/tests/rls/baseball_settings_os.sql:215:  'audit log has NO DELETE policy (append-only)'
+supabase/tests/rls/coach_insights_player_update.sql:4:-- The bug at supabase/migrations/20260427210000_canonical_rls_snapshot.sql:1746-1753
+supabase/tests/rls/coach_insights_player_update.sql:7:-- The fix in 20260517000000_fix_critical_rls_policies.sql uses column-level
+supabase/tests/rls/coach_insights_player_update.sql:26:-- Test 2: the policy still exists (so service_role + admin paths still work).
+supabase/tests/rls/coach_insights_player_update.sql:30:    FROM pg_policy p
+supabase/tests/rls/coach_insights_player_update.sql:35:  'coach_insights_update_player_own policy is still defined'
+supabase/tests/rls/baseball_program_identity.sql:3:-- (public_profile_mode, player_account_policy, default_team_id).
+supabase/tests/rls/baseball_program_identity.sql:8:-- columns inherit the existing capability-gated baseball_teams write policy and
+supabase/tests/rls/baseball_program_identity.sql:14:--   3. CHECK constraints exist on public_profile_mode + player_account_policy so
+supabase/tests/rls/baseball_program_identity.sql:16:--   4. Safe defaults: public_profile_mode='private', player_account_policy=
+supabase/tests/rls/baseball_program_identity.sql:48:SELECT has_column('public', 'baseball_teams', 'player_account_policy',
+supabase/tests/rls/baseball_program_identity.sql:49:  'baseball_teams.player_account_policy exists');
+supabase/tests/rls/baseball_program_identity.sql:75:      AND pg_get_constraintdef(con.oid) LIKE '%player_account_policy%'
+supabase/tests/rls/baseball_program_identity.sql:77:  'baseball_teams has a CHECK on player_account_policy'
+supabase/tests/rls/baseball_program_identity.sql:101:       AND a.attname='player_account_policy') LIKE '%invite_only%',
+supabase/tests/rls/baseball_program_identity.sql:102:  'baseball_teams.player_account_policy defaults to invite_only'
+supabase/tests/rls/baseball_coach_notes.sql:14:--   2. The SELECT policy ties the player branch to BOTH scope = 'player_visible'
+supabase/tests/rls/baseball_coach_notes.sql:22:--   4. No DELETE policy exists (soft-delete only — no hard row delete for any
+supabase/tests/rls/baseball_coach_notes.sql:24:--   5. No policy targets anon; the scope enum carries hidden_from_player.
+supabase/tests/rls/baseball_coach_notes.sql:26:-- Schema-light: asserts the contract over pg_class / pg_policy / pg_type without
+supabase/tests/rls/baseball_coach_notes.sql:53:-- 2. SELECT policy: player branch bound to player_visible + own identity.
+supabase/tests/rls/baseball_coach_notes.sql:60:      AND policyname = 'baseball_coach_notes_select'
+supabase/tests/rls/baseball_coach_notes.sql:63:  'baseball_coach_notes has a named SELECT policy'
+supabase/tests/rls/baseball_coach_notes.sql:70:      FROM pg_policy p
+supabase/tests/rls/baseball_coach_notes.sql:76:  'baseball_coach_notes SELECT policy gates a branch on scope = player_visible'
+supabase/tests/rls/baseball_coach_notes.sql:84:      FROM pg_policy p
+supabase/tests/rls/baseball_coach_notes.sql:92:      FROM pg_policy p
+supabase/tests/rls/baseball_coach_notes.sql:98:  'baseball_coach_notes SELECT policy ties player reads to own baseball_players identity and staff reads to is_baseball_team_coach_v2'
+supabase/tests/rls/baseball_coach_notes.sql:110:      FROM pg_policy p
+supabase/tests/rls/baseball_coach_notes.sql:116:  'baseball_coach_notes SELECT policy applies per-scope capability gating (baseball_staff_has_note_capability)'
+supabase/tests/rls/baseball_coach_notes.sql:123:        FROM pg_policy p
+supabase/tests/rls/baseball_coach_notes.sql:130:  'baseball_coach_notes SELECT policy explicitly references the hidden_from_player scope (strictest gate)'
+supabase/tests/rls/baseball_coach_notes.sql:134:-- 4. No DELETE policy (soft-delete only).
+supabase/tests/rls/baseball_coach_notes.sql:142:  'baseball_coach_notes exposes NO client DELETE policy (soft-delete via deleted_at only)'
+supabase/tests/rls/baseball_coach_notes.sql:146:-- 5. No policy targets anon; the scope enum carries hidden_from_player.
+supabase/tests/rls/baseball_coach_notes.sql:154:  'no baseball_coach_notes policy targets the anon role'
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:9:--       staff-only. No policy targets anon.
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:17:--       reflections stay private) — i.e. the SELECT policy references both the
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:20:-- Schema-light: asserts the contract over pg_policy / pg_constraint without
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:60:-- SELECT policy exists and binds to staff OR the subject player.
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:63:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:74:-- INSERT policy is gated (staff OR subject player) — never open.
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:77:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:90:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:102:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:109:  'no passport_settings DELETE policy lets a player self-delete settings'
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:117:  'no baseball_player_passport_settings policy targets the anon role'
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:181:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:193:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:200:  'no daily_contracts INSERT policy lets a coach write another player''s contract'
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:206:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:218:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:232:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:248:  'no baseball_player_daily_contracts policy targets the anon role'
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:261:-- A SECOND, coach-scoped UPDATE policy exists, gated BOTH on staff authority AND
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:266:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:275:  'coach-ack UPDATE policy is staff-gated AND restricted to shared (non player_only) rows'
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:278:-- The coach-ack UPDATE policy's WITH CHECK also re-asserts the shared + staff
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:282:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:293:-- The original player-owned UPDATE policy is UNTOUCHED (still present), so a
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:297:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_and_daily_contract.sql:305:  'the player-owned UPDATE policy remains intact alongside the coach-ack policy'
+supabase/tests/rls/baseball_staff_audit_events.sql:6:--   2. There is a SELECT policy gated by the team-authority helper
+supabase/tests/rls/baseball_staff_audit_events.sql:11:--   3. There is NO authenticated INSERT/UPDATE/DELETE policy — audit rows are
+supabase/tests/rls/baseball_staff_audit_events.sql:17:-- Schema-light: asserts the contract over pg_class / pg_policy / pg_constraint
+supabase/tests/rls/baseball_staff_audit_events.sql:44:-- 2. A SELECT policy exists and is gated by the team-authority helper.
+supabase/tests/rls/baseball_staff_audit_events.sql:51:      AND policyname = 'baseball_staff_audit_events_select'
+supabase/tests/rls/baseball_staff_audit_events.sql:54:  'baseball_staff_audit_events has a named SELECT policy'
+supabase/tests/rls/baseball_staff_audit_events.sql:60:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_audit_events.sql:66:  'SELECT policy is gated by baseball_can_invite_staff (head coach / can_invite_staff only)'
+supabase/tests/rls/baseball_staff_audit_events.sql:70:-- 3. NO authenticated write policy (append-only; definer-triggers only).
+supabase/tests/rls/baseball_staff_audit_events.sql:78:  'baseball_staff_audit_events exposes NO client INSERT/UPDATE/DELETE policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:3:-- (3) carry at least one policy. Catches accidental drops, RLS-disabled-by-
+supabase/tests/rls/coachhelm_v3_contracts.sql:4:-- mistake migrations, and policy regressions.
+supabase/tests/rls/coachhelm_v3_contracts.sql:35:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:40:  'public.golf_metrics has at least one RLS policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:64:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:69:  'public.golf_pga_standards has at least one RLS policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:93:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:98:  'public.golf_player_standing has at least one RLS policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:122:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:127:  'public.golf_goals has at least one RLS policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:151:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:156:  'public.golf_coachhelm_llm_budget has at least one RLS policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:180:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:185:  'public.golf_coachhelm_llm_calls has at least one RLS policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:209:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:214:  'public.golf_coachhelm_chat_conversations has at least one RLS policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:238:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:243:  'public.golf_coachhelm_chat_messages has at least one RLS policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:267:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:272:  'public.golf_player_genome has at least one RLS policy'
+supabase/tests/rls/coachhelm_v3_contracts.sql:296:    FROM pg_policy p
+supabase/tests/rls/coachhelm_v3_contracts.sql:301:  'public.golf_drills has at least one RLS policy'
+supabase/tests/rls/baseball_practice_visibility.sql:3:--  20260624000050_baseball_rls_helpers_and_policies.sql).
+supabase/tests/rls/baseball_practice_visibility.sql:56:-- No practice policy targets anon (service_role bypasses RLS).
+supabase/tests/rls/baseball_practice_visibility.sql:63:  'no practice policy targets the anon role'
+supabase/tests/rls/baseball_practice_visibility.sql:114:  'baseball_practices has at least one SELECT policy'
+supabase/tests/rls/baseball_practice_visibility.sql:121:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_visibility.sql:133:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_visibility.sql:144:  tests.policy_with_check_contains('public', 'baseball_practices', 'baseball_practices_insert', 'can_manage_practice'),
+supabase/tests/rls/baseball_practice_visibility.sql:150:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_visibility.sql:160:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_visibility.sql:175:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_visibility.sql:185:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_visibility.sql:193:  tests.policy_with_check_contains('public', 'baseball_practice_blocks', 'baseball_practice_blocks_insert', 'can_manage_practice'),
+supabase/tests/rls/baseball_practice_visibility.sql:205:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_visibility.sql:212:-- The same SELECT policy's staff branch is capability-gated.
+supabase/tests/rls/baseball_practice_visibility.sql:216:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_visibility.sql:226:  NOT tests.policy_with_check_contains('public', 'baseball_practice_attendance', 'baseball_practice_attendance_insert', 'get_my_baseball_player_id'),
+supabase/tests/rls/baseball_practice_visibility.sql:227:  'no attendance INSERT policy lets a player self-mark attendance'
+supabase/tests/rls/baseball_practice_visibility.sql:230:  tests.policy_with_check_contains('public', 'baseball_practice_attendance', 'baseball_practice_attendance_insert', 'can_manage_practice'),
+supabase/tests/rls/baseball_practice_visibility.sql:236:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_visibility.sql:246:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_visibility.sql:254:-- Every practice table has at least one INSERT policy (writes are not wide-open
+supabase/tests/rls/baseball_practice_visibility.sql:262:  'all three practice tables expose a staff INSERT policy'
+supabase/tests/rls/golf_coach_insights_cross_tenant_select.sql:5:-- widened the SELECT policy USING clause (or dropped tenant scoping) would
+supabase/tests/rls/baseball_stat_visual_views.sql:6:--      table privileges and NO policy targets the anon role.
+supabase/tests/rls/baseball_stat_visual_views.sql:7:--   2. Every policy (SELECT/INSERT/UPDATE/DELETE) is OWNER-scoped: it pins the
+supabase/tests/rls/baseball_stat_visual_views.sql:10:--   3. A full CRUD policy set exists for authenticated (saved views are
+supabase/tests/rls/baseball_stat_visual_views.sql:45:-- 2. anon locked out — no privileges, no policy targets anon.
+supabase/tests/rls/baseball_stat_visual_views.sql:63:  'no stat-visual-views policy targets the anon role'
+supabase/tests/rls/baseball_stat_visual_views.sql:67:-- 3. A full CRUD policy set exists, each OWNER-scoped to auth.uid().
+supabase/tests/rls/baseball_stat_visual_views.sql:74:  'SELECT policy is owner-scoped (owner_user_id = auth.uid())'
+supabase/tests/rls/baseball_stat_visual_views.sql:80:  'INSERT policy is owner-scoped (WITH CHECK owner_user_id = auth.uid())'
+supabase/tests/rls/baseball_stat_visual_views.sql:86:  'UPDATE policy is owner-scoped (USING + WITH CHECK)'
+supabase/tests/rls/baseball_stat_visual_views.sql:92:  'DELETE policy is owner-scoped (owner_user_id = auth.uid())'
+supabase/tests/rls/baseball_stat_visual_views.sql:101:  'every stat-visual-views policy targets exactly the authenticated role'
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:7:--   1. RLS is ENABLED on both new tables; anon has no privileges and no policy
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:56:  'no scrimmage policy targets the anon role'
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:118:  'baseball_practice_scrimmages has at least one SELECT policy'
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:123:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:134:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:143:  tests.policy_with_check_contains('public', 'baseball_practice_scrimmages', 'baseball_practice_scrimmages_insert', 'can_manage_lineups')
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:144:  OR tests.policy_with_check_contains('public', 'baseball_practice_scrimmages', 'baseball_practice_scrimmages_insert', 'can_manage_practice'),
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:150:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:160:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:175:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:185:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:193:  tests.policy_with_check_contains('public', 'baseball_practice_lineup_slots', 'baseball_practice_lineup_slots_insert', 'can_manage_lineups')
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:194:  OR tests.policy_with_check_contains('public', 'baseball_practice_lineup_slots', 'baseball_practice_lineup_slots_insert', 'can_manage_practice'),
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:200:  NOT tests.policy_with_check_contains('public', 'baseball_practice_lineup_slots', 'baseball_practice_lineup_slots_insert', 'get_my_baseball_player_id'),
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:201:  'no lineup-slot INSERT policy lets a player self-assign a slot'
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:204:-- Both new tables expose a staff INSERT policy (writes are neither wide-open nor
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:212:  'both scrimmage tables expose a staff INSERT policy'
+supabase/tests/rls/baseball_timeline_event_acks.sql:23:--   5. No policy targets anon; the (timeline_event_id, user_id) pair is UNIQUE
+supabase/tests/rls/baseball_timeline_event_acks.sql:26:-- Schema-light: asserts the contract over pg_class / pg_policy / pg_constraint
+supabase/tests/rls/baseball_timeline_event_acks.sql:59:      FROM pg_policy p
+supabase/tests/rls/baseball_timeline_event_acks.sql:75:  'baseball_timeline_event_acks UPDATE policy is self-scoped (user_id = auth.uid())'
+supabase/tests/rls/baseball_timeline_event_acks.sql:84:  'baseball_timeline_event_acks DELETE policy is self-scoped (withdraw own ack only)'
+supabase/tests/rls/baseball_timeline_event_acks.sql:95:     FROM pg_policy p
+supabase/tests/rls/baseball_timeline_event_acks.sql:101:         FROM pg_policy p
+supabase/tests/rls/baseball_timeline_event_acks.sql:115:     FROM pg_policy p
+supabase/tests/rls/baseball_timeline_event_acks.sql:121:         FROM pg_policy p
+supabase/tests/rls/baseball_timeline_event_acks.sql:126:  'baseball_timeline_event_acks SELECT policy admits own acks OR the team coach/staff (is_baseball_team_coach_v2) of the underlying event'
+supabase/tests/rls/baseball_timeline_event_acks.sql:130:-- 5. No policy targets anon; one ack per (event, user).
+supabase/tests/rls/baseball_timeline_event_acks.sql:138:  'no baseball_timeline_event_acks policy targets the anon role'
+supabase/tests/rls/_helpers.sql:12:-- Returns TRUE when the given policy on the given table has a WITH CHECK
+supabase/tests/rls/_helpers.sql:14:CREATE OR REPLACE FUNCTION tests.policy_with_check_contains(
+supabase/tests/rls/_helpers.sql:17:  p_policy text,
+supabase/tests/rls/_helpers.sql:26:  FROM pg_policy p
+supabase/tests/rls/_helpers.sql:31:    AND p.polname = p_policy;
+supabase/tests/rls/baseball_decision_log.sql:14:--   3. APPEND-ONLY: there is NO UPDATE policy (a decision is immutable history),
+supabase/tests/rls/baseball_decision_log.sql:16:--   4. No policy targets anon.
+supabase/tests/rls/baseball_decision_log.sql:20:-- Schema-light: asserts the contract over pg_class / pg_policy / pg_constraint
+supabase/tests/rls/baseball_decision_log.sql:52:      FROM pg_policy p
+supabase/tests/rls/baseball_decision_log.sql:58:  'baseball_decision_log SELECT policy is staff-only (is_baseball_team_staff)'
+supabase/tests/rls/baseball_decision_log.sql:62:  (SELECT COUNT(*)::int FROM pg_policy p
+supabase/tests/rls/baseball_decision_log.sql:69:  'no baseball_decision_log SELECT policy exposes a player-identity read path'
+supabase/tests/rls/baseball_decision_log.sql:78:  'baseball_decision_log INSERT policy requires is_baseball_team_staff'
+supabase/tests/rls/baseball_decision_log.sql:82:-- 3. Append-only: NO UPDATE policy; DELETE primary-coach-only.
+supabase/tests/rls/baseball_decision_log.sql:90:  'baseball_decision_log exposes NO UPDATE policy (append-only ledger)'
+supabase/tests/rls/baseball_decision_log.sql:99:  'baseball_decision_log DELETE policy is restricted to is_baseball_primary_coach'
+supabase/tests/rls/baseball_decision_log.sql:103:-- 4. No policy targets anon.
+supabase/tests/rls/baseball_decision_log.sql:111:  'no baseball_decision_log policy targets the anon role'
+supabase/tests/rls/baseball_signal_action_materialization.sql:26:--   both            No policy targets anon.
+supabase/tests/rls/baseball_signal_action_materialization.sql:28:-- Schema-light: asserts the contract over pg_class / pg_policy / pg_constraint
+supabase/tests/rls/baseball_signal_action_materialization.sql:55:      FROM pg_policy p
+supabase/tests/rls/baseball_signal_action_materialization.sql:61:  'baseball_meeting_items SELECT policy is staff-only (is_baseball_team_staff)'
+supabase/tests/rls/baseball_signal_action_materialization.sql:66:  (SELECT COUNT(*)::int FROM pg_policy p
+supabase/tests/rls/baseball_signal_action_materialization.sql:73:  'no baseball_meeting_items SELECT policy exposes a player-identity read path'
+supabase/tests/rls/baseball_signal_action_materialization.sql:82:  'baseball_meeting_items DELETE policy is restricted to is_baseball_primary_coach'
+supabase/tests/rls/baseball_signal_action_materialization.sql:103:  'no baseball_meeting_items policy targets the anon role'
+supabase/tests/rls/baseball_signal_action_materialization.sql:124:      FROM pg_policy p
+supabase/tests/rls/baseball_signal_action_materialization.sql:130:  'baseball_coach_player_notes SELECT policy grants staff via is_baseball_team_staff'
+supabase/tests/rls/baseball_signal_action_materialization.sql:137:      FROM pg_policy p
+supabase/tests/rls/baseball_signal_action_materialization.sql:143:  'baseball_coach_player_notes SELECT policy ties the player branch to get_my_baseball_player_id (own row only)'
+supabase/tests/rls/baseball_signal_action_materialization.sql:147:-- a staff_only note. The policy phrases this as visibility IN ('team','player_only').
+supabase/tests/rls/baseball_signal_action_materialization.sql:150:     FROM pg_policy p
+supabase/tests/rls/baseball_signal_action_materialization.sql:156:         FROM pg_policy p
+supabase/tests/rls/baseball_signal_action_materialization.sql:170:  'baseball_coach_player_notes INSERT policy requires is_baseball_team_staff'
+supabase/tests/rls/baseball_signal_action_materialization.sql:179:  'baseball_coach_player_notes DELETE policy is restricted to is_baseball_primary_coach'
+supabase/tests/rls/baseball_signal_action_materialization.sql:200:  'no baseball_coach_player_notes policy targets the anon role'
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:14:-- Schema-light: asserts over pg_policy / pg_class without seeding integration
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:27:CREATE OR REPLACE FUNCTION pg_temp.rls_on(tbl text) RETURNS boolean AS $$
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:32:SELECT ok(pg_temp.rls_on('baseball_strength_groups'),            'RLS on baseball_strength_groups');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:33:SELECT ok(pg_temp.rls_on('baseball_strength_group_members'),     'RLS on baseball_strength_group_members');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:34:SELECT ok(pg_temp.rls_on('baseball_lift_exercises'),             'RLS on baseball_lift_exercises');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:35:SELECT ok(pg_temp.rls_on('baseball_lift_exercise_substitutions'),'RLS on baseball_lift_exercise_substitutions');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:36:SELECT ok(pg_temp.rls_on('baseball_lift_programs'),              'RLS on baseball_lift_programs');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:37:SELECT ok(pg_temp.rls_on('baseball_lift_weeks'),                 'RLS on baseball_lift_weeks');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:38:SELECT ok(pg_temp.rls_on('baseball_lift_days'),                  'RLS on baseball_lift_days');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:39:SELECT ok(pg_temp.rls_on('baseball_lift_sections'),             'RLS on baseball_lift_sections');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:40:SELECT ok(pg_temp.rls_on('baseball_lift_prescriptions'),        'RLS on baseball_lift_prescriptions');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:41:SELECT ok(pg_temp.rls_on('baseball_lift_program_assignments'),  'RLS on baseball_lift_program_assignments');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:42:SELECT ok(pg_temp.rls_on('baseball_lift_sessions'),             'RLS on baseball_lift_sessions');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:43:SELECT ok(pg_temp.rls_on('baseball_lift_session_exercises'),    'RLS on baseball_lift_session_exercises');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:44:SELECT ok(pg_temp.rls_on('baseball_lift_set_results'),          'RLS on baseball_lift_set_results');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:45:SELECT ok(pg_temp.rls_on('baseball_soreness_maps'),             'RLS on baseball_soreness_maps');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:46:SELECT ok(pg_temp.rls_on('baseball_bodyweight_entries'),        'RLS on baseball_bodyweight_entries');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:47:SELECT ok(pg_temp.rls_on('baseball_availability_statuses'),     'RLS on baseball_availability_statuses');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:48:SELECT ok(pg_temp.rls_on('baseball_strength_maxes'),            'RLS on baseball_strength_maxes');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:49:SELECT ok(pg_temp.rls_on('baseball_strength_prs'),              'RLS on baseball_strength_prs');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:50:SELECT ok(pg_temp.rls_on('baseball_lift_import_runs'),          'RLS on baseball_lift_import_runs');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:51:SELECT ok(pg_temp.rls_on('baseball_lift_import_rows'),          'RLS on baseball_lift_import_rows');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:53:-- No V11 policy targets anon; anon has no SELECT on the sensitive session table.
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:68:  0, 'no V11 lifting policy targets the anon role'
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:79:    FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:93:  1, 'baseball_lift_sessions has exactly one SELECT policy');
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:103:  EXISTS (SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:129:  EXISTS (SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:136:  EXISTS (SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:143:  EXISTS (SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:158:  NOT EXISTS (SELECT 1 FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
+supabase/tests/rls/baseball_v11_lifting_visibility.sql:163:  'no INSERT policy lets a player self-create a lift session');
+supabase/tests/rls/baseball_stats_center.sql:14:--   2. No SELECT policy on those tables targets the anon role.
+supabase/tests/rls/baseball_stats_center.sql:19:--   4. The games SELECT policy is bound to team membership/coach (so the
+supabase/tests/rls/baseball_stats_center.sql:70:-- No policy on these tables targets anon (service_role bypasses RLS).
+supabase/tests/rls/baseball_stats_center.sql:80:  'no Stats Center read-table policy targets the anon role'
+supabase/tests/rls/baseball_stats_center.sql:91:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_stats_center.sql:105:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_stats_center.sql:119:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_stats_center.sql:133:  (SELECT COUNT(*)::int FROM pg_policy p
+supabase/tests/rls/baseball_stats_center.sql:144:  'no box-score/season SELECT policy is unqualified (true/NULL USING)'
+supabase/tests/rls/baseball_stats_center.sql:154:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_signals_and_actions.sql:13:--      privileges and no policy targets the anon role.
+supabase/tests/rls/baseball_signals_and_actions.sql:61:-- No policy on either table targets anon (service_role bypasses RLS).
+supabase/tests/rls/baseball_signals_and_actions.sql:68:  'no signals/actions policy targets the anon role'
+supabase/tests/rls/baseball_signals_and_actions.sql:130:  'baseball_signals has at least one SELECT policy'
+supabase/tests/rls/baseball_signals_and_actions.sql:138:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:148:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:160:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:171:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:181:  tests.policy_with_check_contains('public', 'baseball_signals', 'baseball_signals_insert', 'is_baseball_team_staff'),
+supabase/tests/rls/baseball_signals_and_actions.sql:185:  NOT tests.policy_with_check_contains('public', 'baseball_signals', 'baseball_signals_insert', 'get_my_baseball_player_id'),
+supabase/tests/rls/baseball_signals_and_actions.sql:186:  'no baseball_signals INSERT policy lets a player self-create a signal'
+supabase/tests/rls/baseball_signals_and_actions.sql:192:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:202:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:213:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:230:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:240:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:252:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_signals_and_actions.sql:262:  tests.policy_with_check_contains('public', 'baseball_actions', 'baseball_actions_insert', 'is_baseball_team_staff'),
+supabase/tests/rls/baseball_signals_and_actions.sql:266:  NOT tests.policy_with_check_contains('public', 'baseball_actions', 'baseball_actions_insert', 'get_my_baseball_player_id'),
+supabase/tests/rls/baseball_signals_and_actions.sql:267:  'no baseball_actions INSERT policy lets a player self-create an action'
+supabase/tests/rls/baseball_signals_and_actions.sql:274:  tests.policy_with_check_contains('public', 'baseball_actions', 'baseball_actions_update', 'visibility')
+supabase/tests/rls/baseball_signals_and_actions.sql:275:    AND tests.policy_with_check_contains('public', 'baseball_actions', 'baseball_actions_update', 'get_my_baseball_player_id'),
+supabase/tests/rls/baseball_signals_and_actions.sql:279:  tests.policy_with_check_contains('public', 'baseball_actions', 'baseball_actions_update', 'is_baseball_team_staff'),
+supabase/tests/rls/baseball_signals_and_actions.sql:286:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_import_center.sql:3:-- The structural lineage contracts (RLS enabled, anon has no grants, one policy
+supabase/tests/rls/baseball_import_center.sql:11:-- Schema-light: asserts over pg_policy without seeding integration data.
+supabase/tests/rls/baseball_import_center.sql:21:-- Helper: fetch a policy's USING / WITH CHECK expression text.
+supabase/tests/rls/baseball_import_center.sql:28:      FROM pg_policy p
+supabase/tests/rls/baseball_import_center.sql:42:      FROM pg_policy p
+supabase/tests/rls/baseball_import_center.sql:55:      FROM pg_policy p
+supabase/tests/rls/baseball_import_center.sql:68:      FROM pg_policy p
+supabase/tests/rls/baseball_import_center.sql:81:      FROM pg_policy p
+supabase/tests/rls/baseball_import_center.sql:95:      FROM pg_policy p
+supabase/tests/rls/baseball_import_center.sql:108:      FROM pg_policy p
+supabase/tests/rls/baseball_import_center.sql:117:-- No import_runs policy targets PUBLIC (authenticated-only).
+supabase/tests/rls/baseball_import_center.sql:123:  'no baseball_import_runs policy targets PUBLIC'
+supabase/tests/rls/baseball_import_center.sql:126:-- No external_ids policy targets PUBLIC.
+supabase/tests/rls/baseball_import_center.sql:132:  'no baseball_player_external_ids policy targets PUBLIC'
+supabase/tests/rls/golf_course_library.sql:90:SELECT ok(tests.policy_with_check_contains('public','golf_course_tees','golf_course_tees_insert','created_by_user_id'),
+supabase/tests/rls/golf_course_library.sql:92:SELECT ok(tests.policy_with_check_contains('public','golf_course_tees','golf_course_tees_insert','auth.uid()'),
+supabase/tests/rls/golf_course_library.sql:94:SELECT ok(tests.policy_with_check_contains('public','golf_course_tees','golf_course_tees_update','last_edited_by_user_id'),
+supabase/tests/rls/golf_course_library.sql:96:SELECT ok(tests.policy_with_check_contains('public','golf_course_edit_history','golf_course_edit_history_insert','edited_by_user_id'),
+supabase/tests/rls/golf_course_library.sql:98:SELECT ok(tests.policy_with_check_contains('public','golf_course_tee_edit_history','golf_course_tee_edit_history_insert','edited_by_user_id'),
+supabase/tests/rls/golf_course_library.sql:107:  'golf_course_tees has NO DELETE policy (soft-delete via deleted_at only)');
+supabase/tests/rls/golf_course_library.sql:111:  'course edit-history is append-only (no UPDATE/DELETE policy)');
+supabase/tests/rls/golf_course_library.sql:115:  'tee edit-history is append-only (no UPDATE/DELETE policy)');
+supabase/tests/rls/golf_course_library.sql:120:SELECT ok(tests.policy_with_check_contains('public','golf_team_saved_courses','golf_team_saved_courses_write','is_golf_team_coach'),
+supabase/tests/rls/baseball_ai_audit.sql:5:-- tamper-evident row describing how the team's AI policy resolved it (approved /
+supabase/tests/rls/baseball_ai_audit.sql:14:--   2. The SELECT policy is gated by is_baseball_team_staff (staff-only read);
+supabase/tests/rls/baseball_ai_audit.sql:15:--      no policy admits a player branch or a bare-true predicate.
+supabase/tests/rls/baseball_ai_audit.sql:18:--   4. No policy targets the anon role (service_role bypasses RLS for engine
+supabase/tests/rls/baseball_ai_audit.sql:23:-- Schema-light: asserts the contract over pg_class / pg_policy / pg_constraint
+supabase/tests/rls/baseball_ai_audit.sql:50:-- 2. SELECT policy is staff-only (is_baseball_team_staff); no player branch.
+supabase/tests/rls/baseball_ai_audit.sql:56:      FROM pg_policy p
+supabase/tests/rls/baseball_ai_audit.sql:62:  'baseball_ai_audit SELECT policy is gated by is_baseball_team_staff (staff-only read)'
+supabase/tests/rls/baseball_ai_audit.sql:65:-- No SELECT policy may expose a player-identity read path — the audit log is
+supabase/tests/rls/baseball_ai_audit.sql:69:  (SELECT COUNT(*)::int FROM pg_policy p
+supabase/tests/rls/baseball_ai_audit.sql:76:  'no baseball_ai_audit SELECT policy exposes a player-identity read path'
+supabase/tests/rls/baseball_ai_audit.sql:90:  'baseball_ai_audit INSERT policy requires is_baseball_team_staff'
+supabase/tests/rls/baseball_ai_audit.sql:100:  'baseball_ai_audit DELETE policy is restricted to is_baseball_primary_coach'
+supabase/tests/rls/baseball_ai_audit.sql:104:-- 4. No policy targets anon.
+supabase/tests/rls/baseball_ai_audit.sql:112:  'no baseball_ai_audit policy targets the anon role'
+supabase/tests/rls/golf_team_coach_staff.sql:1:-- S-CRIT-1 regression: golf_team_coach_staff INSERT policy must require
+supabase/tests/rls/golf_team_coach_staff.sql:4:-- The bug at supabase/migrations/20260427210000_canonical_rls_snapshot.sql:2805-2809
+supabase/tests/rls/golf_team_coach_staff.sql:8:-- The fix migration (20260517000000_fix_critical_rls_policies.sql) adds a
+supabase/tests/rls/golf_team_coach_staff.sql:16:-- Test 1: the policy exists and is a WITH CHECK policy.
+supabase/tests/rls/golf_team_coach_staff.sql:20:    FROM pg_policy p
+supabase/tests/rls/golf_team_coach_staff.sql:26:      AND p.polcmd = 'a'  -- INSERT (the 'a' code in pg_policy.polcmd)
+supabase/tests/rls/golf_team_coach_staff.sql:28:  'golf_team_coach_staff_insert policy exists as INSERT policy'
+supabase/tests/rls/golf_team_coach_staff.sql:31:-- Test 2: the policy requires HEAD-coach ownership of the target team in the
+supabase/tests/rls/golf_team_coach_staff.sql:37:  tests.policy_with_check_contains('public', 'golf_team_coach_staff', 'golf_team_coach_staff_insert', 'is_golf_team_head_coach'),
+supabase/tests/rls/golf_team_coach_staff.sql:41:-- Test 3: the policy still verifies coach_id ownership too (no regression on
+supabase/tests/rls/golf_team_coach_staff.sql:44:  tests.policy_with_check_contains('public', 'golf_team_coach_staff', 'golf_team_coach_staff_insert', 'auth.uid()'),
+supabase/tests/rls/baseball_timeline_visibility.sql:3:--  20260624000050_baseball_rls_helpers_and_policies.sql).
+supabase/tests/rls/baseball_timeline_visibility.sql:10:-- SELECT policy on this table (0040: "baseball_timeline_select" using the
+supabase/tests/rls/baseball_timeline_visibility.sql:18:--   3. Whatever SELECT policy/policies exist, every player-facing branch is
+supabase/tests/rls/baseball_timeline_visibility.sql:21:--      policy on this table grants a player a path that omits the visibility
+supabase/tests/rls/baseball_timeline_visibility.sql:27:-- Schema-light: asserts the contract over pg_policy / pg_constraint without
+supabase/tests/rls/baseball_timeline_visibility.sql:30:-- Source: Wave 1 roster-timeline / schema-rls packets (BaseballHelm).
+supabase/tests/rls/baseball_timeline_visibility.sql:71:-- 3. Every SELECT policy excludes staff-private rows from the player branch.
+supabase/tests/rls/baseball_timeline_visibility.sql:73:-- There is at least one SELECT policy.
+supabase/tests/rls/baseball_timeline_visibility.sql:79:  'baseball_player_timeline_events has at least one SELECT policy'
+supabase/tests/rls/baseball_timeline_visibility.sql:82:-- The 0040 SELECT policy: the player branch must exclude 'staff_only'.
+supabase/tests/rls/baseball_timeline_visibility.sql:83:-- (If the policy is absent, COALESCE('') makes the staff_only check vacuously
+supabase/tests/rls/baseball_timeline_visibility.sql:89:      AND policyname = 'baseball_timeline_select'
+supabase/tests/rls/baseball_timeline_visibility.sql:94:        FROM pg_policy p
+supabase/tests/rls/baseball_timeline_visibility.sql:108:      AND policyname = 'baseball_timeline_select'
+supabase/tests/rls/baseball_timeline_visibility.sql:112:        FROM pg_policy p
+supabase/tests/rls/baseball_timeline_visibility.sql:122:-- The 0050 SELECT policy: the player branch is bound to 'player_visible' AND a
+supabase/tests/rls/baseball_timeline_visibility.sql:128:      AND policyname = 'baseball_player_timeline_events_select'
+supabase/tests/rls/baseball_timeline_visibility.sql:132:        FROM pg_policy p
+supabase/tests/rls/baseball_timeline_visibility.sql:146:      AND policyname = 'baseball_player_timeline_events_select'
+supabase/tests/rls/baseball_timeline_visibility.sql:150:        FROM pg_policy p
+supabase/tests/rls/baseball_timeline_visibility.sql:160:-- A player-identity function is referenced by the SELECT policy set, so the
+supabase/tests/rls/baseball_timeline_visibility.sql:164:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_timeline_visibility.sql:171:  'timeline SELECT policy set ties the player branch to the player''s own identity'
+supabase/tests/rls/baseball_timeline_visibility.sql:175:-- 4. Writes are staff-gated — every write policy references a staff/coach
+supabase/tests/rls/baseball_timeline_visibility.sql:186:  'baseball_player_timeline_events has an INSERT policy'
+supabase/tests/rls/baseball_timeline_visibility.sql:191:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_timeline_visibility.sql:198:  'no INSERT policy lets a player self-insert their own timeline event'
+supabase/tests/rls/baseball_timeline_visibility.sql:203:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_timeline_visibility.sql:216:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_timeline_visibility.sql:232:  'no baseball_player_timeline_events policy targets the anon role'
+supabase/tests/rls/baseball_signals_actions.sql:12:--      staff_only token never appears in a policy without an accompanying
+supabase/tests/rls/baseball_signals_actions.sql:17:-- Schema-light: asserts the contract over pg_policy / pg_constraint without
+supabase/tests/rls/baseball_signals_actions.sql:91:--    The SELECT policy USING expr must reference BOTH a player-identity helper
+supabase/tests/rls/baseball_signals_actions.sql:96:-- Helper: does the named policy's USING expr contain the needle?
+supabase/tests/rls/baseball_signals_actions.sql:97:CREATE OR REPLACE FUNCTION tests.policy_using_contains(
+supabase/tests/rls/baseball_signals_actions.sql:98:  p_table text, p_policy text, p_needle text
+supabase/tests/rls/baseball_signals_actions.sql:101:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_signals_actions.sql:106:      AND p.polname = p_policy
+supabase/tests/rls/baseball_signals_actions.sql:111:SELECT ok(tests.policy_using_contains('baseball_signals', 'baseball_signals_select', 'get_my_baseball_player_id'),
+supabase/tests/rls/baseball_signals_actions.sql:113:SELECT ok(tests.policy_using_contains('baseball_signals', 'baseball_signals_select', 'is_baseball_team_staff'),
+supabase/tests/rls/baseball_signals_actions.sql:115:SELECT ok(tests.policy_using_contains('baseball_signals', 'baseball_signals_select', 'player_only'),
+supabase/tests/rls/baseball_signals_actions.sql:122:SELECT ok(tests.policy_using_contains('baseball_actions', 'baseball_actions_select', 'get_my_baseball_player_id'),
+supabase/tests/rls/baseball_signals_actions.sql:124:SELECT ok(tests.policy_using_contains('baseball_actions', 'baseball_actions_select', 'assignee_player_id'),
+supabase/tests/rls/baseball_signals_actions.sql:126:SELECT ok(tests.policy_using_contains('baseball_actions', 'baseball_actions_select', 'player_only'),
+supabase/tests/rls/baseball_signals_actions.sql:133:SELECT ok(tests.policy_with_check_contains('public', 'baseball_signals', 'baseball_signals_insert', 'is_baseball_team_staff'),
+supabase/tests/rls/baseball_signals_actions.sql:135:SELECT ok(tests.policy_with_check_contains('public', 'baseball_actions', 'baseball_actions_insert', 'is_baseball_team_staff'),
+supabase/tests/rls/baseball_signals_actions.sql:139:SELECT ok(tests.policy_using_contains('baseball_signals', 'baseball_signals_delete', 'is_baseball_primary_coach'),
+supabase/tests/rls/baseball_signals_actions.sql:141:SELECT ok(tests.policy_using_contains('baseball_actions', 'baseball_actions_delete', 'is_baseball_primary_coach'),
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:4:-- Original policy in 20260525160000_v3_golf_goal_suggestions_table.sql
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:6:-- ("Engine writes via service_role; no authenticated INSERT policy") and
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:9:-- Fix in 20260526180000_fix_v3_goals_suggestions_rls.sql splits it into
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:10:-- a FOR SELECT and a FOR UPDATE policy only.
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:17:-- Test 1: the broken FOR ALL policy is gone.
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:20:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:27:  'goal_suggestions_player_own (FOR ALL) policy is dropped'
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:30:-- Test 2: a FOR SELECT policy exists.
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:33:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:41:  'goal_suggestions_player_select exists as SELECT policy'
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:44:-- Test 3: a FOR UPDATE policy exists.
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:47:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:55:  'goal_suggestions_player_update exists as UPDATE policy'
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:58:-- Test 4: no INSERT policy exists for authenticated.
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:61:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:68:  'no INSERT (or ALL) policy on golf_goal_suggestions — engine uses service_role'
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:71:-- Test 5: no DELETE policy exists for authenticated.
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:74:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:81:  'no DELETE (or ALL) policy on golf_goal_suggestions — engine TTL-expires rows server-side'
+supabase/tests/rls/baseball_seasons.sql:5:--   1. RLS is ENABLED on baseball_seasons; anon has no privileges and no policy
+supabase/tests/rls/baseball_seasons.sql:14:--   5. The team join-policy columns added to baseball_teams have a CHECK on
+supabase/tests/rls/baseball_seasons.sql:15:--      invite_policy and secure defaults (require_coach_approval defaults true,
+supabase/tests/rls/baseball_seasons.sql:41:-- 2. anon locked out — no table privileges, no policy targets anon.
+supabase/tests/rls/baseball_seasons.sql:53:  'no baseball_seasons policy targets the anon role'
+supabase/tests/rls/baseball_seasons.sql:123:-- 6. Team join-policy columns: CHECK on invite_policy + secure defaults.
+supabase/tests/rls/baseball_seasons.sql:132:      AND con.contype='c' AND pg_get_constraintdef(con.oid) LIKE '%invite_policy%'
+supabase/tests/rls/baseball_seasons.sql:134:  'baseball_teams has a CHECK constraint on invite_policy'
+supabase/tests/rls/baseball_seasons.sql:163:       AND a.attname='invite_policy'),
+supabase/tests/rls/baseball_seasons.sql:164:  'invite_policy DEFAULT is invite_only (safest)'
+supabase/tests/rls/baseball_passport_scout_packet_share_tokens.sql:12:--   * No policy targets anon.
+supabase/tests/rls/baseball_passport_scout_packet_share_tokens.sql:14:-- Schema-light: asserts the contract over pg_policy / pg_constraint / pg_class
+supabase/tests/rls/baseball_passport_scout_packet_share_tokens.sql:44:  'no share-token policy targets the anon role'
+supabase/tests/rls/baseball_passport_scout_packet_share_tokens.sql:68:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_scout_packet_share_tokens.sql:81:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_scout_packet_share_tokens.sql:94:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_passport_scout_packet_share_tokens.sql:106:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_import_lineage.sql:3:--  20260624000050_baseball_rls_helpers_and_policies.sql).
+supabase/tests/rls/baseball_import_lineage.sql:9:--   3. Every CRUD verb has an explicit, team-scoped policy (no implicit
+supabase/tests/rls/baseball_import_lineage.sql:11:--   4. The team-scoping is real: each policy expression references the team
+supabase/tests/rls/baseball_import_lineage.sql:17:-- Schema-light: asserts the security contract over pg_policy / pg_class without
+supabase/tests/rls/baseball_import_lineage.sql:20:-- Source: Wave 1 source-registry / schema-rls packets (BaseballHelm).
+supabase/tests/rls/baseball_import_lineage.sql:60:-- 3. Every CRUD verb on baseball_import_runs has exactly one named policy.
+supabase/tests/rls/baseball_import_lineage.sql:68:  'baseball_import_runs has exactly one SELECT policy'
+supabase/tests/rls/baseball_import_lineage.sql:75:  'baseball_import_runs has exactly one INSERT policy'
+supabase/tests/rls/baseball_import_lineage.sql:82:  'baseball_import_runs has exactly one UPDATE policy'
+supabase/tests/rls/baseball_import_lineage.sql:89:  'baseball_import_runs has exactly one DELETE policy'
+supabase/tests/rls/baseball_import_lineage.sql:108:      FROM pg_policy p
+supabase/tests/rls/baseball_import_lineage.sql:117:-- external_ids scoping flows through the player -> team chain (the policy text
+supabase/tests/rls/baseball_import_lineage.sql:122:      FROM pg_policy p
+supabase/tests/rls/baseball_import_lineage.sql:139:      FROM pg_policy p
+supabase/tests/rls/baseball_import_lineage.sql:152:      FROM pg_policy p
+supabase/tests/rls/baseball_import_lineage.sql:164:      FROM pg_policy p
+supabase/tests/rls/v3_rpc_grant_hardening.sql:11:-- bypassrls role, that allowed unauthenticated RLS-bypassing recompute/DoS and
+supabase/tests/rls/baseball_event_acknowledgements.sql:10:--      (every write policy is bound to user_id = auth.uid()). A player can never
+supabase/tests/rls/baseball_event_acknowledgements.sql:16:-- Schema-light: asserts the contract over pg_policy / pg_constraint without
+supabase/tests/rls/baseball_event_acknowledgements.sql:56:-- 3. Every WRITE policy is bound to user_id = auth.uid() (self only).
+supabase/tests/rls/baseball_event_acknowledgements.sql:59:-- Helper: assert that the named policy's USING and/or WITH CHECK expression
+supabase/tests/rls/baseball_event_acknowledgements.sql:61:CREATE OR REPLACE FUNCTION tests.policy_is_self_owned(
+supabase/tests/rls/baseball_event_acknowledgements.sql:63:  p_policy text
+supabase/tests/rls/baseball_event_acknowledgements.sql:73:  FROM pg_policy p
+supabase/tests/rls/baseball_event_acknowledgements.sql:76:  WHERE n.nspname = 'public' AND c.relname = p_table AND p.polname = p_policy;
+supabase/tests/rls/baseball_event_acknowledgements.sql:83:  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acks_insert'),
+supabase/tests/rls/baseball_event_acknowledgements.sql:84:  'INSERT policy is bound to user_id = auth.uid() (no forging as another user)'
+supabase/tests/rls/baseball_event_acknowledgements.sql:87:  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acks_update'),
+supabase/tests/rls/baseball_event_acknowledgements.sql:88:  'UPDATE policy is bound to user_id = auth.uid()'
+supabase/tests/rls/baseball_event_acknowledgements.sql:91:  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acks_delete'),
+supabase/tests/rls/baseball_event_acknowledgements.sql:92:  'DELETE policy is bound to user_id = auth.uid()'
+supabase/tests/rls/baseball_event_acknowledgements.sql:96:-- 4. SELECT policy: own rows OR team-staff branch (via the coach helper).
+supabase/tests/rls/baseball_event_acknowledgements.sql:101:  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acks_select'),
+supabase/tests/rls/baseball_event_acknowledgements.sql:102:  'SELECT policy includes the own-row branch (user_id = auth.uid())'
+supabase/tests/rls/baseball_event_acknowledgements.sql:108:     FROM pg_policy p
+supabase/tests/rls/baseball_event_acknowledgements.sql:120:     FROM pg_policy p
+supabase/tests/rls/baseball_event_acknowledgements.sql:130:-- 5. Exactly one policy per command (no overlapping permissive write paths).
+supabase/tests/rls/baseball_event_acknowledgements.sql:134:  (SELECT count(*)::int FROM pg_policy p
+supabase/tests/rls/baseball_event_acknowledgements.sql:141:  'exactly one INSERT policy on baseball_event_acknowledgements'
+supabase/tests/rls/baseball_event_acknowledgements.sql:144:  (SELECT count(*)::int FROM pg_policy p
+supabase/tests/rls/baseball_event_acknowledgements.sql:151:  'exactly one UPDATE policy on baseball_event_acknowledgements'
+supabase/tests/rls/baseball_event_acknowledgements.sql:154:  (SELECT count(*)::int FROM pg_policy p
+supabase/tests/rls/baseball_event_acknowledgements.sql:161:  'exactly one DELETE policy on baseball_event_acknowledgements'
+supabase/tests/rls/baseball_event_acknowledgements.sql:164:  (SELECT count(*)::int FROM pg_policy p
+supabase/tests/rls/baseball_event_acknowledgements.sql:171:  'exactly one SELECT policy on baseball_event_acknowledgements'
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:3:--  20260624000050_baseball_rls_helpers_and_policies.sql).
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:11:--   1. RLS is ENABLED on both new tables; anon has no privileges and no policy
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:56:-- No effectiveness policy targets anon (service_role bypasses RLS for the cron write).
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:63:  'no effectiveness policy targets the anon role'
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:72:  tests.policy_with_check_contains('public', 'baseball_practice_block_objectives', 'bpbo_staff_manage', 'can_manage_practice'),
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:75:-- ...and the same policy's USING expression is capability-gated (no can_manage_practice
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:80:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:93:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:105:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:117:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:128:     FROM pg_policy p
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:158:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:168:  tests.policy_with_check_contains('public', 'baseball_practice_effectiveness_reviews', 'bpe_staff_write', 'can_manage_practice'),
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:176:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:189:      FROM pg_policy p
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:200:     FROM pg_policy p
+supabase/tests/rls/v3_goals_coach_create_player_team_binding.sql:3:-- Original policy in 20260525150000_v3_golf_goals_table.sql only required
+supabase/tests/rls/v3_goals_coach_create_player_team_binding.sql:7:-- Fix in 20260526180000_fix_v3_goals_suggestions_rls.sql adds an EXISTS
+supabase/tests/rls/v3_goals_coach_create_player_team_binding.sql:15:-- Test 1: the policy still exists as an INSERT policy.
+supabase/tests/rls/v3_goals_coach_create_player_team_binding.sql:19:    FROM pg_policy p
+supabase/tests/rls/v3_goals_coach_create_player_team_binding.sql:27:  'goals_coach_create policy exists as INSERT policy'
+supabase/tests/rls/v3_goals_coach_create_player_team_binding.sql:32:  tests.policy_with_check_contains('public', 'golf_goals', 'goals_coach_create', 'is_team_coach'),
+supabase/tests/rls/v3_goals_coach_create_player_team_binding.sql:38:  tests.policy_with_check_contains('public', 'golf_goals', 'goals_coach_create', 'golf_team_members'),
+supabase/tests/rls/v3_goals_coach_create_player_team_binding.sql:44:  tests.policy_with_check_contains('public', 'golf_goals', 'goals_coach_create', 'active'),
+supabase/tests/rls/baseball_full_phase1.sql:18:--   3. NO policy on any Phase-1 table targets the anon role.
+supabase/tests/rls/baseball_full_phase1.sql:19:--   4. Every Phase-1 table has at least one SELECT policy (no implicit-deny gap
+supabase/tests/rls/baseball_full_phase1.sql:63:-- 14 tables × 6 assertions (RLS on, 4× anon-privilege, no-anon-policy) = 84
+supabase/tests/rls/baseball_full_phase1.sql:64:-- + 14 (>=1 SELECT policy) = 98
+supabase/tests/rls/baseball_full_phase1.sql:107:-- 3. NO policy on any Phase-1 table targets the anon role (14).
+supabase/tests/rls/baseball_full_phase1.sql:113:  'no policy on '||bt.t||' targets the anon role'
+supabase/tests/rls/baseball_full_phase1.sql:118:-- 4a. Every Phase-1 table has at least one SELECT policy (14).
+supabase/tests/rls/baseball_full_phase1.sql:124:  bt.t||' has at least one SELECT (or ALL) policy'
+supabase/tests/rls/baseball_full_phase1.sql:145:       SELECT 1 FROM pg_policy pol
+supabase/tests/rls/baseball_staff_invite_accept.sql:6:-- the FINAL policy set after migration 20260624000050 (which REPLACES the
+supabase/tests/rls/baseball_staff_invite_accept.sql:12:--   2. The UPDATE policy lets a manager revoke/edit AND lets the invitee claim
+supabase/tests/rls/baseball_staff_invite_accept.sql:22:-- Schema-light: asserts over pg_policy / pg_class / information_schema without
+supabase/tests/rls/baseball_staff_invite_accept.sql:33:-- 1. Invitee SELECT path — the canonical select policy matches on email so an
+supabase/tests/rls/baseball_staff_invite_accept.sql:42:      AND policyname = 'baseball_staff_invitations_select'
+supabase/tests/rls/baseball_staff_invite_accept.sql:44:  'canonical SELECT policy exists on baseball_staff_invitations'
+supabase/tests/rls/baseball_staff_invite_accept.sql:50:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_invite_accept.sql:56:  'invitation SELECT policy matches the invitee on email (accept path)'
+supabase/tests/rls/baseball_staff_invite_accept.sql:62:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_invite_accept.sql:68:  'invitation SELECT policy also admits managers (can_invite_staff)'
+supabase/tests/rls/baseball_staff_invite_accept.sql:80:      AND policyname = 'baseball_staff_invitations_update'
+supabase/tests/rls/baseball_staff_invite_accept.sql:82:  'canonical UPDATE policy exists on baseball_staff_invitations'
+supabase/tests/rls/baseball_staff_invite_accept.sql:88:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_invite_accept.sql:94:  'UPDATE policy USING lets the invitee accept their own invite (email match)'
+supabase/tests/rls/baseball_staff_invite_accept.sql:100:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_invite_accept.sql:106:  'UPDATE policy WITH CHECK gates manager-side writes on the invite capability'
+supabase/tests/rls/baseball_staff_invite_accept.sql:116:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_invite_accept.sql:128:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_invite_accept.sql:152:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_invite_accept.sql:164:      FROM pg_policy p
+supabase/tests/rls/wave_a_db_security.sql:5:--   A3 F005       player-self UPDATE policy on golf_player_focus_areas
+supabase/tests/rls/wave_a_db_security.sql:78:      FROM pg_policy p
+supabase/tests/rls/wave_a_db_security.sql:88:-- A3 — player-self UPDATE policy exists on golf_player_focus_areas.
+supabase/tests/rls/wave_a_db_security.sql:95:      AND policyname = 'golf_player_focus_areas_update_player' AND cmd = 'UPDATE'
+supabase/tests/rls/wave_a_db_security.sql:97:  'player-self UPDATE policy exists on golf_player_focus_areas'
+supabase/tests/rls/baseball_strength_group_audit.sql:16:--   4. APPEND-ONLY: there is NO UPDATE and NO DELETE policy (immutable history).
+supabase/tests/rls/baseball_strength_group_audit.sql:17:--   5. No policy targets anon; the event_type/source CHECK vocabularies hold.
+supabase/tests/rls/baseball_strength_group_audit.sql:19:-- Schema-light: asserts the contract over pg_class / pg_policy / pg_constraint
+supabase/tests/rls/baseball_strength_group_audit.sql:50:      FROM pg_policy p
+supabase/tests/rls/baseball_strength_group_audit.sql:56:  'baseball_strength_group_audit SELECT policy (bsga_select) is staff-only (is_baseball_team_staff)'
+supabase/tests/rls/baseball_strength_group_audit.sql:60:  (SELECT COUNT(*)::int FROM pg_policy p
+supabase/tests/rls/baseball_strength_group_audit.sql:67:  'no baseball_strength_group_audit SELECT policy exposes a player-identity read path'
+supabase/tests/rls/baseball_strength_group_audit.sql:77:      FROM pg_policy p
+supabase/tests/rls/baseball_strength_group_audit.sql:83:  'baseball_strength_group_audit INSERT policy (bsga_insert) requires the can_manage_lifting capability'
+supabase/tests/rls/baseball_strength_group_audit.sql:89:      FROM pg_policy p
+supabase/tests/rls/baseball_strength_group_audit.sql:95:  'baseball_strength_group_audit INSERT policy enforces a same-team group existence check'
+supabase/tests/rls/baseball_strength_group_audit.sql:99:-- 4. Append-only: NO UPDATE and NO DELETE policy.
+supabase/tests/rls/baseball_strength_group_audit.sql:107:  'baseball_strength_group_audit exposes NO UPDATE/DELETE policy (immutable ledger)'
+supabase/tests/rls/baseball_strength_group_audit.sql:111:-- 5. No policy targets anon; event_type/source CHECK vocabularies hold.
+supabase/tests/rls/baseball_strength_group_audit.sql:119:  'no baseball_strength_group_audit policy targets the anon role'
+supabase/tests/rls/baseball_coach_insights_attribution.sql:19:--   4. The SELECT policy binds the player branch to BOTH player_visible = true
+supabase/tests/rls/baseball_coach_insights_attribution.sql:23:--   5. No policy targets the anon role (service_role bypasses RLS for AI writes).
+supabase/tests/rls/baseball_coach_insights_attribution.sql:25:-- Schema-light: asserts the contract over pg_policy / pg_constraint /
+supabase/tests/rls/baseball_coach_insights_attribution.sql:93:-- 4. SELECT policy gates the player branch with player_visible + identity.
+supabase/tests/rls/baseball_coach_insights_attribution.sql:101:  'baseball_coach_insights has at least one SELECT policy'
+supabase/tests/rls/baseball_coach_insights_attribution.sql:107:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_coach_insights_attribution.sql:114:  'baseball_coach_insights SELECT policy binds the player branch to player_visible'
+supabase/tests/rls/baseball_coach_insights_attribution.sql:120:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_coach_insights_attribution.sql:127:  'baseball_coach_insights SELECT policy ties access to staff or the player''s own identity'
+supabase/tests/rls/baseball_coach_insights_attribution.sql:131:-- 5. No policy targets the anon role.
+supabase/tests/rls/baseball_coach_insights_attribution.sql:139:  'no baseball_coach_insights policy targets the anon role'
+supabase/tests/rls/baseball_staff_capabilities.sql:3:--  20260624000050_baseball_rls_helpers_and_policies.sql).
+supabase/tests/rls/baseball_staff_capabilities.sql:17:-- Schema-light: asserts the security contract over pg_proc / pg_policy /
+supabase/tests/rls/baseball_staff_capabilities.sql:21:-- Source: Wave 1 schema-rls packet (BaseballHelm).
+supabase/tests/rls/baseball_staff_capabilities.sql:126:--    The capability-aware policy set is (re)defined in migration 0050.
+supabase/tests/rls/baseball_staff_capabilities.sql:133:      AND policyname = 'baseball_import_runs_select'
+supabase/tests/rls/baseball_staff_capabilities.sql:135:  'baseball_import_runs_select policy exists'
+supabase/tests/rls/baseball_staff_capabilities.sql:141:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_capabilities.sql:153:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_capabilities.sql:165:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_capabilities.sql:175:-- import runs — the policy text references only the import capability.
+supabase/tests/rls/baseball_staff_capabilities.sql:179:      FROM pg_policy p
+supabase/tests/rls/baseball_staff_capabilities.sql:204:-- The (0050) insert policy must require primary-coach OR the invite capability.
+supabase/tests/rls/baseball_staff_capabilities.sql:208:      FROM pg_policy p
+supabase/tests/rls/baseball_video_classes.sql:11:--         * The SELECT policy's player branch is bound to BOTH a visibility
+supabase/tests/rls/baseball_video_classes.sql:22:-- Schema-light: asserts over pg_policy / pg_constraint / pg_attribute without
+supabase/tests/rls/baseball_video_classes.sql:81:-- 3. At least one SELECT policy, and the player branch excludes staff_only.
+supabase/tests/rls/baseball_video_classes.sql:87:  'baseball_class_conflicts has at least one SELECT policy'
+supabase/tests/rls/baseball_video_classes.sql:90:-- The SELECT policy's player branch must reference visibility <> staff_only.
+supabase/tests/rls/baseball_video_classes.sql:94:      FROM pg_policy p
+supabase/tests/rls/baseball_video_classes.sql:103:-- The SELECT policy ties the player branch to the player''s own identity.
+supabase/tests/rls/baseball_video_classes.sql:107:      FROM pg_policy p
+supabase/tests/rls/baseball_video_classes.sql:121:      FROM pg_policy p
+supabase/tests/rls/baseball_video_classes.sql:130:  tests.policy_with_check_contains(
+supabase/tests/rls/baseball_video_classes.sql:137:  tests.policy_with_check_contains(
+supabase/tests/rls/baseball_video_classes.sql:144:-- 5. No write policy lets a player self-insert/update a conflict.
+supabase/tests/rls/baseball_video_classes.sql:147:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_video_classes.sql:154:  'no INSERT policy lets a player self-insert a class conflict'
+supabase/tests/rls/baseball_video_classes.sql:160:    SELECT 1 FROM pg_policy p
+supabase/tests/rls/baseball_video_classes.sql:170:-- 7. No policy targets the anon role.
+supabase/tests/rls/baseball_video_classes.sql:176:  'no baseball_class_conflicts policy targets the anon role'
+supabase/tests/rls/baseball_postgame_reviews.sql:7:--   2. No postgame policy targets the anon role (service_role bypasses RLS).
+supabase/tests/rls/baseball_postgame_reviews.sql:8:--   3. The staff branch of every SELECT/INSERT/UPDATE/DELETE policy is gated on
+supabase/tests/rls/baseball_postgame_reviews.sql:12:--      There is NO player write path (no INSERT/UPDATE/DELETE policy lets a
+supabase/tests/rls/baseball_postgame_reviews.sql:57:  'no postgame policy targets the anon role'
+supabase/tests/rls/baseball_postgame_reviews.sql:143:  'baseball_postgame_reviews has at least one SELECT policy'
+supabase/tests/rls/baseball_postgame_reviews.sql:148:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_postgame_reviews.sql:156:  tests.policy_with_check_contains('public', 'baseball_postgame_reviews', 'baseball_postgame_reviews_insert', 'is_baseball_team_staff'),
+supabase/tests/rls/baseball_postgame_reviews.sql:162:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_postgame_reviews.sql:172:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_postgame_reviews.sql:188:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_postgame_reviews.sql:199:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_postgame_reviews.sql:210:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_postgame_reviews.sql:220:  tests.policy_with_check_contains('public', 'baseball_postgame_review_items', 'baseball_postgame_review_items_insert', 'is_baseball_team_staff'),
+supabase/tests/rls/baseball_postgame_reviews.sql:224:  NOT tests.policy_with_check_contains('public', 'baseball_postgame_review_items', 'baseball_postgame_review_items_insert', 'player_visible'),
+supabase/tests/rls/baseball_postgame_reviews.sql:225:  'no item INSERT policy lets a player self-create an item'
+supabase/tests/rls/baseball_postgame_reviews.sql:230:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_postgame_reviews.sql:240:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_postgame_reviews.sql:248:-- Both tables expose a staff INSERT policy (writes are not wide-open or denied).
+supabase/tests/rls/baseball_postgame_reviews.sql:255:  'both postgame tables expose a staff INSERT policy'
+supabase/tests/rls/baseball_stat_event_model.sql:3:--  20260624000050_baseball_rls_helpers_and_policies.sql for the helpers).
+supabase/tests/rls/baseball_stat_event_model.sql:8:--   3. Every CRUD verb on every event table has exactly one named policy,
+supabase/tests/rls/baseball_stat_event_model.sql:10:--   4. Team-scoping is real: every SELECT policy references team_id / a player
+supabase/tests/rls/baseball_stat_event_model.sql:19:-- Schema-light: asserts the security contract over pg_policy / pg_class without
+supabase/tests/rls/baseball_stat_event_model.sql:86:-- 3. Every CRUD verb has exactly one policy on each player-grain event table.
+supabase/tests/rls/baseball_stat_event_model.sql:93:  format('%s has exactly one %s policy', t, v)
+supabase/tests/rls/baseball_stat_event_model.sql:129:-- 5. Team-scoping is real — every event SELECT policy references team_id.
+supabase/tests/rls/baseball_stat_event_model.sql:134:      FROM pg_policy p
+supabase/tests/rls/baseball_stat_event_model.sql:162:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_stat_event_model.sql:173:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_stat_event_model.sql:184:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_stat_event_model.sql:194:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_stat_event_model.sql:208:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_stat_event_model.sql:222:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_stat_event_model.sql:232:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/tests/rls/baseball_stat_event_model.sql:243:      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+supabase/scripts/check-current-policies.mjs:48:  SELECT policyname, cmd 
+supabase/scripts/check-current-policies.mjs:51:  ORDER BY policyname
+supabase/scripts/check-current-policies.mjs:64:console.log('2. Look for duplicate policy names or conflicting FOR ALL vs FOR SELECT/INSERT/etc');
+supabase/scripts/check-current-policies.mjs:65:console.log('3. If duplicates found, run fix-rls-completely.sql to wipe and recreate cleanly');
+supabase/config.toml:152:additional_redirect_urls = ["https://127.0.0.1:3000"]
+supabase/config.toml:358:policy = "per_worker"
+supabase/migrations_archive/v1_original/20260104000006_force_fix_conversations_insert.sql:2:-- FORCE FIX: Conversations INSERT policy
+supabase/migrations_archive/v1_original/20260104000006_force_fix_conversations_insert.sql:4:-- Directly fix the conversations INSERT policy without relying on dynamic drops
+supabase/migrations_archive/v1_original/044_restore_complete_rls_policies.sql:4:-- This migration restores the full policy set for all auth tables
+supabase/migrations_archive/v1_original/044_restore_complete_rls_policies.sql:7:-- GOLF_COACHES TABLE - Complete policy set (restore what was in 043)
+supabase/migrations_archive/v1_original/044_restore_complete_rls_policies.sql:28:-- GOLF_PLAYERS TABLE - Complete policy set
+supabase/migrations_archive/v1_original/044_restore_complete_rls_policies.sql:49:-- COACHES TABLE (Baseball) - Complete policy set
+supabase/migrations_archive/v1_original/044_restore_complete_rls_policies.sql:75:-- PLAYERS TABLE (Baseball) - Complete policy set
+supabase/migrations_archive/v1_original/044_restore_complete_rls_policies.sql:107:-- USERS TABLE - Complete policy set
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:3:-- Migration: 20260108000001_rls_audit_fixes.sql
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:20:  policy_rec RECORD;
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:22:  FOR policy_rec IN
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:23:    SELECT policyname
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:28:    EXECUTE format('DROP POLICY IF EXISTS %I ON conversation_participants', policy_rec.policyname);
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:252:  rls_enabled_cp boolean;
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:253:  rls_enabled_pd boolean;
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:254:  policy_count_cp integer;
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:255:  policy_count_pd integer;
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:258:  SELECT relrowsecurity INTO rls_enabled_cp
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:263:  SELECT COUNT(*) INTO policy_count_cp
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:269:  SELECT relrowsecurity INTO rls_enabled_pd
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:274:  SELECT COUNT(*) INTO policy_count_pd
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:281:  RAISE NOTICE 'conversation_participants: RLS=%, Policies=%', rls_enabled_cp, policy_count_cp;
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:282:  RAISE NOTICE 'putt_details: RLS=%, Policies=%', rls_enabled_pd, policy_count_pd;
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:284:  IF NOT rls_enabled_cp THEN
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:288:  IF policy_count_cp < 4 THEN
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:292:  IF NOT rls_enabled_pd THEN
+supabase/migrations_archive/v1_original/20260108000001_rls_audit_fixes.sql:296:  IF policy_count_pd < 4 THEN
+supabase/migrations_archive/v1_original/075_fix_conversation_no_recursion.sql:6:--        within the INSERT policy for conversation_participants
+supabase/migrations_archive/v1_original/075_fix_conversation_no_recursion.sql:9:--           Use a simpler policy that only checks team relationships
+supabase/migrations_archive/v1_original/075_fix_conversation_no_recursion.sql:13:-- Drop the problematic policy
+supabase/migrations_archive/v1_original/075_fix_conversation_no_recursion.sql:16:-- Create a simple, non-recursive policy
+supabase/migrations_archive/v1_original/075_fix_conversation_no_recursion.sql:57:'Simple policy with NO recursion. Users can add themselves or teammates/coaches. Does not query conversation_participants table.';
+supabase/migrations_archive/v1_original/041_batch9_rls_policies.sql:3:-- Migration: 041_batch9_rls_policies.sql
+supabase/migrations_archive/v1_original/023_allow_coaches_create_organizations.sql:2:-- Fixes: Coaches were blocked from creating organizations due to missing RLS policy
+supabase/migrations_archive/v1_original/023_allow_coaches_create_organizations.sql:4:-- Add INSERT policy for authenticated users (coaches) to create organizations
+supabase/migrations_archive/v1_original/023_allow_coaches_create_organizations.sql:10:-- Add UPDATE policy for coaches to update their own organization
+supabase/migrations_archive/v1_original/057_fix_class_select_rls.sql:2:-- FIX: Separate SELECT policy for golf_player_classes
+supabase/migrations_archive/v1_original/20251225000028_fix_golf_rounds_insert.sql:1:-- Fix golf_rounds RLS policy to allow INSERT operations
+supabase/migrations_archive/v1_original/20251225000028_fix_golf_rounds_insert.sql:2:-- The previous policy only had USING clause, which doesn't work for INSERT
+supabase/migrations_archive/v1_original/017_golf_rls_policies.sql:3:-- Migration: 017_golf_rls_policies.sql
+supabase/migrations_archive/v1_original/043_fix_rls_policies.sql:15:    WHERE tablename = 'users' AND policyname = 'Users can read own data'
+supabase/migrations_archive/v1_original/043_fix_rls_policies.sql:28:    WHERE tablename = 'users' AND policyname = 'Users can update own data'
+supabase/migrations_archive/v1_original/043_fix_rls_policies.sql:37:-- COACHES TABLE - Complete policy set
+supabase/migrations_archive/v1_original/043_fix_rls_policies.sql:62:-- PLAYERS TABLE - Complete policy set
+supabase/migrations_archive/v1_original/043_fix_rls_policies.sql:93:-- GOLF_COACHES TABLE - Complete policy set
+supabase/migrations_archive/v1_original/043_fix_rls_policies.sql:112:-- GOLF_PLAYERS TABLE - Complete policy set
+supabase/migrations_archive/v1_original/052_critical_audit_fixes.sql:74:-- Drop the dangerous policy
+supabase/migrations_archive/v1_original/RUN_ALL_MIGRATIONS.sql:134:  COUNT(*) || ' tables with RLS enabled' as rls_check
+supabase/migrations_archive/v1_original/20260104000008_fix_messages_select_policy.sql:2:-- FIX: Messages SELECT policy using SECURITY DEFINER helper
+supabase/migrations_archive/v1_original/20260104000008_fix_messages_select_policy.sql:4:-- Replace the recursive messages SELECT policy with one that uses
+supabase/migrations_archive/v1_original/20260104000008_fix_messages_select_policy.sql:8:-- Drop existing messages SELECT policy
+supabase/migrations_archive/v1_original/20260104000008_fix_messages_select_policy.sql:12:-- Create non-recursive SELECT policy using helper function
+supabase/migrations_archive/v1_original/068_attendance_tracking.sql:6:-- Extend golf_event_attendance table with check-in fields
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:27:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:32:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_players', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:44:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:49:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_coaches', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:61:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:66:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_teams', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:78:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:83:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_organizations', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:95:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:100:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_rounds', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:112:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:117:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_shots', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:129:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:134:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_courses', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:146:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:151:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_events', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:163:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:168:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_team_members', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:180:        SELECT policyname
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:185:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_event_participants', r.policyname);
+supabase/migrations_archive/v1_original/062_complete_golf_rls_cleanup.sql:205:-- SELECT tablename, COUNT(*) as policy_count
+supabase/migrations_archive/v1_original/058_nuclear_rls_fix.sql:15:        SELECT policyname
+supabase/migrations_archive/v1_original/058_nuclear_rls_fix.sql:20:        EXECUTE format('DROP POLICY IF EXISTS %I ON golf_player_classes', r.policyname);
+supabase/migrations_archive/v1_original/058_nuclear_rls_fix.sql:21:        RAISE NOTICE 'Dropped policy: %', r.policyname;
+supabase/migrations_archive/v1_original/058_nuclear_rls_fix.sql:72:  policyname,
+supabase/migrations_archive/v1_original/058_nuclear_rls_fix.sql:78:ORDER BY policyname;
+supabase/migrations_archive/v1_original/077_complete_conversation_participants_cleanup.sql:9:-- SOLUTION: Drop EVERY policy on conversation_participants and disable RLS
+supabase/migrations_archive/v1_original/077_complete_conversation_participants_cleanup.sql:33:  policy_count INTEGER;
+supabase/migrations_archive/v1_original/077_complete_conversation_participants_cleanup.sql:35:  SELECT COUNT(*) INTO policy_count
+supabase/migrations_archive/v1_original/077_complete_conversation_participants_cleanup.sql:40:  IF policy_count > 0 THEN
+supabase/migrations_archive/v1_original/077_complete_conversation_participants_cleanup.sql:41:    RAISE WARNING 'conversation_participants still has % policies! Manual cleanup required.', policy_count;
+supabase/migrations_archive/v1_original/20260104000005_fix_messaging_recursion.sql:2:-- FIX: Remove infinite recursion in conversation_participants policy
+supabase/migrations_archive/v1_original/20260104000005_fix_messaging_recursion.sql:4:-- The previous policy was checking conversation_participants to determine
+supabase/migrations_archive/v1_original/20260104000005_fix_messaging_recursion.sql:11:-- Drop the recursive policy
+supabase/migrations_archive/v1_original/20260104000005_fix_messaging_recursion.sql:31:-- Now create non-recursive policy using the helper function
+supabase/migrations_archive/v1_original/051_fix_golf_events_rls.sql:2:-- Fix golf_events RLS policy
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:5:-- Get all policy names and drop them one by one
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:12:  policy_rec RECORD;
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:15:  FOR policy_rec IN
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:16:    SELECT policyname
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:20:    ORDER BY policyname
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:22:    RAISE NOTICE '  - %', policy_rec.policyname;
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:26:-- Drop each policy explicitly
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:29:  policy_rec RECORD;
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:32:  FOR policy_rec IN
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:33:    SELECT policyname
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:38:    drop_statement := format('DROP POLICY IF EXISTS %I ON conversation_participants', policy_rec.policyname);
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:50:  policy_count INTEGER;
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:51:  rls_enabled BOOLEAN;
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:53:  -- Check policy count
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:54:  SELECT COUNT(*) INTO policy_count
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:60:  SELECT relrowsecurity INTO rls_enabled
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:65:  IF policy_count > 0 THEN
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:66:    RAISE WARNING 'FAILED: conversation_participants still has % policies', policy_count;
+supabase/migrations_archive/v1_original/078_drop_all_conversation_policies.sql:71:  IF rls_enabled THEN
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:2:-- Migration: 20260108000002_comprehensive_rls_fix.sql
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:51:  FOR r IN SELECT policyname FROM pg_policies
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:54:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_organizations', r.policyname);
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:740:-- Remove overly permissive policy
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:743:-- Keep only the recruiting-scoped policy
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:745:-- This policy properly restricts to recruiting_activated = true
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:820:  no_policy_count INTEGER;
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:831:  SELECT COUNT(*) INTO no_policy_count
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:854:  RAISE NOTICE 'Golf tables with NO POLICIES: %', no_policy_count;
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:864:  IF no_policy_count > 0 THEN
+supabase/migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql:906:-- ✅ RLS-007: Removed overly permissive "Coaches can view all players" policy
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:40:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_players' LOOP
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:41:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_players', r.policyname);
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:87:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_coaches' LOOP
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:88:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_coaches', r.policyname);
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:134:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_teams' LOOP
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:135:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_teams', r.policyname);
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:181:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_events' LOOP
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:182:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_events', r.policyname);
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:243:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_event_attendance' LOOP
+supabase/migrations_archive/v1_original/20260104000004_comprehensive_team_based_rls.sql:244:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_event_attendance', r.policyname);
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:14:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_player_classes' LOOP
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:15:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_player_classes', r.policyname);
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:42:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_coaches' LOOP
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:43:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_coaches', r.policyname);
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:62:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_teams' LOOP
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:63:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_teams', r.policyname);
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:89:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_rounds' LOOP
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:90:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_rounds', r.policyname);
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:124:  FOR r IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_players' LOOP
+supabase/migrations_archive/v1_original/059_fix_all_golf_rls.sql:125:    EXECUTE format('DROP POLICY IF EXISTS %I ON golf_players', r.policyname);
+supabase/migrations_archive/v1_original/064_enable_rls_team_scoping.sql:2:-- MIGRATION: 064_enable_rls_team_scoping.sql
+supabase/migrations_archive/v1_original/064_enable_rls_team_scoping.sql:498:-- SELECT tablename, policyname FROM pg_policies WHERE schemaname = 'public' AND tablename LIKE 'golf_%';
+supabase/migrations_archive/v1_original/20260104000003_fix_messaging_rls_definitive.sql:16:    FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'conversations' AND schemaname = 'public')
+supabase/migrations_archive/v1_original/20260104000003_fix_messaging_rls_definitive.sql:18:        EXECUTE 'DROP POLICY IF EXISTS "' || r.policyname || '" ON conversations';
+supabase/migrations_archive/v1_original/20260104000003_fix_messaging_rls_definitive.sql:71:    FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'conversation_participants' AND schemaname = 'public')
+supabase/migrations_archive/v1_original/20260104000003_fix_messaging_rls_definitive.sql:73:        EXECUTE 'DROP POLICY IF EXISTS "' || r.policyname || '" ON conversation_participants';
+supabase/migrations_archive/v1_original/20260104000003_fix_messaging_rls_definitive.sql:121:    FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'messages' AND schemaname = 'public')
+supabase/migrations_archive/v1_original/20260104000003_fix_messaging_rls_definitive.sql:123:        EXECUTE 'DROP POLICY IF EXISTS "' || r.policyname || '" ON messages';
+supabase/migrations_archive/v1_original/024_fix_golf_teams_rls.sql:3:-- Migration: 024_fix_golf_teams_rls.sql
+supabase/migrations_archive/v1_original/071_fix_golf_conversation_creation.sql:9:-- Ensure conversations table has the correct INSERT policy
+supabase/migrations_archive/v1_original/071_fix_golf_conversation_creation.sql:20:-- Drop the restrictive policy on conversation_participants
+supabase/migrations_archive/v1_original/071_fix_golf_conversation_creation.sql:23:-- Create updated policy that allows initial conversation setup
+supabase/migrations_archive/v1_original/071_fix_golf_conversation_creation.sql:113:-- Add comment explaining the policy
+supabase/migrations_archive/v1_original/022_fix_team_staff_infinite_recursion.sql:2:-- The issue: policy was querying team_coach_staff within itself
+supabase/migrations_archive/v1_original/20260104000001_fix_conversations_rls_policy.sql:14:-- Create simple INSERT policy that allows any authenticated user to create
+supabase/migrations_archive/v1_original/20260104000001_fix_conversations_rls_policy.sql:22:-- Also ensure SELECT policy exists
+supabase/migrations_archive/v1_original/20251225000029_fix_golf_holes_insert.sql:1:-- Fix golf_holes RLS policy to allow INSERT operations
+supabase/migrations_archive/v1_original/20251225000029_fix_golf_holes_insert.sql:2:-- The previous policy only had USING clause, which doesn't work for INSERT
+supabase/migrations_archive/v1_original/025_fix_golf_coaches_recursion.sql:2:-- The issue: "View team coaches" policy queries golf_coaches from within itself
+supabase/migrations_archive/v1_original/025_fix_golf_coaches_recursion.sql:4:-- Drop the problematic policy
+supabase/migrations_archive/v1_original/074_fix_conversation_recursion.sql:8:-- SOLUTION: Simplify policy to only handle 1-on-1 conversation creation
+supabase/migrations_archive/v1_original/074_fix_conversation_recursion.sql:13:-- Drop the problematic policy
+supabase/migrations_archive/v1_original/074_fix_conversation_recursion.sql:16:-- Create simplified policy for 1-on-1 conversation creation
+supabase/migrations_archive/v1_original/074_fix_conversation_recursion.sql:69:'Simplified policy to avoid recursion. Users can add themselves or add teammates/coaches to conversations they are part of.';
+supabase/migrations_archive/v1_original/20251231000002_fix_user_signup_rls.sql:5:-- FIX 1: Add INSERT policy for users table
+supabase/migrations_archive/pre_20260527/20260125000000_fix_baseball_rls_comprehensive.sql:2:-- Migration: 20260125000000_fix_baseball_rls_comprehensive.sql
+supabase/migrations_archive/pre_20260527/20260125000000_fix_baseball_rls_comprehensive.sql:744:-- SELECT tablename, policyname, cmd FROM pg_policies
+supabase/migrations_archive/pre_20260527/20260525160000_v3_golf_goal_suggestions_table.sql:63:-- Engine writes via service_role; no authenticated INSERT policy.
+supabase/migrations_archive/pre_20260527/20260525150000_v3_golf_goals_table.sql:20:-- RLS (per master plan Part VI.1 + docs/v3-rls-template.md Pattern 1):
+supabase/migrations_archive/pre_20260527/20260525150000_v3_golf_goals_table.sql:130:-- RLS (Pattern 1 from docs/v3-rls-template.md)
+supabase/migrations_archive/pre_20260527/20260511200000_golf_messages_rls_and_attachment_rpc_hardening.sql:10:--      table's SELECT policy and leaking attachment metadata (filename, MIME,
+supabase/migrations_archive/pre_20260527/20260204000000_fix_golf_team_join_rls.sql:2:-- Migration: 20260204000000_fix_golf_team_join_rls.sql
+supabase/migrations_archive/pre_20260527/20260204000000_fix_golf_team_join_rls.sql:3:-- Purpose: Fix RLS policy to allow players to join teams
+supabase/migrations_archive/pre_20260527/20260204000000_fix_golf_team_join_rls.sql:5:-- ISSUE: The existing policy "Golf coaches can manage team members" only allows
+supabase/migrations_archive/pre_20260527/20260204000000_fix_golf_team_join_rls.sql:9:-- SOLUTION: Add an INSERT policy that allows authenticated players to join teams
+supabase/migrations_archive/pre_20260527/20260204000000_fix_golf_team_join_rls.sql:13:-- Drop existing policy if we need to recreate it
+supabase/migrations_archive/pre_20260527/20260204000000_fix_golf_team_join_rls.sql:17:-- Add policy allowing players to insert themselves into teams
+supabase/migrations_archive/pre_20260527/20260204000000_fix_golf_team_join_rls.sql:35:-- Add policy allowing players to view their own team membership
+supabase/migrations_archive/pre_20260527/20260204000000_fix_golf_team_join_rls.sql:36:-- (This supplements the coach SELECT policy)
+supabase/migrations_archive/pre_20260527/20260204000000_fix_golf_team_join_rls.sql:47:-- Add policy allowing players to leave teams (delete their own membership)
+supabase/migrations_archive/pre_20260527/051_golf_round_drafts.sql:52:    WHERE policyname = 'Players can view own drafts'
+supabase/migrations_archive/pre_20260527/20260524200000_v3_golf_pga_standards_table.sql:79:-- policy for authenticated; seed + future updates run via service_role.
+supabase/migrations_archive/pre_20260527/20260204200000_fix_golf_rls_infinite_recursion.sql:2:-- Migration: 20260204200000_fix_golf_rls_infinite_recursion.sql
+supabase/migrations_archive/pre_20260527/20260524190100_v3_golf_metrics_table.sql:63:-- No write policy for authenticated; seeding + future updates run via service_role.
+supabase/migrations_archive/pre_20260527/20260428000200_stats_cache_teammate_rls.sql:3:-- The existing "Players can view own stats" policy on
+supabase/migrations_archive/pre_20260527/20260428000200_stats_cache_teammate_rls.sql:9:-- team player stats" policy. This migration adds the equivalent
+supabase/migrations_archive/pre_20260527/20260428000200_stats_cache_teammate_rls.sql:10:-- read-only policy for players, scoped to active teammates on a shared
+supabase/migrations_archive/pre_20260527/20260222140000_emergency_rls_fix_v2.sql:2:-- Migration: 20260222140000_emergency_rls_fix_v2.sql
+supabase/migrations_archive/pre_20260527/20260222140000_emergency_rls_fix_v2.sql:6:--      policy (from 044_fix_messaging_rls.sql) is RECURSIVE (queries same table without
+supabase/migrations_archive/pre_20260527/20260222140000_emergency_rls_fix_v2.sql:8:--   2. baseball_players: "baseball_players_select" policy references get_my_player_id()
+supabase/migrations_archive/pre_20260527/20260222140000_emergency_rls_fix_v2.sql:10:--      (defined only in 20260125000000_fix_baseball_rls_comprehensive.sql which is pending)
+supabase/migrations_archive/pre_20260527/20260222140000_emergency_rls_fix_v2.sql:32:--   Drop ALL SELECT policies and recreate ONE clean non-recursive policy
+supabase/migrations_archive/pre_20260527/20260222140000_emergency_rls_fix_v2.sql:35:-- Drop the recursive policy from 044_fix_messaging_rls.sql
+supabase/migrations_archive/pre_20260527/20260222140000_emergency_rls_fix_v2.sql:43:-- Recreate: simple non-recursive policy. User sees their own rows, plus rows in
+supabase/migrations_archive/pre_20260527/20260222140000_emergency_rls_fix_v2.sql:54:--   The policy references get_my_player_id() and get_my_coach_id() which now exist.
+supabase/migrations_archive/pre_20260527/20260222140000_emergency_rls_fix_v2.sql:80:--   But ensure the watchlists policy itself is sane too.
+supabase/migrations_archive/pre_20260527/20260521120000_widen_coach_insights_grant.sql:4:-- PR #16 (20260517000000_fix_critical_rls_policies.sql) revoked table-level
+supabase/migrations_archive/pre_20260527/20260521120000_widen_coach_insights_grant.sql:11:-- The RLS policy `coach_insights_update_player_own` still gates which ROWS
+supabase/migrations_archive/pre_20260527/20260205000000_allow_coaches_see_join_request_players.sql:26:-- Drop and recreate the golf_players_select policy to include pending join requests
+supabase/migrations_archive/pre_20260527/20260526000100_v3_coachhelm_chat_messages.sql:8:-- Append-only at the application layer (no UPDATE/DELETE policy).
+supabase/migrations_archive/pre_20260527/20260429120000_fix_orphan_evidence_insights_rls.sql:6:-- policy requires one of those columns to match the caller's coach/team, so
+supabase/migrations_archive/pre_20260527/20260429120000_fix_orphan_evidence_insights_rls.sql:14:--   2. Add a defense-in-depth RLS policy that lets a coach read any
+supabase/migrations_archive/pre_20260527/20260429120000_fix_orphan_evidence_insights_rls.sql:40:-- 2. New RLS policy: coach who staffs the player's active team can read
+supabase/migrations_archive/pre_20260527/20260523200000_coachhelm_p0_sweep.sql:13:--   W1-D: golf_coach_insights "Coaches can manage their insights" ALL policy
+supabase/migrations_archive/pre_20260527/20260523200000_coachhelm_p0_sweep.sql:100:-- (Each block is a no-op if the policy already targets authenticated or
+supabase/migrations_archive/pre_20260527/20260523200000_coachhelm_p0_sweep.sql:109:    SELECT schemaname, tablename, policyname, cmd, qual, with_check, permissive, roles
+supabase/migrations_archive/pre_20260527/20260523200000_coachhelm_p0_sweep.sql:125:                   pol.policyname, pol.schemaname, pol.tablename);
+supabase/migrations_archive/pre_20260527/20260523200000_coachhelm_p0_sweep.sql:140:    AND policyname = 'Coaches can manage their insights';
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:1:-- 20260421100001_canonical_coachhelm_rls.sql
+supabase/migrations_archive/pre_20260527/20260523000000_p1_followups.sql:57:-- PR #16's policy verified the inserted coach_id row exists but not that the
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:2:-- 20260517000000_fix_critical_rls_policies.sql
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:7:-- S-CRIT-1 (CWE-285): golf_team_coach_staff INSERT policy validated only
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:58:-- The previous policy only checked that the inserted coach_id belonged to
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:62:-- New policy: caller must already be a primary coach on the target team.
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:65:-- path through this policy is a primary coach adding an assistant.
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:90:-- The previous policy let players UPDATE all columns of rows where
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:97:-- The RLS policy itself stays — it gates which ROWS the player can touch.
+supabase/migrations_archive/pre_20260527/20260213000000_fix_broken_coach_select_rls.sql:2:-- These policies were created in 034_all_rls_policies.sql but use joins that don't work.
+supabase/migrations_archive/pre_20260527/20260213000000_fix_broken_coach_select_rls.sql:94:-- 7. golf_calendar_notifications: fix coach insert policy
+supabase/migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql:707:-- ADD UPDATE policy on golf_qualifier_entries for coaches
+supabase/migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql:713:    WHERE tablename = 'golf_qualifier_entries' AND policyname = 'Coaches can update qualifier entries'
+supabase/migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql:738:-- ADD SELECT policy on golf_announcement_acknowledgements for coaches
+supabase/migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql:744:    WHERE tablename = 'golf_announcement_acknowledgements' AND policyname = 'Coaches can view acknowledgements'
+supabase/migrations_archive/pre_20260527/20260524190000_v3_rls_helpers.sql:11:-- every policy at once.
+supabase/migrations_archive/pre_20260527/20260524190000_v3_rls_helpers.sql:141:  'v3 RLS helper: either-or convenience. True if the current user is a coach OR an active player on the given team. Use for team-scoped shared-read policies (Pattern 3 in docs/v3-rls-template.md).';
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:4:-- Captures every live policy on the public schema in production
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:6:-- reproduce the policy graph from the tracked migrations alone. Pre-this-
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:11:-- This file is fully idempotent: each policy is dropped if-exists before
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1667:DROP POLICY IF EXISTS golf_calendar_notifications_insert_policy ON public.golf_calendar_notifications;
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1668:CREATE POLICY golf_calendar_notifications_insert_policy ON public.golf_calendar_notifications AS PERMISSIVE FOR INSERT TO authenticated
+supabase/migrations_archive/pre_20260527/20260204235000_fix_golf_rls_recursion_final.sql:2:-- Migration: fix_golf_rls_recursion_final
+supabase/migrations_archive/pre_20260527/20260204235000_fix_golf_rls_recursion_final.sql:62:-- Step 5: Drop and recreate golf_players_select with a simple non-recursive policy
+supabase/migrations_archive/pre_20260527/20260204235000_fix_golf_rls_recursion_final.sql:65:-- Simple policy: users can see their own record (no cross-table joins in the policy itself)
+supabase/migrations_archive/pre_20260527/20260204235000_fix_golf_rls_recursion_final.sql:74:-- Step 6: Create a simple SELECT policy on golf_team_members using SECURITY DEFINER functions
+supabase/migrations_archive/pre_20260527/20260204235000_fix_golf_rls_recursion_final.sql:84:-- Step 7: Fix the "Players can leave teams" DELETE policy to use SECURITY DEFINER
+supabase/migrations_archive/pre_20260527/20260421000004_secure_perf_rpcs.sql:16:-- Ownership join pattern (canonical — see 20260328000000_fix_calendar_notifications_rls.sql):
+supabase/migrations_archive/pre_20260527/034_all_rls_policies.sql:2:-- Migration: 034_all_rls_policies.sql
+supabase/migrations_archive/pre_20260527/20260212000003_fix_security_rls.sql:16:-- SECURITY ISSUE: The golf_conversations_select_accessible policy ends with
+supabase/migrations_archive/pre_20260527/20260212000003_fix_security_rls.sql:44:-- SECURITY ISSUE: The golf_participants_select_in_conversation policy (from
+supabase/migrations_archive/pre_20260527/20260212000003_fix_security_rls.sql:48:-- We replace it with a clearer policy that explicitly covers both cases:
+supabase/migrations_archive/pre_20260527/20260212000003_fix_security_rls.sql:52:-- This also drops the old policy name from 034 if it somehow still exists.
+supabase/migrations_archive/pre_20260527/20260212000003_fix_security_rls.sql:122:-- 4a. golf_rounds — Coach UPDATE policy
+supabase/migrations_archive/pre_20260527/20260212000003_fix_security_rls.sql:150:-- 4b. golf_holes — Coach UPDATE policy
+supabase/migrations_archive/pre_20260527/20260212000003_fix_security_rls.sql:180:-- 4c. golf_shots — Coach UPDATE policy
+supabase/migrations_archive/pre_20260527/20260222120000_fix_head_coach_id_rls.sql:2:-- Migration: 20260222120000_fix_head_coach_id_rls.sql
+supabase/migrations_archive/pre_20260527/20260222120000_fix_head_coach_id_rls.sql:45:-- 1. Fix baseball_players_select policy
+supabase/migrations_archive/pre_20260527/20260525220000_v3_golf_coachhelm_llm_budget_table.sql:41:-- compose() wrapper invokes server-side, so no write policy here.
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:14:-- Drop the overly restrictive policy
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:17:-- New policy: Allow inserting participants if:
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:31:-- Add UPDATE policy for participants (for last_read_at)
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:38:-- Fix SELECT policy to see all participants in conversations user is part of
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:52:-- Add UPDATE policy for messages (for read status)
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:69:-- Drop the overly restrictive policy
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:72:-- New policy: Allow inserting participants if:
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:86:-- Add UPDATE policy for participants (for last_read_at)
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:93:-- Fix SELECT policy to see all participants in conversations user is part of
+supabase/migrations_archive/pre_20260527/044_fix_messaging_rls.sql:107:-- Add UPDATE policy for messages (for read status)
+supabase/migrations_archive/pre_20260527/20260306000003_cleanup_dead_code_schema.sql:8:-- 2. Drop the RLS policy that references is_draft
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:6:--   - 044_golf_rls_fixes
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:113:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Players view own insights' AND tablename = 'golf_player_insights') THEN
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:119:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Coaches view team insights' AND tablename = 'golf_player_insights') THEN
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:132:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Coaches create team insights' AND tablename = 'golf_player_insights') THEN
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:138:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Coaches update own insights' AND tablename = 'golf_player_insights') THEN
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:145:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Coaches delete own insights' AND tablename = 'golf_player_insights') THEN
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:159:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Team members view recurring events' AND tablename = 'golf_recurring_events') THEN
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:171:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Coaches create recurring events' AND tablename = 'golf_recurring_events') THEN
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:180:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Coaches update recurring events' AND tablename = 'golf_recurring_events') THEN
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:187:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Coaches delete recurring events' AND tablename = 'golf_recurring_events') THEN
+supabase/migrations_archive/pre_20260527/043_critical_fixes.sql:201:    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Team members view own roster' AND tablename = 'golf_team_members') THEN
+supabase/migrations_archive/pre_20260527/20260204210000_fix_golf_rls_recursion_v2.sql:2:-- Migration: 20260204210000_fix_golf_rls_recursion_v2.sql
+supabase/migrations_archive/pre_20260527/20260204210000_fix_golf_rls_recursion_v2.sql:5:-- Problem: golf_players_select queries golf_team_members, which has a policy
+supabase/migrations_archive/pre_20260527/20260204210000_fix_golf_rls_recursion_v2.sql:9:-- 1. Drop the problematic "Players can view their own membership" policy
+supabase/migrations_archive/pre_20260527/20260204210000_fix_golf_rls_recursion_v2.sql:13:-- Drop the recursive policy on golf_team_members
+supabase/migrations_archive/pre_20260527/20260204210000_fix_golf_rls_recursion_v2.sql:16:-- Drop and recreate golf_players_select with a simpler policy
+supabase/migrations_archive/pre_20260527/20260204210000_fix_golf_rls_recursion_v2.sql:19:-- Simple policy: users can see their own record, coaches can see all players in their org
+supabase/migrations_archive/pre_20260527/20260204210000_fix_golf_rls_recursion_v2.sql:35:-- Recreate a simpler team_members select policy for players that doesn't query golf_players
+supabase/migrations_archive/pre_20260527/20260328000000_fix_calendar_notifications_rls.sql:2:-- Fix golf_calendar_notifications INSERT RLS policy
+supabase/migrations_archive/pre_20260527/20260328000000_fix_calendar_notifications_rls.sql:4:-- Bug: The existing INSERT policy references golf_coaches.team_id and
+supabase/migrations_archive/pre_20260527/20260328000000_fix_calendar_notifications_rls.sql:9:-- This caused "new row violates row-level security policy" whenever a coach
+supabase/migrations_archive/pre_20260527/20260328000000_fix_calendar_notifications_rls.sql:13:-- Drop the broken policy
+supabase/migrations_archive/pre_20260527/20260304000003_fix_rls_shots_stats_unique.sql:2:-- Migration: 20260304000003_fix_rls_shots_stats_unique.sql
+supabase/migrations_archive/pre_20260527/20260304000003_fix_rls_shots_stats_unique.sql:25:-- 20260213000000_fix_broken_coach_select_rls.sql) route exclusively
+supabase/migrations_archive/pre_20260527/20260304000003_fix_rls_shots_stats_unique.sql:27:-- are invisible to ALL users. We replace every policy to also check
+supabase/migrations_archive/pre_20260527/20260115212303_golf_message_edit_delete.sql:15:-- Note: The existing select policy should handle this, we just need to ensure
+supabase/migrations_archive/pre_20260527/20260525200000_v3_golf_coach_player_intent_table.sql:52:-- RLS Pattern 2: coach-owned, player-invisible. No player policy at all.
+supabase/migrations_archive/pre_20260527/20260206000000_add_coach_insert_policy_golf_team_members.sql:2:-- Migration: add_coach_insert_policy_golf_team_members
+supabase/migrations_archive/pre_20260527/20260206000000_add_coach_insert_policy_golf_team_members.sql:5:-- policy was dropped during RLS recursion fixes, and only SELECT, UPDATE,
+supabase/migrations_archive/pre_20260527/20260119000000_restrict_golf_team_members_select.sql:1:-- Migration 066: Restrict golf_team_members SELECT policy
+supabase/migrations_archive/pre_20260527/20260119000000_restrict_golf_team_members_select.sql:3:-- SECURITY FIX: The previous policy allowed ANY authenticated user to view
+supabase/migrations_archive/pre_20260527/20260119000000_restrict_golf_team_members_select.sql:9:-- 1. Drop the overly permissive policy
+supabase/migrations_archive/pre_20260527/20260119000000_restrict_golf_team_members_select.sql:46:-- 3. Add comment documenting the policy
+supabase/migrations_archive/pre_20260527/20260222220000_fix_baseball_coaches_rls.sql:1:-- Fix baseball_coaches SELECT policy — too permissive (USING (true) allows any authenticated user
+supabase/migrations_archive/pre_20260527/20260222220000_fix_baseball_coaches_rls.sql:4:-- Replacement policy: any authenticated user who is themselves a baseball coach can read
+supabase/migrations_archive/pre_20260527/061_fix_golf_rls_recursion.sql:10:-- - golf_players_select policy calls is_golf_team_player()
+supabase/migrations_archive/pre_20260527/061_fix_golf_rls_recursion.sql:12:-- - This triggers golf_players_select policy again → infinite loop
+supabase/migrations_archive/pre_20260527/061_fix_golf_rls_recursion.sql:26:-- This policy directly queried golf_players without using the SECURITY DEFINER
+supabase/migrations_archive/pre_20260527/061_fix_golf_rls_recursion.sql:31:-- 3. Add policy for team join flow

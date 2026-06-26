@@ -1,0 +1,36 @@
+Unused dependencies
+* @capacitor/app
+* @capacitor/ios
+* @capacitor/local-notifications
+* @capacitor/network
+* @capacitor/share
+* @visx/visx
+* autoprefixer
+* date-fns-tz
+* postcss
+Unused devDependencies
+* cloc
+* depcheck
+* dependency-cruiser
+* jscpd
+* knip
+* madge
+* npm-check-updates
+* npm-package-json-lint
+* prettier
+* promptfoo
+* ts-prune
+* unimported
+Missing dependencies
+* k6: ./tests/load/basic.js
+* jsr:@supabase: ./supabase/functions/send-apns-push/index.ts
+* server-only: ./src/lib/lifting/access.ts
+* fflate: ./src/lib/baseball/adapters/pdf-reader.ts
+* @radix-ui/react-compose-refs: ./src/components/fairway/controls/tabs.tsx
+* @visx/group: ./src/components/fairway/charts/LeakMap.tsx
+* @visx/shape: ./src/components/fairway/charts/LeakMap.tsx
+* @visx/scale: ./src/components/fairway/charts/LeakMap.tsx
+* @visx/responsive: ./src/components/fairway/charts/LeakMap.tsx
+* playwright: ./scripts/fairway-authed-shots.mjs
+* sharp: ./scripts/gen-ios-icon.mjs
+* glob: ./scripts/verify-db-types.ts

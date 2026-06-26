@@ -1,0 +1,16 @@
+supabase
+supabase/.branches
+supabase/.temp
+supabase/demo
+supabase/functions
+supabase/functions/personalize-email
+supabase/functions/process-task-reminders
+supabase/functions/send-apns-push
+supabase/migrations
+supabase/migrations_archive
+supabase/migrations_archive/pre_20260527
+supabase/migrations_archive/v1_original
+supabase/scripts
+supabase/seed
+supabase/tests
+supabase/tests/rls

@@ -1,0 +1,1910 @@
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/icon-only-button-aria-label.test.mjs[39m[22m [1:1 - 51:34] (51 lines, 111 tokens)
+   __tests__/no-raw-button-product.test.mjs [1:1 - 47:34]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/icon-only-button-aria-label.test.mjs[39m[22m [71:69 - 105:9] (35 lines, 209 tokens)
+   __tests__/no-arbitrary-text-px-components.test.mjs [83:3 - 116:9]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/icon-only-button-aria-label.test.mjs[39m[22m [71:69 - 107:21] (37 lines, 243 tokens)
+   __tests__/no-raw-button-product.test.mjs [70:71 - 112:21]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/icon-only-button-aria-label.test.mjs[39m[22m [74:1 - 108:20] (35 lines, 255 tokens)
+   __tests__/sweep-clean-components.test.mjs [84:1 - 119:15]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/no-arbitrary-text-px-components.test.mjs[39m[22m [137:71 - 160:42] (24 lines, 119 tokens)
+   __tests__/no-vh-in-mobile-paths.test.mjs [86:81 - 110:42]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/no-arbitrary-text-px-components.test.mjs[39m[22m [137:71 - 160:42] (24 lines, 119 tokens)
+   __tests__/sweep-clean-components.test.mjs [139:71 - 162:42]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/no-arbitrary-text-px-components.test.mjs[39m[22m [145:5 - 166:35] (22 lines, 129 tokens)
+   __tests__/no-raw-button-product.test.mjs [140:85 - 158:35]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/no-glasscard-imports.test.mjs[39m[22m [63:67 - 107:6] (45 lines, 210 tokens)
+   __tests__/no-legacy-skeleton-imports.test.mjs [78:53 - 123:6]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/no-glasscard-imports.test.mjs[39m[22m [63:67 - 107:6] (45 lines, 210 tokens)
+   __tests__/radix-dropdown-sonner.test.mjs [70:63 - 115:6]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/no-glasscard-imports.test.mjs[39m[22m [85:1 - 105:2] (21 lines, 165 tokens)
+   __tests__/no-vh-in-mobile-paths.test.mjs [47:1 - 68:2]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/no-glasscard-imports.test.mjs[39m[22m [122:80 - 153:33] (32 lines, 199 tokens)
+   __tests__/no-legacy-skeleton-imports.test.mjs [140:64 - 171:33]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/no-glasscard-imports.test.mjs[39m[22m [122:80 - 153:33] (32 lines, 199 tokens)
+   __tests__/radix-dropdown-sonner.test.mjs [133:89 - 164:33]
+[1mClone found (javascript)[22m
+ - [1m[32m__tests__/no-legacy-skeleton-imports.test.mjs[39m[22m [1:1 - 46:45] (46 lines, 110 tokens)
+   __tests__/radix-dropdown-sonner.test.mjs [1:1 - 51:45]
+[1mClone found (javascript)[22m
+ - [1m[32mimport-coaches.mjs[39m[22m [1:34 - 47:2] (47 lines, 288 tokens)
+   import-via-api.mjs [4:245 - 49:2]
+[1mClone found (javascript)[22m
+ - [1m[32minsert-founding10-plain-template.mjs[39m[22m [14:1 - 37:6] (24 lines, 101 tokens)
+   update-coach-first-touch-template.mjs [11:1 - 39:38]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/api/admin/crm/send-email/route.ts[39m[22m [445:31 - 474:2] (30 lines, 110 tokens)
+   app/api/cron/process-sequences/route.ts [529:31 - 558:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(auth)/demo/page.tsx[39m[22m [22:59 - 43:9] (22 lines, 120 tokens)
+   app/golf/(auth)/demo/page.tsx [24:56 - 45:9]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(auth)/forgot-password/page.tsx[39m[22m [55:7 - 126:11] (72 lines, 340 tokens)
+   app/baseball/(auth)/reset-password/page.tsx [89:7 - 160:11]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(auth)/forgot-password/page.tsx[39m[22m [126:29 - 166:86] (41 lines, 284 tokens)
+   app/baseball/(auth)/reset-password/page.tsx [160:12 - 200:86]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(auth)/forgot-password/page.tsx[39m[22m [126:29 - 166:86] (41 lines, 284 tokens)
+   app/baseball/(auth)/signup/page.tsx [123:29 - 163:86]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(auth)/reset-password/page.tsx[39m[22m [13:42 - 70:17] (58 lines, 293 tokens)
+   app/lifting/(auth)/reset-password/page.tsx [14:49 - 65:79]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(auth)/reset-password/page.tsx[39m[22m [53:5 - 80:19] (28 lines, 100 tokens)
+   app/golf/(auth)/reset-password/page.tsx [89:5 - 115:19]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(coach-dashboard)/coach/template.tsx[39m[22m [59:55 - 97:2] (39 lines, 172 tokens)
+   app/baseball/(player-dashboard)/player/template.tsx [41:56 - 79:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(coach-dashboard)/coach/template.tsx[39m[22m [63:1 - 97:2] (35 lines, 159 tokens)
+   app/baseball/(dashboard)/dashboard/template.tsx [45:93 - 79:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/_components/hub-sub-nav.tsx[39m[22m [105:46 - 135:5] (31 lines, 143 tokens)
+   components/fairway/pages/coachhelm/CoachHelmSubNav.tsx [244:45 - 274:5]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/announcements/page.tsx[39m[22m [59:9 - 80:17] (22 lines, 107 tokens)
+   app/baseball/(dashboard)/dashboard/tasks/page.tsx [93:7 - 112:11]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/compare/actions.ts[39m[22m [12:66 - 33:5] (22 lines, 101 tokens)
+   app/baseball/(dashboard)/dashboard/compare/actions.ts [71:60 - 92:8]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/pipeline/page.tsx[39m[22m [860:70 - 886:61] (27 lines, 169 tokens)
+   app/baseball/(dashboard)/dashboard/watchlist/WatchlistClient.tsx [732:64 - 758:61]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/players/[id]/passport/loading.tsx[39m[22m [23:54 - 88:14] (66 lines, 428 tokens)
+   app/baseball/(player-dashboard)/player/passport/loading.tsx [19:58 - 84:14]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/players/[id]/passport/loading.tsx[39m[22m [88:50 - 111:17] (24 lines, 175 tokens)
+   app/baseball/(player-dashboard)/player/passport/loading.tsx [86:18 - 109:17]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/players/[id]/scout-packet/preview/loading.tsx[39m[22m [39:44 - 63:31] (25 lines, 155 tokens)
+   app/baseball/(public)/packet/[token]/loading.tsx [33:44 - 57:31]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/profile/ProfilePageClient.tsx[39m[22m [13:34 - 60:2] (48 lines, 248 tokens)
+   app/baseball/(dashboard)/dashboard/profile/page.tsx [13:36 - 60:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/settings/ai/loading.tsx[39m[22m [1:1 - 23:2] (23 lines, 142 tokens)
+   app/baseball/(dashboard)/dashboard/settings/appearance/loading.tsx [1:1 - 23:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/settings/ai/loading.tsx[39m[22m [1:1 - 23:2] (23 lines, 142 tokens)
+   app/baseball/(dashboard)/dashboard/settings/data-retention/loading.tsx [1:1 - 23:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/settings/ai/loading.tsx[39m[22m [1:1 - 23:2] (23 lines, 142 tokens)
+   app/baseball/(dashboard)/dashboard/settings/demo-mode/loading.tsx [1:1 - 23:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/settings/ai/loading.tsx[39m[22m [1:1 - 23:2] (23 lines, 142 tokens)
+   app/baseball/(dashboard)/dashboard/settings/guardian-access/loading.tsx [1:1 - 23:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/settings/ai/loading.tsx[39m[22m [1:1 - 23:2] (23 lines, 142 tokens)
+   app/baseball/(dashboard)/dashboard/settings/player-access/loading.tsx [1:1 - 23:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/settings/ai/loading.tsx[39m[22m [1:1 - 23:2] (23 lines, 142 tokens)
+   app/baseball/(dashboard)/dashboard/settings/showcase-profile/loading.tsx [1:1 - 23:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/stats/games/[gameId]/page.tsx[39m[22m [15:3 - 36:54] (22 lines, 169 tokens)
+   app/baseball/(dashboard)/dashboard/stats/games/new/page.tsx [6:3 - 27:54]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/stats/games/new/page.tsx[39m[22m [5:42 - 29:9] (25 lines, 173 tokens)
+   app/baseball/(dashboard)/dashboard/stats/games/page.tsx [5:40 - 29:9]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(dashboard)/dashboard/stats/games/new/page.tsx[39m[22m [5:42 - 29:9] (25 lines, 173 tokens)
+   app/baseball/(dashboard)/dashboard/stats/season/page.tsx [7:46 - 31:8]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(onboarding)/coach-onboarding/page.tsx[39m[22m [60:52 - 92:37] (33 lines, 195 tokens)
+   app/baseball/(onboarding)/player/page.tsx [46:86 - 78:37]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(onboarding)/coach-onboarding/page.tsx[39m[22m [92:102 - 118:31] (27 lines, 127 tokens)
+   components/golf/onboarding/StepIndicator.tsx [47:94 - 73:31]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(onboarding)/coach-onboarding/page.tsx[39m[22m [119:127 - 145:2] (27 lines, 125 tokens)
+   app/baseball/(onboarding)/player/page.tsx [105:169 - 131:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(onboarding)/coach-onboarding/page.tsx[39m[22m [119:127 - 145:2] (27 lines, 125 tokens)
+   components/golf/onboarding/StepIndicator.tsx [74:122 - 100:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(onboarding)/coach-onboarding/page.tsx[39m[22m [654:23 - 675:29] (22 lines, 113 tokens)
+   app/golf/(onboarding)/coach/page.tsx [400:23 - 421:29]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(onboarding)/player/page.tsx[39m[22m [422:21 - 452:34] (31 lines, 136 tokens)
+   app/golf/(onboarding)/player/page.tsx [263:21 - 296:34]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(onboarding)/player/page.tsx[39m[22m [552:17 - 573:97] (22 lines, 124 tokens)
+   app/golf/(onboarding)/player/page.tsx [361:17 - 382:97]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(onboarding)/player/page.tsx[39m[22m [788:32 - 854:102] (67 lines, 492 tokens)
+   app/golf/(onboarding)/coach/page.tsx [560:25 - 626:102]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/baseball/(public)/program/[id]/page.tsx[39m[22m [45:55 - 67:4] (23 lines, 111 tokens)
+   app/baseball/(public)/team/[id]/page.tsx [73:46 - 95:4]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/auth.ts[39m[22m [224:29 - 290:15] (67 lines, 238 tokens)
+   app/golf/actions/auth.ts [214:35 - 271:15]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/camps.ts[39m[22m [128:40 - 149:26] (22 lines, 128 tokens)
+   app/baseball/actions/camps.ts [175:37 - 196:26]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/daily-contract.ts[39m[22m [68:33 - 90:9] (23 lines, 118 tokens)
+   app/baseball/actions/player-actions.ts [127:33 - 162:7]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/dev-plans.ts[39m[22m [184:35 - 214:132] (31 lines, 183 tokens)
+   app/baseball/actions/dev-plans.ts [260:37 - 290:132]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/dev-plans.ts[39m[22m [214:158 - 235:14] (22 lines, 107 tokens)
+   app/baseball/actions/dev-plans.ts [290:160 - 311:14]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/imports.ts[39m[22m [1628:5 - 1648:16] (21 lines, 103 tokens)
+   app/baseball/actions/stat-event-imports.ts [941:5 - 960:19]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/lifting-v11.ts[39m[22m [851:1 - 873:28] (23 lines, 364 tokens)
+   app/lifting/actions/programs.ts [590:2 - 610:6]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/lifting-v11.ts[39m[22m [1222:28 - 1243:6] (22 lines, 169 tokens)
+   app/baseball/actions/lifting-v11.ts [1324:25 - 1345:8]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/lineups.ts[39m[22m [46:3 - 67:10] (22 lines, 113 tokens)
+   app/baseball/actions/lineups.ts [134:3 - 154:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/recruiting-philosophy.ts[39m[22m [73:53 - 98:10] (26 lines, 117 tokens)
+   app/baseball/actions/recruiting-philosophy.ts [200:1 - 225:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/staff.ts[39m[22m [428:3 - 449:15] (22 lines, 119 tokens)
+   app/baseball/actions/staff.ts [490:40 - 506:38]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/stats.ts[39m[22m [314:58 - 336:5] (23 lines, 137 tokens)
+   app/baseball/actions/stats.ts [374:19 - 395:8]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/tasks.ts[39m[22m [662:152 - 687:13] (26 lines, 127 tokens)
+   app/golf/actions/tasks.ts [636:152 - 665:13]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/tasks.ts[39m[22m [823:47 - 848:18] (26 lines, 129 tokens)
+   app/golf/actions/tasks.ts [906:35 - 927:18]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/teams.ts[39m[22m [498:89 - 521:4] (24 lines, 135 tokens)
+   app/baseball/actions/teams.ts [646:51 - 669:4]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/teams.ts[39m[22m [502:3 - 525:7] (24 lines, 126 tokens)
+   app/baseball/actions/teams.ts [650:3 - 671:5]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/videos.ts[39m[22m [349:44 - 375:9] (27 lines, 345 tokens)
+   app/baseball/actions/videos.ts [504:39 - 530:9]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/videos.ts[39m[22m [349:88 - 371:24] (23 lines, 270 tokens)
+   app/baseball/actions/videos.ts [622:14 - 644:26]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/videos.ts[39m[22m [469:39 - 500:8] (32 lines, 129 tokens)
+   app/baseball/actions/videos.ts [547:41 - 578:8]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/baseball/actions/watchlist.ts[39m[22m [19:37 - 41:10] (23 lines, 106 tokens)
+   app/baseball/actions/watchlist.ts [117:42 - 137:10]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(auth)/forgot-password/page.tsx[39m[22m [37:23 - 159:16] (123 lines, 662 tokens)
+   app/golf/(auth)/reset-password/page.tsx [115:55 - 237:16]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(auth)/forgot-password/page.tsx[39m[22m [118:12 - 158:86] (41 lines, 284 tokens)
+   app/golf/(auth)/signup/page.tsx [218:29 - 258:86]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/GolfDashboardShell.tsx[39m[22m [80:5 - 132:17] (53 lines, 300 tokens)
+   components/baseball/dashboard-shell.tsx [127:5 - 178:20]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/GolfDashboardShell.tsx[39m[22m [104:5 - 128:20] (25 lines, 171 tokens)
+   components/fairway/app-shell/AppShell.tsx [221:5 - 245:20]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/alerts/loading.tsx[39m[22m [22:53 - 50:2] (29 lines, 161 tokens)
+   app/golf/(dashboard)/dashboard/insights/loading.tsx [21:54 - 49:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/classes/page.tsx[39m[22m [507:9 - 532:11] (26 lines, 173 tokens)
+   app/golf/(dashboard)/dashboard/classes/page.tsx [906:7 - 931:9]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/development/page.tsx[39m[22m [217:3 - 238:8] (22 lines, 126 tokens)
+   app/golf/(dashboard)/dashboard/my-development/page.tsx [140:3 - 158:8]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/documents/documents-client.tsx[39m[22m [219:26 - 246:8] (28 lines, 184 tokens)
+   components/fairway/pages/documents/FairwayDocuments.tsx [333:34 - 359:8]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/documents/documents-client.tsx[39m[22m [242:69 - 264:28] (23 lines, 130 tokens)
+   components/fairway/pages/documents/FairwayDocuments.tsx [364:85 - 382:28]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/messages/page.tsx[39m[22m [77:34 - 112:10] (36 lines, 286 tokens)
+   components/fairway/pages/messages/FairwayMessages.tsx [133:40 - 168:10]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/messages/page.tsx[39m[22m [169:3 - 217:118] (49 lines, 245 tokens)
+   components/fairway/pages/messages/FairwayMessages.tsx [189:9 - 230:118]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/messages/page.tsx[39m[22m [247:58 - 276:22] (30 lines, 142 tokens)
+   components/fairway/pages/messages/FairwayMessages.tsx [287:61 - 314:22]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/messages/page.tsx[39m[22m [300:29 - 328:22] (29 lines, 127 tokens)
+   components/fairway/pages/messages/FairwayMessages.tsx [334:82 - 357:22]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/messages/page.tsx[39m[22m [918:85 - 1040:34] (123 lines, 729 tokens)
+   components/fairway/pages/messages/MessageComposer.tsx [57:98 - 176:34]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/messages/page.tsx[39m[22m [1126:1 - 1147:30] (22 lines, 168 tokens)
+   components/fairway/pages/messages/MessageConversationRail.tsx [89:1 - 109:30]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/my-standing/page.tsx[39m[22m [61:3 - 81:2] (21 lines, 197 tokens)
+   components/fairway/pages/coachhelm/FairwayStatsCockpit.tsx [149:3 - 166:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/players/[playerId]/game/PlayerGameFingerprint.tsx[39m[22m [85:16 - 117:5] (33 lines, 220 tokens)
+   components/fairway/pages/player-game/FairwayPlayerGameFingerprint.tsx [138:13 - 170:5]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/players/[playerId]/game/PlayerGameFingerprint.tsx[39m[22m [147:10 - 201:2] (55 lines, 343 tokens)
+   components/fairway/pages/player-game/FairwayPlayerGameFingerprint.tsx [559:6 - 614:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/players/[playerId]/game/page.tsx[39m[22m [35:45 - 69:32] (35 lines, 165 tokens)
+   app/golf/(dashboard)/dashboard/players/[playerId]/game/print/page.tsx [28:50 - 61:32]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/players/[playerId]/page.tsx[39m[22m [48:21 - 110:2] (63 lines, 226 tokens)
+   app/golf/(dashboard)/dashboard/players/[playerId]/player-insight-client.tsx [77:14 - 128:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/players/[playerId]/player-insight-client.tsx[39m[22m [51:48 - 144:2] (94 lines, 375 tokens)
+   components/fairway/pages/coachhelm/FairwayPlayerInsight.tsx [83:59 - 165:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/players/[playerId]/player-insight-client.tsx[39m[22m [108:24 - 146:10] (39 lines, 155 tokens)
+   components/fairway/pages/coachhelm/FairwayPlayerInsight.tsx [132:24 - 167:7]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/players/[playerId]/player-insight-client.tsx[39m[22m [318:5 - 369:46] (52 lines, 252 tokens)
+   components/fairway/pages/coachhelm/FairwayPlayerInsight.tsx [439:69 - 484:78]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/players/[playerId]/player-insight-client.tsx[39m[22m [376:7 - 423:8] (48 lines, 317 tokens)
+   components/fairway/pages/coachhelm/FairwayPlayerInsight.tsx [487:101 - 537:8]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/roster/page.tsx[39m[22m [143:15 - 163:77] (21 lines, 138 tokens)
+   app/golf/(dashboard)/dashboard/team-hub/page.tsx [217:15 - 237:75]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx[39m[22m [367:9 - 390:40] (24 lines, 126 tokens)
+   app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx [1051:4 - 1074:40]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx[39m[22m [411:84 - 444:14] (34 lines, 142 tokens)
+   app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx [1100:126 - 1133:14]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx[39m[22m [466:55 - 490:47] (25 lines, 140 tokens)
+   app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx [645:80 - 671:51]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx[39m[22m [470:9 - 495:59] (26 lines, 138 tokens)
+   app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx [1167:9 - 1193:69]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx[39m[22m [529:5 - 577:61] (49 lines, 277 tokens)
+   app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx [1249:5 - 1298:61]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx[39m[22m [1118:16 - 1202:37] (85 lines, 687 tokens)
+   app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx [2787:9 - 2868:37]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx[39m[22m [1203:25 - 1250:25] (48 lines, 398 tokens)
+   app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx [2869:25 - 2916:25]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx[39m[22m [1249:109 - 1269:25] (21 lines, 222 tokens)
+   app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx [2916:68 - 2937:25]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx[39m[22m [1268:31 - 1333:20] (66 lines, 440 tokens)
+   app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx [2937:39 - 3001:20]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/recover/recover-round-client.tsx[39m[22m [16:48 - 242:7] (227 lines, 1456 tokens)
+   components/fairway/pages/rounds-recover/FairwayRecoverRound.tsx [45:93 - 271:7]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/rounds/recover/recover-round-client.tsx[39m[22m [245:33 - 353:62] (109 lines, 751 tokens)
+   components/fairway/pages/rounds-recover/FairwayRecoverRound.tsx [286:39 - 394:62]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/settings/coaching-intelligence/page.tsx[39m[22m [65:83 - 87:22] (23 lines, 129 tokens)
+   components/fairway/pages/settings/FairwaySettingsCoachingIntelligence.tsx [121:47 - 143:12]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/settings/coaching-intelligence/page.tsx[39m[22m [119:40 - 180:10] (62 lines, 347 tokens)
+   components/fairway/pages/settings/FairwaySettingsCoachingIntelligence.tsx [214:45 - 267:8]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/settings/notifications/NotificationPrefsClient.tsx[39m[22m [11:3 - 35:6] (25 lines, 117 tokens)
+   components/fairway/pages/settings/FairwaySettingsNotifications.tsx [37:3 - 62:6]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/settings/notifications/NotificationPrefsClient.tsx[39m[22m [63:102 - 91:4] (29 lines, 183 tokens)
+   components/fairway/pages/settings/FairwaySettingsNotifications.tsx [120:3 - 148:4]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/settings/page.tsx[39m[22m [136:23 - 160:23] (25 lines, 110 tokens)
+   components/fairway/pages/settings/FairwaySettingsGeneral.tsx [443:10 - 466:25]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/settings/page.tsx[39m[22m [160:35 - 192:6] (33 lines, 174 tokens)
+   components/fairway/pages/settings/FairwaySettingsGeneral.tsx [466:41 - 498:8]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/settings/page.tsx[39m[22m [747:5 - 767:16] (21 lines, 157 tokens)
+   components/fairway/pages/settings/FairwaySettingsGeneral.tsx [804:5 - 824:19]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/settings/page.tsx[39m[22m [1334:5 - 1354:16] (21 lines, 151 tokens)
+   components/fairway/pages/settings/FairwaySettingsGeneral.tsx [1649:5 - 1669:19]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/team/team-info-player.tsx[39m[22m [12:31 - 46:6] (35 lines, 153 tokens)
+   components/fairway/pages/team/FairwayTeamInfo.tsx [47:39 - 81:6]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(dashboard)/dashboard/travel/travel-client.tsx[39m[22m [41:13 - 62:2] (22 lines, 120 tokens)
+   components/fairway/pages/travel/travel-helpers.tsx [36:30 - 57:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(onboarding)/coach/loading.tsx[39m[22m [1:1 - 24:26] (24 lines, 137 tokens)
+   app/golf/(onboarding)/player/loading.tsx [1:1 - 24:26]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(onboarding)/coach/page.tsx[39m[22m [289:3 - 340:22] (52 lines, 289 tokens)
+   app/golf/(onboarding)/player/page.tsx [194:3 - 245:22]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(onboarding)/coach/page.tsx[39m[22m [293:42 - 331:38] (39 lines, 197 tokens)
+   app/golf/join/page.tsx [44:4 - 82:23]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(onboarding)/coach/page.tsx[39m[22m [297:3 - 329:11] (33 lines, 179 tokens)
+   app/golf/join/[code]/golf-join-team-client.tsx [85:3 - 117:11]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(onboarding)/coach/page.tsx[39m[22m [462:43 - 490:45] (29 lines, 146 tokens)
+   app/golf/(onboarding)/player/page.tsx [344:65 - 372:45]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/(onboarding)/coach/page.tsx[39m[22m [544:51 - 629:23] (86 lines, 594 tokens)
+   app/golf/(onboarding)/player/page.tsx [422:56 - 507:104]
+[1mClone found (markdown)[22m
+ - [1m[32mapp/golf/README.md:markdown[39m[22m [36:1 - 89:3] (54 lines, 3016 tokens)
+   app/golf/README.md:markdown [36:2 - 89:4]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/__tests__/golf-schemas.test.ts[39m[22m [11:41 - 36:42] (26 lines, 375 tokens)
+   app/golf/actions/golf.ts [262:51 - 287:42]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/__tests__/golf-schemas.test.ts[39m[22m [62:38 - 86:83] (25 lines, 442 tokens)
+   app/golf/actions/golf.ts [377:16 - 401:83]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/__tests__/insight-delivery-coach-feed.test.ts[39m[22m [22:1 - 48:5] (27 lines, 176 tokens)
+   app/golf/actions/__tests__/insight-delivery-meta-and-feedback.test.ts [19:1 - 42:5]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/__tests__/insight-delivery-coach-feed.test.ts[39m[22m [50:30 - 76:2] (27 lines, 105 tokens)
+   app/golf/actions/__tests__/insight-delivery-meta-and-feedback.test.ts [52:1 - 78:2]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/__tests__/insight-delivery-coach-feed.test.ts[39m[22m [96:28 - 137:10] (42 lines, 114 tokens)
+   app/golf/actions/__tests__/insight-delivery-meta-and-feedback.test.ts [95:15 - 121:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/admin-bi-data.ts[39m[22m [70:68 - 90:8] (21 lines, 107 tokens)
+   app/golf/actions/admin-system-data.ts [140:66 - 161:6]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/coachhelm-analytics.ts[39m[22m [235:16 - 274:26] (40 lines, 209 tokens)
+   app/golf/actions/coachhelm-analytics.ts [939:10 - 978:26]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/communication.ts[39m[22m [47:17 - 70:18] (24 lines, 122 tokens)
+   app/golf/actions/tasks.ts [40:9 - 63:18]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/course-library.ts[39m[22m [119:34 - 149:12] (31 lines, 218 tokens)
+   app/golf/actions/course-library.ts [161:40 - 187:12]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/course-library.ts[39m[22m [437:42 - 461:11] (25 lines, 155 tokens)
+   app/golf/actions/course-library.ts [513:48 - 532:11]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/course-library.ts[39m[22m [476:3 - 513:7] (38 lines, 323 tokens)
+   app/golf/actions/course-library.ts [550:3 - 582:7]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/crm-engagement.ts[39m[22m [23:1 - 47:26] (25 lines, 112 tokens)
+   app/golf/actions/crm-timeline.ts [22:28 - 43:2]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/crm-insights.ts[39m[22m [74:29 - 96:2] (23 lines, 110 tokens)
+   app/golf/actions/resend-activity.ts [114:18 - 137:2]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/crm-insights.ts[39m[22m [80:31 - 102:9] (23 lines, 103 tokens)
+   app/golf/actions/crm-timeline.ts [27:31 - 48:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/crm-templates.ts[39m[22m [280:51 - 301:22] (22 lines, 125 tokens)
+   app/golf/actions/crm-templates.ts [350:54 - 375:22]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/crm-templates.ts[39m[22m [280:51 - 301:22] (22 lines, 125 tokens)
+   app/golf/actions/crm-templates.ts [401:56 - 431:22]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/development.ts[39m[22m [580:40 - 612:14] (33 lines, 192 tokens)
+   app/golf/actions/development.ts [645:42 - 674:14]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/development.ts[39m[22m [751:1 - 779:46] (29 lines, 209 tokens)
+   app/golf/actions/development.ts [822:1 - 849:46]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/documents.ts[39m[22m [235:62 - 257:34] (23 lines, 139 tokens)
+   app/golf/actions/documents.ts [929:89 - 951:34]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [2195:51 - 2216:37] (22 lines, 146 tokens)
+   app/golf/actions/golf.ts [2686:34 - 2704:39]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [3375:32 - 3399:18] (25 lines, 103 tokens)
+   app/golf/actions/golf.ts [5028:89 - 5049:18]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [3933:86 - 3953:12] (21 lines, 102 tokens)
+   app/golf/actions/golf.ts [3968:82 - 3988:12]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [4050:39 - 4071:10] (22 lines, 107 tokens)
+   app/golf/actions/golf.ts [4110:84 - 4131:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [4050:39 - 4071:44] (22 lines, 110 tokens)
+   app/golf/actions/golf.ts [4239:44 - 4260:18]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [4110:56 - 4143:10] (34 lines, 172 tokens)
+   app/golf/actions/golf.ts [4169:1 - 4202:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [4946:58 - 4967:12] (22 lines, 100 tokens)
+   app/golf/actions/golf.ts [5955:57 - 5977:12]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [4946:58 - 4970:16] (25 lines, 119 tokens)
+   app/golf/actions/golf.ts [6098:61 - 6122:15]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [4946:58 - 4974:17] (29 lines, 143 tokens)
+   app/golf/actions/round-drafts.ts [443:65 - 472:17]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [5028:88 - 5049:18] (22 lines, 104 tokens)
+   app/golf/actions/golf.ts [5172:79 - 5193:18]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [5028:88 - 5049:18] (22 lines, 104 tokens)
+   app/golf/actions/round-drafts.ts [326:78 - 348:18]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [5638:82 - 5659:16] (22 lines, 102 tokens)
+   app/golf/actions/golf.ts [5696:97 - 5718:16]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [5638:80 - 5662:51] (25 lines, 141 tokens)
+   app/golf/actions/golf.ts [5836:43 - 5858:51]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/golf.ts[39m[22m [6012:5 - 6039:29] (28 lines, 103 tokens)
+   app/golf/actions/golf.ts [6230:5 - 6251:29]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insight-delivery.ts[39m[22m [1255:43 - 1278:34] (24 lines, 153 tokens)
+   app/golf/actions/insight-delivery.ts [1368:42 - 1390:34]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insight-management.ts[39m[22m [243:42 - 276:34] (34 lines, 151 tokens)
+   app/golf/actions/insight-management.ts [309:46 - 340:34]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insight-management.ts[39m[22m [243:42 - 280:19] (38 lines, 167 tokens)
+   app/golf/actions/insight-management.ts [370:42 - 402:16]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insights.ts[39m[22m [766:5 - 797:6] (32 lines, 154 tokens)
+   app/golf/actions/insights.ts [1981:28 - 2010:6]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insights.ts[39m[22m [1154:41 - 1180:16] (27 lines, 119 tokens)
+   app/golf/actions/insights.ts [1234:37 - 1253:16]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insights.ts[39m[22m [1154:41 - 1180:16] (27 lines, 119 tokens)
+   app/golf/actions/insights.ts [1380:37 - 1399:16]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insights.ts[39m[22m [1457:30 - 1478:12] (22 lines, 107 tokens)
+   app/golf/actions/round-reviews.ts [1468:52 - 1489:12]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insights.ts[39m[22m [1595:74 - 1622:23] (28 lines, 138 tokens)
+   app/golf/actions/insights.ts [1655:1 - 1679:23]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insights.ts[39m[22m [3261:49 - 3300:16] (40 lines, 208 tokens)
+   app/golf/actions/insights.ts [3354:45 - 3393:16]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/insights.ts[39m[22m [3264:47 - 3286:98] (23 lines, 117 tokens)
+   app/golf/actions/pattern-management.ts [256:1 - 278:98]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/pattern-management.ts[39m[22m [255:4 - 294:23] (40 lines, 204 tokens)
+   app/golf/actions/pattern-management.ts [875:17 - 913:23]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/pattern-management.ts[39m[22m [261:21 - 295:17] (35 lines, 185 tokens)
+   app/golf/actions/pattern-management.ts [880:21 - 914:14]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/pattern-management.ts[39m[22m [573:43 - 596:23] (24 lines, 129 tokens)
+   app/golf/actions/pattern-management.ts [633:37 - 653:23]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/player-effectiveness.ts[39m[22m [45:43 - 81:2] (37 lines, 179 tokens)
+   app/golf/actions/stats-intelligence.ts [148:4 - 185:2]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/player-fingerprint-types.ts[39m[22m [30:11 - 87:2] (58 lines, 237 tokens)
+   app/golf/actions/player-fingerprint.ts [64:2 - 128:2]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/player-notifications.ts[39m[22m [239:44 - 260:32] (22 lines, 127 tokens)
+   app/golf/actions/player-notifications.ts [288:37 - 308:32]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/player-profile-stats.ts[39m[22m [197:42 - 217:20] (21 lines, 149 tokens)
+   app/golf/actions/stats-data.ts [1000:47 - 1018:16]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/recurring-events.ts[39m[22m [557:5 - 579:16] (23 lines, 129 tokens)
+   app/golf/actions/recurring-events.ts [862:5 - 884:16]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/roster.ts[39m[22m [51:89 - 71:8] (21 lines, 110 tokens)
+   app/golf/actions/teams.ts [308:38 - 329:8]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/round-reviews.ts[39m[22m [1125:1 - 1146:75] (22 lines, 114 tokens)
+   app/golf/actions/round-reviews.ts [1185:47 - 1206:75]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/round-reviews.ts[39m[22m [1357:13 - 1380:16] (24 lines, 131 tokens)
+   app/golf/actions/round-reviews.ts [1410:11 - 1433:16]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/round-reviews.ts[39m[22m [1358:37 - 1381:20] (24 lines, 119 tokens)
+   app/golf/actions/round-reviews.ts [1411:37 - 1434:15]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/stats-data-types.ts[39m[22m [150:23 - 206:7] (57 lines, 173 tokens)
+   components/golf/stats/sections/types.ts [49:31 - 93:7]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/stats.ts[39m[22m [46:43 - 77:24] (32 lines, 158 tokens)
+   app/golf/actions/stats.ts [121:48 - 151:24]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/stats.ts[39m[22m [46:43 - 71:12] (26 lines, 121 tokens)
+   app/golf/actions/stats.ts [172:29 - 197:12]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/stats.ts[39m[22m [46:43 - 77:10] (32 lines, 155 tokens)
+   app/golf/actions/stats.ts [490:2 - 521:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/stats.ts[39m[22m [264:46 - 296:10] (33 lines, 157 tokens)
+   app/golf/actions/stats.ts [315:99 - 346:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/tasks.ts[39m[22m [310:71 - 341:19] (32 lines, 138 tokens)
+   app/golf/actions/tasks.ts [387:72 - 417:19]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/tasks.ts[39m[22m [310:71 - 344:10] (35 lines, 154 tokens)
+   app/golf/actions/tasks.ts [459:74 - 492:21]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/tasks.ts[39m[22m [671:75 - 702:10] (32 lines, 161 tokens)
+   app/golf/actions/tasks.ts [751:75 - 782:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/team-category-insights.ts[39m[22m [305:30 - 354:16] (50 lines, 221 tokens)
+   app/golf/actions/team-category-insights.ts [642:38 - 688:16]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/teams.ts[39m[22m [308:1 - 329:8] (22 lines, 118 tokens)
+   app/golf/actions/teams.ts [395:1 - 415:8]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/teams.ts[39m[22m [308:37 - 331:91] (24 lines, 142 tokens)
+   app/golf/actions/teams.ts [474:49 - 496:36]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/teams.ts[39m[22m [687:89 - 707:8] (21 lines, 110 tokens)
+   app/golf/actions/teams.ts [750:28 - 771:8]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/teams.ts[39m[22m [749:12 - 772:13] (24 lines, 137 tokens)
+   app/golf/actions/teams.ts [893:10 - 916:13]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/teams.ts[39m[22m [754:9 - 788:6] (35 lines, 119 tokens)
+   app/golf/actions/teams.ts [898:9 - 931:6]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/travel.ts[39m[22m [229:5 - 250:16] (22 lines, 119 tokens)
+   app/golf/actions/travel.ts [339:3 - 360:14]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/golf/actions/travel.ts[39m[22m [588:59 - 609:10] (22 lines, 100 tokens)
+   app/golf/actions/travel.ts [807:61 - 828:10]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/components/ErrorFeed.tsx[39m[22m [81:89 - 116:9] (36 lines, 194 tokens)
+   app/golf/admin/components/tracer/RoundDiagnosticModal.tsx [337:4 - 376:9]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/components/ErrorFeed.tsx[39m[22m [91:4 - 154:19] (64 lines, 300 tokens)
+   app/golf/admin/components/tracer/TracerErrorAnalytics.tsx [112:63 - 157:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/components/ErrorFeed.tsx[39m[22m [299:7 - 324:35] (26 lines, 174 tokens)
+   app/golf/admin/components/tracer/RoundDiagnosticModal.tsx [448:4 - 473:35]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/components/ErrorFeed.tsx[39m[22m [299:7 - 348:40] (50 lines, 308 tokens)
+   app/golf/admin/components/tracer/TracerErrorAnalytics.tsx [265:80 - 309:16]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/components/tracer/RoundDiagnosticModal.tsx[39m[22m [360:3 - 398:9] (39 lines, 256 tokens)
+   app/golf/admin/components/tracer/TracerErrorAnalytics.tsx [121:3 - 159:7]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/crm/components/CoachTable.tsx[39m[22m [259:32 - 280:10] (22 lines, 118 tokens)
+   app/golf/admin/crm/components/ConferenceGroupView.tsx [45:1 - 57:7]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/crm/components/CoachTable.tsx[39m[22m [411:68 - 443:17] (33 lines, 273 tokens)
+   app/golf/admin/crm/components/CoachTable.tsx [889:34 - 921:17]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/crm/components/CoachTable.tsx[39m[22m [625:11 - 645:12] (21 lines, 104 tokens)
+   app/golf/admin/crm/components/CoachTable.tsx [966:15 - 983:12]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/crm/components/CoachTable.tsx[39m[22m [645:37 - 674:6] (30 lines, 119 tokens)
+   app/golf/admin/crm/components/CoachTable.tsx [982:39 - 1008:6]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/crm/components/CoachTable.tsx[39m[22m [1262:79 - 1286:41] (25 lines, 147 tokens)
+   app/golf/admin/crm/components/ConferenceGroupView.tsx [323:67 - 348:41]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/crm/components/CoachTable.tsx[39m[22m [1707:15 - 1736:14] (30 lines, 193 tokens)
+   app/golf/admin/crm/components/CoachTable.tsx [1749:13 - 1778:12]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/crm/components/automations/AutomationEditor.tsx[39m[22m [460:19 - 489:44] (30 lines, 117 tokens)
+   app/golf/admin/crm/components/segments/SaveSegmentDialog.tsx [194:25 - 223:44]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/golf/admin/crm/layout.tsx[39m[22m [4:40 - 26:9] (23 lines, 107 tokens)
+   app/golf/admin/layout.tsx [6:42 - 34:9]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/lifting/(auth)/forgot-password/page.tsx[39m[22m [56:7 - 80:15] (25 lines, 192 tokens)
+   app/lifting/(auth)/signup/page.tsx [63:7 - 87:15]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/lifting/(auth)/forgot-password/page.tsx[39m[22m [58:7 - 80:11] (23 lines, 185 tokens)
+   app/lifting/(auth)/reset-password/page.tsx [83:7 - 105:11]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/lifting/(auth)/forgot-password/page.tsx[39m[22m [80:29 - 110:27] (31 lines, 275 tokens)
+   app/lifting/(auth)/login/page.tsx [119:28 - 149:27]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/lifting/(auth)/forgot-password/page.tsx[39m[22m [86:9 - 110:67] (25 lines, 202 tokens)
+   app/lifting/(auth)/reset-password/page.tsx [111:9 - 135:67]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/lifting/(dashboard)/dashboard/athletes/[athleteId]/page.tsx[39m[22m [27:1 - 47:2] (21 lines, 145 tokens)
+   app/lifting/(dashboard)/dashboard/athletes/page.tsx [18:68 - 44:2]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/lifting/(dashboard)/dashboard/check-ins/page.tsx[39m[22m [26:43 - 54:8] (29 lines, 172 tokens)
+   app/lifting/(dashboard)/dashboard/command/page.tsx [133:49 - 158:8]
+[1mClone found (tsx)[22m
+ - [1m[32mapp/lifting/(dashboard)/dashboard/lift/[sessionId]/page.tsx[39m[22m [30:34 - 96:2] (67 lines, 414 tokens)
+   app/lifting/(dashboard)/dashboard/lift/page.tsx [28:27 - 94:2]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/lifting/actions/performance-profile.ts[39m[22m [208:28 - 230:10] (23 lines, 104 tokens)
+   app/lifting/actions/performance-profile.ts [801:39 - 823:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/lifting/actions/soreness.ts[39m[22m [504:26 - 526:7] (23 lines, 105 tokens)
+   app/lifting/actions/soreness.ts [630:40 - 656:10]
+[1mClone found (typescript)[22m
+ - [1m[32mapp/lifting/actions/weight-checkins.ts[39m[22m [442:41 - 462:14] (21 lines, 127 tokens)
+   app/lifting/actions/weight-checkins.ts [538:45 - 557:14]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/auth/baseball-sign-in-form.tsx[39m[22m [6:58 - 29:16] (24 lines, 133 tokens)
+   components/auth/golf-sign-in-form.tsx [6:54 - 29:16]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/auth/baseball-sign-up-form.tsx[39m[22m [101:17 - 157:26] (57 lines, 256 tokens)
+   components/auth/golf-sign-up-form.tsx [131:17 - 187:26]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/announcements/AnnouncementsCoachView.tsx[39m[22m [12:29 - 39:10] (28 lines, 201 tokens)
+   components/baseball/announcements/AnnouncementsPlayerView.tsx [10:34 - 37:10]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/announcements/AnnouncementsCoachView.tsx[39m[22m [60:50 - 81:12] (22 lines, 113 tokens)
+   components/baseball/announcements/AnnouncementsPlayerView.tsx [60:16 - 81:12]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/command-center/BaseballInviteButton.tsx[39m[22m [295:17 - 322:7] (28 lines, 144 tokens)
+   components/golf/roster/InvitePlayerButton.tsx [210:86 - 237:7]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/documents/DocumentPreview.tsx[39m[22m [200:39 - 251:30] (52 lines, 220 tokens)
+   components/golf/documents/DocumentPreview.tsx [189:45 - 244:30]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/documents/UploadNewVersionModal.tsx[39m[22m [36:25 - 93:6] (58 lines, 252 tokens)
+   components/golf/documents/UploadNewVersionModal.tsx [43:22 - 101:6]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/onboarding/StepIndicator.tsx[39m[22m [3:43 - 41:10] (39 lines, 215 tokens)
+   components/golf/onboarding/StepIndicator.tsx [1:13 - 37:10]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/performance/PlayerLiftSessionClient.tsx[39m[22m [310:93 - 357:12] (48 lines, 216 tokens)
+   components/lifting/players/PlayerLiftSessionClient.tsx [271:11 - 318:12]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/performance/PlayerLiftSessionClient.tsx[39m[22m [429:13 - 465:70] (37 lines, 108 tokens)
+   components/lifting/players/PlayerLiftSessionClient.tsx [323:11 - 348:70]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/performance/PlayerLiftToday.tsx[39m[22m [209:3 - 229:28] (21 lines, 145 tokens)
+   components/lifting/players/PlayerLiftToday.tsx [141:3 - 161:28]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/performance/PlayerLiftToday.tsx[39m[22m [243:16 - 278:23] (36 lines, 165 tokens)
+   components/lifting/players/PlayerLiftToday.tsx [170:6 - 205:23]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/performance/PlayerLiftToday.tsx[39m[22m [280:15 - 307:27] (28 lines, 125 tokens)
+   components/lifting/players/PlayerLiftToday.tsx [207:15 - 230:27]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/performance/PlayerLiftToday.tsx[39m[22m [394:11 - 416:11] (23 lines, 118 tokens)
+   components/lifting/players/PlayerLiftToday.tsx [320:11 - 340:33]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/roster/PlayerCard.tsx[39m[22m [38:41 - 91:16] (54 lines, 310 tokens)
+   components/baseball/roster/PlayerRow.tsx [42:20 - 95:16]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/source-trust/SourceDrawer.tsx[39m[22m [96:1 - 118:6] (23 lines, 142 tokens)
+   components/baseball/source-trust/SourceTrustBadge.tsx [45:1 - 67:6]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/tasks/CreateTaskModal.tsx[39m[22m [50:52 - 70:8] (21 lines, 105 tokens)
+   components/golf/tasks/CreateTaskModal.tsx [33:67 - 52:10]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/tasks/CreateTaskModal.tsx[39m[22m [244:86 - 266:11] (23 lines, 114 tokens)
+   components/golf/tasks/CreateFromTemplateModal.tsx [169:20 - 193:11]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/tasks/ReminderBadge.tsx[39m[22m [1:13 - 25:8] (25 lines, 114 tokens)
+   components/golf/tasks/ReminderBadge.tsx [3:44 - 26:8]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/tasks/ReminderBadge.tsx[39m[22m [27:3 - 56:4] (30 lines, 188 tokens)
+   components/golf/tasks/ReminderBadge.tsx [51:3 - 82:4]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/travel/ExpenseForm.tsx[39m[22m [119:35 - 139:26] (21 lines, 113 tokens)
+   components/golf/travel/ExpenseForm.tsx [236:66 - 256:26]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/travel/ExpenseForm.tsx[39m[22m [187:11 - 221:12] (35 lines, 184 tokens)
+   components/golf/travel/ExpenseForm.tsx [313:11 - 347:12]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/travel/ExpenseList.tsx[39m[22m [52:16 - 77:23] (26 lines, 131 tokens)
+   components/golf/travel/ExpenseList.tsx [85:23 - 110:23]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/baseball/travel/TravelClient.tsx[39m[22m [161:22 - 183:7] (23 lines, 171 tokens)
+   components/baseball/travel/TravelClient.tsx [187:18 - 209:7]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/coach/discover/FilterPanel.tsx[39m[22m [407:35 - 459:28] (53 lines, 315 tokens)
+   components/coach/discover/FilterPanel.tsx [570:40 - 622:28]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/charts/ChartFrame.tsx[39m[22m [238:112 - 266:62] (29 lines, 188 tokens)
+   components/fairway/charts/InstrumentTable.tsx [62:88 - 90:62]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/forms/Combobox.tsx[39m[22m [178:24 - 210:2] (33 lines, 100 tokens)
+   components/fairway/forms/Select.tsx [162:23 - 194:2]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/announcements/FairwayCoachAnnouncementCard.tsx[39m[22m [43:93 - 72:9] (30 lines, 244 tokens)
+   components/fairway/pages/announcements/FairwayPlayerAnnouncementCard.tsx [45:75 - 72:9]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/announcements/FairwayCoachAnnouncementCard.tsx[39m[22m [73:46 - 97:16] (25 lines, 121 tokens)
+   components/fairway/pages/announcements/FairwayPlayerAnnouncementCard.tsx [69:90 - 92:16]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/announcements/FairwayCoachAnnouncementCard.tsx[39m[22m [240:15 - 286:34] (47 lines, 221 tokens)
+   components/fairway/pages/announcements/FairwayPlayerAnnouncementCard.tsx [369:15 - 415:34]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/FairwayAgendaView.tsx[39m[22m [31:41 - 67:9] (37 lines, 153 tokens)
+   components/golf/calendar/editorial/AgendaView.tsx [25:27 - 68:9]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/FairwayAgendaView.tsx[39m[22m [70:17 - 95:8] (26 lines, 130 tokens)
+   components/golf/calendar/editorial/AgendaView.tsx [65:38 - 89:6]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/FairwayAgendaView.tsx[39m[22m [96:5 - 128:2] (33 lines, 243 tokens)
+   components/golf/calendar/editorial/AgendaView.tsx [89:6 - 123:2]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/FairwayCalendar.tsx[39m[22m [138:27 - 160:50] (23 lines, 150 tokens)
+   components/golf/calendar/editorial/EditorialCalendarSurface.tsx [83:48 - 116:50]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/FairwayCalendar.tsx[39m[22m [548:3 - 621:32] (74 lines, 427 tokens)
+   components/golf/calendar/editorial/EditorialCalendarSurface.tsx [202:23 - 270:33]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/FairwayDayStrip.tsx[39m[22m [69:24 - 98:21] (30 lines, 219 tokens)
+   components/golf/calendar/editorial/DayStrip.tsx [71:17 - 102:21]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/FairwayEventCard.tsx[39m[22m [24:50 - 45:6] (22 lines, 131 tokens)
+   components/fairway/pages/calendar/FairwayEventDetailDrawer.tsx [45:2 - 59:6]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/FairwayEventEditor.tsx[39m[22m [231:50 - 252:20] (22 lines, 105 tokens)
+   components/golf/calendar/EventDetailModal.tsx [376:56 - 398:22]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/FairwayEventEditor.tsx[39m[22m [365:61 - 441:6] (77 lines, 366 tokens)
+   components/golf/calendar/EventDetailModal.tsx [560:55 - 639:6]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/calendar/__tests__/FairwayEventEditor.test.tsx[39m[22m [61:85 - 117:9] (57 lines, 229 tokens)
+   components/golf/calendar/__tests__/EventDetailModal.test.tsx [52:79 - 108:9]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/coachhelm/FairwayEffectiveness.tsx[39m[22m [381:43 - 409:40] (29 lines, 219 tokens)
+   components/fairway/pages/coachhelm/FairwayEffectiveness.tsx [424:37 - 450:42]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/coachhelm/FairwayGoalCard.tsx[39m[22m [215:13 - 236:9] (22 lines, 114 tokens)
+   components/fairway/pages/coachhelm/GoalsSection.tsx [117:55 - 138:8]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/coachhelm/FairwayPlayerInsight.tsx[39m[22m [750:51 - 776:15] (27 lines, 134 tokens)
+   components/fairway/pages/coachhelm/FairwayPlayerInsight.tsx [785:13 - 811:15]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/dashboard/FairwayCoachDashboard.tsx[39m[22m [125:46 - 146:9] (22 lines, 148 tokens)
+   components/golf/dashboard/premium-components.tsx [373:19 - 399:9]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/hub/FairwayPlayerHub.tsx[39m[22m [431:53 - 457:40] (27 lines, 138 tokens)
+   components/fairway/pages/team-hub/FairwayTeamHub.tsx [381:50 - 405:40]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/messages/FairwayNewMessageSheet.tsx[39m[22m [67:29 - 91:46] (25 lines, 109 tokens)
+   components/golf/messages/GolfNewMessageModal.tsx [51:23 - 76:44]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/messages/FairwayNewMessageSheet.tsx[39m[22m [132:11 - 155:23] (24 lines, 132 tokens)
+   components/golf/messages/GolfNewMessageModal.tsx [113:45 - 137:21]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/messages/FairwayTeamBroadcastSheet.tsx[39m[22m [137:60 - 163:13] (27 lines, 115 tokens)
+   components/golf/messages/GolfTeamBroadcastModal.tsx [115:58 - 143:13]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/recruiting/FairwayRecruitDocuments.tsx[39m[22m [44:45 - 66:2] (23 lines, 179 tokens)
+   components/golf/recruiting/RecruitDocuments.tsx [43:37 - 65:2]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/recruiting/FairwayRecruitDocuments.tsx[39m[22m [115:9 - 140:52] (26 lines, 164 tokens)
+   components/golf/recruiting/RecruitDocuments.tsx [100:3 - 124:52]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/recruiting/FairwayRecruitFormSheet.tsx[39m[22m [75:9 - 95:8] (21 lines, 114 tokens)
+   components/golf/recruiting/RecruitFormSheet.tsx [58:3 - 78:8]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/recruiting/FairwayRecruitingPage.tsx[39m[22m [88:25 - 117:40] (30 lines, 276 tokens)
+   components/golf/recruiting/RecruitingPageClient.tsx [61:19 - 90:40]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/roster/FairwayJoinRequests.tsx[39m[22m [98:83 - 118:29] (21 lines, 149 tokens)
+   components/golf/roster/PendingJoinRequests.tsx [103:26 - 127:6]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/rounds-new/FairwayRoundSubmitOverlay.tsx[39m[22m [50:34 - 100:27] (51 lines, 358 tokens)
+   components/golf/RoundSubmitOverlay.tsx [56:27 - 106:27]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/rounds-new/FairwayRoundSubmitOverlay.tsx[39m[22m [100:34 - 124:31] (25 lines, 137 tokens)
+   components/golf/RoundSubmitOverlay.tsx [106:32 - 130:31]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/rounds-tracking/FairwayScorecardHeader.tsx[39m[22m [173:49 - 206:28] (34 lines, 312 tokens)
+   components/golf/ShotTrackingComprehensive.tsx [84:41 - 115:28]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/rounds-tracking/FairwayShotTracking.tsx[39m[22m [41:66 - 62:2] (22 lines, 121 tokens)
+   components/golf/ShotTrackingComprehensive.tsx [24:35 - 44:2]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/rounds-tracking/FairwayShotTracking.tsx[39m[22m [110:5 - 203:38] (94 lines, 469 tokens)
+   components/golf/ShotTrackingComprehensive.tsx [353:45 - 446:38]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/rounds-tracking/FairwayShotTracking.tsx[39m[22m [205:9 - 256:12] (52 lines, 198 tokens)
+   components/golf/ShotTrackingComprehensive.tsx [454:9 - 505:12]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/rounds-tracking/FairwayShotTracking.tsx[39m[22m [265:7 - 363:22] (99 lines, 473 tokens)
+   components/golf/ShotTrackingComprehensive.tsx [527:7 - 625:22]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/rounds-tracking/FairwayShotTracking.tsx[39m[22m [364:64 - 392:106] (29 lines, 211 tokens)
+   components/golf/ShotTrackingComprehensive.tsx [626:45 - 654:106]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/rounds/FairwayRoundsLibrary.tsx[39m[22m [110:21 - 144:9] (35 lines, 236 tokens)
+   components/golf/rounds/RoundLibraryClient.tsx [70:5 - 104:9]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/tasks/FairwayCreateFromTemplateModal.tsx[39m[22m [177:11 - 206:9] (30 lines, 141 tokens)
+   components/fairway/pages/tasks/FairwayCreateTaskModal.tsx [287:11 - 316:9]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/travel/FairwayExpenseForm.tsx[39m[22m [144:5 - 207:8] (64 lines, 313 tokens)
+   components/golf/travel/ExpenseForm.tsx [121:5 - 190:8]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/fairway/pages/travel/FairwayExpenseForm.tsx[39m[22m [210:7 - 241:4] (32 lines, 160 tokens)
+   components/golf/travel/ExpenseForm.tsx [192:7 - 225:4]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/announcements/AnnouncementsCoachView.tsx[39m[22m [11:93 - 54:10] (44 lines, 376 tokens)
+   components/golf/announcements/AnnouncementsPlayerView.tsx [13:75 - 56:10]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/calendar/DayView.tsx[39m[22m [50:4 - 94:2] (45 lines, 285 tokens)
+   components/golf/calendar/WeekView.tsx [162:16 - 208:2]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/calendar/DayView.tsx[39m[22m [94:1 - 180:2] (87 lines, 543 tokens)
+   components/golf/calendar/WeekView.tsx [77:1 - 163:2]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/calendar/DayView.tsx[39m[22m [203:58 - 227:8] (25 lines, 147 tokens)
+   components/golf/calendar/WeekView.tsx [262:93 - 287:8]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/calendar/EventDetailModal.tsx[39m[22m [334:19 - 369:14] (36 lines, 292 tokens)
+   components/golf/calendar/MobileEventSheet.tsx [149:47 - 180:14]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/calendar/SubscriptionInstructions.tsx[39m[22m [203:50 - 236:10] (34 lines, 198 tokens)
+   components/golf/calendar/SubscriptionInstructions.tsx [265:61 - 298:10]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/calendar/SubscriptionInstructions.tsx[39m[22m [203:50 - 239:2] (37 lines, 206 tokens)
+   components/golf/calendar/SubscriptionInstructions.tsx [333:45 - 369:2]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/analytics/InsightEffectivenessPanel.tsx[39m[22m [274:45 - 317:9] (44 lines, 200 tokens)
+   components/golf/coachhelm/analytics/PatternImpactPanel.tsx [292:48 - 335:9]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/analytics/InsightEffectivenessPanel.tsx[39m[22m [274:45 - 317:9] (44 lines, 200 tokens)
+   components/golf/coachhelm/analytics/PredictionAccuracyPanel.tsx [461:40 - 504:9]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/coach/CategoryCard.tsx[39m[22m [6:57 - 28:10] (23 lines, 103 tokens)
+   components/golf/coachhelm/coach/TeamCategoryView.tsx [18:56 - 40:10]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/coach/TeamCompositeCard.tsx[39m[22m [126:14 - 160:16] (35 lines, 213 tokens)
+   components/golf/coachhelm/player/CompositeRatingCard.tsx [134:12 - 168:16]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/coach/TeamShotOverview.tsx[39m[22m [119:75 - 150:73] (32 lines, 195 tokens)
+   components/golf/coachhelm/player/ShotAnalysisCard.tsx [155:59 - 186:73]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/round-review/RoundTakeaway.tsx[39m[22m [90:22 - 130:5] (41 lines, 121 tokens)
+   components/golf/coachhelm/round-review/V2ReviewSummary.tsx [90:32 - 126:5]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/v2/IntelligenceCommandCenter.tsx[39m[22m [344:8 - 372:12] (29 lines, 119 tokens)
+   components/golf/coachhelm/v2/IntelligenceCommandCenter.tsx [683:70 - 711:12]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/v3/HeroNarrativeCard.tsx[39m[22m [92:6 - 112:23] (21 lines, 120 tokens)
+   components/golf/coachhelm/v3/RoundReviewLlmCard.tsx [91:5 - 110:24]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/v3/StandingBar/Card.tsx[39m[22m [40:44 - 66:17] (27 lines, 172 tokens)
+   components/golf/coachhelm/v3/StandingBar/Hero.tsx [27:46 - 52:17]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/coachhelm/v3/StandingBar/Card.tsx[39m[22m [40:44 - 66:17] (27 lines, 172 tokens)
+   components/golf/coachhelm/v3/StandingBar/Inline.tsx [33:48 - 58:17]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/documents/ImagePreview.tsx[39m[22m [162:28 - 192:7] (31 lines, 109 tokens)
+   components/golf/documents/PDFViewer.tsx [125:25 - 155:7]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/layout/GolfSidebar.tsx[39m[22m [301:22 - 350:15] (50 lines, 289 tokens)
+   components/golf/layout/GolfSidebar.tsx [362:24 - 411:15]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/layout/LargeTitleHeader.tsx[39m[22m [70:80 - 91:23] (22 lines, 112 tokens)
+   components/golf/layout/MobileNavHeader.tsx [71:80 - 92:23]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/player-hub/PlayerHub.tsx[39m[22m [29:48 - 82:10] (54 lines, 226 tokens)
+   components/golf/player-hub/PlayerHubWrapper.tsx [7:57 - 56:10]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/roster/JoinRequestsModal.tsx[39m[22m [46:50 - 81:22] (36 lines, 219 tokens)
+   components/golf/roster/PendingJoinRequests.tsx [38:57 - 77:22]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/roster/JoinRequestsModal.tsx[39m[22m [87:3 - 110:27] (24 lines, 157 tokens)
+   components/golf/roster/PendingJoinRequests.tsx [78:3 - 103:27]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/stats/sections/DispersionStats.tsx[39m[22m [226:109 - 254:9] (29 lines, 174 tokens)
+   components/golf/stats/sections/DispersionStats.tsx [300:116 - 328:9]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/golf/tasks/CreateFromTemplateModal.tsx[39m[22m [182:16 - 213:32] (32 lines, 272 tokens)
+   components/golf/tasks/CreateTaskModal.tsx [216:17 - 245:32]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/lifting/soreness/BodySilhouetteBack.tsx[39m[22m [54:74 - 140:16] (87 lines, 560 tokens)
+   components/lifting/soreness/BodySilhouetteFront.tsx [70:74 - 160:16]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/products/golf-mockups/CoachAIMockup.tsx[39m[22m [6:1 - 108:22] (103 lines, 617 tokens)
+   components/products/golf-mockups/index.tsx [396:1 - 498:22]
+[1mClone found (tsx)[22m
+ - [1m[32mcomponents/ui/select.tsx[39m[22m [203:15 - 230:13] (28 lines, 108 tokens)
+   components/ui/select.tsx [427:15 - 454:13]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/auth/rate-limit.ts[39m[22m [133:96 - 164:5] (32 lines, 117 tokens)
+   lib/auth/supabase-rate-limit.ts [41:5 - 73:5]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/auth/rate-limit.ts[39m[22m [226:3 - 246:2] (21 lines, 105 tokens)
+   lib/auth/supabase-rate-limit.ts [196:3 - 216:2]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/baseball/read-models/coach-daily-contracts.ts[39m[22m [116:23 - 147:2] (32 lines, 142 tokens)
+   lib/baseball/read-models/command-center.ts [149:16 - 180:2]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/baseball/read-models/coach-daily-contracts.ts[39m[22m [116:23 - 147:2] (32 lines, 142 tokens)
+   lib/baseball/read-models/stats-center.ts [464:11 - 495:2]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/baseball/read-models/coach-daily-contracts.ts[39m[22m [123:1 - 153:9] (31 lines, 141 tokens)
+   lib/baseball/read-models/signal-inbox.ts [195:1 - 225:9]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/baseball/read-models/live-weight-room.ts[39m[22m [217:47 - 237:11] (21 lines, 186 tokens)
+   lib/baseball/read-models/performance-command.ts [131:53 - 152:8]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/baseball/read-models/live-weight-room.ts[39m[22m [237:91 - 261:10] (25 lines, 185 tokens)
+   lib/baseball/read-models/performance-command.ts [151:49 - 177:10]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/baseball/read-models/player-passport.ts[39m[22m [182:40 - 211:17] (30 lines, 110 tokens)
+   lib/baseball/scout-packet-shared.ts [45:40 - 79:17]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/baseball/read-models/player-passport.ts[39m[22m [649:49 - 673:20] (25 lines, 221 tokens)
+   lib/baseball/read-models/scout-packet.ts [252:38 - 269:50]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/coachhelm/baseball/loaders-events.ts[39m[22m [160:1 - 183:9] (24 lines, 215 tokens)
+   lib/coachhelm/baseball/loaders.ts [238:1 - 270:9]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/coachhelm/shared/base-generator.ts[39m[22m [93:38 - 113:16] (21 lines, 107 tokens)
+   lib/coachhelm/v3/engine/generator-base.ts [139:56 - 170:16]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/coachhelm/v2/feedback/outcome-tracker.ts[39m[22m [12:1 - 51:18] (40 lines, 107 tokens)
+   lib/coachhelm/v2/learning/outcome-validator.ts [12:1 - 39:18]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/coachhelm/v2/mining/lie-specific-analysis.ts[39m[22m [360:25 - 382:6] (23 lines, 116 tokens)
+   lib/coachhelm/v2/mining/shot-pattern-miner.ts [109:13 - 127:6]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/coachhelm/v2/mining/lie-specific-analysis.ts[39m[22m [609:6 - 634:15] (26 lines, 114 tokens)
+   lib/coachhelm/v2/mining/shot-pattern-miner.ts [199:20 - 234:15]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/coachhelm/v2/mining/pattern-miner.ts[39m[22m [454:50 - 481:67] (28 lines, 152 tokens)
+   lib/coachhelm/v2/mining/pattern-miner.ts [544:78 - 568:67]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/coachhelm/v2/prediction/team-forecaster.ts[39m[22m [320:36 - 346:10] (27 lines, 218 tokens)
+   lib/coachhelm/v2/prediction/team-forecaster.ts [418:32 - 444:10]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/coachhelm/v2/stats/anomaly-detector.ts[39m[22m [260:29 - 284:8] (25 lines, 103 tokens)
+   lib/coachhelm/v2/stats/baselines.ts [142:57 - 171:8]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/golf/sg-benchmarks.ts[39m[22m [258:24 - 281:3] (24 lines, 239 tokens)
+   lib/golf/strokes-gained.ts [54:24 - 80:3]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/baseball-extended.ts[39m[22m [160:17 - 204:50] (45 lines, 134 tokens)
+   lib/types/baseball-imports.ts [157:14 - 198:50]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [511:15 - 541:18] (31 lines, 167 tokens)
+   lib/types/database.ts [546:15 - 576:18]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [1694:15 - 1717:20] (24 lines, 127 tokens)
+   lib/types/database.ts [1730:15 - 1753:20]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [2142:19 - 2162:10] (21 lines, 115 tokens)
+   lib/types/database.ts [2164:20 - 2184:10]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [3690:11 - 3710:22] (21 lines, 107 tokens)
+   lib/types/database.ts [17869:11 - 17889:22]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [4857:30 - 4914:28] (58 lines, 278 tokens)
+   lib/types/database.ts [13767:26 - 13824:28]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [5422:15 - 5457:20] (36 lines, 169 tokens)
+   lib/types/database.ts [5475:15 - 5510:20]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [5848:15 - 5873:22] (26 lines, 145 tokens)
+   lib/types/database.ts [5889:15 - 5914:22]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [6861:15 - 6885:22] (25 lines, 131 tokens)
+   lib/types/database.ts [6895:15 - 6919:22]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [8569:15 - 8591:20] (23 lines, 125 tokens)
+   lib/types/database.ts [8614:15 - 8636:20]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [11031:19 - 11053:10] (23 lines, 109 tokens)
+   lib/types/database.ts [11067:20 - 11089:10]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [14230:15 - 14266:20] (37 lines, 211 tokens)
+   lib/types/database.ts [14317:15 - 14353:20]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [14266:20 - 14316:10] (51 lines, 299 tokens)
+   lib/types/database.ts [14353:21 - 14403:10]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [15238:15 - 15258:20] (21 lines, 115 tokens)
+   lib/types/database.ts [15279:15 - 15299:20]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [15516:15 - 15536:20] (21 lines, 115 tokens)
+   lib/types/database.ts [15561:15 - 15581:20]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [15539:21 - 15560:10] (22 lines, 123 tokens)
+   lib/types/database.ts [15584:22 - 15605:10]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/database.ts[39m[22m [16551:15 - 16571:18] (21 lines, 117 tokens)
+   lib/types/database.ts [16576:15 - 16596:18]
+[1mClone found (typescript)[22m
+ - [1m[32mlib/types/helm-lifting-checkins.ts[39m[22m [99:40 - 131:11] (33 lines, 104 tokens)
+   lib/types/helm-lifting-checkins.ts [188:40 - 208:11]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/api/calendar/feed-token-security.test.ts[39m[22m [56:31 - 76:9] (21 lines, 116 tokens)
+   test/api/calendar/feed-token-security.test.ts [100:12 - 120:9]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/api/cron/coachhelm-insight-lifecycle-archive-anchor.test.ts[39m[22m [1:1 - 23:54] (23 lines, 167 tokens)
+   test/api/cron/coachhelm-insight-lifecycle-bounds.test.ts [1:1 - 23:54]
+[1mClone found (tsx)[22m
+ - [1m[32mtest/app/golf/dashboard/coachhelm/PlayerCoachHelmDashboard.test.tsx[39m[22m [25:5 - 51:80] (27 lines, 129 tokens)
+   test/golf/components/HubInsightSignalCard.test.tsx [57:5 - 83:80]
+[1mClone found (tsx)[22m
+ - [1m[32mtest/app/golf/dashboard/coachhelm/PlayerCoachHelmDashboard.test.tsx[39m[22m [127:122 - 157:8] (31 lines, 121 tokens)
+   test/golf/components/CoachInsightCard.test.tsx [142:68 - 172:8]
+[1mClone found (tsx)[22m
+ - [1m[32mtest/app/golf/dashboard/coachhelm/PlayerCoachHelmDashboard.test.tsx[39m[22m [127:122 - 155:22] (29 lines, 104 tokens)
+   test/golf/components/HeroInsightCard.test.tsx [40:4 - 64:22]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/coachhelm/v2/mining/approach-analytics.test.ts[39m[22m [10:1 - 34:9] (25 lines, 158 tokens)
+   test/coachhelm/v2/mining/tee-strategy.test.ts [5:1 - 27:9]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/coachhelm/v2/mining/pattern-miner.test.ts[39m[22m [100:82 - 120:15] (21 lines, 119 tokens)
+   test/coachhelm/v2/mining/pattern-miner.test.ts [130:64 - 150:6]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/coachhelm/v3/counterfactual-clamp.test.ts[39m[22m [148:73 - 170:6] (23 lines, 102 tokens)
+   test/coachhelm/v3/counterfactual-cohort.test.ts [31:69 - 53:6]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/coachhelm/v3/generator-base-receipt-diagnosis.test.ts[39m[22m [25:28 - 50:9] (26 lines, 184 tokens)
+   test/coachhelm/v3/generator-base-run-lifecycle.test.ts [29:37 - 54:9]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/coachhelm/v3/generator-base-receipt-diagnosis.test.ts[39m[22m [29:44 - 59:16] (31 lines, 210 tokens)
+   test/coachhelm/v3/generator-base-retraction.test.ts [86:3 - 116:23]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/coachhelm/v3/hole-diagnosis.test.ts[39m[22m [144:32 - 172:11] (29 lines, 183 tokens)
+   test/coachhelm/v3/sand-source.test.ts [98:32 - 126:11]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/coachhelm/v3/hole-diagnosis.test.ts[39m[22m [172:15 - 193:6] (22 lines, 180 tokens)
+   test/coachhelm/v3/sand-source.test.ts [125:15 - 146:6]
+[1mClone found (typescript)[22m
+ - [1m[32mtest/golf/actions/insight-celebration.test.ts[39m[22m [12:1 - 34:9] (23 lines, 165 tokens)
+   test/golf/actions/insight-delivery.test.ts [16:1 - 42:9]
+[1mClone found (tsx)[22m
+ - [1m[32mtest/golf/components/HeroInsightCard.test.tsx[39m[22m [28:20 - 78:22] (51 lines, 254 tokens)
+   test/golf/components/InsightCard.test.tsx [53:29 - 106:14]
+[1mClone found (tsx)[22m
+ - [1m[32mtest/golf/components/HeroInsightCard.test.tsx[39m[22m [39:47 - 68:24] (30 lines, 126 tokens)
+   test/golf/components/HubInsightSignalCard.test.tsx [102:38 - 133:8]
+[1mClone found (tsx)[22m
+ - [1m[32mtest/golf/components/HubInsightSignalCard.test.tsx[39m[22m [48:3 - 91:5] (44 lines, 206 tokens)
+   test/golf/components/InsightCard.test.tsx [23:63 - 66:5]
+[1mClone found (sql)[22m
+ - [1m[32mdemo/01_demo_sessions_table.sql[39m[22m [1:1 - 61:40] (61 lines, 187 tokens)
+   migrations/20260611000000_create_golf_demo_sessions.sql [1:1 - 61:40]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [260:9 - 293:76] (34 lines, 241 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [36:13 - 77:76]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [307:9 - 338:2] (32 lines, 228 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [101:9 - 145:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [432:5 - 476:4] (45 lines, 165 tokens)
+   migrations_archive/pre_20260527/20260421000000_email_clicks_and_coach_denorm.sql [75:1 - 119:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [485:9 - 508:33] (24 lines, 146 tokens)
+   migrations_archive/pre_20260527/20260424015134_admin_rollup_function_perf.sql [139:13 - 168:33]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [516:5 - 548:7] (33 lines, 274 tokens)
+   migrations_archive/pre_20260527/20260506000000_admin_rollup_window_perf.sql [91:5 - 123:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [522:5 - 548:7] (27 lines, 225 tokens)
+   migrations_archive/pre_20260527/20260421000007_admin_analytics.sql [137:5 - 196:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [549:5 - 642:15] (94 lines, 747 tokens)
+   migrations_archive/pre_20260527/20260506000000_admin_rollup_window_perf.sql [126:5 - 220:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [572:5 - 592:17] (21 lines, 150 tokens)
+   migrations_archive/pre_20260527/20260424015134_admin_rollup_function_perf.sql [239:5 - 261:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [585:5 - 653:2] (69 lines, 549 tokens)
+   migrations_archive/pre_20260527/20260510120000_admin_rollup_coach_staff_lastseen.sql [190:5 - 260:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [595:5 - 616:28] (22 lines, 166 tokens)
+   migrations_archive/pre_20260527/20260424015134_admin_rollup_function_perf.sql [261:5 - 287:28]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [617:7 - 650:4] (34 lines, 290 tokens)
+   migrations_archive/pre_20260527/20260424015134_admin_rollup_function_perf.sql [291:7 - 329:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [666:10 - 755:2] (90 lines, 451 tokens)
+   migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql [65:5 - 154:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [769:5 - 984:4] (216 lines, 909 tokens)
+   migrations_archive/pre_20260527/20260421000005_admin_rollups_a.sql [674:1 - 889:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [993:5 - 1092:4] (100 lines, 694 tokens)
+   migrations_archive/pre_20260527/20260421000004_secure_perf_rpcs.sql [41:1 - 140:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1058:9 - 1089:6] (32 lines, 204 tokens)
+   migrations_archive/pre_20260527/20260421000001_admin_dashboard_rollup.sql [93:5 - 125:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1123:3 - 1152:50] (30 lines, 157 tokens)
+   migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql [201:3 - 230:50]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1200:3 - 1227:7] (28 lines, 134 tokens)
+   migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql [299:3 - 326:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1229:3 - 1252:7] (24 lines, 106 tokens)
+   migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql [329:3 - 352:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1254:3 - 1283:7] (30 lines, 146 tokens)
+   migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql [355:3 - 384:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1263:18 - 1318:163] (56 lines, 210 tokens)
+   migrations_archive/pre_20260527/20260518124505_fix_live_db_lint_errors.sql [335:18 - 389:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1327:9 - 1390:2] (64 lines, 335 tokens)
+   migrations_archive/pre_20260527/20260424015417_admin_event_summary_no_cte.sql [14:13 - 77:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1400:5 - 1440:4] (41 lines, 332 tokens)
+   migrations_archive/pre_20260527/20260421000005_admin_rollups_a.sql [615:1 - 655:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1450:5 - 1735:4] (286 lines, 1203 tokens)
+   migrations_archive/pre_20260527/20260421000005_admin_rollups_a.sql [50:1 - 335:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [1744:10 - 1986:2] (243 lines, 1018 tokens)
+   migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql [459:5 - 701:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2000:5 - 2246:4] (247 lines, 1111 tokens)
+   migrations_archive/pre_20260527/20260421000005_admin_rollups_a.sql [354:1 - 600:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2313:23 - 2333:4] (21 lines, 225 tokens)
+   migrations_archive/pre_20260527/20260518124505_fix_live_db_lint_errors.sql [35:17 - 55:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2342:5 - 2366:3] (25 lines, 281 tokens)
+   migrations_archive/pre_20260527/20260313100000_admin_dashboard_upgrade.sql [297:3 - 321:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2375:5 - 2425:4] (51 lines, 251 tokens)
+   migrations_archive/pre_20260527/20260421000004_secure_perf_rpcs.sql [156:1 - 206:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2474:5 - 2496:88] (23 lines, 151 tokens)
+   migrations_archive/pre_20260527/20260420000000_resend_activity_mirror.sql [44:1 - 65:79]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2502:5 - 2542:4] (41 lines, 270 tokens)
+   migrations_archive/pre_20260527/20260313000000_crm_enhancements.sql [115:55 - 155:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2684:3 - 2715:4] (32 lines, 184 tokens)
+   migrations_archive/pre_20260527/20260428200000_get_db_telemetry.sql [67:3 - 98:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2726:24 - 2749:4] (24 lines, 203 tokens)
+   migrations_archive/pre_20260527/20260518124505_fix_live_db_lint_errors.sql [143:1 - 166:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2727:5 - 2747:28] (21 lines, 188 tokens)
+   migrations_archive/pre_20260527/20260313100000_admin_dashboard_upgrade.sql [360:3 - 380:28]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2757:9 - 2804:2] (48 lines, 318 tokens)
+   migrations_archive/pre_20260527/20260424015134_admin_rollup_function_perf.sql [33:13 - 80:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2813:5 - 2851:27] (39 lines, 200 tokens)
+   migrations_archive/pre_20260527/043_critical_fixes.sql [24:3 - 62:27]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2841:5 - 2861:21] (21 lines, 127 tokens)
+   migrations/20260621041824_harden_get_golf_conversations_rpc.sql [53:5 - 73:21]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2880:5 - 2915:5] (36 lines, 145 tokens)
+   migrations_archive/pre_20260527/20260511200000_golf_messages_rls_and_attachment_rpc_hardening.sql [38:3 - 73:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [2954:5 - 2980:3] (27 lines, 266 tokens)
+   migrations_archive/pre_20260527/20260313100000_admin_dashboard_upgrade.sql [258:3 - 284:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3015:9 - 3063:2] (49 lines, 430 tokens)
+   migrations_archive/pre_20260527/20260428220000_platform_health_largest_tables.sql [26:13 - 74:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3069:108 - 3096:9] (28 lines, 118 tokens)
+   migrations/20260527000000_prod_public_baseline.sql [3186:137 - 3213:9]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3072:5 - 3176:4] (105 lines, 527 tokens)
+   migrations_archive/pre_20260527/20260421000004_secure_perf_rpcs.sql [221:1 - 325:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3096:5 - 3134:18] (39 lines, 187 tokens)
+   migrations_archive/pre_20260527/20260421000003_dashboard_rpcs.sql [87:3 - 125:16]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3115:23 - 3179:137] (65 lines, 334 tokens)
+   migrations_archive/pre_20260527/20260421000004_secure_perf_rpcs.sql [264:23 - 327:79]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3215:7 - 3236:11] (22 lines, 108 tokens)
+   migrations_archive/pre_20260527/20260421000003_dashboard_rpcs.sql [192:5 - 213:9]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3215:49 - 3262:166] (48 lines, 229 tokens)
+   migrations_archive/pre_20260527/20260421000004_secure_perf_rpcs.sql [367:49 - 413:79]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3306:5 - 3328:4] (23 lines, 177 tokens)
+   migrations_archive/pre_20260527/20260306000003_cleanup_dead_code_schema.sql [32:1 - 54:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3337:5 - 3407:4] (71 lines, 456 tokens)
+   migrations_archive/pre_20260527/20260420000000_resend_activity_mirror.sql [338:1 - 408:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3416:5 - 3452:4] (37 lines, 223 tokens)
+   migrations_archive/pre_20260527/20260420000000_resend_activity_mirror.sql [420:1 - 456:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3512:5 - 3552:3] (41 lines, 471 tokens)
+   migrations_archive/pre_20260527/20260313100000_admin_dashboard_upgrade.sql [208:3 - 248:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3559:24 - 3624:4] (66 lines, 507 tokens)
+   migrations_archive/pre_20260527/20260518124505_fix_live_db_lint_errors.sql [73:1 - 138:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3569:20 - 3603:12] (35 lines, 217 tokens)
+   migrations_archive/pre_20260527/20260313100000_admin_dashboard_upgrade.sql [137:14 - 171:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [3720:5 - 3741:106] (22 lines, 102 tokens)
+   migrations_archive/pre_20260527/20260429100000_calendar_recruiting_hardening.sql [60:1 - 80:5]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4170:9 - 4190:22] (21 lines, 124 tokens)
+   migrations/20260528000000_baseball_recalc_body_guards.sql [24:13 - 44:22]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4170:5 - 4338:4] (169 lines, 1362 tokens)
+   migrations_archive/pre_20260527/20260222200000_baseball_box_score_system.sql [320:1 - 488:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4211:3 - 4235:65] (25 lines, 298 tokens)
+   migrations/20260528000000_baseball_recalc_body_guards.sql [75:3 - 99:65]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4284:3 - 4338:2] (55 lines, 389 tokens)
+   migrations/20260528000000_baseball_recalc_body_guards.sql [146:3 - 200:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4296:107 - 4316:22] (21 lines, 115 tokens)
+   migrations/20260624001000_baseball_official_stat_breadth.sql [245:48 - 254:80]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4321:5 - 4341:167] (21 lines, 101 tokens)
+   migrations_archive/pre_20260527/20260222200000_baseball_box_score_system.sql [471:5 - 490:61]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4347:5 - 4529:3] (183 lines, 883 tokens)
+   migrations_archive/pre_20260527/20260221130000_add_strokes_gained_rpcs.sql [178:14 - 360:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4476:44 - 4566:9] (91 lines, 481 tokens)
+   migrations/20260608120000_charge_penalties_in_sg.sql [73:82 - 114:41]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4557:9 - 4577:87] (21 lines, 150 tokens)
+   migrations/20260606190000_fix_fairway_denominator.sql [10:13 - 30:87]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4557:5 - 4584:4] (28 lines, 187 tokens)
+   migrations_archive/pre_20260527/20260428000100_round_totals_trigger.sql [25:1 - 52:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4565:20 - 4587:115] (23 lines, 134 tokens)
+   migrations_archive/pre_20260527/20260428000100_round_totals_trigger.sql [33:20 - 54:73]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4604:1 - 4628:87] (25 lines, 167 tokens)
+   migrations/20260605120000_v3_cohort_population_baseline.sql [23:1 - 47:87]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4604:1 - 4644:14] (41 lines, 229 tokens)
+   migrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql [21:1 - 62:36]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4607:10 - 4724:2] (118 lines, 662 tokens)
+   migrations_archive/pre_20260527/20260524210100_v3_refresh_player_standing_function.sql [36:13 - 153:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4637:16 - 4682:9] (46 lines, 265 tokens)
+   migrations/20260605120000_v3_cohort_population_baseline.sql [64:35 - 109:9]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4637:16 - 4717:14] (81 lines, 470 tokens)
+   migrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql [65:33 - 151:35]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4737:9 - 4916:2] (180 lines, 1049 tokens)
+   migrations_archive/pre_20260527/20260525190000_v3_refresh_player_standing_round_metrics.sql [42:13 - 221:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4741:16 - 4790:5] (50 lines, 306 tokens)
+   migrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql [43:35 - 92:5]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4770:7 - 4815:40] (46 lines, 246 tokens)
+   migrations/20260609120000_pressure_gate_count_ge_3.sql [58:7 - 98:13]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4819:39 - 4877:5] (59 lines, 368 tokens)
+   migrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql [166:40 - 224:5]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4929:9 - 4978:9] (50 lines, 113 tokens)
+   migrations/20260606170000_refresh_cache_calls_putt_make_pct.sql [8:13 - 26:9]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4929:5 - 5096:4] (168 lines, 1174 tokens)
+   migrations_archive/pre_20260527/20260312040122_fix_18_hole_stats_cache.sql [433:1 - 600:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [4968:25 - 5001:70] (34 lines, 573 tokens)
+   migrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql [816:20 - 846:70]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5010:30 - 5088:37] (79 lines, 431 tokens)
+   migrations/20260606170000_refresh_cache_calls_putt_make_pct.sql [48:115 - 81:37]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5040:3 - 5069:24] (30 lines, 182 tokens)
+   migrations/20260527000000_prod_public_baseline.sql [6884:5 - 6899:78]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5040:3 - 5063:58] (24 lines, 146 tokens)
+   migrations_archive/pre_20260527/046_stats_cache_triggers.sql [559:1 - 582:22]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5071:3 - 5106:64] (36 lines, 168 tokens)
+   migrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql [522:3 - 552:31]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5111:9 - 5164:10] (54 lines, 183 tokens)
+   migrations_archive/pre_20260527/20260311120000_bulletproof_detail_inserts.sql [392:13 - 445:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5128:17 - 5196:33] (69 lines, 353 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [575:42 - 643:33]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5135:24 - 5276:37] (142 lines, 1006 tokens)
+   migrations_archive/pre_20260527/20260310100000_save_partial_round_atomic_v2.sql [37:31 - 178:37]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5135:24 - 5287:66] (153 lines, 1046 tokens)
+   migrations_archive/pre_20260527/20260311100000_rpc_resilient_detail_inserts.sql [304:17 - 455:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5167:3 - 5285:10] (119 lines, 947 tokens)
+   migrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql [300:3 - 418:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5176:28 - 5220:8] (45 lines, 484 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [81:35 - 108:33]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5178:3 - 5213:65] (36 lines, 327 tokens)
+   migrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql [65:3 - 82:142]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5195:3 - 5276:21] (82 lines, 678 tokens)
+   migrations/20260527000000_prod_public_baseline.sql [5632:5689 - 5632:8862]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5199:53 - 5228:10] (30 lines, 301 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [116:35 - 144:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5201:3 - 5228:10] (28 lines, 300 tokens)
+   migrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql [97:3 - 124:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5201:3 - 5228:10] (28 lines, 300 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [622:3 - 649:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5201:3 - 5339:40] (139 lines, 1054 tokens)
+   migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql [119:3 - 249:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5228:9 - 5285:9] (58 lines, 395 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [147:35 - 203:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5230:3 - 5285:9] (56 lines, 394 tokens)
+   migrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql [127:3 - 182:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5230:3 - 5281:35] (52 lines, 378 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [652:3 - 707:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5243:7 - 5275:10] (33 lines, 268 tokens)
+   migrations_archive/pre_20260527/20260304000001_atomic_partial_round_save.sql [128:7 - 160:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5283:15 - 5420:281] (138 lines, 761 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [794:10 - 928:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5394:11 - 5417:2] (24 lines, 102 tokens)
+   migrations_archive/pre_20260527/20260311100000_rpc_resilient_detail_inserts.sql [511:11 - 534:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5460:5 - 5499:3] (40 lines, 239 tokens)
+   migrations_archive/pre_20260527/20260221130000_add_strokes_gained_rpcs.sql [132:3 - 171:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5508:5 - 5584:3] (77 lines, 972 tokens)
+   migrations_archive/pre_20260527/20260221130000_add_strokes_gained_rpcs.sql [44:17 - 120:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5562:55 - 5584:2] (23 lines, 158 tokens)
+   migrations/20260606140000_fix_sg_expected_strokes_baseline_calibration.sql [84:75 - 106:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5641:5 - 5675:4] (35 lines, 124 tokens)
+   migrations_archive/pre_20260527/20260421000000_email_clicks_and_coach_denorm.sql [153:1 - 187:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [5684:5 - 5788:4] (105 lines, 634 tokens)
+   migrations_archive/pre_20260527/20260420000000_resend_activity_mirror.sql [157:1 - 261:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6022:5 - 6068:29] (47 lines, 214 tokens)
+   migrations/20260527000000_prod_public_baseline.sql [6446:5 - 6468:76]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6022:9 - 6065:31] (44 lines, 203 tokens)
+   migrations/20260610040000_stats_population_updown_and_trigger_columns.sql [34:13 - 55:89]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6022:5 - 6052:34] (31 lines, 116 tokens)
+   migrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql [12:17 - 42:34]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6022:5 - 6056:36] (35 lines, 143 tokens)
+   migrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql [293:1 - 327:36]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6025:3 - 6068:29] (44 lines, 207 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [944:3 - 987:29]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6027:31 - 6060:39] (34 lines, 158 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [25:30 - 59:31]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6068:21 - 6197:10] (130 lines, 675 tokens)
+   migrations/20260527000000_prod_public_baseline.sql [6475:41 - 6528:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6076:3 - 6125:33] (50 lines, 168 tokens)
+   migrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql [64:3 - 113:33]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6076:3 - 6192:35] (117 lines, 621 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [1018:3 - 1134:35]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6079:8 - 6101:21] (23 lines, 106 tokens)
+   migrations_archive/pre_20260527/046_stats_cache_triggers.sql [235:8 - 257:21]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6139:61 - 6336:29] (198 lines, 871 tokens)
+   migrations/20260610040000_stats_population_updown_and_trigger_columns.sql [91:9 - 148:122]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6199:3 - 6327:27] (129 lines, 430 tokens)
+   migrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql [197:3 - 295:80]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6242:29 - 6327:18] (86 lines, 340 tokens)
+   migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql [484:52 - 563:38]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6245:63 - 6321:3] (77 lines, 313 tokens)
+   migrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql [216:18 - 292:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6254:24 - 6321:4] (68 lines, 296 tokens)
+   migrations_archive/pre_20260527/046_stats_cache_triggers.sql [390:20 - 457:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6276:22 - 6316:62] (41 lines, 233 tokens)
+   migrations/20260527000000_prod_public_baseline.sql [6571:37 - 6584:120]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6288:41 - 6317:24] (30 lines, 175 tokens)
+   migrations_archive/pre_20260527/046_stats_cache_triggers.sql [685:37 - 714:22]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6330:5 - 6433:4] (104 lines, 494 tokens)
+   migrations_archive/pre_20260527/20260312040122_fix_18_hole_stats_cache.sql [323:1 - 426:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6348:3 - 6415:10] (68 lines, 350 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [1145:3 - 1212:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6350:43 - 6436:103] (87 lines, 405 tokens)
+   migrations_archive/pre_20260527/20260312040122_fix_18_hole_stats_cache.sql [343:43 - 428:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6467:85 - 6494:119] (28 lines, 342 tokens)
+   migrations/20260610040000_stats_population_updown_and_trigger_columns.sql [56:82 - 83:119]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6531:72 - 6555:20] (25 lines, 470 tokens)
+   migrations/20260610040000_stats_population_updown_and_trigger_columns.sql [125:72 - 149:27]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6634:5 - 6698:3] (65 lines, 456 tokens)
+   migrations_archive/pre_20260527/20260221130000_add_strokes_gained_rpcs.sql [367:14 - 431:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [6769:5 - 6903:3] (135 lines, 1342 tokens)
+   migrations_archive/pre_20260527/20260310220000_fix_driving_distance_avg.sql [6:17 - 140:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260527000000_prod_public_baseline.sql[39m[22m [7133:5 - 7153:4] (21 lines, 118 tokens)
+   migrations_archive/pre_20260527/20260428T7_unsubscribe_event_tracking.sql [15:34 - 40:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260528000000_baseball_recalc_body_guards.sql[39m[22m [15:1 - 40:21] (26 lines, 138 tokens)
+   migrations/20260624001000_baseball_official_stat_breadth.sql [109:1 - 123:61]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260528000000_baseball_recalc_body_guards.sql[39m[22m [94:3 - 114:10] (21 lines, 176 tokens)
+   migrations/20260624001000_baseball_official_stat_breadth.sql [171:3 - 190:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260605120000_v3_cohort_population_baseline.sql[39m[22m [34:64 - 65:6] (32 lines, 161 tokens)
+   migrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql [32:64 - 63:79]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260605120000_v3_cohort_population_baseline.sql[39m[22m [112:7 - 187:78] (76 lines, 456 tokens)
+   migrations/20260606180000_standing_putt_band_binding_fix.sql [58:7 - 95:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260605120000_v3_cohort_population_baseline.sql[39m[22m [150:46 - 175:61] (26 lines, 202 tokens)
+   migrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql [152:63 - 177:61]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260605120000_v3_cohort_population_baseline.sql[39m[22m [160:7 - 187:11] (28 lines, 150 tokens)
+   migrations/20260609170000_v3_gender_scoped_level_cohort.sql [135:7 - 148:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260605130000_v3_approach_proximity_standing.sql[39m[22m [19:1 - 82:26] (64 lines, 434 tokens)
+   migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql [389:1 - 451:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260605130000_v3_approach_proximity_standing.sql[39m[22m [39:1 - 109:77] (71 lines, 576 tokens)
+   migrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql [213:1 - 283:77]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606010000_v3_golf_metrics_seed_reproducible.sql[39m[22m [35:1 - 83:36] (49 lines, 485 tokens)
+   migrations_archive/pre_20260527/20260524190200_v3_golf_metrics_seed.sql [43:1 - 91:36]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql[39m[22m [30:1 - 69:11] (40 lines, 225 tokens)
+   migrations/20260609120000_pressure_gate_count_ge_3.sql [15:1 - 54:11]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql[39m[22m [30:1 - 55:18] (26 lines, 105 tokens)
+   migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql [72:1 - 97:18]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql[39m[22m [115:9 - 310:4] (196 lines, 1254 tokens)
+   migrations/20260609120000_pressure_gate_count_ge_3.sql [102:9 - 297:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql[39m[22m [126:35 - 154:16] (29 lines, 178 tokens)
+   migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql [181:55 - 209:16]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql[39m[22m [143:32 - 172:19] (30 lines, 218 tokens)
+   migrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql [277:25 - 306:19]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql[39m[22m [143:38 - 185:24] (43 lines, 254 tokens)
+   migrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql [283:33 - 311:94]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql[39m[22m [157:3 - 184:18] (28 lines, 126 tokens)
+   migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql [212:3 - 239:18]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql[39m[22m [260:35 - 310:4] (51 lines, 305 tokens)
+   migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql [324:55 - 370:19]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120000_v3_round_metrics_cohort_and_team_pct_guard.sql[39m[22m [291:3 - 312:95] (22 lines, 124 tokens)
+   migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql [355:3 - 376:95]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql[39m[22m [65:3 - 110:9] (46 lines, 271 tokens)
+   migrations/20260606180000_standing_putt_band_binding_fix.sql [35:3 - 57:9]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql[39m[22m [133:39 - 159:20] (27 lines, 184 tokens)
+   migrations/20260609170000_v3_gender_scoped_level_cohort.sql [118:96 - 132:20]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606120100_v3_standing_team_pct_tiny_n_guard.sql[39m[22m [274:5 - 306:17] (33 lines, 292 tokens)
+   migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql [491:5 - 519:21]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606150000_recalc_sg_sync_golf_rounds.sql[39m[22m [42:35 - 68:19] (27 lines, 116 tokens)
+   migrations/20260607170000_gender_aware_strokes_gained.sql [101:76 - 111:22]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606150000_recalc_sg_sync_golf_rounds.sql[39m[22m [42:35 - 187:47] (146 lines, 810 tokens)
+   migrations/20260607200000_per_team_sg_baseline.sql [69:46 - 129:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606150000_recalc_sg_sync_golf_rounds.sql[39m[22m [110:7 - 141:9] (32 lines, 248 tokens)
+   migrations/20260606200000_converge_legacy_round_sg.sql [35:5 - 53:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606150000_recalc_sg_sync_golf_rounds.sql[39m[22m [129:68 - 179:31] (51 lines, 322 tokens)
+   migrations/20260607170000_gender_aware_strokes_gained.sql [133:123 - 153:85]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606170000_refresh_cache_calls_putt_make_pct.sql[39m[22m [6:1 - 84:52] (79 lines, 1153 tokens)
+   migrations/20260606220000_player_distance_proximity_writer.sql [48:1 - 129:52]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606170000_refresh_cache_calls_putt_make_pct.sql[39m[22m [6:1 - 45:89] (40 lines, 646 tokens)
+   migrations/20260608140000_cache_penalty_from_golf_holes_canonical.sql [18:1 - 60:89]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606170000_refresh_cache_calls_putt_make_pct.sql[39m[22m [6:1 - 73:79] (68 lines, 1039 tokens)
+   migrations/20260610040000_stats_population_updown_and_trigger_columns.sql [200:1 - 273:93]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606170000_refresh_cache_calls_putt_make_pct.sql[39m[22m [46:67 - 81:37] (36 lines, 484 tokens)
+   migrations/20260608140000_cache_penalty_from_golf_holes_canonical.sql [64:38 - 99:37]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606170000_refresh_cache_calls_putt_make_pct.sql[39m[22m [48:114 - 70:62] (23 lines, 301 tokens)
+   migrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql [846:68 - 893:24]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606180000_standing_putt_band_binding_fix.sql[39m[22m [7:1 - 46:46] (40 lines, 329 tokens)
+   migrations/20260609170000_v3_gender_scoped_level_cohort.sql [49:1 - 88:46]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606200000_converge_legacy_round_sg.sql[39m[22m [19:3 - 43:60] (25 lines, 310 tokens)
+   migrations/20260607170000_gender_aware_strokes_gained.sql [183:3 - 207:60]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260606200000_converge_legacy_round_sg.sql[39m[22m [20:40 - 44:54] (25 lines, 309 tokens)
+   migrations/20260607170000_gender_aware_strokes_gained.sql [109:50 - 132:62]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260607170000_gender_aware_strokes_gained.sql[39m[22m [108:5 - 150:21] (43 lines, 627 tokens)
+   migrations/20260608120000_charge_penalties_in_sg.sql [113:3 - 160:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260607170000_gender_aware_strokes_gained.sql[39m[22m [124:7 - 148:37] (25 lines, 332 tokens)
+   migrations/20260607170000_gender_aware_strokes_gained.sql [199:5 - 223:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260607170000_gender_aware_strokes_gained.sql[39m[22m [181:76 - 223:12] (43 lines, 562 tokens)
+   migrations/20260607200000_per_team_sg_baseline.sql [140:46 - 182:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260607200000_per_team_sg_baseline.sql[39m[22m [58:1 - 97:39] (40 lines, 466 tokens)
+   migrations/20260608120000_charge_penalties_in_sg.sql [22:1 - 62:36]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260608130000_cache_proximity_miss_puttspergir_alignment.sql[39m[22m [144:1 - 168:144] (25 lines, 490 tokens)
+   migrations/20260609090000_cache_putt_band_attempts_and_lifetime_span.sql [20:1 - 44:144]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql[39m[22m [236:23 - 257:27] (22 lines, 180 tokens)
+   migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql [285:58 - 306:29]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations/20260624000062_baseball_accept_staff_invite_rpc.sql[39m[22m [89:3 - 110:82] (22 lines, 118 tokens)
+   migrations/20260624000081_baseball_staff_roles_scope_audit.sql [297:3 - 315:9]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/005_players.sql[39m[22m [95:1 - 118:20] (24 lines, 317 tokens)
+   migrations_archive/pre_20260527/035_all_triggers_functions.sql [208:1 - 231:20]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/014_events_camps.sql[39m[22m [151:1 - 176:41] (26 lines, 151 tokens)
+   migrations_archive/v1_original/011_create_events_and_camps.sql [342:1 - 368:41]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/015_analytics.sql[39m[22m [33:1 - 53:45] (21 lines, 111 tokens)
+   migrations_archive/v1_original/012_create_enhanced_analytics.sql [100:1 - 120:45]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/015_analytics.sql[39m[22m [93:1 - 117:38] (25 lines, 145 tokens)
+   migrations_archive/v1_original/012_create_enhanced_analytics.sql [162:1 - 187:18]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/026_golf_tasks.sql[39m[22m [47:1 - 76:21] (30 lines, 154 tokens)
+   migrations_archive/pre_20260527/035_all_triggers_functions.sql [458:1 - 487:21]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/028_golf_travel.sql[39m[22m [8:28 - 34:3] (27 lines, 126 tokens)
+   migrations_archive/v1_original/016_create_golf_schema.sql [327:14 - 353:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/030_golf_calendar.sql[39m[22m [98:1 - 122:60] (25 lines, 185 tokens)
+   migrations_archive/pre_20260527/035_all_triggers_functions.sql [349:1 - 373:60]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/031_golf_coachhelm.sql[39m[22m [28:3 - 49:20] (22 lines, 122 tokens)
+   migrations_archive/v1_original/20260104000009_create_coach_philosophy.sql [32:3 - 53:20]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/034_all_rls_policies.sql[39m[22m [1056:88 - 1081:80] (26 lines, 168 tokens)
+   migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql [369:54 - 393:80]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/034_all_rls_policies.sql[39m[22m [1111:108 - 1136:80] (26 lines, 168 tokens)
+   migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql [421:57 - 445:80]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/034_all_rls_policies.sql[39m[22m [1196:82 - 1221:80] (26 lines, 168 tokens)
+   migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql [459:49 - 483:80]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/034_all_rls_policies.sql[39m[22m [1247:72 - 1274:81] (28 lines, 188 tokens)
+   migrations_archive/v1_original/20260108000002_comprehensive_rls_fix.sql [506:53 - 535:81]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [267:20 - 297:68] (31 lines, 127 tokens)
+   migrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql [99:24 - 129:68]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [300:40 - 376:17] (77 lines, 269 tokens)
+   migrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql [135:63 - 211:17]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [302:3 - 326:10] (25 lines, 152 tokens)
+   migrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql [418:3 - 442:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [321:9 - 377:23] (57 lines, 155 tokens)
+   migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql [427:91 - 483:23]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [329:3 - 467:5] (139 lines, 452 tokens)
+   migrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql [445:3 - 575:51]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [329:3 - 379:21] (51 lines, 121 tokens)
+   migrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql [191:3 - 227:21]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [498:1 - 555:9] (58 lines, 436 tokens)
+   migrations_archive/pre_20260527/046_stats_cache_triggers.sql [748:3 - 805:11]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [555:7 - 582:22] (28 lines, 192 tokens)
+   migrations_archive/pre_20260527/046_stats_cache_triggers.sql [805:39 - 832:24]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [590:1 - 661:43] (72 lines, 407 tokens)
+   migrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql [299:1 - 370:43]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [590:1 - 635:7] (46 lines, 126 tokens)
+   migrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql [1057:1 - 1092:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [666:60 - 714:22] (49 lines, 309 tokens)
+   migrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql [376:78 - 424:22]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/046_stats_cache_triggers.sql[39m[22m [674:46 - 714:22] (41 lines, 239 tokens)
+   migrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql [1132:20 - 1171:22]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/053_golf_stats_cache_enhancements.sql[39m[22m [78:1 - 119:40] (42 lines, 191 tokens)
+   migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql [570:1 - 611:40]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/053_golf_stats_cache_enhancements.sql[39m[22m [155:10 - 190:4] (36 lines, 133 tokens)
+   migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql [650:44 - 685:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/064_putt_approach_details.sql[39m[22m [80:17 - 100:14] (21 lines, 122 tokens)
+   migrations_archive/pre_20260527/064_putt_approach_details.sql [189:26 - 209:14]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260203000000_strokes_gained_persistence.sql[39m[22m [473:3 - 493:89] (21 lines, 118 tokens)
+   migrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql [737:3 - 757:67]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql[39m[22m [11:1 - 49:35] (39 lines, 160 tokens)
+   migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql [268:1 - 304:34]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql[39m[22m [11:1 - 351:77] (341 lines, 1325 tokens)
+   migrations_archive/pre_20260527/20260312040122_fix_18_hole_stats_cache.sql [16:1 - 316:38]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql[39m[22m [49:32 - 113:33] (65 lines, 228 tokens)
+   migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql [306:37 - 370:33]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql[39m[22m [57:3 - 113:33] (57 lines, 192 tokens)
+   migrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql [67:3 - 123:33]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260210000000_fix_stats_cache_9_hole_support.sql[39m[22m [213:52 - 292:12] (80 lines, 320 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [234:29 - 313:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [308:20 - 333:6] (26 lines, 129 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [35:20 - 60:20]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [332:18 - 391:33] (60 lines, 291 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [61:28 - 120:33]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [400:3 - 442:10] (43 lines, 270 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [129:3 - 171:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [441:84 - 501:19] (61 lines, 144 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [181:37 - 244:20]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [582:1 - 622:40] (41 lines, 194 tokens)
+   migrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql [297:1 - 337:40]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [582:1 - 717:9] (136 lines, 552 tokens)
+   migrations_archive/pre_20260527/20260311140000_fix_ambiguous_created_at.sql [12:1 - 125:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [582:1 - 622:40] (41 lines, 194 tokens)
+   migrations_archive/pre_20260527/20260311150000_scoring_avg_18_hole_only.sql [307:1 - 347:40]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [806:3 - 827:78] (22 lines, 110 tokens)
+   migrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql [995:1 - 1016:76]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [806:3 - 893:24] (88 lines, 923 tokens)
+   migrations_archive/pre_20260527/20260306100001_create_refresh_player_stats_cache.sql [36:3 - 123:24]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260212000004_create_stats_cache_triggers.sql[39m[22m [806:3 - 895:80] (90 lines, 924 tokens)
+   migrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql [432:3 - 521:81]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260221130000_add_strokes_gained_rpcs.sql[39m[22m [1:1 - 457:8] (457 lines, 2866 tokens)
+   migrations_archive/pre_20260527/20260221140000_fix_strokes_gained_rpcs_v2.sql [1:1 - 457:8]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260304000001_atomic_partial_round_save.sql[39m[22m [5:1 - 66:167] (62 lines, 376 tokens)
+   migrations_archive/pre_20260527/20260306000001_save_partial_round_draft_data.sql [5:1 - 66:167]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260304000001_atomic_partial_round_save.sql[39m[22m [66:163 - 173:97] (108 lines, 740 tokens)
+   migrations_archive/pre_20260527/20260306000001_save_partial_round_draft_data.sql [72:5 - 179:97]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql[39m[22m [13:1 - 188:13] (176 lines, 1371 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [321:1 - 491:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql[39m[22m [39:24 - 182:10] (144 lines, 1247 tokens)
+   migrations_archive/pre_20260527/20260311100000_rpc_resilient_detail_inserts.sql [47:17 - 190:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql[39m[22m [93:3 - 182:10] (90 lines, 712 tokens)
+   migrations_archive/pre_20260527/20260311120000_bulletproof_detail_inserts.sql [152:3 - 241:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql[39m[22m [185:3 - 205:10] (21 lines, 199 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [494:3 - 514:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql[39m[22m [185:3 - 205:10] (21 lines, 199 tokens)
+   migrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql [189:3 - 209:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql[39m[22m [208:3 - 234:4] (27 lines, 175 tokens)
+   migrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql [517:3 - 543:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260306000002_submit_round_atomic.sql[39m[22m [208:3 - 234:2] (27 lines, 173 tokens)
+   migrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql [211:3 - 237:2]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260306000004_stats_and_rpc_fixes.sql[39m[22m [593:5 - 619:54] (27 lines, 224 tokens)
+   migrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql [90:5 - 116:54]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql[39m[22m [266:1 - 315:16] (50 lines, 215 tokens)
+   migrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql [19:1 - 65:31]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260309100000_consolidated_v2_fixes.sql[39m[22m [266:1 - 315:16] (50 lines, 215 tokens)
+   migrations_archive/pre_20260527/20260311150000_scoring_avg_18_hole_only.sql [15:1 - 61:31]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310100000_save_partial_round_atomic_v2.sql[39m[22m [8:1 - 37:32] (30 lines, 118 tokens)
+   migrations_archive/pre_20260527/20260311100000_rpc_resilient_detail_inserts.sql [272:1 - 301:32]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310100000_save_partial_round_atomic_v2.sql[39m[22m [23:1 - 66:10] (44 lines, 152 tokens)
+   migrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql [255:1 - 298:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310100000_save_partial_round_atomic_v2.sql[39m[22m [169:94 - 190:37] (22 lines, 139 tokens)
+   migrations_archive/pre_20260527/20260311100000_rpc_resilient_detail_inserts.sql [436:94 - 457:51]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310100000_save_partial_round_atomic_v2.sql[39m[22m [215:3 - 242:12] (28 lines, 180 tokens)
+   migrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql [442:3 - 469:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql[39m[22m [12:1 - 41:25] (30 lines, 107 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [12:1 - 41:25]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql[39m[22m [65:35 - 101:54] (37 lines, 515 tokens)
+   migrations_archive/pre_20260527/20260311120000_bulletproof_detail_inserts.sql [117:16 - 153:54]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql[39m[22m [187:9 - 209:10] (23 lines, 200 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [206:42 - 227:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql[39m[22m [209:9 - 230:10] (22 lines, 159 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [230:46 - 250:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql[39m[22m [240:1 - 269:32] (30 lines, 109 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [271:1 - 300:32]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql[39m[22m [240:1 - 269:32] (30 lines, 109 tokens)
+   migrations_archive/pre_20260527/20260311120000_bulletproof_detail_inserts.sql [377:1 - 406:32]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql[39m[22m [269:31 - 316:42] (48 lines, 196 tokens)
+   migrations_archive/pre_20260527/20260311120000_bulletproof_detail_inserts.sql [416:24 - 463:42]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql[39m[22m [418:9 - 440:10] (23 lines, 203 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [466:42 - 487:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310200000_fix_rpc_statement_timeouts.sql[39m[22m [440:9 - 461:10] (22 lines, 159 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [490:46 - 510:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql[39m[22m [111:3 - 205:33] (95 lines, 728 tokens)
+   migrations_archive/pre_20260527/20260310210000_rpc_exception_handling.sql [371:3 - 463:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311100000_rpc_resilient_detail_inserts.sql[39m[22m [245:11 - 267:4] (23 lines, 100 tokens)
+   migrations_archive/pre_20260527/20260311120000_bulletproof_detail_inserts.sql [350:11 - 372:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311120000_bulletproof_detail_inserts.sql[39m[22m [63:28 - 94:18] (32 lines, 118 tokens)
+   migrations_archive/pre_20260527/20260311223000_fix_round_submit_integrity.sql [3:35 - 34:18]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311120000_bulletproof_detail_inserts.sql[39m[22m [284:66 - 305:75] (22 lines, 116 tokens)
+   migrations_archive/pre_20260527/20260311223000_fix_round_submit_integrity.sql [312:66 - 333:5]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311120000_bulletproof_detail_inserts.sql[39m[22m [337:39 - 372:4] (36 lines, 136 tokens)
+   migrations_archive/pre_20260527/20260311223000_fix_round_submit_integrity.sql [361:39 - 396:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql[39m[22m [65:30 - 145:58] (81 lines, 319 tokens)
+   migrations_archive/pre_20260527/20260311150000_scoring_avg_18_hole_only.sql [65:28 - 145:58]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql[39m[22m [88:19 - 147:69] (60 lines, 224 tokens)
+   migrations_archive/pre_20260527/20260311150000_scoring_avg_18_hole_only.sql [88:19 - 147:55]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql[39m[22m [179:53 - 295:80] (117 lines, 537 tokens)
+   migrations_archive/pre_20260527/20260311150000_scoring_avg_18_hole_only.sql [189:45 - 305:80]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql[39m[22m [322:3 - 413:80] (92 lines, 457 tokens)
+   migrations_archive/pre_20260527/20260311140000_fix_ambiguous_created_at.sql [37:3 - 127:71]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311130000_fix_stats_normalization.sql[39m[22m [376:44 - 410:4] (35 lines, 132 tokens)
+   migrations_archive/pre_20260527/20260311150000_scoring_avg_18_hole_only.sql [389:6 - 423:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311223000_fix_round_submit_integrity.sql[39m[22m [33:3 - 91:12] (59 lines, 236 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [172:3 - 230:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311223000_fix_round_submit_integrity.sql[39m[22m [93:51 - 163:116] (71 lines, 372 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [232:51 - 302:116]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260311223000_fix_round_submit_integrity.sql[39m[22m [313:30 - 339:76] (27 lines, 185 tokens)
+   migrations_archive/pre_20260527/20260314100000_fix_shot_tracking_bugs.sql [452:30 - 478:76]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260421000004_secure_perf_rpcs.sql[39m[22m [215:1 - 289:22] (75 lines, 360 tokens)
+   migrations_archive/pre_20260527/20260421000004_secure_perf_rpcs.sql [335:1 - 411:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql[39m[22m [173:1 - 399:17] (227 lines, 995 tokens)
+   migrations_archive/pre_20260527/20260518124505_fix_live_db_lint_errors.sql [168:1 - 387:4]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260421000007_admin_analytics.sql[39m[22m [128:5 - 206:22] (79 lines, 294 tokens)
+   migrations_archive/pre_20260527/20260424015134_admin_rollup_function_perf.sql [177:5 - 222:34]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260424015134_admin_rollup_function_perf.sql[39m[22m [129:1 - 329:2] (201 lines, 1235 tokens)
+   migrations_archive/pre_20260527/20260424020309_admin_analytics_rollup_restore_gate.sql [9:1 - 170:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260424015134_admin_rollup_function_perf.sql[39m[22m [129:1 - 164:7] (36 lines, 157 tokens)
+   migrations_archive/pre_20260527/20260506000000_admin_rollup_window_perf.sql [38:1 - 67:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/pre_20260527/20260424015134_admin_rollup_function_perf.sql[39m[22m [129:1 - 242:37] (114 lines, 647 tokens)
+   migrations_archive/pre_20260527/20260510120000_admin_rollup_coach_staff_lastseen.sql [68:1 - 164:7]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/v1_original/036_messaging_matrix.sql[39m[22m [69:10 - 97:5] (29 lines, 173 tokens)
+   migrations_archive/v1_original/20260109000003_function_audit_log.sql [43:13 - 71:5]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/v1_original/052a_cleanup_orphaned_data.sql[39m[22m [5:1 - 41:3] (37 lines, 133 tokens)
+   migrations_archive/v1_original/053_add_foreign_keys.sql [11:1 - 47:3]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/v1_original/058_nuclear_rls_fix.sql[39m[22m [29:1 - 68:3] (40 lines, 137 tokens)
+   migrations_archive/v1_original/059_fix_all_golf_rls.sql [21:1 - 32:79]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/v1_original/20251231000003_fix_auth_trigger_metadata.sql[39m[22m [18:28 - 154:10] (137 lines, 506 tokens)
+   migrations_archive/v1_original/20260109000003_function_audit_log.sql [357:46 - 493:10]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/v1_original/20260104000002_fix_golf_messaging_rls.sql[39m[22m [190:3 - 224:34] (35 lines, 118 tokens)
+   migrations_archive/v1_original/20260104000003_fix_messaging_rls_definitive.sql [132:3 - 166:34]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/v1_original/20260108000001_rls_audit_fixes.sql[39m[22m [83:34 - 125:12] (43 lines, 183 tokens)
+   migrations_archive/v1_original/20260109000003_function_audit_log.sql [253:46 - 295:12]
+[1mClone found (sql)[22m
+ - [1m[32mmigrations_archive/v1_original/20260109000001_coach_team_video_uploads.sql[39m[22m [38:9 - 59:4] (22 lines, 147 tokens)
+   migrations_archive/v1_original/20260109000001_coach_team_video_uploads.sql [60:14 - 81:4]
+[90m┌────────────┬────────────────┬─────────────┬──────────────┬──────────────┬──────────────────┬───────────────────┐[39m
+[90m│[39m[31m Format     [39m[90m│[39m[31m Files analyzed [39m[90m│[39m[31m Total lines [39m[90m│[39m[31m Total tokens [39m[90m│[39m[31m Clones found [39m[90m│[39m[31m Duplicated lines [39m[90m│[39m[31m Duplicated tokens [39m[90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m bash       [90m│[39m 6              [90m│[39m 669         [90m│[39m 1216         [90m│[39m 0            [90m│[39m 0 (0.00%)        [90m│[39m 0 (0.00%)         [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m css        [90m│[39m 10             [90m│[39m 4373        [90m│[39m 75813        [90m│[39m 0            [90m│[39m 0 (0.00%)        [90m│[39m 0 (0.00%)         [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m javascript [90m│[39m 95             [90m│[39m 13246       [90m│[39m 74819        [90m│[39m 15           [90m│[39m 505 (3.81%)      [90m│[39m 2667 (3.56%)      [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m json       [90m│[39m 2              [90m│[39m 12465       [90m│[39m 43140        [90m│[39m 0            [90m│[39m 0 (0.00%)        [90m│[39m 0 (0.00%)         [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m markdown   [90m│[39m 8              [90m│[39m 2347        [90m│[39m 5098         [90m│[39m 1            [90m│[39m 53 (2.26%)       [90m│[39m 3016 (59.16%)     [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m python     [90m│[39m 8              [90m│[39m 1408        [90m│[39m 15159        [90m│[39m 0            [90m│[39m 0 (0.00%)        [90m│[39m 0 (0.00%)         [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m sql        [90m│[39m 483            [90m│[39m 117635      [90m│[39m 614141       [90m│[39m 263          [90m│[39m 15328 (13.03%)   [90m│[39m 95163 (15.50%)    [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m text       [90m│[39m 4              [90m│[39m 897         [90m│[39m 971          [90m│[39m 0            [90m│[39m 0 (0.00%)        [90m│[39m 0 (0.00%)         [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m toml       [90m│[39m 1              [90m│[39m 384         [90m│[39m 694          [90m│[39m 0            [90m│[39m 0 (0.00%)        [90m│[39m 0 (0.00%)         [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m tsx        [90m│[39m 1362           [90m│[39m 407914      [90m│[39m 2199451      [90m│[39m 204          [90m│[39m 7537 (1.85%)     [90m│[39m 44213 (2.01%)     [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m typescript [90m│[39m 1031           [90m│[39m 337966      [90m│[39m 1733390      [90m│[39m 142          [90m│[39m 3788 (1.12%)     [90m│[39m 21451 (1.24%)     [90m│[39m
+[90m├────────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤[39m
+[90m│[39m [1mTotal:[22m     [90m│[39m 3010           [90m│[39m 899304      [90m│[39m 4763892      [90m│[39m 625          [90m│[39m 27211 (3.03%)    [90m│[39m 166510 (3.50%)    [90m│[39m
+[90m└────────────┴────────────────┴─────────────┴──────────────┴──────────────┴──────────────────┴───────────────────┘[39m
+[90mFound 625 clones.[39m
+[32mHTML report saved to .cleanup/reports/jscpd/jscpd-report.html[39m
+[32mJSON report saved to .cleanup/reports/jscpd/jscpd-report.json[39m
+[90mtime: 487.857ms[39m
+
+[90m💡 Auto-refactor with AI: [1m[39mnpx skills add https://github.com/kucherenko/jscpd --skill dry-refactoring[90m[22m
+[90m🎩 New: Gangsta Agents — discipline your AI coding → gangsta.page[39m
+[90m💖 Support jscpd project → https://opencollective.com/jscpd[39m

@@ -1,0 +1,21 @@
+- Finding files
+Processed 2786 files (16.6s) (1130 warnings)
+
+✖ Found 15 circular dependencies!
+
+1) app/golf/(dashboard)/dashboard/stats/team/page.tsx > app/golf/(dashboard)/dashboard/stats/team/team-stats-table.tsx
+2) app/golf/actions/admin-data.ts > app/golf/actions/admin/rollup-c.shared.ts
+3) app/golf/actions/admin-data.ts > app/golf/actions/admin/rollup-c.ts
+4) app/golf/admin/crm/components/CoachFilters.tsx > app/golf/admin/crm/components/segments/SaveSegmentDialog.tsx
+5) components/baseball/stat-visuals/StatVisualsSection.tsx > components/baseball/stat-visuals/index.ts
+6) components/baseball/stat-visuals/StatVisualsSection.tsx > components/baseball/stat-visuals/index.ts > components/baseball/stat-visuals/use-stat-visual-views.ts
+7) components/fairway/pages/coachhelm/index.ts > components/fairway/pages/coachhelm/FairwayBrief.tsx
+8) components/fairway/pages/rounds/FairwayRoundCard.tsx > components/fairway/pages/rounds/FairwayRoundsLibrary.tsx > components/fairway/pages/rounds/FairwayRoundRow.tsx
+9) components/fairway/pages/rounds/FairwayRoundsLibrary.tsx > components/fairway/pages/rounds/FairwayRoundRow.tsx
+10) components/fairway/pages/rounds/FairwayRoundsLibrary.tsx > components/fairway/pages/rounds/FairwayUnfinishedBanner.tsx
+11) components/fairway/pages/tasks/FairwayCreateFromTemplateModal.tsx > components/fairway/pages/tasks/FairwayTasks.tsx
+12) components/fairway/pages/tasks/FairwayTasks.tsx > components/fairway/pages/tasks/FairwayCreateTaskModal.tsx
+13) components/golf/calendar/CalendarFeedManager.tsx > components/golf/calendar/CreateFeedSection.tsx
+14) components/golf/coachhelm/insights/DiagnosisPanel.tsx > components/golf/coachhelm/insights/EvidencePanel.tsx
+15) lib/golf/sg-benchmarks.ts > lib/golf/strokes-gained.ts
+

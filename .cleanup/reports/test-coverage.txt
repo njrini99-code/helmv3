@@ -1,0 +1,1218 @@
+
+> helmv3@1.0.0 test:coverage
+> vitest run --coverage
+
+Importing from "vitest/coverage" is deprecated since Vitest 4.1. Please use "vitest/node" instead.
+Loaded  vitest@4.1.8  and  @vitest/coverage-v8@4.0.18 .
+Running mixed versions is not supported and may lead into bugs
+Update your dependencies and make sure the versions match.
+
+ RUN  v4.1.8 /Users/ricknini/Downloads/helmv3
+      Coverage enabled with v8
+
+(node:73489) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73481) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73505) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73550) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73551) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73534) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73560) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73559) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73579) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73665) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73661) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73660) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73667) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73718) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73757) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73743) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73752) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73770) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73815) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73817) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73838) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73857) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73879) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73911) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73951) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73967) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73969) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73970) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73985) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:73883) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74020) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74021) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74033) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74122) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74125) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74126) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74131) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74151) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74148) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74166) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74231) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74232) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74249) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74250) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74266) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74267) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74268) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74269) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74283) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74284) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74204) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74247) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74229) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74371) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74380) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74396) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74418) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74438) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74303) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74471) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74469) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74516) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74542) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74520) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74447) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74588) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74595) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74621) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74639) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74642) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74674) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74679) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74682) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74707) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74718) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74739) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74740) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74744) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74743) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74766) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74773) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74787) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74794) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74792) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74795) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74814) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74810) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74908) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74890) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74910) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74909) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74925) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74988) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74985) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74986) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75002) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75013) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75041) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75073) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75142) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75173) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75175) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75174) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75178) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75196) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75097) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75217) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75218) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75220) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75221) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75223) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75238) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75237) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75253) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75300) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75366) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75382) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75380) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75384) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75402) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75404) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75319) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75442) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75363) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75443) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75466) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75505) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75504) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75551) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75571) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75573) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75575) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75576) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75579) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75593) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75600) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75513) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75656) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75671) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75672) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75706) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75694) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75723) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75743) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75745) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75764) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75765) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75760) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75788) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75803) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75809) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75845) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75851) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75867) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75871) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75873) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75890) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75894) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75846) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75893) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:75990) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76005) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76009) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76057) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76040) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76042) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76075) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76076) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76109) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76125) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76126) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76147) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76145) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76229) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76250) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76288) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76320) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76322) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76341) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76212) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76359) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76360) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76380) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76381) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76402) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76406) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76432) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76438) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76446) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76468) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76469) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76470) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76489) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76495) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76492) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76510) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76533) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76534) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76539) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76561) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76603) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76613) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76635) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76562) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76636) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76655) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76656) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76658) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76674) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76679) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76701) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76719) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76720) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76784) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76806) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76808) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76825) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76824) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76725) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76882) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76884) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76887) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76906) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76908) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76934) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76948) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76967) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76970) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76986) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76987) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:77006) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:77007) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76909) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:77023) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76947) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76985) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  884 passed | 3 skipped (887)
+      Tests  10340 passed | 117 skipped (10457)
+   Start at  22:31:26
+   Duration  124.26s (transform 31.72s, setup 122.59s, import 277.80s, tests 74.79s, environment 346.93s)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   38.25 |    29.09 |   34.61 |   39.27 |                   
+ app/actions       |    7.18 |     4.64 |    6.81 |    5.74 |                   
+  messages.ts      |    7.64 |        5 |    7.14 |    6.06 | 50-1101           
+  ...references.ts |    2.94 |        0 |       0 |    2.94 | 34-123            
+ .../coach/[token] |   76.19 |    59.37 |   66.66 |   78.04 |                   
+  route.ts         |   76.19 |    59.37 |   66.66 |   78.04 | ...01-106,136,175 
+ .../feeds/[token] |   77.98 |    61.42 |   88.88 |   79.43 |                   
+  route.ts         |   77.98 |    61.42 |   88.88 |   79.43 | ...79,281,292,316 
+ ...morning-digest |   83.92 |       61 |     100 |      88 |                   
+  route.ts         |   83.92 |       61 |     100 |      88 | ...65,344-353,431 
+ ...lm-calibration |   95.65 |    79.16 |     100 |     100 |                   
+  route.ts         |   95.65 |    79.16 |     100 |     100 | 64,91,97-101      
+ ...ight-lifecycle |    81.7 |    60.18 |     100 |   81.87 |                   
+  route.ts         |    81.7 |    60.18 |     100 |   81.87 | ...85,380-401,431 
+ ...elm-safety-net |     100 |    81.25 |     100 |     100 |                   
+  route.ts         |     100 |    81.25 |     100 |     100 | 78,107-111        
+ ...elm-validation |     100 |    72.72 |     100 |     100 |                   
+  route.ts         |     100 |    72.72 |     100 |     100 | 70,79-81,97-115   
+ ...vent-reminders |   92.48 |    73.68 |     100 |   93.96 |                   
+  route.ts         |   92.48 |    73.68 |     100 |   93.96 | ...27,266,283-284 
+ ...cess-sequences |    4.44 |     0.87 |   11.11 |       4 |                   
+  route.ts         |    4.44 |     0.87 |   11.11 |       4 | 96-553            
+ ...esh-engagement |   33.33 |    16.66 |     100 |   28.57 |                   
+  route.ts         |   33.33 |    16.66 |     100 |   28.57 | 25-53             
+ ...lity-attribute |   76.14 |    65.21 |   71.42 |   75.24 |                   
+  route.ts         |   76.14 |    65.21 |   71.42 |   75.24 | ...24-328,335-338 
+ ...tions-evaluate |   57.14 |     37.5 |   66.66 |   57.89 |                   
+  route.ts         |   57.14 |     37.5 |   66.66 |   57.89 | 33-35,43-46,50-54 
+ ...gestions-write |   57.14 |     37.5 |   66.66 |   57.89 |                   
+  route.ts         |   57.14 |     37.5 |   66.66 |   57.89 | 33-35,43-48,52-56 
+ ...anding-refresh |      81 |    44.87 |    90.9 |   80.64 |                   
+  route.ts         |      81 |    44.87 |    90.9 |   80.64 | ...13,339,347,375 
+ app/api/log-error |   74.19 |     60.6 |     100 |   74.19 |                   
+  route.ts         |   74.19 |     60.6 |     100 |   74.19 | 11,42-48,88,93    
+ ...seball/actions |   34.88 |    26.88 |    29.5 |   35.54 |                   
+  imports.ts       |   31.94 |     23.7 |   24.07 |    32.9 | ...1563,1581-1740 
+  onboarding.ts    |   41.13 |    32.46 |   71.42 |   40.76 | ...89,218,243-468 
+ ...board/calendar |   69.23 |    44.92 |   26.66 |   71.42 |                   
+  page.tsx         |   69.23 |    44.92 |   26.66 |   71.42 | ...60,187-199,223 
+ ...elm/components |   53.73 |    35.77 |      40 |   55.38 |                   
+  ...Dashboard.tsx |   53.73 |    35.77 |      40 |   55.38 | ...48,434-578,634 
+ ...board/patterns |   83.33 |    28.57 |      60 |   83.33 |                   
+  ...ardClient.tsx |   83.33 |    28.57 |      60 |   83.33 | 62-63             
+ ...ers/[playerId] |   39.07 |    21.36 |   48.57 |    43.2 |                   
+  ...ite-rating.ts |     100 |       80 |     100 |     100 | 48-50             
+  ...ht-client.tsx |   32.35 |    18.57 |      40 |   37.16 | ...16,611,738-888 
+ ...playerId]/game |   21.87 |     3.57 |   29.41 |      24 |                   
+  ...ngerprint.tsx |   21.87 |     3.57 |   29.41 |      24 | 77-107,162-200    
+ .../game/sections |    50.7 |    42.14 |   57.14 |   55.73 |                   
+  ...chSection.tsx |      50 |       50 |   33.33 |      50 | 42-52             
+  ...printHero.tsx |      76 |     61.9 |   88.88 |   85.71 | 189-190,286       
+  ...ngSection.tsx |   28.57 |    16.66 |   33.33 |   28.57 | 43-61             
+  ...ngSection.tsx |   28.57 |    16.66 |   33.33 |   28.57 | 44-62             
+  TeeSection.tsx   |   55.55 |       50 |   66.66 |      50 | 45-49             
+  TrendSection.tsx |   23.52 |     12.5 |      20 |   33.33 | 121-146           
+ ...ds/[id]/review |   54.97 |     45.2 |   47.36 |      59 |                   
+  page.tsx         |   54.97 |     45.2 |   47.36 |      59 | ...,993-1017,1073 
+ ...ard/stats/team |   12.19 |     9.09 |     3.7 |    11.6 |                   
+  ...ats-table.tsx |   12.19 |     9.09 |     3.7 |    11.6 | 90-570            
+ app/golf/actions  |   31.09 |    23.86 |   35.38 |   32.37 |                   
+  alerts.ts        |   66.97 |    37.93 |   58.33 |   67.92 | ...98-403,469-493 
+  announcements.ts |    1.04 |        0 |       0 |    1.22 | 89-853            
+  attendance.ts    |   86.51 |    73.23 |     100 |    86.2 | ...46-751,791-796 
+  ...ndar-feeds.ts |   35.34 |     21.6 |      40 |   35.34 | ...12,341,383,413 
+  calendar-sync.ts |   83.22 |     68.5 |     100 |   83.91 | ...58,484-493,511 
+  ...-analytics.ts |   19.24 |    13.52 |    15.9 |   20.52 | ...1-537,564-1283 
+  ...hhelm-data.ts |    0.35 |        0 |       0 |    0.39 | 185-207,241-1082  
+  ...philosophy.ts |   93.33 |    92.85 |     100 |   93.33 | 104-109           
+  communication.ts |       0 |        0 |       0 |       0 | 49-304            
+  ...se-library.ts |    38.7 |    31.26 |   44.77 |   44.25 | ...1282,1305-1326 
+  ...board-data.ts |   80.85 |    61.86 |   86.15 |    86.4 | ...,965,1048-1051 
+  development.ts   |   27.04 |     19.8 |   35.29 |   27.68 | ...1053,1122-1195 
+  documents.ts     |       0 |        0 |       0 |       0 | 34-1248           
+  drills.ts        |    48.1 |    46.03 |   61.53 |      50 | ...11-219,253-358 
+  ...-documents.ts |       0 |        0 |       0 |       0 | 54-231            
+  golf.ts          |   15.82 |    10.96 |   18.51 |   16.25 | ...4026,4051-6611 
+  ...elebration.ts |   89.65 |     87.5 |     100 |   89.65 | 55,82,87          
+  ...ry-ranking.ts |   96.07 |    71.11 |     100 |     100 | ...03,117,125-141 
+  ...t-delivery.ts |   68.64 |    65.28 |   77.77 |    70.6 | ...1175,1217,1402 
+  ...t-evidence.ts |   46.23 |     40.5 |     100 |   46.73 | ...52,377,386-387 
+  ...management.ts |   26.88 |    17.22 |   38.46 |   27.37 | ...88,492,548-764 
+  insights.ts      |    0.17 |        0 |       0 |    0.19 | 68-1702,1723-4061 
+  ...-dashboard.ts |   20.42 |    10.11 |   26.66 |   20.86 | ...95-413,445-583 
+  onboarding.ts    |   37.24 |    27.85 |   42.85 |   37.14 | ...23,242-476,505 
+  ...management.ts |    25.2 |    13.63 |   21.73 |    26.8 | ...0-675,681-1014 
+  ...r-feedback.ts |   70.27 |       50 |   33.33 |   68.57 | ...50,181-189,209 
+  ...ingerprint.ts |   79.05 |    46.29 |   88.88 |    80.5 | ...37,893,898-899 
+  ...ing-events.ts |   63.04 |    56.93 |   78.57 |   62.21 | ...1089,1098-1286 
+  round-recap.ts   |      75 |    53.09 |     100 |   82.81 | ...62,270,272,274 
+  ...iew-system.ts |   37.17 |    24.53 |   19.08 |   41.71 | ...1748,1755-1797 
+  stats-data.ts    |    31.7 |    24.74 |   32.48 |    34.7 | ...2468,2487,2494 
+  ...-leak-maps.ts |   55.27 |       60 |   74.07 |   60.56 | ...86,499,508-576 
+  tasks.ts         |       0 |        0 |       0 |       0 | 42-1028           
+  team-switcher.ts |      60 |       60 |      40 |   57.14 | 88-117            
+  teams.ts         |   22.15 |    17.66 |      30 |   22.25 | ...1252,1269-1275 
+  travel.ts        |   61.37 |    40.95 |   66.66 |   62.45 | ...1,961,978-1003 
+ ...olf/actions/v3 |    5.52 |     3.78 |    6.97 |    5.19 |                   
+  ...a-progress.ts |   13.04 |    10.86 |      10 |   12.72 | 73-181,208-225    
+  goal-progress.ts |   11.11 |     11.9 |   14.28 |    9.83 | 71-163,199-222    
+  goals.ts         |       0 |        0 |       0 |       0 | 67-519            
+  llm.ts           |    5.97 |     2.04 |    7.69 |    6.77 | ...71-222,265-359 
+  ...ractice-rx.ts |       0 |        0 |       0 |       0 | 39-122            
+ ...eball/calendar |   41.66 |    20.83 |      20 |   43.47 |                   
+  ...arWrapper.tsx |   41.66 |    20.83 |      20 |   43.47 | 80-201,214        
+ ...l/source-trust |   82.14 |    78.57 |   83.33 |   82.14 |                   
+  ...urce-trust.ts |   66.66 |       75 |      50 |   66.66 | 58                
+  stamped-trust.ts |      84 |    78.94 |     100 |      84 | 67-71,75          
+ ...l/stat-visuals |   12.35 |     9.21 |    7.69 |   11.25 |                   
+  ...t-geometry.ts |   12.35 |     9.21 |    7.69 |   11.25 | 41-73,170-295     
+ ...rway/app-shell |   11.02 |        0 |       0 |   12.38 |                   
+  AppShell.tsx     |    2.85 |        0 |       0 |    3.33 | 147-271           
+  ...BottomNav.tsx |    7.69 |        0 |       0 |    9.09 | 29-32,46-80       
+  ...aySidebar.tsx |   17.39 |        0 |       0 |   19.04 | ...05-106,175-294 
+  ...wayTopBar.tsx |   33.33 |        0 |       0 |   33.33 | 30,93-98,135-137  
+  ...Container.tsx |      50 |        0 |       0 |      50 | 47-48             
+  ...ransition.tsx |      25 |        0 |       0 |      25 | 40-61             
+ ...irway/calendar |     4.1 |        0 |       0 |    4.91 |                   
+  ...r-surface.tsx |    7.14 |        0 |       0 |       8 | 58-72,112-309     
+  date-picker.tsx  |    2.22 |        0 |       0 |    2.77 | 121-239           
+ .../cards-insight |   12.26 |        0 |       0 |    13.4 |                   
+  InsightCard.tsx  |   10.25 |        0 |       0 |   10.81 | 66-74,221-516     
+  InsightPanel.tsx |    9.09 |        0 |       0 |      10 | 160-309,356-479   
+  MetricCard.tsx   |    6.66 |        0 |       0 |    7.69 | 116-129,167-345   
+ ...insight/themes |       0 |        0 |       0 |       0 |                   
+  CauseRow.tsx     |       0 |        0 |       0 |       0 | 83-251            
+  ThemeCard.tsx    |       0 |        0 |       0 |       0 | 61-206            
+  ThemesPanel.tsx  |       0 |        0 |       0 |       0 | 59-114            
+ ...fairway/charts |    5.94 |        0 |       0 |    6.56 |                   
+  ...Crosshair.tsx |       0 |        0 |       0 |       0 | 83-237            
+  ChartFrame.tsx   |   11.76 |        0 |       0 |    12.5 | 91-261            
+  ChartTooltip.tsx |       0 |        0 |       0 |       0 | 51-219            
+  Dial.tsx         |    9.75 |        0 |       0 |   10.25 | 62-242            
+  ...ngerprint.tsx |       0 |        0 |       0 |       0 | 132-276           
+  GenomeRadar.tsx  |       0 |        0 |       0 |       0 | 70-112            
+  ...mentTable.tsx |       0 |        0 |       0 |       0 | 34-85             
+  LeakMap.tsx      |    1.63 |        0 |       0 |    1.85 | 79-323            
+  Numeric.tsx      |      25 |        0 |       0 |      25 | 65-125            
+  ...ngHeatmap.tsx |    2.88 |        0 |       0 |    3.09 | 76-277            
+  RadialGauge.tsx  |    15.9 |        0 |       0 |   16.66 | 96-201            
+  Ribbon.tsx       |    3.33 |        0 |       0 |       4 | 85-201            
+  SegmentBar.tsx   |       4 |        0 |       0 |    4.54 | 85-212            
+  ...ispersion.tsx |    0.86 |        0 |       0 |    0.94 | 64-271            
+  Sparkline.tsx    |    5.55 |        0 |       0 |    6.06 | 68-82,107-161     
+  ...dingStrip.tsx |    3.57 |        0 |       0 |    4.16 | 44-76,166-311     
+  StatTile.tsx     |    8.33 |        0 |       0 |    9.09 | 114-159           
+  ...edTornado.tsx |    12.5 |        0 |       0 |    12.9 | 73-187            
+  TrendChart.tsx   |       0 |        0 |       0 |       0 | 83-334            
+  TrendChip.tsx    |   36.84 |        0 |       0 |   38.88 | 65-87,184-191     
+  theme.ts         |   42.85 |        0 |       0 |      50 | 109-144           
+  ...anvasLayer.ts |       0 |        0 |       0 |       0 | 33-86             
+ ...airway/command |    6.66 |        0 |       0 |    7.33 |                   
+  command-menu.tsx |    3.19 |        0 |       0 |    3.57 | 157-521           
+  ...s-surface.tsx |   66.66 |        0 |       0 |   66.66 | 115               
+  icons.tsx        |   14.28 |      100 |       0 |   14.28 | 32-82             
+  search-field.tsx |    12.5 |        0 |       0 |   13.33 | 102-209           
+ ...irway/controls |   58.99 |    38.32 |   38.23 |   61.83 |                   
+  ...rIdentity.tsx |      75 |        0 |       0 |      75 | 103               
+  Toolbar.tsx      |   21.62 |        0 |       0 |   24.24 | ...71-403,448-449 
+  avatar.tsx       |   66.66 |    41.02 |      50 |   73.91 | 112,170-182       
+  badge.tsx        |      60 |        0 |       0 |      60 | 61,109-111        
+  button.tsx       |     100 |    81.81 |     100 |     100 | ...69,175,252,258 
+  eyebrow.tsx      |      50 |        0 |       0 |      50 | 44-45             
+  filter-pill.tsx  |     100 |    68.42 |     100 |     100 | 49-77,84          
+  segmented.tsx    |     100 |    63.63 |     100 |     100 | 89-120,127-140    
+  ...able-pill.tsx |     100 |       96 |     100 |     100 | 90                
+  status-pill.tsx  |     100 |     87.5 |     100 |     100 | 66                
+  tabs.tsx         |   29.41 |        0 |       0 |   29.41 | ...81,105-106,149 
+ ...way/data-table |    2.81 |        0 |       0 |    3.07 |                   
+  ...-skeleton.tsx |       0 |        0 |       0 |       0 | 33-79             
+  ...le-states.tsx |       0 |        0 |       0 |       0 | 25-61             
+  data-table.tsx   |    1.78 |        0 |       0 |       2 | 62-552            
+  density.ts       |   16.66 |        0 |       0 |   16.66 | 59-70             
+ ...irway/feedback |   29.67 |    26.21 |   15.15 |   31.76 |                   
+  EmptyState.tsx   |     100 |    61.53 |     100 |     100 | ...94-105,113-116 
+  InlineNotice.tsx |     100 |    77.41 |     100 |     100 | 65-68,78-81,130   
+  ...cientData.tsx |   11.11 |        0 |       0 |   11.11 | 70-87             
+  ...rdingStep.tsx |   11.11 |        0 |       0 |   11.11 | 79-213            
+  Skeleton.tsx     |   18.18 |    13.33 |    12.5 |   18.18 | 74-174            
+  ToastStack.tsx   |    3.33 |        0 |       0 |    4.16 | 43-140,144-170    
+  motion.ts        |   71.42 |       25 |      50 |   71.42 | 30,51             
+ .../fairway/forms |   29.62 |     6.06 |    2.43 |   30.76 |                   
+  Checkbox.tsx     |   18.75 |        0 |       0 |      20 | 54-96,131-158     
+  Combobox.tsx     |       0 |        0 |       0 |       0 | 75-213            
+  Form.tsx         |      50 |        0 |       0 |      50 | 30                
+  FormField.tsx    |    9.09 |        0 |       0 |    9.09 | 101-241           
+  FormSection.tsx  |   33.33 |        0 |       0 |   33.33 | 44-45             
+  Input.tsx        |   66.66 |    53.33 |      50 |   66.66 | 47,121            
+  NumberField.tsx  |      40 |        0 |       0 |      40 | 51-122            
+  RadioGroup.tsx   |   21.42 |        0 |       0 |   23.07 | 51-71,114-135     
+  Select.tsx       |    6.66 |        0 |       0 |    7.14 | 66-183            
+  Switch.tsx       |   23.07 |        0 |       0 |      25 | 75-116            
+ ...way/instrument |      32 |        0 |       0 |      32 |                   
+  ...ntCluster.tsx |    37.5 |        0 |       0 |    37.5 | 90-140            
+  ...mentPanel.tsx |      40 |        0 |       0 |      40 | 101-104           
+  Readout.tsx      |      25 |        0 |       0 |      25 | 133-260           
+ ...irway/overlays |    63.3 |        0 |       0 |   65.09 |                   
+  ModalShell.tsx   |   57.14 |        0 |       0 |   58.82 | ...45,261,274,292 
+  PopoverPanel.tsx |   53.84 |        0 |       0 |      56 | ...07,170,192,215 
+  Sheet.tsx        |   68.96 |        0 |       0 |   68.96 | ...26,242,255,274 
+  _shared.ts       |   78.94 |        0 |       0 |   83.33 | 89-95             
+ .../announcements |    9.95 |     8.81 |    5.42 |    9.96 |                   
+  ...uncements.tsx |   41.09 |    43.01 |   23.07 |   39.65 | 157-385           
+  ...ementCard.tsx |    1.42 |        0 |       0 |    1.63 | 56-474            
+  ...ouncement.tsx |    2.46 |        0 |       0 |    3.07 | 99-101,115-619    
+  ...ementCard.tsx |    5.15 |      4.4 |       4 |    6.09 | 57-81,120-497     
+ ...pages/calendar |   68.73 |    63.77 |   53.06 |   71.47 |                   
+  ...emberRail.tsx |    6.06 |        0 |       0 |     7.4 | 29-32,49-154      
+  ...rSkeleton.tsx |       0 |      100 |       0 |       0 | 24-72             
+  ...ailDrawer.tsx |   77.77 |    74.03 |    62.5 |   84.37 | ...49,158,208,346 
+  ...entEditor.tsx |   76.08 |    68.85 |   63.63 |   77.14 | ...-897,1011-1019 
+ ...ages/coachhelm |   11.38 |     6.71 |    7.62 |   11.31 |                   
+  ...ationRail.tsx |    2.85 |        0 |       0 |    3.33 | 87-206            
+  ...hreadPane.tsx |       0 |        0 |       0 |       0 | 73-170            
+  AskWorkspace.tsx |       0 |        0 |       0 |       0 | 83-185            
+  ...lWhyPanel.tsx |      20 |        0 |       0 |   21.42 | 63-73,85-212      
+  ...HelmShell.tsx |   16.66 |        0 |       0 |   16.66 | 110-139           
+  ...elmSubNav.tsx |   60.41 |    67.85 |   85.71 |   63.63 | 182,249-271       
+  ...DrillDown.tsx |    0.52 |        0 |       0 |    0.58 | 110-712           
+  FairwayBrief.tsx |    2.41 |        0 |       0 |    2.77 | ...3-196,218-1049 
+  ...lmSignals.tsx |    1.03 |        0 |       0 |    1.21 | 184-196,253-1976  
+  ...ctiveness.tsx |    3.09 |        0 |       0 |    3.51 | ...9,306,311-1715 
+  ...yGoalCard.tsx |    1.81 |        0 |       0 |    2.17 | 112-387           
+  ...velopment.tsx |       0 |        0 |       0 |       0 | 159-803           
+  ...CoachHelm.tsx |    2.25 |        0 |       0 |    2.34 | 181-750,805-1173  
+  ...TeamStats.tsx |    44.1 |    32.08 |   41.42 |    45.9 | ...7,401,513-1152 
+  ...sAreaCard.tsx |    5.26 |        0 |       0 |    5.61 | ...58-496,537-862 
+  ...AreaModal.tsx |    2.54 |        0 |    2.12 |    2.04 | 138-668           
+  ...mpareView.tsx |    4.87 |        0 |       0 |    5.55 | 97-412            
+  ...etailView.tsx |    1.13 |        0 |       0 |    1.28 | 126-761           
+  GoalsSection.tsx |       0 |        0 |       0 |       0 | 114-422           
+  ...rustChips.tsx |   15.38 |        0 |       0 |      16 | 86-122,145-157    
+  ...sGridView.tsx |    0.52 |        0 |       0 |    0.56 | 191-192,241-1243  
+  ...orInsight.tsx |   87.69 |    64.51 |   91.66 |   94.44 | 82-83,165         
+  ...ceRxPanel.tsx |   11.76 |        0 |       0 |    12.5 | 108-178           
+  areaTypes.ts     |      75 |    78.04 |   55.55 |   76.92 | 172,283-307       
+  plan-markdown.ts |     100 |       90 |     100 |     100 | 58                
+  ...chChatSend.ts |    6.25 |        0 |       0 |     7.4 | 93-165            
+ ...chhelm/signals |    1.65 |        0 |       0 |    1.83 |                   
+  ...amControl.tsx |       0 |        0 |       0 |       0 | 51-91             
+  ...lsToolbar.tsx |       0 |        0 |       0 |       0 | 127-203           
+  ...Vocabulary.ts |    2.12 |        0 |       0 |     2.4 | 126-197,222-448   
+ ...ages/dashboard |    1.25 |        0 |       0 |     1.4 |                   
+  ...Dashboard.tsx |    2.22 |        0 |       0 |     2.5 | 72-460            
+  ...ard-parts.tsx |       0 |        0 |       0 |       0 | 62-382            
+ ...rway/pages/hub |   87.32 |    67.34 |      75 |   87.69 |                   
+  ...PlayerHub.tsx |   87.32 |    67.34 |      75 |   87.69 | ...66,288,314,331 
+ ...ges/recruiting |   87.91 |    62.62 |   84.61 |   88.09 |                   
+  ...cruitCard.tsx |    87.5 |    43.33 |     100 |   85.71 | 15                
+  ...itingPage.tsx |   87.34 |    71.64 |   81.81 |   87.67 | ...55,316,382-383 
+  ...uit-status.ts |     100 |       50 |     100 |     100 | 41                
+ ...y/pages/rounds |   24.13 |    24.13 |      30 |   21.73 |                   
+  ...undBanner.tsx |   24.13 |    24.13 |      30 |   21.73 | 65-142            
+ ...ges/rounds-new |   64.55 |    60.95 |   58.69 |   66.42 |                   
+  ...rsePicker.tsx |   64.55 |    60.95 |   58.69 |   66.42 | ...29-530,679-680 
+ ...pages/settings |   29.03 |    26.22 |   24.09 |   30.36 |                   
+  ...elligence.tsx |   58.88 |     52.3 |   39.28 |   62.35 | ...81-450,502,520 
+  ...gsGeneral.tsx |   20.84 |    20.51 |   15.25 |   21.93 | ...2046-2056,2099 
+  ...fications.tsx |    52.7 |    42.42 |      55 |   52.11 | ...50-266,363-366 
+ ...ay/pages/tasks |    2.61 |     3.29 |    1.73 |    2.88 |                   
+  ...lateModal.tsx |       0 |        0 |       0 |       0 | 48-191            
+  ...TaskModal.tsx |    8.33 |    13.11 |    5.88 |    9.09 | 91-301            
+  ...plateList.tsx |    2.02 |        0 |       0 |    2.06 | 66-395            
+  FairwayTasks.tsx |    1.44 |     2.46 |    1.61 |    1.66 | 200-1132          
+ ...ages/whats-new |   86.95 |    65.26 |    92.1 |    92.7 |                   
+  ...yWhatsNew.tsx |   86.95 |    65.26 |    92.1 |    92.7 | 158-163,249       
+ ...irway/surfaces |      56 |    19.51 |   14.28 |      56 |                   
+  ...s-surface.tsx |   42.85 |        0 |       0 |   42.85 | 108-112           
+  surface.tsx      |   61.11 |    29.62 |   16.66 |   61.11 | ...30-231,276-277 
+ ...ay/view-header |   51.42 |    37.17 |   33.33 |   54.54 |                   
+  ...-segments.tsx |    5.88 |        0 |       0 |    6.66 | 69-70,89-129      
+  view-header.tsx  |   94.44 |    59.18 |     100 |   94.44 | 351               
+ components/golf   |    9.82 |     4.75 |    8.66 |    9.87 |                   
+  ...enuButton.tsx |       0 |        0 |       0 |       0 | 33-46             
+  ...rehensive.tsx |    0.54 |        0 |       0 |    0.63 | ...2-251,268-2082 
+  TeamSwitcher.tsx |   93.47 |    88.63 |   92.85 |    92.5 | 104-105,244       
+  ...-selector.tsx |       0 |        0 |       0 |       0 | 18-61             
+  ...-selector.tsx |       0 |        0 |       0 |       0 | 18-55             
+ .../golf/calendar |   58.13 |    54.85 |   54.65 |   58.45 |                   
+  ...ancePanel.tsx |   93.61 |    82.75 |     100 |     100 | ...81-288,345,356 
+  ...arSidebar.tsx |    1.66 |        0 |       0 |    1.85 | 46-300            
+  ...yncButton.tsx |       0 |        0 |       0 |       0 | 39-317            
+  ...tailModal.tsx |   62.02 |    57.14 |   54.43 |   63.03 | ...1373,1426,1477 
+  ...rm-helpers.ts |     100 |    94.11 |     100 |     100 | 118,140,147       
+ ...s/golf/classes |   10.56 |     4.71 |    1.92 |   11.86 |                   
+  ...lassModal.tsx |   10.56 |     4.71 |    1.92 |   11.86 | 72-147,183-590    
+ ...golf/coachhelm |   22.22 |    15.15 |      25 |      24 |                   
+  ...reaButton.tsx |   22.22 |    15.15 |      25 |      24 | 80-167,176-261    
+ ...oachhelm/coach |   19.73 |     8.49 |   12.72 |   22.99 |                   
+  CategoryCard.tsx |   22.22 |        0 |       0 |   22.22 | 63-115            
+  ...DrillDown.tsx |    4.34 |        0 |       0 |    4.54 | 30-32,52-112      
+  LeakBoard.tsx    |   11.53 |        0 |       0 |   14.28 | 74-118            
+  ...ePlanCard.tsx |   41.66 |    19.46 |   46.66 |   48.57 | ...48-253,366-381 
+  ...egoryView.tsx |    9.09 |        0 |       0 |   10.52 | 58-131            
+  ...ositeCard.tsx |    2.43 |        0 |       0 |    3.44 | 33-173            
+  ...tOverview.tsx |       0 |        0 |       0 |       0 | 43-198            
+ ...m/insight-card |   76.84 |    61.39 |   74.66 |   78.48 |                   
+  DrillChips.tsx   |   55.55 |    58.82 |   44.44 |   56.25 | ...87-100,140-141 
+  DrillSheet.tsx   |      70 |       56 |   71.42 |   73.68 | 93-97,124         
+  ...sightCard.tsx |     100 |       80 |     100 |     100 | 49                
+  InsightCard.tsx  |   75.28 |    69.16 |   79.16 |   75.58 | ...33-766,826-838 
+  MovementPill.tsx |     100 |    73.33 |     100 |     100 | 49-51,60-74       
+  ...lebration.tsx |   94.59 |    82.14 |    90.9 |     100 | 76-78,81,96,130   
+  WhyPopover.tsx   |   57.57 |    27.77 |      60 |    62.5 | ...01,209-215,223 
+  ...derivation.ts |     100 |    81.25 |     100 |     100 | 40-42,57-58       
+ ...hhelm/insights |   52.14 |    36.91 |   46.87 |   52.22 |                   
+  ...osisPanel.tsx |   11.11 |        0 |       0 |   11.76 | ...,86-90,144-176 
+  ...ttachment.tsx |   94.28 |    70.83 |     100 |   93.93 | 133-134           
+  ...encePanel.tsx |   86.86 |    69.74 |     100 |   91.02 | 106,211-215,246   
+  ...sAreaCard.tsx |      20 |        0 |       0 |      20 | 43-47             
+  ...tListView.tsx |       0 |        0 |       0 |       0 | 68-350            
+  InsightsFeed.tsx |   39.34 |    22.72 |   33.33 |   45.28 | ...-82,91-118,138 
+  ...ocusAreas.tsx |       0 |        0 |       0 |       0 | 14-70             
+ ...achhelm/player |   20.68 |    10.73 |   17.85 |   22.66 |                   
+  ...atingCard.tsx |    6.25 |        0 |       0 |    8.33 | 49-73,93-203      
+  ...rendBrain.tsx |   12.19 |        0 |       0 |   13.51 | 98-109,119-220    
+  ...AreasGrid.tsx |   80.76 |       68 |    90.9 |   88.63 | 67,96,262,283,326 
+  ...rediction.tsx |       0 |        0 |       0 |       0 | 22-181            
+  ...lysisCard.tsx |       0 |        0 |       0 |       0 | 56-245            
+  ...Dashboard.tsx |   10.34 |        0 |       0 |   11.53 | 83-198            
+  WhatIfPanel.tsx  |    4.34 |        0 |       0 |    4.76 | 47-188            
+ ...m/round-review |   42.85 |    26.31 |   23.07 |   45.65 |                   
+  ...elligence.tsx |       0 |        0 |       0 |       0 | 51-114            
+  ...dTakeaway.tsx |   63.63 |    45.45 |      50 |   63.63 | 81,92-126,206     
+ ...f/coachhelm/v3 |   91.48 |    63.88 |     100 |   95.34 |                   
+  ...ctualLine.tsx |     100 |    81.81 |     100 |     100 | 42,52             
+  ...ativeCard.tsx |      85 |    48.57 |     100 |   89.47 | 73-74             
+  ...ewLlmCard.tsx |      95 |    76.92 |     100 |     100 | ...89,103,121-138 
+ ...chhelm/v3/Chat |   35.59 |    34.11 |   33.33 |   35.08 |                   
+  ChatComposer.tsx |       0 |        0 |       0 |       0 | 25-57             
+  ...ssageList.tsx |   48.83 |    46.77 |   45.45 |   47.61 | 85,136,160-272    
+ ...lm/v3/GoalCard |   94.44 |    85.36 |     100 |     100 |                   
+  index.tsx        |   94.44 |    85.36 |     100 |     100 | 61,79-120,151     
+ ...lCreationModal |    1.72 |        0 |       0 |    1.81 |                   
+  index.tsx        |    1.72 |        0 |       0 |    1.81 | 66-262            
+ ...3/HoleShotPath |   90.47 |    85.84 |     100 |   93.54 |                   
+  geometry.ts      |   96.87 |    93.67 |     100 |   97.36 | 206-207           
+  types.ts         |      70 |    67.64 |     100 |   76.47 | 88,102-104        
+ .../v3/IntentPill |     100 |       88 |     100 |     100 |                   
+  index.tsx        |     100 |       88 |     100 |     100 | 66-70             
+ ...v3/PuttHeatmap |    97.1 |       95 |     100 |   96.55 |                   
+  geometry.ts      |   98.21 |    96.42 |     100 |      98 | 126               
+  types.ts         |    92.3 |    91.66 |     100 |    87.5 | 56                
+ ...v3/StandingBar |   97.91 |    92.15 |     100 |   98.34 |                   
+  Card.tsx         |     100 |    94.33 |     100 |     100 | 256-258           
+  Hero.tsx         |     100 |    84.37 |     100 |     100 | 31,37-44,101      
+  Inline.tsx       |     100 |    93.33 |     100 |     100 | 49,119            
+  utils.ts         |   95.77 |    92.94 |     100 |   96.49 | 66-67             
+ ...s/golf/courses |   16.29 |     5.52 |   18.57 |   15.96 |                   
+  ...ormDrawer.tsx |   24.56 |     7.14 |   33.33 |   23.07 | ...02-155,175-271 
+  CourseImage.tsx  |       0 |        0 |       0 |       0 | 54-89             
+  ...ormDrawer.tsx |   20.27 |     9.63 |    23.8 |   20.32 | ...12,454,477-507 
+  ...kerDrawer.tsx |    1.69 |        0 |       0 |    1.88 | 33-239            
+ ...golf/dashboard |   62.56 |    38.56 |   56.66 |   66.11 |                   
+  ...omponents.tsx |    7.93 |        0 |       0 |    9.25 | ...90-420,455-598 
+  ...sparkline.tsx |      95 |    94.87 |     100 |     100 | 17,81             
+  ...-timeline.tsx |   85.83 |    76.41 |    87.5 |   88.99 | ...13-120,326-327 
+ ...ts/golf/layout |   66.66 |    44.04 |   63.15 |   67.69 |                   
+  AnimatedPage.tsx |   66.66 |        0 |   66.66 |   66.66 | 95                
+  GolfSidebar.tsx  |   74.54 |    52.51 |      75 |   76.47 | ...62,199,341,402 
+  ...NavHeader.tsx |   27.27 |     3.57 |      25 |   27.27 | 61-106,136        
+ ...olf/player-hub |   85.71 |    66.66 |    87.5 |   86.04 |                   
+  ...ignalCard.tsx |   85.71 |    66.66 |    87.5 |   86.04 | ...11,119-125,170 
+ ...stats/sections |    7.01 |        0 |       0 |    7.69 |                   
+  ...rimitives.tsx |    7.01 |        0 |       0 |    7.69 | 72-436            
+ components/icons  |   29.92 |    29.36 |   29.36 |   29.92 |                   
+  index.tsx        |   29.92 |    29.36 |   29.36 |   29.92 | ...96-135,137-142 
+ components/ui     |   42.27 |    21.82 |   30.06 |    43.7 |                   
+  ...ed-number.tsx |   84.61 |    83.33 |     100 |   83.33 | 59-60             
+  avatar.tsx       |    12.9 |        0 |       0 |   14.28 | 44-188            
+  badge.tsx        |   62.06 |    42.42 |      60 |   64.28 | 332-334,362-405   
+  breadcrumb.tsx   |   81.57 |    53.65 |      70 |   84.84 | 134-143,152-153   
+  button.tsx       |     100 |    80.64 |     100 |     100 | 26-89,98-124      
+  card.tsx         |   44.11 |       40 |    12.5 |   45.45 | ...80-199,240-333 
+  ...rm-dialog.tsx |   22.72 |       25 |   22.22 |   21.05 | 36,42-137         
+  drawer.tsx       |   95.83 |      100 |   85.71 |   95.83 | 87                
+  ...down-menu.tsx |      76 |    33.33 |   14.28 |      76 | ...99,114,126,147 
+  empty-state.tsx  |   58.06 |    39.72 |      40 |      60 | ...41,253,288-414 
+  input.tsx        |    7.84 |        0 |       0 |    7.84 | ...75-203,285-323 
+  page-header.tsx  |   17.07 |    11.55 |    17.5 |    18.3 | ...1297,1305-1320 
+  popover.tsx      |   81.81 |        0 |       0 |   81.81 | 33,60             
+  reveal.tsx       |     100 |    66.66 |     100 |     100 | 65-66             
+  shimmer.tsx      |       0 |        0 |       0 |       0 | 40-75             
+  sonner.tsx       |      25 |    15.78 |      25 |   28.26 | ...04-208,215,220 
+  tabs.tsx         |   53.33 |        0 |       0 |   53.33 | 40-45,60,86,131   
+  tooltip.tsx      |   71.42 |        0 |       0 |   71.42 | 27,69             
+ contexts          |   18.18 |       10 |      20 |   19.51 |                   
+  ...r-context.tsx |    87.5 |       50 |     100 |    87.5 | 64                
+  ...r-context.tsx |    2.77 |        0 |       0 |    3.03 | 17-97             
+ hooks             |   13.04 |     6.42 |   14.28 |   13.63 |                   
+  ...focus-trap.ts |   23.25 |       10 |   33.33 |   24.39 | ...56,69-70,76-96 
+  ...al-storage.ts |   65.21 |      100 |      50 |   65.21 | 18,29,51-64       
+  ...edia-query.ts |       0 |        0 |       0 |       0 | 19-27             
+  ...atedNumber.ts |       0 |        0 |       0 |       0 | 10-43             
+  useRSVP.ts       |    1.78 |     1.31 |    4.76 |    1.86 | 36-40,49-388      
+ hooks/golf        |   32.18 |    29.32 |    25.8 |   33.11 |                   
+  ...references.ts |    8.77 |        0 |       0 |      10 | 31-47,66-165      
+  ...nge-events.ts |   84.16 |    69.49 |   78.26 |   85.04 | ...72-273,290-321 
+  ...ance-units.ts |   10.86 |        0 |       0 |    12.5 | 33-49,61-127      
+  ...shot-modal.ts |       0 |        0 |       0 |       0 | 27-242            
+  ...ty-handler.ts |       0 |        0 |       0 |       0 | 17-44             
+  ...te-machine.ts |   33.88 |    43.64 |   23.07 |   35.79 | ...24-426,450-840 
+  ...do-manager.ts |       0 |        0 |       0 |       0 | 26-74             
+ lib               |   56.28 |    50.43 |    40.9 |   59.07 |                   
+  admin-logger.ts  |       5 |        0 |       0 |       5 | 52-96,119-195     
+  error-logging.ts |   78.81 |    55.28 |   68.75 |   80.39 | 227-233,377-409   
+  ...monitoring.ts |   23.25 |       10 |   10.52 |   21.42 | 48-193            
+  rate-limit.ts    |   67.85 |    44.44 |      50 |   67.85 | ...8,67,92-94,100 
+  ...ror-logger.ts |   84.12 |    82.45 |    90.9 |   91.22 | 84,91,101,106,266 
+  utils.ts         |    6.52 |      2.5 |      20 |    9.37 | 11-12,34-79,87-94 
+ lib/auth          |   21.94 |    18.95 |   20.83 |   21.55 |                   
+  ownership.ts     |       0 |        0 |       0 |       0 | 9-148             
+  ...validation.ts |    3.44 |        0 |       0 |    3.44 | 83-137            
+  rate-limit.ts    |   39.47 |    35.59 |   42.85 |   39.18 | ...84-198,211-245 
+  session.ts       |    9.52 |        0 |       0 |   10.52 | 50-92,143-166     
+  ...rate-limit.ts |     2.5 |        0 |       0 |     2.5 | 34-39,83-215      
+  ...yer-access.ts |   54.54 |    52.77 |   66.66 |   53.12 | 42,91,137-169     
+ lib/baseball      |   72.08 |    61.57 |   73.95 |   75.45 |                   
+  ...ve-context.ts |   45.83 |    47.05 |      40 |      50 | 95,140,160-219    
+  ...icy-server.ts |       0 |        0 |       0 |       0 | 63-95             
+  ai-policy.ts     |   97.05 |    95.71 |     100 |     100 | 340-343,415       
+  capabilities.ts  |   54.32 |    38.33 |   61.53 |   62.12 | ...77-288,291-343 
+  csv-utils.ts     |   73.36 |    70.33 |   61.53 |   75.97 | ...14-319,339-340 
+  ...n-progress.ts |     100 |       95 |     100 |     100 | 101               
+  ...t-matching.ts |   76.59 |    58.21 |   68.96 |   81.98 | ...53,379,609-612 
+  ...le-storage.ts |    4.76 |        0 |       0 |    5.55 | 26-91             
+  motion.ts        |   91.66 |    84.61 |      75 |   88.88 | 125               
+  nav-registry.ts  |   82.97 |    79.54 |   83.33 |   87.87 | 941,968-972       
+  ...ule-engine.ts |   86.45 |    71.31 |     100 |    93.5 | 857-875,1069      
+  ...ort-fields.ts |     100 |    83.33 |     100 |     100 | 123               
+  player-access.ts |   57.14 |    60.86 |   57.14 |   58.97 | 128-132,207-229   
+  ...e-variants.ts |   65.71 |    36.84 |      60 |   63.63 | 516-531,572-587   
+  ...om-insight.ts |   78.08 |    61.95 |     100 |   78.87 | ...57,161-167,175 
+  source-record.ts |   18.18 |     9.23 |    12.5 |   22.22 | ...36,238,240,260 
+  ...t-adapters.ts |    62.5 |    42.85 |   66.66 |   68.42 | 768-769,803-809   
+  ...all-action.ts |   61.53 |       50 |      50 |   61.53 | ...69-271,345,355 
+ ...eball/adapters |   83.89 |    62.72 |   83.01 |   87.39 |                   
+  csv-tokenizer.ts |   88.33 |       76 |   93.75 |   90.19 | ...79,121,169,178 
+  event-rows.ts    |   65.38 |    59.09 |     100 |   88.88 | 187-188           
+  ...ingerprint.ts |   94.11 |       75 |     100 |   93.75 | 31                
+  ...-file-body.ts |   89.65 |    66.66 |     100 |      88 | 45,74-77          
+  index.ts         |    85.1 |    69.14 |   82.14 |   88.28 | ...42-343,527,560 
+  mini-xml.ts      |   78.37 |     67.5 |   54.54 |   84.61 | ...01-107,120,146 
+  ...l-adapters.ts |   64.91 |    31.37 |   58.33 |   66.07 | ...95-197,240-244 
+  pdf-adapter.ts   |   85.71 |       50 |     100 |   85.71 | 33                
+  pdf-reader.ts    |   87.75 |    56.25 |     100 |   88.63 | 80,119-121,137    
+  ...g-adapters.ts |   91.22 |    45.45 |     100 |   90.74 | 34,82-83,151-152  
+  ...g-adapters.ts |   85.29 |    76.25 |     100 |   89.24 | 60-64,69-72,316   
+  xlsx-reader.ts   |   85.24 |    54.28 |   86.66 |   91.83 | ...27-128,155,198 
+ ...ball/coachhelm |    37.7 |    34.63 |   46.34 |   37.46 |                   
+  ...n-baseline.ts |   96.55 |     87.5 |     100 |   96.15 | 174               
+  engine-run.ts    |   11.22 |    12.08 |   13.04 |   11.37 | 227-736,799-810   
+  outcome-sweep.ts |   95.65 |    73.84 |     100 |     100 | ...13-229,252-257 
+  ...-evaluator.ts |   29.21 |    32.07 |   66.66 |    27.5 | 139-261           
+ ...daily-contract |   93.65 |    77.08 |     100 |      94 |                   
+  contract-day.ts  |      92 |     87.5 |     100 |   94.73 | 60                
+  missed-sweep.ts  |   94.59 |    67.85 |     100 |   93.33 | 189,219           
+ ...seball/lifting |   84.93 |    81.45 |   94.11 |    86.5 |                   
+  ...ine-buffer.ts |   88.13 |    79.06 |     100 |   93.87 | 102,110,124       
+  ...ss-compute.ts |   82.75 |     82.4 |      80 |   81.81 | ...69-170,236-242 
+ ...ll/read-models |   31.15 |     23.4 |   29.92 |   31.51 |                   
+  ...tat-events.ts |   67.54 |    59.73 |   68.57 |    71.2 | ...1216,1266-1312 
+  ...y-contract.ts |   25.45 |     23.8 |      20 |   26.08 | 112-138,214-286   
+  ...shot-cards.ts |   15.15 |     8.17 |    5.88 |   14.97 | 301,330,408-1055  
+  ...ectiveness.ts |       0 |        0 |       0 |       0 | 99-230            
+  stat-visuals.ts  |   10.99 |    10.73 |   13.15 |    9.43 | ...13-714,767-957 
+  stats-center.ts  |   16.91 |     5.82 |   46.42 |   19.17 | 477-1131          
+ ...baseball/tasks |   89.09 |    59.09 |     100 |   89.09 |                   
+  ...nder-sweep.ts |   89.09 |    59.09 |     100 |   89.09 | ...73,196,213,269 
+ lib/cache         |    3.34 |        0 |    2.27 |    3.57 |                   
+  ...calculator.ts |       0 |        0 |       0 |       0 | 150-856           
+  index.ts         |    8.51 |        0 |       0 |    9.09 | ...10-141,152-164 
+ lib/calendar      |   58.35 |    38.94 |   69.35 |   59.58 |                   
+  availability.ts  |   72.13 |    36.98 |   81.81 |   72.97 | ...07-364,385-388 
+  conflicts.ts     |   63.41 |    65.21 |   83.33 |   63.15 | ...46-158,187-198 
+  ical.ts          |   24.67 |     6.15 |    37.5 |   24.67 | ...17-221,266-288 
+  rsvp.ts          |   59.61 |    45.63 |    61.9 |   65.21 | ...16,281,403-478 
+  timezone.ts      |   66.66 |       75 |   66.66 |   66.66 | 34,50,61          
+  ...-integrity.ts |     100 |    88.23 |     100 |     100 | 27,31             
+ lib/coachhelm     |   17.85 |        0 |       0 |   18.51 |                   
+  insight-types.ts |   11.53 |        0 |       0 |      12 | 282,297-330       
+ ...hhelm/baseball |   54.73 |    44.54 |   53.61 |   54.67 |                   
+  engine.ts        |       8 |        0 |       0 |       8 | 89-140            
+  ...ers-events.ts |   70.35 |    58.64 |   69.23 |   72.22 | ...00,611-612,646 
+  loaders-v10.ts   |       5 |        0 |       0 |    5.88 | 98-266            
+  loaders.ts       |   51.39 |    38.46 |   52.63 |   52.27 | ...21-464,482-540 
+  ranking.ts       |   79.59 |    69.76 |     100 |   86.11 | ...01,107-108,158 
+ .../effectiveness |   90.27 |    73.55 |   84.61 |    91.4 |                   
+  engine.ts        |   90.27 |    73.55 |   84.61 |    91.4 | ...40,302,504-525 
+ ...all/generators |   57.85 |    40.18 |   47.36 |   59.35 |                   
+  class-ops.ts     |   76.36 |    46.87 |   85.71 |    85.1 | 298-305           
+  composites.ts    |   89.47 |       60 |      90 |   92.64 | 113-116,285       
+  ...t-families.ts |   59.09 |       90 |   26.53 |   57.64 | ...44-448,457-461 
+  index.ts         |   52.99 |    36.36 |    64.7 |   55.23 | ...06-407,455-516 
+  v10.ts           |   29.12 |    17.97 |      50 |   29.16 | ...90,108,147-457 
+ ...seball/metrics |   88.46 |    61.53 |    92.3 |      92 |                   
+  registry.ts      |   88.46 |    61.53 |    92.3 |      92 | 527,563           
+ ...lm/focus-areas |   97.97 |    73.04 |     100 |   98.63 |                   
+  catalog.ts       |   97.97 |    73.04 |     100 |   98.63 | 176               
+ ...achhelm/shared |   82.05 |    66.66 |     100 |    90.9 |                   
+  ...-generator.ts |   81.81 |    65.62 |     100 |   92.59 | 137-138           
+  ...ence-types.ts |   83.33 |       75 |     100 |   83.33 | 147               
+ lib/coachhelm/v2  |    8.64 |      7.3 |    5.59 |    9.34 |                   
+  gate.ts          |   25.67 |    13.63 |   33.33 |   26.38 | ...63-285,288-311 
+  orchestrator.ts  |    2.51 |      2.7 |    1.52 |    2.76 | 174-200,263-2469  
+  ...nd-trigger.ts |   73.17 |       65 |     100 |   82.85 | 88-96,99,151-173  
+ ...lm/v2/features |       0 |        0 |       0 |       0 |                   
+  contextual.ts    |       0 |        0 |       0 |       0 | 15-282            
+  index.ts         |       0 |        0 |       0 |       0 | 23-40             
+  sequence.ts      |       0 |        0 |       0 |       0 | 23-339            
+  temporal.ts      |       0 |        0 |       0 |       0 | 26-230            
+ ...lm/v2/feedback |    9.19 |    13.54 |    6.38 |     9.8 |                   
+  ...h-behavior.ts |   20.96 |    26.53 |      15 |   21.05 | ...42-250,267-279 
+  ...calibrator.ts |    2.27 |        0 |       0 |    2.56 | 42-164            
+  ...ght-scorer.ts |    6.66 |        0 |       0 |     7.4 | 56-133            
+  ...me-tracker.ts |       0 |        0 |       0 |       0 | 55-146            
+ ...lm/v2/insights |    68.8 |    64.66 |   72.41 |      75 |                   
+  gate-context.ts  |   66.66 |        0 |   66.66 |      75 | 80-81             
+  ...-injection.ts |   66.66 |    33.33 |   66.66 |   66.66 | 45,71,92          
+  ...ight-input.ts |    72.5 |       75 |     100 |   86.88 | 47-52,68,74       
+  upsert.ts        |    62.8 |    57.04 |      40 |   66.07 | ...33-445,473-511 
+ ...lm/v2/learning |   23.16 |    22.72 |   22.05 |   25.92 |                   
+  ...or-learner.ts |   73.77 |    45.23 |   46.15 |      75 | 93,133,256-307    
+  cross-learner.ts |    4.16 |     5.55 |    9.67 |    4.16 | 97-553,598-611    
+  ...-validator.ts |    24.1 |     30.7 |      25 |   27.95 | ...81-426,450-461 
+ ...helm/v2/mining |   17.81 |    12.06 |   16.42 |   18.56 |                   
+  ...-analytics.ts |   75.91 |     62.4 |   95.65 |   84.41 | ...98,605,660-661 
+  causal-engine.ts |   14.61 |     8.24 |    7.69 |   16.21 | ...33,546,565,589 
+  ...-discovery.ts |       0 |        0 |       0 |       0 | 104-867           
+  ...management.ts |   85.26 |    51.69 |     100 |   90.68 | ...85,495-502,583 
+  ...c-analysis.ts |    3.88 |     6.89 |    0.68 |    3.24 | 456-471,509-2294  
+  pattern-miner.ts |    21.7 |    20.23 |      22 |   21.02 | ...6,970,976,1004 
+  ...tern-miner.ts |   10.74 |     8.47 |   10.63 |   10.52 | 109,130-863       
+  ...telligence.ts |    5.05 |     2.05 |       6 |    6.09 | ...43-448,454-781 
+  ...-generator.ts |    2.55 |     2.12 |    1.88 |    2.22 | 212-2062          
+  ...-generator.ts |    0.46 |        0 |       0 |    0.54 | 90-744            
+  tee-strategy.ts  |   84.04 |    72.05 |   93.33 |    92.3 | ...77,206,209-211 
+ ...achhelm/v2/nlg |       0 |        0 |       0 |       0 |                   
+  ...t-composer.ts |       0 |        0 |       0 |       0 | 40-491            
+ .../v2/prediction |    4.69 |     4.76 |     8.1 |    5.13 |                   
+  ...-predictor.ts |   14.81 |    18.09 |   27.27 |   15.43 | ...30-137,149-532 
+  ...forecaster.ts |    0.47 |        0 |       0 |    0.57 | 38-616            
+  ...forecaster.ts |       0 |        0 |       0 |       0 | 34-557            
+ ...m/v2/reasoning |    14.5 |     4.46 |   16.27 |   15.16 |                   
+  ...calibrator.ts |   35.44 |    13.15 |   30.43 |    37.5 | ...11-132,175-238 
+  ...ing-engine.ts |       0 |        0 |       0 |       0 | 42-415            
+ .../shot-analysis |   27.73 |       12 |   18.42 |   29.19 |                   
+  format.ts        |    3.22 |        0 |       0 |    4.54 | 29-87             
+  ...ortunities.ts |       0 |        0 |       0 |       0 | 60-185            
+  ...e-analysis.ts |       2 |        0 |       0 |    2.43 | 45-252            
+  shot-level-sg.ts |   73.18 |    65.85 |   53.84 |   72.22 | ...06-113,275-353 
+  ...age-curves.ts |       0 |        0 |       0 |       0 | 44-253            
+ .../v2/simulation |    1.52 |        0 |       0 |    1.81 |                   
+  monte-carlo.ts   |    1.89 |        0 |       0 |    2.28 | 65-414            
+  ...rio-engine.ts |       0 |        0 |       0 |       0 | 46-220            
+ ...hhelm/v2/stats |    0.75 |        0 |       0 |     0.9 |                   
+  ...y-detector.ts |       0 |        0 |       0 |       0 | 47-287            
+  baselines.ts     |       0 |        0 |       0 |       0 | 47-194            
+  percentiles.ts   |    5.88 |        0 |       0 |    6.66 | 51-95             
+  z-score.ts       |    1.49 |        0 |       0 |    1.78 | 61-194            
+ ...helm/v2/trends |    0.41 |        0 |       0 |    0.49 |                   
+  multi-window.ts  |     0.8 |        0 |       0 |       1 | 60-137,169-325    
+  ...on-to-mean.ts |       0 |        0 |       0 |       0 | 41-125            
+  ...k-detector.ts |       0 |        0 |       0 |       0 | 59-267            
+ lib/coachhelm/v3  |      58 |        0 |   18.18 |   60.41 |                   
+  motion.ts        |   55.31 |        0 |      10 |   57.77 | ...54-313,330-331 
+ ...m/v3/causality |    95.8 |    86.95 |     100 |     100 |                   
+  attribute.ts     |   95.31 |    86.04 |     100 |     100 | ...11-245,283-290 
+ ...chhelm/v3/chat |   53.91 |    46.26 |   48.27 |   58.58 |                   
+  persistence.ts   |      60 |    71.05 |   55.55 |   68.18 | 54-80,118         
+  tools.ts         |   48.14 |    24.05 |   35.29 |   52.11 | ...18-326,370,384 
+  types.ts         |   88.88 |    94.11 |     100 |     100 | 110               
+ ...m/v3/composite |   38.04 |    46.05 |    38.7 |   38.21 |                   
+  ...nce-loader.ts |    2.63 |        0 |       0 |    3.33 | 32-165            
+  loader.ts        |      10 |        0 |       0 |   14.28 | 23-49             
+  synthesis.ts     |   49.62 |     61.4 |   70.58 |   47.89 | 294-495           
+ ...omposite/rules |   84.52 |    67.62 |   88.88 |   90.76 |                   
+  ...-amplifier.ts |   94.73 |    80.95 |     100 |     100 | 39-45,54,74-88    
+  ...le-fatigue.ts |   93.75 |    73.33 |     100 |     100 | 23,35-40,60-91    
+  ...fter-bogey.ts |   77.27 |    56.66 |      50 |      80 | 85-94             
+  ...-the-green.ts |   26.08 |     5.55 |      25 |   29.41 | 49-72             
+  ...-9-starter.ts |   77.77 |    55.88 |      75 |   83.33 | 78-82             
+  ...ance-3putt.ts |   88.37 |    73.91 |     100 |     100 | ...6,72-79,95-118 
+  ...tt-cascade.ts |   94.73 |     82.6 |     100 |     100 | 39,58-65          
+  ...ecel-chain.ts |   91.89 |    68.88 |     100 |     100 | ...2,58-59,65-107 
+  ...ximity-gap.ts |   95.23 |    81.81 |     100 |     100 | 25,51-58          
+  ...ling-chain.ts |   96.66 |    72.72 |     100 |     100 | 37,66-69,106      
+ ...counterfactual |   88.37 |     80.8 |   91.66 |   93.05 |                   
+  ...ine-loader.ts |       0 |        0 |       0 |       0 | 21-29             
+  compute.ts       |   94.54 |       90 |     100 |     100 | ...96,199-203,251 
+  lookup-tables.ts |     100 |    83.33 |     100 |     100 | 239               
+  ...ort-loader.ts |     100 |    88.88 |     100 |     100 | 42                
+ .../effectiveness |   48.14 |     45.9 |    62.5 |   48.23 |                   
+  event-ledger.ts  |   48.14 |     45.9 |    62.5 |   48.23 | ...02-203,247-379 
+ ...helm/v3/engine |   72.15 |    61.39 |   71.42 |   79.55 |                   
+  diagnosis.ts     |   94.44 |    93.75 |     100 |   94.11 | 119               
+  ...rator-base.ts |   95.34 |    86.11 |   93.33 |   96.61 | 220,333,444-448   
+  ...-diagnosis.ts |   78.26 |     72.5 |   83.33 |    87.5 | 178-185           
+  shot-source.ts   |   37.06 |    29.45 |    37.5 |   44.57 | ...49-261,303-421 
+  ...ow-honesty.ts |      88 |     82.6 |     100 |     100 | 58,74-78          
+ .../v3/foundation |       0 |        0 |       0 |       0 |                   
+  ...or-toggles.ts |       0 |        0 |       0 |       0 | 44-78             
+ .../v3/generators |   72.71 |    63.06 |   68.47 |   77.69 |                   
+  approach-miss.ts |   96.96 |    87.75 |    90.9 |   96.72 | 154,263           
+  course-mgmt.ts   |   35.55 |    31.37 |      50 |   38.15 | 92-177            
+  par-type.ts      |   43.07 |    34.09 |   42.85 |   51.92 | 82-122,198        
+  pressure-gap.ts  |   89.47 |    75.64 |   93.33 |    96.2 | 72,283-284        
+  putt-bias.ts     |   91.35 |    83.33 |   83.33 |    98.5 | 163               
+  putt-distance.ts |   89.47 |     72.5 |      75 |   94.33 | 141,175-177       
+  scrambling.ts    |   93.33 |    78.37 |    92.3 |   94.33 | 89,134,138        
+  tee-strategy.ts  |   50.74 |    43.33 |   21.42 |   54.09 | 120-134,161-196   
+  warmup-hole.ts   |   70.93 |    63.46 |      70 |   77.77 | 66,114-128,206    
+ ...helm/v3/genome |   80.64 |    58.94 |   66.66 |   83.03 |                   
+  loader.ts        |       0 |        0 |       0 |       0 | 24-45             
+  normalize.ts     |   93.75 |      100 |      90 |   92.85 | 43                
+  orchestrator.ts  |   85.96 |    77.14 |   71.42 |   85.45 | ...65-170,204-208 
+  persona.ts       |   83.78 |    52.27 |   54.54 |   87.87 | 62,68,134-143     
+ ...ome/dimensions |   99.14 |    70.32 |     100 |   99.03 |                   
+  ...nine-delta.ts |   95.65 |    72.22 |     100 |   94.44 | 36                
+  driver-usage.ts  |     100 |    66.66 |     100 |     100 | 35                
+  ...-side-bias.ts |     100 |     92.3 |     100 |     100 | 37                
+  ...roficiency.ts |     100 |       50 |     100 |     100 | 31                
+  ...sure-delta.ts |     100 |    73.33 |     100 |     100 | 34-45             
+  scoring-trend.ts |     100 |    71.42 |     100 |     100 | 33-41             
+  ...bling-rate.ts |     100 |    56.25 |     100 |     100 | 22-33,56          
+ ...hhelm/v3/goals |   77.09 |    66.49 |   79.41 |    78.6 |                   
+  evaluator.ts     |     100 |       96 |     100 |     100 | 109               
+  loader.ts        |   15.78 |        0 |      40 |   16.66 | 27-30,38-88       
+  ...ion-writer.ts |   83.33 |       75 |   92.85 |   83.76 | ...07,523-525,563 
+  window-metric.ts |   63.26 |    51.16 |   66.66 |      70 | 89-116            
+ ...gest/providers |   76.39 |    66.66 |   82.14 |   77.94 |                   
+  arccos-client.ts |       8 |        0 |       0 |    9.52 | 77-143            
+  arccos-mapper.ts |   92.98 |    77.27 |     100 |   97.56 | 90                
+  arccos.ts        |   84.93 |    74.46 |    87.5 |   85.29 | ...47,166,209-210 
+  garmin.ts        |     100 |       50 |     100 |     100 | 27                
+ ...lm/v3/insights |    8.33 |        0 |       0 |    9.09 |                   
+  upsert-v3.ts     |    8.33 |        0 |       0 |    9.09 | 42-71             
+ ...helm/v3/intent |   53.57 |    42.85 |   33.33 |      48 |                   
+  loader.ts        |   45.83 |    42.85 |   33.33 |   38.09 | 27-61             
+ ...achhelm/v3/llm |   70.52 |    45.13 |      70 |   68.45 |                   
+  budget.ts        |       0 |        0 |       0 |       0 | 29-149            
+  citations.ts     |   93.75 |       75 |     100 |     100 | 37                
+  compose.ts       |   77.41 |     37.5 |    87.5 |   77.41 | ...97-321,364-365 
+  ...-narrative.ts |       0 |        0 |       0 |       0 | 49-114            
+  round-review.ts  |   98.46 |       75 |      90 |   97.95 | 232               
+ .../notifications |   74.15 |    69.56 |      75 |   77.77 |                   
+  dispatch.ts      |   76.05 |    71.83 |      75 |   78.46 | ...21-225,303-308 
+  types.ts         |      40 |       20 |      50 |      50 | 158-161           
+ ...v3/practice-rx |   47.82 |    39.39 |   22.22 |   46.15 |                   
+  ...metric-map.ts |   23.07 |        0 |       0 |      25 | 29-40,54-58       
+  composer.ts      |   57.57 |    56.52 |   36.36 |   55.55 | 64-98,134-176     
+ .../v3/qualifying |   64.96 |    43.92 |   68.75 |   68.11 |                   
+  loader.ts        |   45.94 |    18.75 |   45.45 |   41.93 | 32-104            
+  service.ts       |   38.59 |    26.66 |      60 |   45.83 | 39-133,161,207    
+  travel-brief.ts  |     100 |    93.75 |     100 |     100 | 14                
+ ...elm/v3/ranking |   86.84 |    90.16 |     100 |    87.3 |                   
+  score.ts         |   86.84 |    90.16 |     100 |    87.3 | 304-326           
+ ...hhelm/v3/recap |   96.29 |    83.33 |     100 |      96 |                   
+  template.ts      |   96.29 |    83.33 |     100 |      96 | 128               
+ ...lm/v3/standing |   53.09 |     41.5 |      50 |   58.16 |                   
+  loader.ts        |   40.35 |    36.36 |   42.85 |   44.68 | 75,105,139-188    
+  pga-standards.ts |   47.22 |    26.08 |   33.33 |   53.12 | 98,120,157-194    
+ ...hhelm/v3/stats |    93.1 |    79.16 |     100 |   92.59 |                   
+  ...rtion-test.ts |    93.1 |    79.16 |     100 |   92.59 | 42,89             
+ ...helm/v3/themes |   96.42 |     89.8 |     100 |   98.64 |                   
+  assemble.ts      |   94.69 |    88.32 |     100 |   97.66 | ...35,369,499,695 
+  shot-drivers.ts  |   97.66 |    91.74 |     100 |   99.48 | 124               
+  taxonomy.ts      |     100 |       50 |     100 |     100 | 49-55             
+ lib/crm           |   44.82 |    79.41 |   22.22 |   48.14 |                   
+  gmail-compose.ts |   71.42 |    84.61 |      50 |   71.42 | 81-82             
+  merge-tags.ts    |     100 |     90.9 |     100 |     100 | 72-73             
+  ...ch-headers.ts |      30 |       75 |       0 |   33.33 | 26-60             
+  ...ribe-token.ts |      30 |       50 |       0 |   33.33 | 34-51             
+ lib/email         |   95.71 |    75.47 |     100 |     100 |                   
+  ...t-template.ts |   95.71 |    75.47 |     100 |     100 | ...13-215,368,379 
+ lib/fairway       |   46.15 |    21.87 |   58.33 |   47.61 |                   
+  ...croll-fade.ts |      44 |    19.35 |   54.54 |      45 | 41,66-74,81-98    
+ lib/golf          |   86.26 |     83.4 |   91.25 |   86.26 |                   
+  ...se-library.ts |    79.1 |    81.29 |   83.33 |   78.43 | ...14,117-128,265 
+  ...ance-units.ts |     100 |    97.05 |     100 |     100 | 116               
+  recurrence.ts    |   98.61 |    91.13 |     100 |     100 | ...16-225,234,320 
+  ...eam-server.ts |   83.33 |        0 |     100 |   83.33 | 46                
+  resolve-team.ts  |   71.66 |    59.67 |   77.77 |   70.21 | 90,261-284        
+  sg-benchmarks.ts |   44.11 |    55.55 |   71.42 |   45.16 | 234-248,315-326   
+ lib/lifting       |   93.39 |    90.69 |    87.5 |    96.7 |                   
+  overuse-rules.ts |   95.91 |    90.69 |     100 |     100 | 155-159,202,395   
+  ...ss-regions.ts |    62.5 |      100 |      50 |    62.5 | 300-302           
+ lib/middleware    |   66.66 |       75 |     100 |   66.66 |                   
+  rate-limit.ts    |   66.66 |       75 |     100 |   66.66 | 20-21             
+ lib/notifications |   13.77 |     6.02 |   10.34 |   13.51 |                   
+  email.ts         |    9.77 |     3.27 |    6.66 |    9.92 | ...95-395,414-868 
+  index.ts         |       0 |        0 |       0 |       0 | 24-164            
+  ...t-notifier.ts |      68 |    54.54 |     100 |   66.66 | 56-68,98          
+  push.ts          |       0 |        0 |       0 |       0 | 14-253            
+ lib/offline       |   43.71 |    24.62 |   34.92 |   45.51 |                   
+  indexed-db.ts    |   45.58 |    33.33 |   34.21 |   48.16 | ...60-461,532-625 
+  ...ave-beacon.ts |    87.5 |       90 |      50 |   93.33 | 29                
+  shot-storage.ts  |   46.24 |    31.42 |    33.7 |   49.34 | ...46-789,800-807 
+  sync-engine.ts   |   37.82 |    17.07 |   38.09 |   37.98 | ...1-934,941-1137 
+ lib/redesign      |   46.15 |    16.66 |   42.85 |   45.45 |                   
+  flag.ts          |   46.15 |    16.66 |   42.85 |   45.45 | 87-104            
+ lib/supabase      |   29.92 |    13.44 |    23.8 |   28.46 |                   
+  admin.ts         |   57.14 |    33.33 |     100 |   57.14 | 11-15             
+  client.ts        |       0 |        0 |       0 |       0 | 9-25              
+  ...h-all-rows.ts |   96.29 |       75 |     100 |   95.65 | 40                
+  middleware.ts    |    7.59 |        0 |       0 |    7.89 | 47-50,95-295      
+  server.ts        |   28.57 |    22.22 |      20 |   28.57 | 15-44             
+ lib/utils         |   63.22 |    56.66 |   63.84 |   65.96 |                   
+  capacitor.ts     |   13.79 |    14.28 |   33.33 |    12.5 | 27-50,59-100      
+  ...ribe-error.ts |       0 |        0 |       0 |       0 | 18-40             
+  ...gency-save.ts |    6.77 |        0 |       0 |    7.14 | 68-184            
+  ...ator-shots.ts |   91.05 |    83.84 |   86.36 |    93.8 | ...2705,2717,2735 
+  ...ule-parser.ts |    5.15 |     0.74 |    2.43 |    6.15 | ...54-906,925-927 
+  shot-helpers.ts  |     100 |    91.58 |     100 |     100 | ...07,252,258,270 
+  ...ient-error.ts |   95.65 |    89.18 |     100 |   94.44 | 80                
+ lib/validation    |   16.66 |        0 |       0 |   16.66 |                   
+  ...-validator.ts |    4.76 |        0 |       0 |    4.76 | 41-181            
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 38.25% ( 18250/47701 )
+Branches     : 29.09% ( 13217/45427 )
+Functions    : 34.61% ( 2963/8561 )
+Lines        : 39.27% ( 16518/42061 )
+================================================================================

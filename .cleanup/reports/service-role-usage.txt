@@ -1,0 +1,867 @@
+src/app/golf/actions/insight-delivery.ts:216: * recent `created_at` wins, since the upsert keeps one row but a service-role
+src/app/golf/actions/push-notifications.ts:65:  // Upsert via the service-role client. The session is already verified above
+src/app/golf/actions/admin-data.ts:36:// service_role client inside the cache body (because unstable_cache forbids
+src/app/golf/actions/admin-data.ts:39:// DEFINER admin gate: service_role JWTs leave `auth.uid()` NULL, so the
+src/app/golf/actions/admin-data.ts:125: *  NULL, as it would under the service_role JWT). */
+src/app/golf/actions/player-feedback.ts:95: * @param supabaseOverride  Optional client (for tests / service-role callers)
+src/app/golf/actions/admin/rollup-a.ts:12: * service role. To make the gate pass via service-role, the orchestrator is
+src/app/golf/actions/admin/rollup-a.ts:301:  // returns NULL when called with the service_role JWT.
+src/app/golf/actions/admin/rollup-b.ts:21: * (with a service_role bypass for the service-role client used here). The
+src/app/golf/actions/development.ts:220: * runs through the service-role admin client and enforces ownership in code:
+src/app/golf/actions/demo-tracking.ts:6: * Reads from `golf_demo_sessions` via the service-role (admin) client because
+src/app/golf/actions/__tests__/stats-data.test.ts:72:// getDetailedStats reads identity / retries shot queries on the service-role
+src/app/golf/actions/__tests__/stats-data.test.ts:73:// client. createAdminClient() THROWS when the service-role env is a placeholder
+src/app/golf/actions/access-code.ts:36: * Best-effort: any failure (e.g. service-role key unavailable) returns false
+src/app/golf/actions/calendar-sync.ts:180:  // the service-role client. Every write below stays scoped to this teamId +
+src/app/golf/actions/task-reminders.ts:22: * service-role admin client (RLS-bypassing) since golf_task_reminders is only
+src/app/golf/actions/task-reminders.ts:23: * readable by coaches / service_role; in-app/interactive callers pass the
+src/app/golf/actions/crm-engagement.ts:12: * via the service-role client because materialized views in Supabase don't
+src/app/golf/actions/stats-data.ts:117:  // Read identity on the service-role client (access already enforced above) so a
+src/app/golf/actions/stats-data.ts:1063:      // is genuinely too large. Re-run the SAME query on the service-role client,
+src/app/golf/actions/stats-data.ts:1127:    // service-role client instead: identical authorisation, no per-row RLS, no
+src/app/golf/actions/stats-data.ts:1142: * the safety-net cron, or the roster-sweep cron. Uses the service-role
+src/app/golf/actions/auth.ts:135:  // uses the service-role admin client, which throws when SUPABASE_SERVICE_ROLE_KEY
+src/app/golf/actions/team-sg-baseline.ts:9: * team's stored SG at the new baseline (DB recompute_team_sg, service-role only),
+src/app/golf/actions/team-sg-baseline.ts:115:  // Recompute the team's stored SG at the new baseline (service-role RPC).
+src/app/baseball/actions/lifting.ts:27://   * No service-role client is used; everything runs through the request-scoped
+src/app/baseball/actions/operational-signals.ts:33://   every read/write (request-scoped client, not service_role).
+src/app/baseball/actions/player-actions.ts:257:    // system-path (service-role) write with honest `system` provenance — the
+src/app/baseball/actions/coachhelm.ts:16://      using the service-role admin client.
+src/app/baseball/actions/notifications.ts:20://   - No service_role client — anon client + RLS only.
+src/app/baseball/actions/coachhelm-actions.ts:26://     scopes Sentry, sanitizes errors. No service_role in the client path.
+src/app/baseball/actions/postgame.ts:27://   * Reads use the request-scoped RLS client (NOT service_role). The engine
+src/app/baseball/actions/scout-packet.ts:412:  // The admin (service-role) client is typed against the generated Database,
+src/app/baseball/actions/daily-contract.ts:465:    // service-role path reserved for system/AI provenance.
+src/app/api/admin/log-event/route.ts:271:    // Insert using service-role admin client. RLS on admin_events restricts INSERT
+src/app/api/admin/log-event/route.ts:272:    // to service_role only (see migration 20260214220000_create_admin_events.sql);
+src/app/api/cron/task-reminders/route.ts:9: * Why a service-role client: golf_task_reminders is readable only by the owning
+src/app/api/cron/task-reminders/route.ts:10: * coach or service_role (RLS). A cron has no user session, so it MUST use the
+src/app/api/cron/process-sequences/route.ts:44:// this route uses the service-role admin client (bypasses RLS) and operates
+src/test/lib/notifications/email.test.ts:36:// getUserNotificationPreferences now reads through the service-role admin
+src/lib/types/helm-lifting.ts:149:// No Update — viewer rows are managed by the accept RPC (service_role).
+src/lib/cache/golf-stats-calculator.ts:289:  // Admin (service-role) client: the refresh_player_stats_cache SECURITY DEFINER
+src/lib/cache/golf-stats-calculator.ts:290:  // RPC is service_role-only after the 2026-06-06 grant-hardening migration
+src/lib/cache/golf-stats-calculator.ts:326:  // Admin (service-role) client — see refreshStatsCache: mark_player_stats_stale
+src/lib/cache/golf-stats-calculator.ts:327:  // is service_role-only after the grant-hardening migration. Callers must
+src/lib/auth/account-lockout.ts:158:  // SUPABASE_SERVICE_ROLE_KEY is absent (CI / preview), and this runs on every
+src/lib/auth/supabase-rate-limit.ts:35:  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+src/lib/baseball/timeline-writer.ts:18://     service-role admin client — the only path allowed to bypass RLS, and ONLY
+src/lib/baseball/timeline-writer.ts:148: * service-role client — the ONLY RLS-bypass path, reserved for system/AI
+src/lib/baseball/timeline-writer.ts:176:  // admin client. A caller cannot smuggle a coach note through service-role.
+src/lib/baseball/timeline-writer.ts:254: * coach session. Uses the service-role client; provenance is forced to ai/system.
+src/lib/baseball/timeline-writer.ts:273: *     player-logged lift/PR is written via the service-role path with `system`
+src/lib/baseball/timeline-writer.ts:293:  // the safety gate in appendTimelineEvent permits the service-role client.
+src/lib/baseball/tasks/reminder-sweep.ts:50:// A minimally-typed client so the sweep runs against the service-role admin
+src/lib/baseball/tasks/reminder-sweep.ts:61: * inject the writer so the core can be unit-tested without the service-role
+src/lib/baseball/coachhelm/outcome-sweep.ts:16://      durable job over every active team (service-role admin client).
+src/lib/baseball/coachhelm/outcome-sweep.ts:49:// client or the service-role admin client (both expose `.from`). RLS still
+src/lib/baseball/coachhelm/outcome-sweep.ts:111: * @param supabase  Resolved client (RLS server client OR service-role admin).
+src/lib/baseball/coachhelm/action-baseline.ts:47://   * No service_role here — the caller passes its already-resolved RLS client.
+src/lib/baseball/coachhelm/scheduled-evaluator.ts:32:// SECURITY: uses the service-role admin client (no session in a cron). Every
+src/lib/baseball/coachhelm/engine-run.ts:19://      heartbeat over every active team (service-role admin client). This is the
+src/lib/baseball/coachhelm/engine-run.ts:32://   the service-role cron drive. This file is that lift for the engine itself.
+src/lib/baseball/coachhelm/engine-run.ts:46://   - The admin (service-role) client is ONLY ever used by the trusted scheduled
+src/lib/baseball/coachhelm/engine-run.ts:168:// or the service-role admin client (both expose `.from`). RLS applies to the RLS
+src/lib/baseball/read-models/decision-room/tasks-conflicts.ts:7: * passed in by the caller (never the service-role/admin client).
+src/lib/baseball/read-models/decision-room/agenda-ledger.ts:13: * cross-team data. Do NOT pass the service-role/admin client here.
+src/lib/baseball/read-models/decision-room/insights.ts:13: * service-role/admin client — it would bypass RLS and leak cross-team data.
+src/lib/baseball/read-models/decision-room/staff-settings.ts:11: * staff. Never call this with the service-role/admin client.
+src/lib/baseball/read-models/decision-room/readiness.ts:13: * results are scoped to the caller's team. We never use the service-role
+src/lib/baseball/read-models/decision-room/games.ts:11: * service-role/admin client here. Every query is additionally scoped by
+src/lib/baseball/read-models/decision-room/effectiveness.ts:11: * service-role/admin client — it would bypass RLS and leak cross-team data.
+src/lib/baseball/read-models/decision-room/focus-imports.ts:9: * use the service-role/admin client here. Every query is additionally scoped by
+src/lib/baseball/read-models/decision-room/lift.ts:11: * team and never leak cross-team rows. Do NOT pass a service-role client here.
+src/lib/baseball/read-models/postgame.ts:15:// pure read — no writes, no service_role; the page passes the RLS-scoped client.
+src/lib/baseball/ai-policy-server.ts:16:// governs the row it can see. No service_role here. The policy itself is the
+src/lib/baseball/ai-policy-server.ts:51: * The client is EITHER the RLS server client OR the service-role admin client
+src/lib/baseball/__tests__/coach-onboarding-staff-row.integration.test.ts:135:// Admin (service-role) client — onboarding writes through this.
+src/lib/baseball/daily-contract/missed-sweep.ts:61:// A minimally-typed client so the sweep runs against the service-role admin client
+src/lib/baseball/daily-contract/missed-sweep.ts:72: * the writer so the core can be unit-tested without the service-role client.
+src/lib/supabase/admin.ts:6:  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+src/lib/supabase/admin.ts:12:    throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing for admin client.');
+src/lib/notifications/push.ts:130: * the service-role client (so it works from background notifier/cron contexts),
+src/lib/notifications/push.ts:179:              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+src/lib/notifications/email.ts:42: * This read uses the service-role client (it runs from background cron/notifier
+scripts/recompute-sg-cache.ts:220:  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/run-prediction-rollup.ts:16:  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/seed-rini-baseball-demo.ts:16: * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+scripts/seed-rini-baseball-demo.ts:130:  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/seed-rini-baseball-demo.ts:131:  if (!url || !key) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
+scripts/rotate-demo-passwords.mjs:16:const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+scripts/seed-demo-player.ts:44:  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/run-migration.mjs:5:const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/run-migration.mjs:8:  console.error('Missing SUPABASE_SERVICE_ROLE_KEY');
+scripts/fix-score-mismatches.ts:111:  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/send-coach-batch.mjs:22:const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
+scripts/wf_p112_p410.js:23:  // service-role writes (server only; admin client bypasses RLS)
+scripts/wf_p112_p410.js:34:  Writers MUST use the service-role admin client (createAdminClient from '@/lib/supabase/admin' if present, else the server client) and MUST be failure-silent (never throw into the caller's happy path — wrap in try/catch + logServerError).
+scripts/wf_p112_p410.js:63:Implement src/lib/coachhelm/v3/effectiveness/event-ledger.ts EXACTLY to the contract: the three failure-silent service-role writers + getInsightEffectivenessSignals (one batched query per table over insightIds, aggregate per insight, derive status + recentTrend). Read database.ts for the exact row types of golf_insight_exposure/action/outcome (already typed). Add a deterministic unit test for the status/trend derivation (pure helper — export deriveTrustStatus(measured,worked) and deriveTrend(improvements[]) and test them). tsc-clean.
+scripts/process-sequence-batch.mjs:41:const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
+scripts/migrate-crm-statuses.mjs:30:const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/export-coach-prospects.mjs:20:const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
+scripts/verify-emails-resend.mjs:8:const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/provision-demo-accounts.mjs:28:const KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/provision-demo-accounts.mjs:29:if (!URL_ || !KEY) { console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local'); process.exit(1); }
+scripts/verify-emails.mjs:11:const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/create-test-user.ts:9:const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+scripts/create-test-user.ts:13:  console.error('Make sure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in .env.local');
+scripts/regen-coachhelm-from-corrected-stats.ts:41: * Requires: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+scripts/regen-coachhelm-from-corrected-stats.ts:51:  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/refresh-demo-nick-rini.ts:183:  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/resend-import-crm-prospects.ts:60:  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/resend-import-crm-prospects.ts:62:    throw new Error('Missing RESEND_API_KEY / NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
+scripts/baseballhelm-depth-fidelity.workflow.js:25:- Server actions: wrap in withBaseballAction with {featureArea, requiredCapability}; capability enforced server-side; revalidatePath; no raw DB errors leaked; no service-role in client; REVOKE anon on RPCs. No destructive writes (upsert/stage-and-swap). Empty/loading/error on every page. A pgTAP RLS test for every new table.
+scripts/backfill-resend-emails.ts:13: *   SUPABASE_SERVICE_ROLE_KEY
+scripts/backfill-resend-emails.ts:31:const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/backfill-resend-emails.ts:44:    'Missing env vars. Need NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY'
+scripts/populate-athletics-urls.mjs:9:const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/h5-attribution-dryrun.ts:30:  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/__tests__/review-gate-rules.test.mjs:11://   - helmv3-no-service-role-key produces ZERO findings outside the
+scripts/__tests__/review-gate-rules.test.mjs:74:// 3. no-service-role-in-client — should be ZERO outside the admin/scripts/edge allowlist.
+scripts/__tests__/review-gate-rules.test.mjs:76:const serviceRoleAll = sgScan('.coderabbit/ast-grep/no-service-role-in-client.yml', 'src');
+scripts/__tests__/review-gate-rules.test.mjs:79:assertCount('no-service-role-key: leaks outside admin allowlist → 0', serviceRoleLeaks, 0);
+scripts/__tests__/check-required-env.test.mjs:11:      SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+scripts/__tests__/check-required-env.test.mjs:23:        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+scripts/__tests__/check-required-env.test.mjs:35:        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+scripts/__tests__/check-required-env.test.mjs:57:        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+scripts/__tests__/check-required-env.test.mjs:70:        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+scripts/seed-demo-team-ops.ts:1137:  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/seed-demo-team-ops.ts:1138:  if (!url || !key) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+scripts/seed-baseball-demo.ts:37: * Requires env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+scripts/seed-baseball-demo.ts:198:  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/seed-baseball-demo.ts:199:  if (!url || !key) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
+scripts/check-required-env.mjs:4:  'SUPABASE_SERVICE_ROLE_KEY',
+scripts/insert-founding10-plain-template.mjs:50:const key = env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/backfill-insight-effectiveness.ts:14: *   - SUPABASE_SERVICE_ROLE_KEY
+scripts/backfill-insight-effectiveness.ts:25:  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/setup-admin.ts:13:  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/setup-admin.ts:16:    console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+scripts/baseballhelm-mega-build.workflow.js:21:- SERVER ACTIONS: 'use server'; wrap every action in withBaseballAction (src/lib/baseball/with-baseball-action.ts from Wave 2) with the right {featureArea, requiredCapability}; auth resolved + capability enforced SERVER-SIDE; revalidatePath; never leak raw DB errors. No service-role key in client bundles. On any RPC/grant: REVOKE anon, never GRANT ALL TO anon.
+scripts/baseballhelm-mega-build.workflow.js:123:- src/lib/baseball/timeline-writer.ts (helper to append timeline events on stat/practice/lift/note/import/ai events; respects visibility; writes via service-role-safe path — but DO NOT apply DB, just author the writer that the actions will call)
+scripts/seed-demo-team-from-guilford.ts:200:  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/inline-email-images-to-public.ts:84:  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/verify-coach-emails.mjs:34:const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
+scripts/setup-coach-sequence.mjs:53:const supa = createClient(env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY,
+scripts/test-send-coach-first-touch.mjs:22:const key = env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/rpc-smoke.mjs:3:// Uses service role: service_role bypasses RLS BUT auth.uid() returns null,
+scripts/run-pattern-miner-for-team.ts:23:// module init time (the admin client reads SUPABASE_SERVICE_ROLE_KEY on
+scripts/insert-college-programs-template.mjs:21:const key = env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/update-coach-first-touch-template.mjs:52:const key = env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/seed-baseball-lifting-demo.ts:48: * Requires: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+scripts/seed-baseball-lifting-demo.ts:189:  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/seed-baseball-lifting-demo.ts:190:  if (!url || !key) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
+scripts/seed-admin-events.ts:27:const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/seed-admin-events.ts:30:  console.error('❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+scripts/recompute-round-totals.ts:216:  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+scripts/baseballhelm-verification.workflow.js:90:    ask: `Adversarial security audit — this protects BOTH BaseballHelm AND production GolfHelm (shared DB), so be ruthless. Check with file:line: (1) NO service-role key / admin Supabase client in ANY client bundle ('use client' files or anything shipped to the browser); (2) NO "GRANT ALL TO anon" or anon EXECUTE/SELECT on any RPC or table — anon must be REVOKEd; this is a RECURRING agent mistake, hunt it hard and verify; (3) every SECURITY DEFINER function pins search_path; (4) RLS enabled + correct on EVERY new baseball_* table; (5) IDOR/ownership enforced SERVER-SIDE on every mutation (not just hidden UI); (6) NO destructive delete-then-reinsert in any save/submit/sync/commit/rollback path (upsert / stage-and-swap only); (7) no secrets/keys committed; (8) no raw DB errors leaked to the client. Any anon grant or data leak = CRITICAL.` },
+scripts/verify-stats-consistency.ts:23: * Requires: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+scripts/verify-stats-consistency.ts:29:const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+scripts/verify-stats-consistency.ts:31:  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in env.');
+supabase/demo/02_shared_demo_coach.sql:15:-- Applied via Supabase MCP (service-role / admin connection only — this script
+supabase/demo/02_shared_demo_coach.sql:16:-- writes to auth.* which requires superuser / service-role privileges).
+supabase/demo/02_shared_demo_coach.sql:30:-- seeding via service-role; Supabase's own CLI seeding approach does the same.
+supabase/demo/README.md:48:non-migration scripts). All scripts require the **service-role** connection
+supabase/demo/README.md:153:4. Execute via MCP or psql using the service-role connection.
+supabase/demo/01_demo_sessions_table.sql:6:-- Reads: admin client (service-role) from the gate server action + admin view.
+supabase/demo/01_demo_sessions_table.sql:7:-- NO public select/insert policies — service-role bypasses RLS automatically.
+supabase/demo/01_demo_sessions_table.sql:28:  'Written exclusively by the gate server action (admin/service-role client). '
+supabase/demo/01_demo_sessions_table.sql:29:  'No public access — service-role bypasses RLS for inserts; admin reads via createAdminClient().';
+supabase/demo/01_demo_sessions_table.sql:34:-- No public access. The service-role key bypasses RLS entirely, so the gate
+supabase/demo/04_reset_demo.sql:6:-- Run manually via Supabase MCP (service-role) or psql to reset the demo
+supabase/migrations/20260607200000_per_team_sg_baseline.sql:187:-- service_role-only.
+supabase/migrations/20260607200000_per_team_sg_baseline.sql:213:GRANT EXECUTE ON FUNCTION public.recompute_team_sg(uuid) TO service_role;
+supabase/migrations/20260624001401_baseball_public_player_stats_rpc.sql:45:--     service_role. anon EXECUTE is INTENTIONAL and REQUIRED here (the public
+supabase/migrations/20260624001401_baseball_public_player_stats_rpc.sql:169:  TO anon, authenticated, service_role;
+supabase/migrations/20260624000083_baseball_stat_visual_views.sql:131:-- Privileges: authenticated + service_role only. NEVER anon.
+supabase/migrations/20260624000083_baseball_stat_visual_views.sql:136:GRANT ALL ON public.baseball_stat_visual_views TO service_role;
+supabase/migrations/20260609170000_v3_gender_scoped_level_cohort.sql:31:-- below to preserve the anon/authenticated/service_role surface verbatim.
+supabase/migrations/20260609170000_v3_gender_scoped_level_cohort.sql:153:-- SECURITY: service_role ONLY. This SECURITY DEFINER refresh RPC bypasses RLS
+supabase/migrations/20260609170000_v3_gender_scoped_level_cohort.sql:158:GRANT EXECUTE ON FUNCTION public.refresh_player_standing(uuid[]) TO service_role;
+supabase/migrations/20260607030000_lock_distance_proximity_putt_rpcs_to_service_role.sql:1:-- Security hardening (2026-06-07): lock the two stat-writer RPCs to service_role.
+supabase/migrations/20260607030000_lock_distance_proximity_putt_rpcs_to_service_role.sql:9:-- refresh_player_stats_cache() (which runs as definer/service_role). Locking them
+supabase/migrations/20260607030000_lock_distance_proximity_putt_rpcs_to_service_role.sql:10:-- to service_role mirrors the v3 standing-RPC hardening in
+supabase/migrations/20260607030000_lock_distance_proximity_putt_rpcs_to_service_role.sql:20:GRANT EXECUTE ON FUNCTION public.update_player_distance_proximity(uuid) TO service_role;
+supabase/migrations/20260607030000_lock_distance_proximity_putt_rpcs_to_service_role.sql:21:GRANT EXECUTE ON FUNCTION public.update_player_putt_make_pct(uuid) TO service_role;
+supabase/migrations/20260612120000_team_toggle_data_model.sql:48:-- Least privilege: authenticated + service_role only (NOT anon). Supabase grants
+supabase/migrations/20260612120000_team_toggle_data_model.sql:52:GRANT EXECUTE ON FUNCTION public.is_golf_team_head_coach(uuid) TO authenticated, service_role;
+supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql:37:--     team-scoped, TO authenticated policy. NO grant to anon. service_role
+supabase/migrations/20260624000080_baseball_elite_stat_event_model.sql:645:--     staff_only. Writes are staff-only (service_role bypasses for imports/AI).
+supabase/migrations/20260625000030_helm_lifting_accept_invite_rpc.sql:25:--   * REVOKE EXECUTE FROM anon; GRANT to authenticated + service_role
+supabase/migrations/20260625000030_helm_lifting_accept_invite_rpc.sql:111:GRANT EXECUTE ON FUNCTION public.helm_lifting_accept_invite(uuid) TO service_role;
+supabase/migrations/20260625000030_helm_lifting_accept_invite_rpc.sql:166:GRANT EXECUTE ON FUNCTION public.helm_lifting_assign_team(uuid, text, uuid, text) TO service_role;
+supabase/migrations/20260625000030_helm_lifting_accept_invite_rpc.sql:250:GRANT EXECUTE ON FUNCTION public.helm_lifting_sync_org_athletes(uuid, text, uuid) TO service_role;
+supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql:11:-- says "Engine writes via service_role; no authenticated INSERT policy"
+supabase/migrations/20260526180000_fix_v3_goals_suggestions_rls.sql:22:--      Engine continues to write via service_role (which bypasses RLS).
+supabase/migrations/20260624000440_baseball_strength_group_audit.sql:54:-- Only a lifting-capable staff member (or service_role) appends. The group must
+supabase/migrations/20260624000440_baseball_strength_group_audit.sql:64:-- ---- GRANTS — authenticated (RLS-gated) + service_role; NEVER anon -----------
+supabase/migrations/20260624000440_baseball_strength_group_audit.sql:67:GRANT ALL ON public.baseball_strength_group_audit TO service_role;
+supabase/migrations/20260608130000_cache_proximity_miss_puttspergir_alignment.sql:36:-- refresh_player_stats_cache() keep working and the service_role lock from
+supabase/migrations/20260608130000_cache_proximity_miss_puttspergir_alignment.sql:186:-- Re-assert the service_role lock (CREATE OR REPLACE preserves ACLs, but be explicit).
+supabase/migrations/20260608130000_cache_proximity_miss_puttspergir_alignment.sql:189:GRANT EXECUTE ON FUNCTION public.update_player_distance_proximity(uuid) TO service_role;
+supabase/migrations/20260608130000_cache_proximity_miss_puttspergir_alignment.sql:190:GRANT EXECUTE ON FUNCTION public.update_player_putt_make_pct(uuid)       TO service_role;
+supabase/migrations/20260624000070_baseball_coach_insights_attribution.sql:24:--     AI writes happen via service_role (which bypasses RLS); authenticated
+supabase/migrations/20260606120300_v3_select_stalest_teams.sql:51:GRANT EXECUTE ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) TO "service_role";
+supabase/migrations/20260625000000_helm_lifting_identity.sql:177:GRANT EXECUTE ON FUNCTION public.helm_lifting_coach_for_org(uuid) TO service_role;
+supabase/migrations/20260625000000_helm_lifting_identity.sql:201:GRANT EXECUTE ON FUNCTION public.helm_lifting_can_view_org(uuid, text) TO service_role;
+supabase/migrations/20260625000000_helm_lifting_identity.sql:225:GRANT EXECUTE ON FUNCTION public.helm_lifting_can_edit_org(uuid) TO service_role;
+supabase/migrations/20260625000000_helm_lifting_identity.sql:246:GRANT EXECUTE ON FUNCTION public.helm_lifting_is_my_athlete(uuid) TO service_role;
+supabase/migrations/20260625000000_helm_lifting_identity.sql:251:--    service_role bypasses RLS by design. anon REVOKED at end.
+supabase/migrations/20260625000000_helm_lifting_identity.sql:270:-- No client INSERT (seeded via accept RPC in service_role SECURITY DEFINER context);
+supabase/migrations/20260625000000_helm_lifting_identity.sql:346:-- INSERT/UPDATE only via accept/onboarding RPC (service_role) — no direct client write
+supabase/migrations/20260625000000_helm_lifting_identity.sql:388:-- 8. GRANTS — REVOKE anon; grant authenticated (RLS-gated) + service_role
+supabase/migrations/20260625000000_helm_lifting_identity.sql:403:    EXECUTE format('GRANT ALL ON public.%I TO service_role', t);
+supabase/migrations/20260623000000_service_role_statement_timeout.sql:2:-- service_role statement_timeout — give the admin client real headroom.
+supabase/migrations/20260623000000_service_role_statement_timeout.sql:12:-- service_role` per request. `service_role` had NO explicit statement_timeout
+supabase/migrations/20260623000000_service_role_statement_timeout.sql:16:-- Fix: give service_role an explicit, bounded 30s timeout — matching the
+supabase/migrations/20260623000000_service_role_statement_timeout.sql:22:ALTER ROLE service_role SET statement_timeout = '30s';
+supabase/migrations/20260624000060_baseball_practices.sql:20:--     all access; service_role bypasses RLS for cron / AI writes.
+supabase/migrations/20260624000820_baseball_daily_contract_missed_rollover.sql:31:--     status transition on a player's own row. The sweep runs as service-role
+supabase/migrations/20260610040000_stats_population_updown_and_trigger_columns.sql:195:GRANT EXECUTE ON FUNCTION public.update_player_stats_complete() TO service_role;
+supabase/migrations/20260610040000_stats_population_updown_and_trigger_columns.sql:297:GRANT EXECUTE ON FUNCTION public.refresh_player_stats_cache(uuid) TO service_role;
+supabase/migrations/20260624000061_baseball_lifting_performance.sql:173:-- All policies are TO authenticated; service_role bypasses RLS by design
+supabase/migrations/20260624000061_baseball_lifting_performance.sql:352:-- GRANTS — authenticated (app) + service_role (cron/import). NEVER anon.
+supabase/migrations/20260624000061_baseball_lifting_performance.sql:364:GRANT ALL ON public.baseball_exercises          TO service_role;
+supabase/migrations/20260624000061_baseball_lifting_performance.sql:365:GRANT ALL ON public.baseball_lift_assignments   TO service_role;
+supabase/migrations/20260624000061_baseball_lifting_performance.sql:366:GRANT ALL ON public.baseball_lift_results        TO service_role;
+supabase/migrations/20260624000061_baseball_lifting_performance.sql:367:GRANT ALL ON public.baseball_readiness_checkins TO service_role;
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:14:--   * EXECUTE granted to authenticated + service_role ONLY. NEVER to anon.
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:287:-- Grants: authenticated (app) + service_role (cron). NEVER anon.
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:296:GRANT EXECUTE ON FUNCTION public.get_my_baseball_player_id() TO authenticated, service_role;
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:297:GRANT EXECUTE ON FUNCTION public.is_baseball_team_staff(uuid) TO authenticated, service_role;
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:298:GRANT EXECUTE ON FUNCTION public.has_baseball_staff_capability(uuid, text) TO authenticated, service_role;
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:299:GRANT EXECUTE ON FUNCTION public.can_view_baseball_player(uuid, uuid) TO authenticated, service_role;
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:300:GRANT EXECUTE ON FUNCTION public.can_view_baseball_player(uuid) TO authenticated, service_role;
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:301:GRANT EXECUTE ON FUNCTION public.is_baseball_team_member(uuid) TO authenticated, service_role;
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:302:GRANT EXECUTE ON FUNCTION public.can_manage_baseball_lift_group(uuid, uuid) TO authenticated, service_role;
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:308:-- rather than erroring. All policies are TO authenticated; service_role bypasses
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:528:    -- Writes: STAFF only (coach-gated). System/AI writes via service_role.
+supabase/migrations/20260624000050_baseball_rls_helpers_and_policies.sql:845:--   player_visible only. AI writes via service_role. Defensive RLS only:
+supabase/migrations/20260611000000_create_golf_demo_sessions.sql:6:-- Reads: admin client (service-role) from the gate server action + admin view.
+supabase/migrations/20260611000000_create_golf_demo_sessions.sql:7:-- NO public select/insert policies — service-role bypasses RLS automatically.
+supabase/migrations/20260611000000_create_golf_demo_sessions.sql:28:  'Written exclusively by the gate server action (admin/service-role client). '
+supabase/migrations/20260611000000_create_golf_demo_sessions.sql:29:  'No public access — service-role bypasses RLS for inserts; admin reads via createAdminClient().';
+supabase/migrations/20260611000000_create_golf_demo_sessions.sql:34:-- No public access. The service-role key bypasses RLS entirely, so the gate
+supabase/migrations/20260625000020_helm_lifting_data_sessions_readiness.sql:782:    EXECUTE format('GRANT ALL ON public.%I TO service_role', t);
+supabase/migrations/20260528012000_relock_crm_admin_rpcs.sql:8:GRANT EXECUTE ON FUNCTION public.get_crm_coach_email_events(uuid) TO service_role;
+supabase/migrations/20260528012000_relock_crm_admin_rpcs.sql:13:GRANT EXECUTE ON FUNCTION public.get_crm_email_stats_detailed() TO service_role;
+supabase/migrations/20260609120000_pressure_gate_count_ge_3.sql:299:-- Lock the SECURITY-DEFINER function to service_role only (CREATE OR REPLACE
+supabase/migrations/20260609120000_pressure_gate_count_ge_3.sql:304:GRANT EXECUTE ON FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) TO service_role;
+supabase/migrations/20260609120000_pressure_gate_count_ge_3.sql:310:--   function remains SECURITY DEFINER, service_role-only.
+supabase/migrations/20260610040100_prune_standing_global_orphans.sql:58:GRANT EXECUTE ON FUNCTION public.prune_stale_player_standing(uuid[], timestamp with time zone) TO service_role;
+supabase/migrations/20260621160000_insight_event_ledger.sql:3:-- Engine writes via the service-role (admin) client, which bypasses RLS. Coaches
+supabase/migrations/20260621160000_insight_event_ledger.sql:53:-- RLS: coach reads team, player reads own, engine writes via service_role (bypasses RLS), no anon.
+supabase/migrations/20260621160000_insight_event_ledger.sql:62:    EXECUTE format('GRANT ALL ON public.%I TO service_role', t);
+supabase/migrations/20260626000030_baseball_notifications_revoke_anon.sql:11:-- This REVOKE is additive security hardening: authenticated + service_role
+supabase/migrations/20260613160000_course_library_phase1.sql:236:GRANT ALL ON public.golf_course_tees TO service_role;
+supabase/migrations/20260613160000_course_library_phase1.sql:237:GRANT ALL ON public.golf_course_tee_holes TO service_role;
+supabase/migrations/20260613160000_course_library_phase1.sql:238:GRANT ALL ON public.golf_team_saved_courses TO service_role;
+supabase/migrations/20260613160000_course_library_phase1.sql:239:GRANT ALL ON public.golf_course_edit_history TO service_role;
+supabase/migrations/20260613160000_course_library_phase1.sql:240:GRANT ALL ON public.golf_course_tee_edit_history TO service_role;
+supabase/migrations/20260613160000_course_library_phase1.sql:243:GRANT EXECUTE ON FUNCTION public.golf_normalize_name(text) TO authenticated, service_role;
+supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql:19:--     + service_role so both app call paths (user-session admin actions, which
+supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql:20:--     already gate on role='admin', and service-role admin actions) keep
+supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql:26:-- on the service-role-only functions, and add an inline `is_admin()` gate to
+supabase/migrations/20260602165152_harden_search_path_and_revoke_anon_admin_fns.sql:75:    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated, service_role;', r.sig);
+supabase/migrations/20260624000310_baseball_decision_log.sql:117:GRANT ALL ON public.baseball_decision_log TO service_role;
+supabase/migrations/20260625000080_helm_lifting_backfill_from_baseball.sql:49:--     already has full service_role access.
+supabase/migrations/20260527000000_prod_public_baseline.sql:242:  IF coalesce(auth.role(), '') = 'service_role' THEN
+supabase/migrations/20260527000000_prod_public_baseline.sql:2660:  IF auth.role() <> 'service_role' THEN
+supabase/migrations/20260527000000_prod_public_baseline.sql:3470:  IF auth.role() <> 'service_role' THEN
+supabase/migrations/20260527000000_prod_public_baseline.sql:7310:COMMENT ON TABLE "public"."auth_rate_limits" IS 'DB-backed rate limit window state - service_role only. Replaces the in-memory Map.';
+supabase/migrations/20260527000000_prod_public_baseline.sql:17210:CREATE POLICY "Service role can insert admin_events" ON "public"."admin_events" FOR INSERT TO "service_role" WITH CHECK (true);
+supabase/migrations/20260527000000_prod_public_baseline.sql:17214:CREATE POLICY "Service role can insert patterns" ON "public"."golf_patterns_v2" FOR INSERT TO "authenticated" WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17218:CREATE POLICY "Service role can manage admin_events" ON "public"."admin_events" TO "service_role" USING (true);
+supabase/migrations/20260527000000_prod_public_baseline.sql:17222:CREATE POLICY "Service role can manage audit logs" ON "public"."audit_log" TO "service_role" USING (true);
+supabase/migrations/20260527000000_prod_public_baseline.sql:17226:CREATE POLICY "Service role can manage demo requests" ON "public"."demo_requests" TO "service_role" USING (true);
+supabase/migrations/20260527000000_prod_public_baseline.sql:17230:CREATE POLICY "Service role can manage error logs" ON "public"."error_logs" TO "service_role" USING (true);
+supabase/migrations/20260527000000_prod_public_baseline.sql:17234:CREATE POLICY "Service role can manage learned behavior" ON "public"."golf_learned_behavior" USING (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17238:CREATE POLICY "Service role can manage login attempts" ON "public"."login_attempts" TO "service_role" USING (true);
+supabase/migrations/20260527000000_prod_public_baseline.sql:17242:CREATE POLICY "Service role can manage predictions" ON "public"."golf_predictions" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17246:CREATE POLICY "Service role can manage validations" ON "public"."golf_validations" USING (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17250:CREATE POLICY "Service role can update patterns" ON "public"."golf_patterns_v2" FOR UPDATE TO "authenticated" USING (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17254:CREATE POLICY "Service role full access" ON "public"."device_tokens" USING (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17258:CREATE POLICY "Service role full access" ON "public"."golf_task_reminders" USING (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17262:CREATE POLICY "Service role full access on push_subscriptions" ON "public"."push_subscriptions" USING (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17272:CREATE POLICY "System can manage percentiles" ON "public"."baseball_player_percentiles" TO "service_role" USING (true);
+supabase/migrations/20260527000000_prod_public_baseline.sql:17520:CREATE POLICY "api_call_logs_service_write" ON "public"."api_call_logs" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17596:CREATE POLICY "auth_metrics_hourly_service_write" ON "public"."auth_metrics_hourly" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:17610:CREATE POLICY "background_job_logs_service_write" ON "public"."background_job_logs" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:18516:CREATE POLICY "baselines_write_service" ON "public"."golf_player_baselines" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:18536:CREATE POLICY "coach_behavior_insert_service" ON "public"."golf_coach_behavior_log" FOR INSERT TO "authenticated" WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:18637:CREATE POLICY "effectiveness_insert_service" ON "public"."golf_insight_effectiveness" FOR INSERT TO "authenticated" WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:18672:CREATE POLICY "error_rate_hourly_service_write" ON "public"."error_rate_hourly" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:18696:CREATE POLICY "global_patterns_write_service" ON "public"."golf_global_patterns" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:18877:CREATE POLICY "golf_causal_relationships_service_role_all" ON "public"."golf_causal_relationships" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:18994:CREATE POLICY "golf_confidence_calibration_service_role_all" ON "public"."golf_confidence_calibration" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:19294:CREATE POLICY "golf_platform_metrics_daily_service_write" ON "public"."golf_platform_metrics_daily" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:19857:CREATE POLICY "golf_tracer_health_snapshot_service_write" ON "public"."golf_tracer_health_snapshot" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:20034:CREATE POLICY "percentile_write_service" ON "public"."golf_percentile_cache" TO "authenticated" USING (("auth"."role"() = 'service_role'::"text")) WITH CHECK (("auth"."role"() = 'service_role'::"text"));
+supabase/migrations/20260527000000_prod_public_baseline.sql:20171:GRANT USAGE ON SCHEMA "public" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20177:GRANT ALL ON FUNCTION "public"."__admin_rollup_b_gate"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20183:GRANT ALL ON FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20189:GRANT ALL ON FUNCTION "public"."calculate_strokes_gained_on_round_complete"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20195:GRANT ALL ON FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_user_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20201:GRANT ALL ON FUNCTION "public"."current_coach_id"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20207:GRANT ALL ON FUNCTION "public"."current_player_id"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20213:GRANT ALL ON FUNCTION "public"."extract_email_click_from_event"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20219:GRANT ALL ON FUNCTION "public"."get_admin_analytics_rollup"("p_ago7d" timestamp with time zone, "p_ago30d" timestamp with time zone, "p_ago12w" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20225:GRANT ALL ON FUNCTION "public"."get_admin_baseball_rollup"("p_ago30d" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20231:GRANT ALL ON FUNCTION "public"."get_admin_coachhelm_rollup"("p_ago7d" timestamp with time zone, "p_ago30d" timestamp with time zone, "p_ago12w" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20237:GRANT ALL ON FUNCTION "public"."get_admin_dashboard_rollup"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20243:GRANT ALL ON FUNCTION "public"."get_admin_errors_rollup"("p_ago7d" timestamp with time zone, "p_ago24h" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20249:GRANT ALL ON FUNCTION "public"."get_admin_event_summary"("p_days_back" integer) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20255:GRANT ALL ON FUNCTION "public"."get_admin_feature_adoption_rollup"("p_ago30d" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20261:GRANT ALL ON FUNCTION "public"."get_admin_rounds_rollup"("p_today" timestamp with time zone, "p_ago24h" timestamp with time zone, "p_ago7d" timestamp with time zone, "p_ago14d" timestamp with time zone, "p_ago30d" timestamp with time zone, "p_ago60d" timestamp with time zone, "p_ago12w" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20267:GRANT ALL ON FUNCTION "public"."get_admin_teams_scoring_rollup"("p_ago7d" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20273:GRANT ALL ON FUNCTION "public"."get_admin_users_rollup"("p_ago7d" timestamp with time zone, "p_ago14d" timestamp with time zone, "p_ago30d" timestamp with time zone, "p_ago12w" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20279:GRANT ALL ON FUNCTION "public"."get_api_performance_summary"("days_back" integer) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20285:GRANT ALL ON FUNCTION "public"."get_audit_log_recent"("limit_count" integer) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20291:GRANT ALL ON FUNCTION "public"."get_baseball_conversations_with_details"("p_user_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20297:GRANT ALL ON FUNCTION "public"."get_coach_effectiveness_metrics"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20303:GRANT ALL ON FUNCTION "public"."get_coach_today_schedule"("p_team_id" "uuid", "p_today_start" timestamp with time zone, "p_today_end" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20309:GRANT ALL ON FUNCTION "public"."get_crm_click_destinations"("p_window" "text", "p_limit" integer) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20314:GRANT ALL ON FUNCTION "public"."get_crm_coach_email_events"("p_coach_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20320:GRANT ALL ON FUNCTION "public"."get_crm_email_stats"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20325:GRANT ALL ON FUNCTION "public"."get_crm_email_stats_detailed"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20331:GRANT ALL ON FUNCTION "public"."get_crm_events_in_range"("p_start" timestamp with time zone, "p_end" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20337:GRANT ALL ON FUNCTION "public"."get_crm_template_performance"("p_window" "text") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20343:GRANT ALL ON FUNCTION "public"."get_crm_time_to_open"("p_window" "text") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20349:GRANT ALL ON FUNCTION "public"."get_current_golf_player_id"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20355:GRANT ALL ON FUNCTION "public"."get_current_player_team_ids"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20361:GRANT ALL ON FUNCTION "public"."get_db_telemetry"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20367:GRANT ALL ON FUNCTION "public"."get_enhanced_system_health"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20373:GRANT ALL ON FUNCTION "public"."get_error_summary"("days_back" integer) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20379:GRANT ALL ON FUNCTION "public"."get_golf_conversations_with_details"("p_user_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20385:GRANT ALL ON FUNCTION "public"."get_golf_message_attachments"("p_message_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20391:GRANT ALL ON FUNCTION "public"."get_my_baseball_conversation_ids"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20397:GRANT ALL ON FUNCTION "public"."get_my_coach_id"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20403:GRANT ALL ON FUNCTION "public"."get_my_player_id"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20409:GRANT ALL ON FUNCTION "public"."get_onboarding_funnel_analysis"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20415:GRANT ALL ON FUNCTION "public"."get_pending_task_reminders"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20421:GRANT ALL ON FUNCTION "public"."get_platform_health_stats"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20427:GRANT ALL ON FUNCTION "public"."get_player_hub_announcements"("p_team_id" "uuid", "p_player_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20433:GRANT ALL ON FUNCTION "public"."get_player_hub_events"("p_team_id" "uuid", "p_player_id" "uuid", "p_since" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20439:GRANT ALL ON FUNCTION "public"."get_player_stats_summary"("p_player_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20445:GRANT ALL ON FUNCTION "public"."get_qualifier_leaderboard"("qualifier_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20451:GRANT ALL ON FUNCTION "public"."get_resend_activity_stats"("p_window" "text") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20457:GRANT ALL ON FUNCTION "public"."get_resend_domain_breakdown"("p_window" "text") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20463:GRANT ALL ON FUNCTION "public"."get_shot_data_quality"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20469:GRANT ALL ON FUNCTION "public"."get_team_health_dashboard"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20475:GRANT ALL ON FUNCTION "public"."get_user_engagement_summary"("time_range_days" integer) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20481:GRANT ALL ON FUNCTION "public"."get_user_golf_organization_id"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20487:GRANT ALL ON FUNCTION "public"."get_user_golf_team_ids"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20492:GRANT ALL ON FUNCTION "public"."get_user_last_active"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20498:GRANT ALL ON FUNCTION "public"."get_users_with_auth"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20504:GRANT ALL ON FUNCTION "public"."golf_event_documents_assert_same_team"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20510:GRANT ALL ON FUNCTION "public"."golf_holes_recompute_round_totals_fn"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20516:GRANT ALL ON FUNCTION "public"."golf_holes_set_gir_fn"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20522:GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20528:GRANT ALL ON FUNCTION "public"."heartbeat"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20535:GRANT ALL ON FUNCTION "public"."hypopg_reset"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20541:GRANT ALL ON FUNCTION "public"."is_admin"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20547:GRANT ALL ON FUNCTION "public"."is_baseball_primary_coach"("p_team_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20553:GRANT ALL ON FUNCTION "public"."is_baseball_team_coach"("team_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20559:GRANT ALL ON FUNCTION "public"."is_baseball_team_coach_v2"("p_team_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20565:GRANT ALL ON FUNCTION "public"."is_baseball_team_member"("team_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20571:GRANT ALL ON FUNCTION "public"."is_baseball_team_member_v2"("p_team_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20577:GRANT ALL ON FUNCTION "public"."is_baseball_team_player"("team_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20583:GRANT ALL ON FUNCTION "public"."is_golf_team_coach"("team_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20589:GRANT ALL ON FUNCTION "public"."is_golf_team_player"("team_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20595:GRANT ALL ON FUNCTION "public"."is_golf_team_primary_coach"("team_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20601:GRANT ALL ON FUNCTION "public"."is_in_team"("team_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20607:GRANT ALL ON FUNCTION "public"."is_team_coach"("team_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20613:GRANT ALL ON FUNCTION "public"."is_team_player"("team_uuid" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20619:GRANT ALL ON FUNCTION "public"."is_user_on_team"("p_user_id" "uuid", "p_team_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20625:GRANT ALL ON FUNCTION "public"."log_review_status_change"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20631:GRANT ALL ON FUNCTION "public"."mark_player_stats_stale"("p_player_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20637:GRANT ALL ON FUNCTION "public"."mark_task_reminder_sent"("p_task_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20643:GRANT ALL ON FUNCTION "public"."recalculate_baseball_season_stats"("p_player_id" "uuid", "p_team_id" "uuid", "p_season_year" integer) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20649:GRANT ALL ON FUNCTION "public"."recalculate_round_strokes_gained"("p_round_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20655:GRANT ALL ON FUNCTION "public"."recalculate_team_baseball_season_stats"("p_team_id" "uuid", "p_season_year" integer) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20661:GRANT ALL ON FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20667:GRANT ALL ON FUNCTION "public"."refresh_crm_coach_engagement"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20673:GRANT ALL ON FUNCTION "public"."refresh_player_standing"("p_team_ids" "uuid"[]) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20679:GRANT ALL ON FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20685:GRANT ALL ON FUNCTION "public"."refresh_player_stats_cache"("p_player_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20691:GRANT ALL ON FUNCTION "public"."save_partial_round_atomic"("p_round_id" "uuid", "p_round_data" "jsonb", "p_holes" "jsonb", "p_shots" "jsonb", "p_putt_details" "jsonb", "p_approach_details" "jsonb", "p_expected_updated_at" timestamp with time zone) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20697:GRANT ALL ON FUNCTION "public"."set_calendar_feed_token"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20703:GRANT ALL ON FUNCTION "public"."set_document_version_number"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20709:GRANT ALL ON FUNCTION "public"."sg_estimate_from_holes"("p_round_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20715:GRANT ALL ON FUNCTION "public"."sg_expected_strokes"("p_lie" "text", "p_distance_yards" numeric) TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20721:GRANT ALL ON FUNCTION "public"."sg_normalize_lie"("p_lie" "text") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20727:GRANT ALL ON FUNCTION "public"."stop_sequences_on_reply"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20733:GRANT ALL ON FUNCTION "public"."submit_round_atomic"("p_round_id" "uuid", "p_round_data" "jsonb", "p_holes" "jsonb", "p_shots" "jsonb", "p_putt_details" "jsonb", "p_approach_details" "jsonb") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20739:GRANT ALL ON FUNCTION "public"."sync_coach_last_email_event"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20745:GRANT ALL ON FUNCTION "public"."sync_email_snapshot_from_event"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20751:GRANT ALL ON FUNCTION "public"."touch_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20757:GRANT ALL ON FUNCTION "public"."update_crm_automations_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20763:GRANT ALL ON FUNCTION "public"."update_crm_coaches_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20769:GRANT ALL ON FUNCTION "public"."update_crm_events_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20775:GRANT ALL ON FUNCTION "public"."update_crm_google_tokens_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20781:GRANT ALL ON FUNCTION "public"."update_crm_notes_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20787:GRANT ALL ON FUNCTION "public"."update_crm_segments_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20793:GRANT ALL ON FUNCTION "public"."update_crm_sequences_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20799:GRANT ALL ON FUNCTION "public"."update_crm_tasks_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20805:GRANT ALL ON FUNCTION "public"."update_device_tokens_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20811:GRANT ALL ON FUNCTION "public"."update_document_version_info"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20817:GRANT ALL ON FUNCTION "public"."update_golf_expenses_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20823:GRANT ALL ON FUNCTION "public"."update_golf_task_reminders_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20829:GRANT ALL ON FUNCTION "public"."update_golf_task_templates_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20835:GRANT ALL ON FUNCTION "public"."update_golf_team_join_requests_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20841:GRANT ALL ON FUNCTION "public"."update_message_has_attachments"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20847:GRANT ALL ON FUNCTION "public"."update_player_stats_cache"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20853:GRANT ALL ON FUNCTION "public"."update_player_stats_cache_enhanced"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20859:GRANT ALL ON FUNCTION "public"."update_player_stats_complete"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20865:GRANT ALL ON FUNCTION "public"."update_player_stats_strokes_gained"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20871:GRANT ALL ON FUNCTION "public"."update_player_stats_strokes_gained"("p_player_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20877:GRANT ALL ON FUNCTION "public"."update_push_subscriptions_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20883:GRANT ALL ON FUNCTION "public"."update_qualifier_leaderboard"("p_qualifier_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20889:GRANT ALL ON FUNCTION "public"."update_round_stats_cache"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20895:GRANT ALL ON FUNCTION "public"."update_round_stats_cache_with_sg"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20901:GRANT ALL ON FUNCTION "public"."update_updated_at"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20907:GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20913:GRANT ALL ON FUNCTION "public"."update_user_last_seen"("target_user_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20919:GRANT ALL ON FUNCTION "public"."user_conversation_ids"("p_user_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20925:GRANT ALL ON FUNCTION "public"."user_has_pending_join_request_to_coach_team"("check_player_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20931:GRANT ALL ON FUNCTION "public"."user_is_coach_of_golf_player"("check_player_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20937:GRANT ALL ON FUNCTION "public"."user_is_golf_team_member"("check_team_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20943:GRANT ALL ON FUNCTION "public"."user_is_teammate_of_golf_player"("check_player_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20949:GRANT ALL ON FUNCTION "public"."validate_notification_preferences"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20955:GRANT ALL ON FUNCTION "public"."verify_coach_owns_player"("p_player_id" "uuid", "p_user_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20961:GRANT ALL ON FUNCTION "public"."verify_coach_owns_team"("p_team_id" "uuid", "p_user_id" "uuid") TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20967:GRANT ALL ON FUNCTION "public"."write_suppression_on_unsubscribe"() TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20973:GRANT ALL ON TABLE "public"."admin_analytics_events" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20979:GRANT ALL ON TABLE "public"."admin_api_perf_log" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20985:GRANT ALL ON TABLE "public"."admin_client_errors" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20991:GRANT ALL ON TABLE "public"."admin_events" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:20997:GRANT ALL ON TABLE "public"."api_call_logs" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21003:GRANT ALL ON TABLE "public"."approach_miss_details" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21009:GRANT ALL ON TABLE "public"."audit_log" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21015:GRANT ALL ON TABLE "public"."auth_metrics_hourly" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21021:GRANT ALL ON TABLE "public"."auth_rate_limits" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21027:GRANT ALL ON TABLE "public"."background_job_logs" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21033:GRANT ALL ON TABLE "public"."baseball_academic_eligibility" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21039:GRANT ALL ON TABLE "public"."baseball_announcement_acknowledgements" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21045:GRANT ALL ON TABLE "public"."baseball_announcement_recipients" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21051:GRANT ALL ON TABLE "public"."baseball_announcements" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21057:GRANT ALL ON TABLE "public"."baseball_box_score_batting" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21063:GRANT ALL ON TABLE "public"."baseball_box_score_pitching" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21069:GRANT ALL ON TABLE "public"."baseball_box_score_uploads" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21075:GRANT ALL ON TABLE "public"."baseball_camp_registrations" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21081:GRANT ALL ON TABLE "public"."baseball_camps" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21087:GRANT ALL ON TABLE "public"."baseball_coach_insights" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21093:GRANT ALL ON TABLE "public"."baseball_coach_philosophy" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21099:GRANT ALL ON TABLE "public"."baseball_coach_recruiting_philosophy" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21105:GRANT ALL ON TABLE "public"."baseball_coaches" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21111:GRANT ALL ON TABLE "public"."baseball_conversation_participants" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21117:GRANT ALL ON TABLE "public"."baseball_conversations" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21123:GRANT ALL ON TABLE "public"."baseball_developmental_plans" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21129:GRANT ALL ON TABLE "public"."baseball_document_versions" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21135:GRANT ALL ON TABLE "public"."baseball_documents" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21141:GRANT ALL ON TABLE "public"."baseball_event_attendance" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21147:GRANT ALL ON TABLE "public"."baseball_events" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21153:GRANT ALL ON TABLE "public"."baseball_games" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21159:GRANT ALL ON TABLE "public"."baseball_lineup_positions" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21165:GRANT ALL ON TABLE "public"."baseball_messages" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21171:GRANT ALL ON TABLE "public"."baseball_notifications" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21177:GRANT ALL ON TABLE "public"."baseball_player_aggregates" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21183:GRANT ALL ON TABLE "public"."baseball_player_classes" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21189:GRANT ALL ON TABLE "public"."baseball_player_comparisons" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21195:GRANT ALL ON TABLE "public"."baseball_player_engagement_events" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21201:GRANT ALL ON TABLE "public"."baseball_player_percentiles" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21207:GRANT ALL ON TABLE "public"."baseball_player_season_stats" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21213:GRANT ALL ON TABLE "public"."baseball_player_settings" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21219:GRANT ALL ON TABLE "public"."baseball_player_stats" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21225:GRANT ALL ON TABLE "public"."baseball_players" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21231:GRANT ALL ON TABLE "public"."baseball_recruiting_interests" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21237:GRANT ALL ON TABLE "public"."baseball_stat_uploads" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21243:GRANT ALL ON TABLE "public"."baseball_task_assignments" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21249:GRANT ALL ON TABLE "public"."baseball_task_templates" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21255:GRANT ALL ON TABLE "public"."baseball_tasks" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21261:GRANT ALL ON TABLE "public"."baseball_team_coach_staff" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21267:GRANT ALL ON TABLE "public"."baseball_team_invitations" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21273:GRANT ALL ON TABLE "public"."baseball_team_lineups" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21279:GRANT ALL ON TABLE "public"."baseball_team_members" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21285:GRANT ALL ON TABLE "public"."baseball_teams" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21291:GRANT ALL ON TABLE "public"."baseball_travel_expenses" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21297:GRANT ALL ON TABLE "public"."baseball_travel_itineraries" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21303:GRANT ALL ON TABLE "public"."baseball_videos" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21309:GRANT ALL ON TABLE "public"."baseball_watchlists" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21315:GRANT ALL ON TABLE "public"."crm_activity_log" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21321:GRANT ALL ON TABLE "public"."crm_automations" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21327:GRANT ALL ON TABLE "public"."crm_coaches" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21333:GRANT ALL ON TABLE "public"."crm_contact_log" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21339:GRANT ALL ON TABLE "public"."email_events" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21345:GRANT ALL ON TABLE "public"."crm_coach_engagement" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21351:GRANT ALL ON TABLE "public"."crm_email_events" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21357:GRANT ALL ON TABLE "public"."crm_email_suppressions" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21363:GRANT ALL ON TABLE "public"."crm_email_templates" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21369:GRANT ALL ON TABLE "public"."crm_events" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21375:GRANT ALL ON TABLE "public"."crm_google_calendar_tokens" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21381:GRANT ALL ON TABLE "public"."crm_notes" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21387:GRANT ALL ON TABLE "public"."crm_replies" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21393:GRANT ALL ON TABLE "public"."crm_segments" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21399:GRANT ALL ON TABLE "public"."crm_sequence_enrollments" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21405:GRANT ALL ON TABLE "public"."crm_sequence_steps" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21411:GRANT ALL ON TABLE "public"."crm_sequences" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21417:GRANT ALL ON TABLE "public"."crm_tasks" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21423:GRANT ALL ON TABLE "public"."demo_requests" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21429:GRANT ALL ON TABLE "public"."device_tokens" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21435:GRANT ALL ON TABLE "public"."email_clicks" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21441:GRANT ALL ON TABLE "public"."emails" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21447:GRANT ALL ON TABLE "public"."error_logs" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21453:GRANT ALL ON TABLE "public"."error_rate_hourly" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21459:GRANT ALL ON TABLE "public"."golf_academic_exclusions" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21465:GRANT ALL ON TABLE "public"."golf_announcement_acknowledgements" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21471:GRANT ALL ON TABLE "public"."golf_announcement_documents" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21477:GRANT ALL ON TABLE "public"."golf_announcement_recipients" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21483:GRANT ALL ON TABLE "public"."golf_announcement_tasks" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21489:GRANT ALL ON TABLE "public"."golf_announcements" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21495:GRANT ALL ON TABLE "public"."golf_attendance_summary" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21501:GRANT ALL ON TABLE "public"."golf_calendar_feeds" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21507:GRANT ALL ON TABLE "public"."golf_calendar_notifications" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21513:GRANT ALL ON TABLE "public"."golf_causal_relationships" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21519:GRANT ALL ON TABLE "public"."golf_coach_behavior_log" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21525:GRANT ALL ON TABLE "public"."golf_coach_blocked_time" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21531:GRANT ALL ON TABLE "public"."golf_coach_insights" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21565:GRANT ALL ON TABLE "public"."golf_coach_philosophy" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21571:GRANT ALL ON TABLE "public"."golf_coach_player_intent" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21577:GRANT ALL ON TABLE "public"."golf_coaches" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21583:GRANT ALL ON TABLE "public"."golf_coachhelm_chat_conversations" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21589:GRANT ALL ON TABLE "public"."golf_coachhelm_chat_messages" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21595:GRANT ALL ON TABLE "public"."golf_coachhelm_coach_weights" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21601:GRANT ALL ON TABLE "public"."golf_coachhelm_llm_budget" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21607:GRANT ALL ON TABLE "public"."golf_coachhelm_llm_calls" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21613:GRANT ALL ON TABLE "public"."golf_coachhelm_settings" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21619:GRANT ALL ON TABLE "public"."golf_confidence_calibration" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21625:GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21631:GRANT ALL ON TABLE "public"."golf_conversations" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21637:GRANT ALL ON TABLE "public"."golf_course_holes" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21643:GRANT ALL ON TABLE "public"."golf_courses" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21649:GRANT ALL ON TABLE "public"."golf_document_versions" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21655:GRANT ALL ON TABLE "public"."golf_documents" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21661:GRANT ALL ON TABLE "public"."golf_drills" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21667:GRANT ALL ON TABLE "public"."golf_event_attendance" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21673:GRANT ALL ON TABLE "public"."golf_event_documents" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21679:GRANT ALL ON TABLE "public"."golf_events" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21685:GRANT ALL ON TABLE "public"."golf_global_patterns" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21691:GRANT ALL ON TABLE "public"."golf_goal_suggestions" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21697:GRANT ALL ON TABLE "public"."golf_goals" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21703:GRANT ALL ON TABLE "public"."golf_holes" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21709:GRANT ALL ON TABLE "public"."golf_ingest_connections" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21715:GRANT ALL ON TABLE "public"."golf_ingest_sync_log" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21721:GRANT ALL ON TABLE "public"."golf_insight_drill_attachments" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21727:GRANT ALL ON TABLE "public"."golf_insight_effectiveness" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21733:GRANT ALL ON TABLE "public"."golf_insight_generation_log" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21739:GRANT ALL ON TABLE "public"."golf_insight_outcome_attribution" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21745:GRANT ALL ON TABLE "public"."golf_insight_player_feedback" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21751:GRANT ALL ON TABLE "public"."golf_learned_behavior" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21757:GRANT ALL ON TABLE "public"."golf_message_attachments" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21763:GRANT ALL ON TABLE "public"."golf_messages" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21769:GRANT ALL ON TABLE "public"."golf_metrics" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21775:GRANT ALL ON TABLE "public"."golf_patterns_v2" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21781:GRANT ALL ON TABLE "public"."golf_percentile_cache" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21787:GRANT ALL ON TABLE "public"."golf_pga_standards" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21793:GRANT ALL ON TABLE "public"."golf_platform_metrics_daily" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21799:GRANT ALL ON TABLE "public"."golf_player_attendance_stats" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21805:GRANT ALL ON TABLE "public"."golf_player_baselines" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21811:GRANT ALL ON TABLE "public"."golf_player_classes" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21817:GRANT ALL ON TABLE "public"."golf_player_courses" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21823:GRANT ALL ON TABLE "public"."golf_player_focus_areas" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21829:GRANT ALL ON TABLE "public"."golf_player_genome" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21835:GRANT ALL ON TABLE "public"."golf_player_notification_state" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21841:GRANT ALL ON TABLE "public"."golf_player_standing" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21847:GRANT ALL ON TABLE "public"."golf_player_stats_cache" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21853:GRANT ALL ON TABLE "public"."golf_players" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21859:GRANT ALL ON TABLE "public"."golf_practice_sessions" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21865:GRANT ALL ON TABLE "public"."golf_prediction_model_performance" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21871:GRANT ALL ON TABLE "public"."golf_prediction_validations" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21877:GRANT ALL ON TABLE "public"."golf_predictions" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21883:GRANT ALL ON TABLE "public"."golf_qualifier_entries" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21889:GRANT ALL ON TABLE "public"."golf_qualifier_selections" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21895:GRANT ALL ON TABLE "public"."golf_qualifiers" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21901:GRANT ALL ON TABLE "public"."golf_recruits" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21907:GRANT ALL ON TABLE "public"."golf_review_events" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21913:GRANT ALL ON TABLE "public"."golf_round_reviews" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21931:GRANT ALL ON TABLE "public"."golf_round_stats_cache" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:21937:GRANT ALL ON TABLE "public"."golf_rounds" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22047:GRANT ALL ON TABLE "public"."golf_shots" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22053:GRANT ALL ON TABLE "public"."golf_task_assignments" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22059:GRANT ALL ON TABLE "public"."golf_task_reminders" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22065:GRANT ALL ON TABLE "public"."golf_task_templates" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22071:GRANT ALL ON TABLE "public"."golf_tasks" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22077:GRANT ALL ON TABLE "public"."golf_team_coach_staff" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22083:GRANT ALL ON TABLE "public"."golf_team_coachhelm_settings" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22089:GRANT ALL ON TABLE "public"."golf_team_join_requests" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22095:GRANT ALL ON TABLE "public"."golf_team_members" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22101:GRANT ALL ON TABLE "public"."golf_team_settings" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22107:GRANT ALL ON TABLE "public"."golf_teams" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22113:GRANT ALL ON TABLE "public"."golf_tracer_health_snapshot" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22119:GRANT ALL ON TABLE "public"."golf_travel_budgets" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22125:GRANT ALL ON TABLE "public"."golf_travel_expenses" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22131:GRANT ALL ON TABLE "public"."golf_travel_itineraries" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22137:GRANT ALL ON TABLE "public"."golf_validations" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22143:GRANT ALL ON TABLE "public"."login_attempts" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22149:GRANT ALL ON TABLE "public"."notifications" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22155:GRANT ALL ON TABLE "public"."organizations" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22161:GRANT ALL ON TABLE "public"."push_subscriptions" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22167:GRANT ALL ON TABLE "public"."putt_details" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22173:GRANT ALL ON TABLE "public"."users" TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22180:ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22190:ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
+supabase/migrations/20260527000000_prod_public_baseline.sql:22200:ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
+supabase/migrations/20260624000210_baseball_coachhelm_v10_ranking_and_outcome_ledger.sql:29:--     AI writes go through service_role, authenticated users only READ via policy.
+supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql:17:-- Every legitimate caller already runs through the service-role client:
+supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql:27:-- from PUBLIC, anon, authenticated; GRANT EXECUTE to service_role only.
+supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql:28:-- service_role-only (stricter than the 20260602165152 admin set, which kept
+supabase/migrations/20260606090000_v3_rpc_grant_hardening.sql:63:    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role;', r.sig);
+supabase/migrations/20260624000230_baseball_signal_action_materialization.sql:240:GRANT ALL ON public.baseball_meeting_items TO service_role;
+supabase/migrations/20260624000230_baseball_signal_action_materialization.sql:241:GRANT ALL ON public.baseball_coach_player_notes TO service_role;
+supabase/migrations/20260624000450_baseball_ai_audit_log.sql:153:GRANT ALL ON public.baseball_ai_audit TO service_role;
+supabase/migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql:49:-- re-asserted service_role-ONLY below (the prior 20260605130000 shot_metrics
+supabase/migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql:65:--     shot_metrics body therein), THEN re-assert the service_role-only grants.
+supabase/migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql:378:-- Lock the SECURITY-DEFINER function to service_role only. anon/authenticated
+supabase/migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql:383:GRANT EXECUTE ON FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) TO service_role;
+supabase/migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql:530:-- Lock the SECURITY-DEFINER function to service_role only. The original
+supabase/migrations/20260609230000_v3_gender_scoped_sibling_cohorts.sql:535:GRANT EXECUTE ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) TO service_role;
+supabase/migrations/20260621041844_relock_anon_grants_reviews_patterns.sql:9:-- service_role retain their grants. Mirrors the prior relock (20260528011000).
+supabase/migrations/20260624000094_baseball_practice_effectiveness.sql:46:--   * service_role bypasses RLS for the engine cron write.
+supabase/migrations/20260621231000_qualifier_round_courses.sql:50:--    gates rows); service_role does everything (bypasses RLS anyway). ──────────
+supabase/migrations/20260621231000_qualifier_round_courses.sql:53:GRANT ALL    ON public.golf_qualifier_round_courses TO service_role;
+supabase/migrations/20260624001000_baseball_official_stat_breadth.sql:136:  -- the target team; service_role bypasses for cron/import paths.
+supabase/migrations/20260624001000_baseball_official_stat_breadth.sql:138:     AND coalesce(auth.role(), '') <> 'service_role'
+supabase/migrations/20260621130000_ingest_external_round_atomic.sql:15:-- service_role ONLY: the cron writes via the admin (service-role) client; this
+supabase/migrations/20260621130000_ingest_external_round_atomic.sql:129:-- service_role only — the ingest cron is the sole caller (admin client).
+supabase/migrations/20260621130000_ingest_external_round_atomic.sql:133:grant execute on function public.ingest_external_round_atomic(jsonb, jsonb, jsonb) to service_role;
+supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql:535:--    Convention: every policy TO authenticated; service_role bypasses by design.
+supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql:903:-- 10. GRANTS — authenticated (RLS-gated) + service_role; NEVER anon.
+supabase/migrations/20260624000063_baseball_v11_premium_lifting.sql:922:    EXECUTE format('GRANT ALL ON public.%I TO service_role', t);
+supabase/migrations/20260624001300_baseball_coachhelm_insight_maturity_counters.sql:38:--     service_role, authenticated users only READ via policy.
+supabase/migrations/20260621041824_harden_get_golf_conversations_rpc.sql:10:-- EXECUTE (authenticated + service_role retain it). Signature preserved for
+supabase/migrations/20260621041824_harden_get_golf_conversations_rpc.sql:81:GRANT EXECUTE ON FUNCTION public.get_golf_conversations_with_details(uuid) TO authenticated, service_role;
+supabase/migrations/20260624000093_baseball_postgame_reviews.sql:39:--   * No GRANTs to anon. RLS governs all access; service_role bypasses RLS for
+supabase/migrations/20260624000093_baseball_postgame_reviews.sql:213:  -- coachhelm.ts). service_role (AI/cron) bypasses RLS.
+supabase/migrations/20260606120200_v3_prune_stale_player_standing.sql:68:-- PostgREST. Lock to service_role.
+supabase/migrations/20260606120200_v3_prune_stale_player_standing.sql:70:GRANT EXECUTE ON FUNCTION "public"."prune_stale_player_standing"("uuid"[], timestamp with time zone) TO "service_role";
+supabase/migrations/20260528010000_reapply_v3_goals_suggestions_rls.sql:59:  'engine writes via service_role, so authenticated INSERT/DELETE is intentionally absent.';
+supabase/migrations/20260624000221_baseball_video_links_and_class_conflicts.sql:358:-- derivation runs through service_role (bypasses RLS for system provenance only).
+supabase/migrations/20260624000221_baseball_video_links_and_class_conflicts.sql:392:-- default privileges; revoke explicitly). authenticated + service_role only.
+supabase/migrations/20260624000221_baseball_video_links_and_class_conflicts.sql:396:GRANT ALL ON public.baseball_class_conflicts TO service_role;
+supabase/migrations/20260624000092_baseball_signals_and_actions.sql:276:-- data). System/AI generation runs through the service-role client which
+supabase/migrations/20260624000092_baseball_signals_and_actions.sql:358:GRANT ALL ON public.baseball_signals TO service_role;
+supabase/migrations/20260624000092_baseball_signals_and_actions.sql:359:GRANT ALL ON public.baseball_actions TO service_role;
+supabase/migrations/20260624000090_baseball_settings_os.sql:41:--     to authenticated + service_role ONLY.
+supabase/migrations/20260624000090_baseball_settings_os.sql:316:-- All policies TO authenticated. service_role bypasses RLS by design.
+supabase/migrations/20260624000090_baseball_settings_os.sql:406:-- (No UPDATE/DELETE policies — append-only; service_role may prune per retention.)
+supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql:36:--     GRANT ALL ON public.<table> TO service_role;
+supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql:46:--   * service_role bypasses RLS by design — no explicit grant needed for it to work.
+supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql:699:-- 10. GRANTS — REVOKE anon; grant authenticated + service_role
+supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql:715:    EXECUTE format('GRANT ALL ON public.%I TO service_role', t);
+supabase/migrations/20260617000100_crm_engagement_invert_clicks.sql:72:-- the service-role admin client (see src/app/golf/actions/crm-engagement.ts —
+supabase/migrations/20260617000100_crm_engagement_invert_clicks.sql:74:-- The pre-migration ACL was {postgres, service_role} only — NO authenticated
+supabase/migrations/20260617000100_crm_engagement_invert_clicks.sql:77:GRANT SELECT ON crm_coach_engagement TO service_role;
+supabase/migrations/20260617000100_crm_engagement_invert_clicks.sql:81:-- authenticated. Strip that back off so the ACL stays {postgres, service_role}
+supabase/migrations/20260528000000_baseball_recalc_body_guards.sql:64:  -- service_role bypasses by leaving auth.uid() NULL → is_baseball_team_coach_v2
+supabase/migrations/20260528000000_baseball_recalc_body_guards.sql:65:  -- returns false, so we explicitly let service_role through for cron paths.
+supabase/migrations/20260528000000_baseball_recalc_body_guards.sql:67:     AND coalesce(auth.role(), '') <> 'service_role'
+supabase/migrations/20260528000000_baseball_recalc_body_guards.sql:205:GRANT EXECUTE ON FUNCTION public.recalculate_baseball_season_stats(uuid, uuid, integer) TO service_role;
+supabase/migrations/20260528000000_baseball_recalc_body_guards.sql:221:     AND coalesce(auth.role(), '') <> 'service_role'
+supabase/migrations/20260528000000_baseball_recalc_body_guards.sql:239:GRANT EXECUTE ON FUNCTION public.recalculate_team_baseball_season_stats(uuid, integer) TO service_role;
+supabase/migrations/20260609090000_cache_putt_band_attempts_and_lifetime_span.sql:76:GRANT  EXECUTE ON FUNCTION public.update_player_putt_make_pct(uuid) TO service_role;
+supabase/migrations/20260625000010_helm_lifting_data_library_programs.sql:500:    EXECUTE format('GRANT ALL ON public.%I TO service_role', t);
+supabase/migrations/20260605130000_v3_approach_proximity_standing.sql:140:GRANT ALL ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) TO "service_role";
+supabase/tests/rls/baseball_settings_os.sql:18:--        UPDATE or DELETE policy (staff can never rewrite history; service_role
+supabase/tests/rls/rpc_grant_hardening.sql:17:-- service_role should.
+supabase/tests/rls/rpc_grant_hardening.sql:29:  'authenticated cannot execute get_crm_coach_email_events (admin UI must use service-role client)'
+supabase/tests/rls/rpc_grant_hardening.sql:33:  has_function_privilege('service_role', 'public.get_crm_coach_email_events(uuid)', 'EXECUTE'),
+supabase/tests/rls/rpc_grant_hardening.sql:34:  'service_role can execute get_crm_coach_email_events'
+supabase/tests/rls/rpc_grant_hardening.sql:50:  has_function_privilege('service_role', 'public.get_crm_email_stats_detailed()', 'EXECUTE'),
+supabase/tests/rls/rpc_grant_hardening.sql:51:  'service_role can execute get_crm_email_stats_detailed'
+supabase/tests/rls/coach_insights_player_update.sql:26:-- Test 2: the policy still exists (so service_role + admin paths still work).
+supabase/tests/rls/coach_insights_player_update.sql:38:-- Test 3: service_role retains full UPDATE (the engine writes content/evidence as admin).
+supabase/tests/rls/coach_insights_player_update.sql:43:    WHERE grantee = 'service_role'
+supabase/tests/rls/coach_insights_player_update.sql:48:  'service_role retains UPDATE on golf_coach_insights (engine still writes)'
+supabase/tests/rls/baseball_practice_visibility.sql:56:-- No practice policy targets anon (service_role bypasses RLS).
+supabase/tests/rls/golf_coach_insights_cross_tenant_select.sql:26:-- Seed two isolated tenants as service_role (RLS bypassed for setup).
+supabase/tests/rls/baseball_recalc_body_guards.sql:7:--   3. accept service_role for cron paths
+supabase/tests/rls/baseball_recalc_body_guards.sql:108:-- service_role still works (cron / admin paths).
+supabase/tests/rls/baseball_recalc_body_guards.sql:111:SET LOCAL role TO service_role;
+supabase/tests/rls/baseball_recalc_body_guards.sql:112:SET LOCAL request.jwt.claims TO '{"role": "service_role"}';
+supabase/tests/rls/baseball_recalc_body_guards.sql:119:  'service_role can still execute per-team RPC (no completed games → no rows mutated)'
+supabase/tests/rls/baseball_practice_scrimmage_visibility.sql:8:--      targets the anon role (service_role bypasses RLS for cron/AI writes).
+supabase/tests/rls/baseball_stats_center.sql:70:-- No policy on these tables targets anon (service_role bypasses RLS).
+supabase/tests/rls/baseball_signals_and_actions.sql:61:-- No policy on either table targets anon (service_role bypasses RLS).
+supabase/tests/rls/golf_course_library.sql:65:SELECT ok(has_function_privilege('service_role', 'public.golf_normalize_name(text)', 'EXECUTE'),
+supabase/tests/rls/golf_course_library.sql:66:  'service_role can execute golf_normalize_name');
+supabase/tests/rls/baseball_ai_audit.sql:18:--   4. No policy targets the anon role (service_role bypasses RLS for engine
+supabase/tests/rls/baseball_timeline_visibility.sql:226:-- All timeline policies target authenticated only (service_role bypasses RLS).
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:2:-- INSERT or DELETE. Engine writes via service_role only.
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:6:-- ("Engine writes via service_role; no authenticated INSERT policy") and
+supabase/tests/rls/v3_goal_suggestions_no_authenticated_insert.sql:68:  'no INSERT (or ALL) policy on golf_goal_suggestions — engine uses service_role'
+supabase/tests/rls/v3_rpc_grant_hardening.sql:3:-- 2026-06-05 prod DDL are locked down to service_role only.
+supabase/tests/rls/v3_rpc_grant_hardening.sql:21:-- refresh_player_standing(uuid[]) — service_role only.
+supabase/tests/rls/v3_rpc_grant_hardening.sql:33:  'authenticated cannot execute refresh_player_standing (cron uses service-role client)'
+supabase/tests/rls/v3_rpc_grant_hardening.sql:43:  has_function_privilege('service_role', 'public.refresh_player_standing(uuid[])', 'EXECUTE'),
+supabase/tests/rls/v3_rpc_grant_hardening.sql:44:  'service_role can execute refresh_player_standing'
+supabase/tests/rls/v3_rpc_grant_hardening.sql:48:-- refresh_player_standing_round_metrics(uuid[]) — service_role only.
+supabase/tests/rls/v3_rpc_grant_hardening.sql:70:  has_function_privilege('service_role', 'public.refresh_player_standing_round_metrics(uuid[])', 'EXECUTE'),
+supabase/tests/rls/v3_rpc_grant_hardening.sql:71:  'service_role can execute refresh_player_standing_round_metrics'
+supabase/tests/rls/v3_rpc_grant_hardening.sql:75:-- refresh_player_standing_shot_metrics(uuid[]) — service_role only.
+supabase/tests/rls/v3_rpc_grant_hardening.sql:97:  has_function_privilege('service_role', 'public.refresh_player_standing_shot_metrics(uuid[])', 'EXECUTE'),
+supabase/tests/rls/v3_rpc_grant_hardening.sql:98:  'service_role can execute refresh_player_standing_shot_metrics'
+supabase/tests/rls/v3_rpc_grant_hardening.sql:102:-- refresh_player_stats_cache(uuid) — service_role only.
+supabase/tests/rls/v3_rpc_grant_hardening.sql:125:  has_function_privilege('service_role', 'public.refresh_player_stats_cache(uuid)', 'EXECUTE'),
+supabase/tests/rls/v3_rpc_grant_hardening.sql:126:  'service_role can execute refresh_player_stats_cache'
+supabase/tests/rls/v3_rpc_grant_hardening.sql:130:-- mark_player_stats_stale(uuid) — service_role only.
+supabase/tests/rls/v3_rpc_grant_hardening.sql:152:  has_function_privilege('service_role', 'public.mark_player_stats_stale(uuid)', 'EXECUTE'),
+supabase/tests/rls/v3_rpc_grant_hardening.sql:153:  'service_role can execute mark_player_stats_stale'
+supabase/tests/rls/baseball_practice_effectiveness_visibility.sql:56:-- No effectiveness policy targets anon (service_role bypasses RLS for the cron write).
+supabase/tests/rls/wave_a_db_security.sql:39:  has_function_privilege('service_role', 'public.get_golf_conversations_with_details(uuid)', 'EXECUTE'),
+supabase/tests/rls/wave_a_db_security.sql:40:  'service_role CAN execute get_golf_conversations_with_details'
+supabase/tests/rls/baseball_coach_insights_attribution.sql:23:--   5. No policy targets the anon role (service_role bypasses RLS for AI writes).
+supabase/tests/rls/baseball_staff_capabilities.sql:7:--      with a pinned search_path, executable by authenticated + service_role
+supabase/tests/rls/baseball_staff_capabilities.sql:56:  has_function_privilege('service_role', 'public.has_baseball_staff_capability(uuid, text)', 'EXECUTE'),
+supabase/tests/rls/baseball_staff_capabilities.sql:57:  'service_role CAN execute has_baseball_staff_capability'
+supabase/tests/rls/baseball_postgame_reviews.sql:7:--   2. No postgame policy targets the anon role (service_role bypasses RLS).
+supabase/scripts/check-current-policies.mjs:5:const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+supabase/scripts/check-current-policies.mjs:8:  console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+supabase/functions/process-task-reminders/index.ts:54:    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+supabase/migrations_archive/v1_original/20260109000003_function_audit_log.sql:19:GRANT SELECT, INSERT ON public.function_audit_log TO service_role;
+supabase/migrations_archive/v1_original/052_critical_audit_fixes.sql:39:ON public.golf_player_stats FOR ALL TO service_role
+supabase/migrations_archive/v1_original/20260111000002_coach_recruiting_philosophy.sql:407:  USING (auth.role() = 'service_role');
+supabase/migrations_archive/v1_original/20260111000002_coach_recruiting_philosophy.sql:414:GRANT ALL ON player_percentiles TO service_role;
+supabase/migrations_archive/v1_original/20260111000002_coach_recruiting_philosophy.sql:416:GRANT EXECUTE ON FUNCTION calculate_grad_year_percentiles(INTEGER) TO service_role;
+supabase/migrations_archive/v1_original/20251231000002_fix_user_signup_rls.sql:74:GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role;
+supabase/migrations_archive/pre_20260527/20260424020309_admin_analytics_rollup_restore_gate.sql:4:-- gate to allow service_role so the optimized function could be EXPLAIN
+supabase/migrations_archive/pre_20260527/20260525220100_v3_golf_coachhelm_llm_calls_table.sql:49:-- policies — writes flow through service-role compose() wrapper.
+supabase/migrations_archive/pre_20260527/20260525160000_v3_golf_goal_suggestions_table.sql:63:-- Engine writes via service_role; no authenticated INSERT policy.
+supabase/migrations_archive/pre_20260527/069_push_subscriptions.sql:84:    USING (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260511220000_calendar_feeds_and_error_logs_rls_hardening.sql:82:GRANT EXECUTE ON FUNCTION public.is_user_on_team(UUID, UUID) TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260307000000_golf_task_reminders.sql:134:    USING (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260524200000_v3_golf_pga_standards_table.sql:79:-- policy for authenticated; seed + future updates run via service_role.
+supabase/migrations_archive/pre_20260527/20260214220000_create_admin_events.sql:94:  TO service_role
+supabase/migrations_archive/pre_20260527/20260214220000_create_admin_events.sql:100:  TO service_role
+supabase/migrations_archive/pre_20260527/20260214220000_create_admin_events.sql:166:GRANT EXECUTE ON FUNCTION log_admin_event(TEXT, TEXT, admin_event_severity, TEXT, JSONB, UUID, TEXT, TEXT, TEXT, JSONB) TO service_role;
+supabase/migrations_archive/pre_20260527/20260524190100_v3_golf_metrics_table.sql:63:-- No write policy for authenticated; seeding + future updates run via service_role.
+supabase/migrations_archive/pre_20260527/20260428200000_get_db_telemetry.sql:17:-- only see their own rows). Body checks role from public.users; service_role
+supabase/migrations_archive/pre_20260527/20260428200000_get_db_telemetry.sql:37:  -- Auth gate: allow service_role unconditionally; otherwise require admin.
+supabase/migrations_archive/pre_20260527/20260428200000_get_db_telemetry.sql:38:  -- auth.role() returns 'service_role' for the service-role JWT, 'authenticated'
+supabase/migrations_archive/pre_20260527/20260428200000_get_db_telemetry.sql:40:  IF auth.role() <> 'service_role' THEN
+supabase/migrations_archive/pre_20260527/20260428200000_get_db_telemetry.sql:101:-- service_role may execute. anon/public are denied at the GRANT layer too.
+supabase/migrations_archive/pre_20260527/20260428200000_get_db_telemetry.sql:105:GRANT  EXECUTE ON FUNCTION public.get_db_telemetry() TO service_role;
+supabase/migrations_archive/pre_20260527/20260521120000_widen_coach_insights_grant.sql:14:-- protection from S-CRIT-2 while unblocking the coach workflow. service_role
+supabase/migrations_archive/pre_20260527/20260429T4_crm_insights_rpcs.sql:103:  TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260429T4_crm_insights_rpcs.sql:166:  TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260429T4_crm_insights_rpcs.sql:206:  TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql:12:--     begin with an admin-role gate that also accepts the service_role JWT
+supabase/migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql:27:-- service_role JWT (createAdminClient from the server action layer).
+supabase/migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql:36:  IF coalesce(auth.role(), '') = 'service_role' THEN
+supabase/migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql:48:GRANT EXECUTE ON FUNCTION public.__admin_rollup_b_gate() TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql:161:GRANT EXECUTE ON FUNCTION public.get_admin_baseball_rollup(timestamptz) TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql:436:GRANT EXECUTE ON FUNCTION public.get_admin_errors_rollup(timestamptz, timestamptz) TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260421000006_admin_rollups_b.sql:708:GRANT EXECUTE ON FUNCTION public.get_admin_teams_scoring_rollup(timestamptz) TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260523200000_coachhelm_p0_sweep.sql:156:-- player-writable columns. service_role and coach paths (via admin client)
+supabase/migrations_archive/pre_20260527/20260523200000_coachhelm_p0_sweep.sql:168:    -- can only be written by service_role / coach paths via admin client.
+supabase/migrations_archive/pre_20260527/20260523200000_coachhelm_p0_sweep.sql:170:    EXECUTE 'GRANT UPDATE ON public.golf_round_reviews TO service_role';
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:19:  WITH CHECK (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:34:  WITH CHECK (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:60:  USING (auth.role() = 'service_role')
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:61:  WITH CHECK (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:85:  USING (auth.role() = 'service_role')
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:86:  WITH CHECK (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:108:  USING (auth.role() = 'service_role')
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:109:  WITH CHECK (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260421100001_canonical_coachhelm_rls.sql:153:    EXECUTE format('CREATE POLICY %I ON public.%I FOR ALL TO authenticated USING (auth.role() = ''service_role'') WITH CHECK (auth.role() = ''service_role'')',
+supabase/migrations_archive/pre_20260527/20260523000000_p1_followups.sql:46:-- Only service_role touches this table (via getAdminClient in
+supabase/migrations_archive/pre_20260527/20260523000000_p1_followups.sql:49:-- No policies → only service_role bypasses RLS.
+supabase/migrations_archive/pre_20260527/20260523000000_p1_followups.sql:52:  'DB-backed rate limit window state — service_role only. Replaces the in-memory Map.';
+supabase/migrations_archive/pre_20260527/20260523000000_p1_followups.sql:80:  'INSERT requires caller to be primary coach on target team AND inserting their own coach_id. Closes S-CRIT-1 self-attach and the PR #16 rival-attach regression. Admin/RPC paths use service_role.';
+supabase/migrations_archive/pre_20260527/20260523000000_p1_followups.sql:91:-- the safe user-editable columns. service_role keeps full UPDATE for
+supabase/migrations_archive/pre_20260527/20260523000000_p1_followups.sql:107:GRANT UPDATE ON public.golf_rounds TO service_role;
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:50:GRANT EXECUTE ON FUNCTION is_golf_team_primary_coach(uuid) TO service_role;
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:63:-- Bootstrap (creating a brand new team) happens via service_role in the
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:99:-- service_role keeps full UPDATE so triggerPlayerInsightsAfterRound and
+supabase/migrations_archive/pre_20260527/20260517000000_fix_critical_rls_policies.sql:104:GRANT UPDATE ON public.golf_coach_insights TO service_role;
+supabase/migrations_archive/pre_20260527/20260518124505_fix_live_db_lint_errors.sql:18:GRANT EXECUTE ON FUNCTION public.hypopg_reset() TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260214230000_create_admin_rpc_functions.sql:76:GRANT EXECUTE ON FUNCTION get_platform_health_stats() TO service_role;
+supabase/migrations_archive/pre_20260527/20260214230000_create_admin_rpc_functions.sql:99:GRANT EXECUTE ON FUNCTION get_users_with_auth() TO service_role;
+supabase/migrations_archive/pre_20260527/20260214230000_create_admin_rpc_functions.sql:163:GRANT EXECUTE ON FUNCTION get_error_summary(INTEGER) TO service_role;
+supabase/migrations_archive/pre_20260527/20260214230000_create_admin_rpc_functions.sql:201:GRANT EXECUTE ON FUNCTION get_audit_log_recent(INTEGER) TO service_role;
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:112:CREATE POLICY "Service role can manage feature flags" ON public._deprecated_feature_flags AS PERMISSIVE FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:322:CREATE POLICY "Service role manages page views" ON public._deprecated_page_views AS PERMISSIVE FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:372:CREATE POLICY "Service role can manage admin_events" ON public.admin_events AS PERMISSIVE FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:375:CREATE POLICY "Service role can insert admin_events" ON public.admin_events AS PERMISSIVE FOR INSERT TO service_role
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:391:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:392:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:450:CREATE POLICY "Service role can manage audit logs" ON public.audit_log AS PERMISSIVE FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:462:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:463:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:471:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:472:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:988:CREATE POLICY "System can manage percentiles" ON public.baseball_player_percentiles AS PERMISSIVE FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1432:CREATE POLICY "Service role can manage demo requests" ON public.demo_requests AS PERMISSIVE FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1441:  USING ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1496:CREATE POLICY "Service role can manage error logs" ON public.error_logs AS PERMISSIVE FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1508:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1509:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1683:DROP POLICY IF EXISTS golf_causal_relationships_service_role_all ON public.golf_causal_relationships;
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1684:CREATE POLICY golf_causal_relationships_service_role_all ON public.golf_causal_relationships AS PERMISSIVE FOR ALL TO public
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1685:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1686:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1704:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1817:DROP POLICY IF EXISTS golf_confidence_calibration_service_role_all ON public.golf_confidence_calibration;
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1818:CREATE POLICY golf_confidence_calibration_service_role_all ON public.golf_confidence_calibration AS PERMISSIVE FOR ALL TO public
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1819:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1820:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1970:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:1971:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2047:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2107:  USING ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2157:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2184:  USING ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2197:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2198:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2213:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2214:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2235:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2236:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2376:  USING ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2715:  USING ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2933:  USING ((auth.role() = 'service_role'::text))
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2934:  WITH CHECK ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:2993:  USING ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:3005:CREATE POLICY "Service role can manage login attempts" ON public.login_attempts AS PERMISSIVE FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260427210000_canonical_rls_snapshot.sql:3056:  USING ((auth.role() = 'service_role'::text));
+supabase/migrations_archive/pre_20260527/20260221150000_set_statement_timeout.sql:13:-- service_role keeps longer timeout for migrations, backfills, bulk ops
+supabase/migrations_archive/pre_20260527/20260221150000_set_statement_timeout.sql:14:-- (service_role = 60s, which is the Supabase platform default)
+supabase/migrations_archive/pre_20260527/041_shared_tables.sql:28:  FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/041_shared_tables.sql:64:  FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/041_shared_tables.sql:98:  FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/041_shared_tables.sql:227:  FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/041_shared_tables.sql:256:  FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260527190000_harden_public_rpc_grants.sql:21:--      GRANT only to service_role. Any admin UI calling these must use the
+supabase/migrations_archive/pre_20260527/20260527190000_harden_public_rpc_grants.sql:22:--      service-role client and gate at the API route level.
+supabase/migrations_archive/pre_20260527/20260527190000_harden_public_rpc_grants.sql:43:-- 1. CRM RPCs — no callers in src/; lock down to service_role only.
+supabase/migrations_archive/pre_20260527/20260527190000_harden_public_rpc_grants.sql:51:grant execute on function public.get_crm_coach_email_events(uuid) to service_role;
+supabase/migrations_archive/pre_20260527/20260527190000_harden_public_rpc_grants.sql:58:grant execute on function public.get_crm_email_stats_detailed() to service_role;
+supabase/migrations_archive/pre_20260527/20260311192653_coachhelm_production_alignment.sql:77:DROP POLICY IF EXISTS "golf_causal_relationships_service_role_all" ON golf_causal_relationships;
+supabase/migrations_archive/pre_20260527/20260311192653_coachhelm_production_alignment.sql:78:CREATE POLICY "golf_causal_relationships_service_role_all"
+supabase/migrations_archive/pre_20260527/20260311192653_coachhelm_production_alignment.sql:80:USING (auth.role() = 'service_role')
+supabase/migrations_archive/pre_20260527/20260311192653_coachhelm_production_alignment.sql:81:WITH CHECK (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260311192653_coachhelm_production_alignment.sql:104:DROP POLICY IF EXISTS "golf_confidence_calibration_service_role_all" ON golf_confidence_calibration;
+supabase/migrations_archive/pre_20260527/20260311192653_coachhelm_production_alignment.sql:105:CREATE POLICY "golf_confidence_calibration_service_role_all"
+supabase/migrations_archive/pre_20260527/20260311192653_coachhelm_production_alignment.sql:107:USING (auth.role() = 'service_role')
+supabase/migrations_archive/pre_20260527/20260311192653_coachhelm_production_alignment.sql:108:WITH CHECK (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260428210000_get_shot_data_quality.sql:37:  -- Auth gate: allow service_role unconditionally; otherwise require admin.
+supabase/migrations_archive/pre_20260527/20260428210000_get_shot_data_quality.sql:38:  IF auth.role() <> 'service_role' THEN
+supabase/migrations_archive/pre_20260527/20260428210000_get_shot_data_quality.sql:75:-- service_role may execute. anon/public are denied at the GRANT layer too.
+supabase/migrations_archive/pre_20260527/20260428210000_get_shot_data_quality.sql:79:GRANT  EXECUTE ON FUNCTION public.get_shot_data_quality() TO service_role;
+supabase/migrations_archive/pre_20260527/20260524210000_v3_golf_player_standing_table.sql:99:-- No INSERT/UPDATE policies for authenticated — cron uses service_role.
+supabase/migrations_archive/pre_20260527/037_baseball_missing_tables.sql:319:  FOR ALL TO service_role
+supabase/migrations_archive/pre_20260527/20260313100000_admin_dashboard_upgrade.sql:387:-- These tables are admin-only, accessed via service_role key.
+supabase/migrations_archive/pre_20260527/20260305000000_device_tokens.sql:37:  FOR ALL USING (auth.role() = 'service_role');
+supabase/migrations_archive/pre_20260527/20260428T6_coach_engagement_view.sql:13:-- Access pattern: server actions read the view via the service-role client
+supabase/migrations_archive/pre_20260527/20260428T6_coach_engagement_view.sql:59:GRANT EXECUTE ON FUNCTION refresh_crm_coach_engagement() TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260428T6_coach_engagement_view.sql:62:-- (server actions read via service-role and enforce admin role at the action
+supabase/migrations_archive/pre_20260527/20260428T6_coach_engagement_view.sql:65:GRANT SELECT ON crm_coach_engagement TO authenticated, service_role;
+supabase/migrations_archive/pre_20260527/20260512100000_coach_id_for_team_rpc.sql:31:GRANT EXECUTE ON FUNCTION public.coach_id_for_team(UUID, UUID) TO authenticated, service_role;
