@@ -49,6 +49,7 @@ import {
   IconSettings,
   IconBuilding,
   IconShieldAlert,
+  IconShieldCheck,
   IconCheckCircle2,
   IconClock,
   IconMessage,
@@ -88,6 +89,7 @@ export type BaseballNavId =
   | 'calendar'
   | 'player-tasks'
   | 'player-profile'
+  | 'player-passport'
   | 'player-timeline'
   | 'stats-center'
   | 'import-center'
@@ -330,6 +332,18 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     section: 'primary',
   },
   {
+    id: 'player-passport',
+    label: 'Passport',
+    href: '/baseball/player/passport',
+    icon: IconShieldCheck,
+    // Full source-backed player proof packet. This is the polished self-view
+    // under the player route group; coach/scout versions remain deep-linked
+    // from player profile/scout-packet surfaces.
+    role: 'player',
+    requiredCapability: null,
+    section: 'primary',
+  },
+  {
     id: 'player-timeline',
     label: 'My Timeline',
     href: '/baseball/player/timeline',
@@ -378,7 +392,9 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
   {
     id: 'practice-planner',
     label: 'Practice Planner',
+    playerLabel: 'Practice',
     href: '/baseball/dashboard/practice',
+    playerHref: '/baseball/player/practice',
     icon: IconClipboardList,
     role: 'both',
     // Coaches need can_manage_practice to plan; players see the published plan.
@@ -414,8 +430,9 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     label: 'Performance',
     href: '/baseball/dashboard/performance',
     icon: IconDumbbell,
-    role: 'both',
-    // Coaches need can_manage_lifting to program; players see their own loads.
+    role: 'coach',
+    // Coaches need can_manage_lifting to program; players reach their own
+    // polished lift/readiness surfaces through player-lift/player-readiness.
     requiredCapability: null,
     section: 'primary',
   },
