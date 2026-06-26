@@ -45,6 +45,7 @@ interface RosterActionResult {
 function revalidateRoster(): void {
   revalidatePath('/baseball/dashboard');
   revalidatePath('/baseball/dashboard/roster');
+  revalidatePath('/baseball/dashboard/command-center');
   revalidatePath('/baseball/dashboard/team');
 }
 

@@ -10,7 +10,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { resolveLiftingAccess } from '@/lib/lifting/access';
+import { resolveLiftingAccess, resolveLiftingOrgIdForUser } from '@/lib/lifting/access';
 import { ProgramEditorClient } from '@/components/lifting/programs/ProgramEditorClient';
 import type {
   HelmLiftingProgramRow,
@@ -22,15 +22,6 @@ import type {
 } from '@/lib/types/helm-lifting-data';
 import type { HelmLiftingAthleteRow } from '@/lib/types/helm-lifting';
 
-async function getOrgId(userId: string): Promise<string | null> {
-  const supabase = await createClient();
-  const { data } = await fromUntyped(supabase, 'helm_lifting_coaches')
-    .select('organization_id')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .limit(1) as { data: Array<{ organization_id: string }> | null };
-  return data?.[0]?.organization_id ?? null;
-}
 
 export interface LiftProgramTree {
   program: HelmLiftingProgramRow;
@@ -172,7 +163,7 @@ export default async function ProgramEditorPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/lifting/login');
 
-  const orgId = await getOrgId(user.id);
+  const orgId = await resolveLiftingOrgIdForUser();
   if (!orgId) redirect('/lifting/coach');
 
   const access = await resolveLiftingAccess(orgId);

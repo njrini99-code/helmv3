@@ -86,3 +86,32 @@ export async function resolveLiftingAccess(orgId: string): Promise<HelmLiftingAc
     assignments,
   };
 }
+
+/**
+ * Resolve the lifting org for the current user — active coach row first, then
+ * org-viewer row (head-coach cross-portal). Mirrors lifting dashboard layout.
+ */
+export async function resolveLiftingOrgIdForUser(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data: coachRow } = await fromUntyped(supabase, 'helm_lifting_coaches')
+    .select('organization_id')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle() as { data: { organization_id: string } | null };
+
+  if (coachRow?.organization_id) return coachRow.organization_id;
+
+  const { data: viewerRow } = await fromUntyped(supabase, 'helm_lifting_org_viewers')
+    .select('organization_id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle() as { data: { organization_id: string } | null };
+
+  return viewerRow?.organization_id ?? null;
+}

@@ -104,7 +104,7 @@ export default function AcademicsPage() {
   const { selectedTeamId } = useTeamStore();
   const { isAllowed, isLoading: routeLoading } = useRouteProtection({
     allowedCoachTypes: ['juco'],
-    redirectTo: '/baseball/dashboard/team',
+    redirectTo: '/baseball/dashboard/command-center',
   });
 
   const [students, setStudents] = useState<StudentAthlete[]>([]);

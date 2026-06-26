@@ -19,8 +19,11 @@ import {
   IconFilter,
   IconChevronDown,
 } from '@/components/icons';
-import type { BaseballRosterPlayer, BaseballCoachInsight } from '@/lib/types';
+import type { BaseballRosterPlayer } from '@/lib/types';
+import type { RiskFeedItem } from '@/lib/baseball/read-models/command-center';
 import { Button } from '@/components/ui/button';
+import { RiskFeedStrip } from './RiskFeedStrip';
+import { DailyBriefPanel } from './DailyBriefPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,10 +43,11 @@ interface CommandCenterClientProps {
     inviteCode: string | null;
   };
   players: BaseballRosterPlayer[];
-  insights: BaseballCoachInsight[];
   coachId: string;
   coachName?: string;
   calendarEvents?: CalendarEvent[];
+  riskFeed?: RiskFeedItem[];
+  riskFeedError?: string | null;
 }
 
 type MainTab = 'roster' | 'stats';
@@ -267,7 +271,10 @@ export function CommandCenterClient({
   team,
   players,
   coachId: _coachId,
+  coachName,
   calendarEvents = [],
+  riskFeed = [],
+  riskFeedError = null,
 }: CommandCenterClientProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -435,6 +442,22 @@ export function CommandCenterClient({
                 </Button>
               </Link>
             </div>
+          </div>
+
+          {/* ── AI brief + risk strip (getCommandCenter read model) ─────── */}
+          <div className="grid gap-5 lg:grid-cols-2 mb-6">
+            <DailyBriefPanel
+              items={riskFeed}
+              coachName={coachName}
+              error={riskFeedError}
+              onOpenPlayer={(playerId) => router.push(`/baseball/dashboard/players/${playerId}`)}
+            />
+            <RiskFeedStrip
+              items={riskFeed}
+              error={riskFeedError}
+              onOpenPlayer={(playerId) => router.push(`/baseball/dashboard/players/${playerId}`)}
+              maxItems={6}
+            />
           </div>
 
           {/* ── Mini Week Calendar Strip ────────────────────────────────── */}

@@ -4,9 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { CommandCenterClient } from '@/components/baseball/command-center/CommandCenterClient';
-import type { BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
+import { getCommandCenter } from '@/lib/baseball/read-models/command-center';
+import type { BaseballPlayerAggregates } from '@/lib/types';
 
-// Local type for baseball player data from the query
 interface BaseballPlayerData {
   id: string;
   first_name: string | null;
@@ -25,10 +25,8 @@ interface BaseballPlayerData {
   state: string | null;
 }
 
-// Extended type for roster players with aggregates and insights
 interface BaseballRosterPlayerLocal extends BaseballPlayerData {
   aggregates?: BaseballPlayerAggregates;
-  insights?: BaseballCoachInsight[];
   jersey_number?: number | null;
   team_position?: string | null;
   team_status?: string | null;
@@ -38,7 +36,6 @@ interface BaseballRosterPlayerLocal extends BaseballPlayerData {
 export default async function CommandCenterPage() {
   const supabase = await createClient();
 
-  // Single cached auth fetch — deduplicates across all server components in this render
   const session = await getSessionProfile();
   if (!session) redirect('/baseball/login');
 
@@ -46,7 +43,6 @@ export default async function CommandCenterPage() {
   if (!coach) redirect('/baseball/player/today');
 
   if (!coach.organization_id) {
-    // No organization - show setup prompt
     return (
       <div className="min-h-dvh bg-cream-100">
         <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-12">
@@ -69,107 +65,26 @@ export default async function CommandCenterPage() {
     );
   }
 
-  // Get team for this organization
-  // Note: join_code column on baseball_teams - types will be regenerated
   const { data: team, error: teamError } = await supabase
     .from('baseball_teams')
     .select('id, name, team_type, join_code')
     .eq('organization_id', coach.organization_id)
     .single() as { data: { id: string; name: string; team_type: string; join_code: string | null } | null; error: unknown };
 
-  // No team found — render the full Command Center with an empty setup state.
   if (teamError || !team) {
-    // team.id = '' signals the client to hide invite/team-specific actions.
     return (
       <CommandCenterClient
         team={{ id: '', name: 'Your Program', teamType: coach.coach_type, inviteCode: null }}
         players={[]}
-        insights={[]}
         coachId={coach.id}
         coachName={coach.full_name || 'Coach'}
         calendarEvents={[]}
+        riskFeed={[]}
+        riskFeedError={null}
       />
     );
   }
 
-  // Get team members (players on this team)
-  const { data: teamMembers } = await supabase
-    .from('baseball_team_members')
-    .select(`
-      player_id,
-      position,
-      jersey_number,
-      status,
-      joined_at,
-      baseball_players!inner (
-        id,
-        first_name,
-        last_name,
-        avatar_url,
-        primary_position,
-        secondary_position,
-        grad_year,
-        bats,
-        throws,
-        height_feet,
-        height_inches,
-        weight_lbs,
-        gpa,
-        city,
-        state
-      )
-    `)
-    .eq('team_id', team.id);
-
-  // Get aggregates for all players on the team
-  // Note: Table created via migration - types will be regenerated
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: aggregates } = await (supabase as any)
-    .from('baseball_player_aggregates')
-    .select('*')
-    .eq('team_id', team.id) as { data: BaseballPlayerAggregates[] | null };
-
-  // Get active insights for the team
-  // Note: Table created via migration - types will be regenerated
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: insights } = await (supabase as any)
-    .from('baseball_coach_insights')
-    .select('*')
-    .eq('team_id', team.id)
-    .eq('coach_id', coach.id)
-    .eq('status', 'active')
-    .order('priority', { ascending: true })
-    .order('created_at', { ascending: false })
-    .limit(10) as { data: BaseballCoachInsight[] | null };
-
-  // Map players with their aggregates and insights
-  const players: BaseballRosterPlayerLocal[] = (teamMembers || []).map((member) => {
-    const player = member.baseball_players as unknown as BaseballPlayerData;
-    const playerAggregates = (aggregates || []).find(
-      (a: BaseballPlayerAggregates) => a.player_id === player.id
-    );
-    const playerInsights = (insights || []).filter(
-      (i: BaseballCoachInsight) => i.player_id === player.id
-    );
-
-    return {
-      ...player,
-      aggregates: playerAggregates || undefined,
-      insights: playerInsights,
-      // Add team member info
-      jersey_number: member.jersey_number,
-      team_position: member.position,
-      team_status: member.status,
-      joined_at: member.joined_at,
-    };
-  });
-
-  // Team-level insights (not player-specific)
-  const teamInsights = (insights || []).filter(
-    (i: BaseballCoachInsight) => !i.player_id
-  );
-
-  // Fetch calendar events for the current week
   const now = new Date();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - now.getDay());
@@ -177,12 +92,66 @@ export default async function CommandCenterPage() {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 7);
 
-  const { data: calendarEvents } = await supabase
-    .from('baseball_events')
-    .select('id, title, event_type, start_time, end_time')
-    .eq('team_id', team.id)
-    .gte('start_time', weekStart.toISOString())
-    .lt('start_time', weekEnd.toISOString());
+  const [commandCenter, teamMembersRes, calendarRes] = await Promise.all([
+    getCommandCenter(team.id),
+    supabase
+      .from('baseball_team_members')
+      .select(`
+        player_id,
+        position,
+        jersey_number,
+        status,
+        joined_at,
+        baseball_players!inner (
+          id,
+          first_name,
+          last_name,
+          avatar_url,
+          primary_position,
+          secondary_position,
+          grad_year,
+          bats,
+          throws,
+          height_feet,
+          height_inches,
+          weight_lbs,
+          gpa,
+          city,
+          state
+        )
+      `)
+      .eq('team_id', team.id),
+    supabase
+      .from('baseball_events')
+      .select('id, title, event_type, start_time, end_time')
+      .eq('team_id', team.id)
+      .gte('start_time', weekStart.toISOString())
+      .lt('start_time', weekEnd.toISOString()),
+  ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: aggregates } = await (supabase as any)
+    .from('baseball_player_aggregates')
+    .select('*')
+    .eq('team_id', team.id) as { data: BaseballPlayerAggregates[] | null };
+
+  const teamMembers = teamMembersRes.data;
+
+  const players: BaseballRosterPlayerLocal[] = (teamMembers || []).map((member) => {
+    const player = member.baseball_players as unknown as BaseballPlayerData;
+    const playerAggregates = (aggregates || []).find(
+      (a: BaseballPlayerAggregates) => a.player_id === player.id,
+    );
+
+    return {
+      ...player,
+      aggregates: playerAggregates || undefined,
+      jersey_number: member.jersey_number,
+      team_position: member.position,
+      team_status: member.status,
+      joined_at: member.joined_at,
+    };
+  });
 
   return (
     <CommandCenterClient
@@ -192,12 +161,12 @@ export default async function CommandCenterPage() {
         teamType: team.team_type,
         inviteCode: team.join_code,
       }}
-      // Cast to expected type - the local type has the same shape
       players={players as unknown as import('@/lib/types').BaseballRosterPlayer[]}
-      insights={teamInsights as BaseballCoachInsight[]}
       coachId={coach.id}
       coachName={coach.full_name || 'Coach'}
-      calendarEvents={calendarEvents ?? []}
+      calendarEvents={calendarRes.data ?? []}
+      riskFeed={commandCenter.authorized ? commandCenter.riskFeed : []}
+      riskFeedError={commandCenter.error}
     />
   );
 }

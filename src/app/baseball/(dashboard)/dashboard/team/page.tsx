@@ -8,9 +8,9 @@ export default async function TeamDashboardPage() {
   const context = await getActiveBaseballContext();
   if (!context) redirect('/baseball/login');
 
-  redirect(
+  const target =
     context.activeRole === 'coach'
       ? '/baseball/dashboard/command-center'
-      : '/baseball/player/today',
-  );
+      : '/baseball/player/today';
+  redirect(target);
 }

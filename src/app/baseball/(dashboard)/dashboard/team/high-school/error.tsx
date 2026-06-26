@@ -17,7 +17,7 @@ export default function Error({
       component="HighSchoolTeamPage"
       title="Failed to load team"
       message="We couldn't load your high school team. Please try again."
-      homePath="/baseball/dashboard/team"
+      homePath="/baseball/dashboard/command-center"
     />
   );
 }

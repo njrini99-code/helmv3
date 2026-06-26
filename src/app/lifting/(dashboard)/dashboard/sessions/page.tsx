@@ -9,7 +9,7 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { resolveLiftingAccess } from '@/lib/lifting/access';
+import { resolveLiftingAccess, resolveLiftingOrgIdForUser } from '@/lib/lifting/access';
 import { SessionListClient } from '@/components/lifting/sessions/SessionListClient';
 import type { HelmLiftingSessionRow } from '@/lib/types/helm-lifting-data';
 import type { HelmLiftingAthleteRow } from '@/lib/types/helm-lifting';
@@ -20,15 +20,6 @@ export interface SessionListItem extends HelmLiftingSessionRow {
   athlete_position: string | null;
 }
 
-async function getOrgId(userId: string): Promise<string | null> {
-  const supabase = await createClient();
-  const { data } = await fromUntyped(supabase, 'helm_lifting_coaches')
-    .select('organization_id')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .limit(1) as { data: Array<{ organization_id: string }> | null };
-  return data?.[0]?.organization_id ?? null;
-}
 
 async function getSessions(orgId: string): Promise<SessionListItem[]> {
   const supabase = await createClient();
@@ -72,7 +63,7 @@ export default async function SessionsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/lifting/login');
 
-  const orgId = await getOrgId(user.id);
+  const orgId = await resolveLiftingOrgIdForUser();
   if (!orgId) redirect('/lifting/coach');
 
   const access = await resolveLiftingAccess(orgId);

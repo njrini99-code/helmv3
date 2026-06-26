@@ -69,6 +69,8 @@ const TEAM_ROUTES = [
   '/baseball/dashboard/team',
 ];
 const RECRUITING_ALLOWED_COACH_TYPES: CoachType[] = ['college', 'juco'];
+/** Canonical coach dashboard landing (replaces legacy /baseball/dashboard/team). */
+const COACH_HOME = '/baseball/dashboard/command-center';
 
 /**
  * Check if user is authorized to access the requested route based on their role
@@ -115,20 +117,20 @@ async function checkRouteAuthorization(
     if (isTeamRoute || isOrgRoute) {
       return { authorized: true };
     }
-    return { authorized: false, redirectTo: '/baseball/dashboard/team' };
+    return { authorized: false, redirectTo: COACH_HOME };
   }
 
   if (isRecruitingRoute && !RECRUITING_ALLOWED_COACH_TYPES.includes(coach.coach_type as CoachType)) {
     return {
       authorized: false,
-      redirectTo: '/baseball/dashboard/team'
+      redirectTo: COACH_HOME
     };
   }
 
   if (isOrgRoute && coach.coach_type !== 'showcase') {
     return {
       authorized: false,
-      redirectTo: '/baseball/dashboard/team',
+      redirectTo: COACH_HOME,
     };
   }
 
@@ -136,13 +138,13 @@ async function checkRouteAuthorization(
     if (coach.coach_type === 'college') {
       return {
         authorized: false,
-        redirectTo: '/baseball/dashboard',
+        redirectTo: COACH_HOME,
       };
     }
     if (coach.coach_type === 'juco' && coachMode === 'recruiting') {
       return {
         authorized: false,
-        redirectTo: '/baseball/dashboard',
+        redirectTo: COACH_HOME,
       };
     }
   }
@@ -151,19 +153,19 @@ async function checkRouteAuthorization(
     if (isRecruitingRoute && coachMode === 'team') {
       return {
         authorized: false,
-        redirectTo: '/baseball/dashboard/team',
+        redirectTo: COACH_HOME,
       };
     }
     if (isTeamRoute && coachMode === 'recruiting') {
       return {
         authorized: false,
-        redirectTo: '/baseball/dashboard',
+        redirectTo: COACH_HOME,
       };
     }
     if (pathname === '/baseball/dashboard' && coachMode === 'team') {
       return {
         authorized: false,
-        redirectTo: '/baseball/dashboard/team',
+        redirectTo: COACH_HOME,
       };
     }
   }

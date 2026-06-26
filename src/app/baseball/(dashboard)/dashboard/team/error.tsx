@@ -17,7 +17,7 @@ export default function Error({
       component="BaseballTeamPage"
       title="Failed to load team"
       message="We couldn't load team info. Please try again."
-      homePath="/baseball/dashboard"
+      homePath="/baseball/dashboard/command-center"
     />
   );
 }
