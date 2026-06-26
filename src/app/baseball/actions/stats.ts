@@ -481,6 +481,8 @@ export async function recalculatePlayerAggregates(
   const practiceAvg = calculateAvg(practiceStats);
   const gameAvg = calculateAvg(gameStats);
   const pressureGap = practiceAvg != null && gameAvg != null ? gameAvg - practiceAvg : null;
+  const totalAtBats = stats.reduce((sum, s) => sum + (s.at_bats || 0), 0);
+  const totalHits = stats.reduce((sum, s) => sum + (s.hits || 0), 0);
 
   // Last 5 and 10 sessions
   const last5 = stats.slice(0, 5);
@@ -490,49 +492,58 @@ export async function recalculatePlayerAggregates(
 
   // Calculate trend
   let recentTrend: 'improving' | 'declining' | 'stable' = 'stable';
-  let trendMagnitude = 0;
-
   if (last5Avg != null && last10Avg != null) {
     const diff = last5Avg - last10Avg;
-    trendMagnitude = Math.abs(diff);
 
     if (diff > 0.020) recentTrend = 'improving';
     else if (diff < -0.020) recentTrend = 'declining';
   }
 
-  // Exit velocity
-  const evStats = stats.filter(s => s.exit_velocity != null);
-  const avgEV = evStats.length > 0
-    ? evStats.reduce((sum, s) => sum + (s.exit_velocity || 0), 0) / evStats.length
-    : null;
-  const maxEV = evStats.length > 0
-    ? Math.max(...evStats.map(s => s.exit_velocity || 0))
-    : null;
+  const trendData = stats
+    .slice(0, 14)
+    .reverse()
+    .map((s, index) => ({
+      session: index + 1,
+      date: s.session_date,
+      type: s.stat_type,
+      avg: calculateAvg([s]) ?? 0,
+    }));
 
-  // Upsert aggregates
-  const aggregates: Partial<BaseballPlayerAggregates> = {
+  // Upsert the aggregate shape that exists in production. The wider
+  // BaseballPlayerAggregates TS type covers future analytics fields, but the
+  // live table is keyed by (player_id, team_id) and does not have those columns.
+  const aggregates = {
     player_id: playerId,
     team_id: teamId,
     total_sessions: stats.length,
-    practice_sessions: practiceStats.length,
-    game_sessions: gameStats.length,
     career_avg: careerAvg,
     practice_avg: practiceAvg,
     game_avg: gameAvg,
     pressure_gap: pressureGap,
     recent_trend: recentTrend,
-    trend_magnitude: trendMagnitude,
+    total_at_bats: totalAtBats,
+    total_hits: totalHits,
     last_5_avg: last5Avg,
     last_10_avg: last10Avg,
-    avg_exit_velocity: avgEV,
-    max_exit_velocity: maxEV,
+    trend_data: trendData,
+    last_session_at: stats[0]?.session_date ?? null,
+    updated_at: new Date().toISOString(),
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  const { error: aggregateError } = await (supabase as any)
     .from('baseball_player_aggregates')
-    .upsert(aggregates, { onConflict: 'player_id' });
+    .upsert(aggregates, { onConflict: 'player_id,team_id' });
 
+  if (aggregateError) {
+    await logServerError(
+      `Failed to upsert baseball player aggregates: ${aggregateError instanceof Error ? aggregateError.message : String(aggregateError)}`,
+      { action: 'stats.recalculatePlayerAggregates', playerId, metadata: { teamId } },
+    );
+    return { success: false, error: 'Failed to recalculate player aggregates' };
+  }
+
+  revalidatePath('/baseball/dashboard/command-center');
   revalidatePath('/baseball/dashboard/stats');
   revalidatePath(`/baseball/dashboard/players/${playerId}`);
   return { success: true };

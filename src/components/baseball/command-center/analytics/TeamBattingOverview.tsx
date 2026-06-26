@@ -40,7 +40,9 @@ function calculateTeamStats(players: BaseballRosterPlayer[]): TeamStats {
   // Calculate weighted averages based on total sessions (as proxy for at-bats)
   let totalWeight = 0;
   let weightedAvg = 0;
+  let obpWeight = 0;
   let weightedOBP = 0;
+  let slgWeight = 0;
   let weightedSLG = 0;
   let totalAtBats = 0;
 
@@ -54,16 +56,18 @@ function calculateTeamStats(players: BaseballRosterPlayer[]): TeamStats {
       weightedAvg += agg.career_avg * weight;
     }
     if (agg.career_obp != null) {
+      obpWeight += weight;
       weightedOBP += agg.career_obp * weight;
     }
     if (agg.career_slg != null) {
+      slgWeight += weight;
       weightedSLG += agg.career_slg * weight;
     }
   }
 
   const teamAvg = totalWeight > 0 ? weightedAvg / totalWeight : null;
-  const teamOBP = totalWeight > 0 ? weightedOBP / totalWeight : null;
-  const teamSLG = totalWeight > 0 ? weightedSLG / totalWeight : null;
+  const teamOBP = obpWeight > 0 ? weightedOBP / obpWeight : null;
+  const teamSLG = slgWeight > 0 ? weightedSLG / slgWeight : null;
   const teamOPS = teamOBP != null && teamSLG != null ? teamOBP + teamSLG : null;
 
   return {
