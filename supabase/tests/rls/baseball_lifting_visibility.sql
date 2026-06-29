@@ -17,7 +17,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(34);
+SELECT plan(35);
 
 -- ============================================================================
 -- 1. RLS enabled + anon locked out on all four tables.

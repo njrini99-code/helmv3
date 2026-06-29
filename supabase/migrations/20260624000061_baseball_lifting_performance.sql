@@ -308,7 +308,7 @@ CREATE POLICY "baseball_lift_results_delete" ON public.baseball_lift_results
   );
 
 -- ----------------------------------------------------------------------------
--- baseball_readiness_checkins — player owns; staff read only with can_view_readiness.
+-- baseball_readiness_checkins — player owns; staff read only with can_view_medical.
 -- ----------------------------------------------------------------------------
 ALTER TABLE public.baseball_readiness_checkins ENABLE ROW LEVEL SECURITY;
 
@@ -317,14 +317,14 @@ DROP POLICY IF EXISTS "baseball_readiness_checkins_insert" ON public.baseball_re
 DROP POLICY IF EXISTS "baseball_readiness_checkins_update" ON public.baseball_readiness_checkins;
 DROP POLICY IF EXISTS "baseball_readiness_checkins_delete" ON public.baseball_readiness_checkins;
 
--- SELECT: the owning player, OR staff WITH the can_view_readiness gate who
+-- SELECT: the owning player, OR staff WITH the can_view_medical gate who
 -- may view that player. Other players can never read (no path matches).
 CREATE POLICY "baseball_readiness_checkins_select" ON public.baseball_readiness_checkins
   FOR SELECT TO authenticated
   USING (
     player_id = public.get_my_baseball_player_id()
     OR (
-      public.has_baseball_staff_capability(team_id, 'can_view_readiness')
+      public.has_baseball_staff_capability(team_id, 'can_view_medical')
       AND public.can_view_baseball_player(team_id, player_id)
     )
   );
