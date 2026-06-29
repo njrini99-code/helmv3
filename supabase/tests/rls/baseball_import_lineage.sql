@@ -99,6 +99,39 @@ SELECT is(
 );
 
 -- ============================================================================
+-- 3b. Every CRUD verb on baseball_player_external_ids has exactly one policy.
+-- ============================================================================
+
+SELECT is(
+  (SELECT COUNT(*)::int FROM pg_policies
+     WHERE schemaname = 'public' AND tablename = 'baseball_player_external_ids'
+       AND cmd = 'SELECT'),
+  1,
+  'baseball_player_external_ids has exactly one SELECT policy'
+);
+SELECT is(
+  (SELECT COUNT(*)::int FROM pg_policies
+     WHERE schemaname = 'public' AND tablename = 'baseball_player_external_ids'
+       AND cmd = 'INSERT'),
+  1,
+  'baseball_player_external_ids has exactly one INSERT policy'
+);
+SELECT is(
+  (SELECT COUNT(*)::int FROM pg_policies
+     WHERE schemaname = 'public' AND tablename = 'baseball_player_external_ids'
+       AND cmd = 'UPDATE'),
+  1,
+  'baseball_player_external_ids has exactly one UPDATE policy'
+);
+SELECT is(
+  (SELECT COUNT(*)::int FROM pg_policies
+     WHERE schemaname = 'public' AND tablename = 'baseball_player_external_ids'
+       AND cmd = 'DELETE'),
+  1,
+  'baseball_player_external_ids has exactly one DELETE policy'
+);
+
+-- ============================================================================
 -- 4. Team-scoping is real — import_runs SELECT references team_id scope.
 -- ============================================================================
 
