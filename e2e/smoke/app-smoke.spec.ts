@@ -2,6 +2,9 @@ import { expect, test } from '@playwright/test';
 
 const demoEmail = process.env.E2E_GOLF_EMAIL;
 const demoPassword = process.env.E2E_GOLF_PASSWORD;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const authSmokeReady = Boolean(demoEmail && demoPassword && serviceRoleKey);
+const authSmokeTest = authSmokeReady ? test : test.skip;
 
 test.describe('Helm smoke checks', () => {
   test('landing page loads', async ({ page }) => {
@@ -21,8 +24,7 @@ test.describe('Helm smoke checks', () => {
     await expect(page).toHaveURL(/\/golf\/login|\/login/);
   });
 
-  test('demo golf user can open dashboard when credentials are configured', async ({ page }) => {
-    test.skip(!demoEmail || !demoPassword, 'E2E_GOLF_EMAIL and E2E_GOLF_PASSWORD are not configured.');
+  authSmokeTest('demo golf user can open dashboard when credentials are configured', async ({ page }) => {
     const email = demoEmail ?? '';
     const password = demoPassword ?? '';
 
