@@ -10,7 +10,7 @@
 --   * ADDITIVE ONLY. No DROP TABLE/COLUMN, no destructive UPDATE/DELETE.
 --   * Functions: CREATE OR REPLACE. Policies: DROP POLICY IF EXISTS then CREATE
 --     POLICY (re-runnable). RLS ENABLED on every referenced table.
---   * SECURITY DEFINER helpers pin search_path = public, pg_temp.
+--   * Elevated helpers pin search_path = pg_catalog, public.
 --   * EXECUTE granted to authenticated + service_role ONLY. NEVER to anon.
 --   * Every table policy block is guarded with to_regclass() so this file is
 --     safe to (re)run even if a sibling migration has not yet landed. It is
@@ -20,7 +20,7 @@
 -- ============================================================================
 
 -- ============================================================================
--- SECTION 1 — HELPER FUNCTIONS (capability-aware, SECURITY DEFINER)
+-- SECTION 1 — HELPER FUNCTIONS (capability-aware, elevated)
 -- ============================================================================
 -- These reuse the existing baseball membership pattern:
 --   get_my_coach_id()  -> baseball_coaches.id  for auth.uid()
@@ -34,7 +34,7 @@ RETURNS uuid
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = pg_catalog, public
 AS $$
   SELECT id FROM public.baseball_players WHERE user_id = auth.uid() LIMIT 1;
 $$;
@@ -52,7 +52,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = pg_catalog, public
 AS $$
   SELECT EXISTS (
     SELECT 1
@@ -84,7 +84,7 @@ RETURNS boolean
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = pg_catalog, public
 AS $$
 DECLARE
   v_coach_id uuid := public.get_my_coach_id();
@@ -158,7 +158,7 @@ RETURNS boolean
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = pg_catalog, public
 AS $$
 DECLARE
   v_coach_id uuid := public.get_my_coach_id();
@@ -232,7 +232,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = pg_catalog, public
 AS $$
   SELECT
     p_player_id = public.get_my_baseball_player_id()
@@ -251,7 +251,7 @@ CREATE OR REPLACE FUNCTION public.is_baseball_team_member(team_uuid uuid)
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = pg_catalog, public
 AS $$
 BEGIN
   RETURN EXISTS (
@@ -275,7 +275,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = pg_catalog, public
 AS $$
   SELECT public.has_baseball_staff_capability(p_team_id, 'can_manage_lifting')
      AND (
