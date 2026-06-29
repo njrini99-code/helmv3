@@ -30,12 +30,11 @@ export async function sha256Hex(bytes: Uint8Array | string): Promise<string> {
   if (!subtle) {
     throw new Error('SubtleCrypto is unavailable in this runtime.');
   }
-  // Copy into a fresh ArrayBuffer so a Uint8Array view with a non-zero offset
-  // (e.g. a subarray) never hashes neighboring bytes, and the BufferSource is a
-  // plain ArrayBuffer (avoids ArrayBufferLike/SharedArrayBuffer typing friction).
+  // Copy into a fresh Uint8Array so a view with a non-zero offset (e.g. a
+  // subarray) never hashes neighboring bytes.
   const copy = new Uint8Array(data.byteLength);
   copy.set(data);
-  const digest = await subtle.digest('SHA-256', copy.buffer);
+  const digest = await subtle.digest('SHA-256', copy);
   const hashArray = Array.from(new Uint8Array(digest));
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
