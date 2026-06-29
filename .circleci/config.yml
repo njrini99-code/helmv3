@@ -228,10 +228,19 @@ jobs:
           name: Wait for Vercel preview to be READY
           command: |
             URL=$(bash .circleci/scripts/wait-for-vercel-preview.sh)
-            echo "export PREVIEW_URL='${URL}'" >> "$BASH_ENV"
+            if [ -z "${URL}" ]; then
+              echo "No Vercel preview URL available; skipping advisory Lighthouse run."
+              echo "export SKIP_LIGHTHOUSE=1" >> "$BASH_ENV"
+            else
+              echo "export PREVIEW_URL='${URL}'" >> "$BASH_ENV"
+            fi
       - run:
           name: Run Lighthouse CI
           command: |
+            if [ "${SKIP_LIGHTHOUSE:-0}" = "1" ]; then
+              echo "Skipping Lighthouse CI because preview credentials are not configured."
+              exit 0
+            fi
             npx lhci autorun --config=lighthouserc.cjs
       - store_artifacts:
           path: .lighthouseci/

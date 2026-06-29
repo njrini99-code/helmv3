@@ -14,7 +14,9 @@
 #                        finish in 1-3 min
 #   POLL_INTERVAL_S    — default 10
 #
-# Exits non-zero with a useful message on timeout or API error.
+# Exits non-zero with a useful message on timeout or API error. If CircleCI is
+# not configured with Vercel credentials yet, exits zero with no stdout so the
+# caller can skip the advisory Lighthouse run without blocking the PR.
 # Designed to be source'd OR run with `eval $(...)` to set
 # PREVIEW_URL in the calling shell. Standalone use: `bash this | tail -1`.
 #
@@ -23,9 +25,15 @@
 
 set -euo pipefail
 
-: "${VERCEL_TOKEN:?VERCEL_TOKEN env var is required}"
-: "${VERCEL_PROJECT_ID:?VERCEL_PROJECT_ID env var is required}"
-: "${CIRCLE_SHA1:?CIRCLE_SHA1 env var is required (CircleCI provides this)}"
+if [[ -z "${VERCEL_TOKEN:-}" || -z "${VERCEL_PROJECT_ID:-}" ]]; then
+  echo "Skipping Lighthouse preview: VERCEL_TOKEN or VERCEL_PROJECT_ID is not configured in CircleCI." >&2
+  exit 0
+fi
+
+if [[ -z "${CIRCLE_SHA1:-}" ]]; then
+  echo "Skipping Lighthouse preview: CIRCLE_SHA1 is not set." >&2
+  exit 0
+fi
 
 POLL_TIMEOUT_S="${POLL_TIMEOUT_S:-600}"
 POLL_INTERVAL_S="${POLL_INTERVAL_S:-10}"
