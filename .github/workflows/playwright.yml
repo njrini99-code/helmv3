@@ -78,7 +78,7 @@ jobs:
         # stabilized. Once it's reliably green for a week, replace the
         # `|| echo` shim with a hard `npm run test:e2e` and add as a
         # required status check via .github/branch-protection.md.
-        run: npx playwright test --max-failures=10 || echo "Playwright suite has failures — see report artifact"
+        run: npx playwright test --max-failures=10 --retries=0 || echo "Playwright suite has failures — see report artifact"
 
       - name: Upload Playwright report
         if: always()
@@ -135,7 +135,7 @@ jobs:
 
       - name: Run course-library spec (capture screenshots)
         # Never fail the job on a test issue — the deliverable is the images.
-        run: npx playwright test course-library.spec.ts --reporter=line || echo "course-library spec had failures — see screenshots/report artifacts"
+        run: npx playwright test course-library.spec.ts --reporter=line --retries=0 || echo "course-library spec had failures — see screenshots/report artifacts"
 
       - name: Upload course-picker screenshots
         if: always()
