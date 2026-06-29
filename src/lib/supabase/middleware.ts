@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { ACTIVE_BASEBALL_TEAM_COOKIE } from '@/lib/baseball/active-context-shared';
 
 /**
  * STAFF_CAPABILITY_ROUTES — the middleware mirror of every nav-registry entry
@@ -18,9 +19,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  * Pure config — no DB. Edits to the registry's requiredCapability map must be
  * mirrored here or CI fails.
  *
- * TODO(db): the middleware does not yet ENFORCE these (resolve the viewer's
- * capabilities + redirect). That enforcement is wired in the DB pass; this map
- * is the source of truth it will read.
+ * updateSession enforces this map for authenticated Baseball dashboard requests.
  */
 export const STAFF_CAPABILITY_ROUTES: Array<[string, string]> = [
   ['/baseball/dashboard/import', 'can_manage_imports'],
@@ -51,26 +50,74 @@ function getSportFromPath(pathname: string): 'baseball' | 'golf' | 'lifting' | n
 }
 
 /**
- * Coach types that can access recruiting features
+ * Native app requests use the same auth/access policy as desktop web for app
+ * routes, but are kept away from marketing/pricing surfaces.
  */
-type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
-type CoachMode = 'recruiting' | 'team';
+const NATIVE_UA_MARKER = 'HelmSportsLabsApp';
+const APP_ROUTE_PREFIXES = [
+  '/golf',
+  '/baseball',
+  '/api',
+  '/auth',
+  '/support',
+  '/privacy',
+  '/terms',
+  '/dev',
+] as const;
+
+function isNativeUserAgent(request: NextRequest): boolean {
+  const ua = request.headers.get('user-agent') ?? '';
+  return ua.includes(NATIVE_UA_MARKER);
+}
+
+function isMarketingRoute(pathname: string): boolean {
+  if (pathname === '/') return true;
+  return !APP_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+/**
+ * Program-aware Baseball route gates. These mirror the server page guards and
+ * intentionally do not read viewport or mobile/desktop state.
+ */
+type BaseballProgramType = 'college' | 'high_school' | 'showcase' | 'juco' | 'academy' | 'club';
+const BASEBALL_PROGRAM_TYPES = new Set<string>([
+  'college',
+  'high_school',
+  'showcase',
+  'juco',
+  'academy',
+  'club',
+]);
 const RECRUITING_ROUTES = [
   '/baseball/dashboard/discover',
   '/baseball/dashboard/watchlist',
   '/baseball/dashboard/pipeline',
   '/baseball/dashboard/compare',
+  '/baseball/dashboard/comparisons',
+  '/baseball/dashboard/college-interest',
+  '/baseball/dashboard/scout-packets',
   '/baseball/dashboard/camps',
 ];
 const ORG_ROUTES = [
   '/baseball/dashboard/organization',
+  '/baseball/dashboard/teams',
+  '/baseball/dashboard/events',
 ];
-const TEAM_ROUTES = [
-  '/baseball/dashboard/team',
-];
-const RECRUITING_ALLOWED_COACH_TYPES: CoachType[] = ['college', 'juco'];
+const ACADEMICS_ROUTES = ['/baseball/dashboard/academics'];
+const LEGACY_TEAM_ROUTES = ['/baseball/dashboard/team'];
+const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
+  'college',
+  'juco',
+  'showcase',
+  'academy',
+  'club',
+]);
+const ORG_PROGRAM_TYPES = new Set<BaseballProgramType>(['showcase', 'academy', 'club']);
 /** Canonical coach dashboard landing (replaces legacy /baseball/dashboard/team). */
 const COACH_HOME = '/baseball/dashboard/command-center';
+const PLAYER_HOME = '/baseball/player/today';
 
 /**
  * Check if user is authorized to access the requested route based on their role
@@ -79,95 +126,135 @@ interface SupabaseClient {
   from: (table: string) => {
     select: (columns: string) => {
       eq: (column: string, value: string) => {
-        single: () => Promise<{ data: { coach_type: string } | null; error: Error | null }>;
+        maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
+        single: () => Promise<{ data: Record<string, unknown> | null; error: Error | null }>;
+      };
+      in?: (column: string, values: string[]) => {
+        order: (column: string, options?: { ascending?: boolean }) =>
+          Promise<{ data: Record<string, unknown>[] | null; error: Error | null }>;
       };
     };
   };
+}
+
+function pathStartsWithAny(pathname: string, routes: readonly string[]) {
+  return routes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function normalizeProgramType(raw: unknown): BaseballProgramType | null {
+  return typeof raw === 'string' && BASEBALL_PROGRAM_TYPES.has(raw)
+    ? (raw as BaseballProgramType)
+    : null;
+}
+
+function routeCapability(pathname: string): string | null {
+  let best: { route: string; cap: string } | null = null;
+  for (const [route, cap] of STAFF_CAPABILITY_ROUTES) {
+    if ((pathname === route || pathname.startsWith(`${route}/`)) && (!best || route.length > best.route.length)) {
+      best = { route, cap };
+    }
+  }
+  return best?.cap ?? null;
+}
+
+function staffHasCapability(row: Record<string, unknown>, cap: string): boolean {
+  const status = typeof row.status === 'string' ? row.status : null;
+  if (status && ['suspended', 'removed', 'invited'].includes(status)) return false;
+  if (row.is_primary === true || row.is_head_coach === true) return true;
+  if (row[cap] === true) return true;
+  if (cap === 'can_message_players' && row.can_message_team === true) return true;
+
+  const json = row.capabilities;
+  if (Array.isArray(json)) {
+    return json.includes(cap) || (cap === 'can_message_players' && json.includes('can_message_team'));
+  }
+  if (json && typeof json === 'object') {
+    const caps = json as Record<string, unknown>;
+    return caps[cap] === true || (cap === 'can_message_players' && caps.can_message_team === true);
+  }
+  return false;
 }
 
 async function checkRouteAuthorization(
   supabase: SupabaseClient,
   user: { id: string },
   pathname: string,
-  coachMode: CoachMode
+  activeTeamCookie: string | null,
 ): Promise<{ authorized: boolean; redirectTo?: string }> {
-  // Check if route requires recruiting access
-  const isRecruitingRoute = RECRUITING_ROUTES.some(route =>
-    pathname.startsWith(route)
-  );
-  const isOrgRoute = ORG_ROUTES.some(route =>
-    pathname.startsWith(route)
-  );
-  const isTeamRoute = TEAM_ROUTES.some(route =>
-    pathname.startsWith(route)
-  );
+  const isRecruitingRoute = pathStartsWithAny(pathname, RECRUITING_ROUTES);
+  const isOrgRoute = pathStartsWithAny(pathname, ORG_ROUTES);
+  const isAcademicsRoute = pathStartsWithAny(pathname, ACADEMICS_ROUTES);
+  const isLegacyTeamRoute = pathStartsWithAny(pathname, LEGACY_TEAM_ROUTES);
+  const requiredCapability = routeCapability(pathname);
 
-  if (!isRecruitingRoute && !isTeamRoute && !isOrgRoute) {
+  if (!isRecruitingRoute && !isOrgRoute && !isAcademicsRoute && !isLegacyTeamRoute && !requiredCapability) {
     return { authorized: true };
   }
 
-  // Fetch coach type
-  const { data: coach, error } = await supabase
-    .from('baseball_coaches')
-    .select('coach_type')
-    .eq('user_id', user.id)
-    .single();
-
-  if (error || !coach) {
-    if (isTeamRoute || isOrgRoute) {
-      return { authorized: true };
-    }
+  if (isLegacyTeamRoute) {
     return { authorized: false, redirectTo: COACH_HOME };
   }
 
-  if (isRecruitingRoute && !RECRUITING_ALLOWED_COACH_TYPES.includes(coach.coach_type as CoachType)) {
-    return {
-      authorized: false,
-      redirectTo: COACH_HOME
-    };
+  // Fetch coach profile. Player-only users should land on the player home
+  // rather than bouncing through a coach-only destination.
+  const { data: coach, error } = await supabase
+    .from('baseball_coaches')
+    .select('id, coach_type')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error || !coach) {
+    return { authorized: false, redirectTo: PLAYER_HOME };
   }
 
-  if (isOrgRoute && coach.coach_type !== 'showcase') {
+  const coachId = String(coach.id);
+  const staffRowsResult = await supabase
+    .from('baseball_team_coach_staff')
+    .select('*')
+    .eq('coach_id', coachId);
+  const staffRows = (staffRowsResult as unknown as { data?: Record<string, unknown>[] | null }).data ?? [];
+  const staffRow =
+    (activeTeamCookie ? staffRows.find((row) => row.team_id === activeTeamCookie) : undefined) ??
+    staffRows[0] ??
+    null;
+
+  if (!staffRow?.team_id) {
+    return { authorized: false, redirectTo: COACH_HOME };
+  }
+
+  const { data: team } = await supabase
+    .from('baseball_teams')
+    .select('program_type')
+    .eq('id', String(staffRow.team_id))
+    .maybeSingle();
+  const programType = normalizeProgramType(team?.program_type);
+
+  if (requiredCapability && !staffHasCapability(staffRow, requiredCapability)) {
     return {
       authorized: false,
       redirectTo: COACH_HOME,
     };
   }
 
-  if (isTeamRoute) {
-    if (coach.coach_type === 'college') {
-      return {
-        authorized: false,
-        redirectTo: COACH_HOME,
-      };
-    }
-    if (coach.coach_type === 'juco' && coachMode === 'recruiting') {
-      return {
-        authorized: false,
-        redirectTo: COACH_HOME,
-      };
-    }
+  if (isRecruitingRoute && (!programType || !RECRUITING_PROGRAM_TYPES.has(programType))) {
+    return {
+      authorized: false,
+      redirectTo: COACH_HOME
+    };
   }
 
-  if (coach.coach_type === 'juco') {
-    if (isRecruitingRoute && coachMode === 'team') {
-      return {
-        authorized: false,
-        redirectTo: COACH_HOME,
-      };
-    }
-    if (isTeamRoute && coachMode === 'recruiting') {
-      return {
-        authorized: false,
-        redirectTo: COACH_HOME,
-      };
-    }
-    if (pathname === '/baseball/dashboard' && coachMode === 'team') {
-      return {
-        authorized: false,
-        redirectTo: COACH_HOME,
-      };
-    }
+  if (isOrgRoute && (!programType || !ORG_PROGRAM_TYPES.has(programType))) {
+    return {
+      authorized: false,
+      redirectTo: COACH_HOME,
+    };
+  }
+
+  if (isAcademicsRoute && programType !== 'juco') {
+    return {
+      authorized: false,
+      redirectTo: COACH_HOME,
+    };
   }
 
   return { authorized: true };
@@ -180,6 +267,10 @@ async function checkRouteAuthorization(
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const sport = getSportFromPath(pathname);
+
+  if (isNativeUserAgent(request) && isMarketingRoute(pathname)) {
+    return NextResponse.redirect(new URL('/golf/login', request.url));
+  }
 
   // Public routes that don't need any session handling at all
   const isStaticPublicRoute = pathname === '/';
@@ -234,8 +325,7 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const coachModeCookie = request.cookies.get('coach_mode')?.value;
-  const coachMode: CoachMode = coachModeCookie === 'team' ? 'team' : 'recruiting';
+  const activeTeamCookie = request.cookies.get(ACTIVE_BASEBALL_TEAM_COOKIE)?.value ?? null;
 
   // Dashboard routes require full authentication (not onboarding routes)
   const isDashboardRoute = pathname.startsWith('/baseball/dashboard') ||
@@ -265,7 +355,7 @@ export async function updateSession(request: NextRequest) {
       supabase as unknown as SupabaseClient,
       user,
       pathname,
-      coachMode
+      activeTeamCookie,
     );
     if (!authResult.authorized && authResult.redirectTo) {
       return NextResponse.redirect(

@@ -10,9 +10,10 @@ import { cn } from '@/lib/utils';
 
 export interface MobileNavItem {
   label: string;
-  href: string;
+  href?: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: number;
+  onClick?: () => void;
 }
 
 interface MobileBottomNavProps {
@@ -45,24 +46,19 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
     >
       <div className="grid grid-cols-4 gap-1 px-2 py-2">
         {items.map((item) => {
-          const active = isActive(item.href);
+          const active = item.href ? isActive(item.href) : false;
           const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'relative flex flex-col items-center justify-center gap-1 min-h-[44px]',
-                'px-3 py-2 rounded-xl',
-                'transition-all duration-200',
-                'active:scale-95',
-                active
-                  ? 'text-primary-600 bg-primary-50'
-                  : 'text-warm-500 hover:text-warm-700 hover:bg-warm-50 active:bg-warm-100'
-              )}
-            >
-              {/* Icon with badge */}
+          const className = cn(
+            'relative flex flex-col items-center justify-center gap-1 min-h-[44px]',
+            'px-3 py-2 rounded-xl',
+            'transition-all duration-200',
+            'active:scale-95',
+            active
+              ? 'text-primary-600 bg-primary-50'
+              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-50 active:bg-warm-100'
+          );
+          const content = (
+            <>
               <div className="relative">
                 <Icon className={cn('h-6 w-6', active && 'scale-110')} aria-hidden="true" />
                 {item.badge && item.badge > 0 && (
@@ -83,7 +79,6 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
                 )}
               </div>
 
-              {/* Label */}
               <span
                 className={cn(
                   'text-xs font-medium truncate max-w-full',
@@ -93,7 +88,6 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
                 {item.label}
               </span>
 
-              {/* Active indicator */}
               {active && (
                 <div
                   className="
@@ -103,6 +97,30 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
                   "
                 />
               )}
+            </>
+          );
+
+          if (item.onClick) {
+            return (
+              <button
+                key={`action-${item.label}`}
+                type="button"
+                onClick={item.onClick}
+                className={className}
+                aria-label={item.label}
+              >
+                {content}
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href ?? '#'}
+              className={className}
+            >
+              {content}
             </Link>
           );
         })}

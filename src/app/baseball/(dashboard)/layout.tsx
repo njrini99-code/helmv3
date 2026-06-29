@@ -29,11 +29,9 @@
 // withBaseballAction + requireBaseballCapability + RLS. The guard only prevents
 // the awkward "dashboard but nothing loads" experience for new users.
 //
-// useTeamRouteProtection (from src/hooks/use-route-protection.ts) guards specific
-// coach-type routes (HS / showcase / juco only). It is wired here as a no-op for
-// the layout-level "wrong role type" case: a college coach who somehow navigates
-// to a team-mgmt-only surface will be redirected by that surface's own page guard
-// (not by this layout). The layout guard covers TEAM PRESENCE, not coach_type.
+// Coach-type and program-type route policy now belongs to server page guards
+// (see src/lib/baseball/server-route-guards.ts). The layout guard covers TEAM
+// PRESENCE, not coach_type.
 // =============================================================================
 
 import { useEffect } from 'react';

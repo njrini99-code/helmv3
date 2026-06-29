@@ -44,7 +44,7 @@ import type { Json } from '@/lib/types';
 
 const FEATURE = { featureArea: 'baseball-stat-visuals' } as const;
 
-const STATS_CENTER_PATH = '/baseball/dashboard/stats';
+const STATS_CENTER_PATH = '/baseball/dashboard/stats-center';
 const PLAYER_STATS_PATH = '/baseball/dashboard/players';
 
 type ActionResult<T = unknown> = { success: boolean; error?: string; data?: T };

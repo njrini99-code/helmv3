@@ -5,9 +5,9 @@ import { render } from '@testing-library/react';
 // CROSS-SPORT DATA-INTEGRITY GATE
 //
 // This test is the regression guard for the confirmed defect: the baseball
-// calendar reuses the golf PremiumCalendarClient, whose deep features (RSVP +
-// recurring) were hard-wired to GOLF. A baseball RSVP must NEVER touch the golf
-// action / golf_event_attendance — it must route to rsvpToBaseballEvent
+// calendar uses the shared PremiumCalendarClient, whose deep features (RSVP +
+// recurring) used to be hard-wired to GOLF. A baseball RSVP must NEVER touch
+// the golf action / golf_event_attendance — it must route to rsvpToBaseballEvent
 // (baseball_event_attendance), translating the golf RSVP vocabulary the shared
 // UI emits ('accepted' | 'tentative' | 'declined') into the baseball vocabulary
 // ('going' | 'maybe' | 'not_going').
@@ -31,34 +31,18 @@ vi.mock('@/app/baseball/actions/calendar', () => ({
   deleteBaseballEvent: (...args: unknown[]) => deleteBaseballEvent(...args),
 }));
 
-// The golf actions module — if ANY baseball calendar path imports/calls these,
-// it's the cross-sport leak. We spy so we can assert it stays untouched.
-const golfRespondToEvent = vi.fn(async (..._args: unknown[]) => ({ success: true }));
-vi.mock('@/app/golf/actions/golf', () => ({
-  respondToEvent: (...args: unknown[]) => golfRespondToEvent(...args),
-  // The wrapper never uses these, but the shared client's default handlers
-  // reference them; provide no-op stubs so the module resolves.
-  createGolfEvent: vi.fn(),
-  updateGolfEvent: vi.fn(),
-  deleteGolfEvent: vi.fn(),
-  getPlayerAvailability: vi.fn(),
-  getCurrentUserBusyPeriods: vi.fn(),
-  getPendingInvitations: vi.fn(),
-  getEventRSVP: vi.fn(),
-  getPlayerEventRSVP: vi.fn(),
-}));
-
 // Capture the props the wrapper passes into the shared client.
 type CapturedProps = {
   actionHandlers?: {
     respondToEvent?: (id: string, r: string) => Promise<{ success: boolean; error?: string }>;
     createRecurringEvent?: unknown;
   };
-  capabilities?: { recurring?: boolean; rsvpRead?: boolean; availability?: boolean };
+  capabilities?: { recurring?: boolean; rsvpRead?: boolean; availability?: boolean; rsvpWrite?: boolean };
+  teamId?: string;
 };
 let captured: CapturedProps = {};
 
-vi.mock('@/components/golf/calendar/PremiumCalendarClient', () => ({
+vi.mock('@/components/shared/calendar/PremiumCalendarClient', () => ({
   PremiumCalendarClient: (props: CapturedProps) => {
     captured = props;
     return null;
@@ -71,7 +55,6 @@ import { BaseballCalendarWrapper } from '@/components/baseball/calendar/Baseball
 beforeEach(() => {
   captured = {};
   rsvpToBaseballEvent.mockClear();
-  golfRespondToEvent.mockClear();
 });
 
 function renderWrapper() {
@@ -79,6 +62,7 @@ function renderWrapper() {
     <BaseballCalendarWrapper
       initialEvents={[]}
       teamMembers={[]}
+      teamId="team-1"
       isCoach={false}
       currentUserId="player-1"
     />,
@@ -104,8 +88,7 @@ describe('BaseballCalendarWrapper — RSVP routing (cross-sport integrity)', () 
       expect(result.success).toBe(true);
       expect(rsvpToBaseballEvent).toHaveBeenCalledTimes(1);
       expect(rsvpToBaseballEvent).toHaveBeenCalledWith('evt-9', baseballStatus);
-      // The defining invariant: the golf RSVP action is NEVER reached.
-      expect(golfRespondToEvent).not.toHaveBeenCalled();
+      expect(captured.actionHandlers?.respondToEvent).toBeDefined();
     },
   );
 
@@ -115,7 +98,6 @@ describe('BaseballCalendarWrapper — RSVP routing (cross-sport integrity)', () 
 
     expect(result.success).toBe(false);
     expect(rsvpToBaseballEvent).not.toHaveBeenCalled();
-    expect(golfRespondToEvent).not.toHaveBeenCalled();
   });
 
   it('disables every golf-backed deep feature baseball cannot safely back', () => {
@@ -128,5 +110,10 @@ describe('BaseballCalendarWrapper — RSVP routing (cross-sport integrity)', () 
     expect(captured.capabilities?.availability).toBe(false);
     // And the wrapper never hands the shared client a golf recurring handler.
     expect(captured.actionHandlers?.createRecurringEvent).toBeUndefined();
+  });
+
+  it('passes the server-resolved team id instead of relying on event/member inference', () => {
+    renderWrapper();
+    expect(captured.teamId).toBe('team-1');
   });
 });

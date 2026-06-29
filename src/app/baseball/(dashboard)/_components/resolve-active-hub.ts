@@ -24,6 +24,15 @@ import {
   PLAYER_TEAM_TABS,
 } from './hub-definitions';
 import type { HubSubNavTab } from './hub-sub-nav';
+import type { BaseballProgramType } from '@/lib/types/baseball-settings';
+
+const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
+  'college',
+  'juco',
+  'showcase',
+  'academy',
+  'club',
+]);
 
 export interface ResolvedHub {
   /** Stable hub id (telemetry / test anchor). */
@@ -113,8 +122,8 @@ function playerHubs(): HubDef[] {
 export interface ResolveActiveHubArgs {
   pathname: string | null;
   role: 'coach' | 'player' | null;
-  /** Coach type — gates Recruiting (hidden by default) + Academics (JUCO only). */
-  coachType?: string | null;
+  /** Server-resolved program type — gates mode-specific hub visibility. */
+  programType?: BaseballProgramType | null;
 }
 
 /**
@@ -124,16 +133,15 @@ export interface ResolveActiveHubArgs {
  * no sub-nav strip, exactly like a flat top-level tab.
  */
 export function resolveActiveHub(args: ResolveActiveHubArgs): ResolvedHub | null {
-  const { pathname, role, coachType } = args;
+  const { pathname, role, programType } = args;
   if (!pathname || !role) return null;
 
   const hubs =
     role === 'coach'
       ? coachHubs({
-          // Recruiting is archived-ok / scaffolded hidden for now.
-          showRecruiting: false,
+          showRecruiting: Boolean(programType && RECRUITING_PROGRAM_TYPES.has(programType)),
           // Academics is JUCO-only.
-          showAcademics: coachType === 'juco',
+          showAcademics: programType === 'juco',
         })
       : playerHubs();
 

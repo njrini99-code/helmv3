@@ -153,15 +153,6 @@ export function useAuth() {
     // the subscription is not torn down + rebuilt on every render.
   }, [supabase]);
 
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const maxAgeDays = 30;
-    const maxAgeSeconds = maxAgeDays * 24 * 60 * 60;
-    document.cookie = `coach_mode=${encodeURIComponent(
-      coachMode
-    )}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax`;
-  }, [coachMode]);
-
   const signOut = async () => {
     await supabase.auth.signOut();
     clear();

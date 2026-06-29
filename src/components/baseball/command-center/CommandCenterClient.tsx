@@ -21,9 +21,17 @@ import {
 } from '@/components/icons';
 import type { BaseballRosterPlayer } from '@/lib/types';
 import type { RiskFeedItem } from '@/lib/baseball/read-models/command-center';
+import type { CoachDailyContractsReadModel } from '@/lib/baseball/read-models/coach-daily-contracts';
 import { Button } from '@/components/ui/button';
 import { RiskFeedStrip } from './RiskFeedStrip';
 import { DailyBriefPanel } from './DailyBriefPanel';
+import { CoachDailyContracts } from '@/components/baseball/coach-daily-contract';
+import {
+  GameVsPracticePanel,
+  PlayerPerformanceGrid,
+  TeamBattingOverview,
+  TrendAnalysisPanel,
+} from './analytics';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,6 +56,7 @@ interface CommandCenterClientProps {
   calendarEvents?: CalendarEvent[];
   riskFeed?: RiskFeedItem[];
   riskFeedError?: string | null;
+  coachDailyContracts?: CoachDailyContractsReadModel;
 }
 
 type MainTab = 'roster' | 'stats';
@@ -203,24 +212,6 @@ function PlayerRosterCard({
   );
 }
 
-// ─── Team Stats Card ──────────────────────────────────────────────────────────
-
-function TeamStatCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
-  return (
-    <div
-      className={`rounded-2xl p-4 transition-shadow duration-200 ${
-        accent
-          ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-glass'
-          : 'bg-cream-100/75 backdrop-blur-glass border border-white/20 shadow-glass hover:shadow-card-hover'
-      }`}
-    >
-      <p className={`text-eyebrow font-semibold uppercase tracking-wide mb-1 ${accent ? 'text-primary-100' : 'text-warm-400'}`}>{label}</p>
-      <p className={`text-2xl font-bold tabular-nums leading-none ${accent ? 'text-white' : 'text-warm-900'}`}>{value}</p>
-      {sub && <p className={`text-xs mt-1 ${accent ? 'text-primary-200' : 'text-warm-400'}`}>{sub}</p>}
-    </div>
-  );
-}
-
 // ─── Sortable table header ────────────────────────────────────────────────────
 
 type StatSortKey = 'name' | 'avg' | 'hr' | 'ops' | 'trend';
@@ -275,6 +266,7 @@ export function CommandCenterClient({
   calendarEvents = [],
   riskFeed = [],
   riskFeedError = null,
+  coachDailyContracts,
 }: CommandCenterClientProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -339,28 +331,6 @@ export function CommandCenterClient({
 
     return result;
   }, [players, searchQuery, positionFilter, sortOption]);
-
-  // ── Team aggregate stats ────────────────────────────────────────────────────
-  const teamStats = useMemo(() => {
-    const withStats = players.filter((p) => p.aggregates?.career_avg != null);
-    const teamAvg =
-      withStats.length > 0
-        ? withStats.reduce((s, p) => s + (p.aggregates?.career_avg ?? 0), 0) / withStats.length
-        : null;
-    const teamOBP =
-      withStats.filter((p) => p.aggregates?.career_obp != null).length > 0
-        ? withStats.reduce((s, p) => s + (p.aggregates?.career_obp ?? 0), 0) / withStats.length
-        : null;
-    const teamSLG =
-      withStats.filter((p) => p.aggregates?.career_slg != null).length > 0
-        ? withStats.reduce((s, p) => s + (p.aggregates?.career_slg ?? 0), 0) / withStats.length
-        : null;
-    const totalSessions = players.reduce((s, p) => s + (p.aggregates?.total_sessions ?? 0), 0);
-    const improving = players.filter((p) => p.aggregates?.recent_trend === 'improving').length;
-    const declining = players.filter((p) => p.aggregates?.recent_trend === 'declining').length;
-
-    return { teamAvg, teamOBP, teamSLG, totalSessions, improving, declining };
-  }, [players]);
 
   // ── Stats tab player table ──────────────────────────────────────────────────
   const statsTablePlayers = useMemo(() => {
@@ -459,6 +429,15 @@ export function CommandCenterClient({
               maxItems={6}
             />
           </div>
+
+          {coachDailyContracts?.authorized && (
+            <div className="mb-6">
+              <CoachDailyContracts
+                model={coachDailyContracts}
+                onOpenPlayer={(playerId) => router.push(`/baseball/dashboard/players/${playerId}`)}
+              />
+            </div>
+          )}
 
           {/* ── Mini Week Calendar Strip ────────────────────────────────── */}
           <div className="bg-cream-100/75 backdrop-blur-glass border border-white/20 rounded-2xl shadow-glass p-4 mb-5">
@@ -705,65 +684,17 @@ export function CommandCenterClient({
             }}
           >
             <div className="space-y-6">
-
-              {/* Team overview cards */}
-              <div>
-                <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide mb-3">Team Overview</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  <TeamStatCard label="Players" value={String(players.length)} accent />
-                  <TeamStatCard label="Team AVG" value={formatAvg(teamStats.teamAvg)} />
-                  <TeamStatCard label="Team OBP" value={formatAvg(teamStats.teamOBP)} />
-                  <TeamStatCard label="Team SLG" value={formatAvg(teamStats.teamSLG)} />
-                  <TeamStatCard label="↑ Improving" value={String(teamStats.improving)} />
-                  <TeamStatCard label="↓ Declining" value={String(teamStats.declining)} />
-                </div>
+              <TeamBattingOverview players={players} />
+              <GameVsPracticePanel players={players} />
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
+                <PlayerPerformanceGrid players={statsTablePlayers} />
+                <TrendAnalysisPanel players={players} />
               </div>
 
-              {/* Game vs Scrimmage comparison */}
-              <div>
-                <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide mb-3">
-                  Game vs Scrimmage
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(['game', 'scrimmage'] as const).map((type) => {
-                    const isGame = type === 'game';
-                    const withData = players.filter((p) =>
-                      isGame ? p.aggregates?.game_avg != null : p.aggregates?.practice_avg != null
-                    );
-                    const avgVal = withData.length > 0
-                      ? withData.reduce((s, p) => s + (isGame ? (p.aggregates?.game_avg ?? 0) : (p.aggregates?.practice_avg ?? 0)), 0) / withData.length
-                      : null;
-                    return (
-                      <div key={type} className="bg-cream-100/75 backdrop-blur-glass border border-white/20 rounded-2xl shadow-glass hover:shadow-card-hover transition-shadow duration-200 p-5">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className={`w-2 h-2 rounded-full ${isGame ? 'bg-primary-500' : 'bg-amber-500'}`} aria-hidden />
-                          <span className="text-sm font-semibold text-warm-900">
-                            {isGame ? 'Game' : 'Scrimmage'}
-                          </span>
-                        </div>
-                        <p className="text-3xl font-bold text-warm-900 tabular-nums leading-none">
-                          {formatAvg(avgVal)}
-                        </p>
-                        <p className="text-xs text-warm-400 mt-1.5">Team batting average</p>
-                        {withData.length > 0 ? (
-                          <p className="text-xs text-warm-500 mt-3">
-                            {withData.length} of {players.length} player{players.length !== 1 ? 's' : ''} with {isGame ? 'game' : 'scrimmage'} data
-                          </p>
-                        ) : (
-                          <p className="text-xs text-warm-400 mt-3 italic">
-                            No {isGame ? 'game' : 'scrimmage'} data uploaded yet
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Player performance table */}
+              {/* Compact filtered table for coach-controlled slices */}
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                  <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Player Performance</h3>
+                  <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Filtered Player Table</h3>
                   <div className="flex items-center gap-2 sm:ml-auto">
                     {/* Stat type filter */}
                     <div role="group" aria-label="Stat type" className="flex bg-cream-100/75 border border-warm-200/60 rounded-xl p-0.5 gap-0.5">

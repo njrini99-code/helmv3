@@ -339,7 +339,6 @@ export async function joinTeam(playerId: string, teamId: string) {
 
   // Revalidate relevant paths
   revalidatePath('/baseball/dashboard/command-center');
-  revalidatePath('/baseball/dashboard/team');
   revalidatePath('/baseball/dashboard/roster');
 
   return {
@@ -562,8 +561,7 @@ export async function generateTeamInviteCode(teamId: string): Promise<TeamInvite
   }
 
   revalidatePath('/baseball/dashboard/command-center');
-  revalidatePath('/baseball/dashboard/team');
-  revalidatePath('/baseball/dashboard/command-center');
+  revalidatePath('/baseball/dashboard/roster');
 
   return {
     success: true,
@@ -627,8 +625,7 @@ export async function regenerateTeamInviteCode(teamId: string): Promise<TeamInvi
   }
 
   revalidatePath('/baseball/dashboard/command-center');
-  revalidatePath('/baseball/dashboard/team');
-  revalidatePath('/baseball/dashboard/command-center');
+  revalidatePath('/baseball/dashboard/roster');
 
   return {
     success: true,

@@ -124,7 +124,7 @@ function SessionRow({ stat, isExpanded, onToggle }: SessionRowProps) {
             </div>
 
             {/* Exit Velocity */}
-            {stat.exit_velocity !== null && (
+            {stat.exit_velocity != null && (
               <div>
                 <p className="text-micro text-warm-400 uppercase tracking-wide mb-1">Exit Velo</p>
                 <p className="text-sm font-semibold text-warm-900">
@@ -134,7 +134,7 @@ function SessionRow({ stat, isExpanded, onToggle }: SessionRowProps) {
             )}
 
             {/* Launch Angle */}
-            {stat.launch_angle !== null && (
+            {stat.launch_angle != null && (
               <div>
                 <p className="text-micro text-warm-400 uppercase tracking-wide mb-1">Launch Angle</p>
                 <p className="text-sm font-semibold text-warm-900">
@@ -223,7 +223,7 @@ export function SessionHistory({ stats, className }: SessionHistoryProps) {
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200',
                   filter === f
-                    ? 'bg-white text-warm-900 shadow-sm'
+                    ? 'bg-cream-50 text-warm-900 shadow-sm'
                     : 'text-warm-600 hover:text-warm-900'
                 )}
               >

@@ -5,6 +5,7 @@ import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { CommandCenterClient } from '@/components/baseball/command-center/CommandCenterClient';
 import { getCommandCenter } from '@/lib/baseball/read-models/command-center';
+import { getCoachDailyContracts } from '@/lib/baseball/read-models/coach-daily-contracts';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 
 interface BaseballPlayerData {
@@ -92,8 +93,9 @@ export default async function CommandCenterPage() {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 7);
 
-  const [commandCenter, teamMembersRes, calendarRes] = await Promise.all([
+  const [commandCenter, coachDailyContracts, teamMembersRes, calendarRes] = await Promise.all([
     getCommandCenter(team.id),
+    getCoachDailyContracts(team.id),
     supabase
       .from('baseball_team_members')
       .select(`
@@ -153,18 +155,6 @@ export default async function CommandCenterPage() {
     };
   });
 
-  // #region agent log
-  console.error('[debug-ee78e2] command-center', JSON.stringify({
-    coachId: coach.id,
-    teamId: team.id,
-    playerCount: players.length,
-    ccAuthorized: commandCenter.authorized,
-    riskCount: commandCenter.riskFeed.length,
-    rosterPulseCount: commandCenter.rosterPulse.length,
-    ccError: commandCenter.error,
-  }));
-  // #endregion
-
   return (
     <CommandCenterClient
       team={{
@@ -179,6 +169,7 @@ export default async function CommandCenterPage() {
       calendarEvents={calendarRes.data ?? []}
       riskFeed={commandCenter.authorized ? commandCenter.riskFeed : []}
       riskFeedError={commandCenter.error}
+      coachDailyContracts={coachDailyContracts}
     />
   );
 }

@@ -24,12 +24,14 @@ import {
   IconMap,
   IconFileText,
   IconTarget,
+  IconStar,
 } from '@/components/icons';
 import {
   COACH_TEAM_TABS,
   COACH_STATS_TABS,
   COACH_DEVELOPMENT_TABS,
   COACH_MANAGEMENT_TABS,
+  COACH_RECRUITING_TABS,
   COACH_ACADEMICS_TABS,
   PLAYER_STATS_TABS,
   PLAYER_DEVELOPMENT_TABS,
@@ -41,6 +43,10 @@ import { usePlayerTeams } from '@/hooks/use-player-teams';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { Button } from '@/components/ui/button';
+import {
+  getVisibleBaseballNav,
+  type BaseballNavContext,
+} from '@/lib/baseball/nav-registry';
 
 // =============================================================================
 // GROUPED-HUBS NAVIGATION (approved 2026-06-24)
@@ -59,7 +65,7 @@ import { Button } from '@/components/ui/button';
 type SidebarHubItem = {
   name: string;
   href: string;
-  icon: typeof IconHome;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: number }>;
   badge?: boolean;
   /** Route prefixes that mark this hub item active (defaults to [href]). */
   hubPrefixes?: string[];
@@ -97,11 +103,22 @@ const COACH_MANAGEMENT_HUB: SidebarHubItem = {
   icon: IconBuilding,
   hubPrefixes: hubPrefixesFrom(COACH_MANAGEMENT_TABS),
 };
-// RECRUITING hub — gated / scaffolded hidden (archived-ok). The hub's tabs +
-// route ownership live in hub-definitions.ts + resolve-active-hub.ts; surfacing
-// it is a one-line change: build a SidebarHubItem from COACH_RECRUITING_TABS
-// (icon: IconStar) and add it to the coach nav arrays below. Kept out of the
-// live nav arrays for now so the sidebar stays lean.
+const COACH_RECRUITING_HUB: SidebarHubItem = {
+  name: 'Recruiting',
+  href: COACH_RECRUITING_TABS[0]!.href,
+  icon: IconStar,
+  hubPrefixes: hubPrefixesFrom(COACH_RECRUITING_TABS),
+};
+const COACH_ORGANIZATION_HUB: SidebarHubItem = {
+  name: 'Organization',
+  href: '/baseball/dashboard/organization',
+  icon: IconBuilding,
+  hubPrefixes: [
+    '/baseball/dashboard/organization',
+    '/baseball/dashboard/teams',
+    '/baseball/dashboard/events',
+  ],
+};
 const COACH_ACADEMICS_HUB: SidebarHubItem = {
   name: 'Academics',
   href: COACH_ACADEMICS_TABS[0]!.href,
@@ -224,6 +241,82 @@ const EXACT_MATCH_HREFS = new Set<string>([
   '/golf/dashboard',
 ]);
 
+const RECRUITING_PROGRAM_TYPES = new Set(['college', 'juco', 'showcase', 'academy', 'club']);
+
+function visibleIdSet(ctx: BaseballNavContext) {
+  return new Set(getVisibleBaseballNav(ctx).map((entry) => entry.id));
+}
+
+function hasAnyVisible(ids: Set<string>, candidates: string[]) {
+  return candidates.some((id) => ids.has(id));
+}
+
+function buildCondensedBaseballNavigation(ctx: BaseballNavContext): SidebarHubItem[] {
+  const ids = visibleIdSet(ctx);
+
+  if (ctx.role === 'player') {
+    return [
+      { name: 'Today', href: '/baseball/player/today', icon: IconHome },
+      { name: 'Schedule', href: '/baseball/dashboard/calendar', icon: IconCalendar },
+      {
+        name: 'My Stats',
+        href: PLAYER_STATS_TABS[0]!.href,
+        icon: IconChartBar,
+        hubPrefixes: hubPrefixesFrom(PLAYER_STATS_TABS),
+      },
+      {
+        name: 'Development',
+        href: PLAYER_DEVELOPMENT_TABS[0]!.href,
+        icon: IconTarget,
+        hubPrefixes: hubPrefixesFrom(PLAYER_DEVELOPMENT_TABS),
+      },
+      {
+        name: 'Team',
+        href: PLAYER_TEAM_TABS[0]!.href,
+        icon: IconUsers,
+        hubPrefixes: hubPrefixesFrom(PLAYER_TEAM_TABS),
+      },
+      { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+      { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
+    ];
+  }
+
+  const items: SidebarHubItem[] = [
+    { name: 'Command', href: '/baseball/dashboard/command-center', icon: IconHome },
+  ];
+
+  if (ids.has('signals')) {
+    items.push({ name: 'Signals', href: '/baseball/dashboard/signals', icon: IconTarget });
+  }
+
+  if (hasAnyVisible(ids, ['organization', 'teams', 'events'])) {
+    items.push(COACH_ORGANIZATION_HUB);
+  }
+
+  if (hasAnyVisible(ids, ['roster', 'calendar', 'announcements', 'documents', 'travel'])) {
+    items.push(COACH_TEAM_HUB);
+  }
+
+  if (hasAnyVisible(ids, ['stats-center', 'performance', 'postgame-review', 'practice-effectiveness', 'import-center'])) {
+    items.push(COACH_STATS_HUB);
+  }
+
+  if (hasAnyVisible(ids, ['dev-plans', 'videos'])) {
+    items.push(COACH_DEVELOPMENT_HUB);
+  }
+
+  if (ctx.programType && RECRUITING_PROGRAM_TYPES.has(ctx.programType)) {
+    items.push(COACH_RECRUITING_HUB);
+  }
+
+  if (ids.has('academics')) {
+    items.push(COACH_ACADEMICS_HUB);
+  }
+
+  items.push(COACH_MANAGEMENT_HUB);
+  return items;
+}
+
 /**
  * Whether a top-level (hub or flat) sidebar item is active for the current path.
  * A hub item lights when the pathname matches its href OR any route inside the
@@ -242,9 +335,10 @@ function isHubItemActive(item: SidebarHubItem, pathname: string): boolean {
 
 interface SidebarProps {
   isMobile?: boolean;
+  navContext?: BaseballNavContext;
 }
 
-export function Sidebar({ isMobile = false }: SidebarProps) {
+export function Sidebar({ isMobile = false, navContext }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, coach, player, signOut } = useAuth();
@@ -262,9 +356,12 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
 
   // Determine navigation based on role, coach type, and mode
   // ARCHIVED: Recruiting mode branches removed — all users see team mode only
-  const getNavigation = () => {
+  const getNavigation = (): SidebarHubItem[] => {
     if (isGolf) {
       return golfCoachNav;
+    }
+    if (navContext) {
+      return buildCondensedBaseballNavigation(navContext);
     }
     if (user?.role === 'coach') {
       if (coach?.coach_type === 'college') {
@@ -294,7 +391,20 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
 
   const navigation = getNavigation();
   const teamNavigation = getTeamNavigation();
-  const secondaryNav = user?.role === 'coach' ? coachSecondaryNav : playerSecondaryNav;
+  const secondaryNav = !isGolf && navContext
+    ? navContext.role === 'coach'
+      ? [{ name: 'Help', href: '/help', icon: IconHelp }]
+      : [
+          ...getVisibleBaseballNav(navContext)
+            .filter((entry) => entry.section === 'secondary')
+            .map((entry) => ({
+              name: entry.label,
+              href: entry.href,
+              icon: entry.icon,
+            })),
+          { name: 'Help', href: '/help', icon: IconHelp },
+        ]
+    : user?.role === 'coach' ? coachSecondaryNav : playerSecondaryNav;
   const displayName = coach?.full_name || (player ? `${player.first_name} ${player.last_name}` : 'User');
   const isShowcaseCoach = coach?.coach_type === 'showcase';
   const subtitle = coach ? ((coach.organization as { name?: string })?.name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : '');

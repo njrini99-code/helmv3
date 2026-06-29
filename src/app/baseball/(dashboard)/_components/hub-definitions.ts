@@ -28,6 +28,9 @@ import {
   IconUpload,
   IconTarget,
   IconVideo,
+  IconDumbbell,
+  IconGauge,
+  IconShieldCheck,
   IconBrain,
   IconBuilding,
   IconSettings,
@@ -59,10 +62,10 @@ export const COACH_STATS_TABS: readonly HubSubNavTab[] = [
   {
     id: 'overview',
     label: 'Overview',
-    href: '/baseball/dashboard/stats',
+    href: '/baseball/dashboard/stats-center',
     icon: IconChartBar,
-    // /stats is the overview; its nested /games, /season, /upload are separate
-    // tabs below, so the overview tab matches the bare /stats route only.
+    // /stats-center is the canonical overview; legacy /stats children remain
+    // below for games, season, and upload routes.
   },
   { id: 'games', label: 'Games', href: '/baseball/dashboard/stats/games', icon: IconClipboardList },
   { id: 'season', label: 'Season', href: '/baseball/dashboard/stats/season', icon: IconTrendingUp },
@@ -73,6 +76,10 @@ export const COACH_STATS_TABS: readonly HubSubNavTab[] = [
     icon: IconTrendingUp,
     matchPrefixes: ['/baseball/dashboard/performance'],
   },
+  { id: 'performance-live', label: 'Live', href: '/baseball/dashboard/performance/live', icon: IconDumbbell },
+  { id: 'performance-programs', label: 'Programs', href: '/baseball/dashboard/performance/programs', icon: IconClipboardList, matchPrefixes: ['/baseball/dashboard/performance/programs'] },
+  { id: 'performance-groups', label: 'Groups', href: '/baseball/dashboard/performance/groups', icon: IconUsers },
+  { id: 'performance-builder', label: 'Builder', href: '/baseball/dashboard/performance/builder', icon: IconGauge },
   { id: 'upload', label: 'Upload', href: '/baseball/dashboard/stats/upload', icon: IconUpload },
 ];
 
@@ -95,6 +102,10 @@ export const COACH_MANAGEMENT_TABS: readonly HubSubNavTab[] = [
  * Defined here so the layout + future un-hide is a one-line sidebar change.
  */
 export const COACH_RECRUITING_TABS: readonly HubSubNavTab[] = [
+  { id: 'pipeline', label: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconTarget, matchPrefixes: ['/baseball/dashboard/pipeline'] },
+  { id: 'discover', label: 'Discover', href: '/baseball/dashboard/discover', icon: IconStar },
+  { id: 'watchlist', label: 'Watchlist', href: '/baseball/dashboard/watchlist', icon: IconStar },
+  { id: 'compare', label: 'Compare', href: '/baseball/dashboard/compare', icon: IconChartBar },
   { id: 'college-interest', label: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconStar },
   { id: 'scout-packets', label: 'Scout Packets', href: '/baseball/dashboard/scout-packets', icon: IconNote },
   { id: 'import', label: 'Import', href: '/baseball/dashboard/import', icon: IconUpload },
@@ -116,18 +127,15 @@ export const COACH_ACADEMICS_TABS: readonly HubSubNavTab[] = [
 /** Player STATS hub — own stats depth + game/season views. */
 export const PLAYER_STATS_TABS: readonly HubSubNavTab[] = [
   { id: 'overview', label: 'Overview', href: '/baseball/dashboard/my-stats', icon: IconChartBar },
-  {
-    id: 'performance',
-    label: 'Performance',
-    href: '/baseball/dashboard/performance',
-    icon: IconTrendingUp,
-    matchPrefixes: ['/baseball/dashboard/performance'],
-  },
 ];
 
-/** Player DEVELOPMENT hub — own dev plan + video library. */
+/** Player DEVELOPMENT hub — own dev plan, training, proof packet, and video library. */
 export const PLAYER_DEVELOPMENT_TABS: readonly HubSubNavTab[] = [
   { id: 'dev-plan', label: 'Dev Plan', href: '/baseball/dashboard/dev-plan', icon: IconTarget },
+  { id: 'practice', label: 'Practice', href: '/baseball/player/practice', icon: IconClipboardList },
+  { id: 'lifts', label: 'Lifts', href: '/baseball/dashboard/lift', icon: IconDumbbell, matchPrefixes: ['/baseball/dashboard/lift'] },
+  { id: 'readiness', label: 'Readiness', href: '/baseball/dashboard/readiness', icon: IconGauge },
+  { id: 'passport', label: 'Passport', href: '/baseball/player/passport', icon: IconShieldCheck },
   { id: 'videos', label: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo, matchPrefixes: ['/baseball/dashboard/videos'] },
 ];
 

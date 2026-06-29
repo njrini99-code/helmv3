@@ -226,6 +226,7 @@ export default async function BaseballCalendarPage() {
         <BaseballCalendarWrapper
           initialEvents={events}
           teamMembers={teamMembers}
+          teamId={teamId}
           isCoach={isCoach}
           currentUserId={currentUserId}
         />

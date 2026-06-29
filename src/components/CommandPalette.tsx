@@ -22,7 +22,7 @@ interface CommandPaletteProps {
   isCoach?: boolean;
 }
 
-export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
+export function CommandPalette({ isCoach }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -59,7 +59,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       label: 'View Team Stats',
       description: 'Player performance analytics',
       icon: <IconChart size={18} />,
-      action: () => router.push('/baseball/dashboard/stats'),
+      action: () => router.push('/baseball/dashboard/stats-center'),
       keywords: ['analytics', 'performance', 'scores'],
     },
     {
@@ -102,7 +102,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       label: 'My Stats',
       description: 'Performance analytics',
       icon: <IconChart size={18} />,
-      action: () => router.push('/baseball/dashboard/stats'),
+      action: () => router.push('/baseball/dashboard/my-stats'),
       keywords: ['analytics', 'performance'],
     },
     {
@@ -131,7 +131,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     },
   ];
 
-  const commands = isCoach ? coachCommands : playerCommands;
+  const commands = isCoach === true ? coachCommands : playerCommands;
 
   const filteredCommands = commands.filter((cmd) => {
     if (!search) return true;

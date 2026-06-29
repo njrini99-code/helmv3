@@ -133,9 +133,10 @@ const COLLEGE: BaseballProgramVariant = {
     'calendar',
     'player-tasks',
     'practice-planner',
-    'performance',
+    'player-lift',
     'stats-center',
     'player-profile',
+    'player-passport',
     'player-timeline',
   ],
   terminology: {
@@ -206,6 +207,7 @@ const HIGH_SCHOOL: BaseballProgramVariant = {
     'player-tasks',
     'stats-center',
     'player-profile',
+    'player-passport',
   ],
   terminology: {
     coachHome: 'Team Command',
@@ -272,6 +274,7 @@ const SHOWCASE: BaseballProgramVariant = {
     'calendar',
     'player-tasks',
     'player-profile',
+    'player-passport',
     'stats-center',
   ],
   terminology: {
@@ -341,9 +344,10 @@ const JUCO: BaseballProgramVariant = {
     'calendar',
     'player-tasks',
     'practice-planner',
-    'performance',
+    'player-lift',
     'stats-center',
     'player-profile',
+    'player-passport',
   ],
   terminology: {
     coachHome: 'Command Center',
@@ -409,9 +413,11 @@ const ACADEMY: BaseballProgramVariant = {
     'player-today',
     'calendar',
     'player-tasks',
-    'performance',
+    'practice-planner',
+    'player-lift',
     'stats-center',
     'player-profile',
+    'player-passport',
   ],
   terminology: {
     coachHome: 'Command Center',
@@ -459,7 +465,7 @@ const CLUB: BaseballProgramVariant = {
     'stats-center',
     'import-center',
   ],
-  playerNavPriority: ['player-today', 'calendar', 'player-tasks', 'stats-center', 'player-profile'],
+  playerNavPriority: ['player-today', 'calendar', 'player-tasks', 'stats-center', 'player-profile', 'player-passport'],
   terminology: {
     coachHome: 'Team Command',
     playerHome: 'Today',

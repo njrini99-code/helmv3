@@ -31,7 +31,7 @@ import type {
 } from '@/lib/types';
 
 const STATS_PATHS = [
-  '/baseball/dashboard/stats',
+  '/baseball/dashboard/stats-center',
   '/baseball/dashboard/stats/games',
   '/baseball/dashboard/stats/season',
   '/baseball/dashboard/calendar',

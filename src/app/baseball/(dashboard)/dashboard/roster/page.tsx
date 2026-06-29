@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,8 +28,12 @@ import { useToast } from '@/components/ui/sonner';
 import {
   PlayerRow,
   PlayerCard,
+  PositionBoard,
+  StatusBoard,
+  DevelopmentBoard,
   RosterToolbar,
   exportRosterCSV,
+  type RosterBoardMember,
   type SortField,
   type SortDirection,
   type ViewMode,
@@ -36,6 +41,7 @@ import {
 import type { BaseballPlayerAggregates } from '@/lib/types';
 
 type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
+type RosterSurface = 'cards' | 'position' | 'status' | 'development';
 
 interface PlayerData {
   id: string;
@@ -63,6 +69,7 @@ const POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'OF', 'LHP', 'RHP', 'UTL'];
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
 
 export default function RosterPage() {
+  const router = useRouter();
   const { user, coach, loading: authLoading } = useAuth();
   const { selectedTeamId, getSelectedTeam } = useTeamStore();
   const selectedTeam = getSelectedTeam();
@@ -87,6 +94,7 @@ export default function RosterPage() {
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [viewMode, setViewMode] = useState<ViewMode>('expanded');
+  const [rosterSurface, setRosterSurface] = useState<RosterSurface>('cards');
 
   // Resolved team ID: prefer store, fall back to first team in org
   const [resolvedTeamId, setResolvedTeamId] = useState<string | null>(selectedTeamId);
@@ -287,6 +295,23 @@ export default function RosterPage() {
   // Active filter count
   const activeFilterCount = [positionFilter, gradYearFilter, statusFilter].filter(Boolean).length;
 
+  const boardMembers = useMemo<RosterBoardMember[]>(
+    () =>
+      filteredRoster.map((member) => ({
+        memberId: member.id,
+        playerId: member.player.id,
+        firstName: member.player.first_name,
+        lastName: member.player.last_name,
+        avatarUrl: member.player.avatar_url,
+        primaryPosition: member.player.primary_position,
+        secondaryPosition: member.player.secondary_position,
+        jerseyNumber: member.jersey_number,
+        status: member.status,
+        aggregates: aggregates[member.player.id],
+      })),
+    [filteredRoster, aggregates],
+  );
+
   // Clear all filters
   const clearFilters = () => {
     setPositionFilter('');
@@ -304,6 +329,10 @@ export default function RosterPage() {
   // Handle view mode change
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
+  };
+
+  const handleSelectPlayer = (playerId: string) => {
+    router.push(`/baseball/dashboard/players/${playerId}`);
   };
 
   // Handle export
@@ -547,7 +576,25 @@ export default function RosterPage() {
 
             {/* Roster Toolbar - Sort & View Controls */}
             {!loading && roster.length > 0 && (
-              <div className="mb-4">
+              <div className="mb-4 space-y-3">
+                <div className="flex w-full gap-2 overflow-x-auto rounded-2xl border border-warm-200 bg-cream-100/80 p-1 shadow-sm">
+                  {[
+                    { id: 'cards' as const, label: 'Cards' },
+                    { id: 'position' as const, label: 'Position Board' },
+                    { id: 'status' as const, label: 'Status Board' },
+                    { id: 'development' as const, label: 'Development Board' },
+                  ].map((surface) => (
+                    <Button
+                      key={surface.id}
+                      variant={rosterSurface === surface.id ? 'primary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setRosterSurface(surface.id)}
+                      className="min-h-[40px] flex-shrink-0 rounded-xl px-3"
+                    >
+                      {surface.label}
+                    </Button>
+                  ))}
+                </div>
                 <RosterToolbar
                   playerCount={filteredRoster.length}
                   sortField={sortField}
@@ -641,81 +688,97 @@ export default function RosterPage() {
                   </div>
                 ) : (
                   <>
-                    {/* Mobile card view */}
-                    <div className="lg:hidden grid grid-cols-1 gap-4">
-                      {filteredRoster.map((member) => (
-                        <PlayerCard
-                          key={member.id}
-                          player={member.player}
-                          jerseyNumber={member.jersey_number}
-                          status={member.status}
-                          aggregates={aggregates[member.player.id]}
-                        />
-                      ))}
-                    </div>
+                    {rosterSurface === 'position' && (
+                      <PositionBoard members={boardMembers} onSelect={handleSelectPlayer} />
+                    )}
 
-                    {/* Desktop table view */}
-                    <div className="hidden lg:block overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-warm-200">
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                              Player
-                            </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                              Position
-                            </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                              Class
-                            </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                              AVG
-                            </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                              OBP
-                            </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                              SLG
-                            </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                              OPS
-                            </th>
-                            {viewMode === 'expanded' && (
-                              <>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  Last 5
-                                </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  Exit Velo
-                                </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                                  Sessions
-                                </th>
-                              </>
-                            )}
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                              Status
-                            </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-warm-200">
+                    {rosterSurface === 'status' && (
+                      <StatusBoard members={boardMembers} onSelect={handleSelectPlayer} />
+                    )}
+
+                    {rosterSurface === 'development' && (
+                      <DevelopmentBoard members={boardMembers} onSelect={handleSelectPlayer} />
+                    )}
+
+                    {rosterSurface === 'cards' && (
+                      <>
+                        {/* Mobile card view */}
+                        <div className="lg:hidden grid grid-cols-1 gap-4">
                           {filteredRoster.map((member) => (
-                            <PlayerRow
+                            <PlayerCard
                               key={member.id}
-                              memberId={member.id}
                               player={member.player}
                               jerseyNumber={member.jersey_number}
                               status={member.status}
                               aggregates={aggregates[member.player.id]}
-                              compact={viewMode === 'compact'}
                             />
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        </div>
+
+                        {/* Desktop table view */}
+                        <div className="hidden lg:block overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-warm-200">
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                  Player
+                                </th>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                  Position
+                                </th>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                  Class
+                                </th>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                  AVG
+                                </th>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                  OBP
+                                </th>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                  SLG
+                                </th>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                  OPS
+                                </th>
+                                {viewMode === 'expanded' && (
+                                  <>
+                                    <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                      Last 5
+                                    </th>
+                                    <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                      Exit Velo
+                                    </th>
+                                    <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                      Sessions
+                                    </th>
+                                  </>
+                                )}
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                  Status
+                                </th>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
+                                  Actions
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-warm-200">
+                              {filteredRoster.map((member) => (
+                                <PlayerRow
+                                  key={member.id}
+                                  memberId={member.id}
+                                  player={member.player}
+                                  jerseyNumber={member.jersey_number}
+                                  status={member.status}
+                                  aggregates={aggregates[member.player.id]}
+                                  compact={viewMode === 'compact'}
+                                />
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </CardContent>
