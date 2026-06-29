@@ -451,6 +451,7 @@ DO $$
 BEGIN
   IF to_regclass('public.baseball_staff_invitations') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.baseball_staff_invitations ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'ALTER TABLE public.baseball_staff_invitations ADD COLUMN IF NOT EXISTS accepted_by_user_id uuid';
 
     EXECUTE 'DROP POLICY IF EXISTS "baseball_staff_invitations_select" ON public.baseball_staff_invitations';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_staff_invitations_insert" ON public.baseball_staff_invitations';
