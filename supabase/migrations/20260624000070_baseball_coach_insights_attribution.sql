@@ -121,6 +121,8 @@ DECLARE
 BEGIN
   IF to_regclass('public.baseball_coach_insights') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.baseball_coach_insights ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'REVOKE ALL ON TABLE public.baseball_coach_insights FROM anon';
+    EXECUTE 'REVOKE ALL ON TABLE public.baseball_coach_insights FROM PUBLIC';
 
     SELECT EXISTS (
       SELECT 1 FROM information_schema.columns
