@@ -374,11 +374,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS helm_lifting_import_rows_legacy_uq
   WHERE legacy_baseball_id IS NOT NULL;
 
 -- ===========================================================================
--- 5b. SECURITY DEFINER HELPER — head-coach-level visibility gate
+-- 5b. Elevated helper — head-coach-level visibility gate
 --
 -- Returns TRUE when the calling user is an active lifting coach for the given
--- organization (i.e., has a row in helm_lifting_coaches that is not soft-
--- deleted).  Org-viewers granted only read access via helm_lifting_org_viewers
+-- organization (i.e., has an active row in helm_lifting_coaches).
+-- Org-viewers granted only read access via helm_lifting_org_viewers
 -- return FALSE, so rows with visibility = 'head_coach_only' are withheld from
 -- them by the hlrc_select and hlas_select policies below.
 -- ===========================================================================
@@ -387,14 +387,14 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = pg_catalog, public
 AS $$
   SELECT EXISTS (
     SELECT 1
     FROM public.helm_lifting_coaches c
     WHERE c.organization_id = p_org
       AND c.user_id = auth.uid()
-      AND (c.deleted_at IS NULL OR c.deleted_at > now())
+      AND c.status = 'active'
   );
 $$;
 REVOKE ALL ON FUNCTION public.helm_lifting_is_head_coach_viewer(uuid) FROM anon;
