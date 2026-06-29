@@ -27,10 +27,9 @@
 --     results via can_manage_baseball_lift_group; OTHER players can NEVER read a
 --     teammate's loads (staff-restricted).
 --   * Readiness check-ins: a player INSERTs/updates/reads only their OWN
---     check-ins. Staff read only with can_view_medical (readiness/soreness is
---     health-adjacent; there is no can_view_readiness capability in the staff
---     model, so the nearest health gate is used). Never framed as a medical
---     diagnosis; other players can NEVER read.
+--     check-ins. Staff read only with can_view_readiness (performance-tier
+--     readiness, soreness, bodyweight, and availability). Never framed as a
+--     medical diagnosis; other players can NEVER read.
 --
 -- GUARANTEES:
 --   * Idempotent / additive only: CREATE TABLE IF NOT EXISTS, ADD COLUMN IF
@@ -308,7 +307,7 @@ CREATE POLICY "baseball_lift_results_delete" ON public.baseball_lift_results
   );
 
 -- ----------------------------------------------------------------------------
--- baseball_readiness_checkins — player owns; staff read only with can_view_medical.
+-- baseball_readiness_checkins — player owns; staff read only with can_view_readiness.
 -- ----------------------------------------------------------------------------
 ALTER TABLE public.baseball_readiness_checkins ENABLE ROW LEVEL SECURITY;
 
@@ -317,14 +316,14 @@ DROP POLICY IF EXISTS "baseball_readiness_checkins_insert" ON public.baseball_re
 DROP POLICY IF EXISTS "baseball_readiness_checkins_update" ON public.baseball_readiness_checkins;
 DROP POLICY IF EXISTS "baseball_readiness_checkins_delete" ON public.baseball_readiness_checkins;
 
--- SELECT: the owning player, OR staff WITH the can_view_medical gate who
+-- SELECT: the owning player, OR staff WITH the can_view_readiness gate who
 -- may view that player. Other players can never read (no path matches).
 CREATE POLICY "baseball_readiness_checkins_select" ON public.baseball_readiness_checkins
   FOR SELECT TO authenticated
   USING (
     player_id = public.get_my_baseball_player_id()
     OR (
-      public.has_baseball_staff_capability(team_id, 'can_view_medical')
+      public.has_baseball_staff_capability(team_id, 'can_view_readiness')
       AND public.can_view_baseball_player(team_id, player_id)
     )
   );

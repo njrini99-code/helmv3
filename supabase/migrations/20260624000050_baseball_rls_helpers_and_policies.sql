@@ -818,7 +818,7 @@ BEGIN
 END $$;
 
 -- ----------------------------------------------------------------------------
--- baseball_readiness_checkins  (player owns; staff read with can_view_medical)
+-- baseball_readiness_checkins  (player owns; staff read with can_view_readiness)
 -- ----------------------------------------------------------------------------
 DO $$
 BEGIN
@@ -835,7 +835,7 @@ BEGIN
       USING (
         player_id = public.get_my_baseball_player_id()
         OR (
-          public.has_baseball_staff_capability(team_id, 'can_view_medical')
+          public.has_baseball_staff_capability(team_id, 'can_view_readiness')
           AND public.can_view_baseball_player(team_id, player_id)
         )
       )$p$;
