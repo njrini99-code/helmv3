@@ -7,7 +7,7 @@
 -- Tables addressed (by source migration):
 --   migration 000020: baseball_import_runs, baseball_player_external_ids
 --   migration 000040: baseball_player_timeline_events, baseball_event_acknowledgements
---   migration 000050: baseball_staff_invitations
+--   migration 000050: baseball_team_coach_staff, baseball_staff_invitations
 --   migration 000060: baseball_practices, baseball_practice_blocks,
 --                     baseball_practice_attendance
 --   baseline/000010: baseball_stat_uploads
@@ -47,10 +47,13 @@ BEGIN
 END $$;
 
 -- -----------------------------------------------------------------------------
--- From migration 000050 and baseline/000010 — staff invitations + stat uploads
+-- From migration 000050 and baseline/000010 — staff surfaces + stat uploads
 -- -----------------------------------------------------------------------------
 DO $$
 BEGIN
+  IF to_regclass('public.baseball_team_coach_staff') IS NOT NULL THEN
+    REVOKE ALL ON public.baseball_team_coach_staff FROM anon;
+  END IF;
   IF to_regclass('public.baseball_staff_invitations') IS NOT NULL THEN
     REVOKE ALL ON public.baseball_staff_invitations FROM anon;
   END IF;
