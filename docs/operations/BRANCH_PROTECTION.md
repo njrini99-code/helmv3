@@ -22,6 +22,7 @@ Required checks for `main` should match the hard blockers in `docs/operations/GA
 Do not require these until they are stable enough to block everyday work:
 
 - `Playwright E2E Advisory`
+- `Business contracts`
 - `Course picker screenshots`
 - CircleCI weekly radar jobs
 - Lighthouse preview jobs

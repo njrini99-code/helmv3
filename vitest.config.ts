@@ -12,12 +12,14 @@ import path from 'path';
  *   unit         — default for `npm test`. Excludes the slow lanes.
  *   integration  — *.integration.test.{ts,tsx}, longer timeout
  *   rls          — *.rls.test.{ts,tsx}, longer timeout
+ *   business     — *.contract.test.{ts,tsx}, advisory product-truth contracts
  *
  * Scripts:
  *   npm test                 → unit only (fast)
  *   npm run test:all         → every project (CI)
  *   npm run test:integration → just integration
  *   npm run test:rls         → just RLS
+ *   npm run test:business    → just business contracts
  */
 const sharedTestConfig = {
   environment: 'jsdom' as const,
@@ -75,6 +77,7 @@ export default defineConfig({
             'helm-intelligence',
             'src/**/*.integration.test.{ts,tsx}',
             'src/**/*.rls.test.{ts,tsx}',
+            'src/**/*.contract.test.{ts,tsx}',
           ],
         },
       },
@@ -94,6 +97,22 @@ export default defineConfig({
           ...sharedTestConfig,
           name: 'rls',
           include: ['src/**/*.rls.test.{ts,tsx}'],
+          exclude: ['node_modules', '.next'],
+          testTimeout: 30_000,
+        },
+      },
+      {
+        plugins: [react()],
+        resolve: {
+          alias: {
+            '@': path.resolve(__dirname, './src'),
+            'server-only': path.resolve(__dirname, './src/test/stubs/server-only.ts'),
+          },
+        },
+        test: {
+          ...sharedTestConfig,
+          name: 'business',
+          include: ['src/**/*.contract.test.{ts,tsx}'],
           exclude: ['node_modules', '.next'],
           testTimeout: 30_000,
         },

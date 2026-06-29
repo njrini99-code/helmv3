@@ -25,6 +25,7 @@ This file is the current map of hard merge blockers versus advisory checks.
 | Check | Why Advisory |
 |---|---|
 | Playwright E2E Advisory | full suite is still stabilizing |
+| Business Contracts | advisory product-truth radar for GolfHelm stats, CoachHelm evidence, access boundaries, and product trust states |
 | Course picker screenshots | visual evidence artifact, not a merge blocker |
 | Lighthouse | performance and accessibility visibility |
 | Knip | dead-code discovery |

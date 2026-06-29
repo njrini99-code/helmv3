@@ -246,6 +246,26 @@ jobs:
         if: always()
         run: supabase stop || true
 
+  business-contracts:
+    name: Business contracts
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run advisory business contract lane
+        run: npm run verify:business
+
   all:
     name: all
     runs-on: ubuntu-latest
