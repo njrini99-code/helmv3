@@ -144,8 +144,10 @@ jobs:
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        shell: bash
         run: |
-          set -eu
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           # Skip the `.coderabbit/semgrep/__test__/` positive fixtures —
           # they are intentionally broken code that exists only to verify
           # rule-pack behaviour locally. Letting them flow into CI would
@@ -163,8 +165,10 @@ jobs:
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        shell: bash
         run: |
-          set -eu
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           mapfile -t files < <(bash .github/scripts/changed-files.sh \
             | grep -E '\.(ts|tsx|js|jsx|sql|py|sh|bash|ya?ml)$' \
             | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
