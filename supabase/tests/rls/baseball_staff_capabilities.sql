@@ -36,7 +36,7 @@ SELECT ok(
     WHERE n.nspname = 'public'
       AND p.proname = 'has_baseball_staff_capability'
       AND p.prosecdef = true
-      AND p.proconfig @> ARRAY['search_path=public, pg_temp']
+      AND p.proconfig @> ARRAY['search_path=pg_catalog, public']
   ),
   'has_baseball_staff_capability is SECURITY DEFINER with pinned search_path'
 );
