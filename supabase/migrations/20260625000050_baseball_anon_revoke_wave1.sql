@@ -7,8 +7,10 @@
 -- Tables addressed (by source migration):
 --   migration 000020: baseball_import_runs, baseball_player_external_ids
 --   migration 000040: baseball_player_timeline_events, baseball_event_acknowledgements
+--   migration 000050: baseball_staff_invitations
 --   migration 000060: baseball_practices, baseball_practice_blocks,
 --                     baseball_practice_attendance
+--   baseline/000010: baseball_stat_uploads
 --
 -- Pattern: Supabase default privileges grant anon usage on public schema tables
 -- at CREATE time. An explicit REVOKE closes that gap regardless of policy state.
@@ -45,9 +47,21 @@ BEGIN
 END $$;
 
 -- -----------------------------------------------------------------------------
+-- From migration 000050 and baseline/000010 — staff invitations + stat uploads
+-- -----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF to_regclass('public.baseball_staff_invitations') IS NOT NULL THEN
+    REVOKE ALL ON public.baseball_staff_invitations FROM anon;
+  END IF;
+  IF to_regclass('public.baseball_stat_uploads') IS NOT NULL THEN
+    REVOKE ALL ON public.baseball_stat_uploads       FROM anon;
+  END IF;
+END $$;
+
+-- -----------------------------------------------------------------------------
 -- From migration 000060 — practice tables
--- (RLS enabled in 000060; policies injected by 000050 to_regclass-guarded.
---  REVOKE eliminates the gap window between those two migrations.)
+-- (RLS and policies are attached in 000060. REVOKE removes inherited anon grants.)
 -- -----------------------------------------------------------------------------
 DO $$
 BEGIN

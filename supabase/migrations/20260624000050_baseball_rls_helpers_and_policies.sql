@@ -292,6 +292,13 @@ REVOKE ALL ON FUNCTION public.can_view_baseball_player(uuid, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.can_view_baseball_player(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.is_baseball_team_member(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.can_manage_baseball_lift_group(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_my_baseball_player_id() FROM anon;
+REVOKE ALL ON FUNCTION public.is_baseball_team_staff(uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.has_baseball_staff_capability(uuid, text) FROM anon;
+REVOKE ALL ON FUNCTION public.can_view_baseball_player(uuid, uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.can_view_baseball_player(uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.is_baseball_team_member(uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.can_manage_baseball_lift_group(uuid, uuid) FROM anon;
 
 GRANT EXECUTE ON FUNCTION public.get_my_baseball_player_id() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.is_baseball_team_staff(uuid) TO authenticated, service_role;

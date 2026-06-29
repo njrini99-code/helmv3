@@ -85,18 +85,92 @@ CREATE INDEX IF NOT EXISTS idx_bpa_player        ON public.baseball_practice_att
 CREATE INDEX IF NOT EXISTS idx_bpa_team          ON public.baseball_practice_attendance(team_id);
 
 -- ----------------------------------------------------------------------------
--- RLS ENABLED (deny-by-default). Policies are attached by
--- 20260624000050_baseball_rls_helpers_and_policies.sql (to_regclass-guarded):
+-- RLS ENABLED (deny-by-default). The helper migration also contains
+-- to_regclass-guarded copies of these policies for reruns, but this migration
+-- attaches the initial policies immediately after creating the practice tables:
 --   * baseball_practices            : staff read/write via can_manage_practice;
 --                                     players read status='published' only.
 --   * baseball_practice_blocks      : inherits practice visibility.
 --   * baseball_practice_attendance  : staff manage; player reads own row.
--- Enabling RLS here ensures the tables are never world-readable in the window
--- before/independent of the policy migration running.
+-- That keeps replay order deterministic and prevents policy drift.
 -- ----------------------------------------------------------------------------
 ALTER TABLE public.baseball_practices            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.baseball_practice_blocks      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.baseball_practice_attendance  ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "baseball_practices_select" ON public.baseball_practices;
+DROP POLICY IF EXISTS "baseball_practices_insert" ON public.baseball_practices;
+DROP POLICY IF EXISTS "baseball_practices_update" ON public.baseball_practices;
+DROP POLICY IF EXISTS "baseball_practices_delete" ON public.baseball_practices;
+
+CREATE POLICY "baseball_practices_select" ON public.baseball_practices
+  FOR SELECT TO authenticated
+  USING (
+    public.is_baseball_team_staff(team_id)
+    OR (status = 'published' AND public.is_baseball_team_member(team_id))
+  );
+CREATE POLICY "baseball_practices_insert" ON public.baseball_practices
+  FOR INSERT TO authenticated
+  WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'));
+CREATE POLICY "baseball_practices_update" ON public.baseball_practices
+  FOR UPDATE TO authenticated
+  USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))
+  WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'));
+CREATE POLICY "baseball_practices_delete" ON public.baseball_practices
+  FOR DELETE TO authenticated
+  USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'));
+
+DROP POLICY IF EXISTS "baseball_practice_blocks_select" ON public.baseball_practice_blocks;
+DROP POLICY IF EXISTS "baseball_practice_blocks_insert" ON public.baseball_practice_blocks;
+DROP POLICY IF EXISTS "baseball_practice_blocks_update" ON public.baseball_practice_blocks;
+DROP POLICY IF EXISTS "baseball_practice_blocks_delete" ON public.baseball_practice_blocks;
+
+CREATE POLICY "baseball_practice_blocks_select" ON public.baseball_practice_blocks
+  FOR SELECT TO authenticated
+  USING (
+    public.is_baseball_team_staff(team_id)
+    OR (
+      public.is_baseball_team_member(team_id)
+      AND EXISTS (
+        SELECT 1
+        FROM public.baseball_practices p
+        WHERE p.id = baseball_practice_blocks.practice_id
+          AND p.status = 'published'
+      )
+    )
+  );
+CREATE POLICY "baseball_practice_blocks_insert" ON public.baseball_practice_blocks
+  FOR INSERT TO authenticated
+  WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'));
+CREATE POLICY "baseball_practice_blocks_update" ON public.baseball_practice_blocks
+  FOR UPDATE TO authenticated
+  USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))
+  WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'));
+CREATE POLICY "baseball_practice_blocks_delete" ON public.baseball_practice_blocks
+  FOR DELETE TO authenticated
+  USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'));
+
+DROP POLICY IF EXISTS "baseball_practice_attendance_select" ON public.baseball_practice_attendance;
+DROP POLICY IF EXISTS "baseball_practice_attendance_insert" ON public.baseball_practice_attendance;
+DROP POLICY IF EXISTS "baseball_practice_attendance_update" ON public.baseball_practice_attendance;
+DROP POLICY IF EXISTS "baseball_practice_attendance_delete" ON public.baseball_practice_attendance;
+
+CREATE POLICY "baseball_practice_attendance_select" ON public.baseball_practice_attendance
+  FOR SELECT TO authenticated
+  USING (
+    public.has_baseball_staff_capability(team_id, 'can_manage_practice')
+    OR player_id = public.get_my_baseball_player_id()
+  );
+CREATE POLICY "baseball_practice_attendance_insert" ON public.baseball_practice_attendance
+  FOR INSERT TO authenticated
+  WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'));
+CREATE POLICY "baseball_practice_attendance_update" ON public.baseball_practice_attendance
+  FOR UPDATE TO authenticated
+  USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))
+  WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'));
+CREATE POLICY "baseball_practice_attendance_delete" ON public.baseball_practice_attendance
+  FOR DELETE TO authenticated
+  USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'));
 
 -- ============================================================================
 -- END — baseball practice tables. ADDITIVE. NOT applied to any DB.
