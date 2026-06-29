@@ -60,7 +60,7 @@ function PipelineStatsSummary({ watchlist }: { watchlist: Array<{ pipeline_stage
       committed: 0,
       uninterested: 0,
     };
-    
+
     watchlist.forEach(item => {
       switch (item.pipeline_stage) {
         case 'watchlist':
@@ -80,7 +80,7 @@ function PipelineStatsSummary({ watchlist }: { watchlist: Array<{ pipeline_stage
           break;
       }
     });
-    
+
     return counts;
   }, [watchlist]);
 
@@ -182,7 +182,7 @@ export default function PipelinePage() {
   const [removing, setRemoving] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [peekPlayerId, setPeekPlayerId] = useState<string | null>(null);
-  
+
   // Keyboard navigation state
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const listContainerRef = useRef<HTMLDivElement>(null);
@@ -376,7 +376,7 @@ export default function PipelinePage() {
   const handleKeyboardNavigation = useCallback((e: KeyboardEvent) => {
     // Only handle in list view when not editing
     if (viewMode !== 'list' || editingNote || filteredWatchlist.length === 0) return;
-    
+
     // Don't intercept if user is typing in an input
     const target = e.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
@@ -838,7 +838,7 @@ export default function PipelinePage() {
                     <tbody className="divide-y divide-warm-200">
                       {filteredWatchlist.map((item, index) => (
                         <React.Fragment key={item.id}>
-                          <tr 
+                          <tr
                             className={cn(
                               'hover:bg-warm-50 active:bg-warm-100 transition-colors',
                               focusedIndex === index && 'bg-primary-50 ring-2 ring-inset ring-primary-500'
