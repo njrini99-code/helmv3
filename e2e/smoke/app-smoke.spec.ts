@@ -2,8 +2,9 @@ import { expect, test } from '@playwright/test';
 
 const demoEmail = process.env.E2E_GOLF_EMAIL;
 const demoPassword = process.env.E2E_GOLF_PASSWORD;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const authSmokeReady = Boolean(demoEmail && demoPassword && serviceRoleKey);
+const authSmokeReady = Boolean(
+  demoEmail && demoPassword && process.env.E2E_AUTH_SMOKE_ENABLED === 'true'
+);
 const authSmokeTest = authSmokeReady ? test : test.skip;
 
 test.describe('Helm smoke checks', () => {

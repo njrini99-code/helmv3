@@ -32,6 +32,7 @@ env:
   NEXT_PUBLIC_REDESIGN: 'true'
   E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
   E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+  E2E_AUTH_SMOKE_ENABLED: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
   COMMIT_SHA: ${{ github.sha }}
   # The `npm run build` step (both jobs) OOMs at Node's ~4GB default heap on
   # the CI runner — the same OOM that fails the `build` check. The standard

@@ -19,6 +19,7 @@ env:
   NEXT_PUBLIC_REDESIGN: 'true'
   E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
   E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+  E2E_AUTH_SMOKE_ENABLED: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
