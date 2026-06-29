@@ -1,0 +1,67 @@
+name: Bug
+description: Report a Helm bug with enough routing context to fix it safely.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      options:
+        - GolfHelm
+        - BaseballHelm
+        - CoachHelm
+        - Lifting Lab
+        - Platform
+    validations:
+      required: true
+  - type: input
+    id: feature_area
+    attributes:
+      label: Feature area
+      description: Registry key from memory/registry.yml when known.
+  - type: textarea
+    id: user_impact
+    attributes:
+      label: User impact
+      description: Who notices this and how bad is it?
+    validations:
+      required: true
+  - type: textarea
+    id: current_behavior
+    attributes:
+      label: Current behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Screenshots, logs, Sentry, Datadog, PR comments, tests, or user reports.
+  - type: textarea
+    id: suspected_files
+    attributes:
+      label: Suspected files
+      description: Include paths when known.
+  - type: textarea
+    id: required_checks
+    attributes:
+      label: Required checks
+      value: |
+        - [ ] npm run typecheck
+        - [ ] npm run lint
+        - [ ] npm run test:run
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+    validations:
+      required: true

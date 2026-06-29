@@ -140,7 +140,7 @@ function ExerciseCard({ exercise, groupSoreness, onAdd }: ExerciseCardProps) {
             {stress !== 'none' && (
               <span
                 className={[
-                  'inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
+                  'inline-flex items-center rounded-full border px-1.5 py-0.5 text-caption font-medium',
                   stress === 'high'
                     ? 'border-red-200 bg-red-50 text-red-700'
                     : stress === 'medium'

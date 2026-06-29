@@ -32,8 +32,8 @@ export interface FilterPillProps
 }
 
 const sizeStyles: Record<'sm' | 'md', string> = {
-  sm: 'min-h-[30px] px-3 text-[12px] gap-1.5',
-  md: 'min-h-[36px] px-3.5 text-[13px] gap-1.5',
+  sm: 'min-h-[30px] px-3 text-caption gap-1.5',
+  md: 'min-h-[36px] px-3.5 text-body-sm gap-1.5',
 };
 
 export const FilterPill = forwardRef<HTMLButtonElement, FilterPillProps>(function FilterPill(
@@ -80,7 +80,7 @@ export const FilterPill = forwardRef<HTMLButtonElement, FilterPillProps>(functio
       {typeof count === 'number' && (
         <span
           className={cn(
-            'ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1 tabular-nums font-fw-mono text-[11px]',
+            'ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1 tabular-nums font-fw-mono text-caption',
             selected ? 'bg-accent-500/15 text-accent-700' : 'bg-surface-sunken text-text-tertiary',
           )}
         >

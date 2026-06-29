@@ -27,7 +27,7 @@ const SIZE_CLASS: Record<NumericSize, string> = {
   lg: 'text-h1',
   // Fairway display numeric (44/48) — the spec's hero stat; no exact canonical
   // text-* token (display is 40), so the size is set explicitly here.
-  hero: 'text-[44px] leading-[48px]',
+  hero: 'text-display leading-[48px]',
 };
 
 export interface NumericProps {

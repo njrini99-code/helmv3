@@ -264,7 +264,7 @@ export function CoachFilters({
           <IconFilter size={14} />
           Filters
           {activeFilterCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 bg-primary-600 text-white text-[11px] font-bold rounded-full leading-none">
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 bg-primary-600 text-white text-caption font-bold rounded-full leading-none">
               {activeFilterCount}
             </span>
           )}
@@ -328,7 +328,7 @@ export function CoachFilters({
         >
           {/* Division — soft chips, no "All" */}
           <fieldset className="space-y-1.5">
-            <legend className="text-[11px] font-semibold uppercase tracking-wide text-warm-500">Division</legend>
+            <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Division</legend>
             <div className="flex flex-wrap gap-1.5">
               {DIVISION_OPTIONS.map(div => {
                 const selected = filters.division === div;
@@ -347,7 +347,7 @@ export function CoachFilters({
 
           {/* Program — soft chips, no "All" */}
           <fieldset className="space-y-1.5">
-            <legend className="text-[11px] font-semibold uppercase tracking-wide text-warm-500">Program</legend>
+            <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Program</legend>
             <div className="flex flex-wrap gap-1.5">
               {PROGRAM_OPTIONS.map(opt => {
                 const selected = filters.program === opt.value;
@@ -367,7 +367,7 @@ export function CoachFilters({
           {/* Compact labeled dropdowns: Status / Conference / Priority / Queue */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <label className="space-y-1.5">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-warm-500">Status</span>
+              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Status</span>
               <select
                 value={filters.status}
                 onChange={(e) => setFilters(f => ({ ...f, status: e.target.value as Filters['status'] }))}
@@ -379,7 +379,7 @@ export function CoachFilters({
             </label>
 
             <label className="space-y-1.5">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-warm-500">Conference</span>
+              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Conference</span>
               <select
                 value={filters.conference}
                 onChange={(e) => setFilters(f => ({ ...f, conference: e.target.value }))}
@@ -391,7 +391,7 @@ export function CoachFilters({
             </label>
 
             <label className="space-y-1.5">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-warm-500">Priority</span>
+              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Priority</span>
               <select
                 value={filters.priority}
                 onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
@@ -403,7 +403,7 @@ export function CoachFilters({
             </label>
 
             <label className="space-y-1.5">
-              <span className="block text-[11px] font-semibold uppercase tracking-wide text-warm-500">Queue status</span>
+              <span className="block text-caption font-semibold uppercase tracking-wide text-warm-500">Queue status</span>
               <select
                 value={filters.queueStatus ?? 'all'}
                 onChange={(e) => setFilters(f => ({ ...f, queueStatus: e.target.value as Filters['queueStatus'] }))}
@@ -417,7 +417,7 @@ export function CoachFilters({
 
           {/* Boolean toggles — soft chips with leading icons */}
           <fieldset className="space-y-1.5">
-            <legend className="text-[11px] font-semibold uppercase tracking-wide text-warm-500">Quick filters</legend>
+            <legend className="text-caption font-semibold uppercase tracking-wide text-warm-500">Quick filters</legend>
             <div className="flex flex-wrap gap-1.5">
               <FacetChip selected={filters.followUpDue} onClick={() => setFilters(f => ({ ...f, followUpDue: !f.followUpDue }))}>
                 <IconClock size={12} /> Follow-ups Due

@@ -269,14 +269,14 @@ export function TodayQueue({
                       </span>
                       <span
                         className={cn(
-                          'inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1',
+                          'inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-caption font-semibold uppercase tracking-wide ring-1',
                           chip,
                         )}
                       >
                         {div || '—'}
                       </span>
                       {coach.assigned_to && (
-                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700 ring-1 ring-primary-200">
+                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-caption font-medium text-primary-700 ring-1 ring-primary-200">
                           <IconUser size={11} />
                           {coach.assigned_to}
                         </span>
@@ -286,7 +286,7 @@ export function TodayQueue({
                       {coach.school}
                       {coach.title ? ` · ${coach.title}` : ''}
                     </span>
-                    <span className="mt-0.5 block truncate text-[11px] text-warm-400">
+                    <span className="mt-0.5 block truncate text-caption text-warm-400">
                       {fitReason(coach)}
                     </span>
                   </span>

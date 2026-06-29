@@ -1,0 +1,56 @@
+name: Cleanup
+description: Scoped cleanup that should not drift into product changes.
+title: "[Cleanup]: "
+labels: ["cleanup"]
+body:
+  - type: dropdown
+    id: cleanup_type
+    attributes:
+      label: Cleanup type
+      options:
+        - Dead code
+        - Duplicate code
+        - Docs
+        - Dependency
+        - Structure
+        - Generated artifacts
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      options:
+        - Low
+        - Medium
+        - High
+  - type: textarea
+    id: allowed_files
+    attributes:
+      label: Allowed files
+  - type: textarea
+    id: forbidden_files
+    attributes:
+      label: Forbidden files
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      value: |
+        - [ ] npm run verify
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: rollback
+    attributes:
+      label: Rollback plan

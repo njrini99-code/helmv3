@@ -297,7 +297,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium text-warm-800">{o.focusArea}</p>
-                              <p className="text-[11px] text-warm-400">
+                              <p className="text-caption text-warm-400">
                                 {o.targetMetric
                                   ? getBaseballMetricLabel(o.targetMetric)
                                   : 'Completion only'}
@@ -327,7 +327,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                           {run && (
                             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                               <label className="block">
-                                <span className="mb-1 block text-[11px] font-medium text-warm-600">
+                                <span className="mb-1 block text-caption font-medium text-warm-600">
                                   Reps done
                                 </span>
                                 <input
@@ -339,7 +339,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                                 />
                               </label>
                               <label className="block">
-                                <span className="mb-1 block text-[11px] font-medium text-warm-600">
+                                <span className="mb-1 block text-caption font-medium text-warm-600">
                                   Reps correct
                                 </span>
                                 <input
@@ -351,7 +351,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                                 />
                               </label>
                               <label className="col-span-2 block">
-                                <span className="mb-1 block text-[11px] font-medium text-warm-600">
+                                <span className="mb-1 block text-caption font-medium text-warm-600">
                                   Video link (optional)
                                 </span>
                                 <div className="flex items-center gap-1.5">
@@ -369,7 +369,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                           )}
 
                           <label className="mt-2 block">
-                            <span className="mb-1 block text-[11px] font-medium text-warm-600">
+                            <span className="mb-1 block text-caption font-medium text-warm-600">
                               Completion notes (optional)
                             </span>
                             <textarea
@@ -387,7 +387,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                               <button
                                 type="button"
                                 onClick={() => setTaskForObjective(o.id)}
-                                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary-600 hover:text-primary-700"
+                                className="inline-flex items-center gap-1 text-caption font-medium text-primary-600 hover:text-primary-700"
                               >
                                 <Plus className="h-3 w-3" />
                                 Assign follow-up task
@@ -425,7 +425,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                             <div className="min-w-0">
                               <p className="truncate text-sm font-medium text-warm-800">{s.title}</p>
-                              <p className="text-[11px] text-warm-400">
+                              <p className="text-caption text-warm-400">
                                 {s.mode.replace(/_/g, ' ')} · {s.slots.length} assigned
                                 {completed && ' · scored'}
                               </p>
@@ -433,7 +433,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                           </div>
                           <div className="grid grid-cols-3 gap-2">
                             <label className="block">
-                              <span className="mb-1 block text-[11px] font-medium text-warm-600">
+                              <span className="mb-1 block text-caption font-medium text-warm-600">
                                 Blue / offense
                               </span>
                               <input
@@ -445,7 +445,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                               />
                             </label>
                             <label className="block">
-                              <span className="mb-1 block text-[11px] font-medium text-warm-600">
+                              <span className="mb-1 block text-caption font-medium text-warm-600">
                                 White / defense
                               </span>
                               <input
@@ -457,7 +457,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                               />
                             </label>
                             <label className="block">
-                              <span className="mb-1 block text-[11px] font-medium text-warm-600">
+                              <span className="mb-1 block text-caption font-medium text-warm-600">
                                 Innings
                               </span>
                               <input
@@ -470,7 +470,7 @@ export function PracticeRecapPanel({ practiceId, roster, onSaved }: Props) {
                             </label>
                           </div>
                           <label className="mt-2 block">
-                            <span className="mb-1 block text-[11px] font-medium text-warm-600">
+                            <span className="mb-1 block text-caption font-medium text-warm-600">
                               Outing note (optional)
                             </span>
                             <textarea
@@ -580,7 +580,7 @@ function RecapTaskComposer({
 
   if (done) {
     return (
-      <div className="flex items-center justify-between rounded-lg border border-primary-100 bg-primary-50/60 px-3 py-2 text-[11px] text-primary-700">
+      <div className="flex items-center justify-between rounded-lg border border-primary-100 bg-primary-50/60 px-3 py-2 text-caption text-primary-700">
         <span>Follow-up task assigned.</span>
         <button type="button" onClick={onClose} className="font-medium hover:underline">
           Done
@@ -592,7 +592,7 @@ function RecapTaskComposer({
   return (
     <div className="space-y-2 rounded-lg border border-warm-200 bg-white/80 p-2.5">
       <label className="block">
-        <span className="mb-1 block text-[11px] font-medium text-warm-600">Task title</span>
+        <span className="mb-1 block text-caption font-medium text-warm-600">Task title</span>
         <input
           type="text"
           value={title}
@@ -601,7 +601,7 @@ function RecapTaskComposer({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-[11px] font-medium text-warm-600">Due (optional)</span>
+        <span className="mb-1 block text-caption font-medium text-warm-600">Due (optional)</span>
         <input
           type="date"
           value={dueDate}
@@ -612,7 +612,7 @@ function RecapTaskComposer({
 
       {roster.length > 0 ? (
         <div>
-          <span className="mb-1 block text-[11px] font-medium text-warm-600">Assign to</span>
+          <span className="mb-1 block text-caption font-medium text-warm-600">Assign to</span>
           <div className="flex flex-wrap gap-1.5">
             {roster.map((p) => {
               const on = selected.has(p.id);
@@ -621,7 +621,7 @@ function RecapTaskComposer({
                   key={p.id}
                   type="button"
                   onClick={() => toggle(p.id)}
-                  className={`rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
+                  className={`rounded-full border px-2.5 py-0.5 text-caption transition-colors ${
                     on
                       ? 'border-primary-300 bg-primary-100 text-primary-700'
                       : 'border-warm-200 bg-cream-50 text-warm-600 hover:bg-warm-50'
@@ -634,7 +634,7 @@ function RecapTaskComposer({
           </div>
         </div>
       ) : (
-        <p className="text-[11px] text-warm-400">
+        <p className="text-caption text-warm-400">
           Assigning to the {objective.playerIds.length} player(s) on this objective.
         </p>
       )}

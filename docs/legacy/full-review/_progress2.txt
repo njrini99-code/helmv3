@@ -1,0 +1,4 @@
+DONE counter-fix
+DONE feedback-diag
+DONE legacy-cleanup
+DONE pattern-gate

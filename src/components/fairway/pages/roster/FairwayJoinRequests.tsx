@@ -131,7 +131,7 @@ function formatHandicap(handicap: number): string {
 
 function RequestAvatar({ seed, name, size = 'md' }: { seed: string; name: string; size?: 'md' | 'lg' }) {
   const tint = tintFor(seed);
-  const dim = size === 'lg' ? 'h-12 w-12 text-[16px]' : 'h-10 w-10 text-[14px]';
+  const dim = size === 'lg' ? 'h-12 w-12 text-body' : 'h-10 w-10 text-body-sm';
   return (
     <span
       data-slot="fw-join-avatar"

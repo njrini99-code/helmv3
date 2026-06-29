@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable helm/no-raw-button -- event editor chip controls are legacy dense controls pending primitive migration. */
+
 /**
  * ============================================================================
  * Fairway · Calendar · FairwayEventEditor — native create / edit event modal

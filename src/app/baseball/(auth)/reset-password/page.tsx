@@ -9,6 +9,7 @@ import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function ResetPasswordPage() {
   const prefersReducedMotion = useReducedMotion();
@@ -252,7 +253,7 @@ export default function ResetPasswordPage() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="reset-new-password" className="text-sm font-medium text-warm-700">New Password</label>
-                  <input
+                  <Input
                     id="reset-new-password"
                     type="password"
                     value={password}
@@ -262,23 +263,14 @@ export default function ResetPasswordPage() {
                     // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on a single-field auth page
                     autoFocus
                     autoComplete="new-password"
-                    className="
-                      w-full px-4 py-2.5 sm:py-3
-                      bg-white
-                      border border-warm-200
-                      rounded-xl
-                      text-warm-900 text-base lg:text-sm
-                      placeholder:text-warm-400
-                      transition-all duration-200
-                      focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
-                    "
+                    className="py-2.5 sm:py-3 focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10"
                   />
                   <PasswordStrengthIndicator password={password} />
                 </div>
 
                 <div className="space-y-1.5">
                   <label htmlFor="reset-confirm-password" className="text-sm font-medium text-warm-700">Confirm Password</label>
-                  <input
+                  <Input
                     id="reset-confirm-password"
                     type="password"
                     value={confirmPassword}
@@ -287,13 +279,7 @@ export default function ResetPasswordPage() {
                     required
                     autoComplete="new-password"
                     className={`
-                      w-full px-4 py-2.5 sm:py-3
-                      bg-white
-                      border rounded-xl
-                      text-warm-900 text-base lg:text-sm
-                      placeholder:text-warm-400
-                      transition-all duration-200
-                      focus:outline-none focus:ring-[3px]
+                      py-2.5 sm:py-3 focus:ring-[3px]
                       ${confirmPassword && confirmPassword !== password
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
                         : confirmPassword && confirmPassword === password

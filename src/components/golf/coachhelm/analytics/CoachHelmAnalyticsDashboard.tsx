@@ -248,7 +248,7 @@ export function CoachHelmAnalyticsDashboard({
               {effectiveness && (
                 <Card variant="overlay" className="p-0" padding="none">
                   <div className="px-6 py-4 border-b border-warm-100">
-                    <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Insight Effectiveness</h3>
+                    <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Insight Effectiveness</h3>
                     <p className="text-sm text-warm-500">How well insights translate to action</p>
                   </div>
                   <div className="p-6">
@@ -261,7 +261,7 @@ export function CoachHelmAnalyticsDashboard({
               {performance && (
                 <Card variant="overlay" className="p-0" padding="none">
                   <div className="px-6 py-4 border-b border-warm-100">
-                    <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Prediction Accuracy</h3>
+                    <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Prediction Accuracy</h3>
                     <p className="text-sm text-warm-500">Model performance over time</p>
                   </div>
                   <div className="p-6">
@@ -274,7 +274,7 @@ export function CoachHelmAnalyticsDashboard({
               {patternImpact && (
                 <Card variant="overlay" className="p-0 lg:col-span-2" padding="none">
                   <div className="px-6 py-4 border-b border-warm-100">
-                    <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Pattern Impact</h3>
+                    <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Pattern Impact</h3>
                     <p className="text-sm text-warm-500">Detected patterns and their resolution</p>
                   </div>
                   <div className="p-6">
@@ -289,7 +289,7 @@ export function CoachHelmAnalyticsDashboard({
             {effectiveness && (
               <Card variant="overlay" className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
-                  <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Insight Effectiveness</h3>
+                  <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Insight Effectiveness</h3>
                   <p className="text-sm text-warm-500">
                     Detailed breakdown of insight types and their outcomes
                   </p>
@@ -305,7 +305,7 @@ export function CoachHelmAnalyticsDashboard({
             {performance && (
               <Card variant="overlay" className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
-                  <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Prediction Performance</h3>
+                  <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Prediction Performance</h3>
                   <p className="text-sm text-warm-500">
                     Accuracy, calibration, and error analysis
                   </p>
@@ -321,7 +321,7 @@ export function CoachHelmAnalyticsDashboard({
             {patternImpact && (
               <Card variant="overlay" className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
-                  <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Pattern Impact Analysis</h3>
+                  <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Pattern Impact Analysis</h3>
                   <p className="text-sm text-warm-500">
                     Pattern lifecycle and strokes saved
                   </p>

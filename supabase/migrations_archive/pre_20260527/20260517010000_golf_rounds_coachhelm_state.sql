@@ -8,7 +8,7 @@
 -- A-NEW-6 (HTTP self-call + heuristic safety-net) by replacing the
 -- previous "any active insight after round.created_at" heuristic with a
 -- single-source-of-truth column. See
---   .full-review-2026-05-17-golfhelm-audit/05-final-report.md
+--   docs/legacy/full-review-2026-05-17-golfhelm-audit/05-final-report.md
 --   docs/superpowers/plans/2026-05-17-plan-04-round-loop-hardening.md
 -- =====================================================================
 

@@ -48,7 +48,7 @@ export function GenomeComparePicker({
 
   return (
     <div className="surface-matte rounded-2xl p-4">
-      <h3 className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-3">
+      <h3 className="text-caption uppercase tracking-[0.14em] text-warm-500 mb-3">
         {heading}
       </h3>
       {roster.length === 0 ? (
@@ -97,10 +97,10 @@ export function GenomeComparePicker({
                     <span className="flex items-center justify-between gap-2">
                       <span className="truncate">{p.name}</span>
                       {isOther && (
-                        <span className="text-[10px] opacity-60 shrink-0">in other slot</span>
+                        <span className="text-caption opacity-60 shrink-0">in other slot</span>
                       )}
                       {isSelected && (
-                        <span aria-hidden className="text-[10px] tracking-[0.08em] uppercase opacity-70 shrink-0">
+                        <span aria-hidden className="text-caption tracking-[0.08em] uppercase opacity-70 shrink-0">
                           Picked
                         </span>
                       )}

@@ -151,7 +151,6 @@ export function useAuth() {
     };
     // supabase is a stable ref; intentionally not depending on router/clear so
     // the subscription is not torn down + rebuilt on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
   useEffect(() => {

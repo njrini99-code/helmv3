@@ -150,30 +150,30 @@ jobs:
           # they are intentionally broken code that exists only to verify
           # rule-pack behaviour locally. Letting them flow into CI would
           # block every PR that touches the rule pack.
-          files="$(bash .github/scripts/changed-files.sh \
+          mapfile -t files < <(bash .github/scripts/changed-files.sh \
             | grep -E '\.(ts|tsx|js|jsx|sql|py)$' \
             | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
-            || true)"
-          if [ -z "$files" ]; then
+            || true)
+          if [ "${#files[@]}" -eq 0 ]; then
             echo "No changed files for semgrep."
             exit 0
           fi
-          semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions $files
+          semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions "${files[@]}"
       - name: Scan with default p/ci ruleset
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           set -eu
-          files="$(bash .github/scripts/changed-files.sh \
+          mapfile -t files < <(bash .github/scripts/changed-files.sh \
             | grep -E '\.(ts|tsx|js|jsx|sql|py|sh|bash|ya?ml)$' \
             | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
-            || true)"
-          if [ -z "$files" ]; then
+            || true)
+          if [ "${#files[@]}" -eq 0 ]; then
             echo "No changed files for semgrep p/ci."
             exit 0
           fi
-          semgrep --error --config p/ci --skip-unknown-extensions $files
+          semgrep --error --config p/ci --skip-unknown-extensions "${files[@]}"
 
   gitleaks:
     name: gitleaks

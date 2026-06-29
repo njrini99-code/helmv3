@@ -1,5 +1,9 @@
 # Helm Intelligence 🧠
 
+> Legacy tool docs. `.helm/` output is historical context and tool output only in this repo.
+> Current work lives in GitHub Issues and the Helm Dev Command Center project.
+> Start with `docs/current/README.md` before using these workflows.
+
 Deep AI analysis of your codebase. Run before bed, wake up to comprehensive documentation.
 
 ## Quick Start (5 minutes to launch)

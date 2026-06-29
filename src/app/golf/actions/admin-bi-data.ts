@@ -93,13 +93,19 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
     const [platformMetricsRes, engagementRes, aiRoundsRes, insightLogRes, insightActionRes] =
       await Promise.all([
         // Last 30 daily snapshots
-        (adminDb.from('golf_platform_metrics_daily' as never) as any)
+        (adminDb.from('golf_platform_metrics_daily' as never) as unknown as {
+          select: (columns: string) => {
+            order: (column: string, options: { ascending: boolean }) => {
+              limit: (count: number) => { data: Record<string, unknown>[] | null; error: unknown };
+            };
+          };
+        })
           .select('*')
           .order('snapshot_date', { ascending: false })
-          .limit(30) as unknown as { data: any[] | null; error: unknown },
+          .limit(30) as unknown as { data: Record<string, unknown>[] | null; error: unknown },
 
         // Engagement summary for tier computation
-        adminDb.rpc('get_user_engagement_summary' as never, { period_days: 30 } as never) as unknown as { data: any[] | null; error: unknown },
+        adminDb.rpc('get_user_engagement_summary' as never, { period_days: 30 } as never) as unknown as { data: Record<string, unknown>[] | null; error: unknown },
 
         // AI vs non-AI retention: get rounds with join to insight log
         adminDb
@@ -125,7 +131,7 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
 
     // Parse platform metrics
     const platformMetrics: PlatformMetricsEntry[] = (
-      (platformMetricsRes.data ?? []) as any[]
+      (platformMetricsRes.data ?? []) as Record<string, unknown>[]
     ).map((row: Record<string, unknown>) => ({
       snapshotDate: String(row.snapshot_date ?? ''),
       dau: Number(row.dau ?? 0),

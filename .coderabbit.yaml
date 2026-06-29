@@ -492,6 +492,30 @@ chat:
       usage: auto
 
 # ---------------------------------------------------------------------------
+# Issue enrichment — analyze GitHub issues for duplicates/context/labels
+# ---------------------------------------------------------------------------
+issue_enrichment:
+  auto_enrich:
+    enabled: true
+  labeling:
+    auto_apply_labels: false
+    labeling_instructions:
+      - label: "bug"
+        instructions: "Issues reporting broken behavior, runtime errors, regressions, incorrect data, failed jobs, or user-visible defects."
+      - label: "feature"
+        instructions: "Issues requesting new product capability, user workflow support, routes, screens, integrations, or business behavior."
+      - label: "cleanup"
+        instructions: "Issues focused on repo hygiene, dead code, generated artifacts, docs organization, dependency cleanup, or structural refactors."
+      - label: "database"
+        instructions: "Issues touching Supabase schema, migrations, generated DB types, RLS policies, pgTAP tests, or database query behavior."
+      - label: "security"
+        instructions: "Issues involving auth, authorization, RLS exposure, secrets, signed URLs, privacy, abuse controls, or production data access."
+      - label: "ci"
+        instructions: "Issues involving GitHub Actions, branch protection, CodeRabbit, Playwright, build/test gates, lint ratchets, or release checks."
+      - label: "design-system"
+        instructions: "Issues involving UI primitives, Tailwind tokens, accessibility, mobile layout, visual consistency, or component migration."
+
+# ---------------------------------------------------------------------------
 # Knowledge base — feed CodeRabbit our specs so it reviews against them
 # ---------------------------------------------------------------------------
 knowledge_base:

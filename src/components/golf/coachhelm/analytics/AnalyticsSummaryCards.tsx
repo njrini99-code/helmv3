@@ -126,7 +126,7 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
 
             {/* Value */}
             <div className="flex items-baseline gap-2">
-              <span className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{card.valueNode}</span>
+              <span className="text-h2 md:text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">{card.valueNode}</span>
               {card.change !== undefined && card.change !== 0 && (
                 <span
                   className={cn(

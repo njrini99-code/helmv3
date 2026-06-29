@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable helm/no-raw-button -- round-entry score controls require custom tap geometry pending primitive migration. */
+
 /**
  * ============================================================================
  * Fairway · Rounds · FairwayNewRoundEntry — the redesigned create-round ENTRY

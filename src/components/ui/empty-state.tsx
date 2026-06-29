@@ -291,7 +291,7 @@ export function EmptyState({
         <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-primary-600/80">
           {finalIcon}
         </div>
-        <h3 className="text-[17px] font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
+        <h3 className="text-body-lg font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
         <p className="text-sm leading-relaxed text-warm-500 mb-7 max-w-md mx-auto">{finalDescription}</p>
         {suggestion && (
           <p className="text-xs text-warm-400 mb-4">{suggestion}</p>
@@ -337,7 +337,7 @@ export function EmptyState({
           {finalIcon}
         </div>
       </div>
-      <h3 className="text-[17px] font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
+      <h3 className="text-body-lg font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
       <p className="text-sm leading-relaxed text-warm-500 mb-7 max-w-sm mx-auto">{finalDescription}</p>
       {suggestion && (
         <p className="text-xs text-warm-400 mb-5">
@@ -370,7 +370,7 @@ export function SearchEmptyState({ query, filters, onClearFilters }: SearchEmpty
       <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-warm-100 to-warm-50 flex items-center justify-center">
         <IconSearch size={32} className="text-warm-400" />
       </div>
-      <h3 className="text-[17px] font-semibold text-warm-900 tracking-tight mb-2">
+      <h3 className="text-body-lg font-semibold text-warm-900 tracking-tight mb-2">
         No results found
       </h3>
       <p className="text-sm leading-relaxed text-warm-500 mb-4 max-w-sm mx-auto">

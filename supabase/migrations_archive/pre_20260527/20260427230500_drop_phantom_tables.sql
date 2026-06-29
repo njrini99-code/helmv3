@@ -1,5 +1,5 @@
 -- Drop phantom tables: zero rows, no INSERT writers in src/, decided to remove.
--- See .full-review/_FINAL_REPORT_v2.md and 2026-04-27 tonight's audit.
+-- See docs/legacy/full-review/_FINAL_REPORT_v2.md and 2026-04-27 tonight's audit.
 --
 -- golf_review_insights: 0 rows in production. Only an UPDATE writer exists at
 --   round-reviews.ts:1372, no INSERT writer anywhere in src/. The table never

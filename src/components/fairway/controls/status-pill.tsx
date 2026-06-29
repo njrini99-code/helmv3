@@ -38,8 +38,8 @@ const toneStyles: Record<FwStatusTone, { pill: string; dot: string }> = {
 };
 
 const sizeStyles: Record<'sm' | 'md', string> = {
-  sm: 'h-5 px-2 text-[11px] gap-1',
-  md: 'h-6 px-2.5 text-[12px] gap-1.5',
+  sm: 'h-5 px-2 text-caption gap-1',
+  md: 'h-6 px-2.5 text-caption gap-1.5',
 };
 
 export const StatusPill = forwardRef<HTMLSpanElement, StatusPillProps>(function StatusPill(

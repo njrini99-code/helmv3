@@ -284,7 +284,11 @@ type PipelineStage = 'watchlist' | 'high_priority' | 'offer_extended' | 'committ
 npm run dev          # Dev server (localhost:3000)
 npm run typecheck    # TypeScript check
 npm run lint         # ESLint
+npm run lint:ratchet # Fails if warnings increase above .lint-baseline.json
 npm run build        # Production build
+npm run verify       # typecheck + lint + lint ratchet + unit tests + build
+npm run verify:full  # verify + integration + rls + knowledge check
+npm run verify:db    # db type drift + migration ledger + Vitest RLS lane
 
 # Inventory docs (auto-regenerated; do not edit AUTOGEN blocks by hand)
 npm run docs:regen   # Regenerate memory/glossary.md + memory/projects/golfhelm.md inventory
@@ -296,6 +300,7 @@ npm run test:all          # every project (unit + integration + rls)
 npm run test:integration  # *.integration.test.{ts,tsx}
 npm run test:rls          # *.rls.test.{ts,tsx}
 npm run test:e2e          # Playwright (also runs in GHA on every PR)
+npm run verify:e2e:smoke  # Playwright smoke hard gate
 
 # Quality (one-shot)
 npm run evals             # Promptfoo LLM eval — needs ANTHROPIC_API_KEY or OPENAI_API_KEY
@@ -397,7 +402,9 @@ check: `Review Gate / all`.
 **CI split — GitHub Actions vs CircleCI**
 
 GitHub Actions owns the per-PR fast path: typecheck, lint, vitest,
-next build, Supabase RLS tests (`ci.yml`), and the Review Gate above.
+next build, database type drift, schema invariants, Supabase RLS tests
+(`ci.yml`), Playwright Smoke, and the Review Gate above. The jobs are
+split so one failure does not hide later test/build status.
 
 CircleCI (`.circleci/config.yml`) owns what GHA does poorly:
 

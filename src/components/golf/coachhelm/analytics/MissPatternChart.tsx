@@ -259,10 +259,10 @@ export function MissPatternChart({
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
             <div className="text-center bg-cream-50/92 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
-              <div className="text-[13px] font-medium text-warm-900 leading-tight tabular-nums">
+              <div className="text-body-sm font-medium text-warm-900 leading-tight tabular-nums">
                 {primaryMiss.percentage}%
               </div>
-              <div className="text-[9px] font-medium text-warm-500 uppercase tracking-wide leading-tight">
+              <div className="text-caption font-medium text-warm-500 uppercase tracking-wide leading-tight">
                 {DIRECTION_LABELS[primaryMiss.direction] || primaryMiss.direction}
               </div>
             </div>

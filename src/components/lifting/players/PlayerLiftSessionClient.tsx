@@ -81,7 +81,7 @@ export function PlayerLiftSessionClient({
       map.set(key, arr);
     }
     return Array.from(map.entries());
-  }, [session.exercises]);
+  }, [session]);
 
   const totalSets = useMemo(
     () => session.exercises.reduce((n, ex) => n + (ex.prescribed_sets ?? 1), 0),
@@ -352,7 +352,7 @@ function ExerciseBlock({
       <div className="flex items-center justify-between">
         <p className="font-medium text-warm-900">{name}</p>
         {modified && (
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-caption font-medium text-amber-700">
             Modified
           </span>
         )}

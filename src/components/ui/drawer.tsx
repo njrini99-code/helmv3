@@ -98,7 +98,7 @@ const DrawerTitle = React.forwardRef<
   <VaulDrawer.Title
     ref={ref}
     className={cn(
-      'text-[22px] md:text-[26px] font-medium tracking-[-0.022em] text-warm-900',
+      'text-h3 md:text-[26px] font-medium tracking-[-0.022em] text-warm-900',
       className,
     )}
     {...props}
@@ -112,7 +112,7 @@ const DrawerDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <VaulDrawer.Description
     ref={ref}
-    className={cn('text-[13px] text-warm-500 leading-relaxed', className)}
+    className={cn('text-body-sm text-warm-500 leading-relaxed', className)}
     {...props}
   />
 ));

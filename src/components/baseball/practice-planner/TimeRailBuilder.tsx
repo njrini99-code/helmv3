@@ -235,7 +235,7 @@ export function TimeRailBuilder({
             m % 15 === 0 ? (
               <div
                 key={m}
-                className="absolute left-0 -translate-y-1/2 text-[10px] tabular-nums text-warm-400"
+                className="absolute left-0 -translate-y-1/2 text-caption tabular-nums text-warm-400"
                 style={{ top: m * PX_PER_MIN }}
               >
                 {fmtClock(m)}
@@ -304,7 +304,7 @@ export function TimeRailBuilder({
                         <Eye className="h-3 w-3 shrink-0 text-primary-500" aria-label="Player visible" />
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-warm-500">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-caption text-warm-500">
                       <span className="tabular-nums">
                         {fmtClock(b.startOffsetMin)}–{fmtClock(b.startOffsetMin + b.durationMin)} ·{' '}
                         {b.durationMin}m
@@ -318,13 +318,13 @@ export function TimeRailBuilder({
                       )}
                     </div>
                     {hasOwnerWarn && (
-                      <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-amber-600">
+                      <span className="mt-0.5 inline-flex items-center gap-1 text-caption text-amber-600">
                         <UserX className="h-2.5 w-2.5" />
                         {codes.has('owner_conflict') ? 'Owner double-booked' : 'No owner'}
                       </span>
                     )}
                     {codes.has('overlap') && (
-                      <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-red-600">
+                      <span className="mt-0.5 inline-flex items-center gap-1 text-caption text-red-600">
                         <AlertTriangle className="h-2.5 w-2.5" /> Overlaps another block
                       </span>
                     )}
@@ -343,7 +343,7 @@ export function TimeRailBuilder({
         </div>
       </div>
 
-      <p className="text-[11px] text-warm-400">
+      <p className="text-caption text-warm-400">
         Drag a block to move it, drag its bottom edge to resize. Or focus a block and use the arrow
         keys (Shift + arrows to resize). The rail snaps to 5-minute steps.
       </p>

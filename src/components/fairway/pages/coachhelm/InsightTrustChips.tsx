@@ -169,7 +169,7 @@ const InsightTrustChipsImpl = function InsightTrustChips({
         aria-label={aria}
         className={cn(
           'inline-flex items-center gap-1 rounded-full',
-          'h-5 px-2 text-[11px] font-fw-sans font-medium leading-none',
+          'h-5 px-2 text-caption font-fw-sans font-medium leading-none',
           'whitespace-nowrap align-middle tabular-nums',
           tone.pill,
         )}
@@ -188,7 +188,7 @@ const InsightTrustChipsImpl = function InsightTrustChips({
         <span
           title={`Shown ${signal.shown} time${signal.shown === 1 ? '' : 's'} · acted on ${signal.acted} time${signal.acted === 1 ? '' : 's'}`}
           aria-label={`Shown ${signal.shown} ${signal.shown === 1 ? 'time' : 'times'}, acted on ${signal.acted} ${signal.acted === 1 ? 'time' : 'times'}`}
-          className="font-fw-mono text-[10px] tabular-nums leading-none text-text-tertiary"
+          className="font-fw-mono text-caption tabular-nums leading-none text-text-tertiary"
         >
           Shown {signal.shown} · Acted {signal.acted}
         </span>

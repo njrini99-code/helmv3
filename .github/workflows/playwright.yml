@@ -1,4 +1,4 @@
-name: Playwright E2E
+name: Playwright E2E Advisory
 
 # E2E tests against a real Next.js dev server. The playwright.config.ts
 # webServer block starts `npm run dev` automatically.

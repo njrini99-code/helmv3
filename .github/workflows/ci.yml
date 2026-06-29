@@ -6,19 +6,33 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
+env:
+  NODE_OPTIONS: --max-old-space-size=8192
+
 jobs:
-  build:
+  gate-map:
+    name: Gate map
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write CI summary
+        run: |
+          {
+            echo "## Helm CI Gate Map"
+            echo ""
+            echo "- Hard/advisory gate matrix: \`docs/operations/GATE_MATRIX.md\`"
+            echo "- CI triage runbook: \`docs/operations/CI_RUNBOOK.md\`"
+            echo "- Branch protection checklist: \`docs/operations/BRANCH_PROTECTION.md\`"
+            echo "- Current repo operating system: \`docs/current/operating-system.md\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  db-types:
+    name: Database types drift
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-      # `next build --webpack` peaks just above Node's ~4GB default heap on the
-      # CI runner and OOMs (exit 134) — nondeterministically on main too. The
-      # standard GitHub Linux runner has 16GB RAM, so raise the V8 old-space
-      # ceiling well clear of the peak. CI-only: Vercel/local builds are
-      # untouched (they already have ample headroom).
-      NODE_OPTIONS: --max-old-space-size=8192
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -32,51 +46,149 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify database types are up to date
-        env:
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-        run: |
-          # Generate fresh types to a temp file (override the redirect in package.json)
-          npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID" > /tmp/generated-types.ts 2>&1 || {
-            echo "Could not generate types (project ID may be missing or invalid)"
-            exit 0  # Don't fail CI if we can't verify
-          }
+      - name: Verify generated database types
+        run: npm run check:types-drift
 
-          # Compare with committed version (if types file exists)
-          if [ -f src/lib/types/database.ts ]; then
-            if ! diff -q src/lib/types/database.ts /tmp/generated-types.ts > /dev/null 2>&1; then
-              echo "Database types are out of date!"
-              echo "Run SUPABASE_PROJECT_ID=<id> npm run db:types to regenerate"
-              echo ""
-              echo "Diff preview:"
-              diff src/lib/types/database.ts /tmp/generated-types.ts | head -50 || true
-              exit 1
-            else
-              echo "Database types are up to date"
-            fi
-          else
-            echo "Warning: database.ts file not found"
-          fi
+  schema-invariants:
+    name: Schema invariants
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
-      - name: Schema invariants (catch golf_team_coach_staff.user_id etc.)
+      - name: Check schema invariants
         run: ./scripts/check-schema-invariants.sh
+
+  knowledge-check:
+    name: Feature knowledge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check feature knowledge routing
+        run: npm run knowledge:check
+
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Typecheck
         run: npm run typecheck
 
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Lint
         run: npm run lint
 
-      - name: Lint ratchet (warnings must not grow per-rule)
-        run: npm run lint:ratchet
+  lint-ratchet:
+    name: Lint ratchet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
-      - name: Unit tests
-        run: npm run test -- --run
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check warning baseline
+        run: |
+          set -o pipefail
+          npm run lint:ratchet 2>&1 | tee lint-ratchet-report.txt
+
+      - name: Upload lint ratchet report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lint-ratchet-report
+          path: lint-ratchet-report.txt
+          retention-days: 14
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit test lane
+        run: npm run test:run
+
+  build:
+    name: Next build
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build
         run: npm run build
 
-  supabase:
+  supabase-rls:
     name: Supabase lint + RLS tests
     runs-on: ubuntu-latest
     steps:
@@ -91,6 +203,17 @@ jobs:
       - name: Start local Supabase stack
         run: supabase start
 
+      - name: Upload Supabase logs on startup failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: supabase-startup-logs
+          path: |
+            supabase/.branches/**/logs/**
+            supabase/.temp/**
+          retention-days: 14
+          if-no-files-found: ignore
+
       - name: Lint migrations
         run: supabase db lint --schema public
 
@@ -98,8 +221,13 @@ jobs:
         run: |
           set -euo pipefail
           tmp_dir="$(mktemp -d)"
-          for f in supabase/tests/rls/*.sql; do
-            # Skip the helpers file — it's included via \i from the others.
+          shopt -s nullglob
+          rls_files=(supabase/tests/rls/*.sql)
+          if [ "${#rls_files[@]}" -eq 0 ]; then
+            echo "::error::No RLS test files found in supabase/tests/rls"
+            exit 1
+          fi
+          for f in "${rls_files[@]}"; do
             case "$f" in
               */_helpers.sql) continue ;;
             esac

@@ -1,0 +1,4 @@
+DONE attendance-fix
+DONE email-invites-fix
+DONE small-majors-fix
+DONE coachhelm-analytics-fix

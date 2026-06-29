@@ -139,9 +139,9 @@ helmv3/
 ├── .production-team/             # Multi-agent audit prompts
 │   └── memory/                   # Agent memory files
 │
-└── .helm/                        # Project intelligence
-    ├── UNDERSTANDING.json        # Codebase knowledge graph
-    └── HELM_ESSAY.md             # Product philosophy
+└── .helm/                        # Legacy Helm Intelligence archive/tool output
+    ├── UNDERSTANDING.json        # Historical codebase knowledge graph
+    └── HELM_ESSAY.md             # Historical product philosophy
 ```
 
 ## Module Guide

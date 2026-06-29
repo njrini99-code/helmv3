@@ -836,7 +836,7 @@
      replaces the border. Use across forms in calendar, recruiting,
      settings, etc. */
   .input-notebook {
-    @apply w-full bg-cream-50/0 border-0 border-b border-warm-200/60 rounded-none px-0 py-3 text-[15px] text-warm-900 placeholder:text-warm-400 focus:outline-none focus:border-warm-500;
+    @apply w-full bg-cream-50/0 border-0 border-b border-warm-200/60 rounded-none px-0 py-3 text-body text-warm-900 placeholder:text-warm-400 focus:outline-none focus:border-warm-500;
     transition: border-color 320ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   .input-notebook:focus {
@@ -847,7 +847,7 @@
      emphasis only on hover. Use for secondary buttons + filter chips
      that should not compete with the page hero. */
   .pill-soft {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium text-warm-700 bg-cream-100/80 border border-warm-200/55;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-body-sm font-medium text-warm-700 bg-cream-100/80 border border-warm-200/55;
     transition: background-color 360ms cubic-bezier(0.16, 1, 0.3, 1),
                 color 360ms cubic-bezier(0.16, 1, 0.3, 1),
                 border-color 360ms cubic-bezier(0.16, 1, 0.3, 1),

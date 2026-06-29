@@ -1,7 +1,7 @@
 # CoachHelm Evidence Contract
 
 Status: **ACTIVE** as of 2026-05-17.
-Source: closes audit Findings 1, Q-NEW-1/2/3/5/12, A-NEW-3, S-HIGH-1 from `.full-review-2026-05-17-golfhelm-audit/05-final-report.md`.
+Source: closes audit Findings 1, Q-NEW-1/2/3/5/12, A-NEW-3, S-HIGH-1 from `docs/legacy/full-review-2026-05-17-golfhelm-audit/05-final-report.md`.
 
 ## Promise
 

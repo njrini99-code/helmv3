@@ -103,10 +103,10 @@ export async function getPeopleTabData(): Promise<PeopleTabData> {
   try {
     const [engagementRes, teamHealthRes, coachEffectivenessRes, onboardingRes] =
       await Promise.all([
-        adminDb.rpc('get_user_engagement_summary' as never, { period_days: 30 } as never) as unknown as { data: any[] | null; error: unknown },
-        adminDb.rpc('get_team_health_dashboard' as never) as unknown as { data: any[] | null; error: unknown },
-        adminDb.rpc('get_coach_effectiveness_metrics' as never) as unknown as { data: any[] | null; error: unknown },
-        adminDb.rpc('get_onboarding_funnel_analysis' as never) as unknown as { data: any[] | null; error: unknown },
+        adminDb.rpc('get_user_engagement_summary' as never, { period_days: 30 } as never) as unknown as { data: Record<string, unknown>[] | null; error: unknown },
+        adminDb.rpc('get_team_health_dashboard' as never) as unknown as { data: Record<string, unknown>[] | null; error: unknown },
+        adminDb.rpc('get_coach_effectiveness_metrics' as never) as unknown as { data: Record<string, unknown>[] | null; error: unknown },
+        adminDb.rpc('get_onboarding_funnel_analysis' as never) as unknown as { data: Record<string, unknown>[] | null; error: unknown },
       ]);
 
     // Parse engagement summary

@@ -121,7 +121,7 @@ function BarItem({
           )}
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{value === null ? '—' : value}</span>
+          <span className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">{value === null ? '—' : value}</span>
           {value !== null && <span className="text-xs text-warm-500">{suffix}</span>}
         </div>
       </div>

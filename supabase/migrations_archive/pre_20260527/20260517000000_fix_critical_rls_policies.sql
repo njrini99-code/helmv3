@@ -2,7 +2,7 @@
 -- 20260517000000_fix_critical_rls_policies.sql
 --
 -- Closes two RLS Criticals identified in
--- .full-review-2026-05-17-golfhelm-audit/05-final-report.md.
+-- docs/legacy/full-review-2026-05-17-golfhelm-audit/05-final-report.md.
 --
 -- S-CRIT-1 (CWE-285): golf_team_coach_staff INSERT policy validated only
 --   coach_id ownership, allowing any authenticated coach to self-attach to

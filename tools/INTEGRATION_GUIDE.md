@@ -1,5 +1,9 @@
 # 🎯 Complete Integration Guide - All Helm Intelligence Systems
 
+> Legacy workflow reference. The repo now uses GitHub Issues, GitHub Project,
+> `memory/registry.yml`, `AGENTS.md`, `CLAUDE.md`, and `docs/current/` as the
+> active operating system. `.helm/` output is historical context/tool output.
+
 This guide shows how to use all three Helm Intelligence systems together for maximum effectiveness.
 
 ---

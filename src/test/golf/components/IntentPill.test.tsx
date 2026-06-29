@@ -48,7 +48,7 @@ describe('IntentPill', () => {
   it('honors size prop', () => {
     const { rerender } = render(<IntentPill narrative_goal="develop" size="sm" />);
     // size="sm" uses the canonical `text-eyebrow` utility (W1B sweep #148
-    // replaced the old arbitrary `text-[10px]`).
+    // replaced the old arbitrary `text-caption`).
     expect(screen.getByTestId('intent-pill').className).toContain('text-eyebrow');
     rerender(<IntentPill narrative_goal="develop" size="md" />);
     expect(screen.getByTestId('intent-pill').className).toContain('text-xs');

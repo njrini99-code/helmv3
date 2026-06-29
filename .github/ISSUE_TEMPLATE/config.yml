@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Current repo operating system
+    url: https://github.com/njrini99-code/helmv3/blob/main/docs/current/operating-system.md
+    about: Read docs/current/operating-system.md in the repo before opening broad work.

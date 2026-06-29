@@ -1,7 +1,7 @@
 # Review Fixes Design — Baseball Auth/Onboarding
 
 ## Scope
-Fix all remaining issues from `.full-review/02-security-performance.md` (S-4, S-5, S-8, S-9, S-10, P-1, P-2, P-4, P-5, P-6, P-7). Defer P-9 (monolithic component split) to separate PR.
+Fix all remaining issues from `docs/legacy/full-review/02-security-performance.md` (S-4, S-5, S-8, S-9, S-10, P-1, P-2, P-4, P-5, P-6, P-7). Defer P-9 (monolithic component split) to separate PR.
 
 ## Group A: Quick Fixes
 

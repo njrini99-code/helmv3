@@ -2865,7 +2865,7 @@ export default function NewRoundClient() {
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: 0.3 })}
-                          className="text-[44px] md:text-[52px] font-light tracking-[-0.025em] text-white tabular-nums"
+                          className="text-display md:text-[52px] font-light tracking-[-0.025em] text-white tabular-nums"
                         >
                           {totalScore}
                         </m.span>

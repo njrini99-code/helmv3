@@ -280,7 +280,7 @@ function StatCard({
         {icon}
         <span className="text-xs text-warm-500">{label}</span>
       </div>
-      <span className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{value}</span>
+      <span className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{value}</span>
     </div>
   );
 }
@@ -301,7 +301,7 @@ function StatCardLarge({
       <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">{label}</p>
       <p
         className={cn(
-          'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+          'text-h2 md:text-h1 font-light tabular-nums tracking-[-0.025em]',
           color === 'green' && 'text-primary-600',
           color === 'amber' && 'text-amber-600',
           color === 'slate' && 'text-warm-900'

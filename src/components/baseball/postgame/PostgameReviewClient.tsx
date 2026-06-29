@@ -476,8 +476,8 @@ function Section({
         </span>
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-warm-700">{title}</h3>
-            <span className="rounded-full bg-warm-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-warm-500">
+            <h3 className="text-body-sm font-semibold uppercase tracking-[0.08em] text-warm-700">{title}</h3>
+            <span className="rounded-full bg-warm-100 px-1.5 py-0.5 text-caption font-semibold tabular-nums text-warm-500">
               {items.length}
             </span>
           </div>

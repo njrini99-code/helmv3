@@ -1,0 +1,54 @@
+name: DB / RLS task
+description: Database, migration, or row-level-security work.
+title: "[DB/RLS]: "
+labels: ["db", "rls"]
+body:
+  - type: dropdown
+    id: migration_risk
+    attributes:
+      label: Migration risk
+      options:
+        - Low
+        - Medium
+        - High
+    validations:
+      required: true
+  - type: textarea
+    id: tables
+    attributes:
+      label: Tables touched
+  - type: textarea
+    id: rls_impact
+    attributes:
+      label: RLS impact
+    validations:
+      required: true
+  - type: dropdown
+    id: backfill
+    attributes:
+      label: Backfill needed?
+      options:
+        - "No"
+        - "Yes"
+        - Unsure
+  - type: textarea
+    id: rollback
+    attributes:
+      label: Rollback plan
+  - type: textarea
+    id: required_checks
+    attributes:
+      label: Required checks
+      value: |
+        - [ ] supabase db lint --schema public
+        - [ ] RLS tests
+        - [ ] npm run check:types-drift
+        - [ ] npm run check:ledger
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+    validations:
+      required: true

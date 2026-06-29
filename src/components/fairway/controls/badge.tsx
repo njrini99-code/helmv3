@@ -40,8 +40,8 @@ const toneOutline: Record<FwStatusTone, string> = {
 };
 
 const badgeSize: Record<'sm' | 'md', string> = {
-  sm: 'h-5 px-2 text-[11px] gap-1',
-  md: 'h-6 px-2.5 text-[12px] gap-1',
+  sm: 'h-5 px-2 text-caption gap-1',
+  md: 'h-6 px-2.5 text-caption gap-1',
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -98,8 +98,8 @@ export interface ChipProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'onClic
 // negative right margin so it consumes the chip's right padding instead of
 // pushing the chip taller/wider. The X svg keeps its small h-3 / h-3.5 size.
 const chipSize: Record<'sm' | 'md', { chip: string; remove: string }> = {
-  sm: { chip: 'h-6 pl-2.5 pr-1 text-[12px] gap-1', remove: 'h-6 w-6 -mr-1 [&_svg]:h-3 [&_svg]:w-3' },
-  md: { chip: 'h-7 pl-3 pr-1.5 text-[13px] gap-1.5', remove: 'h-7 w-7 -mr-1 [&_svg]:h-3.5 [&_svg]:w-3.5' },
+  sm: { chip: 'h-6 pl-2.5 pr-1 text-caption gap-1', remove: 'h-6 w-6 -mr-1 [&_svg]:h-3 [&_svg]:w-3' },
+  md: { chip: 'h-7 pl-3 pr-1.5 text-body-sm gap-1.5', remove: 'h-7 w-7 -mr-1 [&_svg]:h-3.5 [&_svg]:w-3.5' },
 };
 
 export const Chip = forwardRef<HTMLSpanElement, ChipProps>(function Chip(

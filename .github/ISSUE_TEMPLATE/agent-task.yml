@@ -1,0 +1,54 @@
+name: Agent task
+description: Scoped work order for an AI coding agent.
+title: "[Agent Task]: "
+labels: ["agent-task"]
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+    validations:
+      required: true
+  - type: input
+    id: registry_key
+    attributes:
+      label: Feature registry key
+  - type: textarea
+    id: allowed_files
+    attributes:
+      label: Allowed files
+      value: |
+        -
+  - type: textarea
+    id: forbidden_files
+    attributes:
+      label: Forbidden files
+      value: |
+        -
+  - type: textarea
+    id: required_docs
+    attributes:
+      label: Required docs to read first
+      value: |
+        - memory/registry.yml
+  - type: textarea
+    id: required_commands
+    attributes:
+      label: Required commands
+      value: |
+        - [ ] npm run knowledge:context -- --files ...
+        - [ ] npm run typecheck
+        - [ ] npm run test:run
+        - [ ] npm run build
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+  - type: textarea
+    id: done_means
+    attributes:
+      label: Done means
+      value: |
+        - [ ]
+    validations:
+      required: true

@@ -39,11 +39,11 @@ export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chil
 }
 
 const sizePx: Record<AvatarSize, string> = {
-  xs: 'h-6 w-6 text-[10px]',
-  sm: 'h-8 w-8 text-[12px]',
-  md: 'h-10 w-10 text-[14px]',
-  lg: 'h-12 w-12 text-[16px]',
-  xl: 'h-16 w-16 text-[20px]',
+  xs: 'h-6 w-6 text-caption',
+  sm: 'h-8 w-8 text-caption',
+  md: 'h-10 w-10 text-body-sm',
+  lg: 'h-12 w-12 text-body',
+  xl: 'h-16 w-16 text-h3',
 };
 
 const statusSize: Record<AvatarSize, string> = {

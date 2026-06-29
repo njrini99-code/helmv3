@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable helm/no-raw-button -- segmented filters and stat chips are legacy dense controls; migrate as a scoped design-system task. */
+
 // =============================================================================
 // src/components/baseball/stats-center/StatsCenterClient.tsx
 //

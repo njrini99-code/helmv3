@@ -107,7 +107,7 @@ export function FormatToggle({
               />
             )}
             <span className="relative z-10">{opt.label}</span>
-            <span className={`relative z-10 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${
+            <span className={`relative z-10 rounded-full px-1.5 py-0.5 text-caption font-medium tabular-nums ${
               isActive
                 ? 'bg-primary-100 text-primary-700'
                 : 'bg-warm-200/80 text-warm-500'
@@ -436,7 +436,7 @@ export function StatSection({
         onClick={() => collapsible && setIsOpen(!isOpen)}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-[13px] font-medium text-warm-700 uppercase tracking-wide">
+          <h3 className="text-body-sm font-medium text-warm-700 uppercase tracking-wide">
             {title}
           </h3>
           {collapsible && (

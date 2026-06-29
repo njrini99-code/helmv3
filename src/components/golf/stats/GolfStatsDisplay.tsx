@@ -162,7 +162,7 @@ export default function GolfStatsDisplay({
         <motion.div className="mb-6" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_CINEMATIC })}>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3">
             <div className="flex-1 min-w-0">
-              <motion.h1 className="text-xl sm:text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em] truncate" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}>
+              <motion.h1 className="text-xl sm:text-h2 md:text-h2 font-medium text-warm-900 tracking-[-0.022em] truncate" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}>
                 {playerName ? `${playerName}'s Stats` : 'My Stats'}
               </motion.h1>
               <motion.p className="text-warm-500 text-xs sm:text-sm mt-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}>
@@ -284,7 +284,7 @@ export default function GolfStatsDisplay({
             <motion.div className="w-20 h-20 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4" animate={{ boxShadow: ['0 0 0 0 rgba(22, 163, 74, 0)', '0 0 0 20px rgba(22, 163, 74, 0.1)', '0 0 0 0 rgba(22, 163, 74, 0)'] }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 2, repeat: Infinity })}>
               <IconGolf size={40} className="text-warm-300" />
             </motion.div>
-            <motion.h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}>No Stats Yet</motion.h2>
+            <motion.h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}>No Stats Yet</motion.h2>
             <motion.p className="text-warm-500 max-w-sm mx-auto" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}>Complete rounds with shot tracking to see your detailed statistics here.</motion.p>
           </motion.div>
         )}

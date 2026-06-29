@@ -44,7 +44,7 @@ const PopoverContent = React.forwardRef<
         'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2',
         'data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
         'duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
-        'text-[14px] leading-relaxed text-warm-700',
+        'text-body-sm leading-relaxed text-warm-700',
         className,
       )}
       {...props}

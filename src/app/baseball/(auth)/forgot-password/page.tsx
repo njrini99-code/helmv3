@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function ForgotPasswordPage() {
   const prefersReducedMotion = useReducedMotion();
@@ -230,7 +231,7 @@ export default function ForgotPasswordPage() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="forgot-email" className="text-sm font-medium text-warm-700">Email</label>
-                  <input
+                  <Input
                     id="forgot-email"
                     type="email"
                     value={email}
@@ -240,16 +241,7 @@ export default function ForgotPasswordPage() {
                     // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on a single-field auth page
                     autoFocus
                     autoComplete="email"
-                    className="
-                      w-full px-4 py-2.5 sm:py-3
-                      bg-white
-                      border border-warm-200
-                      rounded-xl
-                      text-warm-900 text-base lg:text-sm
-                      placeholder:text-warm-400
-                      transition-all duration-200
-                      focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
-                    "
+                    className="py-2.5 sm:py-3 focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10"
                   />
                 </div>
 

@@ -1,0 +1,212 @@
+# Vercel error log triage — starting
+## File stats
+  size: Apr bytes
+  total rows: 1792
+  error rows: 549
+  top 10 distinct error signatures:
+    336x  [log-event] Database error: {
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'new row vi
+    50x  bs [AuthApiError]: Invalid Refresh Token: Refresh Token Not Found
+    at b6 (/var/task/.next/server/
+    40x  [resend-activity] stats rpc failed: {
+  code: 'PGRST202',
+  details: 'Searched for the function publ
+    10x  Error: [object Object]
+    at K.tags (.next/server/app/golf/admin/page.js:31:39878)
+    at async (.n
+    10x  Error: [object Object]
+    at J.tags (.next/server/app/golf/admin/page.js:31:38894)
+    at async (.n
+    9x  [Stats] Falling back to round-level stats: {
+  code: '57014',
+  details: null,
+  hint: null,
+  messa
+    8x  failed to forward action response [TypeError: fetch failed] {
+  [cause]: Error: expected non-null bo
+    7x  [admin-data] fetchAdminRollupA threw: get_admin_rounds_rollup RPC failed: [object Object] Error: get
+    7x  [admin-data] outer A+B Promise.all threw: Error: rollupA failed: get_admin_rounds_rollup RPC failed:
+    7x  Error: rollupA failed: get_admin_rounds_rollup RPC failed: [object Object]
+    at <unknown> (.next/s
+
+## Agent dispatched
+
+## Investigating cause 1 (RLS 42501 on [log-event])
+- src/app/api/admin/log-event/route.ts:186-200 — used user-scoped supabase client to insert into admin_events. RLS migration (supabase/migrations/20260214220000_create_admin_events.sql:92-95) only allows INSERT to service_role.
+- Fixed: switched to createAdminClient() inside POST after auth check.
+
+## Investigating cause 2 (Refresh Token noise)
+- src/proxy.ts:64 — updateSession() was not wrapped in try/catch (the older middleware.ts at repo root does wrap it). Stale-refresh-token AuthApiError bubbled out of supabase-js into the proxy.
+- Fixed: src/proxy.ts now try/catches updateSession and downgrades refresh-token errors to console.warn.
+- sentry.server.config.ts + instrumentation.ts — added "Invalid Refresh Token", "Refresh Token Not Found", "AuthApiError" to ignoreErrors so Sentry stops paging on normal session expiry.
+
+## Investigating cause 3 (PGRST202 missing RPC for resend-activity stats)
+- src/app/golf/actions/resend-activity.ts:149 — calls supabase.rpc('get_resend_activity_stats', { p_window }).
+- src/app/golf/actions/resend-activity.ts:282 — calls supabase.rpc('get_resend_domain_breakdown', { p_window }).
+- supabase/migrations/20260420000000_resend_activity_mirror.sql:333,415 — both RPCs are defined SECURITY DEFINER but the migration only does REVOKE EXECUTE FROM public, anon (lines 410, 458) and never GRANT EXECUTE TO authenticated. PostgREST returns PGRST202 "function not found" because the authenticated role has no execute privilege on the schema cache view.
+- Decision: DB-side fix only — code call sites are correct. SQL grant block written into the SQL section.
+
+## Investigating cause 4 (Error: [object Object] in golf/admin/page.js)
+- Source of "Error: [object Object]": src/app/golf/actions/admin-data.ts:77 — `unstable_cache` body of `getAdminDashboardRollup`. When the wrapped RPC fails with a Supabase Postgrest error (plain object, not Error instance), `String(error)` coerced to the literal string "[object Object]". The cache wrapper rethrows that as Error("[object Object]"), and Next.js minified internals (J.tags / K.tags = cache-tag bookkeeping) surface it in the stack you see in production.
+- Secondary: src/app/golf/actions/admin/rollup-a.ts:252 fallback `String(err)` returned "[object Object]" when JSON.stringify failed (circular ref / Symbol).
+- Fixed: imported describeError() in admin-data.ts; replaced 4 String(e) sites with describeError(e). Hardened describeRpcError() in rollup-a.ts with circular-safe JSON serializer + extra fields (status, error_description, name, statusText) so the [object Object] fallback is no longer reachable.
+
+## Investigating cause 5 (Stats timeout 57014)
+- Source: src/app/golf/actions/stats-data.ts:825-861 — Promise.all([golf_holes select, golf_shots select with embedded putt_details/approach_miss_details]) using `.in('round_id', roundIds)`. When a player has many rounds (no preset filter applied) and many shots per round (90+ per round), Postgres hits statement_timeout (57014).
+- Code-side decision: WONTFIX in this triage — the call site already swallows the timeout into `buildFallbackDetailedStats` (line 939) so user impact is graceful degradation. Long-term fix is to push the aggregation into a SQL function, but that's a larger refactor.
+- DB-side recommendation: add covering index `idx_golf_shots_round_id_covering` and ensure FK indexes exist on putt_details(shot_id) / approach_miss_details(shot_id). SQL written below.
+
+## Investigating cause 6 (fetch failed: expected non-null body source)
+- Source: Next.js internal — node_modules/next/dist/esm/server/app-render/action-handler.js. The string "failed to forward action response" is emitted by Next.js when a server action's outgoing response body is null. This is a runtime/framework concern.
+- Decision: WONTFIX from this triage. Verified no application-level fetch() in src/ passes body: null. The cause is Next.js 16's action-handler interacting with edge-cached responses; upstream issue, not actionable here.
+
+## Investigating cause 7 (admin-data fetchAdminRollupA / get_admin_rounds_rollup)
+- Source: src/app/golf/actions/admin/rollup-a.ts:288 calls supabase.rpc('get_admin_rounds_rollup', ...). The migration supabase/migrations/20260421000005_admin_rollups_a.sql:896 already does GRANT EXECUTE TO authenticated — function exists and is callable.
+- The "[object Object]" log is the SAME bug as cause 4: describeRpcError() fell through to String(err) for a non-stringifiable error object. After the fix in cause 4, the next failure will surface the real Postgres code/message (most likely 57014 statement_timeout on the rollup, or auth.uid() being null).
+- Code-side fix: same as cause 4 — circular-safe describeRpcError now extracts code/msg/details/hint/status/error_description even when JSON.stringify fails.
+- Once visible, the underlying cause is most likely Postgres statement_timeout in the rollup body. SQL recommendation: bump statement_timeout for the SECURITY DEFINER function via ALTER FUNCTION ... SET statement_timeout. Written below.
+
+## Running typecheck...
+
+## Per-cause fix
+
+### 1. RLS 42501 on [log-event]
+- Source: src/app/api/admin/log-event/route.ts:186 (POST handler insert into admin_events).
+- Root cause: Used `await supabase ...` (user-scoped client). RLS migration supabase/migrations/20260214220000_create_admin_events.sql:92-95 only allows INSERT to service_role; authenticated users have no INSERT policy → 42501.
+- Fix applied: src/app/api/admin/log-event/route.ts — imported `createAdminClient`, switched the insert to the privileged admin client AFTER the existing user-auth check on line 145. Behaviour unchanged for unauthenticated users; authenticated user_id is still recorded on the row.
+
+### 2. Refresh Token noise
+- Source A: src/proxy.ts:64 — call to `updateSession()` was unwrapped (the older /middleware.ts at repo root already had try/catch, but the Next.js 16 proxy.ts did not).
+- Source B: sentry.server.config.ts and instrumentation.ts — Sentry was capturing AuthApiError as a real "error", paging the team for normal session expiry.
+- Fix applied:
+  - src/proxy.ts: wrapped updateSession() in try/catch; refresh-token errors are downgraded to console.warn and the request continues with no session (legitimate logged-out state).
+  - sentry.server.config.ts: added "Invalid Refresh Token: Refresh Token Not Found", "Refresh Token Not Found", "AuthApiError" to ignoreErrors.
+  - instrumentation.ts: same ignoreErrors additions for both nodejs and edge runtime Sentry init.
+
+### 3. Missing RPC (resend-activity)
+- Source: src/app/golf/actions/resend-activity.ts:149 (`get_resend_activity_stats`) and :282 (`get_resend_domain_breakdown`).
+- Root cause: supabase/migrations/20260420000000_resend_activity_mirror.sql defines both functions SECURITY DEFINER but only does `REVOKE EXECUTE FROM public, anon` (lines 410, 458). It NEVER `GRANT EXECUTE TO authenticated`. Without the grant, PostgREST omits the function from its schema cache → PGRST202 "Searched for the function public.<name>".
+- Fix applied: code call sites are correct — function names match exactly. Fix is DB-side: GRANT EXECUTE on both functions (SQL written below).
+
+### 4. Error: [object Object] on golf/admin/page.js
+- Source A: src/app/golf/actions/admin-data.ts:77 — inside the `unstable_cache` body of `getAdminDashboardRollup`, line was `throw error instanceof Error ? error : new Error(String(error));`. Supabase Postgrest errors are plain objects (not Error instances), so `String(error)` returned the literal "[object Object]".
+- Source B: src/app/golf/actions/admin/rollup-a.ts:252 — `describeRpcError` had a JSON.stringify-with-String-fallback. When the Supabase error contained circular references (very common: it nests itself in `cause`), JSON.stringify threw, the fallback ran `String(err)` → "[object Object]".
+- Source C: src/app/golf/actions/admin-data.ts:1438, 1445, 1466, 1521-1522 — four sites used `e instanceof Error ? e.message : String(e)` which had the same toxic pattern when the upstream throw was already a wrapped Error("[object Object]").
+- Fix applied:
+  - src/app/golf/actions/admin-data.ts: imported `describeError` from `@/lib/utils/describe-error`, replaced 4 String(e) call-sites with `describeError(e)`, fixed line 77 to use `describeError(error)` so the Postgrest code/msg/details/hint are preserved when re-thrown out of the cache body.
+  - src/app/golf/actions/admin/rollup-a.ts:239-279: hardened `describeRpcError` with a circular-safe JSON replacer (WeakSet) plus extra fields (status, statusText, error_description, name, error). Last-resort fallback now reports object key names instead of "[object Object]".
+
+### 5. Stats timeout 57014
+- Source: src/app/golf/actions/stats-data.ts:825-861 — Promise.all of `golf_holes` SELECT and `golf_shots` SELECT with embedded `putt_details` and `approach_miss_details` on `.in('round_id', roundIds)`. The IN list can be hundreds of rounds when the user has not selected a preset filter.
+- Fix path: code already has a graceful catch (line 937-940) that falls back to round-level stats and logs the timeout as warning. The 9-per-day rate is acceptable degradation.
+- DB-side recommendation: ensure FK indexes on putt_details(shot_id), approach_miss_details(shot_id), and a covering index on golf_shots for the SELECT shape. SQL written below; main agent should run `EXPLAIN ANALYZE` on the failing query and decide if a SQL function rewrite is worth the lift.
+
+### 6. fetch failed: expected non-null body source
+- Source: Next.js internal — node_modules/next/dist/esm/server/app-render/action-handler.js. Confirmed by grepping the framework source.
+- No application code passes `body: null` to fetch().
+- Decision: WONTFIX from this triage — framework-level bug, no fix exists in our codebase. 8/day occurrence is below alerting threshold.
+
+### 7. fetchAdminRollupA / get_admin_rounds_rollup
+- Source: src/app/golf/actions/admin/rollup-a.ts:288 → `rpc('get_admin_rounds_rollup', ...)`.
+- Function definition exists and is granted: supabase/migrations/20260421000005_admin_rollups_a.sql:36 (function), :896-899 (GRANT EXECUTE TO authenticated).
+- Same root cause as #4 — the RPC error message was lost inside `describeRpcError`. With the fix from #4, the next failure will surface the actual Postgres error code. Most likely candidate: 57014 statement_timeout on the rollup body itself (it has 17 sub-queries collapsed into 1; some windows may be slow under load).
+- Fix applied: same code edit as #4 (rollup-a.ts describeRpcError hardening).
+- Recommendation for main agent: bump statement_timeout for the SECURITY DEFINER rollup functions via `ALTER FUNCTION ... SET statement_timeout = '30s'`. SQL written below.
+
+## SQL for main agent to apply
+```sql
+-- =============================================================================
+-- Cause 3: Missing GRANT EXECUTE for resend-activity RPCs
+-- File: supabase/migrations/20260420000000_resend_activity_mirror.sql
+-- Lines 410, 458 do REVOKE FROM public, anon but never GRANT TO authenticated,
+-- so PostgREST returns PGRST202 "function not found" for authenticated users.
+-- =============================================================================
+GRANT EXECUTE ON FUNCTION public.get_resend_activity_stats(text)    TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_resend_domain_breakdown(text)  TO authenticated;
+
+-- (The function bodies already enforce admin-role via auth.uid() check, so the
+--  grant is safe — non-admins still receive `RAISE EXCEPTION 'Forbidden'`.)
+
+
+-- =============================================================================
+-- Cause 5: Stats timeout 57014 on detailed-stats query
+-- File: src/app/golf/actions/stats-data.ts:825-861
+-- The slow query is golf_shots SELECT with embedded putt_details +
+-- approach_miss_details on `.in('round_id', roundIds)`.
+-- =============================================================================
+
+-- Ensure FK-side indexes exist on the embedded relationship sides.
+-- (064_putt_approach_details.sql already creates these, but they may have been
+-- dropped. IF NOT EXISTS makes this idempotent.)
+CREATE INDEX IF NOT EXISTS idx_putt_details_shot_id
+  ON putt_details (shot_id);
+
+CREATE INDEX IF NOT EXISTS idx_approach_miss_details_shot_id
+  ON approach_miss_details (shot_id);
+
+-- Covering index for the detailed-stats SELECT shape. Existing
+-- idx_golf_shots_round_id is just (round_id); this version INCLUDEs the
+-- columns the query actually returns so Postgres can serve the whole result
+-- from the index without going to the heap.
+CREATE INDEX IF NOT EXISTS idx_golf_shots_round_id_covering
+  ON golf_shots (round_id, hole_number, shot_number)
+  INCLUDE (
+    id, hole_id, shot_type, club_type,
+    lie_before, lie_after, distance_to_hole_before, distance_unit_before,
+    result, distance_to_hole_after, distance_unit_after, shot_distance,
+    miss_direction, putt_break, putt_distance_feet, putt_slope, putt_made,
+    is_penalty, penalty_type
+  );
+
+-- Optional: bump statement_timeout for the read-only stats path. Apply only
+-- if the covering index alone doesn't bring p95 under the timeout threshold.
+-- ALTER ROLE authenticated IN DATABASE postgres SET statement_timeout = '15s';
+
+
+-- =============================================================================
+-- Cause 7: fetchAdminRollupA timeouts on get_admin_rounds_rollup
+-- File: supabase/migrations/20260421000005_admin_rollups_a.sql:36
+-- The function is granted correctly. Failures are most likely 57014 timeout —
+-- bump per-function statement_timeout so the SECURITY DEFINER body has more
+-- runway than the global default.
+-- =============================================================================
+ALTER FUNCTION public.get_admin_rounds_rollup(
+  timestamptz, timestamptz, timestamptz, timestamptz,
+  timestamptz, timestamptz, timestamptz
+) SET statement_timeout = '30s';
+
+ALTER FUNCTION public.get_admin_users_rollup(
+  timestamptz, timestamptz, timestamptz, timestamptz
+) SET statement_timeout = '30s';
+
+ALTER FUNCTION public.get_admin_feature_adoption_rollup(timestamptz)
+  SET statement_timeout = '30s';
+
+ALTER FUNCTION public.get_admin_coachhelm_rollup(
+  timestamptz, timestamptz, timestamptz
+) SET statement_timeout = '30s';
+```
+
+## Verification
+- typecheck: clean (`/Users/ricknini/Downloads/helmv3/node_modules/.bin/tsc --noEmit -p tsconfig.json` → exit 0, 0 errors).
+- Causes resolved by code edits alone:
+  - 1 (RLS 42501): admin-client switch in /api/admin/log-event.
+  - 2 (Refresh Token): proxy.ts try/catch + Sentry ignoreErrors.
+  - 4 (Error: [object Object]): describeError() in admin-data.ts; hardened describeRpcError() in rollup-a.ts.
+- Causes that need the SQL above to fully land:
+  - 3 (resend-activity PGRST202): GRANT EXECUTE.
+  - 5 (Stats 57014): index DDL.
+  - 7 (rollup A timeouts): ALTER FUNCTION SET statement_timeout. The code-side fix (#4) just reveals the real error code; the timeout itself is fixed in SQL.
+- Causes triaged as WONTFIX:
+  - 6 (fetch failed: expected non-null body source): Next.js framework internal; no actionable code in src/.
+
+## Files modified
+- src/app/api/admin/log-event/route.ts
+- src/proxy.ts
+- sentry.server.config.ts
+- instrumentation.ts
+- src/app/golf/actions/admin-data.ts
+- src/app/golf/actions/admin/rollup-a.ts

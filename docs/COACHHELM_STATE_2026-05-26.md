@@ -51,7 +51,7 @@
 | All 28 features (data flows, files, tables, deps, gaps) | `memory/context/golfhelm-features.md` |
 | 75-table glossary + enums + type locations | `memory/glossary.md` |
 | Compatibility shim registry (kill dates) | `docs/v3-compatibility-shims.md` |
-| 2026-05-17 audit final report (P0/P1/P2/P3 with file:line) | `.full-review-2026-05-17-golfhelm-audit/05-final-report.md` |
+| 2026-05-17 audit final report (P0/P1/P2/P3 with file:line) | `docs/legacy/full-review-2026-05-17-golfhelm-audit/05-final-report.md` |
 | 2026-05-17 business logic report (982 lines, what was audited) | `docs/GOLFHELM_BUSINESS_LOGIC_REPORT_2026-05-17.md` |
 | Active P0–P3 audit follow-up plans | `docs/superpowers/plans/2026-05-17-*` |
 | Today's deploy runbook | `docs/operations/2026-05-17-DEPLOY-RUNBOOK.md` |
@@ -1076,7 +1076,7 @@ The goal of this section is to maximize signal in Codex's report by pre-empting 
 
 ### What to tell Codex before they start
 
-1. **Ignore findings already in `.full-review-2026-05-17-golfhelm-audit/` and `docs/superpowers/plans/2026-05-17-*`.** A full multi-dimensional review ran 9 days ago. Pointing Codex at the existing report lets it dedupe instead of re-reporting. **The P0 RLS Criticals (§19) are explicitly known** — confirm with the team whether they've been fixed before treating Codex's findings as new.
+1. **Ignore findings already in `docs/legacy/full-review-2026-05-17-golfhelm-audit/` and `docs/superpowers/plans/2026-05-17-*`.** A full multi-dimensional review ran 9 days ago. Pointing Codex at the existing report lets it dedupe instead of re-reporting. **The P0 RLS Criticals (§19) are explicitly known** — confirm with the team whether they've been fixed before treating Codex's findings as new.
 
 2. **Ignore findings of the form "ingest adapter does nothing"** — Arccos / Garmin / TrackMan adapters (W39–W41) are intentionally non-functional stubs. They ship as scaffolding while partnership + env vars + per-provider HTTP-client code are arranged. See `memory/project_coachhelm_v3_ingest_prereqs.md`.
 
@@ -1099,7 +1099,7 @@ The goal of this section is to maximize signal in Codex's report by pre-empting 
 
 - The baseball CRM surface (`adp-peo-crm`) — separate project, separate Vercel deployment
 - The marketing site
-- `docs/`, `memory/`, `.full-review-*` — these are reference, not shipped code
+- `docs/`, `memory/`, `docs/legacy/full-review-*` — these are reference, not shipped code
 - Auto-generated Supabase types
 
 ---
@@ -1146,7 +1146,7 @@ The grep guard caught a **third instance** during this session — `golf.ts:1728
 
 ## 20. P1 / P2 / P3 Audit Backlog
 
-Summarized from `.full-review-2026-05-17-golfhelm-audit/05-final-report.md`. Full file:line citations in that report.
+Summarized from `docs/legacy/full-review-2026-05-17-golfhelm-audit/05-final-report.md`. Full file:line citations in that report.
 
 ### P1 — High (fix before next release)
 

@@ -1,5 +1,9 @@
 # 🎯 Helm Intelligence - Quick Reference Card
 
+> Legacy workflow reference. Do not treat `.helm/cycles/*.md`, `.helm/ACTIONS.md`,
+> or `.helm/ISSUES.md` as live work queues unless a current GitHub issue points
+> to them. Start with `docs/current/README.md`.
+
 ```
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║                    HELM INTELLIGENCE QUICK REFERENCE                     ║

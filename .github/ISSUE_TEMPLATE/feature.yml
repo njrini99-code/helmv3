@@ -1,0 +1,62 @@
+name: Feature
+description: Product feature work with routing and test expectations.
+title: "[Feature]: "
+labels: ["feature"]
+body:
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      options:
+        - GolfHelm
+        - BaseballHelm
+        - CoachHelm
+        - Lifting Lab
+        - Platform
+    validations:
+      required: true
+  - type: input
+    id: registry_key
+    attributes:
+      label: Feature registry key
+  - type: textarea
+    id: user_story
+    attributes:
+      label: User story
+  - type: textarea
+    id: routes
+    attributes:
+      label: Screens / routes
+  - type: textarea
+    id: data_model
+    attributes:
+      label: Data model
+  - type: textarea
+    id: api
+    attributes:
+      label: Server actions / APIs
+  - type: textarea
+    id: tests
+    attributes:
+      label: Required tests
+      value: |
+        - [ ] Unit
+        - [ ] Integration
+        - [ ] RLS
+        - [ ] E2E or manual QA
+  - type: textarea
+    id: docs
+    attributes:
+      label: Required docs update
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: input
+    id: rollout
+    attributes:
+      label: Rollout / feature flag

@@ -95,7 +95,7 @@ export function PatternImpactPanel({
             <span className="text-xs font-medium text-warm-500">Resolution Rate</span>
             <span
               className={cn(
-                'text-[13px] font-medium',
+                'text-body-sm font-medium',
                 data.conversionRate >= 0.5 ? 'text-primary-600' : 'text-amber-600'
               )}
             >
@@ -173,7 +173,7 @@ export function PatternImpactPanel({
               <span className="text-sm font-medium text-warm-700">Conversion Rate</span>
               <span
                 className={cn(
-                  'text-[17px] font-medium tracking-[-0.005em]',
+                  'text-body-lg font-medium tracking-[-0.005em]',
                   data.conversionRate >= 0.5 ? 'text-primary-600' : 'text-amber-600'
                 )}
               >
@@ -298,7 +298,7 @@ function StatCard({
         {icon}
         <span className="text-xs text-warm-500">{label}</span>
       </div>
-      <span className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{value}</span>
+      <span className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{value}</span>
     </div>
   );
 }
@@ -319,7 +319,7 @@ function StatCardLarge({
       <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">{label}</p>
       <p
         className={cn(
-          'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+          'text-h2 md:text-h1 font-light tabular-nums tracking-[-0.025em]',
           color === 'green' && 'text-primary-600',
           color === 'amber' && 'text-amber-600',
           color === 'slate' && 'text-warm-900'
@@ -481,7 +481,7 @@ function PatternRow({
               ) : (
                 <IconTrendingUp size={14} />
               )}
-              <span className="text-[13px] font-medium tabular-nums">
+              <span className="text-body-sm font-medium tabular-nums">
                 {pattern.strokesImpact > 0 ? '+' : ''}
                 {pattern.strokesImpact.toFixed(1)}
               </span>

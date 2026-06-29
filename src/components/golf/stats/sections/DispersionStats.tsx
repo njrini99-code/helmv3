@@ -129,7 +129,7 @@ function SummaryChip({
       animate={{ opacity: 1, y: 0 }}
       transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.medium, ease: EASE_CINEMATIC })}
     >
-      <div className="text-[10px] font-medium uppercase tracking-[0.16em] opacity-70">{label}</div>
+      <div className="text-caption font-medium uppercase tracking-[0.16em] opacity-70">{label}</div>
       <div className="mt-1 text-sm font-medium">{value}</div>
     </motion.div>
   );
@@ -171,9 +171,9 @@ function OutcomeStrip({ group }: { group: SprayChartShotGroup }) {
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.04 * index, duration: DURATION.medium, ease: EASE_CINEMATIC })}
         >
-          <div className="text-[11px] font-medium uppercase tracking-[0.16em] opacity-75">{item.label}</div>
+          <div className="text-caption font-medium uppercase tracking-[0.16em] opacity-75">{item.label}</div>
           <div className="mt-1 flex items-end justify-between gap-3">
-            <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums">{item.count}</div>
+            <div className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums">{item.count}</div>
             <div className="text-xs font-medium opacity-80">{item.percentage}</div>
           </div>
         </motion.div>
@@ -222,8 +222,8 @@ function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
         fillOpacity={0.35}
         opacity={0.45}
       />
-      <text x={width / 2} y={height - 8} textAnchor="middle" className="fill-warm-500 text-[10px]">Tee</text>
-      <text x={width / 2} y={padding} textAnchor="middle" className="fill-warm-500 text-[10px]">Landing area</text>
+      <text x={width / 2} y={height - 8} textAnchor="middle" className="fill-warm-500 text-caption">Tee</text>
+      <text x={width / 2} y={padding} textAnchor="middle" className="fill-warm-500 text-caption">Landing area</text>
 
       {group.points.map((point) => {
         const style = OUTCOME_STYLES[point.outcomeBucket];
@@ -294,10 +294,10 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
         strokeWidth="2"
         opacity={0.9}
       />
-      <text x={width / 2} y={padding - 4} textAnchor="middle" className="fill-warm-500 text-[10px]">Long</text>
-      <text x={width / 2} y={height - 10} textAnchor="middle" className="fill-warm-500 text-[10px]">Short</text>
-      <text x={padding - 2} y={height / 2 - 6} textAnchor="start" className="fill-warm-500 text-[10px]">Left</text>
-      <text x={width - padding + 2} y={height / 2 - 6} textAnchor="end" className="fill-warm-500 text-[10px]">Right</text>
+      <text x={width / 2} y={padding - 4} textAnchor="middle" className="fill-warm-500 text-caption">Long</text>
+      <text x={width / 2} y={height - 10} textAnchor="middle" className="fill-warm-500 text-caption">Short</text>
+      <text x={padding - 2} y={height / 2 - 6} textAnchor="start" className="fill-warm-500 text-caption">Left</text>
+      <text x={width - padding + 2} y={height / 2 - 6} textAnchor="end" className="fill-warm-500 text-caption">Right</text>
 
       {group.points.map((point) => {
         const style = OUTCOME_STYLES[point.outcomeBucket];
@@ -348,10 +348,10 @@ function DirectionalSummary({ group }: { group: SprayChartShotGroup }) {
             key={sector}
             className={`rounded-2xl border px-3 py-4 text-center transition-colors ${background}`}
           >
-            <div className="text-[11px] font-medium uppercase tracking-wide text-warm-500">
+            <div className="text-caption font-medium uppercase tracking-wide text-warm-500">
               {SECTOR_LABELS[sector]}
             </div>
-            <div className="mt-2 text-[20px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">
+            <div className="mt-2 text-h3 font-medium text-warm-900 tracking-[-0.012em] tabular-nums">
               {band?.count ?? 0}
             </div>
             <div className="text-xs text-warm-500">
@@ -361,7 +361,7 @@ function DirectionalSummary({ group }: { group: SprayChartShotGroup }) {
               const secondary = group.family === 'driving' ? band.avgForwardDistance : band.avgRemainingDistance;
               const secondaryLabel = group.family === 'driving' ? 'avg distance' : 'avg leave';
               return secondary !== null ? (
-                <div className="mt-2 text-[11px] text-warm-500">
+                <div className="mt-2 text-caption text-warm-500">
                   {formatDistance(secondary)} {secondaryLabel}
                 </div>
               ) : null;
@@ -419,7 +419,7 @@ export function DispersionStats({
       <motion.div className="space-y-4" variants={containerVariants} initial="hidden" animate="visible">
         <div className="space-y-3">
           <div>
-            <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Spray Charts</h3>
+            <h3 className="text-body font-medium text-warm-900 tracking-[-0.005em]">Spray Charts</h3>
             <p className="mt-1 text-sm text-warm-500">Visualize real shot dispersion from tracked tee and approach shots.</p>
           </div>
           <GolfTabBar
@@ -447,7 +447,7 @@ export function DispersionStats({
         transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.medium, ease: EASE_CINEMATIC })}
       >
         <div className="space-y-1">
-          <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">{FAMILY_LABELS[family]} spray summary</h3>
+          <h3 className="text-body font-medium text-warm-900 tracking-[-0.005em]">{FAMILY_LABELS[family]} spray summary</h3>
           <p className="text-sm text-warm-600">
             {buildSummary(currentGroup, family)}
           </p>

@@ -35,8 +35,8 @@ type ReadoutSize = 'sm' | 'md' | 'lg' | 'hero';
 
 /** Fragment-Mono value sizes — `hero` is the cockpit centerpiece display. */
 const SIZE_VALUE: Record<ReadoutSize, string> = {
-  sm: 'text-[28px] leading-[32px]',
-  md: 'text-[40px] leading-[44px]',
+  sm: 'text-h2 leading-[32px]',
+  md: 'text-display leading-[44px]',
   lg: 'text-[56px] leading-[60px]',
   hero: 'text-[72px] leading-[76px]',
 };

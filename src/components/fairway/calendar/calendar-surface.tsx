@@ -46,9 +46,9 @@ import type {
 /* Per-size geometry — every size keeps the day target >= 24px CSS (WCAG 2.2). */
 /* -------------------------------------------------------------------------- */
 const SIZE_CELL: Record<CalendarSize, string> = {
-  compact: 'h-9 w-9 text-[13px]', // 36px — dense month overviews
-  cozy: 'h-10 w-10 text-[14px]', // 40px — default
-  comfortable: 'h-11 w-11 text-[15px]', // 44px — touch-first
+  compact: 'h-9 w-9 text-body-sm', // 36px — dense month overviews
+  cozy: 'h-10 w-10 text-body-sm', // 40px — default
+  comfortable: 'h-11 w-11 text-body', // 44px — touch-first
 };
 
 /* -------------------------------------------------------------------------- */
@@ -193,7 +193,7 @@ export const CalendarSurface = React.forwardRef<
             caption_label: cn(
               defaults.caption_label,
               // Fraunces voice for the month title — the editorial seasoning.
-              'font-fw-display text-[17px] font-medium tracking-[-0.005em] text-text-primary',
+              'font-fw-display text-body-lg font-medium tracking-[-0.005em] text-text-primary',
             ),
             // ---- nav ----
             nav: cn(
@@ -209,7 +209,7 @@ export const CalendarSurface = React.forwardRef<
             weekdays: cn(defaults.weekdays, 'flex'),
             weekday: cn(
               defaults.weekday,
-              'flex-1 select-none pb-1 text-center text-[11px] font-semibold uppercase tracking-[0.06em] text-text-tertiary',
+              'flex-1 select-none pb-1 text-center text-caption font-semibold uppercase tracking-[0.06em] text-text-tertiary',
               // size the header column to match the day cell width
               cellWidth(cell),
             ),
@@ -260,21 +260,21 @@ export const CalendarSurface = React.forwardRef<
             // ---- week numbers + footer + dropdowns ----
             week_number_header: cn(
               defaults.week_number_header,
-              'text-[11px] font-semibold uppercase tracking-[0.06em] text-text-tertiary',
+              'text-caption font-semibold uppercase tracking-[0.06em] text-text-tertiary',
             ),
             week_number: cn(
               defaults.week_number,
-              'text-[12px] font-fw-mono tabular-nums text-text-tertiary',
+              'text-caption font-fw-mono tabular-nums text-text-tertiary',
             ),
             footer: cn(
               defaults.footer,
-              'pt-3 text-center text-[12px] text-text-secondary',
+              'pt-3 text-center text-caption text-text-secondary',
             ),
             dropdowns: cn(defaults.dropdowns, 'flex items-center gap-2'),
             dropdown_root: cn(defaults.dropdown_root, 'relative'),
             dropdown: cn(
               defaults.dropdown,
-              'rounded-fw-sm border border-border-subtle bg-surface px-2 py-1 text-[14px] text-text-primary',
+              'rounded-fw-sm border border-border-subtle bg-surface px-2 py-1 text-body-sm text-text-primary',
               'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
             ),
             ...(classNames ?? {}),

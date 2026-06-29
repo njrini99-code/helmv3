@@ -104,8 +104,8 @@ const TONE_DOT: Record<StatusPillTone, string> = {
 };
 
 const SIZE_CLASSES: Record<StatusPillSize, string> = {
-  xs: 'px-1.5 py-0.5 text-[10px] gap-1',
-  sm: 'px-2 py-0.5 text-[11px] gap-1.5',
+  xs: 'px-1.5 py-0.5 text-caption gap-1',
+  sm: 'px-2 py-0.5 text-caption gap-1.5',
   md: 'px-2.5 py-1 text-xs gap-1.5',
 };
 

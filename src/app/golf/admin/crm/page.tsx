@@ -1510,7 +1510,7 @@ export default function CRMPage() {
                 )}
               >
                 <TabIcon size={22} className="flex-shrink-0" />
-                <span className="text-[10px] font-medium leading-none">{tab.label}</span>
+                <span className="text-caption font-medium leading-none">{tab.label}</span>
               </Button>
             );
           })}
@@ -1530,7 +1530,7 @@ export default function CRMPage() {
                 )}
               >
                 <IconMoreHorizontal size={22} className="flex-shrink-0" />
-                <span className="text-[10px] font-medium leading-none">More</span>
+                <span className="text-caption font-medium leading-none">More</span>
               </Button>
             );
           })()}

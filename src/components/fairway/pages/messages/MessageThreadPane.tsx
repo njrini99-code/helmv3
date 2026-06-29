@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable helm/no-raw-button -- message composer action clusters use custom Fairway hit-area geometry pending primitive migration. */
+
 /**
  * ============================================================================
  * Fairway · messages · MessageThreadPane — the PULSE focal hero (open thread)

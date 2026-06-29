@@ -51,7 +51,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex cursor-pointer select-none items-center px-4 py-2.5 text-[13px] outline-none',
+      'relative flex cursor-pointer select-none items-center px-4 py-2.5 text-body-sm outline-none',
       'transition-colors duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
@@ -72,7 +72,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      'relative flex cursor-pointer select-none items-center pl-9 pr-4 py-2.5 text-[13px] outline-none',
+      'relative flex cursor-pointer select-none items-center pl-9 pr-4 py-2.5 text-body-sm outline-none',
       'transition-colors duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'text-warm-700 data-[highlighted]:bg-cream-50/70 data-[highlighted]:text-warm-900',
@@ -126,7 +126,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      'flex cursor-pointer select-none items-center px-4 py-2.5 text-[13px] outline-none',
+      'flex cursor-pointer select-none items-center px-4 py-2.5 text-body-sm outline-none',
       'transition-colors duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'text-warm-700 data-[state=open]:bg-cream-50/70 data-[highlighted]:bg-cream-50/70',

@@ -84,7 +84,7 @@ export const Eyebrow = React.forwardRef<HTMLParagraphElement, EyebrowProps>(
     <p
       ref={ref}
       className={cn(
-        'font-serif text-[11px] uppercase tracking-[0.16em] text-warm-500',
+        'font-serif text-caption uppercase tracking-[0.16em] text-warm-500',
         'inline-flex items-center gap-2',
         className,
       )}
@@ -118,7 +118,7 @@ export const PageTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttribut
     <h1
       ref={ref}
       className={cn(
-        'font-display text-[34px] sm:text-[40px] md:text-[48px] font-medium leading-[1.05] tracking-[-0.022em] text-warm-900',
+        'font-display text-h1 sm:text-display md:text-[48px] font-medium leading-[1.05] tracking-[-0.022em] text-warm-900',
         'max-w-[28ch]',
         className,
       )}
@@ -136,7 +136,7 @@ export const PageSubtitle = React.forwardRef<HTMLParagraphElement, React.HTMLAtt
     <p
       ref={ref}
       className={cn(
-        'text-[16px] sm:text-[17px] leading-[1.55] text-warm-500',
+        'text-body sm:text-body-lg leading-[1.55] text-warm-500',
         'max-w-[52ch]',
         className,
       )}

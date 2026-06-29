@@ -1,6 +1,6 @@
 'use client';
 
-/* eslint-disable helm/no-arbitrary-text-px, helm/no-raw-button, jsx-a11y/aria-role */
+/* eslint-disable helm/no-raw-button, jsx-a11y/aria-role */
 
 /**
  * ============================================================================
@@ -149,7 +149,7 @@ function Section({
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className="font-fw-mono text-[11px] uppercase tracking-wide text-text-tertiary">
+    <span className="font-fw-mono text-caption uppercase tracking-wide text-text-tertiary">
       {children}
     </span>
   );

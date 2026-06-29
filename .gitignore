@@ -44,6 +44,7 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 tsconfig.tsbuildinfo
+*.tmp.*
 
 # IDE
 .vscode/
@@ -77,9 +78,11 @@ next-shadcn-dashboard-starter/
 helm-vid/
 .full-review/
 .claude/scheduled_tasks.lock
-*.png
-# Hosted email assets must reach prod — exempt them from the global *.png ignore.
-!public/email/*.png
+# Image assets are valid source in public/, design/, ios/, and skill folders.
+# Ignore only known generated/root screenshot artifacts.
+/*.png
+/images/generated-*.png
+/.tmp-screenshots/
 GolfHelm-Prospect-Deck.pptx
 .claude/worktrees/
 
@@ -134,6 +137,7 @@ scripts/rotate-demo-passwords.mjs
 
 # Test-runner output.
 /test-results/
+/playwright-report/
 
 # Large generated showcase binaries (repo already ignores GolfHelm-Prospect-Deck.pptx).
 GolfHelm-CoachHelm-Showcase.pdf

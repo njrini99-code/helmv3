@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable helm/no-raw-button -- dense calendar grid cells need native button geometry until the CRM calendar control is migrated to design-system slots. */
+
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';

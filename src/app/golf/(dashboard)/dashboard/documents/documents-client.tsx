@@ -1153,12 +1153,33 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setUploadIsPublic(v => !v)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setUploadIsPublic(v => !v);
+                    }
+                  }}
                   className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer ${uploadIsPublic ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}
                 >
                   {uploadIsPublic && <IconCheck size={12} className="text-white" />}
                 </div>
-                <span className="text-sm text-warm-700" onClick={() => setUploadIsPublic(v => !v)}>Visible to players</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="text-sm text-warm-700"
+                  onClick={() => setUploadIsPublic(v => !v)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setUploadIsPublic(v => !v);
+                    }
+                  }}
+                >
+                  Visible to players
+                </span>
               </label>
 
               {/* Progress bar */}

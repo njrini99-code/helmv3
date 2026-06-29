@@ -3,7 +3,7 @@
 --
 -- Fixes derived from the 549-error /Users/ricknini/Downloads/
 -- helmv3-log-export-2026-04-28T02-32-39.json export.
--- See .full-review/agent-1.log for the per-cause source-code citations.
+-- See docs/legacy/full-review/agent-1.log for the per-cause source-code citations.
 -- =============================================================================
 
 -- Cause 3 (40× PGRST202 "function not found" on resend-activity stats)

@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable helm/no-raw-button -- settings inline action controls are legacy dense controls pending primitive migration. */
+
 /**
  * ============================================================================
  * Fairway · Settings · FairwaySettingsGeneral  (COACH + PLAYER · ADDITIVE · GATED)

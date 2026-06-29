@@ -92,13 +92,13 @@ const TabsTrigger = React.forwardRef<
       'disabled:pointer-events-none disabled:opacity-40',
       'focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:ring-offset-0',
       variant === 'pills' && [
-        'min-h-[44px] rounded-full px-4 py-1.5 text-[13px] font-medium tracking-[-0.005em]',
+        'min-h-[44px] rounded-full px-4 py-1.5 text-body-sm font-medium tracking-[-0.005em]',
         'data-[state=active]:bg-white data-[state=active]:text-warm-900',
         'data-[state=active]:shadow-[0_1px_2px_hsl(42_14%_22%/0.06),0_4px_10px_hsl(42_14%_22%/0.08)]',
         'data-[state=inactive]:hover:text-warm-800',
       ],
       variant === 'underline' && [
-        'pb-3 text-[14px] font-medium tracking-[-0.005em]',
+        'pb-3 text-body-sm font-medium tracking-[-0.005em]',
         'before:absolute before:inset-x-0 before:-bottom-px before:h-[2px] before:scale-x-0 before:bg-warm-900',
         'before:transition-transform before:duration-300 before:[transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         'data-[state=active]:text-warm-900 data-[state=active]:before:scale-x-100',

@@ -6,7 +6,7 @@
  * ----------------------------------------------------------------------------
  * The most celebratory moment of the create-round flow, re-skinned in the warm
  * Fairway system. Replaces the legacy summary drawer (pure cream tokens +
- * arbitrary `text-[44px]/[52px]` type) with:
+ * arbitrary `text-display/[52px]` type) with:
  *   • a green `bg-accent-600` celebration header (radial highlight) carrying the
  *     total score on the `text-display` role + `font-fw-mono` numerals;
  *   • key-stat tiles in sunken wells (`bg-surface-sunken`);

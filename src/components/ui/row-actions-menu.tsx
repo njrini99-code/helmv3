@@ -87,7 +87,7 @@ export function RowActionsMenu({ actions }: RowActionsMenuProps) {
               className={cn(
                 "w-full flex items-center gap-3",
                 "px-3 py-2.5 min-h-[44px]",
-                "text-[15px] font-medium text-left",
+                "text-body font-medium text-left",
                 "transition-colors duration-100",
                 action.variant === 'danger'
                   // Destructive label on a light menu surface — darkened from the

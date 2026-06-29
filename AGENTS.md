@@ -47,13 +47,20 @@ PRs are reviewed by **two AI reviewers in parallel** on every push:
 CI runs across two platforms:
 
 - **GitHub Actions** (`.github/workflows/ci.yml`, `review-gate.yml`)
-  — every-PR fast path (typecheck, lint, vitest, build, RLS tests,
-  Review Gate static analyzers).
+  — every-PR fast path split into independent jobs for database type
+  drift, schema invariants, typecheck, lint, lint ratchet, unit tests,
+  build, Supabase RLS tests, Playwright Smoke, and Review Gate static
+  analyzers.
 - **CircleCI** (`.circleci/config.yml`, see `.circleci/README.md`)
   — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk)
   scheduled Mondays 06:00 UTC, plus iOS Capacitor compile on
   M-series macOS runners (push to `main`, `release/*`, `ios/*`,
   `capacitor/*`).
+
+Do not say a code change is done unless `npm run verify` passes or the
+final response explains why it could not be run. For database-sensitive
+work, prefer `npm run verify:db`; for broad work, prefer
+`npm run verify:full`.
 
 Pre-merge gate blocks (must be `error`-clean before merge):
 - Service-role key in a client bundle

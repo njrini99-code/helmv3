@@ -7,14 +7,20 @@ features:
     owner: platform
     criticality: high
     docs:
-      feature: docs/ai-system/helmv3-ai-codebase-intelligence.md
+      feature: docs/current/operating-system.md
       flows:
+        - docs/current/README.md
         - docs/superpowers/plans/2026-05-28-ai-codebase-intelligence.md
       ui:
         - AGENTS.md
         - CLAUDE.md
       business_logic:
         - memory/registry.yml
+        - docs/current/architecture-map.md
+        - docs/current/product-map.md
+        - docs/operations/GATE_MATRIX.md
+        - docs/operations/CI_RUNBOOK.md
+        - docs/operations/HOT_FILES.md
       incidents: []
     code:
       routes: []
@@ -25,6 +31,14 @@ features:
         - scripts/knowledge/**
         - .devin/wiki.json
         - .github/workflows/feature-awareness.yml
+        - .github/workflows/ci.yml
+        - .github/workflows/playwright-smoke.yml
+        - .github/workflows/review-gate.yml
+        - docs/current/**
+        - docs/operations/GATE_MATRIX.md
+        - docs/operations/CI_RUNBOOK.md
+        - docs/operations/BRANCH_PROTECTION.md
+        - docs/operations/HOT_FILES.md
         - package.json
         - AGENTS.md
         - CLAUDE.md
@@ -37,12 +51,16 @@ features:
       - coderabbit
     review:
       required_docs:
-        - docs/ai-system/helmv3-ai-codebase-intelligence.md
+        - docs/current/operating-system.md
+        - docs/current/architecture-map.md
+        - docs/current/product-map.md
+        - docs/operations/GATE_MATRIX.md
         - memory/registry.yml
         - AGENTS.md
         - CLAUDE.md
       required_checks:
         - npm run knowledge:check
+        - npm run repo:health
         - node --check scripts/knowledge/workflow-report.mjs
 
   coachhelm_ai:

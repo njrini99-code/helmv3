@@ -67,14 +67,14 @@ export function AxisX({
             x={t.pos}
             y={y + 16}
             textAnchor="middle"
-            className="fill-warm-500 text-[10px] tabular-nums"
+            className="fill-warm-500 text-caption tabular-nums"
           >
             {format(t.value)}
           </text>
         </g>
       ))}
       {label ? (
-        <text x={(x0 + x1) / 2} y={y + 30} textAnchor="middle" className="fill-warm-400 text-[10px] font-medium uppercase tracking-wide">
+        <text x={(x0 + x1) / 2} y={y + 30} textAnchor="middle" className="fill-warm-400 text-caption font-medium uppercase tracking-wide">
           {label}
         </text>
       ) : null}
@@ -107,7 +107,7 @@ export function AxisY({
             x={x - 8}
             y={t.pos + 3}
             textAnchor="end"
-            className="fill-warm-500 text-[10px] tabular-nums"
+            className="fill-warm-500 text-caption tabular-nums"
           >
             {format(t.value)}
           </text>
@@ -119,7 +119,7 @@ export function AxisY({
           y={(y0 + y1) / 2}
           textAnchor="middle"
           transform={`rotate(-90, 12, ${(y0 + y1) / 2})`}
-          className="fill-warm-400 text-[10px] font-medium uppercase tracking-wide"
+          className="fill-warm-400 text-caption font-medium uppercase tracking-wide"
         >
           {label}
         </text>

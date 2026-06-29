@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable helm/no-raw-button -- lineup/field builder controls are custom spatial controls pending primitive migration. */
+
 // =============================================================================
 // src/components/baseball/practice-planner/ScrimmageLineupBuilder.tsx
 //
@@ -275,18 +277,18 @@ export function ScrimmageLineupBuilder({
                             : 'border-dashed border-warm-300 bg-white/70 hover:bg-white',
                       )}
                     >
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-warm-500">
+                      <span className="text-caption font-bold uppercase tracking-wide text-warm-500">
                         {position}
                       </span>
                       {player ? (
-                        <span className="max-w-[64px] truncate text-[10px] font-semibold text-warm-900">
+                        <span className="max-w-[64px] truncate text-caption font-semibold text-warm-900">
                           {player.name}
                         </span>
                       ) : (
-                        <span className="text-[9px] text-warm-400">—</span>
+                        <span className="text-caption text-warm-400">—</span>
                       )}
                       {player && (player.bats || player.throws) && (
-                        <span className="text-[8px] text-warm-400">
+                        <span className="text-caption text-warm-400">
                           {player.bats ? `B:${player.bats}` : ''} {player.throws ? `T:${player.throws}` : ''}
                         </span>
                       )}
@@ -318,16 +320,16 @@ export function ScrimmageLineupBuilder({
                   }}
                   className="rounded-lg border border-dashed border-warm-200 bg-cream-50/60 p-2"
                 >
-                  <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-warm-400">
+                  <div className="mb-1 text-caption font-bold uppercase tracking-wide text-warm-400">
                     {pos}
                   </div>
                   {held.length === 0 ? (
-                    <p className="text-[10px] text-warm-400">Drop here</p>
+                    <p className="text-caption text-warm-400">Drop here</p>
                   ) : (
                     <ul className="space-y-1">
                       {held.map((s) => (
                         <li key={s.playerId} className="flex items-center justify-between gap-1">
-                          <span className="truncate text-[10px] text-warm-800">
+                          <span className="truncate text-caption text-warm-800">
                             {rosterById.get(s.playerId)?.name ?? 'Player'}
                           </span>
                           <button
@@ -383,7 +385,7 @@ export function ScrimmageLineupBuilder({
                         {p.name}
                       </span>
                       {p.primaryPosition && (
-                        <span className="shrink-0 text-[9px] text-warm-400">{p.primaryPosition}</span>
+                        <span className="shrink-0 text-caption text-warm-400">{p.primaryPosition}</span>
                       )}
                       {unavail && (
                         <Badge tone="red" appearance="soft" size="sm">
@@ -446,11 +448,11 @@ export function ScrimmageLineupBuilder({
                         {p?.name ?? 'Player'}
                       </span>
                       {s.defensivePosition && (
-                        <span className="shrink-0 text-[10px] font-semibold text-warm-500">
+                        <span className="shrink-0 text-caption font-semibold text-warm-500">
                           {s.defensivePosition}
                         </span>
                       )}
-                      {p?.bats && <span className="shrink-0 text-[9px] text-warm-400">B:{p.bats}</span>}
+                      {p?.bats && <span className="shrink-0 text-caption text-warm-400">B:{p.bats}</span>}
                       {orderDup && <AlertTriangle className="h-3 w-3 shrink-0 text-red-500" />}
                     </li>
                   );

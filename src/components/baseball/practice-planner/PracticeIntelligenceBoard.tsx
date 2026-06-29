@@ -145,7 +145,7 @@ export function PracticeIntelligenceBoard({
                   {signal.summary && (
                     <p className="mt-1 line-clamp-2 text-xs text-warm-600">{signal.summary}</p>
                   )}
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-warm-500">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-warm-500">
                     {/* Honest source-trust pill: AI-derived + confidence (null -> "—"). */}
                     <SourceTrustBadge
                       size="sm"
@@ -194,7 +194,7 @@ export function PracticeIntelligenceBoard({
 
               {/* The suggestion preview (what the converted block would look like). */}
               {!converted && suggestion && (
-                <div className="mt-2 rounded-lg border border-dashed border-warm-200 bg-cream-50/70 px-2.5 py-1.5 text-[11px] text-warm-600">
+                <div className="mt-2 rounded-lg border border-dashed border-warm-200 bg-cream-50/70 px-2.5 py-1.5 text-caption text-warm-600">
                   <span className="font-medium text-warm-700">{suggestion.headline}</span>
                   {' · '}
                   {suggestion.durationMin}m

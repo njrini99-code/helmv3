@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-14
 **Status:** In Progress
-**Reference:** `/UI_AUDIT_REPORT.md`
+**Reference:** `docs/legacy/root-docs/UI_AUDIT_REPORT.md`
 
 ---
 

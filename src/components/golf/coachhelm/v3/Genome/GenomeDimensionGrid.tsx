@@ -40,11 +40,11 @@ export function GenomeDimensionGrid({ vector }: Props) {
               isLocked ? '' : 'cursor-default'
             }`}
           >
-            <p className="text-[10px] uppercase tracking-[0.14em] text-warm-500 mb-1.5">
+            <p className="text-caption uppercase tracking-[0.14em] text-warm-500 mb-1.5">
               {dim.label}
             </p>
             <p
-              className={`text-[15px] font-medium leading-snug ${
+              className={`text-body font-medium leading-snug ${
                 isLocked ? 'text-warm-400 italic' : 'text-warm-900'
               }`}
             >
@@ -74,7 +74,7 @@ export function GenomeDimensionGrid({ vector }: Props) {
               })}
             </div>
             {!isLocked && r?.value !== undefined && r?.value !== null && (
-              <p className="mt-2.5 text-[11px] tabular-nums text-warm-500">
+              <p className="mt-2.5 text-caption tabular-nums text-warm-500">
                 {formatValue(r.value)}
                 {r.confidence !== null && (
                   <span className="opacity-60"> · conf {(r.confidence * 100).toFixed(0)}%</span>
