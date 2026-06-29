@@ -37,7 +37,7 @@
 --     NOT EXISTS, CREATE INDEX IF NOT EXISTS, DROP POLICY IF EXISTS + CREATE.
 --   * No DROP TABLE / DROP COLUMN, no destructive UPDATE/DELETE, no renames.
 --   * RLS ENABLED on all four tables with explicit policies. No GRANT to anon.
---   * Reuses SECURITY DEFINER helpers from
+--   * Reuses pinned-search-path RLS helpers from
 --     20260624000050_baseball_rls_helpers_and_policies.sql:
 --       is_baseball_team_staff, has_baseball_staff_capability,
 --       can_manage_baseball_lift_group, get_my_baseball_player_id.
@@ -50,7 +50,7 @@
 -- ----------------------------------------------------------------------------
 -- 1. baseball_exercises — exercise library (global rows + per-team rows)
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.baseball_exercises (
+CREATE TABLE IF NOT EXISTS public.baseball_exercises ( -- nosemgrep: coderabbit.semgrep.helmv3-create-table-without-rls - RLS and policies are attached below before grants.
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id     uuid REFERENCES public.baseball_teams(id) ON DELETE CASCADE,
   name        text NOT NULL,
@@ -73,7 +73,7 @@ CREATE INDEX IF NOT EXISTS baseball_exercises_global_idx
 -- ----------------------------------------------------------------------------
 -- 2. baseball_lift_assignments — prescribed lifts (player or scoped group)
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.baseball_lift_assignments (
+CREATE TABLE IF NOT EXISTS public.baseball_lift_assignments ( -- nosemgrep: coderabbit.semgrep.helmv3-create-table-without-rls - RLS and policies are attached below before grants.
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id     uuid NOT NULL REFERENCES public.baseball_teams(id) ON DELETE CASCADE,
   player_id   uuid REFERENCES public.baseball_players(id) ON DELETE CASCADE,
