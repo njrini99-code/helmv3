@@ -10,6 +10,9 @@
 --   migration 000050: baseball_team_coach_staff, baseball_staff_invitations
 --   migration 000060: baseball_practices, baseball_practice_blocks,
 --                     baseball_practice_attendance
+--   baseline stats center: baseball_box_score_batting,
+--                          baseball_box_score_pitching,
+--                          baseball_player_season_stats, baseball_games
 --   baseline/000010: baseball_stat_uploads
 --
 -- Pattern: Supabase default privileges grant anon usage on public schema tables
@@ -59,6 +62,25 @@ BEGIN
   END IF;
   IF to_regclass('public.baseball_stat_uploads') IS NOT NULL THEN
     REVOKE ALL ON public.baseball_stat_uploads       FROM anon;
+  END IF;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- From baseline stats center — scoped stats/game tables
+-- -----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF to_regclass('public.baseball_box_score_batting') IS NOT NULL THEN
+    REVOKE ALL ON public.baseball_box_score_batting FROM anon;
+  END IF;
+  IF to_regclass('public.baseball_box_score_pitching') IS NOT NULL THEN
+    REVOKE ALL ON public.baseball_box_score_pitching FROM anon;
+  END IF;
+  IF to_regclass('public.baseball_player_season_stats') IS NOT NULL THEN
+    REVOKE ALL ON public.baseball_player_season_stats FROM anon;
+  END IF;
+  IF to_regclass('public.baseball_games') IS NOT NULL THEN
+    REVOKE ALL ON public.baseball_games FROM anon;
   END IF;
 END $$;
 
