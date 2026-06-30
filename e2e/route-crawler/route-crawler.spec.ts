@@ -64,6 +64,10 @@ async function crawlPage(
   const response = await page.goto(targetPath, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   const httpStatus = response?.status() ?? 0;
 
+  // Allow client redirects and auth gates to settle before landmark/body checks.
+  await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+  await page.locator('main, h1, [role="main"]').first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+
   if (httpStatus >= 500) issues.push(`HTTP ${httpStatus}`);
   if (httpStatus === 404) issues.push('HTTP 404');
 
