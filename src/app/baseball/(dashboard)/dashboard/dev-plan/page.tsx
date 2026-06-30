@@ -24,6 +24,8 @@ import {
 } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/sonner';
+import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import {
   getActiveDevPlan,
   completeGoal,
@@ -348,6 +350,7 @@ function GoalsList({
 export default function PlayerDevPlanPage() {
   const prefersReducedMotion = useReducedMotion();
   const { user, player, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const [plan, setPlan] = useState<DevelopmentalPlanWithGoals | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -384,8 +387,8 @@ export default function PlayerDevPlanPage() {
         try {
           await completeGoal(plan.id, goalId);
           await fetchPlan();
-        } catch (err) {
-          console.error('Error completing goal:', err);
+        } catch {
+          showToast('Could not mark goal complete', 'error');
         }
       });
     },
@@ -401,8 +404,8 @@ export default function PlayerDevPlanPage() {
         try {
           await uncompleteGoal(plan.id, goalId);
           await fetchPlan();
-        } catch (err) {
-          console.error('Error uncompleting goal:', err);
+        } catch {
+          showToast('Could not update goal', 'error');
         }
       });
     },
@@ -479,11 +482,15 @@ export default function PlayerDevPlanPage() {
         {isLoading ? (
           <DevPlanSkeleton />
         ) : error ? (
-          <Card variant="glass">
-            <CardContent className="p-12 text-center">
-              <p className="text-red-500">{error}</p>
-            </CardContent>
-          </Card>
+          <ReadModelStateNotice
+            state="error"
+            title="Development plan unavailable"
+            onRetry={() => {
+              setIsLoading(true);
+              setError(null);
+              void fetchPlan();
+            }}
+          />
         ) : !plan ? (
           <>
             <EmptyState />

@@ -123,6 +123,13 @@ export const BASEBALL_CAPABILITY_GROUPS: readonly BaseballCapabilityGroup[] = [
     sensitive: true,
   },
   {
+    key: 'documents',
+    label: 'Documents',
+    description: 'Upload and manage team document library.',
+    capabilities: ['can_manage_documents'],
+    sensitive: true,
+  },
+  {
     key: 'settings',
     label: 'Settings',
     description: 'Manage program, team, season, and access settings.',

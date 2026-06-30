@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { TravelClient } from '@/components/baseball/travel';
+import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import {
   getTeamItineraries,
   type BaseballTravelItinerary,
@@ -18,6 +19,7 @@ export default function BaseballTravelPage() {
 
   const [itineraries, setItineraries] = useState<BaseballTravelItinerary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isCoach, setIsCoach] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
   const supabase = createClient();
@@ -34,6 +36,7 @@ export default function BaseballTravelPage() {
   async function detectRoleAndLoad() {
     if (!user) return;
     setLoading(true);
+    setLoadError(null);
 
     try {
       // Check if coach
@@ -84,10 +87,14 @@ export default function BaseballTravelPage() {
         const result = await getTeamItineraries(resolvedTeamId);
         if (result.success) {
           setItineraries(result.data);
+        } else {
+          setItineraries([]);
+          setLoadError(result.error ?? 'Travel itineraries could not be loaded.');
         }
       }
-    } catch (err) {
-      console.error('[Baseball Travel] Error loading:', err);
+    } catch {
+      setItineraries([]);
+      setLoadError('Travel itineraries could not be loaded.');
     } finally {
       setLoading(false);
     }
@@ -109,6 +116,21 @@ export default function BaseballTravelPage() {
         <div className="p-8 text-center">
           <h2 className="text-lg font-semibold text-warm-900 mb-2">No Team Found</h2>
           <p className="text-warm-500">You must be on a team to access travel itineraries.</p>
+        </div>
+      </>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <>
+        <Header title="Travel" subtitle="Team travel and expense tracking" />
+        <div className="p-6 lg:p-8">
+          <ReadModelStateNotice
+            state="error"
+            title="Travel unavailable"
+            onRetry={() => void detectRoleAndLoad()}
+          />
         </div>
       </>
     );
