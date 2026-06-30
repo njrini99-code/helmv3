@@ -56,12 +56,15 @@ export default async function BaseballCalendarPage() {
     teamId = teamResult.data?.id || null;
     currentUserId = coachResult.data?.id;
   } else if (!isCoach) {
-    const { data: teamMember } = await supabase
-      .from('baseball_team_members')
-      .select('team_id')
-      .eq('player_id', session.userId)
-      .maybeSingle();
-    teamId = teamMember?.team_id || null;
+    const playerId = session.player?.id;
+    if (playerId) {
+      const { data: teamMember } = await supabase
+        .from('baseball_team_members')
+        .select('team_id')
+        .eq('player_id', playerId)
+        .maybeSingle();
+      teamId = teamMember?.team_id || null;
+    }
   }
 
   // ── Fetch events + roster ───────────────────────────────────────────────────

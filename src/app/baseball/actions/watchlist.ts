@@ -15,6 +15,8 @@ import {
 import { notifyWatchlistAdd, notifyPipelineStageChange } from '@/lib/notifications';
 import { WatchlistSchemas } from '@/lib/validation/action-schemas';
 import { logServerError } from '@/lib/server-error-logger';
+import { assertCoachCanRecruitPlayer } from '@/lib/baseball/recruitability';
+import type { CoachType } from '@/app/baseball/actions/discover';
 
 export async function addToWatchlist(coachId: string, playerId: string) {
   const supabase = await createClient();
@@ -28,13 +30,23 @@ export async function addToWatchlist(coachId: string, playerId: string) {
   // Verify coach belongs to user
   const { data: coach } = await supabase
     .from('baseball_coaches')
-    .select('id')
+    .select('id, coach_type')
     .eq('id', coachId)
     .eq('user_id', user.id)
     .single();
 
   if (!coach) {
     throw new Error('Unauthorized: Coach not found');
+  }
+
+  const recruitability = await assertCoachCanRecruitPlayer(
+    supabase,
+    coachId,
+    coach.coach_type as CoachType,
+    playerId,
+  );
+  if (!recruitability.allowed) {
+    return { success: false, message: 'This player is not available for recruiting' };
   }
 
   // Check if already in watchlist
