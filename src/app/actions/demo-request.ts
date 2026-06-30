@@ -40,6 +40,7 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
     // interest_type CHECK allows: baseball_coach | baseball_player | golf_coach
     //   | golf_player | organization | other → use 'other' for landing-page leads.
     // status CHECK allows: pending | contacted | scheduled | completed | declined.
+    // nosemgrep: helmv3-server-action-missing-auth-check -- public landing lead capture; no session required.
     const { error } = await supabase.from('demo_requests').insert({
       email,
       interest_type: 'other',
@@ -65,6 +66,7 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
 
     // Also create a CRM coach entry so admin can follow up from the CRM
     // Skip if a coach with this email already exists
+    // nosemgrep: helmv3-server-action-missing-auth-check -- public landing lead capture; no session required.
     const { data: existing } = await supabase
       .from('crm_coaches')
       .select('id')
@@ -72,6 +74,7 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
       .maybeSingle();
 
     if (!existing) {
+      // nosemgrep: helmv3-server-action-missing-auth-check -- public landing lead capture; no session required.
       await supabase.from('crm_coaches').insert({
         name: email.split('@')[0] || 'Unknown',
         email,
