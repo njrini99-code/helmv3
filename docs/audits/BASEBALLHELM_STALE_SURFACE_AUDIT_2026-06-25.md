@@ -53,7 +53,7 @@ Seeded:
 - `helm_lifting_set_results`: 182
 - `helm_lifting_readiness_checkins`: 14
 
-Missing or empty:
+Missing or empty (status as of this audit — 2026-06-25):
 
 - `baseball_strength_groups`: 0
 - `baseball_tasks`: 0
@@ -68,6 +68,34 @@ Missing or empty:
 - `baseball_player_stats`: 0
 - `baseball_player_aggregates`: 0
 - `baseball_developmental_plans`: 0
+
+### Update (#414) — now seeded by `scripts/seed-baseball-surfaces-demo.ts`
+
+Every table listed above (plus `baseball_task_assignments` and
+`baseball_strength_group_members`, the join tables for `baseball_tasks` and
+`baseball_strength_groups`) is now populated for the demo team by the
+Phase-3 dependent seed script. Full per-table contract (row shapes, route
+mapping, schema caveats): `docs/seed/BASEBALLHELM_DEMO_DATA_CONTRACT.md`.
+Run order: `seed-baseball-demo.ts` (Phase 1) → `seed-baseball-lifting-demo.ts`
+(Phase 2) → `seed-baseball-surfaces-demo.ts` (Phase 3). Verify with
+`scripts/verify-baseball-demo-coverage.ts`.
+
+This closes the coverage gap for the **demo team** specifically. It does not
+seed the live `njrini99@gmail.com` / "Rini University Baseball" account
+referenced above — these scripts are scoped exclusively to the Phase-1 demo
+org/team/coach/roster ids and never touch any other team.
+
+The following surfaces remain intentionally empty (not a coverage gap — see
+the contract doc's "Intentionally-empty surfaces" section for the full
+rationale):
+
+- `baseball_recruiting_interests`, `baseball_watchlists` — the demo team is
+  a college roster; college players never activate recruiting.
+- `baseball_decision_log`, `baseball_meeting_items`, `baseball_signals`,
+  `baseball_actions` — Decision Room is a separate workflow, out of scope
+  for this pass.
+- `baseball_video_events` — the staff-anchored film-tagging queue, distinct
+  from the player-uploaded `baseball_videos` library this pass seeds.
 
 ## Remaining stale-risk surfaces
 
