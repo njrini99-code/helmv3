@@ -31,8 +31,10 @@ reviews:
   auto_title_placeholder: "@coderabbitai"
   auto_title_instructions: >
     Conventional Commits style. Format as `<type>(<scope>): <subject>`
-    using golf/baseball/coachhelm/supabase/ios/ci as scopes. Imperative mood,
-    no trailing period, <= 72 chars.
+    using golf, baseball, coachhelm, supabase, ios, ci, design-system, types,
+    deps, docs, or ops as scopes. Imperative mood, no trailing period, <= 72
+    chars. Keep this scope list in sync with
+    reviews.pre_merge_checks.title.requirements.
   review_status: true
   commit_status: true
   fail_commit_status: true
@@ -299,14 +301,31 @@ reviews:
         component-scoped styles. Verify any new CSS variable is registered in
         the design-system tokens file.
 
-  # Branch + PR filters
-  base_branches: ["main", "develop", "release/*"]
-  drafts: true
-  ignore_title_keywords:
-    - "WIP"
-    - "[skip-review]"
-    - "dependabot"
   finishing_touches:
+    custom:
+      - enabled: true
+        name: "helm safety pass"
+        instructions: >
+          Review the changed files for Helm-specific safety issues:
+          service-role leakage, missing auth checks, RLS gaps, destructive
+          writes, sport table prefix mistakes, client-side LLM calls, PII
+          logging, missing loading/error/empty states, and missing tests.
+          Open a stacked PR with minimal targeted fixes only.
+      - enabled: true
+        name: "dashboard ux pass"
+        instructions: >
+          Review changed dashboard UI for mobile responsiveness, skeleton
+          loading states, empty states, error states, accessibility, keyboard
+          navigation, visual consistency with Helm's premium design system, and
+          overly dense layouts. Open a stacked PR with minimal fixes only.
+      - enabled: true
+        name: "rls test pass"
+        instructions: >
+          For database/RLS-sensitive changes, inspect migrations, server
+          actions, and tests. Add or improve tests that prove anon users cannot
+          read data, authenticated users can only read their team's rows, and
+          coach/player role escalation is impossible without assignment. Open a
+          stacked PR with tests only.
     docstrings:
       enabled: true
     unit_tests:
@@ -341,32 +360,37 @@ reviews:
       - name: "No service-role in client bundles"
         mode: error
         instructions: >
-          Fail if any file outside src/lib/supabase/admin* or
-          src/app/api/**/admin/** references SUPABASE_SERVICE_ROLE_KEY or
-          creates a Supabase client with the service role key.
+          Evaluate only files changed by this PR. Fail if changed code outside
+          src/lib/supabase/admin* or src/app/api/**/admin/** references
+          SUPABASE_SERVICE_ROLE_KEY or creates a Supabase client with the
+          service role key. Do not fail this check for pre-existing violations
+          in untouched files; surface those as non-blocking findings instead.
       - name: "RLS coverage on new tables"
         mode: error
         instructions: >
-          Fail if a migration adds a CREATE TABLE without ENABLE ROW LEVEL
-          SECURITY and at least one CREATE POLICY in the same migration.
+          Evaluate only migrations changed by this PR. Fail if a changed
+          migration adds a CREATE TABLE without ENABLE ROW LEVEL SECURITY and
+          at least one CREATE POLICY in the same migration.
       - name: "Auth check in server actions"
         mode: error
         instructions: >
-          Fail if a file under src/app/**/actions/**/*.ts exports an async
-          function that does not call supabase.auth.getUser() before any
-          .from()/rpc() call.
+          Evaluate only files changed by this PR. Fail if a changed file under
+          src/app/**/actions/**/*.ts exports an async function that does not
+          call supabase.auth.getUser() before any .from()/rpc() call. Do not
+          fail this check for pre-existing violations in untouched files;
+          surface those as non-blocking findings instead.
       - name: "Sport-prefixed table names"
         mode: error
         instructions: >
-          Fail if any *.ts/*.tsx queries Supabase tables without the sport
-          prefix (coaches, players, teams, rounds, events without
-          golf_/baseball_ prefix).
+          Evaluate only changed *.ts/*.tsx files. Fail if changed code queries
+          Supabase tables without the sport prefix (coaches, players, teams,
+          rounds, events without golf_/baseball_ prefix).
       - name: "No destructive writes"
         mode: error
         instructions: >
-          Fail if a save/submit/sync code path performs DELETE followed by
-          INSERT on the same table without an explicit transaction comment
-          justifying the rebuild.
+          Evaluate only files changed by this PR. Fail if changed save/submit/
+          sync code performs DELETE followed by INSERT on the same table without
+          an explicit transaction comment justifying the rebuild.
       - name: "No edits to historical migrations"
         mode: error
         instructions: >
@@ -416,6 +440,8 @@ reviews:
     # Shell + config
     shellcheck:
       enabled: true
+    dotenvLint:
+      enabled: true
     yamllint:
       enabled: true
     actionlint:
@@ -442,9 +468,21 @@ reviews:
     # Security
     gitleaks:
       enabled: true
+    osvScanner:
+      enabled: true
+    presidio:
+      enabled: true
     semgrep:
       enabled: true
       config_file: ".coderabbit/semgrep/helmv3.yml"
+
+    # React / CSS / agent files
+    reactDoctor:
+      enabled: true
+    stylelint:
+      enabled: true
+    skillspector:
+      enabled: true
 
     # SQL
     sqlfluff:
@@ -483,8 +521,9 @@ reviews:
 # Chat — let CodeRabbit auto-respond to its own walkthrough comments
 # ---------------------------------------------------------------------------
 chat:
+  art: false
   auto_reply: true
-  create_issues: true
+  allow_non_org_members: false
   integrations:
     jira:
       usage: auto
@@ -583,3 +622,75 @@ code_generation:
         instructions: >
           pytest. Cover happy path + one failure mode per public function.
           Use respx for httpx mocking.
+
+# ---------------------------------------------------------------------------
+# Issue enrichment + CodeRabbit Plan — Pro+ planning layer
+# ---------------------------------------------------------------------------
+issue_enrichment:
+  auto_enrich:
+    enabled: true
+
+  planning:
+    enabled: true
+    auto_planning:
+      enabled: true
+      labels:
+        - "feature"
+        - "enhancement"
+        - "bug"
+        - "high-risk"
+        - "security"
+        - "auth"
+        - "rls"
+        - "database"
+        - "stats"
+        - "import"
+        - "coachhelm"
+        - "golf"
+        - "baseball"
+        - "dashboard"
+        - "mobile"
+        - "!wip"
+        - "!no-plan"
+
+  labeling:
+    auto_apply_labels: false
+    labeling_instructions:
+      - label: "feature"
+        instructions: "New product behavior, new workflow, new dashboard section, new import pipeline, or new user-facing capability."
+      - label: "enhancement"
+        instructions: "Improves an existing flow, component, dashboard, query, test, or UX without introducing a brand-new feature."
+      - label: "bug"
+        instructions: "Fixes incorrect behavior, failed auth, incorrect stats, broken UI, failed import, broken test, or production regression."
+      - label: "high-risk"
+        instructions: "Touches auth, RLS, migrations, service-role usage, subscriptions, data imports, stat calculations, production data, or core dashboards."
+      - label: "security"
+        instructions: "Touches auth, secrets, service-role keys, signed URLs, RLS policies, logging, PII, or external callbacks/webhooks."
+      - label: "auth"
+        instructions: "Login, user session, role-based access, coach/player/team authorization, middleware, or Supabase auth."
+      - label: "rls"
+        instructions: "Supabase Row Level Security policies, tests, helper functions, team/player/coach row access, or role escalation."
+      - label: "database"
+        instructions: "Supabase migrations, schema, SQL functions, indexes, constraints, triggers, enums, generated DB types, or seed data."
+      - label: "stats"
+        instructions: "Golf/baseball stat calculation, rollups, cache tables, analytics, leaderboard logic, or report generation."
+      - label: "import"
+        instructions: "CSV import, stat import, parser, mapping, dedupe, validation, file upload, or import review workflows."
+      - label: "coachhelm"
+        instructions: "CoachHelm AI, patterns, predictions, insights, LLM usage, budget controls, coaching philosophy, or generated recommendations."
+      - label: "golf"
+        instructions: "GolfHelm-specific routes, tables, dashboards, rounds, qualifiers, team management, player hub, or CoachHelm golf intelligence."
+      - label: "baseball"
+        instructions: "BaseballHelm-specific routes, recruiting pipeline, coach/player profiles, schools, watchlists, evaluations, or baseball stat flows."
+      - label: "dashboard"
+        instructions: "Coach dashboard, player dashboard, admin dashboard, UI cards, tables, filters, charts, navigation, empty/loading/error states."
+      - label: "mobile"
+        instructions: "Capacitor, iOS, mobile shell, push notifications, safe areas, app navigation, native permissions, or mobile-specific UI."
+      - label: "ci"
+        instructions: "GitHub Actions, Vercel build, lint/typecheck/test scripts, Playwright, Lighthouse, or deployment automation."
+      - label: "docs"
+        instructions: "Documentation-only change, product plan, runbook, architecture note, security/privacy doc, or implementation guide."
+      - label: "no-plan"
+        instructions: "Tiny chore or doc change where CodeRabbit Plan would be overkill."
+      - label: "wip"
+        instructions: "Work in progress; do not auto-plan yet."

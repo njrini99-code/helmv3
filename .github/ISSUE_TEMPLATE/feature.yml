@@ -1,0 +1,70 @@
+name: Feature / Enhancement
+description: Plan a new Helm feature or improvement.
+title: "[Feature]: "
+labels: ["feature", "enhancement"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: What should be true when this is finished?
+      placeholder: "Coaches can..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: product_area
+    attributes:
+      label: Product area
+      options:
+        - GolfHelm
+        - BaseballHelm
+        - CoachHelm
+        - Admin/platform
+        - Auth/RLS
+        - Import/stats
+        - Mobile/iOS
+        - CI/docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: user_flow
+    attributes:
+      label: User flow
+      description: Describe the user journey, pages, buttons, data states, and success path.
+    validations:
+      required: true
+
+  - type: textarea
+    id: data_rules
+    attributes:
+      label: Data / permission rules
+      description: Include tables, RLS expectations, coach/player/team visibility, imports, stats, or role constraints.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: What must be true for this to be done?
+      value: |
+        - [ ]
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: test_plan
+    attributes:
+      label: Test plan
+      value: |
+        - [ ] Unit tests
+        - [ ] RLS tests
+        - [ ] Integration tests
+        - [ ] Playwright/E2E
+        - [ ] Manual UI check
+    validations:
+      required: true

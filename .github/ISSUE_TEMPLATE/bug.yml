@@ -1,0 +1,63 @@
+name: Bug
+description: Report a Helm bug or regression.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: current_behavior
+    attributes:
+      label: Current behavior
+      description: What is broken?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: What should happen instead?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: product_area
+    attributes:
+      label: Product area
+      options:
+        - GolfHelm
+        - BaseballHelm
+        - CoachHelm
+        - Admin/platform
+        - Auth/RLS
+        - Import/stats
+        - Mobile/iOS
+        - CI/docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact / severity
+      description: Who is affected and how bad is it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, Sentry issue, screenshots, or PR links
+      description: Paste any relevant links.
+    validations:
+      required: false
