@@ -38,8 +38,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: latest
+
+      - name: Start local Supabase stack
+        if: env.SUPABASE_ACCESS_TOKEN == ''
+        env:
+          SUPABASE_PROJECT_ID: helmv3
+        run: supabase start
+
       - name: Verify database types are up to date
+        env:
+          SUPABASE_PROJECT_ID: helmv3
         run: npm run check:types-drift
+
+      - name: Stop local Supabase stack
+        if: always() && env.SUPABASE_ACCESS_TOKEN == ''
+        env:
+          SUPABASE_PROJECT_ID: helmv3
+        run: supabase stop || true
 
   schema-invariants:
     name: Schema invariants
