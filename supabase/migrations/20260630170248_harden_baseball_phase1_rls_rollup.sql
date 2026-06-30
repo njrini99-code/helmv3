@@ -30,17 +30,33 @@ BEGIN
   IF to_regclass('public.baseball_practices') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.baseball_practices ENABLE ROW LEVEL SECURITY';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_practices_select" ON public.baseball_practices';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_practices_insert" ON public.baseball_practices';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_practices_update" ON public.baseball_practices';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_practices_delete" ON public.baseball_practices';
     EXECUTE $p$CREATE POLICY "baseball_practices_select" ON public.baseball_practices
       FOR SELECT TO authenticated
       USING (
         public.is_baseball_team_staff(team_id)
         OR (status = 'published' AND public.is_baseball_team_member(team_id))
       )$p$;
+    EXECUTE $p$CREATE POLICY "baseball_practices_insert" ON public.baseball_practices
+      FOR INSERT TO authenticated
+      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+    EXECUTE $p$CREATE POLICY "baseball_practices_update" ON public.baseball_practices
+      FOR UPDATE TO authenticated
+      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))
+      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+    EXECUTE $p$CREATE POLICY "baseball_practices_delete" ON public.baseball_practices
+      FOR DELETE TO authenticated
+      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
   END IF;
 
   IF to_regclass('public.baseball_practice_blocks') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.baseball_practice_blocks ENABLE ROW LEVEL SECURITY';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_practice_blocks_select" ON public.baseball_practice_blocks';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_practice_blocks_insert" ON public.baseball_practice_blocks';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_practice_blocks_update" ON public.baseball_practice_blocks';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_practice_blocks_delete" ON public.baseball_practice_blocks';
     EXECUTE $p$CREATE POLICY "baseball_practice_blocks_select" ON public.baseball_practice_blocks
       FOR SELECT TO authenticated
       USING (
@@ -55,16 +71,39 @@ BEGIN
           )
         )
       )$p$;
+    EXECUTE $p$CREATE POLICY "baseball_practice_blocks_insert" ON public.baseball_practice_blocks
+      FOR INSERT TO authenticated
+      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+    EXECUTE $p$CREATE POLICY "baseball_practice_blocks_update" ON public.baseball_practice_blocks
+      FOR UPDATE TO authenticated
+      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))
+      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+    EXECUTE $p$CREATE POLICY "baseball_practice_blocks_delete" ON public.baseball_practice_blocks
+      FOR DELETE TO authenticated
+      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
   END IF;
 
   IF to_regclass('public.baseball_practice_attendance') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.baseball_practice_attendance ENABLE ROW LEVEL SECURITY';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_practice_attendance_select" ON public.baseball_practice_attendance';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_practice_attendance_insert" ON public.baseball_practice_attendance';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_practice_attendance_update" ON public.baseball_practice_attendance';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_practice_attendance_delete" ON public.baseball_practice_attendance';
     EXECUTE $p$CREATE POLICY "baseball_practice_attendance_select" ON public.baseball_practice_attendance
       FOR SELECT TO authenticated
       USING (
         public.has_baseball_staff_capability(team_id, 'can_manage_practice')
         OR player_id = public.get_my_baseball_player_id()
       )$p$;
+    EXECUTE $p$CREATE POLICY "baseball_practice_attendance_insert" ON public.baseball_practice_attendance
+      FOR INSERT TO authenticated
+      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+    EXECUTE $p$CREATE POLICY "baseball_practice_attendance_update" ON public.baseball_practice_attendance
+      FOR UPDATE TO authenticated
+      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))
+      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+    EXECUTE $p$CREATE POLICY "baseball_practice_attendance_delete" ON public.baseball_practice_attendance
+      FOR DELETE TO authenticated
+      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
   END IF;
 END $$;
