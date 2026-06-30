@@ -36,7 +36,7 @@ test.describe('Coach - Create New Game', () => {
 
   test('should display the new game form', async ({ page }) => {
     // TODO: requires test data setup (coach must belong to college/juco team)
-    await page.goto('/baseball/dashboard/stats/games/new');
+    await page.goto('/baseball/dashboard/stats/games/create');
     await waitForPageLoad(page);
 
     await expect(
@@ -55,7 +55,7 @@ test.describe('Coach - Create New Game', () => {
 
   test('should require a game date before submitting', async ({ page }) => {
     // TODO: requires test data setup
-    await page.goto('/baseball/dashboard/stats/games/new');
+    await page.goto('/baseball/dashboard/stats/games/create');
     await waitForPageLoad(page);
 
     // Clear the date field and attempt to submit
@@ -79,7 +79,7 @@ test.describe('Coach - Create New Game', () => {
 
   test('should fill game details and submit the create-game form', async ({ page }) => {
     // TODO: requires test data setup (coach must belong to college/juco team with a roster)
-    await page.goto('/baseball/dashboard/stats/games/new');
+    await page.goto('/baseball/dashboard/stats/games/create');
     await waitForPageLoad(page);
 
     // Set game type to "game"
@@ -123,7 +123,7 @@ test.describe('Coach - Create New Game', () => {
       await page.waitForTimeout(1500);
       const currentUrl = page.url();
       const wentToGamePage = currentUrl.includes('/stats/games/');
-      const stayedOnForm = currentUrl.includes('/stats/games/new') || currentUrl.includes('/dashboard');
+      const stayedOnForm = currentUrl.includes('/stats/games/create') || currentUrl.includes('/dashboard');
       expect(wentToGamePage || stayedOnForm).toBeTruthy();
     }
   });
@@ -411,7 +411,7 @@ test.describe('Coach - Games List and Box Score View', () => {
     await waitForPageLoad(page);
 
     const addButton = page.locator(
-      'a[href*="/stats/games/new"], button:has-text("Add Game"), a:has-text("Add Game")'
+      'a[href*="/stats/games/create"], button:has-text("Add Game"), a:has-text("Add Game")'
     ).first();
 
     if (await addButton.count() > 0 && await addButton.isVisible({ timeout: 5000 })) {

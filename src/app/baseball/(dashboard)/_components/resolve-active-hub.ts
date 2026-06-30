@@ -25,6 +25,7 @@ import {
 } from './hub-definitions';
 import type { HubSubNavTab } from './hub-sub-nav';
 import type { BaseballProgramType } from '@/lib/types/baseball-settings';
+import type { BaseballCapability } from '@/lib/baseball/capabilities';
 
 const RECRUITING_PROGRAM_TYPES = new Set<BaseballProgramType>([
   'college',
@@ -124,6 +125,27 @@ export interface ResolveActiveHubArgs {
   role: 'coach' | 'player' | null;
   /** Server-resolved program type — gates mode-specific hub visibility. */
   programType?: BaseballProgramType | null;
+  /** Resolved staff capabilities — filters capability-gated hub tabs (#370). */
+  capabilities?: Partial<Record<BaseballCapability, boolean>>;
+}
+
+/** Hide hub sub-tabs the current coach cannot access. Players skip cap checks. */
+export function filterHubTabsByCapabilities(
+  tabs: readonly HubSubNavTab[],
+  role: 'coach' | 'player',
+  capabilities: Partial<Record<BaseballCapability, boolean>> = {},
+): HubSubNavTab[] {
+  return tabs.filter((tab) => {
+    if (tab.requiredAnyCapabilities?.length) {
+      if (role !== 'coach') return false;
+      return tab.requiredAnyCapabilities.some((cap) => capabilities[cap] === true);
+    }
+    if (tab.requiredCapability) {
+      if (role !== 'coach') return false;
+      return capabilities[tab.requiredCapability] === true;
+    }
+    return true;
+  });
 }
 
 /**
@@ -159,5 +181,10 @@ export function resolveActiveHub(args: ResolveActiveHubArgs): ResolvedHub | null
 
   if (!best) return null;
   const { id, ariaLabel, tabs } = best.hub;
-  return { id, ariaLabel, tabs };
+  const visibleTabs =
+    role === 'coach'
+      ? filterHubTabsByCapabilities(tabs, role, args.capabilities ?? {})
+      : [...tabs];
+  if (visibleTabs.length === 0) return null;
+  return { id, ariaLabel, tabs: visibleTabs };
 }

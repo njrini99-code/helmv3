@@ -117,14 +117,10 @@ export async function createBaseballEvent(input: CreateEventInput): Promise<Acti
   const coachTeam = await getCoachAndTeam(supabase, user.id);
   if (!coachTeam) return { success: false, error: 'Coach or team not found' };
 
-  // When an explicit teamId is provided (e.g. from the Events page multi-team
-  // selector), verify team membership and capability before writing.
   const resolvedTeamId = input.teamId ?? coachTeam.teamId;
-  if (input.teamId) {
-    const allowed = await hasBaseballCapability(input.teamId, 'can_manage_practice');
-    if (!allowed) {
-      return { success: false, error: 'You do not have permission to create events for this team' };
-    }
+  const allowed = await hasBaseballCapability(resolvedTeamId, 'can_manage_calendar');
+  if (!allowed) {
+    return { success: false, error: 'You do not have permission to create events for this team' };
   }
 
   const startDateTime = buildDateTime(input.startDate, input.startTime);
@@ -208,7 +204,7 @@ export async function updateBaseballEvent(eventId: string, input: UpdateEventInp
     return { success: false, error: 'Event not found or you do not have permission to update it' };
   }
 
-  const allowed = await hasBaseballCapability(eventRow.team_id, 'can_manage_practice');
+  const allowed = await hasBaseballCapability(eventRow.team_id, 'can_manage_calendar');
   if (!allowed) {
     return { success: false, error: 'You do not have permission to update events for this team' };
   }
@@ -274,7 +270,7 @@ export async function deleteBaseballEvent(eventId: string): Promise<ActionResult
   }
 
   // Verify team membership + can_manage_practice capability.
-  const allowed = await hasBaseballCapability(eventRow.team_id, 'can_manage_practice');
+  const allowed = await hasBaseballCapability(eventRow.team_id, 'can_manage_calendar');
   if (!allowed) {
     return { success: false, error: 'You do not have permission to delete events for this team' };
   }
