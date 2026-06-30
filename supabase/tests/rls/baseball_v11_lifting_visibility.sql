@@ -19,7 +19,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(40);
+SELECT plan(42);
 
 -- ============================================================================
 -- 1. RLS enabled + anon locked out on every new V11 table.
