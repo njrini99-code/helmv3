@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_ai_audit (
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.baseball_ai_audit ENABLE ROW LEVEL SECURITY;
 
 -- Additive guards (partial pre-existing table).
 ALTER TABLE public.baseball_ai_audit ADD COLUMN IF NOT EXISTS player_id          uuid;
@@ -118,7 +119,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS baseball_ai_audit_dedupe_uidx
 -- =============================================================================
 -- 3. RLS — staff-only governance surface
 -- =============================================================================
-ALTER TABLE public.baseball_ai_audit ENABLE ROW LEVEL SECURITY;
 
 -- SELECT: staff only. A player never reads the AI audit log.
 DROP POLICY IF EXISTS "baseball_ai_audit_select" ON public.baseball_ai_audit;

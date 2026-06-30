@@ -271,6 +271,7 @@ async function main() {
       id: pid,
       user_id: playerAuth.userId,
       player_type: 'college',
+      recruiting_activated: false,
       first_name: p.first,
       last_name: p.last,
       email: playerEmail,

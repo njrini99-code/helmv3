@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// Note: This file uses 'as any' casts for baseball_document_versions table queries
-// because the Supabase types may need to be regenerated to include the table.
-// Once `npm run db:types` is run against the active database, these casts can be removed.
+// Untyped document/version queries go through `(supabase as any)` until database.ts
+// includes baseball_documents + baseball_document_versions (regen via npm run db:types).
 'use server';
 
 import { createClient } from '@/lib/supabase/server';

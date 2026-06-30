@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_postgame_reviews (
   -- One canonical review per (team, game) — re-running UPSERTs in place.
   CONSTRAINT uq_baseball_postgame_review_game UNIQUE (team_id, game_id)
 );
+ALTER TABLE public.baseball_postgame_reviews ENABLE ROW LEVEL SECURITY;
 
 -- ----------------------------------------------------------------------------
 -- baseball_postgame_review_items — the source-cited action rows of a review.
@@ -146,6 +147,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_postgame_review_items (
 
   CONSTRAINT uq_baseball_postgame_item UNIQUE (review_id, dedupe_key)
 );
+ALTER TABLE public.baseball_postgame_review_items ENABLE ROW LEVEL SECURITY;
 
 -- ----------------------------------------------------------------------------
 -- Indexes for the read paths.
@@ -162,8 +164,6 @@ CREATE INDEX IF NOT EXISTS idx_bpri_player_vis ON public.baseball_postgame_revie
 -- ----------------------------------------------------------------------------
 -- RLS ENABLED (deny-by-default) on both tables.
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_postgame_reviews       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.baseball_postgame_review_items  ENABLE ROW LEVEL SECURITY;
 
 -- ----------------------------------------------------------------------------
 -- Policies. Reuse the SECURITY DEFINER helpers from 20260624000050:

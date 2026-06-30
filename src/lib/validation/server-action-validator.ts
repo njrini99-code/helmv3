@@ -79,6 +79,16 @@ export const CommonSchemas = {
     .regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format (must be #RRGGBB)')
     .optional()
     .nullable(),
+
+  recruitingPlayerState: z
+    .object({
+      player_type: z.enum(['high_school', 'showcase', 'juco', 'college']),
+      recruiting_activated: z.boolean(),
+    })
+    .refine(
+      (value) => !(value.player_type === 'college' && value.recruiting_activated),
+      { message: 'College players cannot activate recruiting.' },
+    ),
 };
 
 /**

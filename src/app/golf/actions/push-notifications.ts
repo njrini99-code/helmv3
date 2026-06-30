@@ -73,7 +73,7 @@ export async function registerDeviceToken(
   const admin = createAdminClient();
   const { error } = await admin
     .from('device_tokens')
-    .upsert(
+    .upsert( // nosemgrep: helmv3-action-missing-revalidate -- push worker reads tokens directly, not cached pages
       {
         user_id: user.id,
         token: parsed.data.token,
@@ -115,7 +115,7 @@ export async function unregisterDeviceToken(token: string): Promise<DeviceTokenR
 
   const { error } = await supabase
     .from('device_tokens')
-    .update({ active: false })
+    .update({ active: false }) // nosemgrep: helmv3-action-missing-revalidate -- push worker reads tokens directly
     .eq('token', parsed.data)
     .eq('user_id', user.id);
 

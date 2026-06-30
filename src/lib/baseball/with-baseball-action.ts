@@ -66,6 +66,7 @@ import {
   PlayerAccessError,
   type PlayerAccessKey,
 } from '@/lib/baseball/player-access';
+import { BaseballDisabledSourceError } from '@/lib/baseball/import-source-enabled';
 
 // -----------------------------------------------------------------------------
 // Public error types
@@ -320,7 +321,8 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           error instanceof BaseballUnauthorizedError ||
           error instanceof BaseballNoActiveTeamError ||
           error instanceof BaseballCapabilityError ||
-          error instanceof PlayerAccessError
+          error instanceof PlayerAccessError ||
+          error instanceof BaseballDisabledSourceError
         ) {
           await logServerException(
             error,

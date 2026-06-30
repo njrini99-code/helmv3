@@ -279,6 +279,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_class_conflicts (
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.baseball_class_conflicts ENABLE ROW LEVEL SECURITY;
 
 -- Additive guards (in case a partial table already exists).
 ALTER TABLE public.baseball_class_conflicts ADD COLUMN IF NOT EXISTS class_id                 uuid;
@@ -333,7 +334,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS baseball_class_conflicts_dedupe_open_uidx
 --        non-staff_only conflict (their daily schedule). Class detail is
 --        academic-adjacent, so STAFF read requires can_view_academics.
 -- =============================================================================
-ALTER TABLE public.baseball_class_conflicts ENABLE ROW LEVEL SECURITY;
 
 -- SELECT: staff with academics capability who can view the player; OR the
 -- player themselves on their own non-staff_only conflict. No path lets a player

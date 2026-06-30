@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
-import { createClient } from '@/lib/supabase/client';
-import { sanitizeAuthError } from '@/lib/db-error';
+import { changePasswordAction } from '@/app/baseball/actions/auth';
 import { IconChevronRight, IconShield, IconBuilding, IconBell, IconMail } from '@/components/icons';
 import Link from 'next/link';
 
@@ -61,23 +60,21 @@ export default function SettingsPage() {
       return;
     }
 
+    if (!currentPassword.trim()) {
+      showToast('Current password is required', 'error');
+      return;
+    }
+
     setSaving(true);
 
     try {
-      const supabase = createClient();
+      const result = await changePasswordAction(currentPassword, newPassword);
 
-      // Supabase updateUser doesn't require current password verification
-      // The user must be logged in, which is sufficient for password change
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) {
-        showToast(sanitizeAuthError(error, 'updatePassword'), 'error');
+      if (!result.success) {
+        showToast(result.error ?? 'Failed to update password', 'error');
         return;
       }
 
-      // Success - clear form
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');

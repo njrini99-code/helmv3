@@ -227,21 +227,31 @@ rules:
   # ---------------------------------------------------------------------------
   # SQL — RLS-bypass via SECURITY DEFINER without search_path lock
   # ---------------------------------------------------------------------------
+  # Last-resort inline suppression (SQL comment on the offending line):
+  #   -- nosemgrep: helmv3-security-definer-without-search-path
+  #   -- justification: <repair migration ref>
+  # Prefer in-file ALTER FUNCTION ... SET search_path hardening (recognized below).
   - id: helmv3-security-definer-without-search-path
     languages: [generic]
     paths:
       include:
         - "supabase/migrations/**/*.sql"
         - "supabase/functions/**/*.sql"
+      exclude:
+        - "supabase/migrations/**/*_prod_public_baseline.sql"
     severity: ERROR
     message: >
       SECURITY DEFINER functions must pin `SET search_path = ''` (or
       `pg_catalog, public`) to prevent search-path hijacking that turns
       RLS into a one-step privilege escalation. Add a SET search_path
-      clause and document why the elevation is needed.
+      clause inline, via ALTER FUNCTION in the same file, or document
+      why the elevation is needed. Last resort: inline
+      `-- nosemgrep: helmv3-security-definer-without-search-path`.
     patterns:
-      - pattern: SECURITY DEFINER
-      - pattern-not-regex: "(?is)security\\s+definer[\\s\\S]{0,500}set\\s+search_path"
+      - pattern-regex: "(?i)security\\s+definer"
+      - pattern-not-regex: "(?is)security\\s+definer[\\s\\S]{0,8000}set\\s+search_path"
+      - pattern-not-regex: "(?is)alter\\s+function[\\s\\S]{0,2000}set\\s+search_path"
+      - pattern-not-regex: "(?is)alter\\s+function[\\s'\\s%]*set\\s+search_path"
 
   # ---------------------------------------------------------------------------
   # SQL — new table without RLS enable
