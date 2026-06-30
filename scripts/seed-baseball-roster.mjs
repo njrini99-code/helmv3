@@ -1,9 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://qmnssrrolpinvwjjnufo.supabase.co';
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtbnNzcnJvbHBpbnZ3ampudWZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODMyNjg0MCwiZXhwIjoyMDgzOTAyODQwfQ.pW8-66rT0Y3LXcPYSXMPqj0_y0K_AYnPj22nXjdMU6I';
-const ORG_ID = 'd4b0a207-76ca-49ff-ae29-59c26990d474'; // Pacific Coast Conference
-const COACH_ID = '0917b446-e19e-4b25-9d42-3f358dec8e65'; // yup@gmail.com
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const ORG_ID = process.env.BASEBALL_SEED_ORG_ID;
+const COACH_ID = process.env.BASEBALL_SEED_COACH_ID;
+
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  console.error('Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY.');
+  process.exit(1);
+}
+
+if (!ORG_ID || !COACH_ID) {
+  console.error('Set BASEBALL_SEED_ORG_ID and BASEBALL_SEED_COACH_ID for roster seed targets.');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }

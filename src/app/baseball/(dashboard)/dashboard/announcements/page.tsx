@@ -12,6 +12,7 @@ import { getAnnouncementsWithMeta } from '@/app/baseball/actions/announcements';
 import { AnnouncementsCoachView } from '@/components/baseball/announcements/AnnouncementsCoachView';
 import { AnnouncementsPlayerView } from '@/components/baseball/announcements/AnnouncementsPlayerView';
 import { CreateAnnouncementFlow } from '@/components/baseball/announcements/CreateAnnouncementFlow';
+import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';
 
 interface RosterPlayer {
@@ -27,6 +28,7 @@ export default function BaseballAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<BaseballAnnouncementMeta[]>([]);
   const [players, setPlayers] = useState<RosterPlayer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const isCoach = user?.role === 'coach';
 
@@ -39,10 +41,10 @@ export default function BaseballAnnouncementsPage() {
 
     async function fetchData() {
       setLoading(true);
+      setLoadError(null);
 
       const playerId = player?.id || null;
 
-      // Fetch announcements via server action
       const result = await getAnnouncementsWithMeta(
         selectedTeamId!,
         user!.id,
@@ -52,6 +54,9 @@ export default function BaseballAnnouncementsPage() {
 
       if (result.success && result.data) {
         setAnnouncements(result.data);
+      } else {
+        setAnnouncements([]);
+        setLoadError(result.error ?? 'Announcements could not be loaded.');
       }
 
       // For coaches: also fetch roster for the create flow
@@ -141,6 +146,30 @@ export default function BaseballAnnouncementsPage() {
               </p>
             </CardContent>
           </Card>
+        ) : loadError ? (
+          <ReadModelStateNotice
+            state="error"
+            title="Announcements unavailable"
+            onRetry={() => {
+              if (!selectedTeamId || !user) return;
+              setLoading(true);
+              setLoadError(null);
+              void getAnnouncementsWithMeta(
+                selectedTeamId,
+                user.id,
+                isCoach,
+                player?.id || null,
+              ).then((result) => {
+                if (result.success && result.data) {
+                  setAnnouncements(result.data);
+                  setLoadError(null);
+                } else {
+                  setLoadError(result.error ?? 'Announcements could not be loaded.');
+                }
+                setLoading(false);
+              });
+            }}
+          />
         ) : announcements.length === 0 ? (
           <Card variant="glass">
             <CardContent className="p-12 text-center">
