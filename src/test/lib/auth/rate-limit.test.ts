@@ -82,3 +82,49 @@ describe('rate-limit (in-memory fallback)', () => {
     expect(bFresh.allowed).toBe(true);
   });
 });
+
+describe('RATE_LIMITS.DEMO_GATE (Issue #392)', () => {
+  beforeEach(() => {
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  });
+
+  it('is configured with a bounded attempt count and an extended block', async () => {
+    const { RATE_LIMITS } = await import('@/lib/auth/rate-limit');
+    expect(RATE_LIMITS.DEMO_GATE.maxAttempts).toBe(5);
+    expect(RATE_LIMITS.DEMO_GATE.windowMs).toBe(5 * 60 * 1000);
+    expect(RATE_LIMITS.DEMO_GATE.blockDurationMs).toBe(15 * 60 * 1000);
+  });
+
+  it('allows up to maxAttempts demo-gate attempts per identifier', async () => {
+    const { checkRateLimit, RATE_LIMITS } = await import('@/lib/auth/rate-limit');
+    const id = `demo-gate-allow-${Date.now()}-${Math.random()}`;
+
+    for (let i = 0; i < RATE_LIMITS.DEMO_GATE.maxAttempts; i++) {
+      const r = await checkRateLimit(id, RATE_LIMITS.DEMO_GATE);
+      expect(r.allowed).toBe(true);
+    }
+  });
+
+  it('denies and extended-blocks the demo gate once maxAttempts is exceeded', async () => {
+    const { checkRateLimit, RATE_LIMITS } = await import('@/lib/auth/rate-limit');
+    const id = `demo-gate-deny-${Date.now()}-${Math.random()}`;
+
+    for (let i = 0; i < RATE_LIMITS.DEMO_GATE.maxAttempts; i++) {
+      await checkRateLimit(id, RATE_LIMITS.DEMO_GATE);
+    }
+    const overLimit = await checkRateLimit(id, RATE_LIMITS.DEMO_GATE);
+
+    expect(overLimit.allowed).toBe(false);
+    expect(overLimit.remaining).toBe(0);
+    expect(overLimit.blockedUntil).toBeDefined();
+    expect(overLimit.blockedUntil!).toBeGreaterThan(Date.now());
+  });
+
+  it('formats the demo-gate block duration as a friendly remaining time', async () => {
+    const { formatTimeRemaining, RATE_LIMITS } = await import('@/lib/auth/rate-limit');
+    expect(formatTimeRemaining(RATE_LIMITS.DEMO_GATE.blockDurationMs!)).toBe('15 minutes');
+  });
+});

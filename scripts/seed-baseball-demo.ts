@@ -250,6 +250,20 @@ async function main() {
     created_by: COACH_ID,
   }]);
 
+  // --- 1c. Activate demo mode on the seeded team's settings document ------
+  // Issue #392: makes the dormant `demo_mode_enabled` flag explicit/discoverable
+  // for UI affordances (e.g. a "you're in the live demo" banner). The
+  // authoritative write-block for the shared demo coach is enforced at runtime
+  // by withBaseballAction's demo read-only guard (see with-baseball-action.ts),
+  // not by this flag — this only documents intent on the settings row.
+  // baseball_program_settings.team_id is UNIQUE, so onConflict: 'team_id' is
+  // the natural key (no deterministic `id` needed here).
+  await upsert(
+    'baseball_program_settings',
+    [{ team_id: TEAM_ID, demo_mode_enabled: true }],
+    'team_id',
+  );
+
   // --- 2. Players + memberships -----------------------------------
 
   const playerIdByKey: Record<string, string> = {};
