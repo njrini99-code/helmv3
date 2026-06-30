@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { z } from 'zod';
+import type { DeviceTokenResult } from '@/lib/golf/push-device-token.types';
 
 // Device-token payloads arrive from the iOS Capacitor bridge as raw
 // strings — validate before they reach the database.
@@ -15,14 +16,13 @@ const registerDeviceTokenSchema = z.object({
 
 const deviceTokenSchema = z.string().min(1, 'token is required').max(512);
 
-import type { DeviceTokenResult } from '@/lib/golf/push-device-token.types';
-
 /**
  * Register (or refresh) an APNs/FCM device token for the current user.
  * Auth-first per server-action convention; on a missing session it returns
  * a retryable result rather than throwing so the iOS login-confirm cookie
  * race can be retried silently by the caller.
  */
+// nosemgrep: helmv3-action-missing-revalidate -- device-token registry; no cached page reads this table
 // SEMGREP-ALLOW: device-token registry is read directly by the push worker, not cached pages
 export async function registerDeviceToken(
   token: string,
@@ -57,6 +57,7 @@ export async function registerDeviceToken(
   // security policy for table device_tokens"). Reassigning the device to whoever
   // is currently signed in on it is the intended behaviour.
   const admin = createAdminClient();
+  // nosemgrep: helmv3-action-missing-revalidate
   const { error } = await admin
     .from('device_tokens')
     .upsert(
@@ -82,6 +83,7 @@ export async function registerDeviceToken(
 }
 
 /** Soft-deactivate a device token for the current user (auth-first). */
+// nosemgrep: helmv3-action-missing-revalidate -- device-token registry; no cached page reads this table
 export async function unregisterDeviceToken(token: string): Promise<DeviceTokenResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -99,6 +101,7 @@ export async function unregisterDeviceToken(token: string): Promise<DeviceTokenR
     return { success: false, error: 'Invalid device token' };
   }
 
+  // nosemgrep: helmv3-action-missing-revalidate
   const { error } = await supabase
     .from('device_tokens')
     .update({ active: false })
