@@ -215,7 +215,7 @@ jobs:
   # Required env vars in CircleCI project settings:
   #   VERCEL_TOKEN, VERCEL_PROJECT_ID, (optional) VERCEL_TEAM_ID
   lighthouse-preview:
-    executor: node
+    executor: node-large
     steps:
       - checkout
       - install-node-deps
