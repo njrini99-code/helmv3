@@ -158,7 +158,7 @@ let staleActionWarnedThisSession = false;
 /**
  * Client-side report de-duplication.
  *
- * A single flaky tab — e.g. a backgrounded `/golf/dashboard/rounds/new` on a
+ * A single flaky tab — e.g. a backgrounded `/golf/dashboard/rounds/create` on a
  * weak connection throwing `TypeError: network error` every few seconds — was
  * writing hundreds of identical rows to error_logs + Sentry (one client wrote
  * 320 in 8 hours). Collapse identical `(severity|component|message)` reports:

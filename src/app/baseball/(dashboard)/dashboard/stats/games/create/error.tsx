@@ -13,7 +13,7 @@ export default function NewGameError({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/baseball/dashboard/stats/games/new"
+      route="/baseball/dashboard/stats/games/create"
       component="NewGamePage"
       title="New game form unavailable"
       message="We couldn't load the new game form. Please try again."

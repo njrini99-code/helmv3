@@ -53,7 +53,7 @@ import {
 import { IconCalendar, IconMapPin, IconGolf, IconArrowRight, IconPlus } from '@/components/icons';
 import type { GolfQualifier } from '@/lib/types/golf';
 
-const CREATE_HREF = '/golf/dashboard/qualifiers/new';
+const CREATE_HREF = '/golf/dashboard/qualifiers/create';
 const detailHref = (id: string) => `/golf/dashboard/qualifiers/${id}`;
 
 /** Status segments for the filter row. */

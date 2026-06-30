@@ -105,7 +105,7 @@ function EmptyState() {
       description="Complete a few rounds to unlock AI-powered insights about your game. CoachHelm analyzes your performance patterns to provide personalized recommendations."
       action={{
         label: 'Log Your First Round',
-        href: '/golf/dashboard/rounds/new',
+        href: '/golf/dashboard/rounds/create',
       }}
     />
   );

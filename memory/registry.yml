@@ -259,9 +259,9 @@ features:
         - docs/ROUND_REVIEW_ACCURACY_REPORT.md
     code:
       routes:
-        - src/app/golf/(dashboard)/dashboard/rounds/new/**
+        - src/app/golf/(dashboard)/dashboard/rounds/create/**
         - src/app/golf/(dashboard)/dashboard/rounds/continue/**
-        - src/app/golf/(dashboard)/dashboard/rounds/recover/**
+        - src/app/golf/(dashboard)/dashboard/rounds/recover-draft-draft/**
       components:
         - src/components/golf/ShotTrackingComprehensive.tsx
         - src/components/golf/rounds/**

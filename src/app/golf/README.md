@@ -40,7 +40,8 @@ src/app/golf/
 ├── (dashboard)/dashboard/       # All dashboard pages (35+ routes)
 │   ├── hub/                     # Dashboard home
 │   ├── roster/, roster/[id]/    # Team roster + player profiles
-│   ├── rounds/, rounds/new      # Round history + creation
+│   ├── rounds/, rounds/create      # Round history + creation
+│   ├── rounds/recover-draft        # Offline round recovery
 │   ├── rounds/[id]/, rounds/[id]/review  # Round details + AI review
 │   ├── rounds/continue/[id]     # Resume in-progress round
 │   ├── calendar/                # Team calendar + RSVP

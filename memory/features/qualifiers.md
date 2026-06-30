@@ -19,7 +19,7 @@ There are three user surfaces:
 ### Routes
 
 - `src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx`
-- `src/app/golf/(dashboard)/dashboard/qualifiers/new/page.tsx`
+- `src/app/golf/(dashboard)/dashboard/qualifiers/create/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/my-qualifiers/page.tsx`
 - `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**`
@@ -56,7 +56,7 @@ Coach creates qualifier
   -> INSERT golf_qualifier_entries
 
 Player enters a qualifier round
-  -> rounds/new with qualifier context
+  -> rounds/create with qualifier context
   -> submitGolfRoundComprehensive()
   -> WRITE golf_rounds.qualifier_id
   -> WRITE golf_holes and golf_shots

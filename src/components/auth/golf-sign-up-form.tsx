@@ -318,10 +318,10 @@ export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
         disabled={isLoading}
         className="
           w-full py-3
-          bg-primary-600 text-white font-semibold text-sm
-          rounded-xl shadow-lg shadow-primary-600/25
+          bg-primary-700 text-white font-semibold text-sm
+          rounded-xl shadow-lg shadow-primary-700/25
           transition-all duration-200
-          hover:bg-primary-700 hover:shadow-primary-600/30
+          hover:bg-primary-800 hover:shadow-primary-700/30
           active:scale-[0.98]
           disabled:opacity-50 disabled:cursor-not-allowed
           flex items-center justify-center

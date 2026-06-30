@@ -111,7 +111,7 @@ test.describe('Cloud Course Library — authenticated flow', () => {
   test('"Browse course library" on new round opens the tee picker', async ({
     page,
   }) => {
-    await page.goto('/golf/dashboard/rounds/new');
+    await page.goto('/golf/dashboard/rounds/create');
 
     const browse = page.getByRole('button', { name: /Browse course library/i });
     // Only present when not resuming an in-progress round; guard so the test
@@ -136,7 +136,7 @@ test.describe('Cloud Course Library — authenticated flow', () => {
   test('capture: premium course picker screenshots', async ({ page }) => {
     const dir = 'e2e-screenshots';
 
-    await page.goto('/golf/dashboard/rounds/new');
+    await page.goto('/golf/dashboard/rounds/create');
     const browse = page.getByRole('button', { name: /Browse course library/i });
     await browse.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
     if (!(await browse.isVisible().catch(() => false))) {

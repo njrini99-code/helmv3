@@ -23,7 +23,7 @@
  *   • Concluded section shows an honest subtle EmptyState; never a fabricated
  *     past qualifier.
  *
- * The "Start qualifying round" CTA deep-links to rounds/new?qualifier=<id> — the
+ * The "Start qualifying round" CTA deep-links to rounds/create?qualifier=<id> — the
  * already-wired entry path that auto-selects the qualifier + sets round_type.
  *
  * Tokens ONLY: bg-canvas, text-text-*, font-fw-display/sans/mono, rounded-card,
@@ -47,7 +47,7 @@ import { IconCalendar, IconMapPin, IconArrowRight, IconGolf } from '@/components
 import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
 
 const detailHref = (id: string) => `/golf/dashboard/qualifiers/${id}`;
-const startRoundHref = (id: string) => `/golf/dashboard/rounds/new?qualifier=${id}`;
+const startRoundHref = (id: string) => `/golf/dashboard/rounds/create?qualifier=${id}`;
 
 export interface FairwayMyQualifiersProps {
   qualifiers: PlayerQualifierInfo[];

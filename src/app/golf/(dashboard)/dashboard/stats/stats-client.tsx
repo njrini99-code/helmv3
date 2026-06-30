@@ -1264,7 +1264,7 @@ export default function StatsClient({
                   transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5, duration: 0.4 })}
                 >
                   <a
-                    href="/golf/dashboard/rounds/new"
+                    href="/golf/dashboard/rounds/create"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-colors duration-200 min-h-[44px]"
                   >
                     <IconPlus size={16} />

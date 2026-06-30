@@ -13,7 +13,7 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/golf/dashboard/rounds/new"
+      route="/golf/dashboard/rounds/create"
       component="NewRoundPage"
       title="Failed to load round entry"
       message="We couldn't load round entry. Please try again."

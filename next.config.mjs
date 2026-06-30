@@ -113,9 +113,43 @@ const nextConfig = {
   // The previous custom config forced ALL node_modules into a single ~3MB
   // "vendor" chunk, causing render-blocking on mobile devices.
 
-  // Redirects (if needed)
+  // Permanent redirects for renamed routes (bookmarks, external links, SEO)
   async redirects() {
-    return [];
+    return [
+      {
+        source: '/golf/dashboard/rounds/new',
+        destination: '/golf/dashboard/rounds/create',
+        permanent: true,
+      },
+      {
+        source: '/golf/dashboard/rounds/recover',
+        destination: '/golf/dashboard/rounds/recover-draft',
+        permanent: true,
+      },
+      {
+        source: '/golf/dashboard/qualifiers/new',
+        destination: '/golf/dashboard/qualifiers/create',
+        permanent: true,
+      },
+      {
+        source: '/baseball/dashboard/stats/games/new',
+        destination: '/baseball/dashboard/stats/games/create',
+        permanent: true,
+      },
+      {
+        source: '/golf/dashboard/coachhelm/genome/compare',
+        destination: '/golf/dashboard/coachhelm/genome/compare-players',
+        permanent: true,
+      },
+      // Public player profile moved from /player/[id] → /profile/[id]
+      // UUID constraint avoids catching /baseball/player/today, /passport, etc.
+      {
+        source:
+          '/baseball/player/:id([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
+        destination: '/baseball/profile/:id',
+        permanent: true,
+      },
+    ];
   },
 
   // Headers for caching and security

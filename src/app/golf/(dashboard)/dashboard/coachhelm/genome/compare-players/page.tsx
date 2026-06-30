@@ -1,7 +1,7 @@
 /**
  * W34 — coach desktop genome compare.
  *
- * /dashboard/coachhelm/genome/compare?p1=&p2=  · coach-only.
+ * /dashboard/coachhelm/genome/compare-players-players?p1=&p2=  · coach-only.
  *
  * Two players overlaid on the same radar so the coach can see "who's
  * the better fit for course X" at a glance. p2 is optional — when

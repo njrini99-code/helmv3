@@ -30,7 +30,7 @@ Helm Sports Labs route ownership for GolfHelm and BaseballHelm. Canonical URLs n
 | --- | --- | --- | --- |
 | `/golf/dashboard/coachhelm` | CoachHelm | player | Player CoachHelm entry |
 | `/golf/dashboard/my-qualifiers` | Qualifiers | player | |
-| `/golf/dashboard/rounds/new` | Rounds | player | Round entry |
+| `/golf/dashboard/rounds/create` | Rounds | player | Round entry |
 
 ## CoachHelm surface classification
 

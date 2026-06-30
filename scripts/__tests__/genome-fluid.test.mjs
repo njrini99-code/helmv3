@@ -42,7 +42,7 @@ const CONSUMER_FILES = [
   ),
   join(
     REPO_ROOT,
-    'src/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/page.tsx',
+    'src/app/golf/(dashboard)/dashboard/coachhelm/genome/compare-players-players-players/page.tsx',
   ),
   join(
     REPO_ROOT,

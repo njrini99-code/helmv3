@@ -202,9 +202,9 @@ const TABLE: TableRow[] = [
   { route: '/golf/dashboard/analytics/coachhelm', role: 'coach', category: 'analytics', criticality: 'medium' },
   { route: '/golf/dashboard/settings/coaching-intelligence', role: 'coach', category: 'settings', criticality: 'medium' },
   { route: '/golf/dashboard/development', role: 'coach', category: 'coachhelm', criticality: 'high' },
-  { route: '/golf/dashboard/qualifiers/new', role: 'coach', category: 'qualifiers', criticality: 'medium' },
+  { route: '/golf/dashboard/qualifiers/create', role: 'coach', category: 'qualifiers', criticality: 'medium' },
   { route: '/golf/dashboard/stats/team', role: 'coach', category: 'stats', criticality: 'high' },
-  { route: '/golf/dashboard/coachhelm/genome/compare', role: 'coach', category: 'coachhelm', criticality: 'medium' },
+  { route: '/golf/dashboard/coachhelm/genome/compare-players-players-players', role: 'coach', category: 'coachhelm', criticality: 'medium' },
   {
     route: '/golf/dashboard/recruiting',
     role: 'coach',
@@ -231,8 +231,8 @@ const TABLE: TableRow[] = [
   { route: '/golf/dashboard/my-game-profile', role: 'player', category: 'player', criticality: 'medium' },
   { route: '/golf/dashboard/my-standing', role: 'player', category: 'player', criticality: 'medium' },
   { route: '/golf/dashboard/classes', role: 'player', category: 'player', criticality: 'low' },
-  { route: '/golf/dashboard/rounds/new', role: 'player', category: 'rounds', criticality: 'high' },
-  { route: '/golf/dashboard/rounds/recover', role: 'player', category: 'rounds', criticality: 'low' },
+  { route: '/golf/dashboard/rounds/create', role: 'player', category: 'rounds', criticality: 'high' },
+  { route: '/golf/dashboard/rounds/recover-draft-draft', role: 'player', category: 'rounds', criticality: 'low' },
 
   // --- SHARED — emit BOTH coach + player. auth true, enabled true ---
   { route: '/golf/dashboard', label: 'Dashboard', role: 'shared', category: 'core', criticality: 'high' },

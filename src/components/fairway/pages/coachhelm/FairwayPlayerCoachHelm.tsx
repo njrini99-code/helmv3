@@ -438,7 +438,7 @@ export function FairwayPlayerCoachHelm({
                 description="Log a few rounds and CoachHelm will surface the patterns that move your scores."
                 action={
                   <Button asChild variant="primary">
-                    <Link href="/golf/dashboard/rounds/new">Log your first round</Link>
+                    <Link href="/golf/dashboard/rounds/create">Log your first round</Link>
                   </Button>
                 }
               />

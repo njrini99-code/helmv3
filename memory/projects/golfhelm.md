@@ -59,7 +59,7 @@
 | `/golf/dashboard/analytics/coachhelm` | CoachHelm analytics |
 | `/golf/dashboard/settings/coaching-intelligence` | AI philosophy config |
 | `/golf/dashboard/development` | Player development plans (focus areas) |
-| `/golf/dashboard/qualifiers/new` | Create qualifier |
+| `/golf/dashboard/qualifiers/create` | Create qualifier |
 | `/golf/dashboard/stats/team` | Team-level analytics |
 
 ### Player-Only Routes
@@ -70,7 +70,7 @@
 | `/golf/dashboard/my-development` | My development focus areas |
 | `/golf/dashboard/my-qualifiers` | My qualifier progress |
 | `/golf/dashboard/my-insights` | → Redirects to `/dashboard/coachhelm` |
-| `/golf/dashboard/rounds/new` | Create new round |
+| `/golf/dashboard/rounds/create` | Create new round |
 | `/golf/dashboard/rounds/continue/[id]` | Resume in-progress round |
 | `/golf/dashboard/rounds/[id]/review` | AI round review |
 | `/golf/dashboard/classes` | Class schedule management |
@@ -314,7 +314,7 @@ src/lib/coachhelm/
 - `/baseball/dashboard/stats`
 - `/baseball/dashboard/stats/games`
 - `/baseball/dashboard/stats/games/[gameId]`
-- `/baseball/dashboard/stats/games/new`
+- `/baseball/dashboard/stats/games/create`
 - `/baseball/dashboard/stats/season`
 - `/baseball/dashboard/stats/upload`
 - `/baseball/dashboard/tasks`
@@ -358,7 +358,7 @@ src/lib/coachhelm/
 - `/golf/dashboard/coachhelm`
 - `/golf/dashboard/coachhelm/chat`
 - `/golf/dashboard/coachhelm/genome/[playerId]`
-- `/golf/dashboard/coachhelm/genome/compare`
+- `/golf/dashboard/coachhelm/genome/compare-players-players-players`
 - `/golf/dashboard/coachhelm/qualifying/[id]`
 - `/golf/dashboard/courses`
 - `/golf/dashboard/development`
@@ -378,7 +378,7 @@ src/lib/coachhelm/
 - `/golf/dashboard/players/[playerId]/game/print`
 - `/golf/dashboard/qualifiers`
 - `/golf/dashboard/qualifiers/[id]`
-- `/golf/dashboard/qualifiers/new`
+- `/golf/dashboard/qualifiers/create`
 - `/golf/dashboard/recruiting`
 - `/golf/dashboard/roster`
 - `/golf/dashboard/roster/[id]`
@@ -386,8 +386,8 @@ src/lib/coachhelm/
 - `/golf/dashboard/rounds/[id]`
 - `/golf/dashboard/rounds/[id]/review`
 - `/golf/dashboard/rounds/continue/[id]`
-- `/golf/dashboard/rounds/new`
-- `/golf/dashboard/rounds/recover`
+- `/golf/dashboard/rounds/create`
+- `/golf/dashboard/rounds/recover-draft-draft`
 - `/golf/dashboard/settings`
 - `/golf/dashboard/settings/coaching-intelligence`
 - `/golf/dashboard/settings/notifications`

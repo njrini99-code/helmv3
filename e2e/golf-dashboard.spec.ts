@@ -45,7 +45,7 @@ test.describe('Golf Dashboard - Player Flow', () => {
 
   test('should access new round page and see all steps', async ({ page }) => {
     // Navigate to new round page
-    await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
+    await page.goto('http://localhost:3000/golf/dashboard/rounds/create');
 
     // Step 1: Setup - Should see course setup form
     await expect(page.locator('h1')).toContainText('New Round');
@@ -114,7 +114,7 @@ test.describe('Golf Dashboard - Player Flow', () => {
 
   test('should verify emerald color scheme throughout', async ({ page }) => {
     // Go to new round page
-    await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
+    await page.goto('http://localhost:3000/golf/dashboard/rounds/create');
 
     // Check for emerald focus rings on inputs
     const courseNameInput = page.locator('#courseName');

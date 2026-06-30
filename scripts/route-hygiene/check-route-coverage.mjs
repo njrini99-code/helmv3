@@ -13,7 +13,7 @@ const CRITICAL_ROUTES = [
   '/golf/dashboard',
   '/golf/dashboard/stats',
   '/golf/dashboard/rounds',
-  '/golf/dashboard/rounds/new',
+  '/golf/dashboard/rounds/create',
   '/golf/dashboard/coachhelm',
   '/golf/dashboard/coachhelm/chat',
   '/golf/dashboard/roster',

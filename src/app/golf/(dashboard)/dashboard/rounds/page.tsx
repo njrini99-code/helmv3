@@ -233,7 +233,7 @@ export default async function RoundsPage() {
           subtitle={`${rounds.length} round${rounds.length !== 1 ? 's' : ''} recorded`}
         >
           {userRole === 'player' && (
-            <Link href="/golf/dashboard/rounds/new">
+            <Link href="/golf/dashboard/rounds/create">
               <Button variant="primary" className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                 <IconPlus size={16} />
                 New Round
@@ -269,7 +269,7 @@ export default async function RoundsPage() {
                   : 'Start tracking your golf rounds to see stats and improvement over time.'}
               </p>
               {userRole === 'player' && (
-                <Link href="/golf/dashboard/rounds/new">
+                <Link href="/golf/dashboard/rounds/create">
                   <Button variant="primary" className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                     <IconPlus size={16} />
                     Submit First Round

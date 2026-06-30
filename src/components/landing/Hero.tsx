@@ -75,7 +75,7 @@ function EmailCapture() {
         <Button variant="primary"
           type="submit"
           disabled={loading}
-          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-[background-color,transform,opacity] duration-150 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
+          className="px-7 py-3.5 rounded-xl bg-primary-700 hover:bg-primary-600 text-white font-semibold text-sm transition-[background-color,transform,opacity] duration-150 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -307,7 +307,7 @@ export function Hero() {
                     <svg className="w-3 h-3 text-primary-600/60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    <span className="text-eyebrow text-white/30 tracking-wide">helmsportslabs.com/golf/dashboard</span>
+                    <span className="text-eyebrow text-white/60 tracking-wide">helmsportslabs.com/golf/dashboard</span>
                   </div>
                   {/* Action icons */}
                   <div className="flex items-center gap-2">

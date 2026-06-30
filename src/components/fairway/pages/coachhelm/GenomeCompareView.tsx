@@ -56,7 +56,7 @@ import { IconCheck } from '@/components/icons';
 import { Users as LucideUsers } from 'lucide-react';
 
 /* ---------------------------------------------------------------------------
- * Props — mirror the genome/compare route's reads (serializable)
+ * Props — mirror the genome/compare-players route's reads (serializable)
  * ------------------------------------------------------------------------- */
 
 export interface ComparePlayerOption {
@@ -388,7 +388,7 @@ function ComparePicker({
     const params = new URLSearchParams();
     params.set(paramName, id);
     if (otherParamValue) params.set(otherParam, otherParamValue);
-    return `/golf/dashboard/coachhelm/genome/compare?${params.toString()}`;
+    return `/golf/dashboard/coachhelm/genome/compare-players?${params.toString()}`;
   }
 
   return (

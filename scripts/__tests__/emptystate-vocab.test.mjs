@@ -120,8 +120,8 @@ test('intentionally action-less configs (search, camps) stay action-less', () =>
 // Lock the exact hrefs that drive navigation CTAs so a copy edit can never
 // silently re-point or drop them.
 const REQUIRED_HREFS = {
-  rounds: '/golf/dashboard/rounds/new',
-  stats: '/golf/dashboard/rounds/new',
+  rounds: '/golf/dashboard/rounds/create',
+  stats: '/golf/dashboard/rounds/create',
   watchlist: '/baseball/dashboard/discover',
   pipeline: '/baseball/dashboard/discover',
 };

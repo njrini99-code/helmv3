@@ -69,7 +69,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'coachhelm-patterns', label: 'CoachHelm Patterns', description: 'Recurring player and team patterns', icon: <IconTarget size={18} />, href: '/golf/dashboard/patterns', keywords: ['patterns', 'mining', 'trends', 'evidence', 'coachhelm'] },
     { id: 'coachhelm-analytics', label: 'CoachHelm Analytics', description: 'Insight effectiveness', icon: <IconGauge size={18} />, href: '/golf/dashboard/analytics/coachhelm', keywords: ['analytics', 'effectiveness', 'coachhelm', 'metrics'] },
     { id: 'coachhelm-chat', label: 'CoachHelm Chat', description: 'Chat history', icon: <IconBot size={18} />, href: '/golf/dashboard/coachhelm/chat', keywords: ['chat', 'conversation', 'coachhelm', 'history', 'ask'] },
-    { id: 'genome-compare', label: 'Genome Compare', description: 'Compare player genomes', icon: <IconChartRadar size={18} />, href: '/golf/dashboard/coachhelm/genome/compare', keywords: ['genome', 'compare', 'radar', 'persona', 'profile'] },
+    { id: 'genome-compare', label: 'Genome Compare', description: 'Compare player genomes', icon: <IconChartRadar size={18} />, href: '/golf/dashboard/coachhelm/genome/compare-players', keywords: ['genome', 'compare', 'radar', 'persona', 'profile'] },
     { id: 'qualifying-selection', label: 'Selection Workspace', description: 'Qualifier selection', icon: <IconCrosshair size={18} />, href: '/golf/dashboard/qualifiers', keywords: ['qualifying', 'selection', 'workspace', 'lineup', 'tournament', 'pick'] },
     { id: 'courses', label: 'Course Library', description: 'Browse courses, tees & saved home courses', icon: <IconMapPin size={18} />, href: '/golf/dashboard/courses', keywords: ['course', 'courses', 'library', 'tees', 'tee', 'facility', 'saved'] },
     { id: 'roster', label: 'Go to Roster', description: 'Manage your team players', icon: <IconUsers size={18} />, href: '/golf/dashboard/roster', keywords: ['players', 'team', 'members'] },
@@ -92,7 +92,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   ];
 
   const playerQuickActions: CommandItemSpec[] = [
-    { id: 'log-round', label: 'Log a Round', description: 'Start a new round entry', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds/new', keywords: ['log', 'new', 'submit', 'enter', 'round'] },
+    { id: 'log-round', label: 'Log a Round', description: 'Start a new round entry', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds/create', keywords: ['log', 'new', 'submit', 'enter', 'round'] },
     { id: 'insights', label: 'CoachHelm AI', description: 'Personalized AI insights', icon: <IconSparkles size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'coachhelm', 'focus'] },
     { id: 'rounds', label: 'My Rounds', description: 'View and submit rounds', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds', keywords: ['scores', 'games'] },
     { id: 'courses', label: 'Course Library', description: 'Browse courses & tee sets', icon: <IconMapPin size={18} />, href: '/golf/dashboard/courses', keywords: ['course', 'courses', 'library', 'tees', 'tee', 'facility'] },

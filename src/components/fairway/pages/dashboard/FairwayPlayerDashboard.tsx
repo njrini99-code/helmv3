@@ -251,7 +251,7 @@ export function FairwayPlayerDashboard({ data, enhancedData }: FairwayPlayerDash
 
   const newRoundCta = (
     <Button asChild variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
-      <Link href="/golf/dashboard/rounds/new">New round</Link>
+      <Link href="/golf/dashboard/rounds/create">New round</Link>
     </Button>
   );
 
@@ -299,7 +299,7 @@ export function FairwayPlayerDashboard({ data, enhancedData }: FairwayPlayerDash
               icon={<Flag aria-hidden className="h-full w-full" strokeWidth={2} />}
               actions={
                 <Button asChild variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
-                  <Link href="/golf/dashboard/rounds/new">Submit your first round</Link>
+                  <Link href="/golf/dashboard/rounds/create">Submit your first round</Link>
                 </Button>
               }
             >
@@ -503,7 +503,7 @@ export function FairwayPlayerDashboard({ data, enhancedData }: FairwayPlayerDash
                     description="Your logged rounds will show up here."
                     action={
                       <Button asChild variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
-                        <Link href="/golf/dashboard/rounds/new">Submit a round</Link>
+                        <Link href="/golf/dashboard/rounds/create">Submit a round</Link>
                       </Button>
                     }
                   />

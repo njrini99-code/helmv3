@@ -726,7 +726,7 @@ export function FairwayStatsCockpit({ playerId, className, isOwnStats = false }:
           action={
             isOwnStats ? (
               <Button asChild variant="primary">
-                <Link href="/golf/dashboard/rounds/new">Log a round</Link>
+                <Link href="/golf/dashboard/rounds/create">Log a round</Link>
               </Button>
             ) : undefined
           }

@@ -196,7 +196,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
   if (isPlayer && canPlayRound) {
     primaryAction = (
       <Button asChild variant="primary" size="md">
-        <Link href={`/golf/dashboard/rounds/new?qualifier=${qualifierId}`}>
+        <Link href={`/golf/dashboard/rounds/create?qualifier=${qualifierId}`}>
           Play qualifier round
         </Link>
       </Button>

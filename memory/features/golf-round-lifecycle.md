@@ -15,11 +15,11 @@ This is one of the highest-risk product areas because a broken write path can lo
 ### Routes
 
 - `src/app/golf/(dashboard)/dashboard/rounds/page.tsx`
-- `src/app/golf/(dashboard)/dashboard/rounds/new/**`
+- `src/app/golf/(dashboard)/dashboard/rounds/create/**`
 - `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/**`
 - `src/app/golf/(dashboard)/dashboard/rounds/[id]/**`
 - `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**`
-- `src/app/golf/(dashboard)/dashboard/rounds/recover/**`
+- `src/app/golf/(dashboard)/dashboard/rounds/recover-draft-draft/**`
 
 ### Actions
 

@@ -344,7 +344,7 @@ export function FairwayRoundsLibrary({
 
   const primaryAction = !isCoach ? (
     <Button asChild variant="primary" size="md">
-      <Link href="/golf/dashboard/rounds/new">New round</Link>
+      <Link href="/golf/dashboard/rounds/create">New round</Link>
     </Button>
   ) : undefined;
 
@@ -479,7 +479,7 @@ export function FairwayRoundsLibrary({
             action={
               !isCoach ? (
                 <Button asChild variant="primary" size="md">
-                  <Link href="/golf/dashboard/rounds/new">Log your first round</Link>
+                  <Link href="/golf/dashboard/rounds/create">Log your first round</Link>
                 </Button>
               ) : undefined
             }

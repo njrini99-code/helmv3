@@ -56,9 +56,13 @@ async function crawlPage(
   page.on('pageerror', (err) => consoleErrors.push(err.message));
   page.on('requestfailed', (req) => {
     const url = req.url();
-    if (!url.includes('_next') && !url.includes('favicon')) {
-      failedRequests.push(`${req.failure()?.errorText ?? 'failed'} ${url}`);
+    if (url.includes('_next') || url.includes('favicon') || url.includes('sentry.io')) {
+      return;
     }
+    const errText = req.failure()?.errorText ?? 'failed';
+    // Benign during client/server redirects — the navigation aborts in-flight beacons.
+    if (errText.includes('ERR_ABORTED')) return;
+    failedRequests.push(`${errText} ${url}`);
   });
 
   const response = await page.goto(targetPath, { waitUntil: 'domcontentloaded', timeout: 30_000 });

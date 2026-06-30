@@ -100,7 +100,7 @@ import type { Player, Coach, Organization } from '@/lib/types';
 | CoachHelm Analytics | `/dashboard/analytics/coachhelm` | golf_insight_effectiveness | coachhelm-analytics.ts |
 | Coaching Settings | `/dashboard/settings/coaching-intelligence` | golf_coach_philosophy | (in settings page) |
 | Development Plans | `/dashboard/development` | golf_player_focus_areas | development.ts |
-| Create Qualifier | `/dashboard/qualifiers/new` | golf_qualifiers | golf.ts |
+| Create Qualifier | `/dashboard/qualifiers/create` | golf_qualifiers | golf.ts |
 | Team Stats | `/dashboard/stats/team` | golf_player_stats_cache | stats.ts, stats-v2.ts |
 
 ### Player-Only Features
@@ -110,7 +110,7 @@ import type { Player, Coach, Organization } from '@/lib/types';
 | Player CoachHelm | `/dashboard/coachhelm` | golf_predictions | shot-analytics.ts |
 | My Development | `/dashboard/my-development` | golf_player_focus_areas | development.ts |
 | My Qualifiers | `/dashboard/my-qualifiers` | golf_qualifier_entries | golf.ts |
-| Round Entry | `/dashboard/rounds/new` | golf_rounds | golf.ts |
+| Round Entry | `/dashboard/rounds/create` | golf_rounds | golf.ts |
 | Continue Round | `/dashboard/rounds/continue/[id]` | golf_shots | golf.ts |
 | Round Review | `/dashboard/rounds/[id]/review` | golf_round_reviews | round-reviews.ts, round-review-system.ts |
 | Classes | `/dashboard/classes` | golf_player_classes | (inline) |

@@ -196,7 +196,7 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              router.push(`/golf/dashboard/rounds/new?qualifier=${qualifier.id}`);
+                              router.push(`/golf/dashboard/rounds/create?qualifier=${qualifier.id}`);
                             }}
                             className="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
                           >

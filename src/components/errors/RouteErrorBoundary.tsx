@@ -206,7 +206,7 @@ export function RouteErrorBoundary({
       // Transient-network and generic-load failures are auto-retried below and
       // shown to the user as "temporary" — they are NOT incidents. Logging them
       // at 'error' let a single flaky/backgrounded tab flood error_logs + Sentry
-      // (one client wrote 320 `severity:error` rows from /rounds/new in 8h).
+      // (one client wrote 320 `severity:error` rows from /rounds/create in 8h).
       // Downgrade to 'medium' (warning) so they stay discoverable without
       // polluting the error feed — but ONLY for pure client transience. A real
       // HTTP 5xx (isServer5xx) stays at 'high' so a backend outage still pages,
@@ -215,7 +215,7 @@ export function RouteErrorBoundary({
   }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, isServer5xx, retryCount]);
 
   // Auto-retry for transient errors OR generic load failures. Two guards stop the
-  // self-perpetuating retry loop a backgrounded /rounds/new tab created: reset()
+  // self-perpetuating retry loop a backgrounded /rounds/create tab created: reset()
   // remounts this boundary and resets the in-component retryCount to 0, so
   // component state alone can never cap retries across reset cycles.
   useEffect(() => {

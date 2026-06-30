@@ -323,7 +323,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
             {canPlayRound && (
               <div className="mt-4 pt-4 border-t border-warm-200/60">
                 <Link
-                  href={`/golf/dashboard/rounds/new?qualifier=${id}`}
+                  href={`/golf/dashboard/rounds/create?qualifier=${id}`}
                   className="inline-flex items-center gap-2 px-5 py-3 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200"
                 >
                   <IconTrophy size={16} />

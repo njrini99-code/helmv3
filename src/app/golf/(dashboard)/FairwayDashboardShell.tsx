@@ -649,7 +649,7 @@ function FairwayDashboardContent({
   // top bar must not compete with the round controls. The page brings its own
   // `.fairway-ds` scope + bg; we only stick its control header below the notch.
   const isImmersive =
-    pathname === '/golf/dashboard/rounds/new' || pathname.startsWith('/golf/dashboard/rounds/continue');
+    pathname === '/golf/dashboard/rounds/create' || pathname.startsWith('/golf/dashboard/rounds/continue');
 
   // Immersive routes render no drawer; if the bridged drawer state is somehow
   // open, force it closed so SidebarProvider's body-scroll-lock can't soft-lock

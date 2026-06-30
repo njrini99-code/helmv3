@@ -65,7 +65,7 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
     description: 'Post your first round to start tracking your game.',
     action: {
       label: 'Submit Round',
-      href: '/golf/dashboard/rounds/new',
+      href: '/golf/dashboard/rounds/create',
     },
   },
   calendar: {
@@ -90,7 +90,7 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
     description: 'Post a round and your numbers will start building here.',
     action: {
       label: 'Submit a Round',
-      href: '/golf/dashboard/rounds/new',
+      href: '/golf/dashboard/rounds/create',
     },
   },
   qualifiers: {

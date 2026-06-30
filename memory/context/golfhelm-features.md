@@ -65,7 +65,7 @@ Players create rounds with shot-by-shot tracking. Rounds populate stats, trigger
 
 ### Data Flow
 ```
-/golf/dashboard/rounds/new → NewRoundClient (4-step wizard)
+/golf/dashboard/rounds/create → NewRoundClient (4-step wizard)
   Step 1: Setup (course, type, qualifier selection, saved courses)
   Step 2: Hole config (par/yardage per hole, or skip if saved course)
   Step 3: Shot tracking (ShotTrackingComprehensive component)
@@ -91,12 +91,12 @@ Players create rounds with shot-by-shot tracking. Rounds populate stats, trigger
 ### Key Files
 | Type | Path |
 |------|------|
-| Route (new) | `src/app/golf/(dashboard)/dashboard/rounds/new/page.tsx` |
+| Route (new) | `src/app/golf/(dashboard)/dashboard/rounds/create/page.tsx` |
 | Route (list) | `src/app/golf/(dashboard)/dashboard/rounds/page.tsx` |
 | Route (detail) | `src/app/golf/(dashboard)/dashboard/rounds/[id]/page.tsx` |
 | Route (review) | `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/page.tsx` |
 | Route (continue) | `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx` |
-| Client wizard | `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` |
+| Client wizard | `src/app/golf/(dashboard)/dashboard/rounds/create/new-round-client.tsx` |
 | Shot tracking | `src/components/golf/ShotTrackingComprehensive.tsx` |
 | Actions | `src/app/golf/actions/golf.ts` (submit, save, delete) |
 | Drafts | `src/app/golf/actions/round-drafts.ts` |
@@ -206,7 +206,7 @@ Display: getQualifierLeaderboard() → positions, ties, totals
 |------|------|
 | Route (list) | `src/app/golf/(dashboard)/dashboard/qualifiers/page.tsx` |
 | Route (detail) | `src/app/golf/(dashboard)/dashboard/qualifiers/[id]/page.tsx` |
-| Route (new) | `src/app/golf/(dashboard)/dashboard/qualifiers/new/page.tsx` |
+| Route (new) | `src/app/golf/(dashboard)/dashboard/qualifiers/create/page.tsx` |
 | Actions | `src/app/golf/actions/golf.ts` (qualifier functions) |
 | Components | `src/components/golf/qualifiers/` |
 | Hook | `src/hooks/golf/use-qualifier-realtime.ts` |
@@ -915,7 +915,7 @@ Player view of qualifying tournaments they're entered in. Shows progress, scores
   → Progress: rounds completed / total rounds
   → Score and to-par display
   → Status badges: Upcoming (slate), In Progress (amber), Complete (green), Ended (slate)
-  → Action: "Enter Round" button for in-progress qualifiers → rounds/new
+  → Action: "Enter Round" button for in-progress qualifiers → rounds/create
   → Link to full leaderboard → qualifiers/[id]
 ```
 

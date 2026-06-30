@@ -1515,7 +1515,7 @@ export default function NewRoundClient() {
         setError('');
         showToast('Round saved on this device. Opening recovery flow.', 'warning');
         startTransition(() => {
-          router.push('/golf/dashboard/rounds/recover?from=submit');
+          router.push('/golf/dashboard/rounds/recover-draft?from=submit');
         });
         return;
       }

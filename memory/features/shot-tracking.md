@@ -14,14 +14,14 @@ The current round flow uses a wizard for setup, hole configuration, shot capture
 
 ### Routes
 
-- `src/app/golf/(dashboard)/dashboard/rounds/new/**`
+- `src/app/golf/(dashboard)/dashboard/rounds/create/**`
 - `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/**`
-- `src/app/golf/(dashboard)/dashboard/rounds/recover/**`
+- `src/app/golf/(dashboard)/dashboard/rounds/recover-draft-draft/**`
 
 ### Components
 
 - `src/components/golf/ShotTrackingComprehensive.tsx`
-- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx`
+- `src/app/golf/(dashboard)/dashboard/rounds/create/new-round-client.tsx`
 - `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx`
 - `src/components/golf/rounds/**`
 

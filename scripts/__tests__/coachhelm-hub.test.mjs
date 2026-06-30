@@ -47,7 +47,7 @@ const SURFACES = [
   { name: 'insights', href: '/golf/dashboard/insights' },
   { name: 'analytics/coachhelm', href: '/golf/dashboard/analytics/coachhelm' },
   { name: 'chat', href: '/golf/dashboard/coachhelm/chat' },
-  { name: 'genome', href: '/golf/dashboard/coachhelm/genome/compare' },
+  { name: 'genome', href: '/golf/dashboard/coachhelm/genome/compare-players-players-players' },
   { name: 'qualifying', href: '/golf/dashboard/qualifiers' },
   { name: 'coaching-intelligence', href: '/golf/dashboard/settings/coaching-intelligence' },
 ];

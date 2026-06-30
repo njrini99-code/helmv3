@@ -250,7 +250,7 @@ export function FairwayMyGameProfile({
                 shape automatically.
               </p>
               <Button asChild variant="primary">
-                <Link href="/golf/dashboard/rounds/new">Log a round</Link>
+                <Link href="/golf/dashboard/rounds/create">Log a round</Link>
               </Button>
             </div>
           </InstrumentPanel>

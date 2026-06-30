@@ -26,7 +26,7 @@ test.describe('Golf Round - Complete Flow', () => {
 
   test('should complete a full round entry', async ({ page }) => {
     // Navigate to new round page
-    await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
+    await page.goto('http://localhost:3000/golf/dashboard/rounds/create');
 
     // Step 1: Course Setup
     await page.fill('#courseName', 'E2E Test Course');
@@ -57,7 +57,7 @@ test.describe('Golf Round - Complete Flow', () => {
 
   test('should show validation errors for invalid input', async ({ page }) => {
     // Navigate to new round page
-    await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
+    await page.goto('http://localhost:3000/golf/dashboard/rounds/create');
 
     // Try to proceed without filling course name
     const nextButton = page.locator('button:has-text("Next: Configure Holes")');
@@ -72,7 +72,7 @@ test.describe('Golf Round - Complete Flow', () => {
 
   test('should save round in progress', async ({ page }) => {
     // Navigate to new round page
-    await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
+    await page.goto('http://localhost:3000/golf/dashboard/rounds/create');
 
     // Setup course
     await page.fill('#courseName', 'Progress Test Course');
@@ -113,7 +113,7 @@ test.describe('Golf Round - Complete Flow', () => {
 
   test('should handle network errors gracefully', async ({ page }) => {
     // Navigate to new round page
-    await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
+    await page.goto('http://localhost:3000/golf/dashboard/rounds/create');
 
     // Setup course
     await page.fill('#courseName', 'Network Error Test');

@@ -81,11 +81,11 @@ const ALLOWLIST = new Map([
 
   // Sub-action / utility pages reached from a parent that IS in the manifest.
   [
-    '/golf/dashboard/qualifiers/new',
+    '/golf/dashboard/qualifiers/create',
     'create-qualifier sub-action; reached from the Qualifiers list',
   ],
   [
-    '/golf/dashboard/rounds/recover',
+    '/golf/dashboard/rounds/recover-draft-draft',
     'round-recovery utility; reached from My Rounds',
   ],
 
@@ -95,7 +95,7 @@ const ALLOWLIST = new Map([
   // from the Qualifiers list and Genome Compare static entries respectively.)
   [
     '/golf/dashboard/coachhelm/genome/[playerId]',
-    'dynamic — needs playerId; static landing is genome/compare (in manifest)',
+    'dynamic — needs playerId; static landing is genome/compare-players-players (in manifest)',
   ],
   [
     '/golf/dashboard/coachhelm/qualifying/[id]',
@@ -258,7 +258,7 @@ test('every W4B route the audit called out is in the Cmd+K manifest', async () =
     '/golf/dashboard/intelligence',
     '/golf/dashboard/analytics/coachhelm',
     '/golf/dashboard/coachhelm/chat',
-    '/golf/dashboard/coachhelm/genome/compare',
+    '/golf/dashboard/coachhelm/genome/compare-players-players-players',
     '/golf/dashboard/settings/notifications',
     '/golf/dashboard/settings/coaching-intelligence',
     '/golf/dashboard/stats/team',

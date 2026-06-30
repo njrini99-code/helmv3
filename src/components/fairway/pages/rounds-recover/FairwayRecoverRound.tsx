@@ -4,7 +4,7 @@
  * ============================================================================
  * Fairway · pages/rounds-recover · FairwayRecoverRound  (ADDITIVE · FLAG-GATED)
  * ----------------------------------------------------------------------------
- * The flag-on redesign of the PLAYER /golf/dashboard/rounds/recover route — the
+ * The flag-on redesign of the PLAYER /golf/dashboard/rounds/recover-draft route — the
  * incomplete-round recovery flow. A self-contained client (mirroring the legacy
  * RecoverRoundClient shape) that scans the SAME offline storage — modern + legacy
  * IndexedDB plus localStorage emergency saves — and re-submits a recoverable

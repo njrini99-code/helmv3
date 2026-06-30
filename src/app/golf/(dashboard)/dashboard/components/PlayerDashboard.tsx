@@ -254,7 +254,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                     </p>
 
                                     <Link
-                                        href="/golf/dashboard/rounds/new"
+                                        href="/golf/dashboard/rounds/create"
                                         className={cn(
                                             'group inline-flex items-center gap-2 px-7 py-3.5 rounded-full',
                                             'bg-primary-600/95 text-white font-medium text-body tracking-[-0.005em]',
@@ -476,7 +476,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                         {/* CTA: Submit Round */}
                         <m.div variants={itemVariants}>
                             <Link
-                                href="/golf/dashboard/rounds/new"
+                                href="/golf/dashboard/rounds/create"
                                 className={cn(
                                     'group flex items-center justify-center gap-2 w-full py-4 rounded-full text-body-sm font-medium tracking-[-0.005em]',
                                     'bg-primary-600/95 text-white',

@@ -4,7 +4,7 @@
  * ============================================================================
  * Fairway · Qualifiers · FairwayNewQualifier  (ADDITIVE · FLAG-GATED)
  * ----------------------------------------------------------------------------
- * The flag-on redesign of the COACH /golf/dashboard/qualifiers/new route — the
+ * The flag-on redesign of the COACH /golf/dashboard/qualifiers/create route — the
  * create-qualifier form. A presentation rebuild on the Fairway form primitives;
  * the create logic is reused VERBATIM via `createGolfQualifier` (same import
  * path, same input contract).

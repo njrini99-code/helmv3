@@ -1301,7 +1301,7 @@ const COACHHELM_SURFACES: {
     icon: IconMessageSquare,
   },
   {
-    href: '/golf/dashboard/coachhelm/genome/compare',
+    href: '/golf/dashboard/coachhelm/genome/compare-players',
     eyebrow: 'Profile',
     title: 'Player Genome',
     description: 'Compare performance fingerprints across your roster.',

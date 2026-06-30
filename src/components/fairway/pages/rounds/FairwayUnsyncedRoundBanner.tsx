@@ -139,7 +139,7 @@ export function FairwayUnsyncedRoundBanner({ hasServerInProgress }: FairwayUnsyn
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => router.push('/golf/dashboard/rounds/new')}
+                  onClick={() => router.push('/golf/dashboard/rounds/create')}
                   leftIcon={<Play className="h-4 w-4" aria-hidden="true" />}
                 >
                   Resume

@@ -297,7 +297,7 @@ export function GenomeDetailView({
           leftIcon={<LucideGitCompare size={15} />}
           asChild
         >
-          <Link href={`/golf/dashboard/coachhelm/genome/compare?p1=${playerId}`}>Compare</Link>
+          <Link href={`/golf/dashboard/coachhelm/genome/compare-players?p1=${playerId}`}>Compare</Link>
         </Button>
       ) : null}
     </div>

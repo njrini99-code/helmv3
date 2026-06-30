@@ -63,7 +63,7 @@ export function GenomeComparePicker({
             const params = new URLSearchParams();
             params.set(paramName, p.id);
             if (otherSlot) params.set(otherParam, otherSlot);
-            const href = `/golf/dashboard/coachhelm/genome/compare?${params.toString()}`;
+            const href = `/golf/dashboard/coachhelm/genome/compare-players?${params.toString()}`;
             const interactive = !isOther;
             const hoverProps =
               prefersReducedMotion || isSelected || !interactive ? {} : { whileHover: liftHover };

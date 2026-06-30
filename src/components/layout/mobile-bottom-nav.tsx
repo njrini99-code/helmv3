@@ -152,9 +152,9 @@ import { HomeIcon, TrophyIcon, VideoIcon, SettingsIcon } from 'lucide-react';
 <MobileBottomNav
   items={[
     { label: 'Home', href: '/baseball/player/today', icon: HomeIcon },
-    { label: 'Journey', href: '/baseball/player/journey', icon: TrophyIcon },
-    { label: 'Videos', href: '/baseball/player/videos', icon: VideoIcon },
-    { label: 'Settings', href: '/baseball/player/settings', icon: SettingsIcon },
+    { label: 'Journey', href: '/baseball/dashboard/journey', icon: TrophyIcon },
+    { label: 'Videos', href: '/baseball/dashboard/videos', icon: VideoIcon },
+    { label: 'Settings', href: '/baseball/dashboard/settings', icon: SettingsIcon },
   ]}
 />
 

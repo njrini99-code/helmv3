@@ -13,7 +13,7 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/golf/dashboard/coachhelm/genome/compare"
+      route="/golf/dashboard/coachhelm/genome/compare-players"
       component="GenomeComparePage"
       title="Failed to load comparison"
       message="We couldn't load the genome comparison. Please try again."

@@ -165,7 +165,7 @@ export function TodaysMissionCard({
             Log two more rounds and CoachHelm will prescribe a focus area for your daily practice.
           </p>
           <Link
-            href="/golf/dashboard/rounds/new"
+            href="/golf/dashboard/rounds/create"
             className="mt-auto inline-flex items-center gap-2 self-start px-4 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors"
           >
             Log a round

@@ -163,7 +163,7 @@ export default async function CoachGenomePage({ params }: PageProps) {
             </div>
             <div className="mt-5 flex items-center gap-3">
               <Link
-                href={`/golf/dashboard/coachhelm/genome/compare?p1=${playerId}`}
+                href={`/golf/dashboard/coachhelm/genome/compare-players?p1=${playerId}`}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-warm-900 text-white text-sm font-medium hover:bg-warm-800 transition shadow-[0_8px_18px_-10px_rgba(28,25,23,0.45)] v3-lift"
               >
                 Compare

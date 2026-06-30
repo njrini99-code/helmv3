@@ -13,11 +13,11 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/golf/dashboard/rounds/recover"
-      component="RecoverRoundPage"
-      title="Failed to load round recovery"
-      message="We couldn't load the round recovery page. Please try again."
-      homePath="/golf/dashboard"
+      route="/golf/dashboard/qualifiers/create"
+      component="NewQualifierPage"
+      title="Failed to load qualifier builder"
+      message="We couldn't load the qualifier builder. Please try again."
+      homePath="/golf/dashboard/qualifiers"
     />
   );
 }
