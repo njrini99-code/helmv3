@@ -89,10 +89,27 @@ describe('resolveCoachActiveTeamId', () => {
   it('honors a validated active-team cookie', async () => {
     const supabase = makeSupabaseClient(
       {},
-      { baseball_team_coach_staff: { data: { id: 'staff-1' }, error: null } },
+      {
+        baseball_team_coach_staff: { data: { id: 'staff-1' }, error: null },
+        baseball_coaches: { data: { organization_id: 'org-1' }, error: null },
+        baseball_teams: { data: { id: 'team-cookie' }, error: null },
+      },
     );
     const id = await resolveCoachActiveTeamId(supabase, 'org-1', 'coach-1', 'team-cookie');
     expect(id).toBe('team-cookie');
+  });
+
+  it('honors same-org cookie even when coach is staffed on a different team', async () => {
+    const supabase = makeSupabaseClient(
+      {},
+      {
+        baseball_team_coach_staff: { data: null, error: null },
+        baseball_coaches: { data: { organization_id: 'org-1' }, error: null },
+        baseball_teams: { data: { id: 'team-jv' }, error: null },
+      },
+    );
+    const id = await resolveCoachActiveTeamId(supabase, 'org-1', 'coach-1', 'team-jv');
+    expect(id).toBe('team-jv');
   });
 
   it('falls back to staffed team when cookie is invalid', async () => {

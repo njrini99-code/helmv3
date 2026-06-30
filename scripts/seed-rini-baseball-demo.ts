@@ -171,7 +171,8 @@ async function main() {
     id: detId('staff:head'), team_id: TEAM_ID, coach_id: COACH_ID, role: 'head_coach', is_primary: true,
     can_manage_roster: true, can_manage_practice: true, can_manage_lifting: true, can_view_academics: true,
     can_manage_imports: true, can_manage_stats: true, can_invite_staff: true, can_manage_settings: true,
-    can_view_medical: true, can_message_team: true, can_manage_calendar: true, is_head_coach: true,
+    can_view_medical: true, can_message_team: true, can_manage_calendar: true,
+    can_manage_documents: true, is_head_coach: true,
     capabilities: {}, status: 'active', title: 'Head Coach',
     bio: 'Head coach + strength coach for Rini University Baseball.', visible_to_players: true,
   }], 'team_id, coach_id');
@@ -279,6 +280,70 @@ async function main() {
     { id: detId('tl:lift'), player_id: demoPid, team_id: TEAM_ID, event_type: 'lift_logged', title: 'Bench press logged', body: 'Completed assigned bench session at RPE 7.5.', source_type: 'baseball_lift_results', source_id: detId(`bresult:bench:${PLAYER_KEY}`), occurred_at: isoDaysAgo(2), created_by: COACH_USER_ID, visibility: 'player_only' },
     { id: detId('tl:insight'), player_id: demoPid, team_id: TEAM_ID, event_type: 'coach_insight', title: 'Coach flagged arm fatigue', body: 'Staff note from the readiness insight engine.', source_type: 'baseball_coach_insights', source_id: detId('insight:readiness'), confidence: 0.74, occurred_at: isoDaysAgo(0), created_by: COACH_USER_ID, visibility: 'staff_only' },
   ]);
+
+  // --- 9. Team ops surfaces (#414) ----------------------------------------
+  const announcementId = detId('announcement:series');
+  await upsert('baseball_announcements', [{
+    id: announcementId,
+    team_id: TEAM_ID,
+    title: 'Series opener — bus departs 8am',
+    content: 'Be in the locker room by 7:45. Cleats + road grays packed.',
+    urgency: 'high',
+    is_pinned: true,
+    published_at: isoDaysAgo(1),
+    created_by_id: COACH_ID,
+  }]);
+  await upsert('baseball_announcement_acknowledgements', [{
+    id: detId('ann-ack:p1'),
+    announcement_id: announcementId,
+    player_id: demoPid,
+    acknowledged_at: isoDaysAgo(0),
+  }]);
+
+  const travelItineraryId = detId('travel:coastal');
+  await upsert('baseball_travel_itineraries', [{
+    id: travelItineraryId,
+    team_id: TEAM_ID,
+    event_name: 'Coastal State series',
+    departure_date: dateDaysFromNow(2),
+    return_date: dateDaysFromNow(4),
+    location: 'Coastal State',
+    accommodation: 'Marriott Courtyard',
+    transportation: 'Charter bus',
+    notes: 'Rooming list posted in locker room.',
+    created_by: COACH_USER_ID,
+  }]);
+  await upsert('baseball_travel_expenses', [{
+    id: detId('travel-exp:bus'),
+    itinerary_id: travelItineraryId,
+    team_id: TEAM_ID,
+    category: 'transport',
+    amount: 2400,
+    description: 'Charter bus deposit',
+    paid_by: 'team',
+    expense_date: dateDaysAgo(3),
+    created_by: COACH_USER_ID,
+  }]);
+
+  const taskId = detId('task:passport');
+  await upsert('baseball_tasks', [{
+    id: taskId,
+    team_id: TEAM_ID,
+    title: 'Upload passport copy',
+    description: 'Required for Canada showcase travel.',
+    due_date: dateDaysFromNow(7),
+    priority: 'high',
+    category: 'travel',
+    status: 'open',
+    assigned_by: COACH_ID,
+  }]);
+  await upsert('baseball_task_assignments', ROSTER.slice(0, 4).map((p, i) => ({
+    id: detId(`task-assign:${p.key}`),
+    task_id: taskId,
+    player_id: playerIdByKey[p.key],
+    status: i === 0 ? 'completed' : 'pending',
+    completed_at: i === 0 ? isoDaysAgo(1) : null,
+  })));
 
   // ========================================================================
   // LIFT LAB (helm_lifting_*)
