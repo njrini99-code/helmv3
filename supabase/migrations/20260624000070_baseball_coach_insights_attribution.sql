@@ -121,6 +121,7 @@ DECLARE
 BEGIN
   IF to_regclass('public.baseball_coach_insights') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.baseball_coach_insights ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'REVOKE ALL ON public.baseball_coach_insights FROM anon';
 
     SELECT EXISTS (
       SELECT 1 FROM information_schema.columns
@@ -134,6 +135,7 @@ BEGIN
     ) INTO v_has_team_id;
 
     IF v_has_team_id AND v_has_player_visible THEN
+      EXECUTE 'DROP POLICY IF EXISTS "baseball_insights_select" ON public.baseball_coach_insights';
       EXECUTE 'DROP POLICY IF EXISTS "baseball_coach_insights_staff_select" ON public.baseball_coach_insights';
       EXECUTE $p$CREATE POLICY "baseball_coach_insights_staff_select" ON public.baseball_coach_insights
         FOR SELECT TO authenticated
