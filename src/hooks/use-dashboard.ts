@@ -84,7 +84,7 @@ export function useSavedSearches() {
 
 // Player Distribution by State Hook
 // Respects discoverability rules based on coach type
-export function usePlayersByState(coachId?: string, coachType?: string) {
+export function usePlayersByState() {
   const [stateCounts, setStateCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
@@ -93,10 +93,8 @@ export function usePlayersByState(coachId?: string, coachType?: string) {
       setLoading(true);
 
       try {
-        // Use server action to avoid RLS recursion issues
         const { getStateCounts } = await import('@/app/baseball/actions/discover');
-        // coachType is already typed as string, getStateCounts accepts it
-        const counts = await getStateCounts('players', coachId, coachType as 'college' | 'juco' | 'high_school' | 'showcase' | undefined);
+        const counts = await getStateCounts('players');
 
         // Normalize state codes to uppercase
         const normalizedCounts: Record<string, number> = {};
@@ -115,7 +113,7 @@ export function usePlayersByState(coachId?: string, coachType?: string) {
     }
 
     fetchStateCounts();
-  }, [coachId, coachType]);
+  }, []);
 
   return { stateCounts, loading };
 }
