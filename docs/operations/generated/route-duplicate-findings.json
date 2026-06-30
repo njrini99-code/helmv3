@@ -1,0 +1,135 @@
+{
+  "generated_at": "2026-06-30T13:21:50.871Z",
+  "findings": [
+    {
+      "id": "ROUTE-STATIC-DYNAMIC--baseball-dashboard-stats-games-create",
+      "type": "static-dynamic-overlap",
+      "severity": "P2",
+      "confidence": "medium",
+      "canonicalPath": "/baseball/dashboard/stats/games/create",
+      "dynamicPath": "/baseball/dashboard/stats/games/:gameId",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "Static segment \"create\" sits under dynamic parent /baseball/dashboard/stats/games."
+    },
+    {
+      "id": "ROUTE-STATIC-DYNAMIC--golf-dashboard-coachhelm-genome-compare-players",
+      "type": "static-dynamic-overlap",
+      "severity": "P2",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/coachhelm/genome/compare-players",
+      "dynamicPath": "/golf/dashboard/coachhelm/genome/:playerId",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "Static segment \"compare-players\" sits under dynamic parent /golf/dashboard/coachhelm/genome."
+    },
+    {
+      "id": "ROUTE-STATIC-DYNAMIC--golf-dashboard-qualifiers-create",
+      "type": "static-dynamic-overlap",
+      "severity": "P2",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/qualifiers/create",
+      "dynamicPath": "/golf/dashboard/qualifiers/:id",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "Static segment \"create\" sits under dynamic parent /golf/dashboard/qualifiers."
+    },
+    {
+      "id": "ROUTE-STATIC-DYNAMIC--golf-dashboard-rounds-create",
+      "type": "static-dynamic-overlap",
+      "severity": "P2",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/rounds/create",
+      "dynamicPath": "/golf/dashboard/rounds/:id",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "Static segment \"create\" sits under dynamic parent /golf/dashboard/rounds."
+    },
+    {
+      "id": "ROUTE-STATIC-DYNAMIC--golf-dashboard-rounds-recover-draft",
+      "type": "static-dynamic-overlap",
+      "severity": "P2",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/rounds/recover-draft",
+      "dynamicPath": "/golf/dashboard/rounds/:id",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "Static segment \"recover-draft\" sits under dynamic parent /golf/dashboard/rounds."
+    },
+    {
+      "id": "ROUTE-COACHHELM-SURFACE--golf-dashboard-coachhelm",
+      "type": "coachhelm-surface",
+      "severity": "P3",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/coachhelm",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "CoachHelm surface present — classify as canonical, alias, tab, or needs-decision.",
+      "classification": "needs-decision"
+    },
+    {
+      "id": "ROUTE-COACHHELM-SURFACE--golf-dashboard-coachhelm-chat",
+      "type": "coachhelm-surface",
+      "severity": "P3",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/coachhelm/chat",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "CoachHelm surface present — classify as canonical, alias, tab, or needs-decision.",
+      "classification": "needs-decision"
+    },
+    {
+      "id": "ROUTE-COACHHELM-SURFACE--golf-dashboard-alerts",
+      "type": "coachhelm-surface",
+      "severity": "P3",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/alerts",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "CoachHelm surface present — classify as canonical, alias, tab, or needs-decision.",
+      "classification": "needs-decision"
+    },
+    {
+      "id": "ROUTE-COACHHELM-SURFACE--golf-dashboard-patterns",
+      "type": "coachhelm-surface",
+      "severity": "P3",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/patterns",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "CoachHelm surface present — classify as canonical, alias, tab, or needs-decision.",
+      "classification": "needs-decision"
+    },
+    {
+      "id": "ROUTE-COACHHELM-SURFACE--golf-dashboard-insights",
+      "type": "coachhelm-surface",
+      "severity": "P3",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/insights",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "CoachHelm surface present — classify as canonical, alias, tab, or needs-decision.",
+      "classification": "needs-decision"
+    },
+    {
+      "id": "ROUTE-COACHHELM-SURFACE--golf-dashboard-intelligence",
+      "type": "coachhelm-surface",
+      "severity": "P3",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/intelligence",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "CoachHelm surface present — classify as canonical, alias, tab, or needs-decision.",
+      "classification": "needs-decision"
+    },
+    {
+      "id": "ROUTE-COACHHELM-SURFACE--golf-dashboard-development",
+      "type": "coachhelm-surface",
+      "severity": "P3",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/development",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "CoachHelm surface present — classify as canonical, alias, tab, or needs-decision.",
+      "classification": "needs-decision"
+    },
+    {
+      "id": "ROUTE-COACHHELM-SURFACE--golf-dashboard-my-insights",
+      "type": "coachhelm-surface",
+      "severity": "P3",
+      "confidence": "medium",
+      "canonicalPath": "/golf/dashboard/my-insights",
+      "detectedBy": "routes:check:duplicates",
+      "evidence": "CoachHelm surface present — classify as canonical, alias, tab, or needs-decision.",
+      "classification": "needs-decision"
+    }
+  ]
+}

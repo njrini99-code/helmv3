@@ -40,6 +40,26 @@ env:
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
+  smoke:
+    name: Smoke checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
   e2e:
     name: Playwright (chromium)
     runs-on: ubuntu-latest

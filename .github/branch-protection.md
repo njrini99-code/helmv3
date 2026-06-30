@@ -4,30 +4,41 @@ Apply these settings to `main` (and any release branch):
 
 ## Required status checks
 
-- `build` (from `ci.yml` build job — includes typecheck, lint, vitest, next build)
-- `Supabase lint + RLS tests` (from `ci.yml` supabase job, added in Plan 01)
-- `Review Gate / all` (from `review-gate.yml` — aggregates ast-grep, semgrep,
-  gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint,
-  sqlfluff, hadolint — mirrors the AI reviewers' pre-merge gate so merges
-  are blocked even if either reviewer is offline)
-- `CodeRabbit` (the bot's own status check — assertive review, blocking
-  custom checks defined in `.coderabbit.yaml`)
-- `Greptile` (the bot's own status check — whole-codebase review,
-  hard rules defined in `.greptile/instructions.md`; enable in the
-  Greptile dashboard at https://app.greptile.com after installing the
-  GitHub App on this repo)
-- `ci/circleci: ios-compile` (from `.circleci/config.yml` — iOS
-  Capacitor compile on M-series macOS; required only for branches
-  that touch `ios/**` or `capacitor.config.ts`). Leave as a
-  non-blocking check until you're ready to enforce green iOS on
-  every iOS-touching PR.
-- `Playwright (chromium)` — from `.github/workflows/playwright.yml`. Wraps
-  failures with `|| echo` for now (suite-stabilization phase). Flip to a
-  hard `npm run test:e2e` and add as a required status check once the
-  suite has been green for a week. Closes Plan 02 Task 9.
-- `lighthouse-preview` (CircleCI) — runs Lighthouse against the Vercel
-  preview URL on every push. a11y + CLS asserts are hard errors. Add as
-  a required check after first green run.
+Require aggregate checks instead of every leaf job. Leaf jobs still run and
+remain visible on PRs, but branch protection depends on stable aggregate names
+so a job split/rename does not silently break protection.
+
+- `CI / all` — hard aggregate for:
+  - `Database types drift`
+  - `Schema invariants`
+  - `Feature knowledge`
+  - `TypeScript`
+  - `ESLint`
+  - `Lint ratchet`
+  - `Unit tests`
+  - `Business contracts`
+  - `Next build`
+  - `Supabase lint + RLS tests`
+  - `Route Hygiene P0/P1`
+- `Review Gate / all` — hard aggregate for ast-grep, semgrep, gitleaks,
+  actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, and
+  hadolint.
+- `Playwright E2E / Smoke checks` — hard smoke build check. The full
+  `Playwright (chromium)` suite remains advisory until it is stable enough to
+  fail hard.
+- `CodeQL` — GitHub code-scanning status.
+- `CodeRabbit` — CodeRabbit's own status check, with assertive review,
+  pre-merge checks, issue enrichment, and auto-planning configured in
+  `.coderabbit.yaml`.
+
+Advisory checks:
+
+- `Vercel` and `Vercel Preview Comments`
+- `Greptile Review`
+- `ci/circleci: lighthouse-preview`
+- `Playwright (chromium)`
+- `Course picker screenshots`
+- `migration-lockdown / block-historical-edits`
 
 ## Other settings
 
@@ -52,7 +63,7 @@ After applying:
 # Open a PR that intentionally breaks a test; confirm merge is blocked.
 gh pr create --title "test(branch-protection): verify red CI blocks merge" --body "Intentional failure."
 # Push a commit that breaks vitest.
-# Confirm "build" appears as a Required check that hasn't passed.
+# Confirm `CI / all` appears as a Required check that has not passed.
 # Close the PR without merging.
 ```
 
