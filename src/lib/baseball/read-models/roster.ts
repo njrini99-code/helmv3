@@ -1,0 +1,152 @@
+import 'server-only';
+
+import { createClient } from '@/lib/supabase/server';
+import type { BaseballPlayerAggregates } from '@/lib/types';
+
+export type RosterMemberStatus =
+  | 'pending'
+  | 'active'
+  | 'inactive'
+  | 'removed'
+  | 'injured'
+  | 'alumni';
+
+export interface RosterPlayerBio {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  primary_position: string | null;
+  secondary_position: string | null;
+  grad_year: number | null;
+  city: string | null;
+  state: string | null;
+  avatar_url: string | null;
+  recruiting_activated: boolean | null;
+}
+
+export interface RosterTeamMember {
+  id: string;
+  jersey_number: number | null;
+  joined_at: string | null;
+  status: RosterMemberStatus | null;
+  player: RosterPlayerBio;
+}
+
+export interface RosterReadModel {
+  teamId: string;
+  authorized: boolean;
+  members: RosterTeamMember[];
+  aggregates: Record<string, BaseballPlayerAggregates>;
+  rosterError: boolean;
+  aggregatesError: boolean;
+}
+
+const REVOKED_STAFF_STATUSES = new Set(['suspended', 'removed', 'invited']);
+
+async function isTeamStaff(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  teamId: string,
+): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data: coach } = await supabase
+    .from('baseball_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!coach) return false;
+
+  const { data: staff } = await supabase
+    .from('baseball_team_coach_staff')
+    .select('id, status')
+    .eq('team_id', teamId)
+    .eq('coach_id', coach.id)
+    .maybeSingle();
+
+  if (!staff) return false;
+  const status = typeof staff.status === 'string' ? staff.status : null;
+  if (status && REVOKED_STAFF_STATUSES.has(status)) return false;
+  return true;
+}
+
+function emptyResult(teamId: string, authorized: boolean): RosterReadModel {
+  return {
+    teamId,
+    authorized,
+    members: [],
+    aggregates: {},
+    rosterError: false,
+    aggregatesError: false,
+  };
+}
+
+/**
+ * Canonical roster read model (#411). Distinguishes load failures from empty rosters.
+ */
+export async function getRoster(teamId: string): Promise<RosterReadModel> {
+  const supabase = await createClient();
+
+  if (!(await isTeamStaff(supabase, teamId))) {
+    return emptyResult(teamId, false);
+  }
+
+  const { data: rosterData, error: rosterError } = await supabase
+    .from('baseball_team_members')
+    .select(`
+      id,
+      jersey_number,
+      joined_at,
+      status,
+      player:baseball_players (
+        id,
+        first_name,
+        last_name,
+        email,
+        primary_position,
+        secondary_position,
+        grad_year,
+        city,
+        state,
+        avatar_url,
+        recruiting_activated
+      )
+    `)
+    .eq('team_id', teamId)
+    .order('joined_at', { ascending: false });
+
+  if (rosterError) {
+    return {
+      ...emptyResult(teamId, true),
+      rosterError: true,
+    };
+  }
+
+  const members = (rosterData ?? []) as unknown as RosterTeamMember[];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: aggregatesData, error: aggregatesError } = await (supabase as any)
+    .from('baseball_player_aggregates')
+    .select('*')
+    .eq('team_id', teamId) as {
+    data: BaseballPlayerAggregates[] | null;
+    error: unknown;
+  };
+
+  const aggregates: Record<string, BaseballPlayerAggregates> = {};
+  if (!aggregatesError && aggregatesData) {
+    for (const agg of aggregatesData) {
+      aggregates[agg.player_id] = agg;
+    }
+  }
+
+  return {
+    teamId,
+    authorized: true,
+    members,
+    aggregates,
+    rosterError: false,
+    aggregatesError: Boolean(aggregatesError),
+  };
+}

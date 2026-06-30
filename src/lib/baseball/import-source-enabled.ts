@@ -53,9 +53,7 @@ type ImportSourceLookupClient = {
   from: (table: string) => {
     select: (cols: string) => {
       eq: (col: string, val: string) => {
-        or: (filter: string) => {
-          limit: (n: number) => Promise<{ data: unknown[] | null; error: unknown }>;
-        };
+        or: (filter: string) => Promise<{ data: unknown[] | null; error: unknown }>;
       };
     };
   };
@@ -71,11 +69,14 @@ export async function loadImportSourceRegistration(
     .from('baseball_import_sources')
     .select('source_name, enabled')
     .eq('team_id', teamId)
-    .or(`source_type.eq.${sourceKey},source_name.eq.${sourceKey}`)
-    .limit(1);
+    .or(`source_type.eq.${sourceKey},source_name.eq.${sourceKey}`);
 
-  const row = (data ?? [])[0] as ImportSourceRegistration | undefined;
-  return row ?? null;
+  const rows = (data ?? []) as ImportSourceRegistration[];
+  if (rows.length === 0) return null;
+
+  // If any matching row is disabled, treat the source as disabled (#407).
+  const disabled = rows.find((row) => row.enabled === false);
+  return disabled ?? rows[0] ?? null;
 }
 
 /** Block preview/commit when the registry row exists and is disabled. */
