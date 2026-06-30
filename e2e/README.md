@@ -82,6 +82,124 @@ Tests use pre-configured test users:
 
 **Important:** These users must exist in your test database for tests to pass.
 
+## BaseballHelm seeded fixtures (Camps / Pipeline / Box Score)
+
+`camps.spec.ts`, `baseball-pipeline.spec.ts`, and `baseball-box-score.spec.ts`
+exercise real coach/player flows (camp registration, pipeline stage moves,
+box-score entry) against **seeded, production-shaped data** rather than
+mocks. They are gated on the `PLAYWRIGHT_BASEBALL_SEEDED` env var and
+self-skip when it isn't set to `1`, so the rest of the suite stays green on
+machines/forks without a seeded test database.
+
+### Seeded accounts
+
+Same shared `@helm.test` logins every other spec in this directory uses
+(`helpers/auth.ts` `TEST_USERS`):
+
+```text
+COACH : testcoach@helm.test  / TestCoach123!
+PLAYER: testplayer@helm.test / TestPlayer123!
+```
+
+The seed script (`scripts/seed-baseball-e2e.ts`) attaches both to a
+dedicated `E2E Test University Baseball` team, with the coach granted full
+`baseball_team_coach_staff` capabilities (head coach, all `can_*` flags) so
+every coach-only write path the specs touch (camps, box scores, pipeline
+notes) is authorized.
+
+Fixture roster, beyond the shared accounts: three seed-only players
+(`Riley Bennett`, `Quinn Ortiz`, `Dakota Reyes` — `*@baseballhelm-e2e.test`)
+plus one off-roster recruiting candidate (`Jordan Hayes`, grad year 2027)
+used by the Pipeline spec. Seed-only accounts never log in and never have
+their password reset; only the two shared `@helm.test` accounts get their
+password force-set on every seed run.
+
+### Deterministic-ID strategy
+
+Every seeded row's `id` is derived from a stable key via
+`detId(key) = sha1("baseballhelm-e2e:" + key)`, reshaped into a v5-style
+UUID. Re-running the script `upsert`s the same rows in place instead of
+duplicating them — safe to run repeatedly, including in CI on every PR. The
+`baseballhelm-e2e` namespace is fixed and distinct from
+`scripts/seed-baseball-demo.ts`'s `baseballhelm-demo-phase1` namespace, so
+the two seed scripts can never collide.
+
+The one exception: the test player's camp registration. Registering via the
+UI inserts a row with a fresh random id that a by-id upsert can't reset, so
+the script explicitly deletes any `baseball_camp_registrations` row scoped
+to `(seeded camp, test player)` before reseeding — guaranteeing the
+register/unregister spec always starts from "not registered." No other
+data is touched by that cleanup.
+
+### Running / resetting the seed locally
+
+```bash
+# 1. Dry run (default) — prints the seed plan, writes nothing:
+DOTENV_CONFIG_PATH=.env.local npm run seed:baseball:e2e
+
+# 2. Actually seed (writes to the database the env vars point at):
+DOTENV_CONFIG_PATH=.env.local npm run seed:baseball:e2e -- --confirm
+```
+
+Required env vars (read via `dotenv/config`, so `.env.local` works):
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=<your test/dev Supabase project URL>
+SUPABASE_SERVICE_ROLE_KEY=<service role key for that project>
+```
+
+The script uses the service-role key to bypass RLS for setup and to call
+the `recalculate_baseball_season_stats` RPC (so team/season-stat rollups
+and the player "My Stats" dashboard are non-empty). It only ever writes
+rows under the `baseballhelm-e2e` namespace — never run it against a shared
+production database; point it at a dedicated test/dev Supabase project.
+
+Re-running the seed at any time (e.g. after a spec mutates a pipeline stage,
+a watchlist note, or flips the scheduled game to `completed`) restores the
+baseline described above. There's no separate "reset" command — reseeding
+*is* the reset, because every mutable column is rewritten by the upsert.
+
+### The `PLAYWRIGHT_BASEBALL_SEEDED` gate
+
+```bash
+PLAYWRIGHT_BASEBALL_SEEDED=1 npx playwright test camps.spec.ts baseball-pipeline.spec.ts baseball-box-score.spec.ts
+```
+
+Without this env var set to `1`, all three spec files self-skip via
+`test.skip(!SEEDED, '...set PLAYWRIGHT_BASEBALL_SEEDED=1...')` calls at both
+the `describe` and `beforeEach` level — running the full suite locally
+without seeding is safe and won't produce false failures.
+
+### Refreshing fixtures
+
+To pick up a schema change or just get a clean baseline before a local test
+run: re-run `npm run seed:baseball:e2e -- --confirm` against your test
+database. There's nothing else to refresh — the script is the single
+source of truth for this fixture set, and it's idempotent by design (see
+above).
+
+### CI
+
+`.github/workflows/playwright.yml`'s `e2e` job runs
+`npm run seed:baseball:e2e -- --confirm` immediately before
+`npm run test:e2e`, and exports `PLAYWRIGHT_BASEBALL_SEEDED=1` for that test
+run — both gated on the `SUPABASE_SERVICE_ROLE_KEY` repo secret being
+present (it isn't, on fork PRs, matching the existing `E2E_GOLF_*` secret
+pattern in that workflow). When the secret is absent, the seed step is
+skipped entirely and the three specs above self-skip rather than fail.
+
+### Known limitation: "create game" / "create camp" specs are non-destructive only on the create side
+
+`GameCard`'s delete affordance is intentionally hidden in the UI (a
+permanent `hidden` class), so the box-score spec's "create a new game" test
+cannot clean up the game row it creates via the UI — each CI run adds one
+new `baseball_games` row with a unique opponent name
+(`E2E Created Opponent ${Date.now()}`) to the test database. This is a
+known, accepted trade-off (documented here rather than worked around) since
+the created row doesn't affect any other spec's assertions. The Camps
+spec's create/delete round-trip *is* fully self-cleaning, since the Camps
+UI does expose a working delete action.
+
 ## CI/CD Integration
 
 ### GitHub Actions

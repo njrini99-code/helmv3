@@ -24,6 +24,7 @@ export function PipelineColumn({ stage, items }: PipelineColumnProps) {
   return (
     <div
       ref={setNodeRef}
+      data-testid={`pipeline-column-${stage}`}
       className={cn(
         'relative rounded-[20px] p-5 min-h-[500px] transition-all duration-200 overflow-hidden',
         'bg-cream-100/68 backdrop-blur-md border border-warm-200/55',

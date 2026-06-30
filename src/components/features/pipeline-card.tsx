@@ -44,6 +44,10 @@ export function PipelineCard({ item, isDragging = false }: PipelineCardProps) {
       style={style}
       {...listeners}
       {...attributes}
+      data-testid="pipeline-card"
+      data-id={item.id}
+      data-player-id={item.player_id}
+      data-stage={currentStage}
       className={cn(
         'transition-all duration-200',
         isActuallyDragging && 'opacity-50 cursor-grabbing',

@@ -1,619 +1,332 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { loginAsCoach, loginAsPlayer } from './helpers/auth';
 import { waitForPageLoad } from './helpers/common';
 
 /**
  * Baseball Box Score E2E Tests
  *
- * Covers the full box-score lifecycle:
- *   - Coach creates a game and enters box score stats (manual entry + CSV upload)
- *   - Coach views box score history and game detail
- *   - Player views personal season stats from the my-stats page
- *   - Error/empty states throughout the flow
+ * Exercises the full box-score lifecycle against the deterministic fixtures
+ * provisioned by `scripts/seed-baseball-e2e.ts` (issue #375):
+ *   - one SCHEDULED game (vs "Riverside University") with no stats yet —
+ *     used for manual entry / save flows
+ *   - one COMPLETED game (vs "Eastview College", final 5-3 W) with full
+ *     batting + pitching box scores and rolled-up season stats — used for
+ *     read-only box-score-view / season-stats / my-stats assertions
  *
- * NOTE: Tests marked with "// TODO: requires test data setup" need a seeded
- * test database with coach + team + players present. Tests that only check
- * navigation and UI structure can run against an empty (but authenticated) DB.
+ * SHARED-STATE SAFETY: several groups below read or write the same two
+ * seeded games (and the season stats they drive), so this whole file runs
+ * with `test.describe.configure({ mode: 'serial' })` to avoid two tests
+ * racing under Playwright's `fullyParallel` config. The "save box score"
+ * test intentionally flips the scheduled game to `completed` — that's a
+ * one-way mutation for the run, restored by the next `seed:baseball:e2e`
+ * invocation (the upsert in the seed script rewrites the full row,
+ * including `status`), per the "destructive tests rely on seed reset"
+ * pattern used throughout this fixture.
+ *
+ * The "create game" test adds one extra (non-seeded) game row each run —
+ * there is currently no reachable delete affordance in the UI (GamesList's
+ * delete button is shipped with a permanent `hidden` class), so this is a
+ * known, documented trade-off rather than an oversight. See e2e/README.md.
+ *
+ * Gated on PLAYWRIGHT_BASEBALL_SEEDED=1, with a per-test self-skip if the
+ * login fixture is unavailable in the target environment — same pattern as
+ * camps.spec.ts / baseball-pipeline.spec.ts.
  */
 
-// ---------------------------------------------------------------------------
-// Shared test data
-// ---------------------------------------------------------------------------
+test.describe.configure({ mode: 'serial' });
 
-const GAME_DATE = '2025-04-15';
-const OPPONENT_NAME = 'Riverside University';
-const VENUE = 'Alumni Field';
+const SEEDED =
+  process.env.PLAYWRIGHT_BASEBALL_SEEDED === '1' ||
+  process.env.PLAYWRIGHT_BASEBALL_SEEDED === 'true';
+
+const SCHEDULED_OPPONENT = 'Riverside University';
+const COMPLETED_OPPONENT = 'Eastview College';
+
+async function loginCoachOrSkip(page: Page) {
+  try {
+    await loginAsCoach(page);
+  } catch {
+    test.skip(true, 'coach login fixture unavailable in this environment');
+  }
+}
+
+async function loginPlayerOrSkip(page: Page) {
+  try {
+    await loginAsPlayer(page);
+  } catch {
+    test.skip(true, 'player login fixture unavailable in this environment');
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Group 1: Coach creates a new game
 // ---------------------------------------------------------------------------
 
 test.describe('Coach - Create New Game', () => {
+  test.skip(!SEEDED, 'no seeded baseball team fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
+
   test.beforeEach(async ({ page }) => {
-    await loginAsCoach(page);
+    await loginCoachOrSkip(page);
+    await page.goto('/baseball/dashboard/stats/games/create');
     await waitForPageLoad(page);
   });
 
-  test('should display the new game form', async ({ page }) => {
-    // TODO: requires test data setup (coach must belong to college/juco team)
-    await page.goto('/baseball/dashboard/stats/games/create');
-    await waitForPageLoad(page);
-
-    await expect(
-      page.locator('h1:has-text("Add Game"), h1:has-text("Game"), h1:has-text("Scrimmage")').first()
-    ).toBeVisible({ timeout: 5000 });
-
-    // Should show type toggle (Game / Scrimmage)
-    await expect(page.locator('button:has-text("game"), button:has-text("Game")').first()).toBeVisible();
-
-    // Should show date input
-    await expect(page.locator('input[type="date"]')).toBeVisible();
-
-    // Should show opponent name input
-    await expect(page.locator('input[placeholder*="Opponent"], input[placeholder*="State University"]').first()).toBeVisible();
+  test('should display the new game form with date, opponent, and venue fields', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: /Add Game/i })).toBeVisible();
+    await expect(page.locator('#new-game-date')).toBeVisible();
+    await expect(page.locator('#new-game-opponent')).toBeVisible();
+    await expect(page.locator('#new-game-venue')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Create Game/i })).toBeVisible();
   });
 
   test('should require a game date before submitting', async ({ page }) => {
-    // TODO: requires test data setup
-    await page.goto('/baseball/dashboard/stats/games/create');
-    await waitForPageLoad(page);
+    await page.locator('#new-game-date').fill('');
+    await page.getByRole('button', { name: /Create Game/i }).click();
 
-    // Clear the date field and attempt to submit
-    const dateInput = page.locator('input[type="date"]');
-    await dateInput.fill('');
-
-    const submitButton = page.locator(
-      'button:has-text("Create Game"), button[type="submit"]'
-    ).first();
-
-    if (await submitButton.isVisible({ timeout: 3000 })) {
-      await submitButton.click();
-
-      // Browser native validation should prevent submission — check date is still empty/invalid
-      // or an explicit error message appears
-      const errorMsg = page.locator('text=/date|required/i');
-      const dateValue = await dateInput.inputValue();
-      expect(dateValue === '' || (await errorMsg.count()) > 0).toBeTruthy();
-    }
+    // The date input is `required`, so the browser's native constraint
+    // validation blocks submission before the client-side guard ever runs —
+    // either way, submission must not proceed and the field stays empty.
+    await expect(page).toHaveURL(/\/stats\/games\/create$/);
+    await expect(page.locator('#new-game-date')).toHaveValue('');
   });
 
-  test('should fill game details and submit the create-game form', async ({ page }) => {
-    // TODO: requires test data setup (coach must belong to college/juco team with a roster)
-    await page.goto('/baseball/dashboard/stats/games/create');
+  test('should create a new game and redirect to its box-score entry page', async ({ page }) => {
+    const opponent = `E2E Created Opponent ${Date.now()}`;
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 45);
+    const dateStr = futureDate.toISOString().slice(0, 10);
+
+    await page.locator('#new-game-date').fill(dateStr);
+    await page.locator('#new-game-opponent').fill(opponent);
+    await page.locator('#new-game-venue').fill('E2E Created Field');
+    await page.getByRole('button', { name: /Create Game/i }).click();
+
+    await expect(page).toHaveURL(/\/stats\/games\/[a-zA-Z0-9-]+$/, { timeout: 8000 });
     await waitForPageLoad(page);
 
-    // Set game type to "game"
-    const gameTypeButton = page.locator('button:has-text("game")').first();
-    if (await gameTypeButton.isVisible({ timeout: 3000 })) {
-      await gameTypeButton.click();
-    }
-
-    // Enter game date
-    await page.fill('input[type="date"]', GAME_DATE);
-
-    // Enter opponent name
-    const opponentInput = page.locator(
-      'input[placeholder*="State University"], input[placeholder*="Opponent"]'
-    ).first();
-    if (await opponentInput.isVisible({ timeout: 3000 })) {
-      await opponentInput.fill(OPPONENT_NAME);
-    }
-
-    // Set home/away to "home"
-    const homeButton = page.locator('button:has-text("home")').first();
-    if (await homeButton.isVisible({ timeout: 3000 })) {
-      await homeButton.click();
-    }
-
-    // Enter venue
-    const venueInput = page.locator('input[placeholder*="Alumni Field"], input[placeholder*="Venue"]').first();
-    if (await venueInput.isVisible({ timeout: 3000 })) {
-      await venueInput.fill(VENUE);
-    }
-
-    // Submit
-    const submitButton = page.locator(
-      'button:has-text("Create Game"), button[type="submit"]'
-    ).first();
-    if (await submitButton.isVisible({ timeout: 3000 })) {
-      await submitButton.click();
-
-      // On success: redirected to game detail page /stats/games/<id>
-      // On failure (no team): stays on form or shows error — both are valid for this test
-      await page.waitForTimeout(1500);
-      const currentUrl = page.url();
-      const wentToGamePage = currentUrl.includes('/stats/games/');
-      const stayedOnForm = currentUrl.includes('/stats/games/create') || currentUrl.includes('/dashboard');
-      expect(wentToGamePage || stayedOnForm).toBeTruthy();
-    }
+    // Newly created, uncompleted game lands directly on the manual entry form.
+    await expect(page.getByText(opponent)).toBeVisible();
+    await expect(page.locator('[data-testid="batting-entry-table"]')).toBeVisible();
   });
 });
 
 // ---------------------------------------------------------------------------
-// Group 2: Coach enters box score stats (manual entry)
+// Group 2: Coach enters box score stats (manual entry) on the seeded
+// SCHEDULED game. The final test in this group saves real stats, which
+// flips the game to "completed" for the remainder of this run.
 // ---------------------------------------------------------------------------
 
 test.describe('Coach - Manual Box Score Entry', () => {
+  test.skip(!SEEDED, 'no seeded baseball game fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
+
   test.beforeEach(async ({ page }) => {
-    await loginAsCoach(page);
+    await loginCoachOrSkip(page);
+    await page.goto('/baseball/dashboard/stats/games');
+    await waitForPageLoad(page);
+    const gameCard = page.locator('[data-testid="game-card"]', { hasText: SCHEDULED_OPPONENT });
+    await expect(gameCard).toBeVisible();
+    await gameCard.getByRole('link').click();
     await waitForPageLoad(page);
   });
 
-  test('should display batting and pitching tabs on the box score entry page', async ({ page }) => {
-    // TODO: requires test data setup — a game must exist with the test coach's team
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    // Look for a game card link to click into
-    const gameLink = page.locator(
-      'a[href*="/stats/games/"], [data-testid="game-card"] a, .game-card a'
-    ).first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 3000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      // Should show batting/pitching tabs (BoxScoreUpload or BoxScoreEntry)
-      const battingTab = page.locator('button:has-text("Batting"), button:has-text("Manual Entry")').first();
-      const pitchingTab = page.locator('button:has-text("Pitching")').first();
-
-      const hasBatting = await battingTab.isVisible({ timeout: 5000 });
-      expect(hasBatting).toBeTruthy();
-
-      if (hasBatting) {
-        await expect(pitchingTab).toBeVisible();
-      }
-    }
+  test('should display batting and pitching tabs with the batting table active by default', async ({ page }) => {
+    await expect(page.getByRole('button', { name: 'Batting', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Pitching', exact: true })).toBeVisible();
+    await expect(page.locator('[data-testid="batting-entry-table"]')).toBeVisible();
   });
 
-  test('should switch between batting and pitching tabs', async ({ page }) => {
-    // TODO: requires test data setup
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 3000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      // First, click "Manual Entry" tab if present (BoxScoreUpload wraps BoxScoreEntry)
-      const manualTab = page.locator('button:has-text("Manual Entry"), button:has-text("✏️ Manual Entry")').first();
-      if (await manualTab.isVisible({ timeout: 3000 })) {
-        await manualTab.click();
-      }
-
-      // Now switch to Pitching tab
-      const pitchingTab = page.locator('button:has-text("Pitching")').first();
-      if (await pitchingTab.isVisible({ timeout: 3000 })) {
-        await pitchingTab.click();
-        await page.waitForTimeout(300);
-
-        // Pitching UI: pitcher selector dropdown should appear
-        await expect(
-          page.locator('select:has([option*="pitcher"]), select[class*="pitcher"], select').first()
-        ).toBeVisible({ timeout: 3000 });
-      }
-    }
+  test('should show the empty pitching state until a pitcher is added', async ({ page }) => {
+    await page.getByRole('button', { name: 'Pitching', exact: true }).click();
+    await expect(page.getByText(/Add pitchers using the selector above/i)).toBeVisible();
   });
 
-  test('should update the final score inputs for both teams', async ({ page }) => {
-    // TODO: requires test data setup
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
+  test('should add a pitcher using the selector and Add Pitcher button', async ({ page }) => {
+    await page.getByRole('button', { name: 'Pitching', exact: true }).click();
 
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
+    const pitcherSelect = page.locator('select').first();
+    const firstOptionValue = await pitcherSelect.locator('option').nth(1).getAttribute('value');
+    expect(firstOptionValue).toBeTruthy();
+    await pitcherSelect.selectOption(firstOptionValue as string);
+    await page.getByRole('button', { name: 'Add Pitcher', exact: true }).click();
 
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 3000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      // Enter Manual Entry mode if needed
-      const manualTab = page.locator('button:has-text("Manual Entry"), button:has-text("✏️")').first();
-      if (await manualTab.isVisible({ timeout: 3000 })) {
-        await manualTab.click();
-      }
-
-      // Score inputs: labeled "Us" and the opponent name (or "Them")
-      const scoreInputs = page.locator('input[type="number"][min="0"][max="99"]');
-      const count = await scoreInputs.count();
-
-      if (count >= 2) {
-        // Set our score to 7
-        await scoreInputs.nth(0).fill('7');
-        // Set opponent score to 3
-        await scoreInputs.nth(1).fill('3');
-
-        // Verify values were accepted
-        await expect(scoreInputs.nth(0)).toHaveValue('7');
-        await expect(scoreInputs.nth(1)).toHaveValue('3');
-      }
-    }
+    await expect(page.locator('[data-testid="pitching-entry-table"]')).toBeVisible({ timeout: 3000 });
   });
 
-  test('should show a totals row at the bottom of the batting table', async ({ page }) => {
-    // TODO: requires test data setup (game + active roster players)
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
+  test('should reflect entered batting stats in the totals row', async ({ page }) => {
+    const totalsRow = page.locator('[data-testid="batting-entry-totals-row"]');
+    await expect(totalsRow).toBeVisible();
+    await expect(totalsRow).toContainText('TOTALS');
 
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
+    const firstRow = page.locator('[data-testid="batting-entry-table"] tbody tr').first();
+    const abInput = firstRow.locator('input').first();
+    await abInput.fill('4');
 
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 3000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      const manualTab = page.locator('button:has-text("Manual Entry"), button:has-text("✏️")').first();
-      if (await manualTab.isVisible({ timeout: 3000 })) {
-        await manualTab.click();
-      }
-
-      // Batting tab should be active by default
-      const battingTab = page.locator('button:has-text("Batting")').first();
-      if (await battingTab.isVisible({ timeout: 3000 })) {
-        await battingTab.click();
-      }
-
-      // Totals footer row
-      const totalsRow = page.locator('tfoot td:has-text("TOTALS"), td:has-text("TOTALS")').first();
-      if (await totalsRow.count() > 0) {
-        await expect(totalsRow).toBeVisible();
-      }
-    }
+    // AB column is the first numeric column in both the row and totals row.
+    await expect(totalsRow.locator('td').nth(1)).toHaveText('4');
   });
 
-  test('should add a pitcher using the pitcher dropdown and Add Pitcher button', async ({ page }) => {
-    // TODO: requires test data setup (game + at least one active roster player)
-    await page.goto('/baseball/dashboard/stats/games');
+  test('should enter a full batting + pitching line, save, and redirect to the completed box score view', async ({ page }) => {
+    // Batting: give the first roster row an AB/H/R line so it survives the
+    // saveFullBoxScore non-zero filter.
+    const firstBattingRow = page.locator('[data-testid="batting-entry-table"] tbody tr').first();
+    const battingInputs = firstBattingRow.locator('input');
+    await battingInputs.nth(0).fill('4'); // AB
+    await battingInputs.nth(1).fill('1'); // R
+    await battingInputs.nth(2).fill('2'); // H
+
+    // Pitching: add one pitcher with a simple line.
+    await page.getByRole('button', { name: 'Pitching', exact: true }).click();
+    const pitcherSelect = page.locator('select').first();
+    const firstOptionValue = await pitcherSelect.locator('option').nth(1).getAttribute('value');
+    await pitcherSelect.selectOption(firstOptionValue as string);
+    await page.getByRole('button', { name: 'Add Pitcher', exact: true }).click();
+    const pitchingRow = page.locator('[data-testid="pitching-entry-table"] tbody tr').first();
+    await pitchingRow.locator('input').first().fill('6'); // IP
+
+    await page.getByRole('button', { name: /Save Box Score/i }).click();
+
+    await expect(page).toHaveURL(/\/stats\/games\/[a-zA-Z0-9-]+$/, { timeout: 8000 });
     await waitForPageLoad(page);
 
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 3000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      const manualTab = page.locator('button:has-text("Manual Entry"), button:has-text("✏️")').first();
-      if (await manualTab.isVisible({ timeout: 3000 })) {
-        await manualTab.click();
-      }
-
-      // Switch to Pitching tab
-      const pitchingTab = page.locator('button:has-text("Pitching")').first();
-      if (await pitchingTab.isVisible({ timeout: 3000 })) {
-        await pitchingTab.click();
-        await page.waitForTimeout(300);
-      }
-
-      // Find pitcher selector and select the first available option
-      const pitcherSelect = page.locator('select:has(option[value!=""])').first();
-      if (await pitcherSelect.count() > 0) {
-        const options = await pitcherSelect.locator('option[value!=""]').all();
-        const firstOption = options[0];
-        if (options.length > 0 && firstOption) {
-          const firstValue = await firstOption.getAttribute('value');
-          if (firstValue) {
-            await pitcherSelect.selectOption(firstValue);
-
-            // Click Add Pitcher
-            const addPitcherButton = page.locator('button:has-text("Add Pitcher")');
-            if (await addPitcherButton.isVisible({ timeout: 3000 })) {
-              await addPitcherButton.click();
-              await page.waitForTimeout(300);
-
-              // Pitcher row should now appear in the table
-              await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 3000 });
-            }
-          }
-        }
-      }
-    }
-  });
-
-  test('should show empty pitching state when no pitchers have been added', async ({ page }) => {
-    // TODO: requires test data setup
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 3000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      const manualTab = page.locator('button:has-text("Manual Entry"), button:has-text("✏️")').first();
-      if (await manualTab.isVisible({ timeout: 3000 })) {
-        await manualTab.click();
-      }
-
-      const pitchingTab = page.locator('button:has-text("Pitching")').first();
-      if (await pitchingTab.isVisible({ timeout: 3000 })) {
-        await pitchingTab.click();
-        await page.waitForTimeout(300);
-
-        // Empty state text should be visible when no pitchers added yet
-        const emptyState = page.locator('text=/Add pitchers using the selector/i');
-        // Only assert if no rows exist yet (game just created)
-        const tableRows = page.locator('table tbody tr');
-        const rowCount = await tableRows.count();
-        if (rowCount === 0) {
-          await expect(emptyState).toBeVisible({ timeout: 3000 });
-        }
-      }
-    }
-  });
-
-  test('should show Save Box Score button and attempt to save', async ({ page }) => {
-    // TODO: requires test data setup (game + roster players + at least one stat entry)
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 3000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      const manualTab = page.locator('button:has-text("Manual Entry"), button:has-text("✏️")').first();
-      if (await manualTab.isVisible({ timeout: 3000 })) {
-        await manualTab.click();
-      }
-
-      // The Save button should be visible
-      const saveButton = page.locator(
-        'button:has-text("Save Box Score"), button:has-text("Save")'
-      ).first();
-
-      if (await saveButton.isVisible({ timeout: 5000 })) {
-        await expect(saveButton).toBeEnabled();
-
-        // Click save; without data this is a no-op but shouldn't crash
-        await saveButton.click();
-        await page.waitForTimeout(1000);
-
-        // Should either redirect to game detail page or stay with an error
-        const currentUrl = page.url();
-        expect(
-          currentUrl.includes('/stats/games/') || currentUrl.includes('/dashboard')
-        ).toBeTruthy();
-      }
-    }
+    // BoxScoreView now renders the just-completed game (read-only display —
+    // distinct from the "batting-entry-table" still rendered further down
+    // the page inside the "Update Box Score" panel).
+    await expect(page.locator('[data-testid="batting-table"]')).toBeVisible();
+    await expect(page.getByText(/^FINAL$/)).toBeVisible();
+    await expect(page.getByText(/^[WLT]$/).first()).toBeVisible();
   });
 });
 
 // ---------------------------------------------------------------------------
-// Group 3: Coach views game history and completed box scores
-// ---------------------------------------------------------------------------
-
-test.describe('Coach - Games List and Box Score View', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAsCoach(page);
-    await waitForPageLoad(page);
-  });
-
-  test('should display the games list page', async ({ page }) => {
-    // TODO: requires test data setup
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    // Page heading or an "Add Game" button must be present
-    const heading = page.locator('h1, h2').filter({ hasText: /Games|Scrimmage/i }).first();
-    const addButton = page.locator('button:has-text("Add Game"), a:has-text("Add Game"), button:has-text("New Game")').first();
-
-    const hasHeading = await heading.count() > 0;
-    const hasAddButton = await addButton.count() > 0;
-
-    expect(hasHeading || hasAddButton).toBeTruthy();
-  });
-
-  test('should show "Add Game" button and navigate to new game form', async ({ page }) => {
-    // TODO: requires test data setup
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const addButton = page.locator(
-      'a[href*="/stats/games/create"], button:has-text("Add Game"), a:has-text("Add Game")'
-    ).first();
-
-    if (await addButton.count() > 0 && await addButton.isVisible({ timeout: 5000 })) {
-      await addButton.click();
-      await waitForPageLoad(page);
-
-      await expect(page).toHaveURL(/\/stats\/games\/new/);
-      await expect(page.locator('h1').first()).toBeVisible({ timeout: 5000 });
-    }
-  });
-
-  test('should navigate to a game detail page from the games list', async ({ page }) => {
-    // TODO: requires test data setup (at least one game must exist for this team)
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const gameCard = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameCard.count() > 0 && await gameCard.isVisible({ timeout: 5000 })) {
-      await gameCard.click();
-      await waitForPageLoad(page);
-
-      await expect(page).toHaveURL(/\/stats\/games\/[a-zA-Z0-9-]+$/);
-    }
-  });
-
-  test('should display the box score view for a completed game', async ({ page }) => {
-    // TODO: requires test data setup (a completed game with batting + pitching entries)
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    // Find a game with status "completed" (may show a "W" / "L" badge)
-    const completedGame = page.locator(
-      'a[href*="/stats/games/"]:has(text(/W|L|completed/i))'
-    ).first();
-
-    const anyGame = page.locator('a[href*="/stats/games/"]').first();
-    const targetLink = (await completedGame.count() > 0) ? completedGame : anyGame;
-
-    if (await targetLink.count() > 0 && await targetLink.isVisible({ timeout: 5000 })) {
-      await targetLink.click();
-      await waitForPageLoad(page);
-
-      // BoxScoreView renders "Batting" and "Pitching" section headings
-      const battingSection = page.locator('h2:has-text("Batting"), th:has-text("AB")').first();
-      const entryForm = page.locator('button:has-text("Pitching")').first();
-
-      // Either viewing a completed box score or showing the entry form
-      const hasView = await battingSection.count() > 0;
-      const hasEntry = await entryForm.count() > 0;
-      expect(hasView || hasEntry).toBeTruthy();
-    }
-  });
-
-  test('should display breadcrumb navigation on the game detail page', async ({ page }) => {
-    // TODO: requires test data setup
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 5000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      // Breadcrumb "Games ›" link back to games list
-      const breadcrumb = page.locator('a[href*="/stats/games"]:has-text("Games")').first();
-      if (await breadcrumb.count() > 0) {
-        await expect(breadcrumb).toBeVisible();
-      }
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Group 4: Coach - Season stats summary page
-// ---------------------------------------------------------------------------
-
-test.describe('Coach - Season Stats Dashboard', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAsCoach(page);
-    await waitForPageLoad(page);
-  });
-
-  test('should display season stats page with team name', async ({ page }) => {
-    // TODO: requires test data setup (college/juco coach with a team)
-    await page.goto('/baseball/dashboard/stats/season');
-    await waitForPageLoad(page);
-
-    // Should have a heading containing "Stats"
-    await expect(
-      page.locator('h1:has-text("Stats"), h1:has-text("Season")').first()
-    ).toBeVisible({ timeout: 5000 });
-  });
-
-  test('should show season stats table or empty state', async ({ page }) => {
-    // TODO: requires test data setup
-    await page.goto('/baseball/dashboard/stats/season');
-    await waitForPageLoad(page);
-
-    const statsTable = page.locator('table, [data-testid="season-stats-table"]');
-    const emptyState = page.locator('text=/No stats|No games|Season stats/i');
-
-    const hasTable = await statsTable.count() > 0;
-    const hasEmpty = await emptyState.count() > 0;
-
-    expect(hasTable || hasEmpty).toBeTruthy();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Group 5: Coach - CSV Upload flow
+// Group 3: Coach - CSV upload tab (structural checks only — does not submit
+// a real CSV, so it never mutates seeded box-score data).
 // ---------------------------------------------------------------------------
 
 test.describe('Coach - CSV Box Score Upload', () => {
+  test.skip(!SEEDED, 'no seeded baseball game fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
+
   test.beforeEach(async ({ page }) => {
-    await loginAsCoach(page);
+    await loginCoachOrSkip(page);
+    await page.goto('/baseball/dashboard/stats/games');
+    await waitForPageLoad(page);
+    const gameCard = page.locator('[data-testid="game-card"]', { hasText: COMPLETED_OPPONENT });
+    await expect(gameCard).toBeVisible();
+    await gameCard.getByRole('link').click();
     await waitForPageLoad(page);
   });
 
-  test('should switch to CSV upload tab and show the upload form', async ({ page }) => {
-    // TODO: requires test data setup (a game must exist)
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 5000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      // Click "CSV Upload" tab
-      const csvTab = page.locator('button:has-text("CSV Upload"), button:has-text("📄 CSV Upload")').first();
-
-      if (await csvTab.isVisible({ timeout: 5000 })) {
-        await csvTab.click();
-        await page.waitForTimeout(300);
-
-        // Should show textarea for CSV paste and upload button
-        await expect(page.locator('textarea').first()).toBeVisible({ timeout: 3000 });
-        await expect(
-          page.locator('button:has-text("Upload"), button:has-text("Match Players")').first()
-        ).toBeVisible({ timeout: 3000 });
-      }
-    }
+  test('should switch to the CSV upload tab and show the paste/upload form', async ({ page }) => {
+    await page.getByRole('button', { name: /CSV Upload/i }).click();
+    await expect(page.locator('textarea')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Upload.*Match Players/i })).toBeVisible();
   });
 
-  test('should show validation error when uploading empty CSV', async ({ page }) => {
-    // TODO: requires test data setup (a game must exist)
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
+  test('should disable the upload button until CSV content is provided', async ({ page }) => {
+    await page.getByRole('button', { name: /CSV Upload/i }).click();
+    const uploadButton = page.getByRole('button', { name: /Upload.*Match Players/i });
+    await expect(uploadButton).toBeDisabled();
 
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 5000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      const csvTab = page.locator('button:has-text("CSV Upload"), button:has-text("📄 CSV Upload")').first();
-
-      if (await csvTab.isVisible({ timeout: 5000 })) {
-        await csvTab.click();
-        await page.waitForTimeout(300);
-
-        // Leave textarea empty and click upload
-        const uploadButton = page.locator(
-          'button:has-text("Upload & Match"), button:has-text("Upload")'
-        ).first();
-
-        if (await uploadButton.isVisible({ timeout: 3000 })) {
-          // Button should be disabled when no content
-          const isDisabled = await uploadButton.isDisabled();
-          expect(isDisabled).toBeTruthy();
-        }
-      }
-    }
+    await page.locator('textarea').fill('player_name,ab,r,h\nTest Player,4,1,2');
+    await expect(uploadButton).toBeEnabled();
   });
 
   test('should offer batting/pitching CSV template download buttons', async ({ page }) => {
-    // TODO: requires test data setup
+    await page.getByRole('button', { name: /CSV Upload/i }).click();
+    await expect(page.getByText(/Download template/i)).toBeVisible();
+
+    // Switch the CSV column-reference toggle (lowercase "batting"/"pitching"
+    // buttons) from its "batting" default to "pitching" — distinct from the
+    // (unmounted, while on this tab) Manual Entry "Batting"/"Pitching" tabs.
+    await page.getByRole('button', { name: 'pitching', exact: true }).click();
+    await expect(page.getByText(/Download template/i)).toBeVisible();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 4: Coach views game history and the completed box score
+// ---------------------------------------------------------------------------
+
+test.describe('Coach - Games List and Box Score View', () => {
+  test.skip(!SEEDED, 'no seeded baseball game fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
+
+  test.beforeEach(async ({ page }) => {
+    await loginCoachOrSkip(page);
     await page.goto('/baseball/dashboard/stats/games');
     await waitForPageLoad(page);
+  });
 
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
+  test('should display the games list with both seeded games', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Games & Scrimmages' })).toBeVisible();
+    await expect(page.locator('[data-testid="game-card"]', { hasText: COMPLETED_OPPONENT })).toBeVisible();
+    await expect(page.locator('[data-testid="game-card"]', { hasText: SCHEDULED_OPPONENT })).toBeVisible();
+  });
 
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 5000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
+  test('should navigate to the completed game detail page from the games list', async ({ page }) => {
+    const gameCard = page.locator('[data-testid="game-card"]', { hasText: COMPLETED_OPPONENT });
+    await gameCard.getByRole('link').click();
+    await waitForPageLoad(page);
+    await expect(page).toHaveURL(/\/stats\/games\/[a-zA-Z0-9-]+$/);
+  });
 
-      const csvTab = page.locator('button:has-text("CSV Upload"), button:has-text("📄 CSV Upload")').first();
+  test('should display the box score view with the FINAL score and result badge', async ({ page }) => {
+    const gameCard = page.locator('[data-testid="game-card"]', { hasText: COMPLETED_OPPONENT });
+    await gameCard.getByRole('link').click();
+    await waitForPageLoad(page);
 
-      if (await csvTab.isVisible({ timeout: 5000 })) {
-        await csvTab.click();
-        await page.waitForTimeout(300);
+    await expect(page.getByRole('heading', { name: new RegExp(`vs ${COMPLETED_OPPONENT}`, 'i') })).toBeVisible();
+    await expect(page.getByText(/^FINAL$/)).toBeVisible();
+    await expect(page.getByText('5 – 3')).toBeVisible();
+    await expect(page.getByText('W', { exact: true }).first()).toBeVisible();
+    await expect(page.locator('[data-testid="batting-table"]')).toBeVisible();
+    await expect(page.locator('[data-testid="batting-totals-row"]')).toBeVisible();
+    await expect(page.locator('th', { hasText: 'AB' })).toBeVisible();
+  });
 
-        // "Download template" link
-        const templateLink = page.locator('text=/Download template/i').first();
-        if (await templateLink.count() > 0) {
-          await expect(templateLink).toBeVisible();
-        }
-      }
-    }
+  test('should display ERA/WHIP columns and a pitching decision badge', async ({ page }) => {
+    const gameCard = page.locator('[data-testid="game-card"]', { hasText: COMPLETED_OPPONENT });
+    await gameCard.getByRole('link').click();
+    await waitForPageLoad(page);
+
+    await expect(page.locator('[data-testid="pitching-table"]')).toBeVisible();
+    await expect(page.locator('th', { hasText: 'ERA' })).toBeVisible();
+    await expect(page.locator('th', { hasText: 'WHIP' })).toBeVisible();
+    await expect(page.locator('[data-testid="pitching-table"]').getByText('W', { exact: true })).toBeVisible();
+  });
+
+  test('should display breadcrumb navigation back to Games', async ({ page }) => {
+    const gameCard = page.locator('[data-testid="game-card"]', { hasText: COMPLETED_OPPONENT });
+    await gameCard.getByRole('link').click();
+    await waitForPageLoad(page);
+
+    const breadcrumb = page.getByRole('link', { name: 'Games', exact: true });
+    await expect(breadcrumb).toBeVisible();
+    await breadcrumb.click();
+    await waitForPageLoad(page);
+    await expect(page).toHaveURL(/\/stats\/games$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 5: Coach - Season stats summary page
+// ---------------------------------------------------------------------------
+
+test.describe('Coach - Season Stats Dashboard', () => {
+  test.skip(!SEEDED, 'no seeded baseball team fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
+
+  test.beforeEach(async ({ page }) => {
+    await loginCoachOrSkip(page);
+    await page.goto('/baseball/dashboard/stats/season');
+    await waitForPageLoad(page);
+  });
+
+  test('should display the season stats page with the team name', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: /— Stats$/ })).toBeVisible();
+  });
+
+  test('should show the seeded batting stats in the season stats table', async ({ page }) => {
+    await expect(page.locator('table').first()).toBeVisible({ timeout: 8000 });
+    // Bench players from the seeded completed game must show up with non-zero AB.
+    await expect(page.getByText('Bennett').or(page.getByText('Ortiz'))).toBeVisible();
   });
 });
 
@@ -622,151 +335,34 @@ test.describe('Coach - CSV Box Score Upload', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Player - My Stats Dashboard', () => {
+  test.skip(!SEEDED, 'no seeded baseball player fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
+
   test.beforeEach(async ({ page }) => {
-    await loginAsPlayer(page);
-    await waitForPageLoad(page);
-  });
-
-  test('should display the my-stats page', async ({ page }) => {
+    await loginPlayerOrSkip(page);
     await page.goto('/baseball/dashboard/my-stats');
     await waitForPageLoad(page);
-
-    // Should see "My Stats" heading
-    await expect(
-      page.locator('h1:has-text("My Stats"), h1:has-text("Stats")').first()
-    ).toBeVisible({ timeout: 8000 });
   });
 
-  test('should show player name and position header', async ({ page }) => {
-    // TODO: requires test data setup (player profile with first/last name)
-    await page.goto('/baseball/dashboard/my-stats');
-    await waitForPageLoad(page);
-
-    // Either shows a player name or the page-level "My Stats" title
-    const playerHeader = page.locator('h1').first();
-    await expect(playerHeader).toBeVisible({ timeout: 8000 });
-
-    const text = await playerHeader.textContent();
-    expect(text).toBeTruthy();
+  test('should display the my-stats page with the seeded player name', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Test Player' })).toBeVisible({ timeout: 8000 });
   });
 
-  test('should show season stats section or empty state', async ({ page }) => {
-    // TODO: requires test data setup for season stats to be populated
-    await page.goto('/baseball/dashboard/my-stats');
-    await waitForPageLoad(page);
+  test('should show non-zero seeded season batting stats', async ({ page }) => {
+    const seasonStats = page.locator('[data-testid="my-season-stats"]');
+    await expect(seasonStats).toBeVisible({ timeout: 8000 });
 
-    // MySeasonStats component renders batting stats table or empty state
-    const seasonSection = page.locator(
-      'text=/Season|season/i, table, text=/No stats|No games/i'
-    ).first();
-
-    await expect(seasonSection).toBeVisible({ timeout: 8000 });
+    const battingSection = page.locator('[data-testid="my-season-batting"]');
+    await expect(battingSection).toBeVisible();
+    await expect(battingSection.getByText('AVG', { exact: true })).toBeVisible();
+    // The seeded testplayer batting line is 4 AB / 2 H — AVG must render a
+    // real number, not the "no stats" em-dash placeholder.
+    await expect(battingSection.getByText('—', { exact: true })).toHaveCount(0);
   });
 
-  test('should show empty state message when player has no stats yet', async ({ page }) => {
-    // NOTE: This test is valid for a freshly created player with no recorded games.
-    await page.goto('/baseball/dashboard/my-stats');
-    await waitForPageLoad(page);
-
-    // Either stats data or the "No Stats Yet" empty state
-    const emptyState = page.locator('text=/No Stats Yet|No stats/i');
-    const statsContent = page.locator('table, [class*="stats"]');
-
-    const hasEmpty = await emptyState.count() > 0;
-    const hasStats = await statsContent.count() > 0;
-
-    expect(hasEmpty || hasStats).toBeTruthy();
-  });
-
-  test('should have a Refresh button that can be clicked', async ({ page }) => {
-    await page.goto('/baseball/dashboard/my-stats');
-    await waitForPageLoad(page);
-
-    const refreshButton = page.locator('button:has-text("Refresh")').first();
-
-    if (await refreshButton.isVisible({ timeout: 5000 })) {
-      await refreshButton.click();
-
-      // Button enters "Refreshing..." state
-      await expect(
-        page.locator('button:has-text("Refreshing"), button:has-text("Refresh")')
-      ).toBeVisible({ timeout: 3000 });
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Group 7: Box Score View — read-only rendering checks
-// ---------------------------------------------------------------------------
-
-test.describe('Box Score View - Read-Only Display', () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAsCoach(page);
-    await waitForPageLoad(page);
-  });
-
-  test('should show win/loss badge next to final score in box score view', async ({ page }) => {
-    // TODO: requires test data setup (a completed game with our_score and opponent_score set)
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 5000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      // Win/Loss badge rendered by BoxScoreView (W = green, L = red)
-      const resultBadge = page.locator('text=/^W$|^L$|^T$/').first();
-      // Batting stats column header
-      const abHeader = page.locator('th:has-text("AB")').first();
-
-      // Either the completed BoxScoreView or the entry form should be present
-      const hasResult = await resultBadge.count() > 0;
-      const hasEntry = await abHeader.count() > 0;
-      expect(hasResult || hasEntry).toBeTruthy();
-    }
-  });
-
-  test('should display computed AVG and OPS columns in batting table', async ({ page }) => {
-    // TODO: requires test data setup (completed game with batting stats)
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 5000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      // BoxScoreView renders th "AVG" and "OPS"/"OBP"/"SLG" columns
-      const avgCol = page.locator('th:has-text("AVG")').first();
-      if (await avgCol.count() > 0) {
-        await expect(avgCol).toBeVisible();
-      }
-    }
-  });
-
-  test('should display ERA and WHIP columns in pitching table', async ({ page }) => {
-    // TODO: requires test data setup (completed game with pitching stats)
-    await page.goto('/baseball/dashboard/stats/games');
-    await waitForPageLoad(page);
-
-    const gameLink = page.locator('a[href*="/stats/games/"]').first();
-
-    if (await gameLink.count() > 0 && await gameLink.isVisible({ timeout: 5000 })) {
-      await gameLink.click();
-      await waitForPageLoad(page);
-
-      const eraCol = page.locator('th:has-text("ERA")').first();
-      if (await eraCol.count() > 0) {
-        await expect(eraCol).toBeVisible();
-      }
-
-      const whipCol = page.locator('th:has-text("WHIP")').first();
-      if (await whipCol.count() > 0) {
-        await expect(whipCol).toBeVisible();
-      }
-    }
+  test('should have a working Refresh button', async ({ page }) => {
+    const refreshButton = page.getByRole('button', { name: /Refresh/i });
+    await expect(refreshButton).toBeVisible();
+    await refreshButton.click();
+    await expect(refreshButton).toBeEnabled({ timeout: 5000 });
   });
 });

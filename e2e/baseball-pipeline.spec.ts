@@ -1,168 +1,176 @@
 import { test, expect } from '@playwright/test';
+import { loginAsCoach } from './helpers/auth';
+import { waitForPageLoad } from './helpers/common';
 
 /**
- * Baseball Pipeline E2E Test
- * Tests pipeline drag-and-drop, stage management, and player tracking
+ * Baseball Pipeline E2E Tests
+ *
+ * Exercises the real recruiting pipeline board (Kanban), list view, grad-year
+ * filter, notes, and keyboard navigation against the deterministic fixture
+ * provisioned by `scripts/seed-baseball-e2e.ts` (issue #375):
+ *   - one off-roster pipeline candidate ("Jordan Hayes", grad year 2027) on
+ *     the seeded test coach's watchlist, stage = "watchlist"
+ *
+ * Stage moves use the PipelineCard's built-in advance/retreat buttons
+ * (`← <stage>` / `<stage> →`) rather than simulating native HTML5 drag and
+ * drop — dnd-kit's pointer-sensor drag is unreliable to script headlessly,
+ * and the product already ships these buttons as the accessible/no-drag
+ * fallback for exactly this interaction.
+ *
+ * Mutating tests (stage move, note edit) are self-contained round trips
+ * (move then move back, save then leave restoration to the next seed run)
+ * so they don't depend on execution order — but to avoid two tests racing
+ * on the single shared candidate row under Playwright's `fullyParallel`
+ * config, the "Coach Flow" describe block runs its tests serially.
+ *
+ * Gated on PLAYWRIGHT_BASEBALL_SEEDED=1, with a per-test self-skip if the
+ * login fixture is unavailable in the target environment — same pattern as
+ * camps.spec.ts / baseball-phase1.spec.ts.
  */
 
-const TEST_COACH = {
-  email: 'coach@helmsportslabs.com',
-  password: 'TestPassword123!',
-};
+const SEEDED =
+  process.env.PLAYWRIGHT_BASEBALL_SEEDED === '1' ||
+  process.env.PLAYWRIGHT_BASEBALL_SEEDED === 'true';
+
+const CANDIDATE_NAME = 'Jordan Hayes';
+const CANDIDATE_GRAD_YEAR = '2027';
+const SEEDED_NOTE_FRAGMENT = 'Seeded E2E pipeline candidate';
+
+const STAGES = ['watchlist', 'high_priority', 'offer_extended', 'committed', 'uninterested'] as const;
 
 test.describe('Baseball Pipeline - College Coach Flow', () => {
-  test.skip('should display pipeline board with stages', async ({ page }) => {
-    // Skip if coach login not available
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_COACH.email);
-    await page.fill('input[type="password"]', TEST_COACH.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test.skip(!SEEDED, 'no seeded baseball pipeline fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
+  // Tests below mutate the single shared candidate's pipeline stage / notes —
+  // run them one at a time so they can't race each other under fullyParallel.
+  test.describe.configure({ mode: 'serial' });
 
-    // Navigate to pipeline
-    await page.goto('http://localhost:3000/baseball/dashboard/pipeline');
-
-    // Should see pipeline heading
-    await expect(page.locator('h1')).toContainText(/Pipeline|Planner/i);
-
-    // Should see all 5 stages
-    const stages = ['Watchlist', 'High Priority', 'Offer Extended', 'Committed', 'Uninterested'];
-
-    for (const stage of stages) {
-      await expect(page.locator(`text=${stage}`).first()).toBeVisible();
+  test.beforeEach(async ({ page }) => {
+    try {
+      await loginAsCoach(page);
+    } catch {
+      test.skip(true, 'coach login fixture unavailable in this environment');
     }
+    await page.goto('/baseball/dashboard/pipeline');
+    await waitForPageLoad(page);
   });
 
-  test.skip('should drag player between stages', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_COACH.email);
-    await page.fill('input[type="password"]', TEST_COACH.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test('should display the pipeline board with all stage columns and the seeded candidate', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Pipeline' })).toBeVisible();
 
-    await page.goto('http://localhost:3000/baseball/dashboard/pipeline');
-
-    // Find a player card
-    const playerCard = page.locator('[data-testid="player-card"], .player-card').first();
-
-    if (await playerCard.isVisible()) {
-      // Get initial position
-      const initialBoundingBox = await playerCard.boundingBox();
-
-      // Find target column
-      const targetColumn = page.locator('[data-testid="stage-high_priority"], [data-stage="high_priority"]').first();
-
-      if (await targetColumn.isVisible() && initialBoundingBox) {
-        const targetBox = await targetColumn.boundingBox();
-
-        if (targetBox) {
-          // Perform drag
-          await playerCard.hover();
-          await page.mouse.down();
-          await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
-          await page.mouse.up();
-
-          // Verify stage changed (by checking for success toast or card location)
-          await page.waitForTimeout(1000);
-        }
-      }
+    for (const stage of STAGES) {
+      await expect(page.locator(`[data-testid="pipeline-column-${stage}"]`)).toBeVisible();
     }
+
+    const candidateCard = page.locator(
+      '[data-testid="pipeline-column-watchlist"] [data-testid="pipeline-card"]',
+      { hasText: CANDIDATE_NAME }
+    );
+    await expect(candidateCard).toBeVisible();
   });
 
-  test.skip('should filter pipeline by grad year', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_COACH.email);
-    await page.fill('input[type="password"]', TEST_COACH.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test('should move the seeded candidate to a new stage and back using the card buttons', async ({ page }) => {
+    const card = page.locator('[data-testid="pipeline-card"]', { hasText: CANDIDATE_NAME });
+    await expect(card).toBeVisible();
+    await expect(card).toHaveAttribute('data-stage', 'watchlist');
 
-    await page.goto('http://localhost:3000/baseball/dashboard/pipeline');
+    // Advance: watchlist -> high_priority via the card's "next stage" button.
+    await card.getByRole('button', { name: /High Priority/i }).click();
+    await expect(
+      page.locator('[data-testid="pipeline-column-high_priority"] [data-testid="pipeline-card"]', {
+        hasText: CANDIDATE_NAME,
+      })
+    ).toBeVisible({ timeout: 5000 });
+    await expect(card).toHaveAttribute('data-stage', 'high_priority');
 
-    // Look for filter dropdown
-    const gradYearFilter = page.locator('select[name="gradYear"], [data-testid="grad-year-filter"]');
-
-    if (await gradYearFilter.isVisible()) {
-      await gradYearFilter.selectOption('2025');
-
-      // Wait for filter to apply
-      await page.waitForTimeout(500);
-
-      // All visible player cards should be 2025
-      const playerCards = page.locator('[data-testid="player-card"], .player-card');
-      const count = await playerCards.count();
-
-      for (let i = 0; i < Math.min(count, 5); i++) {
-        const card = playerCards.nth(i);
-        const gradYear = await card.locator('[data-testid="grad-year"], .grad-year').textContent();
-        if (gradYear) {
-          expect(gradYear).toContain('2025');
-        }
-      }
-    }
+    // Restore: high_priority -> watchlist via the card's "previous stage" button
+    // (the watchlist stage is labeled "Prospects" on the board/card UI).
+    await card.getByRole('button', { name: /Prospects/i }).click();
+    await expect(
+      page.locator('[data-testid="pipeline-column-watchlist"] [data-testid="pipeline-card"]', {
+        hasText: CANDIDATE_NAME,
+      })
+    ).toBeVisible({ timeout: 5000 });
+    await expect(card).toHaveAttribute('data-stage', 'watchlist');
   });
 
-  test.skip('should add notes to a player', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_COACH.email);
-    await page.fill('input[type="password"]', TEST_COACH.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test('should filter the pipeline board by grad year', async ({ page }) => {
+    const gradYearTrigger = page.getByRole('button', { name: 'All Years' });
+    await expect(gradYearTrigger).toBeVisible();
 
-    await page.goto('http://localhost:3000/baseball/dashboard/pipeline');
+    // Filter to the candidate's own grad year — candidate must remain visible.
+    await gradYearTrigger.click();
+    await page.getByRole('option', { name: CANDIDATE_GRAD_YEAR, exact: true }).click();
+    await expect(
+      page.locator('[data-testid="pipeline-card"]', { hasText: CANDIDATE_NAME })
+    ).toBeVisible();
 
-    // Click on a player card
-    const playerCard = page.locator('[data-testid="player-card"], .player-card').first();
+    // Filter to a different grad year — candidate must be filtered out.
+    await page.getByRole('button', { name: CANDIDATE_GRAD_YEAR, exact: true }).click();
+    await page.getByRole('option', { name: '2025', exact: true }).click();
+    await expect(
+      page.locator('[data-testid="pipeline-card"]', { hasText: CANDIDATE_NAME })
+    ).toHaveCount(0);
 
-    if (await playerCard.isVisible()) {
-      await playerCard.click();
+    // Clear the filter to restore the default (unfiltered) board state.
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await expect(
+      page.locator('[data-testid="pipeline-card"]', { hasText: CANDIDATE_NAME })
+    ).toBeVisible();
+  });
 
-      // Should open player detail panel
-      await expect(page.locator('[data-testid="player-panel"], .player-detail')).toBeVisible({ timeout: 3000 });
+  test('should add a note to the seeded candidate from the list view', async ({ page }) => {
+    await page.getByRole('button', { name: 'List', exact: true }).click();
 
-      // Find notes section
-      const notesArea = page.locator('textarea[name="notes"], [data-testid="notes-input"]');
+    const row = page.locator('tr', { hasText: CANDIDATE_NAME });
+    await expect(row).toBeVisible();
 
-      if (await notesArea.isVisible()) {
-        await notesArea.fill('E2E Test Note - Great arm strength');
+    // The notes button's `title` attribute always holds the full (untruncated)
+    // note text, so it's a stable anchor regardless of truncation in the cell.
+    const noteButton = row.locator('button[title]');
+    await expect(noteButton).toBeVisible();
+    await expect(noteButton).toHaveAttribute('title', new RegExp(SEEDED_NOTE_FRAGMENT));
+    await noteButton.click();
 
-        // Save notes
-        const saveButton = page.locator('button:has-text("Save"), button:has-text("Update")');
-        await saveButton.click();
+    const noteText = `E2E test note ${Date.now()} — strong arm, plus bat speed.`;
+    const textarea = row.locator('textarea');
+    await expect(textarea).toBeVisible();
+    await textarea.fill(noteText);
+    await row.getByRole('button', { name: 'Save', exact: true }).click();
 
-        // Verify saved
-        await expect(page.locator('text=saved, text=updated').first()).toBeVisible({ timeout: 3000 });
-      }
-    }
+    await expect(row.locator(`button[title="${noteText}"]`)).toBeVisible({ timeout: 5000 });
   });
 });
 
 test.describe('Baseball Pipeline - Keyboard Navigation', () => {
-  test.skip('should support keyboard navigation', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_COACH.email);
-    await page.fill('input[type="password"]', TEST_COACH.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test.skip(!SEEDED, 'no seeded baseball pipeline fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
 
-    await page.goto('http://localhost:3000/baseball/dashboard/pipeline');
-
-    // Focus on first player card
-    const playerCard = page.locator('[data-testid="player-card"], .player-card').first();
-
-    if (await playerCard.isVisible()) {
-      await playerCard.focus();
-
-      // Press Enter to open detail
-      await page.keyboard.press('Enter');
-
-      // Should open detail panel
-      await expect(page.locator('[data-testid="player-panel"], .player-detail')).toBeVisible({ timeout: 3000 });
-
-      // Press Escape to close
-      await page.keyboard.press('Escape');
-
-      // Panel should close
-      await expect(page.locator('[data-testid="player-panel"], .player-detail')).not.toBeVisible({ timeout: 1000 });
+  test.beforeEach(async ({ page }) => {
+    try {
+      await loginAsCoach(page);
+    } catch {
+      test.skip(true, 'coach login fixture unavailable in this environment');
     }
+    await page.goto('/baseball/dashboard/pipeline');
+    await waitForPageLoad(page);
+    await page.getByRole('button', { name: 'List', exact: true }).click();
+  });
+
+  test('should support j/k/Enter/Escape keyboard navigation in list view', async ({ page }) => {
+    const row = page.locator('tr', { hasText: CANDIDATE_NAME });
+    await expect(row).toBeVisible();
+
+    // ArrowDown moves focus onto the (only) row — verified via the highlight class.
+    await page.keyboard.press('ArrowDown');
+    await expect(row).toHaveClass(/bg-primary-50/);
+
+    // Enter opens the player peek panel for the focused row.
+    await page.keyboard.press('Enter');
+    const closePanelButton = page.getByRole('button', { name: 'Close panel' });
+    await expect(closePanelButton).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: CANDIDATE_NAME })).toBeVisible();
+
+    // Escape closes the panel.
+    await page.keyboard.press('Escape');
+    await expect(closePanelButton).not.toBeVisible({ timeout: 5000 });
   });
 });

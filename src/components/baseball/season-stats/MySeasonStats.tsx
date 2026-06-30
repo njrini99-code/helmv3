@@ -53,7 +53,7 @@ export function MySeasonStats() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="my-season-stats">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-warm-800">{currentYear} Season Stats</h3>
         <span className="text-xs text-warm-400">{stats.g} games played</span>
@@ -61,7 +61,7 @@ export function MySeasonStats() {
 
       {/* Batting stats */}
       {stats.ab > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="my-season-batting">
           <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider">Batting</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard label="AVG" value={stats.avg != null ? stats.avg.toFixed(3).replace(/^0/, '') : '—'} highlight={stats.avg != null && stats.avg >= 0.3} />
