@@ -53,6 +53,7 @@ import {
 } from '@/lib/baseball/adapters/event-rows';
 import { getSourceRegistryEntry } from '@/lib/baseball/stat-import-adapters';
 import type { MatchablePlayer } from '@/lib/baseball/import-matching';
+import { assertImportSourceAllowed } from '@/lib/baseball/import-source-enabled';
 import type { BaseballSourceKey } from '@/lib/types/baseball-stat-events';
 import { fingerprintBody } from '@/lib/baseball/adapters/file-fingerprint';
 import {
@@ -252,6 +253,8 @@ export const previewEventImport = withBaseballAction(
     const supabase = await createClient();
     const db = supabase as unknown as LooseClient;
 
+    await assertImportSourceAllowed(db, teamId, sourceKey);
+
     const parsed = parser(fileBody);
 
     // Detect-step result, derived from the SAME parse (no double-parse): detected
@@ -349,6 +352,8 @@ export const commitEventImport = withBaseballAction(
     }
     const supabase = await createClient();
     const db = supabase as unknown as LooseClient;
+
+    await assertImportSourceAllowed(db, teamId, sourceKey);
 
     const sourceId = await resolveSourceId(db, teamId, sourceKey, ctx.user.id);
     const entry = getSourceRegistryEntry(sourceKey);

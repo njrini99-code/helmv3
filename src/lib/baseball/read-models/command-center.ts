@@ -29,6 +29,8 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import type {
   BaseballInsightPriority,
+  BaseballPlayerAggregates,
+  BaseballRosterPlayer,
   BaseballTrend,
 } from '@/lib/types';
 import {
@@ -107,7 +109,11 @@ export interface CommandCenterReadModel {
   authorized: boolean;
   riskFeed: RiskFeedItem[];
   rosterPulse: RosterPulseItem[];
+  /** Full roster rows for client cards (same membership source as rosterPulse). */
+  rosterPlayers: BaseballRosterPlayer[];
   todayEvents: CommandCenterEvent[];
+  /** Current-week events for the calendar strip when requested. */
+  weekEvents: CommandCenterEvent[];
   summary: {
     openRisks: number;
     criticalRisks: number;
@@ -128,6 +134,8 @@ export interface CommandCenterOptions {
   riskLimit?: number;
   /** ISO date (YYYY-MM-DD) to treat as "today"; defaults to server now. */
   forDate?: string;
+  /** Include Sunday–Saturday week events for the calendar strip. */
+  includeWeekEvents?: boolean;
 }
 
 // -----------------------------------------------------------------------------
@@ -192,7 +200,7 @@ export async function getCommandCenter(
   teamId: string,
   options: CommandCenterOptions = {},
 ): Promise<CommandCenterReadModel> {
-  const { riskLimit = 25, forDate } = options;
+  const { riskLimit = 25, forDate, includeWeekEvents = false } = options;
 
   const base = (
     authorized: boolean,
@@ -202,7 +210,9 @@ export async function getCommandCenter(
     authorized,
     riskFeed: [],
     rosterPulse: [],
+    rosterPlayers: [],
     todayEvents: [],
+    weekEvents: [],
     summary: {
       openRisks: 0,
       criticalRisks: 0,
@@ -225,9 +235,33 @@ export async function getCommandCenter(
   const dayStart = `${day}T00:00:00.000Z`;
   const dayEnd = `${day}T23:59:59.999Z`;
 
+  let weekStartIso: string | null = null;
+  let weekEndIso: string | null = null;
+  if (includeWeekEvents) {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+    weekStartIso = weekStart.toISOString();
+    weekEndIso = weekEnd.toISOString();
+  }
+
+  const memberSelect = `
+    player_id, jersey_number, position, status, joined_at,
+    baseball_players!inner (
+      id, first_name, last_name, avatar_url, primary_position, secondary_position,
+      grad_year, bats, throws, height_feet, height_inches, weight_lbs, gpa, city, state
+    ),
+    baseball_player_aggregates (
+      player_id, team_id, total_sessions, practice_sessions, game_sessions,
+      career_avg, career_obp, career_slg, career_ops, practice_avg, game_avg,
+      pressure_gap, recent_trend, trend_magnitude, trend_velocity,
+      last_5_avg, last_10_avg, season_avg, last_session_at
+    )`;
+
   const [insightsRes, membersRes, eventsRes] = await Promise.all([
-    // Risk feed: open insights (active/acknowledged), newest first.
-    // source_refs is included so the UI can render expandable evidence chips.
     supabase
       .from('baseball_coach_insights')
       .select(
@@ -237,16 +271,10 @@ export async function getCommandCenter(
       .in('status', ['active', 'acknowledged'])
       .order('created_at', { ascending: false })
       .limit(Math.min(Math.max(riskLimit, 1), 100)),
-    // Roster pulse: members + their aggregates + player bio in one shaped read.
     supabase
       .from('baseball_team_members')
-      .select(
-        `player_id, jersey_number,
-         baseball_players!inner ( id, first_name, last_name, primary_position ),
-         baseball_player_aggregates ( total_sessions, recent_trend, career_avg, last_session_at )`,
-      )
+      .select(memberSelect)
       .eq('team_id', teamId),
-    // Today's events.
     supabase
       .from('baseball_events')
       .select('id, title, event_type, start_time, end_time, location, is_mandatory')
@@ -255,6 +283,17 @@ export async function getCommandCenter(
       .lte('start_time', dayEnd)
       .order('start_time', { ascending: true }),
   ]);
+
+  const weekEventsRes =
+    includeWeekEvents && weekStartIso && weekEndIso
+      ? await supabase
+          .from('baseball_events')
+          .select('id, title, event_type, start_time, end_time, location, is_mandatory')
+          .eq('team_id', teamId)
+          .gte('start_time', weekStartIso)
+          .lt('start_time', weekEndIso)
+          .order('start_time', { ascending: true })
+      : { data: [], error: null };
 
   let error: string | null = null;
 
@@ -308,8 +347,9 @@ export async function getCommandCenter(
     }
   }
 
-  // ---- Roster pulse ----
+  // ---- Roster pulse + full roster players (one membership read) ----
   const rosterPulse: RosterPulseItem[] = [];
+  const rosterPlayers: BaseballRosterPlayer[] = [];
   if (membersRes.error) {
     error = error ?? 'The roster pulse could not be loaded.';
   } else {
@@ -318,18 +358,23 @@ export async function getCommandCenter(
         id: string;
         first_name: string | null;
         last_name: string | null;
+        avatar_url: string | null;
         primary_position: string | null;
+        secondary_position: string | null;
+        grad_year: number | null;
+        bats: string | null;
+        throws: string | null;
+        height_feet: number | null;
+        height_inches: number | null;
+        weight_lbs: number | null;
+        gpa: number | null;
+        city: string | null;
+        state: string | null;
       } | null;
       if (!player) continue;
-      // aggregates may be returned as an array (0/1) from the embedded select.
       const aggRaw = m.baseball_player_aggregates as unknown;
       const agg = (Array.isArray(aggRaw) ? aggRaw[0] : aggRaw) as
-        | {
-            total_sessions: number | null;
-            recent_trend: string | null;
-            career_avg: number | null;
-            last_session_at: string | null;
-          }
+        | (BaseballPlayerAggregates & { last_session_at?: string | null })
         | null
         | undefined;
       const totalSessions = agg?.total_sessions ?? 0;
@@ -345,8 +390,15 @@ export async function getCommandCenter(
         lastSessionAt: agg?.last_session_at ?? null,
         noData: totalSessions === 0,
       });
+      rosterPlayers.push({
+        ...player,
+        aggregates: agg ?? undefined,
+        jersey_number: m.jersey_number,
+        team_position: m.position,
+        team_status: m.status,
+        joined_at: m.joined_at,
+      } as BaseballRosterPlayer);
     }
-    // Sort: most recent activity first, no-data players last.
     rosterPulse.sort((a, b) => {
       if (a.noData !== b.noData) return a.noData ? 1 : -1;
       return (b.lastSessionAt ?? '').localeCompare(a.lastSessionAt ?? '');
@@ -371,6 +423,23 @@ export async function getCommandCenter(
     }
   }
 
+  const weekEvents: CommandCenterEvent[] = [];
+  if (includeWeekEvents && weekEventsRes.error) {
+    error = error ?? "This week's events could not be loaded.";
+  } else if (includeWeekEvents) {
+    for (const e of weekEventsRes.data ?? []) {
+      weekEvents.push({
+        id: e.id,
+        title: e.title,
+        eventType: e.event_type,
+        startTime: e.start_time,
+        endTime: e.end_time,
+        location: e.location,
+        isMandatory: e.is_mandatory === true,
+      });
+    }
+  }
+
   const playersWithData = rosterPulse.filter((p) => !p.noData).length;
   const criticalRisks = riskFeed.filter((r) => r.severity === 'critical').length;
 
@@ -379,7 +448,9 @@ export async function getCommandCenter(
     authorized: true,
     riskFeed,
     rosterPulse,
+    rosterPlayers,
     todayEvents,
+    weekEvents,
     summary: {
       openRisks: riskFeed.length,
       criticalRisks,

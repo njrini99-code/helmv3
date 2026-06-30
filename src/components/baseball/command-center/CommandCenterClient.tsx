@@ -22,6 +22,7 @@ import {
 import type { BaseballRosterPlayer } from '@/lib/types';
 import type { RiskFeedItem } from '@/lib/baseball/read-models/command-center';
 import type { CoachDailyContractsReadModel } from '@/lib/baseball/read-models/coach-daily-contracts';
+import type { ReadModelLoadState } from '@/lib/product-trust/read-model-state';
 import { Button } from '@/components/ui/button';
 import { RiskFeedStrip } from './RiskFeedStrip';
 import { DailyBriefPanel } from './DailyBriefPanel';
@@ -57,6 +58,14 @@ interface CommandCenterClientProps {
   riskFeed?: RiskFeedItem[];
   riskFeedError?: string | null;
   coachDailyContracts?: CoachDailyContractsReadModel;
+  summary?: {
+    openRisks: number;
+    criticalRisks: number;
+    rosterSize: number;
+    playersWithData: number;
+    eventsToday: number;
+  };
+  loadState?: ReadModelLoadState;
 }
 
 type MainTab = 'roster' | 'stats';
@@ -267,6 +276,8 @@ export function CommandCenterClient({
   riskFeed = [],
   riskFeedError = null,
   coachDailyContracts,
+  summary,
+  loadState,
 }: CommandCenterClientProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -392,7 +403,18 @@ export function CommandCenterClient({
               </p>
               <h1 className="text-2xl sm:text-3xl font-bold text-warm-900 tracking-tight">Command Center</h1>
               <p className="text-warm-500 mt-1 text-sm">
-                {players.length} player{players.length !== 1 ? 's' : ''} on your roster
+                {loadState === 'error' || loadState === 'partial'
+                  ? (riskFeedError ?? 'Some Command Center data could not be loaded.')
+                  : loadState === 'unauthorized'
+                    ? 'You do not have staff access to this team.'
+                    : `${summary?.rosterSize ?? players.length} player${(summary?.rosterSize ?? players.length) !== 1 ? 's' : ''} on your roster`}
+                {summary && loadState !== 'unauthorized' && loadState !== 'error' && (
+                  <span className="text-warm-400">
+                    {' '}
+                    · {summary.openRisks} open signal{summary.openRisks !== 1 ? 's' : ''}
+                    {summary.eventsToday > 0 ? ` · ${summary.eventsToday} event${summary.eventsToday !== 1 ? 's' : ''} today` : ''}
+                  </span>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-2.5">

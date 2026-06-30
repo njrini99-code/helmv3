@@ -151,7 +151,7 @@ async function run() {
         state: p.state,
         high_school_name: p.hs,
         player_type: 'college',
-        recruiting_activated: true,
+        recruiting_activated: false,
       })
       .select()
       .single();

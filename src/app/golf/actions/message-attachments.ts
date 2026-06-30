@@ -57,7 +57,7 @@ export async function sendGolfMessageWithAttachments(
     // Insert the message
     const { data: message, error: messageError } = await supabase
       .from('golf_messages')
-      .insert({
+      .insert({ // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI; revalidate would cause reload loop
         conversation_id: conversationId,
         sender_id: user.id,
         content: content || '', // Allow empty content if there are attachments
@@ -100,7 +100,7 @@ export async function sendGolfMessageWithAttachments(
     // Update conversation updated_at timestamp
     await supabase
       .from('golf_conversations')
-      .update({ updated_at: new Date().toISOString() })
+      .update({ updated_at: new Date().toISOString() }) // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI
       .eq('id', conversationId);
 
     return { success: true, messageId: message.id };
@@ -233,7 +233,7 @@ export async function deleteGolfMessageAttachment(attachmentId: string): Promise
     // Delete from database
     const { error: deleteError } = await supabase
       .from('golf_message_attachments')
-      .delete()
+      .delete() // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI
       .eq('id', attachmentId);
 
     if (deleteError) {

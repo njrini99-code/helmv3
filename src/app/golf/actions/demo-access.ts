@@ -128,7 +128,7 @@ export async function enterDemo(input: EnterDemoInput): Promise<EnterDemoResult>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyAdmin = adminDb as unknown as { from: (table: string) => any };
     // nosemgrep: helmv3-server-action-missing-auth-check -- public demo gate; see JSDoc above.
-    await anyAdmin.from('golf_demo_sessions').insert({
+    await anyAdmin.from('golf_demo_sessions').insert({ // nosemgrep: helmv3-action-missing-revalidate -- redirect-terminated demo flow
       name,
       email,
       school,

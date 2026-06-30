@@ -41,9 +41,15 @@ export function CollegeCard({
 
     try {
       if (newState) {
-        await addToInterests(college.id, college.name, college.division, college.conference);
+        const result = await addToInterests(college.id);
+        if (!result.success) {
+          throw new Error('Failed to add interest');
+        }
       } else {
-        await removeFromInterests(college.id);
+        const result = await removeFromInterests(college.id);
+        if (!result.success) {
+          throw new Error('Failed to remove interest');
+        }
       }
     } catch (error) {
       // Revert on error

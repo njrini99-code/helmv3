@@ -9,6 +9,7 @@ import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/sup
 import { validatePassword } from '@/lib/auth/password-validation';
 import type { User } from '@supabase/supabase-js';
 import { logServerError } from '@/lib/server-error-logger';
+import { CommonSchemas } from '@/lib/validation/server-action-validator';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -449,12 +450,18 @@ export async function completeBaseballSignup(data: {
     const fullName = user.user_metadata?.full_name || userEmail.split('@')[0] || 'Player';
     const [firstName, ...lastParts] = fullName.split(' ');
 
+    const recruitingActivated = playerType !== 'college';
+    CommonSchemas.recruitingPlayerState.parse({
+      player_type: playerType,
+      recruiting_activated: recruitingActivated,
+    });
+
     const { error: playerError } = await admin.from('baseball_players').insert({
       user_id: user.id,
       player_type: playerType,
       first_name: firstName,
       last_name: lastParts.join(' ') || '',
-      recruiting_activated: playerType !== 'college',
+      recruiting_activated: recruitingActivated,
       onboarding_completed: false,
       profile_completion_percent: 0,
     });
