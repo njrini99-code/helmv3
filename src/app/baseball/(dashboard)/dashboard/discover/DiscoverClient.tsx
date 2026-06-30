@@ -317,8 +317,8 @@ function DiscoverContent() {
 
       try {
         const [playerCounts, teamCounts] = await Promise.all([
-          getStateCounts('players', coach.id, coach.coach_type as CoachType),
-          getStateCounts('teams', coach.id, coach.coach_type as CoachType),
+          getStateCounts('players'),
+          getStateCounts('teams'),
         ]);
         setPlayerStateCounts(playerCounts);
         setTeamStateCounts(teamCounts);
@@ -328,7 +328,7 @@ function DiscoverContent() {
     }
 
     fetchStateCounts();
-  }, [coach?.id, coach?.coach_type]);
+  }, [coach?.id]);
 
   if (authLoading) return <PageLoading />;
 
