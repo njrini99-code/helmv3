@@ -230,3 +230,87 @@ jobs:
           name: picker-playwright-report
           path: playwright-report/
           retention-days: 14
+
+  # Isolated, advisory job for the seeded BaseballHelm stats-surface smoke
+  # (#382). Isolated for the same reason as `picker-screenshots`: the shared
+  # `e2e` job's full suite has pre-existing failing specs that would exhaust
+  # its 30-min budget before this ever ran, AND baseball-phase1.spec.ts /
+  # this spec's Tier-2 assertions are gated by the SAME PLAYWRIGHT_BASEBALL_SEEDED
+  # flag — running them in the shared job would make `e2e`'s pass/fail depend
+  # on baseball fixture credentials it doesn't otherwise need. The seeded
+  # credentials below are therefore scoped to ONLY this job's `env:`, not the
+  # workflow-level `env:` block, so no other job's specs see them.
+  #
+  # ADVISORY/NON-BLOCKING: the `|| echo` guard on the test step means this job
+  # can never fail the PR. Promotion path: once it has been green across
+  # several consecutive runs (recommend N >= 10, or one week of merges to
+  # main), remove the `|| echo "..."` suffix below so a real failure fails the
+  # job — at that point also remove `continue-on-error` from any branch
+  # protection config that references this job, if one was added.
+  #
+  # Required repo secrets (Settings → Secrets and variables → Actions):
+  #   PLAYWRIGHT_BASEBALL_SEEDED   = "1"
+  #   E2E_BASEBALL_COACH_EMAIL     (a seeded BaseballHelm college coach, e.g.
+  #                                  the Rini demo's njrini99@gmail.com)
+  #   E2E_BASEBALL_COACH_PASSWORD
+  #   E2E_BASEBALL_PLAYER_EMAIL    (a seeded player on that coach's team, e.g.
+  #                                  the Rini demo's rinin376@gmail.com)
+  #   E2E_BASEBALL_PLAYER_PASSWORD
+  #   NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are inherited
+  #   from the workflow-level env: block above (same Supabase project the
+  #   fixture accounts were seeded into).
+  #
+  # One-time seeding command (run locally / from a trusted shell against the
+  # target Supabase project — needs SUPABASE_SERVICE_ROLE_KEY, which is NOT a
+  # CI secret consumed by this job):
+  #   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config \
+  #     scripts/seed-rini-baseball-demo.ts --confirm
+  baseball-smoke:
+    name: BaseballHelm seeded smoke (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_BASEBALL_SEEDED: ${{ secrets.PLAYWRIGHT_BASEBALL_SEEDED }}
+      E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
+      E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
+      E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
+      E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build (so dev server boots fast)
+        run: npm run build
+
+      - name: Run baseball-smoke spec
+        # Advisory only — see job comment above for the promotion path.
+        run: npx playwright test baseball-stats-smoke.spec.ts --reporter=line || echo "baseball-smoke had failures — see report artifact"
+
+      - name: Upload Playwright report (baseball-smoke)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: baseball-smoke-playwright-report
+          path: playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
