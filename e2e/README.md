@@ -233,6 +233,88 @@ jobs:
           path: playwright-report/
 ```
 
+## BaseballHelm mandatory smoke (#372)
+
+`baseball-smoke.spec.ts` is a **non-skippable** suite covering Command
+Center, Player Today, Calendar, Roster, Stats Center / My Stats,
+Performance / Lift, and Settings, plus a player→coach denied-capability
+redirect check. `baseball-onboarding-smoke.spec.ts` is a small, anonymous
+companion covering signup + onboarding rendering. Unlike the rest of `e2e/`
+(which self-skips when no seeded fixture is present, e.g.
+`baseball-phase1.spec.ts`'s `PLAYWRIGHT_BASEBALL_SEEDED` guard), this suite
+has no skip guard and is wired as a **blocking** step in
+`.github/workflows/playwright.yml` — a failure here fails CI.
+
+### How it authenticates
+
+`playwright/baseball-auth.setup.ts` logs a coach and a player in once against
+`/baseball/login` and persists their session to
+`playwright/.auth/baseball-coach.json` / `playwright/.auth/baseball-player.json`.
+`playwright.config.ts` wires this as a `setup` project; the `baseball-coach`
+and `baseball-player` projects declare `dependencies: ['setup']` and consume
+the matching storageState file, so `baseball-smoke.spec.ts` never logs in
+itself — it just navigates as an already-authenticated coach or player
+(tests are tagged `@coach` / `@player` so each project only runs its own
+half of the file).
+
+### Required env vars
+
+| Env var | Purpose |
+|---|---|
+| `E2E_BASEBALL_COACH_EMAIL` / `E2E_BASEBALL_COACH_PASSWORD` | Seeded coach login used by the `setup` project. |
+| `E2E_BASEBALL_PLAYER_EMAIL` / `E2E_BASEBALL_PLAYER_PASSWORD` | Seeded player login used by the `setup` project. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Used by `npm run seed:baseball:ci` to upsert the demo team/accounts. |
+| `PLAYWRIGHT_BASEBALL_REQUIRED` | Optional. Set to `1`/`true` locally to opt into the same "throw on missing creds" behavior CI gets automatically (CI is detected via the `CI` env var). |
+
+Register the first three (well, four counting the two coach/player email +
+password pairs) as **GitHub Secrets** on the repo
+(`Settings → Secrets and variables → Actions`) — the workflow injects them
+into the `e2e` job's `env:` block. If they're absent, `npm run seed:baseball:ci`
+exits non-zero immediately with `Missing required env var: ... — cannot seed
+baseball CI accounts`, and if the seed step is skipped/bypassed,
+`playwright/baseball-auth.setup.ts` throws `Baseball seeded auth missing —
+set E2E_BASEBALL_*_EMAIL / E2E_BASEBALL_*_PASSWORD and run \`npm run
+seed:baseball:ci\`` — either way CI fails loudly rather than silently
+skipping.
+
+### Seeding / resetting the fixture
+
+```bash
+# Dry run first (prints the plan, writes nothing):
+DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo.ts
+
+# Actually seed (idempotent — safe to re-run any time, upserts by deterministic id):
+npm run seed:baseball:ci
+```
+
+This creates/upserts **Demo University Baseball** with a coach
+(`demo-coach@baseballhelmdemo.com`) and player (`demo-player@baseballhelmdemo.com`),
+both with password `BaseballDemo2026` (see `scripts/seed-baseball-demo.ts` for
+the full roster + practice/lift/readiness/insight fixtures it seeds). If you
+point `E2E_BASEBALL_*` at those exact values, the demo seed doubles as the
+CI fixture; otherwise point them at a dedicated CI-only account and seed that
+account by whatever means is appropriate for your environment.
+
+To reset: re-run `npm run seed:baseball:ci` — every write is an
+`upsert(..., { onConflict: 'id' })` on a deterministic id, so a second run is
+a no-op diff rather than creating duplicates or destroying existing rows.
+Delete `playwright/.auth/baseball-*.json` to force a fresh login on the next
+run (they're already gitignored alongside the other `playwright/.auth/*`
+files).
+
+### Known gap / follow-up
+
+Full fresh-account onboarding — actually creating a brand-new coach/player
+account, completing the multi-step onboarding wizard, and tearing the
+account down afterwards — is **not** covered by the mandatory suite (it
+needs nondeterministic creation + cleanup that doesn't fit an always-green
+smoke test). `baseball-onboarding-smoke.spec.ts` covers only the anonymous,
+render-only slice (signup form renders; the coach-onboarding wizard renders
+its first step for a logged-out visitor; the player onboarding route
+correctly denies anonymous visitors). File a follow-up issue referencing
+#372 for full account-creation onboarding coverage if one doesn't already
+exist.
+
 ## Viewing Test Reports
 
 After running tests, view the HTML report:
