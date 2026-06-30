@@ -20,16 +20,17 @@ jobs:
     steps:
       - name: Resolve scan target
         id: target
+        env:
+          INPUT_URL: ${{ github.event.inputs.target_url }}
+          SECRET_URL: ${{ secrets.ZAP_TARGET_URL }}
+          DEFAULT_URL: https://helmsportslabs.com
         run: |
-          INPUT="${{ github.event.inputs.target_url }}"
-          SECRET="${{ secrets.ZAP_TARGET_URL }}"
-          DEFAULT="https://helmsportslabs.com"
-          if [ -n "$INPUT" ]; then
-            echo "url=$INPUT" >> "$GITHUB_OUTPUT"
-          elif [ -n "$SECRET" ]; then
-            echo "url=$SECRET" >> "$GITHUB_OUTPUT"
+          if [ -n "$INPUT_URL" ]; then
+            echo "url=$INPUT_URL" >> "$GITHUB_OUTPUT"
+          elif [ -n "$SECRET_URL" ]; then
+            echo "url=$SECRET_URL" >> "$GITHUB_OUTPUT"
           else
-            echo "url=$DEFAULT" >> "$GITHUB_OUTPUT"
+            echo "url=$DEFAULT_URL" >> "$GITHUB_OUTPUT"
           fi
 
       - name: ZAP baseline scan
