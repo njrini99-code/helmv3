@@ -78,6 +78,7 @@ export type BaseballCapability =
   | 'can_message_players'
   | 'can_export_reports'
   | 'can_manage_calendar'
+  | 'can_manage_documents'
   | 'is_head_coach';
 
 /**
@@ -101,6 +102,7 @@ export const BASEBALL_CAPABILITY_KEYS: readonly BaseballCapability[] = [
   'can_message_players',
   'can_export_reports',
   'can_manage_calendar',
+  'can_manage_documents',
   'is_head_coach',
 ] as const;
 
