@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { PlayerProfileClient } from './PlayerProfileClient';
+import { resolvePublicProfileAccess } from '@/lib/baseball/public-profile-access';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -10,10 +11,18 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const access = await resolvePublicProfileAccess(id, user?.id ?? null);
+
+  if (!access.allowed || !access.displayName) {
+    return {
+      title: 'Player Profile | Helm',
+    };
+  }
 
   const { data: player } = await supabase
     .from('baseball_players')
-    .select('first_name, last_name, primary_position, grad_year')
+    .select('primary_position, grad_year')
     .eq('id', id)
     .single();
 
@@ -24,16 +33,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: `${player.first_name} ${player.last_name} - ${player.primary_position} | Helm`,
-    description: `View ${player.first_name} ${player.last_name}'s baseball recruiting profile. Class of ${player.grad_year}.`,
+    title: `${access.displayName} - ${player.primary_position} | Helm`,
+    description: `View ${access.displayName}'s baseball recruiting profile. Class of ${player.grad_year}.`,
   };
 }
 
 export default async function PublicPlayerProfilePage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const access = await resolvePublicProfileAccess(id, user?.id ?? null);
 
-  // Fetch player with all related data
+  if (!access.allowed) {
+    notFound();
+  }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: player, error } = await (supabase as any)
     .from('baseball_players')
@@ -122,7 +135,6 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
   }
 
   // Check if current user is a coach viewing
-  const { data: { user } } = await supabase.auth.getUser();
   let isCoachViewing = false;
   let coachId: string | null = null;
 

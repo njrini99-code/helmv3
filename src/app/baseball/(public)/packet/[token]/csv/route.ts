@@ -33,11 +33,9 @@ export async function GET(_req: Request, { params }: RouteParams): Promise<Respo
   const { token } = await params;
   const model = await resolveScoutPacketByToken(token ?? '');
   const csv = scoutPacketToCsv(model);
-  // An unexposed/invalid packet returns ok:false; scoutPacketToCsv already emits
-  // a minimal "Unavailable" CSV in that case (no leaked rows). Use 200 either way
-  // so the browser downloads the (possibly empty) file cleanly.
+  const status = model.ok ? 200 : model.reason === 'not_found' ? 404 : 403;
   return new Response(csv, {
-    status: 200,
+    status,
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${fileName(model.ok ? model.playerName : null)}"`,
