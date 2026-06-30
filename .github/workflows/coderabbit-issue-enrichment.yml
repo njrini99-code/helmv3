@@ -1,0 +1,33 @@
+name: CodeRabbit Issue Enrichment
+
+on:
+  issues:
+    types:
+      - opened
+      - reopened
+      - edited
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  trigger-planning:
+    name: Trigger CodeRabbit planning
+    if: ${{ !github.event.issue.pull_request && !contains(github.event.issue.labels.*.name, 'no-plan') && !contains(github.event.issue.labels.*.name, 'wip') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure plan-me label exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create plan-me \
+            --repo "$GITHUB_REPOSITORY" \
+            --color "7057ff" \
+            --description "Trigger CodeRabbit automatic issue planning" \
+            || true
+
+      - name: Add CodeRabbit planning trigger label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue edit "${{ github.event.issue.number }}" --repo "$GITHUB_REPOSITORY" --add-label plan-me
