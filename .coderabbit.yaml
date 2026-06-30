@@ -638,6 +638,7 @@ issue_enrichment:
         - "feature"
         - "enhancement"
         - "bug"
+        - "tech-debt"
         - "high-risk"
         - "security"
         - "auth"
