@@ -42,7 +42,7 @@ const findings = [];
 for (const source of sources) {
   const data = source.data;
   if (!data) continue;
-  if (source.input === 'gitleaks.json' && Array.isArray(data)) {
+  if (source.input === 'gitleaks.json' && Array.isArray(data) && data.length > 0) {
     findings.push({
       source: source.input,
       id: `GITLEAKS-${data.length}-REDACTED-FINDINGS`,
@@ -53,7 +53,7 @@ for (const source of sources) {
     });
   } else if (Array.isArray(data.findings)) {
     for (const finding of data.findings) findings.push({ source: source.input, ...finding });
-  } else if (source.input === 'osv.json' && Array.isArray(data.results)) {
+  } else if (source.input === 'osv.json' && Array.isArray(data.results) && data.results.length > 0) {
     findings.push({
       source: source.input,
       id: `OSV-${data.results.length}-VULN-FINDINGS`,
@@ -61,6 +61,36 @@ for (const source of sources) {
       confidence: 'medium',
       title: `OSV reported ${data.results.length} vulnerability result groups`,
       evidence: ['Review generated OSV JSON and triage reachability before blocking merge.'],
+    });
+  } else if (source.input === 'semgrep.json' && Array.isArray(data.results) && data.results.length > 0) {
+    const byRule = data.results.reduce((acc, result) => {
+      const rule = result.check_id ?? 'unknown';
+      acc[rule] = (acc[rule] ?? 0) + 1;
+      return acc;
+    }, {});
+    findings.push({
+      source: source.input,
+      id: `SEMGREP-${data.results.length}-ADVISORY-FINDINGS`,
+      severity: 'P2',
+      confidence: 'medium',
+      title: `Semgrep reported ${data.results.length} advisory findings`,
+      evidence: Object.entries(byRule).map(([rule, count]) => `${rule}: ${count}`),
+      suggestedFix: 'Triage custom Semgrep findings, tune false positives, and fix confirmed service-role or silent-error paths.',
+    });
+  } else if (source.input === 'dependency-cruiser.json' && Array.isArray(data.summary?.violations) && data.summary.violations.length > 0) {
+    const byRule = data.summary.violations.reduce((acc, violation) => {
+      const rule = violation.rule?.name ?? 'unknown';
+      acc[rule] = (acc[rule] ?? 0) + 1;
+      return acc;
+    }, {});
+    findings.push({
+      source: source.input,
+      id: `DEPCRUISE-${data.summary.violations.length}-ADVISORY-VIOLATIONS`,
+      severity: 'P2',
+      confidence: 'high',
+      title: `Dependency Cruiser reported ${data.summary.violations.length} advisory architecture violations`,
+      evidence: Object.entries(byRule).map(([rule, count]) => `${rule}: ${count}`),
+      suggestedFix: 'Move shared contracts out of app directories, break CoachHelm/Golf circular imports, or document intentional exceptions.',
     });
   } else if (data.finding_count > 0 && Array.isArray(data.findings)) {
     for (const finding of data.findings) findings.push({ source: source.input, ...finding });

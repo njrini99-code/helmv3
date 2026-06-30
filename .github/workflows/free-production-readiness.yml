@@ -81,12 +81,15 @@ jobs:
 
       - name: Run Semgrep Helm rules
         run: npm run analyze:semgrep
+        continue-on-error: true
 
       - name: Run dependency-cruiser
         run: npm run analyze:deps
+        continue-on-error: true
 
       - name: Run duplicate-code radar
         run: npm run analyze:duplicates
+        continue-on-error: true
 
       - name: Run Helm auditor
         if: always()

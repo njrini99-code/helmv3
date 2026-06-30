@@ -68,7 +68,8 @@ export function isCourseImagePublicUrl(url: string, supabaseUrl: string): boolea
 // ─────────────────────────────────────────────────────────────────────────────
 // Course website normalization (P338).
 // A course website was previously persisted only `.trim()`-ed, so a value like
-// "example.com" (no scheme) rendered as a RELATIVE href ("/golf/.../example.com")
+// "example.com" (no scheme) rendered as a broken route-relative link under the
+// current Golf URL.
 // — a broken link. These helpers fix that on BOTH sides:
 //   • normalizeWebsiteUrl — used on SAVE (create/edit): trims, prepends https://
 //     when no scheme is present, validates the result, and returns null for

@@ -20,7 +20,7 @@ To connect locally:
 
 ```bash
 # .env.local
-SUPABASE_DB_URL='postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres'
+SUPABASE_DB_URL='copy-from-supabase-dashboard'
 ```
 
 ## Option 1: Quick — Run Critical Checks Only (2 minutes)
@@ -86,12 +86,11 @@ Lists functions and triggers — verify `handle_new_user` exists.
 
 ## If Connection Fails on Your Machine
 
-Try the IPv6 bracket notation against the same `$SUPABASE_DB_URL` host:
+If the direct database connection fails, copy the IPv6-compatible connection
+string from the Supabase dashboard and assign it to `$SUPABASE_DB_URL` locally:
 
 ```bash
-# Resolve the IPv6 address from Supabase dashboard, then:
-psql "postgresql://postgres:<password>@[<ipv6-addr>]:5432/postgres" \
-  -f AUDIT_BATCH_2_SECURITY_CRITICAL.sql
+psql "$SUPABASE_DB_URL" -f AUDIT_BATCH_2_SECURITY_CRITICAL.sql
 ```
 
 Or just use Supabase Dashboard (Option 3) — guaranteed to work.

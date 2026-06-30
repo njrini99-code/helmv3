@@ -46,8 +46,8 @@ echo "🔑 Using project ID: ${SUPABASE_PROJECT_ID:0:10}..."
 
 # Apply migration using Supabase MCP or psql
 # Note: This assumes you have the Supabase CLI or MCP tools available
-# For direct database connection:
-# PGPASSWORD='your-password' psql "postgresql://postgres:password@db.$SUPABASE_PROJECT_ID.supabase.co:5432/postgres" -f "$MIGRATION_FILE"
+# For direct database connection, set SUPABASE_DB_URL locally and run:
+# psql "$SUPABASE_DB_URL" -f "$MIGRATION_FILE"
 
 # For now, we'll just apply via Supabase dashboard or MCP tools
 echo "⚠️  Note: Migration must be applied manually via:"

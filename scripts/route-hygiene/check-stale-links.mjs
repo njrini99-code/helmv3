@@ -1,4 +1,12 @@
-import { extractHrefLikeStrings, readJson, readSource, sourceFiles, writeJson } from './route-utils.mjs';
+import {
+  canonicalRouteHref,
+  extractHrefLikeStrings,
+  publicAssetExists,
+  readJson,
+  readSource,
+  sourceFiles,
+  writeJson,
+} from './route-utils.mjs';
 
 const inventory = readJson('route-inventory.json', { routes: [] });
 const routes = new Set(inventory.routes.map((row) => row.route));
@@ -11,9 +19,11 @@ for (const file of sourceFiles()) {
       findings.push({ id: 'ROUTE-GROUP-IN-HREF', severity: 'P1', file, href });
       continue;
     }
+    const routeHref = canonicalRouteHref(href);
     if (/^\/(api|_next|assets|images)/.test(href)) continue;
+    if (publicAssetExists(href)) continue;
     if (href.includes('[') || href.includes('${') || href.includes(':')) continue;
-    if (!routes.has(href) && !routes.has(href.replace(/\/$/, ''))) {
+    if (!routes.has(routeHref) && !routes.has(routeHref.replace(/\/$/, ''))) {
       findings.push({ id: 'ROUTE-STALE-LINK', severity: 'P2', file, href });
     }
   }

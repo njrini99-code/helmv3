@@ -59,7 +59,8 @@
     "analyze:deps": "depcruise src --config dependency-cruiser.config.cjs --output-type json > docs/operations/generated/dependency-cruiser.json",
     "analyze:knip": "knip --reporter json > docs/operations/generated/knip.json",
     "analyze:duplicates": "jscpd src --reporters json,markdown --output docs/operations/generated/jscpd",
-    "secrets:scan": "gitleaks detect --source . --redact --report-format json --report-path docs/operations/generated/gitleaks.json",
+    "secrets:scan": "node scripts/security/run-gitleaks-current-tree.mjs",
+    "secrets:scan:history": "gitleaks git . --redact --report-format json --report-path docs/operations/generated/gitleaks-history.json",
     "deps:audit:npm": "npm audit --audit-level=high",
     "deps:audit:osv": "osv-scanner --lockfile package-lock.json --format json > docs/operations/generated/osv.json",
     "a11y:critical": "playwright test e2e/accessibility",
@@ -159,7 +160,7 @@
     "lucide-react": "^0.562.0",
     "mapbox-gl": "^3.24.0",
     "next": "^16.0.10",
-    "postcss": "^8.5.15",
+    "postcss": "^8.5.16",
     "postgres": "^3.4.9",
     "posthog-js": "^1.257.0",
     "posthog-node": "^4.18.0",
@@ -212,6 +213,13 @@
     "vitest": "^4.0.18"
   },
   "overrides": {
-    "tmp": "^0.2.7"
+    "@opentelemetry/core": "^2.8.0",
+    "@lhci/cli": {
+      "uuid": "^11.1.1"
+    },
+    "postcss": "^8.5.16",
+    "qs": "^6.15.3",
+    "tmp": "^0.2.7",
+    "ws": "^8.21.0"
   }
 }

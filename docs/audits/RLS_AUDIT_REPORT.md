@@ -649,7 +649,7 @@ Added performance indexes for common query patterns:
 
 ```bash
 # Apply the migration to production
-PGPASSWORD='your_password' psql "your_connection_string" -f supabase/migrations/20260108000001_rls_audit_fixes.sql
+psql "$SUPABASE_DB_URL" -f supabase/migrations/20260108000001_rls_audit_fixes.sql
 
 # After migration, regenerate types
 npm run db:types

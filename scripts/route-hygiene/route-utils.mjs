@@ -61,6 +61,21 @@ export function extractHrefLikeStrings(source) {
   return out;
 }
 
+export function canonicalRouteHref(href) {
+  try {
+    const url = new URL(href, 'http://helm.local');
+    return url.pathname.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+  } catch {
+    return href.split('?')[0]?.split('#')[0]?.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+  }
+}
+
+export function publicAssetExists(href) {
+  const pathname = canonicalRouteHref(href);
+  if (!pathname || pathname === '/') return false;
+  return existsSync(join(repoRoot, 'public', pathname.replace(/^\//, '')));
+}
+
 export function readSource(file) {
   return readFileSync(join(repoRoot, file), 'utf8');
 }
