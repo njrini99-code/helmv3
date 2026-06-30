@@ -118,6 +118,7 @@ export function BaseballDashboardShell({ children, role, navContext }: Props) {
     pathname,
     role,
     programType: navContext?.programType ?? null,
+    capabilities: navContext?.capabilities,
   });
 
   const mobileSidebarRef = useRef<HTMLDivElement>(null);

@@ -186,6 +186,11 @@ export interface BaseballNavEntry {
    * a player only ever sees role 'player' | 'both' entries with `null` here.
    */
   requiredCapability: BaseballCapability | null;
+  /**
+   * When set, the coach must hold at least one of these capabilities to see the
+   * entry. Mutually exclusive with requiredCapability for a given entry (#408).
+   */
+  requiredAnyCapabilities?: readonly BaseballCapability[];
   /** When true, render the unread-message badge (messaging lives outside this set). */
   showUnreadBadge?: boolean;
   /**
@@ -439,9 +444,9 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     href: '/baseball/dashboard/performance',
     icon: IconDumbbell,
     role: 'coach',
-    // Coaches need can_manage_lifting to program; players reach their own
-    // polished lift/readiness surfaces through player-lift/player-readiness.
+    // Align with performance/page.tsx: lifting OR readiness review (#408).
     requiredCapability: null,
+    requiredAnyCapabilities: ['can_manage_lifting', 'can_view_readiness'],
     section: 'primary',
   },
   {
@@ -856,7 +861,13 @@ export function isBaseballNavEntryVisible(
   if (entry.role !== 'both' && entry.role !== ctx.role) return false;
 
   // 2. Capability gate — coaches only.
-  if (entry.requiredCapability) {
+  if (entry.requiredAnyCapabilities?.length) {
+    if (ctx.role !== 'coach') return false;
+    const anyGranted = entry.requiredAnyCapabilities.some(
+      (cap) => ctx.capabilities[cap] === true,
+    );
+    if (!anyGranted) return false;
+  } else if (entry.requiredCapability) {
     // Players are never granted staff capabilities; hide any capability-gated
     // entry from them outright (defence in depth even though role gate above
     // already excludes coach-only entries for players).

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { getBaseballStatsGameCreateHref } from '@/lib/baseball/stats-route-aliases';
 import { GameCard } from './GameCard';
 import { getTeamGames, deleteGame } from '@/app/baseball/actions/games';
 import type { BaseballGame, BaseballGameType } from '@/lib/types';
@@ -118,7 +119,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
 
           {showAddButton && (
             <Link
-              href="/baseball/dashboard/stats/games/new"
+              href={getBaseballStatsGameCreateHref()}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
               <IconPlus size={16} />
@@ -177,7 +178,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
           </p>
           {showAddButton && (
             <Link
-              href="/baseball/dashboard/stats/games/new"
+              href={getBaseballStatsGameCreateHref()}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors"
             >
               <IconPlus size={16} />

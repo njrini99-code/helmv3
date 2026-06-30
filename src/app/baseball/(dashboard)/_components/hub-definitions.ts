@@ -75,11 +75,37 @@ export const COACH_STATS_TABS: readonly HubSubNavTab[] = [
     href: '/baseball/dashboard/performance',
     icon: IconTrendingUp,
     matchPrefixes: ['/baseball/dashboard/performance'],
+    requiredAnyCapabilities: ['can_manage_lifting', 'can_view_readiness'],
   },
-  { id: 'performance-live', label: 'Live', href: '/baseball/dashboard/performance/live', icon: IconDumbbell },
-  { id: 'performance-programs', label: 'Programs', href: '/baseball/dashboard/performance/programs', icon: IconClipboardList, matchPrefixes: ['/baseball/dashboard/performance/programs'] },
-  { id: 'performance-groups', label: 'Groups', href: '/baseball/dashboard/performance/groups', icon: IconUsers },
-  { id: 'performance-builder', label: 'Builder', href: '/baseball/dashboard/performance/builder', icon: IconGauge },
+  {
+    id: 'performance-live',
+    label: 'Live',
+    href: '/baseball/dashboard/performance/live',
+    icon: IconDumbbell,
+    requiredCapability: 'can_manage_lifting',
+  },
+  {
+    id: 'performance-programs',
+    label: 'Programs',
+    href: '/baseball/dashboard/performance/programs',
+    icon: IconClipboardList,
+    matchPrefixes: ['/baseball/dashboard/performance/programs'],
+    requiredCapability: 'can_manage_lifting',
+  },
+  {
+    id: 'performance-groups',
+    label: 'Groups',
+    href: '/baseball/dashboard/performance/groups',
+    icon: IconUsers,
+    requiredCapability: 'can_manage_lifting',
+  },
+  {
+    id: 'performance-builder',
+    label: 'Builder',
+    href: '/baseball/dashboard/performance/builder',
+    icon: IconGauge,
+    requiredCapability: 'can_manage_lifting',
+  },
   { id: 'upload', label: 'Upload', href: '/baseball/dashboard/stats/upload', icon: IconUpload },
 ];
 
@@ -108,7 +134,7 @@ export const COACH_RECRUITING_TABS: readonly HubSubNavTab[] = [
   { id: 'compare', label: 'Compare', href: '/baseball/dashboard/compare', icon: IconChartBar },
   { id: 'college-interest', label: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconStar },
   { id: 'scout-packets', label: 'Scout Packets', href: '/baseball/dashboard/scout-packets', icon: IconNote },
-  { id: 'import', label: 'Import', href: '/baseball/dashboard/import', icon: IconUpload },
+  { id: 'import', label: 'Import', href: '/baseball/dashboard/import', icon: IconUpload, requiredCapability: 'can_manage_imports' },
 ];
 
 /**
