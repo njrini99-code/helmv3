@@ -45,7 +45,7 @@ reviews:
   related_issues: true
   related_prs: true
   suggested_labels: true
-  auto_apply_labels: false
+  auto_apply_labels: true
   suggested_reviewers: true
   auto_assign_reviewers: false
   poem: false
@@ -432,6 +432,8 @@ reviews:
       enabled: true
     pylint:
       enabled: true
+    flake8:
+      enabled: true
 
     # iOS / Swift
     swiftlint:
@@ -445,6 +447,8 @@ reviews:
     yamllint:
       enabled: true
     actionlint:
+      enabled: true
+    zizmor:
       enabled: true
     markdownlint:
       enabled: true
@@ -464,9 +468,15 @@ reviews:
       enabled: true
     checkov:
       enabled: true
+    trivy:
+      enabled: true
+    checkmake:
+      enabled: true
 
     # Security
     gitleaks:
+      enabled: true
+    trufflehog:
       enabled: true
     osvScanner:
       enabled: true
@@ -475,11 +485,15 @@ reviews:
     semgrep:
       enabled: true
       config_file: ".coderabbit/semgrep/helmv3.yml"
+    opengrep:
+      enabled: true
 
     # React / CSS / agent files
     reactDoctor:
       enabled: true
     stylelint:
+      enabled: true
+    htmlhint:
       enabled: true
     skillspector:
       enabled: true
@@ -510,9 +524,7 @@ reviews:
       enabled: false
     regal:
       enabled: false
-    shopify-theme-check:
-      enabled: false
-    htmlhint:
+    shopifyThemeCheck:
       enabled: false
     prismaLint:
       enabled: false
@@ -655,7 +667,7 @@ issue_enrichment:
         - "!no-plan"
 
   labeling:
-    auto_apply_labels: false
+    auto_apply_labels: true
     labeling_instructions:
       - label: "feature"
         instructions: "New product behavior, new workflow, new dashboard section, new import pipeline, or new user-facing capability."
