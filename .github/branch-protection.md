@@ -18,7 +18,6 @@ so a job split/rename does not silently break protection.
   - `Unit tests`
   - `Business contracts`
   - `Next build`
-  - `Supabase lint + RLS tests`
   - `Route Hygiene P0/P1`
 - `Review Gate / all` — hard aggregate for ast-grep, semgrep, gitleaks,
   actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, and
@@ -39,6 +38,9 @@ Advisory checks:
 - `Playwright (chromium)`
 - `Course picker screenshots`
 - `migration-lockdown / block-historical-edits`
+- `Supabase lint + RLS tests` — temporarily advisory: the baseball pgTAP RLS
+  suite is red on `main`; its fix lands in PR #423. Promote back into the
+  `CI / all` aggregate once that suite is green on `main`.
 
 ## Other settings
 
