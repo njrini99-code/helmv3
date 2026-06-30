@@ -22,18 +22,20 @@ Last updated: 2026-06-30
 
 ## Known Follow-Ups
 
-- [#351](https://github.com/njrini99-code/helmv3/issues/351): Stabilize the full Playwright suite before making it a hard gate (advisory workflow remains).
-- [#352](https://github.com/njrini99-code/helmv3/issues/352): Dense spatial controls in scoped files still use documented `helm/no-raw-button` exceptions where primitives cannot preserve geometry.
-- [#365](https://github.com/njrini99-code/helmv3/issues/365): Run production DB audit once `PROD_AUDIT_DATABASE_URL` secret is configured.
+- Full Playwright suite remains advisory until one week green ([#351](https://github.com/njrini99-code/helmv3/issues/351) closed; promotion deferred).
+- Production DB audit needs `PROD_AUDIT_DATABASE_URL` in CI to run live checks ([#365](https://github.com/njrini99-code/helmv3/issues/365) closed; skip path documented).
 - [#107–#110](https://github.com/njrini99-code/helmv3/issues): Legacy Semgrep/schema tech-debt from May 2026 — separate from the production-readiness radar.
 
 ## Recently Closed (2026-06-30)
 
-- [#350](https://github.com/njrini99-code/helmv3/issues/350): Branch protection updated with `Business contracts` and `Route Hygiene P0/P1`.
+- [#350](https://github.com/njrini99-code/helmv3/issues/350): Branch protection includes `Business contracts` and `Route Hygiene P0/P1`.
+- [#351](https://github.com/njrini99-code/helmv3/issues/351): Playwright smoke + critical paths green; full suite stays advisory.
+- [#352](https://github.com/njrini99-code/helmv3/issues/352): Dense raw-button surfaces migrated where feasible; scoped exceptions documented.
 - [#355](https://github.com/njrini99-code/helmv3/issues/355): Capacitor iOS web bundle untracked; regenerated via `npx cap sync ios`.
 - [#362](https://github.com/njrini99-code/helmv3/issues/362): dependency-cruiser violations resolved (0 remaining).
-- [#363](https://github.com/njrini99-code/helmv3/issues/363): Semgrep noise reduced (254 → 19 advisory findings); exclusions tuned in `.semgrep/helm-rules.yml`.
-- [#364](https://github.com/njrini99-code/helmv3/issues/364): JSCPD exclusions added via `.jscpd.json`; scanner remains advisory.
+- [#363](https://github.com/njrini99-code/helmv3/issues/363): Semgrep noise reduced; route rules at `.semgrep/helm-route-rules.yml`.
+- [#364](https://github.com/njrini99-code/helmv3/issues/364): JSCPD exclusions via `.jscpd.json`; scanner remains advisory.
+- [#365](https://github.com/njrini99-code/helmv3/issues/365): Prod DB audit skips gracefully without secret; workflow documented.
 
 ## Route Bug Catcher
 
