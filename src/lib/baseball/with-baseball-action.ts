@@ -23,6 +23,14 @@
 //                    rethrow a sanitized error so internals never leak to the
 //                    client.
 //
+// DEMO READ-ONLY GUARD (Issue #392)
+//   - Immediately after AUTH, every action is checked against the shared
+//     Baseball demo coach session (isCurrentSessionBaseballDemo). Unless the
+//     action was registered with `demoSafe: true`, the demo session is
+//     short-circuited with BaseballDemoReadOnlyError before CONTEXT/CAPABILITY
+//     resolution even runs — no visitor can use the shared demo login to
+//     mutate state another visitor would then see.
+//
 // SECURITY
 //   - Capability checks are enforced here on the server. The client never gets
 //     to assert a capability; requiredCapability is wired by the action author,
@@ -67,6 +75,7 @@ import {
   type PlayerAccessKey,
 } from '@/lib/baseball/player-access';
 import { BaseballDisabledSourceError } from '@/lib/baseball/import-source-enabled';
+import { isCurrentSessionBaseballDemo } from '@/lib/demo/baseball-config.server';
 
 // -----------------------------------------------------------------------------
 // Public error types
@@ -105,6 +114,20 @@ export class BaseballActionError extends Error {
   constructor(message = 'Something went wrong. Please try again.') {
     super(message);
     this.name = 'BaseballActionError';
+  }
+}
+
+/**
+ * Thrown when the active session is the shared Baseball demo coach and the
+ * action is not marked `demoSafe`. The demo coach account is shared by every
+ * visitor at once, so it must never be able to persist a mutation that other
+ * visitors would then see (Issue #392). Carries HTTP-403.
+ */
+export class BaseballDemoReadOnlyError extends Error {
+  readonly status = 403;
+  constructor(message = "This isn't available in the live demo.") {
+    super(message);
+    this.name = 'BaseballDemoReadOnlyError';
   }
 }
 
@@ -160,6 +183,17 @@ export interface WithBaseballActionOptions<TArgs extends unknown[] = unknown[]> 
    * but require a teamFrom resolver or an existing activeTeamId.
    */
   requireActiveContext?: boolean;
+  /**
+   * Marks this action as safe to run for the shared Baseball demo coach
+   * session — i.e. it performs no write a visitor could use to alter state
+   * every other visitor also sees. Defaults to `false`: EVERY wrapped action
+   * is blocked for the demo session unless explicitly opted in here. This is
+   * an intentional fail-closed default (Issue #392) so a future mutating
+   * action can never become demo-reachable just by omission; an action
+   * author must affirmatively mark it `demoSafe: true` after confirming it
+   * never writes.
+   */
+  demoSafe?: boolean;
 }
 
 /**
@@ -209,7 +243,14 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
   opts: WithBaseballActionOptions<TArgs>,
   fn: BaseballActionFn<TArgs, TResult>,
 ): (...args: TArgs) => Promise<TResult> {
-  const { featureArea, requiredCapability, requiredPlayerAccess, teamFrom = 'active', requireActiveContext = true } = opts;
+  const {
+    featureArea,
+    requiredCapability,
+    requiredPlayerAccess,
+    teamFrom = 'active',
+    requireActiveContext = true,
+    demoSafe = false,
+  } = opts;
 
   return async (...args: TArgs): Promise<TResult> => {
     return Sentry.withScope(async (scope) => {
@@ -236,6 +277,19 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           throw new BaseballUnauthorizedError();
         }
         scope.setUser({ id: user.id, email: user.email ?? undefined });
+
+        // -------------------------------------------------------------------
+        // 1b. DEMO READ-ONLY GUARD — the shared Baseball demo coach account
+        //     must never be able to mutate state that every other visitor's
+        //     session also sees. Fail closed: only actions explicitly marked
+        //     `demoSafe: true` run for the demo session; everything else is
+        //     short-circuited here with a friendly, expected (non-Sentry)
+        //     error. Reuses the `user` already resolved above — no extra
+        //     auth round-trip.
+        // -------------------------------------------------------------------
+        if (!demoSafe && (await isCurrentSessionBaseballDemo(user.email ?? null))) {
+          throw new BaseballDemoReadOnlyError();
+        }
 
         // -------------------------------------------------------------------
         // 2. CONTEXT — resolve the server-validated active baseball context.
@@ -351,7 +405,8 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           error instanceof BaseballNoActiveTeamError ||
           error instanceof BaseballCapabilityError ||
           error instanceof PlayerAccessError ||
-          error instanceof BaseballDisabledSourceError
+          error instanceof BaseballDisabledSourceError ||
+          error instanceof BaseballDemoReadOnlyError
         ) {
           await logServerException(
             error,
