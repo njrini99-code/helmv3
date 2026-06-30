@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable helm/no-raw-button -- round-entry score controls require custom tap geometry pending primitive migration. */
-
 /**
  * ============================================================================
  * Fairway · Rounds · FairwayNewRoundEntry — the redesigned create-round ENTRY
@@ -244,9 +242,8 @@ function CockpitBand({
       <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-500/15 blur-[70px]" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
       {onBack && (
+        // eslint-disable-next-line helm/no-raw-button -- compact back affordance in round-entry header
         <button
-          type="button"
-          onClick={onBack}
           className="relative -ml-1 mb-3 inline-flex min-h-[44px] items-center gap-1 rounded-fw-sm px-1 font-fw-sans text-body-sm font-medium text-nav-text-dim transition-colors hover:text-nav-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-nav-bg"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -475,8 +472,8 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         const par = course.holeConfigs.length > 0 ? totalPar(course.holeConfigs) : null;
                         const loc = [course.courseCity, course.courseState].filter(Boolean).join(', ');
                         return (
+                          // eslint-disable-next-line helm/no-raw-button -- saved-course selection card tile
                           <button
-                            key={course.id}
                             type="button"
                             onClick={() => props.onSavedCourseSelect(isSel ? null : course.id)}
                             className={cn(
@@ -687,9 +684,8 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                   </div>
 
                   {courseMode === 'new' && (
+                    // eslint-disable-next-line helm/no-raw-button -- save-course toggle card tile
                     <button
-                      type="button"
-                      onClick={props.onToggleSaveCourse}
                       className={cn(
                         'flex items-center gap-3 rounded-fw-md border p-3.5 text-left transition-colors',
                         props.saveCourseChecked
@@ -732,8 +728,8 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                 <p className="font-fw-sans text-caption text-text-tertiary">Tap to start a qualifier round</p>
                 <Inset padding="sm" className="flex max-h-[240px] flex-col gap-2 overflow-y-auto">
                   {allActiveQualifiers.map((q) => (
+                    // eslint-disable-next-line helm/no-raw-button -- qualifier picker list row
                     <button
-                      key={q.id}
                       type="button"
                       onClick={() => props.onPickActiveQualifier(q)}
                       className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-border-strong hover:bg-surface-tint"

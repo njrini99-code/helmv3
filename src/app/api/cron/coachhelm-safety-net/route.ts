@@ -21,6 +21,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
+import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
           playerId: round.player_id,
           roundId: round.id,
           triggerReason: 'safety_net',
-        }),
+        }, triggerPlayerInsightsAfterRound),
       ),
     );
     for (let j = 0; j < settled.length; j++) {

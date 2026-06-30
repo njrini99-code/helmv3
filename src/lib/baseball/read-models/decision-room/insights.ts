@@ -16,7 +16,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { DecisionRoomInsight } from '@/app/baseball/actions/decision-room';
+import type { DecisionRoomInsight } from '@/lib/baseball/decision-room/types';
 
 /**
  * Hard server-side row cap. PostgREST also enforces a max-rows ceiling, but a

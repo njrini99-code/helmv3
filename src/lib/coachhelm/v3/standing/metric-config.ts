@@ -20,7 +20,7 @@
  */
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
-import type { Direction, Unit } from '@/components/golf/coachhelm/v3/StandingBar';
+import type { Direction, Unit } from '@/lib/coachhelm/v3/standing/bar-types';
 
 export interface MetricRenderConfig {
   direction: Direction;

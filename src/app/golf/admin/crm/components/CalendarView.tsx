@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable helm/no-raw-button -- dense calendar grid cells need native button geometry until the CRM calendar control is migrated to design-system slots. */
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -259,6 +257,7 @@ export function CalendarView({
                 const isCurrentDay = isToday(date);
 
                 return (
+                  // eslint-disable-next-line helm/no-raw-button -- calendar month day cell (full-bleed grid slot)
                   <button
                     type="button"
                     key={date.toISOString()}
@@ -283,6 +282,7 @@ export function CalendarView({
                       {dayEvents.slice(0, 3).map((event) => {
                         const config = EVENT_TYPE_CONFIG[event.event_type];
                         return (
+                          // eslint-disable-next-line helm/no-raw-button -- calendar event pill in month cell
                           <button
                             type="button"
                             key={event.id}
@@ -378,6 +378,7 @@ export function CalendarView({
                   className="flex-1 border-l border-warm-100/30 relative"
                 >
                   {hours.map((hour) => (
+                    // eslint-disable-next-line helm/no-raw-button -- week-view time slot cell
                     <button
                       type="button"
                       key={hour}
@@ -400,6 +401,7 @@ export function CalendarView({
                     const config = EVENT_TYPE_CONFIG[event.event_type];
                     
                     return (
+                      // eslint-disable-next-line helm/no-raw-button -- week-view positioned event block
                       <button
                         type="button"
                         key={event.id}
@@ -480,6 +482,7 @@ export function CalendarView({
             {/* Event Column */}
             <div className="flex-1 border-l border-warm-100/30 relative">
               {hours.map((hour) => (
+                // eslint-disable-next-line helm/no-raw-button -- day-view time slot cell
                 <button
                   type="button"
                   key={hour}
@@ -502,6 +505,7 @@ export function CalendarView({
                 const config = EVENT_TYPE_CONFIG[event.event_type];
 
                 return (
+                  // eslint-disable-next-line helm/no-raw-button -- day-view positioned event block
                   <button
                     type="button"
                     key={event.id}

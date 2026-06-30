@@ -17,7 +17,7 @@
  */
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
-import type { Direction } from '@/components/golf/coachhelm/v3/StandingBar';
+import type { Direction } from '@/lib/coachhelm/v3/standing/bar-types';
 import {
   COUNTERFACTUAL_SUPPRESS_THRESHOLD,
   type CounterfactualProjection,

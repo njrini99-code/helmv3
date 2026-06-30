@@ -63,7 +63,7 @@ export async function initPushListeners(): Promise<void> {
 
     // Listen for the registration event (fires once per session with APNs token)
     PushNotifications.addListener('registration', async (token) => {
-      const { registerDeviceToken } = await import('@/app/golf/actions/push-notifications');
+      const { registerDeviceTokenClient } = await import('@/lib/golf/push-device-token.client');
       // The webview can fire `registration` before the Supabase session
       // cookie has propagated, so registerDeviceToken may return a retryable
       // Unauthorized result. Back off and retry a few times before giving up
@@ -72,7 +72,7 @@ export async function initPushListeners(): Promise<void> {
       let lastError: unknown;
       for (let attempt = 0; attempt <= backoffsMs.length; attempt++) {
         try {
-          const result = await registerDeviceToken(token.value, 'ios');
+          const result = await registerDeviceTokenClient(token.value, 'ios');
           if (result.success) return;
           if (!result.retryable) {
             console.error('[Push] Failed to save device token:', result.error);

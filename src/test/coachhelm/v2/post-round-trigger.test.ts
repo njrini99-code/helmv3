@@ -1,13 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { createFakeSupabase } from '@/test/fixtures/fake-supabase';
-
-// Mock the underlying trigger before importing postRoundTrigger.
-const mockTrigger = vi.fn();
-vi.mock('@/app/golf/actions/insights', () => ({
-  triggerPlayerInsightsAfterRound: (...args: unknown[]) => mockTrigger(...args),
-}));
-
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
+
+const mockTrigger = vi.fn();
 
 describe('postRoundTrigger', () => {
   beforeEach(() => {
@@ -24,7 +19,7 @@ describe('postRoundTrigger', () => {
     });
     mockTrigger.mockResolvedValue({ success: true, insights_created: 3 });
 
-    await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r1' });
+    await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r1' }, mockTrigger);
 
     const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r1');
     expect(data?.[0]?.['coachhelm_analyzed_at']).toBeTruthy();
@@ -40,7 +35,7 @@ describe('postRoundTrigger', () => {
     });
     mockTrigger.mockResolvedValue({ success: false, error: 'team disabled coachhelm' });
 
-    await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r2' });
+    await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r2' }, mockTrigger);
 
     const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r2');
     expect(data?.[0]?.['coachhelm_analyzed_at']).toBeFalsy();
@@ -59,7 +54,7 @@ describe('postRoundTrigger', () => {
     });
     mockTrigger.mockRejectedValue(new Error('engine_boom'));
 
-    await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r3' });
+    await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r3' }, mockTrigger);
 
     const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r3');
     expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
@@ -77,7 +72,7 @@ describe('postRoundTrigger', () => {
     });
     mockTrigger.mockRejectedValue(new Error(long));
 
-    await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r4' });
+    await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r4' }, mockTrigger);
 
     const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r4');
     expect(String(data?.[0]?.['coachhelm_failure_reason']).length).toBeLessThanOrEqual(500);
@@ -87,6 +82,6 @@ describe('postRoundTrigger', () => {
     const admin = createFakeSupabase({ tables: { golf_rounds: [{ id: 'r5', player_id: 'p1' }] } });
     mockTrigger.mockRejectedValue(new Error('boom'));
 
-    await expect(postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r5' })).resolves.not.toThrow();
+    await expect(postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r5' }, mockTrigger)).resolves.not.toThrow();
   });
 });

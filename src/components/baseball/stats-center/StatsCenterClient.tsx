@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable helm/no-raw-button -- segmented filters and stat chips are legacy dense controls; migrate as a scoped design-system task. */
-
 // =============================================================================
 // src/components/baseball/stats-center/StatsCenterClient.tsx
 //
@@ -40,7 +38,8 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
+import { ChipToggle } from '@/components/ui/filter-chips';
 import {
   IconChartBar,
   IconFilter,
@@ -712,6 +711,7 @@ function SegmentedControl<T extends string>({
       {options.map((opt) => {
         const active = opt.value === value;
         return (
+          // eslint-disable-next-line helm/no-raw-button -- segmented radio control (role=radio), not a pill CTA
           <button
             key={opt.value}
             type="button"
@@ -930,25 +930,29 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                   Season
                 </span>
                 <div className="inline-flex items-center rounded-xl border border-warm-200 bg-cream-50">
-                  <button
+                  <IconButton
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     aria-label="Previous season"
                     onClick={() => changeSeason(-1)}
-                    className="px-2.5 py-1.5 text-warm-600 transition-colors hover:bg-warm-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-l-xl"
+                    className="rounded-l-xl"
                   >
                     −
-                  </button>
+                  </IconButton>
                   <span className="min-w-[3.5rem] px-2 text-center text-sm font-semibold tabular-nums text-warm-900">
                     {seasonYear}
                   </span>
-                  <button
+                  <IconButton
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     aria-label="Next season"
                     onClick={() => changeSeason(1)}
-                    className="px-2.5 py-1.5 text-warm-600 transition-colors hover:bg-warm-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-r-xl"
+                    className="rounded-r-xl"
                   >
                     +
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 
@@ -967,14 +971,16 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
 
               {/* Clear */}
               {hasActiveFilters && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={clearFilters}
-                  className="ml-auto flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-700"
+                  className="ml-auto gap-1"
+                  leftIcon={<IconX size={14} />}
                 >
-                  <IconX size={14} />
                   Clear
-                </button>
+                </Button>
               )}
             </div>
 
@@ -987,20 +993,13 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                 {positionOptions.map((pos) => {
                   const active = positions.includes(pos);
                   return (
-                    <button
+                    <ChipToggle
                       key={pos}
-                      type="button"
-                      aria-pressed={active}
+                      label={prettyPosition(pos)}
+                      selected={active}
                       onClick={() => togglePosition(pos)}
-                      className={cn(
-                        'rounded-full border px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
-                        active
-                          ? 'border-primary-600 bg-primary-600 text-white'
-                          : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300 hover:bg-warm-50',
-                      )}
-                    >
-                      {prettyPosition(pos)}
-                    </button>
+                      className={active ? 'border-primary-600 bg-primary-600 text-white' : undefined}
+                    />
                   );
                 })}
               </div>

@@ -39,8 +39,10 @@ import {
   type SyncStatus,
 } from './shot-storage';
 
-// Dynamic import to avoid lib/ → app/ circular dependency
-type RoundDraftData = import('@/app/golf/actions/round-drafts').RoundDraftData;
+import type {
+  RoundDraftData,
+  SaveRoundDraftFn,
+} from '@/lib/golf/round-draft.types';
 
 // ============================================================================
 // TYPES
@@ -114,6 +116,8 @@ interface SyncEngineConfig {
    * and pause sync until resolved via resolveConflict()
    */
   enableManualConflictResolution?: boolean;
+  /** Server action wired by the app shell — required for legacy draft sync. */
+  saveRoundDraft?: SaveRoundDraftFn;
 }
 
 interface SyncEngineState {
@@ -182,6 +186,10 @@ class SyncEngine {
   // ==========================================================================
   // PUBLIC API
   // ==========================================================================
+
+  setSaveRoundDraft(saveRoundDraft: SaveRoundDraftFn): void {
+    this.config.saveRoundDraft = saveRoundDraft;
+  }
 
   /**
    * Start the sync engine with auto-sync interval
@@ -482,8 +490,10 @@ class SyncEngine {
         // Prepare draft data for server
         const draftData = this.prepareRoundDraftData(round);
 
-        // Sync to server (dynamic import to avoid circular dependency)
-        const { saveRoundDraft } = await import('@/app/golf/actions/round-drafts');
+        const saveRoundDraft = this.config.saveRoundDraft;
+        if (!saveRoundDraft) {
+          throw new Error('saveRoundDraft is not configured on SyncEngine');
+        }
         const result = await saveRoundDraft(draftData, round._server_id);
 
         if (result.success) {
@@ -543,7 +553,10 @@ class SyncEngine {
       return { synced, failed, errors };
     }
 
-    const { saveRoundDraft } = await import('@/app/golf/actions/round-drafts');
+    const saveRoundDraft = this.config.saveRoundDraft;
+    if (!saveRoundDraft) {
+      return { synced, failed, errors };
+    }
 
     for (const round of pendingRounds) {
       if (this.syncAbortController?.signal.aborted) {
@@ -1150,6 +1163,8 @@ let syncEngineInstance: SyncEngine | null = null;
 export function getSyncEngine(config?: Partial<SyncEngineConfig>): SyncEngine {
   if (!syncEngineInstance) {
     syncEngineInstance = new SyncEngine(config);
+  } else if (config?.saveRoundDraft) {
+    syncEngineInstance.setSaveRoundDraft(config.saveRoundDraft);
   }
   return syncEngineInstance;
 }

@@ -92,6 +92,8 @@ for (const source of sources) {
       evidence: Object.entries(byRule).map(([rule, count]) => `${rule}: ${count}`),
       suggestedFix: 'Move shared contracts out of app directories, break CoachHelm/Golf circular imports, or document intentional exceptions.',
     });
+  } else if (source.input === 'prod-db-audit-findings.json' && data.skipped) {
+    // Informational skip — do not open recurring auditor issues when the secret is absent.
   } else if (data.finding_count > 0 && Array.isArray(data.findings)) {
     for (const finding of data.findings) findings.push({ source: source.input, ...finding });
   } else if (data.parse_error) {

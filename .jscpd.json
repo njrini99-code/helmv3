@@ -1,0 +1,24 @@
+{
+  "path": ["src"],
+  "minLines": 5,
+  "minTokens": 50,
+  "reporters": ["json", "markdown"],
+  "output": "docs/operations/generated/jscpd",
+  "absolute": true,
+  "gitignore": true,
+  "ignore": [
+    "**/node_modules/**",
+    "**/__snapshots__/**",
+    "**/*.snap",
+    "docs/operations/generated/**",
+    ".cleanup/**",
+    ".ultracode/**",
+    "ios/App/App/public/**",
+    "memory/**",
+    "**/database.types.ts",
+    "**/database.ts"
+  ],
+  "ignorePattern": [
+    "<!-- AUTOGEN:[^>]+:start -->[\\s\\S]*?<!-- AUTOGEN:[^>]+:end -->"
+  ]
+}

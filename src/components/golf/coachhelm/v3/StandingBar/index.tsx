@@ -41,11 +41,14 @@ export function StandingBar(props: StandingBarProps) {
 
 export type {
   StandingBarProps,
-  Direction,
-  Unit,
   SizeVariant,
   RenderState,
 } from './types';
+
+export type {
+  Direction,
+  Unit,
+} from '@/lib/coachhelm/v3/standing/bar-types';
 
 export {
   toScalePct,

@@ -53,6 +53,7 @@ import { detectAnomalies } from './stats/anomaly-detector';
 import { detectStreaks } from './trends/streak-detector';
 import { scoreInsight, shouldShowInsight } from './feedback/insight-scorer';
 import { logServerError } from '@/lib/server-error-logger';
+import { getDetailedStatsAsAdmin } from '@/lib/golf/stats/detailed-stats-query';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 import type {
@@ -1844,8 +1845,6 @@ class CoachHelmIntelligence {
       return this._statsCache.get(playerId);
     }
     try {
-      // Dynamic import to avoid client/server import issues.
-      const { getDetailedStatsAsAdmin } = await import('@/app/golf/actions/stats-data');
       const stats = await getDetailedStatsAsAdmin(playerId, 'overall');
       this._statsCache.set(playerId, stats);
       return stats;

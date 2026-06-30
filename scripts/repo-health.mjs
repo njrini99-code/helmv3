@@ -35,10 +35,7 @@ const generatedTrackedPaths = [
   'test-results',
 ];
 
-const allowedTrackedIgnored = [
-  /^ios\/App\/App\/config\.xml$/,
-  /^ios\/App\/App\/public\//,
-];
+const allowedTrackedIgnored = [];
 
 function status(command, args) {
   try {
@@ -100,7 +97,7 @@ if (unexpectedTrackedIgnored.length > 0) failed = true;
 console.log(
   `- tracked ignored files: ${
     unexpectedTrackedIgnored.length === 0
-      ? `ok (${trackedIgnored.length} allowed iOS generated files)`
+      ? 'ok'
       : `check (${unexpectedTrackedIgnored.join(', ')})`
   }`,
 );

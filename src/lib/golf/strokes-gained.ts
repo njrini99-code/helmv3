@@ -13,21 +13,9 @@
 
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { getBenchmarkData, type BenchmarkLevel } from './sg-benchmarks';
+import type { BaselineData, LieType } from './strokes-gained-types';
 
-// ============================================
-// LOCAL TYPE DEFINITIONS
-// ============================================
-
-/**
- * Lie types for strokes gained calculation
- */
-export type LieType = 'tee' | 'fairway' | 'rough' | 'sand' | 'green';
-
-/**
- * Baseline data structure for expected strokes from each lie type
- * Key is distance (yards for non-green, feet for green), value is expected strokes
- */
-export type BaselineData = Record<LieType, Record<number, number>>;
+export type { BaselineData, LieType } from './strokes-gained-types';
 
 // ============================================
 // PGA TOUR BASELINE DATA

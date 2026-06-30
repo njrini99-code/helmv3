@@ -30,7 +30,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   DecisionRoomAgendaItem,
   DecisionRoomLedgerEntry,
-} from '@/app/baseball/actions/decision-room';
+} from '@/lib/baseball/decision-room/types';
 
 /**
  * Generic Supabase client alias. The Decision Room callers pass the

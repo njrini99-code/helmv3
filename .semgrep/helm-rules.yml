@@ -1,25 +1,62 @@
 rules:
+  # ---------------------------------------------------------------------------
+  # SECURITY — admin/service-role Supabase client must not ship in browser bundles
+  # Scoped to `'use client'` modules and the browser client factory only.
+  # Server actions, API routes, cron handlers, and CoachHelm engine code are
+  # intentionally excluded — they run server-side and may use createAdminClient().
+  # ---------------------------------------------------------------------------
   - id: helm-service-role-in-client-code
     severity: ERROR
     languages: [typescript, javascript]
     message: Service-role/admin Supabase client must not be imported from client-facing code.
+    # Unanchored globs (no leading `/`) for Semgrepignore v2 compatibility.
     paths:
       include:
-        - /src/**/*.ts
-        - /src/**/*.tsx
+        - src/**/*.ts
+        - src/**/*.tsx
       exclude:
-        - /src/lib/supabase/admin.ts
-        - /src/**/*.test.ts
-        - /src/**/*.test.tsx
-        - /src/contracts/**
-    patterns:
-      - pattern-either:
-          - pattern: import $X from '@/lib/supabase/admin'
-          - pattern: import { $X } from '@/lib/supabase/admin'
-          - pattern: createAdminClient(...)
-      - pattern-not-inside: |
-          "use server";
-          ...
+        - src/app/**/actions/**
+        - src/lib/supabase/server.ts
+        - src/lib/supabase/admin.ts
+        - src/lib/coachhelm/**
+        - src/app/api/**
+        - src/contracts/**
+        - src/test/**
+        - src/**/*.test.ts
+        - src/**/*.test.tsx
+        - src/**/__tests__/**
+        - scripts/**
+        - e2e/**
+        - tools/**
+    pattern-either:
+      - patterns:
+          - pattern-inside: |
+              "use client";
+              ...
+          - pattern-either:
+              - pattern: import $X from '@/lib/supabase/admin'
+              - pattern: import { $X } from '@/lib/supabase/admin'
+              - pattern: createAdminClient(...)
+      - patterns:
+          - pattern-inside: |
+              'use client';
+              ...
+          - pattern-either:
+              - pattern: import $X from '@/lib/supabase/admin'
+              - pattern: import { $X } from '@/lib/supabase/admin'
+              - pattern: createAdminClient(...)
+
+  - id: helm-service-role-in-supabase-client-module
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: Service-role/admin Supabase client must not be imported from the browser Supabase client module.
+    paths:
+      include:
+        - src/lib/supabase/client.ts
+    pattern-either:
+      - pattern: import $X from '@/lib/supabase/admin'
+      - pattern: import { $X } from '@/lib/supabase/admin'
+      - pattern: createAdminClient(...)
 
   - id: helm-golf-file-links-baseball-auth-or-dashboard
     severity: ERROR
@@ -31,8 +68,8 @@ rules:
           - pattern: "'/baseball/$PATH'"
     paths:
       include:
-        - /src/app/golf/**/*.ts
-        - /src/app/golf/**/*.tsx
+        - src/app/golf/**/*.ts
+        - src/app/golf/**/*.tsx
 
   - id: helm-baseball-file-links-golf-auth-or-dashboard
     severity: ERROR
@@ -47,8 +84,8 @@ rules:
           regex: ^(login|signup|dashboard).*
     paths:
       include:
-        - /src/app/baseball/**/*.ts
-        - /src/app/baseball/**/*.tsx
+        - src/app/baseball/**/*.ts
+        - src/app/baseball/**/*.tsx
 
   - id: helm-success-true-inside-catch
     severity: ERROR
@@ -72,18 +109,55 @@ rules:
           "use client";
           ...
 
+  # ---------------------------------------------------------------------------
+  # RELIABILITY — catch blocks that silently collapse failures
+  # Product src only; tests/scripts/tools excluded. Logged failures are allowed.
+  # ---------------------------------------------------------------------------
   - id: helm-catch-collapses-error-to-empty
     severity: WARNING
     languages: [typescript, javascript]
     message: Catch block collapses a failure to []/null; prefer an explicit error state.
-    pattern-either:
-      - pattern: |
+    paths:
+      include:
+        - src/**/*.ts
+        - src/**/*.tsx
+      exclude:
+        - src/app/**/actions/**
+        - src/**/*.server.ts
+        - src/**/*.test.ts
+        - src/**/*.test.tsx
+        - src/**/__tests__/**
+        - src/test/**
+        - scripts/**
+        - e2e/**
+        - tools/**
+    patterns:
+      - pattern-either:
+          - pattern: |
+              catch ($ERR) {
+                ...
+                return [];
+              }
+          - pattern: |
+              catch ($ERR) {
+                ...
+                return null;
+              }
+      - pattern-not-inside: |
           catch ($ERR) {
             ...
-            return [];
+            logServerError(...);
+            ...
           }
-      - pattern: |
+      - pattern-not-inside: |
           catch ($ERR) {
             ...
-            return null;
+            captureException(...);
+            ...
+          }
+      - pattern-not-inside: |
+          catch ($ERR) {
+            ...
+            Sentry.captureException(...);
+            ...
           }

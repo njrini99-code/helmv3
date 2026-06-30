@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   DecisionRoomAttendanceSummary,
   DecisionRoomAvailabilityConcern,
-} from '@/app/baseball/actions/decision-room';
+} from '@/lib/baseball/decision-room/types';
 
 /**
  * Decision Room — Availability + Attendance read models.

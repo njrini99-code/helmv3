@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
+import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -1949,7 +1950,7 @@ export async function submitGolfRoundComprehensive(
         playerId: backgroundPlayerId,
         roundId: backgroundRoundId,
         triggerReason: 'round_submitted',
-      });
+      }, triggerPlayerInsightsAfterRound);
     });
 
     // Log round submission event (fire-and-forget)

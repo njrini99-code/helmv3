@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable helm/no-raw-button -- lineup/field builder controls are custom spatial controls pending primitive migration. */
-
 // =============================================================================
 // src/components/baseball/practice-planner/ScrimmageLineupBuilder.tsx
 //
@@ -193,8 +191,8 @@ export function ScrimmageLineupBuilder({
         {isIntrasquad ? (
           <div className="inline-flex rounded-lg border border-warm-200 bg-cream-50 p-0.5">
             {(['blue', 'white'] as BaseballScrimmageSide[]).map((s) => (
+              // eslint-disable-next-line helm/no-raw-button -- batting/fielding side segmented control
               <button
-                key={s}
                 type="button"
                 onClick={() => setActiveSide(s)}
                 className={cn(
@@ -257,6 +255,7 @@ export function ScrimmageLineupBuilder({
                       setDragPlayerId(null);
                     }}
                   >
+                    {/* eslint-disable-next-line helm/no-raw-button -- diamond position slot (spatial DnD target) */}
                     <button
                       type="button"
                       onClick={() => {
@@ -332,9 +331,8 @@ export function ScrimmageLineupBuilder({
                           <span className="truncate text-caption text-warm-800">
                             {rosterById.get(s.playerId)?.name ?? 'Player'}
                           </span>
+                          // eslint-disable-next-line helm/no-raw-button -- compact lineup row remove control
                           <button
-                            type="button"
-                            onClick={() => removeSlot(s.playerId)}
                             aria-label="Remove"
                             className="text-warm-400 hover:text-red-500"
                           >
@@ -365,9 +363,8 @@ export function ScrimmageLineupBuilder({
                 const limited = p.availability === 'limited';
                 return (
                   <li key={p.id}>
+                    // eslint-disable-next-line helm/no-raw-button -- draggable player chip (DnD + tap select)
                     <button
-                      type="button"
-                      draggable
                       onDragStart={() => setDragPlayerId(p.id)}
                       onDragEnd={() => setDragPlayerId(null)}
                       onClick={() => setSelectedPlayerId(selected ? null : p.id)}

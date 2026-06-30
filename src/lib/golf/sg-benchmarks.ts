@@ -19,7 +19,7 @@
  * - green: feet
  */
 
-import type { BaselineData, LieType } from './strokes-gained';
+import type { BaselineData, LieType } from './strokes-gained-types';
 
 // ============================================================================
 // BENCHMARK LEVEL TYPE

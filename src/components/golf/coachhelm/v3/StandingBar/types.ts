@@ -8,9 +8,9 @@
  *   PGA. Render gracefully degrades when PGA reference is null.
  */
 
-export type Direction = 'higher_better' | 'lower_better';
+import type { Direction, Unit } from '@/lib/coachhelm/v3/standing/bar-types';
 
-export type Unit = 'percent' | 'strokes' | 'yards' | 'count' | 'feet';
+export type { Direction, Unit };
 
 export type SizeVariant = 'inline' | 'card' | 'hero';
 

@@ -24,7 +24,7 @@
  * ========================================================================== */
 
 import type { InsightCategory } from '@/lib/coachhelm/v2/insights/types';
-import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import type { EvidenceInsight } from '@/lib/coachhelm/v3/delivery/evidence-insight.types';
 import {
   THEME_TAXONOMY,
   getThemeDef,

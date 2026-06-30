@@ -22,7 +22,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { DecisionRoomGameResult } from '@/app/baseball/actions/decision-room';
+import type { DecisionRoomGameResult } from '@/lib/baseball/decision-room/types';
 
 /**
  * Generic Supabase client alias. The Decision Room callers pass the

@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable helm/no-raw-button -- settings inline action controls are legacy dense controls pending primitive migration. */
-
 /**
  * ============================================================================
  * Fairway · Settings · FairwaySettingsGeneral  (COACH + PLAYER · ADDITIVE · GATED)
@@ -1032,6 +1030,7 @@ function OptionTile({
   hint?: string;
 }) {
   return (
+    // eslint-disable-next-line helm/no-raw-button -- selectable settings card tile (aria-pressed), not a pill CTA
     <button
       type="button"
       aria-pressed={active}
@@ -1095,8 +1094,8 @@ function AppearancePanel() {
               { val: 'DD/MM/YYYY' as const, ex: '28/01/2026' },
               { val: 'YYYY-MM-DD' as const, ex: '2026-01-28' },
             ]).map(({ val, ex }) => (
+              // eslint-disable-next-line helm/no-raw-button -- date-format segmented option tile
               <button
-                key={val}
                 type="button"
                 aria-pressed={dateFormat === val}
                 onClick={() => update({ dateFormat: val })}
@@ -1535,8 +1534,8 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           <FieldLabel>Default tees</FieldLabel>
           <div className="grid grid-cols-4 gap-1.5">
             {['black', 'blue', 'white', 'gold'].map((tee) => (
+              // eslint-disable-next-line helm/no-raw-button -- default-tee segmented option
               <button
-                key={tee}
                 type="button"
                 aria-pressed={defaultTees === tee}
                 onClick={() => setDefaultTees(tee)}
@@ -1575,8 +1574,8 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
               const meta = BENCHMARK_METADATA[level];
               const active = sgBenchmark === level;
               return (
+                // eslint-disable-next-line helm/no-raw-button -- SG benchmark level card tile
                 <button
-                  key={level}
                   type="button"
                   aria-pressed={active}
                   onClick={() => setSgBenchmark(level)}

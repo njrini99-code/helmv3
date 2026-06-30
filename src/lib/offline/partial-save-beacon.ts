@@ -15,7 +15,7 @@
  *
  * Returns true if the save was accepted into the browser's background queue.
  */
-import type { PartialRoundData } from '@/app/golf/actions/golf';
+import type { PartialRoundData } from '@/lib/golf/partial-round.types';
 
 export const PARTIAL_SAVE_BEACON_ENDPOINT = '/api/golf/rounds/partial-save';
 

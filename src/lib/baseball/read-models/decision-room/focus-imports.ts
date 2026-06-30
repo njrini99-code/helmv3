@@ -18,7 +18,7 @@ import type {
   DecisionRoomPlayerFocus,
   DecisionRoomImportIssue,
   DecisionRoomSummaryPlayer,
-} from '@/app/baseball/actions/decision-room';
+} from '@/lib/baseball/decision-room/types';
 
 /**
  * Generic Supabase client alias. The Decision Room callers pass the

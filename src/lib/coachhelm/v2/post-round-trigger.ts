@@ -17,8 +17,16 @@
  * NOT a replacement for triggerPlayerInsightsAfterRound — wraps it.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 import { logServerError } from '@/lib/server-error-logger';
+
+export interface PostRoundInsightsResult {
+  success: boolean;
+  insights_created?: number;
+  error?: string;
+  partial?: boolean;
+}
+
+export type PostRoundInsightsRunner = (playerId: string) => Promise<PostRoundInsightsResult>;
 
 export interface PostRoundTriggerArgs {
   playerId: string;
@@ -114,10 +122,11 @@ async function writeTerminalState(
 export async function postRoundTrigger(
   admin: SupabaseClient,
   args: PostRoundTriggerArgs,
+  runInsights: PostRoundInsightsRunner,
 ): Promise<{ success: boolean; error?: string; partial?: boolean }> {
   const now = new Date().toISOString();
   try {
-    const result = await triggerPlayerInsightsAfterRound(args.playerId);
+    const result = await runInsights(args.playerId);
 
     if (!result.success) {
       const reason = result.error ?? 'engine reported failure';

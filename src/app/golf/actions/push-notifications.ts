@@ -15,21 +15,7 @@ const registerDeviceTokenSchema = z.object({
 
 const deviceTokenSchema = z.string().min(1, 'token is required').max(512);
 
-/**
- * Result shape for device-token mutations.
- *
- * `UNAUTHORIZED_RETRYABLE` is returned (not thrown) when the iOS webview
- * fires registration before the Supabase session cookie has propagated.
- * The caller retries silently instead of surfacing a noisy Sentry error.
- */
-type DeviceTokenResult =
-  | { success: true }
-  | {
-      success: false;
-      error: string;
-      code?: 'UNAUTHORIZED_RETRYABLE';
-      retryable?: boolean;
-    };
+import type { DeviceTokenResult } from '@/lib/golf/push-device-token.types';
 
 /**
  * Register (or refresh) an APNs/FCM device token for the current user.

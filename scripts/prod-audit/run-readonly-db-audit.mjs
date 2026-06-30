@@ -5,9 +5,10 @@ import postgres from 'postgres';
 const outDir = join(process.cwd(), 'docs/operations/generated');
 mkdirSync(outDir, { recursive: true });
 
-const connectionString = process.env.PROD_AUDIT_DATABASE_URL || process.env.DATABASE_URL;
+const connectionString = process.env.PROD_AUDIT_DATABASE_URL?.trim() || '';
 const startedAt = new Date().toISOString();
 const findings = [];
+let skipped = false;
 
 function addFinding(partial) {
   findings.push({
@@ -19,12 +20,19 @@ function addFinding(partial) {
 
 async function main() {
   if (!connectionString) {
+    skipped = true;
     addFinding({
       id: 'PROD-DB-AUDIT-NO-URL',
-      severity: 'P3',
+      severity: 'info',
       confidence: 'high',
-      title: 'Production DB audit skipped because no read-only database URL was provided',
-      evidence: ['Set PROD_AUDIT_DATABASE_URL to a read-only connection string.'],
+      skipped: true,
+      status: 'skipped',
+      title: 'Production DB audit skipped because PROD_AUDIT_DATABASE_URL is not configured',
+      evidence: [
+        'CI: add repository secret PROD_AUDIT_DATABASE_URL (read-only Postgres URL) to run this audit in GitHub Actions.',
+        'Local: export PROD_AUDIT_DATABASE_URL="postgresql://..." then run npm run prod:audit:db',
+        'Local Supabase: npm run db:audit:local uses LOCAL_DB_AUDIT_DATABASE_URL or DATABASE_URL via scripts/db-audit/run-local-db-audit.mjs',
+      ],
     });
     return writeReports();
   }
@@ -112,11 +120,15 @@ async function main() {
 }
 
 function writeReports() {
+  const actionableFindings = findings.filter((finding) => !finding.skipped);
   const report = {
     generated_at: startedAt,
     read_only: true,
-    finding_count: findings.length,
-    findings,
+    skipped,
+    status: skipped ? 'skipped' : 'completed',
+    finding_count: actionableFindings.length,
+    findings: actionableFindings,
+    skip_reason: skipped ? findings.find((finding) => finding.skipped) ?? null : null,
   };
   writeFileSync(join(outDir, 'prod-db-audit-findings.json'), `${JSON.stringify(report, null, 2)}\n`);
   writeFileSync(
@@ -126,13 +138,20 @@ function writeReports() {
       '',
       `Generated: ${startedAt}`,
       '',
-      `Findings: ${findings.length}`,
+      `Status: ${skipped ? 'skipped (no PROD_AUDIT_DATABASE_URL)' : 'completed'}`,
+      `Findings: ${actionableFindings.length}`,
       '',
-      ...findings.map((finding) => `- **${finding.severity}** ${finding.id}: ${finding.title}`),
+      ...(skipped && report.skip_reason
+        ? [`- **info** ${report.skip_reason.id}: ${report.skip_reason.title}`]
+        : actionableFindings.map((finding) => `- **${finding.severity}** ${finding.id}: ${finding.title}`)),
       '',
     ].join('\n'),
   );
-  console.log(`Production read-only DB audit complete: ${findings.length} findings.`);
+  if (skipped) {
+    console.log('Production read-only DB audit skipped: PROD_AUDIT_DATABASE_URL is not configured.');
+    return;
+  }
+  console.log(`Production read-only DB audit complete: ${actionableFindings.length} findings.`);
 }
 
 main().catch((error) => {

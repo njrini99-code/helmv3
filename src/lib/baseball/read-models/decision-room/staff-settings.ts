@@ -24,7 +24,7 @@ import type {
   StaffMemberView,
   StaffInvitationView,
   StaffSettingsData,
-} from '@/app/baseball/actions/decision-room';
+} from '@/lib/baseball/decision-room/types';
 
 /**
  * Shape of a `baseball_team_coach_staff` row, joined to the owning coach's

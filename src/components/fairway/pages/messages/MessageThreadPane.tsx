@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable helm/no-raw-button -- message composer action clusters use custom Fairway hit-area geometry pending primitive migration. */
-
 /**
  * ============================================================================
  * Fairway · messages · MessageThreadPane — the PULSE focal hero (open thread)
@@ -42,7 +40,7 @@ import type {
 import { getGolfMessageAttachments } from '@/app/golf/actions/messages';
 import { formatFileSize } from '@/lib/storage/attachments';
 import { Avatar } from '@/components/fairway/controls/avatar';
-import { IconButton } from '@/components/fairway/controls/button';
+import { Button, IconButton } from '@/components/fairway/controls/button';
 import { EmptyState } from '@/components/fairway/feedback';
 import { InstrumentPanel } from '@/components/fairway/instrument';
 import { Inset } from '@/components/fairway/surfaces/surface';
@@ -397,18 +395,9 @@ export function MessageThreadPane({
             title="Select a conversation"
             description="Choose a conversation from the list to start messaging."
             action={
-              <button
-                type="button"
-                onClick={onNewMessage}
-                className={cn(
-                  'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
-                  'bg-accent-500 font-fw-sans text-body-sm font-medium text-text-on-accent shadow-flat',
-                  'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
-                  'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                )}
-              >
+              <Button type="button" size="sm" onClick={onNewMessage}>
                 New message
-              </button>
+              </Button>
             }
           />
         </div>
@@ -485,18 +474,9 @@ export function MessageThreadPane({
             description="Something went wrong loading these messages. Check your connection and try again."
             action={
               onRetry ? (
-                <button
-                  type="button"
-                  onClick={onRetry}
-                  className={cn(
-                    'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
-                    'bg-accent-500 font-fw-sans text-body-sm font-medium text-text-on-accent shadow-flat',
-                    'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
-                    'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                  )}
-                >
+                <Button type="button" size="sm" onClick={onRetry}>
                   Try again
-                </button>
+                </Button>
               ) : undefined
             }
           />
@@ -629,27 +609,25 @@ export function MessageThreadPane({
                           autoFocus
                         />
                         <div className="mt-2 flex items-center justify-end gap-1 border-t border-accent-200 pt-2">
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={onCancelEdit}
                             disabled={isEditSaving}
-                            className="rounded px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary transition-colors hover:text-text-secondary disabled:opacity-50"
                           >
                             Cancel
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
+                            variant="secondary"
+                            size="sm"
                             onClick={onSaveEdit}
                             disabled={isEditSaving || !editContent.trim()}
-                            className={cn(
-                              'rounded px-2 py-1 font-fw-sans text-eyebrow transition-colors',
-                              isEditSaving || !editContent.trim()
-                                ? 'cursor-not-allowed text-text-tertiary'
-                                : 'text-accent-700 hover:bg-accent-100',
-                            )}
+                            busy={isEditSaving}
                           >
                             {isEditSaving ? 'Saving…' : 'Save'}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     ) : (
@@ -681,6 +659,7 @@ export function MessageThreadPane({
                           resolvedAttachments.length ? (
                             <MessageAttachments attachments={resolvedAttachments} isOwn={isOwn} />
                           ) : hasAttachmentError ? (
+                            // eslint-disable-next-line helm/no-raw-button -- inline attachment retry chip
                             <button
                               type="button"
                               onClick={retryAttachments}

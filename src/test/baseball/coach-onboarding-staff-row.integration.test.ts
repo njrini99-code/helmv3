@@ -162,8 +162,8 @@ vi.mock('@/lib/server-error-logger', () => ({
 }));
 
 import { completeCoachOnboarding } from '@/app/baseball/actions/onboarding';
-import { getActiveBaseballContext } from '../active-context';
-import { resolveBaseballCapabilities } from '../capabilities';
+import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 
 beforeEach(() => {
   resetDb();

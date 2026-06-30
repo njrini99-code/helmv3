@@ -1,7 +1,5 @@
 'use client';
 
-/* eslint-disable helm/no-raw-button -- event editor chip controls are legacy dense controls pending primitive migration. */
-
 /**
  * ============================================================================
  * Fairway · Calendar · FairwayEventEditor — native create / edit event modal
@@ -612,8 +610,8 @@ export function FairwayEventEditor({
               {EVENT_TYPES.map(({ type, label, icon: Icon }) => {
                 const active = formData.eventType === type;
                 return (
+                  // eslint-disable-next-line helm/no-raw-button -- event-type segmented chip (aria-pressed), not a pill CTA
                   <button
-                    key={type}
                     type="button"
                     onClick={() => setFormData({ ...formData, eventType: type })}
                     disabled={locked}
@@ -823,8 +821,8 @@ export function FairwayEventEditor({
                     const selected = formData.attendeeIds.includes(p.id);
                     const tint = tintFor(p.id);
                     return (
+                      // eslint-disable-next-line helm/no-raw-button -- attendee picker tile (avatar + label), not a pill CTA
                       <button
-                        key={p.id}
                         type="button"
                         onClick={() => toggleAttendee(p.id)}
                         disabled={locked || attendeesLoading}
@@ -892,9 +890,10 @@ export function FairwayEventEditor({
                     </ul>
                     {conflicts.suggestions.length > 0 ? (
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {conflicts.suggestions.slice(0, 3).map((s, i) => (
+                        {conflicts.suggestions.slice(0, 3).map((s) => (
+                          // eslint-disable-next-line helm/no-raw-button -- compact suggested-time chip
                           <button
-                            key={i}
+                            key={s.start.toISOString()}
                             type="button"
                             onClick={() => selectSuggestedTime(s)}
                             className="rounded-full border border-border-subtle bg-surface px-2.5 py-1 font-fw-mono text-caption tabular-nums text-text-secondary transition-colors hover:bg-surface-tint"
@@ -949,8 +948,8 @@ export function FairwayEventEditor({
                       {WEEKDAY_OPTIONS.map((day) => {
                         const selected = (formData.recurrenceWeekdays ?? []).includes(day.value);
                         return (
+                          // eslint-disable-next-line helm/no-raw-button -- weekday circle toggle (aria-pressed)
                           <button
-                            key={day.value}
                             type="button"
                             onClick={() => toggleRecurrenceWeekday(day.value)}
                             disabled={locked}

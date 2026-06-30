@@ -22,7 +22,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   DecisionRoomLiftSummary,
   DecisionRoomSummaryPlayer,
-} from '@/app/baseball/actions/decision-room';
+} from '@/lib/baseball/decision-room/types';
 
 /**
  * Recent window (in days) over which lifting activity is summarized for the

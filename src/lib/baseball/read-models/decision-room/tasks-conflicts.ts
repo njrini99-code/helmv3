@@ -17,7 +17,7 @@ import type { createClient } from '@/lib/supabase/server';
 import type {
   DecisionRoomOpenTask,
   DecisionRoomConflict,
-} from '@/app/baseball/actions/decision-room';
+} from '@/lib/baseball/decision-room/types';
 
 /**
  * The authenticated, cookie-bound server client (RLS applies). The Decision Room
