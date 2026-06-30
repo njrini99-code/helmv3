@@ -83,7 +83,7 @@ async function loadMemberships(
     coachId
       ? supabase
           .from('baseball_team_coach_staff')
-          .select('team_id, created_at')
+          .select('team_id, created_at, status')
           .eq('coach_id', coachId)
           .order('created_at', { ascending: true })
       : Promise.resolve({ data: [], error: null } as const),
@@ -101,6 +101,10 @@ async function loadMemberships(
   }
 
   for (const row of staffMemberships.data ?? []) {
+    const status = typeof row.status === 'string' ? row.status : null;
+    if (status === 'suspended' || status === 'removed' || status === 'invited') {
+      continue;
+    }
     memberships.push({
       teamId: row.team_id,
       role: 'coach',
