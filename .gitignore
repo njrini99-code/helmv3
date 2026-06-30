@@ -143,6 +143,10 @@ scripts/rotate-demo-passwords.mjs
 /docs/operations/generated/
 /.stryker-tmp/
 
+# Cleanup agent raw/generated reports (never commit secret-scan output).
+.cleanup/reports/secret-pattern-scan.txt
+.cleanup/reports/secret-pattern-scan.redacted.txt
+
 # Large generated showcase binaries (repo already ignores GolfHelm-Prospect-Deck.pptx).
 GolfHelm-CoachHelm-Showcase.pdf
 GolfHelm-Fairway-Guide.pdf

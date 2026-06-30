@@ -49,7 +49,7 @@ python overnight.py --baseballhelm ~/helmv3
 # - .helm/UNDERSTANDING.json (app knowledge)
 # - .helm/BASEBALLHELM_ESSAY.md (4000-6000 word doc)
 # - .helm/security/RLS_AUDIT.md (security report)
-# - .helm/ACTIONS.md (prioritized work items)
+# - GitHub Issues (create from findings; .helm/ACTIONS.md is archived context)
 # - *.spec.md files (feature specs)
 ```
 
@@ -65,9 +65,8 @@ cd tools/continuous-improvement
 # Run first cycle (uses overnight context)
 python cycle-agent.py --project ~/helmv3 --platform baseballhelm
 
-# This produces:
-# - .helm/cycles/issues-cycle-001.md (issues for Claude Code)
-# - .helm/cycles/issues-cycle-001.json (machine-readable)
+# This produces archived cycle output under .helm/cycles/ (historical only).
+# Triage actionable work in GitHub Issues / the project board.
 ```
 
 **Cost:** ~$2-5 per cycle  
@@ -75,8 +74,8 @@ python cycle-agent.py --project ~/helmv3 --platform baseballhelm
 
 In Cursor:
 ```
-Open .helm/cycles/issues-cycle-001.md
-Tell Claude Code: "Fix all issues in this file. Document each fix in the FIX STATUS sections."
+Open the linked GitHub issue or project board item.
+Tell Claude Code: "Fix this issue. Document the fix in the PR."
 ```
 
 After Claude Code finishes:

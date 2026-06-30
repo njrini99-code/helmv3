@@ -379,12 +379,13 @@ class EnhancedCycleAgent:
         prompt = """
 You are importing issues from overnight analysis into the continuous improvement system.
 
-Read these files:
-- .helm/ACTIONS.md (prioritized action items)
-- .helm/ISSUES.md (detailed issue descriptions)
-- .helm/security/RLS_AUDIT.md (security findings)
+Read these archived files when present (historical context only):
+- .helm/ACTIONS.md
+- .helm/ISSUES.md
+- .helm/security/RLS_AUDIT.md
 
-Extract ALL issues and convert them to this standardized format:
+Create or update GitHub Issues for actionable work instead of treating `.helm/` markdown as a live queue.
+Use `docs/current/operating-system.md` and the GitHub project board as the command center.
 
 ```json
 {

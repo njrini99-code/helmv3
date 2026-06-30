@@ -60,6 +60,7 @@
     "analyze:knip": "knip --reporter json > docs/operations/generated/knip.json",
     "analyze:duplicates": "jscpd src --reporters json,markdown --output docs/operations/generated/jscpd",
     "secrets:scan": "node scripts/security/run-gitleaks-current-tree.mjs",
+    "cleanup:secret-scan": "node scripts/cleanup/run-secret-pattern-scan.mjs",
     "secrets:scan:history": "gitleaks git . --redact --report-format json --report-path docs/operations/generated/gitleaks-history.json",
     "deps:audit:npm": "npm audit --audit-level=high",
     "deps:audit:osv": "osv-scanner --lockfile package-lock.json --format json > docs/operations/generated/osv.json",

@@ -22,7 +22,7 @@ import { getCoachTeams, getCoachTeamSwitchContext } from '@/lib/golf/resolve-tea
 import type { CoachTeamOption } from '@/lib/golf/resolve-team';
 // 'use server' modules may only export async functions — the cookie constants
 // live in a plain sibling module.
-import { ACTIVE_TEAM_COOKIE, ACTIVE_TEAM_COOKIE_MAX_AGE } from './team-switcher.constants';
+import { ACTIVE_TEAM_COOKIE, ACTIVE_TEAM_COOKIE_MAX_AGE } from '@/lib/golf/team-switcher.constants';
 
 /**
  * Switch the signed-in coach's active team.

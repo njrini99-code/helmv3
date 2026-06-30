@@ -32,4 +32,5 @@ python3 dead_simple_agent.py \
 echo ""
 echo "✅ Done!"
 echo ""
-echo "📋 Next: Open .helm/cycles/issues-cycle-002.md in Cursor"
+echo "📋 Next: triage findings in GitHub Issues / the project board."
+echo "    Legacy .helm/cycles output is archived context only."

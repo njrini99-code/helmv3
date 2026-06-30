@@ -16,7 +16,7 @@ import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { resolveCoachActiveTeamId } from '@/lib/golf/resolve-team';
-import { ACTIVE_TEAM_COOKIE } from '@/app/golf/actions/team-switcher.constants';
+import { ACTIVE_TEAM_COOKIE } from '@/lib/golf/team-switcher.constants';
 
 type TypedSupabaseClient = SupabaseClient<Database>;
 
