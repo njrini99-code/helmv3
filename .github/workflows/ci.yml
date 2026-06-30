@@ -10,7 +10,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      deploy_config_only: ${{ steps.filter.outputs.deploy_config == 'true' && steps.filter.outputs.other != 'true' }}
+      deploy_config_only: ${{ steps.gate.outputs.value }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -29,6 +29,16 @@ jobs:
               - '!vercel.json'
               - '!.github/workflows/ci.yml'
               - '!.github/workflows/playwright.yml'
+
+      - name: Compute deploy_config_only
+        id: gate
+        run: |
+          if [ "${{ steps.filter.outputs.deploy_config }}" = "true" ] && [ "${{ steps.filter.outputs.other }}" != "true" ]; then
+            echo "value=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "deploy_config=${{ steps.filter.outputs.deploy_config }} other=${{ steps.filter.outputs.other }}"
 
   build:
     needs: changes
