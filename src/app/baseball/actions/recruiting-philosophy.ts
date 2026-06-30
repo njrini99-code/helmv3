@@ -3,6 +3,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { sanitizeDbError } from '@/lib/db-error';
 import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-error-logger';
+import { BaseballCapabilityError } from '@/lib/baseball/capabilities';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballNoActiveTeamError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
 import type {
   CoachRecruitingPhilosophy,
   CoachRecruitingPhilosophyInsert,
@@ -14,6 +22,38 @@ import type {
 // Run migration and regenerate Supabase types to remove type assertions.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseAny = any;
+
+const PHILOSOPHY_PATHS = [
+  '/baseball/dashboard/discover',
+  '/baseball/dashboard/settings/recruiting-preferences',
+] as const;
+
+function revalidatePhilosophyPaths() {
+  for (const path of PHILOSOPHY_PATHS) {
+    revalidatePath(path);
+  }
+}
+
+function mapRecruitingPhilosophyActionError(
+  error: unknown,
+): { success: false; error: string } {
+  if (error instanceof BaseballUnauthorizedError) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  if (error instanceof BaseballNoActiveTeamError) {
+    return { success: false, error: 'Coach not found' };
+  }
+  if (error instanceof BaseballCapabilityError) {
+    return { success: false, error: 'You do not have permission to manage recruiting settings' };
+  }
+  if (error instanceof BaseballActionError) {
+    return { success: false, error: 'Could not complete the recruiting settings action. Please try again.' };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred' };
+}
 
 // ============================================================================
 // RECRUITING PHILOSOPHY CRUD
@@ -28,7 +68,6 @@ export async function getRecruitingPhilosophy(): Promise<{
 }> {
   const supabase = await createClient();
 
-  // Get authenticated user
   const {
     data: { user },
     error: userError,
@@ -38,7 +77,6 @@ export async function getRecruitingPhilosophy(): Promise<{
     return { data: null, error: 'Not authenticated' };
   }
 
-  // Get coach record
   const { data: coach, error: coachError } = await (supabase as SupabaseAny)
     .from('baseball_coaches')
     .select('id')
@@ -49,7 +87,6 @@ export async function getRecruitingPhilosophy(): Promise<{
     return { data: null, error: 'Coach not found' };
   }
 
-  // Get philosophy (table will exist after migration is run)
   const { data, error } = await (supabase as SupabaseAny)
     .from('baseball_coach_recruiting_philosophy')
     .select('*')
@@ -57,7 +94,6 @@ export async function getRecruitingPhilosophy(): Promise<{
     .single();
 
   if (error && error.code !== 'PGRST116') {
-    // PGRST116 = no rows found, which is OK
     return { data: null, error: sanitizeDbError(error, 'recruiting-philosophy') };
   }
 
@@ -69,72 +105,67 @@ export async function getRecruitingPhilosophy(): Promise<{
  * Creates if doesn't exist, updates if exists.
  */
 export async function saveRecruitingPhilosophy(
-  philosophy: CoachRecruitingPhilosophyUpdate
+  philosophy: CoachRecruitingPhilosophyUpdate,
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createClient();
-
-  // Get authenticated user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return { success: false, error: 'Not authenticated' };
+  try {
+    return await saveRecruitingPhilosophyAction(philosophy);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'recruiting-philosophy.saveRecruitingPhilosophy', featureArea: 'baseball-recruiting-philosophy' },
+    );
+    const mapped = mapRecruitingPhilosophyActionError(error);
+    return { success: false, error: mapped.error };
   }
-
-  // Get coach record
-  const { data: coach, error: coachError } = await (supabase as SupabaseAny)
-    .from('baseball_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (coachError || !coach) {
-    return { success: false, error: 'Coach not found' };
-  }
-
-  // Check if philosophy exists
-  const { data: existing } = await (supabase as SupabaseAny)
-    .from('baseball_coach_recruiting_philosophy')
-    .select('id')
-    .eq('coach_id', coach.id)
-    .single();
-
-  if (existing) {
-    // Update existing
-    const { error: updateError } = await (supabase as SupabaseAny)
-      .from('baseball_coach_recruiting_philosophy')
-      .update({
-        ...philosophy,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('coach_id', coach.id);
-
-    if (updateError) {
-      return { success: false, error: updateError.message };
-    }
-  } else {
-    // Insert new
-    const insertData: CoachRecruitingPhilosophyInsert = {
-      coach_id: coach.id,
-      ...philosophy,
-    };
-
-    const { error: insertError } = await (supabase as SupabaseAny)
-      .from('baseball_coach_recruiting_philosophy')
-      .insert(insertData);
-
-    if (insertError) {
-      return { success: false, error: insertError.message };
-    }
-  }
-
-  revalidatePath('/baseball/dashboard/discover');
-  revalidatePath('/baseball/dashboard/settings/recruiting-preferences');
-
-  return { success: true, error: null };
 }
+
+const saveRecruitingPhilosophyAction = withBaseballAction(
+  'saveRecruitingPhilosophy',
+  { featureArea: 'baseball-recruiting-philosophy', requiredCapability: 'can_manage_settings' },
+  async (ctx, philosophy: CoachRecruitingPhilosophyUpdate): Promise<{ success: boolean; error: string | null }> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    const { data: existing } = await (supabase as SupabaseAny)
+      .from('baseball_coach_recruiting_philosophy')
+      .select('id')
+      .eq('coach_id', coachId)
+      .single();
+
+    if (existing) {
+      const { error: updateError } = await (supabase as SupabaseAny)
+        .from('baseball_coach_recruiting_philosophy')
+        .update({
+          ...philosophy,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('coach_id', coachId);
+
+      if (updateError) {
+        return { success: false, error: updateError.message };
+      }
+    } else {
+      const insertData: CoachRecruitingPhilosophyInsert = {
+        coach_id: coachId,
+        ...philosophy,
+      };
+
+      const { error: insertError } = await (supabase as SupabaseAny)
+        .from('baseball_coach_recruiting_philosophy')
+        .insert(insertData);
+
+      if (insertError) {
+        return { success: false, error: insertError.message };
+      }
+    }
+
+    revalidatePhilosophyPaths();
+    return { success: true, error: null };
+  },
+);
 
 /**
  * Update specific weights in the philosophy.
@@ -155,7 +186,7 @@ export async function updateRecruitingWeights(weights: {
  * Update position priorities.
  */
 export async function updatePositionPriorities(
-  positions: string[]
+  positions: string[],
 ): Promise<{ success: boolean; error: string | null }> {
   return saveRecruitingPhilosophy({ position_priorities: positions });
 }
@@ -186,7 +217,7 @@ export async function updateGeographicPreferences(prefs: {
  * Update target grad years.
  */
 export async function updateTargetGradYears(
-  gradYears: number[]
+  gradYears: number[],
 ): Promise<{ success: boolean; error: string | null }> {
   return saveRecruitingPhilosophy({ target_grad_years: gradYears });
 }
@@ -198,44 +229,41 @@ export async function resetRecruitingPhilosophy(): Promise<{
   success: boolean;
   error: string | null;
 }> {
-  const supabase = await createClient();
-
-  // Get authenticated user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return { success: false, error: 'Not authenticated' };
+  try {
+    return await resetRecruitingPhilosophyAction();
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'recruiting-philosophy.resetRecruitingPhilosophy', featureArea: 'baseball-recruiting-philosophy' },
+    );
+    const mapped = mapRecruitingPhilosophyActionError(error);
+    return { success: false, error: mapped.error };
   }
-
-  // Get coach record
-  const { data: coach, error: coachError } = await (supabase as SupabaseAny)
-    .from('baseball_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (coachError || !coach) {
-    return { success: false, error: 'Coach not found' };
-  }
-
-  // Delete existing philosophy (will use defaults)
-  const { error: deleteError } = await (supabase as SupabaseAny)
-    .from('baseball_coach_recruiting_philosophy')
-    .delete()
-    .eq('coach_id', coach.id);
-
-  if (deleteError) {
-    return { success: false, error: deleteError.message };
-  }
-
-  revalidatePath('/baseball/dashboard/discover');
-  revalidatePath('/baseball/dashboard/settings/recruiting-preferences');
-
-  return { success: true, error: null };
 }
+
+const resetRecruitingPhilosophyAction = withBaseballAction(
+  'resetRecruitingPhilosophy',
+  { featureArea: 'baseball-recruiting-philosophy', requiredCapability: 'can_manage_settings' },
+  async (ctx): Promise<{ success: boolean; error: string | null }> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    const { error: deleteError } = await (supabase as SupabaseAny)
+      .from('baseball_coach_recruiting_philosophy')
+      .delete()
+      .eq('coach_id', coachId);
+
+    if (deleteError) {
+      return { success: false, error: deleteError.message };
+    }
+
+    revalidatePhilosophyPaths();
+    return { success: true, error: null };
+  },
+);
 
 // ============================================================================
 // PLAYER PERCENTILES
@@ -245,7 +273,7 @@ export async function resetRecruitingPhilosophy(): Promise<{
  * Get percentiles for a list of players.
  */
 export async function getPlayerPercentiles(
-  playerIds: string[]
+  playerIds: string[],
 ): Promise<{ data: PlayerPercentiles[]; error: string | null }> {
   if (playerIds.length === 0) {
     return { data: [], error: null };
@@ -269,7 +297,7 @@ export async function getPlayerPercentiles(
  * Get percentiles for a single player.
  */
 export async function getPlayerPercentile(
-  playerId: string
+  playerId: string,
 ): Promise<{ data: PlayerPercentiles | null; error: string | null }> {
   const supabase = await createClient();
 
@@ -291,31 +319,37 @@ export async function getPlayerPercentile(
  * This calls the database function.
  */
 export async function recalculatePercentiles(
-  gradYear: number
+  gradYear: number,
 ): Promise<{ success: boolean; error: string | null }> {
-  const supabase = await createClient();
-
-  // Verify user is authenticated
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return { success: false, error: 'Not authenticated' };
+  try {
+    return await recalculatePercentilesAction(gradYear);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'recruiting-philosophy.recalculatePercentiles', featureArea: 'baseball-recruiting-philosophy' },
+    );
+    const mapped = mapRecruitingPhilosophyActionError(error);
+    return { success: false, error: mapped.error };
   }
-
-  // Call the database function (custom RPC not in generated types)
-  const { error } = await (supabase as SupabaseAny).rpc('calculate_grad_year_percentiles', {
-    target_grad_year: gradYear,
-  });
-
-  if (error) {
-    return { success: false, error: sanitizeDbError(error, 'recruiting-philosophy') };
-  }
-
-  return { success: true, error: null };
 }
+
+const recalculatePercentilesAction = withBaseballAction(
+  'recalculatePercentiles',
+  { featureArea: 'baseball-recruiting-philosophy', requiredCapability: 'can_manage_settings' },
+  async (_ctx, gradYear: number): Promise<{ success: boolean; error: string | null }> => {
+    const supabase = await createClient();
+
+    const { error } = await (supabase as SupabaseAny).rpc('calculate_grad_year_percentiles', {
+      target_grad_year: gradYear,
+    });
+
+    if (error) {
+      return { success: false, error: sanitizeDbError(error, 'recruiting-philosophy') };
+    }
+
+    return { success: true, error: null };
+  },
+);
 
 // ============================================================================
 // MATCH SCORING (Server-side)
@@ -326,7 +360,7 @@ export async function recalculatePercentiles(
  * This is called server-side to enrich player data with match scores.
  */
 export async function calculateMatchScoresForPlayers(
-  playerIds: string[]
+  playerIds: string[],
 ): Promise<{
   scores: Map<string, { match_score: number; breakdown: Record<string, unknown> }>;
   error: string | null;
@@ -337,7 +371,6 @@ export async function calculateMatchScoresForPlayers(
 
   const supabase = await createClient();
 
-  // Get authenticated user
   const {
     data: { user },
     error: userError,
@@ -347,7 +380,6 @@ export async function calculateMatchScoresForPlayers(
     return { scores: new Map(), error: 'Not authenticated' };
   }
 
-  // Get coach record
   const { data: coach, error: coachError } = await (supabase as SupabaseAny)
     .from('baseball_coaches')
     .select('id')
@@ -358,11 +390,9 @@ export async function calculateMatchScoresForPlayers(
     return { scores: new Map(), error: 'Coach not found' };
   }
 
-  // Calculate scores using database function
   const scores = new Map<string, { match_score: number; breakdown: Record<string, unknown> }>();
 
   for (const playerId of playerIds) {
-    // Custom RPC not in generated types
     const { data, error } = await (supabase as SupabaseAny).rpc('calculate_player_match_score', {
       p_player_id: playerId,
       p_coach_id: coach.id,

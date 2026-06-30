@@ -14,6 +14,16 @@ const from = vi.fn();
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({ auth: { getUser }, from })),
 }));
+vi.mock('@/lib/baseball/active-context', () => ({
+  getActiveBaseballContext: vi.fn(async () => ({
+    userId: 'user-1',
+    activeTeamId: 'team-1',
+    activeRole: 'player',
+    activePlayerId: PLAYER_ID,
+    activeCoachId: null,
+    fellBackFromStale: false,
+  })),
+}));
 vi.mock('@/lib/supabase/untyped', () => ({
   fromUntyped: vi.fn((_supabase, table: string) => from(table)),
 }));
@@ -32,9 +42,24 @@ vi.mock('@/lib/validation/server-action-validator', async (importOriginal) => {
 
 import { addToInterests, removeFromInterests } from '@/app/baseball/actions/interests';
 import { logSecurityEvent } from '@/lib/validation/server-action-validator';
+import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 
 const ORG_ID = '11111111-1111-4111-8111-111111111111';
 const PLAYER_ID = '22222222-2222-4222-8222-222222222222';
+
+function mockActivePlayerContext() {
+  // .mockReset() before re-arming the default so a queued
+  // mockResolvedValueOnce(null) left over from a prior (unconsumed) test
+  // never leaks into this one.
+  vi.mocked(getActiveBaseballContext).mockReset().mockResolvedValue({
+    userId: 'user-1',
+    activeTeamId: 'team-1',
+    activeRole: 'player',
+    activePlayerId: PLAYER_ID,
+    activeCoachId: null,
+    fellBackFromStale: false,
+  });
+}
 
 function mockTable(table: string) {
   const chain: Record<string, unknown> = {};
@@ -66,6 +91,7 @@ function mockTable(table: string) {
 describe('addToInterests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockActivePlayerContext();
     getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
     from.mockImplementation((table: string) => mockTable(table));
     insert.mockReturnValue({ error: null });
@@ -109,6 +135,7 @@ describe('addToInterests', () => {
 
   it('rejects unauthenticated callers', async () => {
     getUser.mockResolvedValue({ data: { user: null } });
+    vi.mocked(getActiveBaseballContext).mockResolvedValueOnce(null);
     const res = await addToInterests(ORG_ID);
     expect(res.success).toBe(false);
     expect(insert).not.toHaveBeenCalled();
@@ -118,6 +145,7 @@ describe('addToInterests', () => {
 describe('removeFromInterests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockActivePlayerContext();
     getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
     from.mockImplementation((table: string) => mockTable(table));
   });
