@@ -31,7 +31,17 @@ In **Settings → Secrets and variables → Actions**:
 | `METICULOUS_API_TOKEN` | API token from Meticulous dashboard |
 | `METICULOUS_PROJECT_ID` | Project ID (optional; uncomment in workflow) |
 
-Once `METICULOUS_API_TOKEN` is set, `.github/workflows/meticulous-advisory.yml` runs on every PR (advisory — `continue-on-error: true`).
+Once `METICULOUS_API_TOKEN` is set, add a Meticulous action step to `.github/workflows/meticulous-advisory.yml` (advisory — `continue-on-error: true`). Recommended for Next.js:
+
+```yaml
+- name: Run Meticulous tests
+  uses: alwaysmeticulous/report-diffs-action/upload-container@v1
+  with:
+    api-token: ${{ secrets.METICULOUS_API_TOKEN }}
+    image-tag: helmv3:${{ github.sha }}
+```
+
+See [Meticulous GitHub Actions docs](https://app.meticulous.ai/docs/github-actions-v2) for upload-assets, upload-container, and cloud-compute options.
 
 ## 4. Vercel preview integration
 
