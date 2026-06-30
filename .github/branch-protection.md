@@ -34,6 +34,7 @@ Advisory checks:
 
 - `Vercel` and `Vercel Preview Comments`
 - `Greptile Review`
+- `Qodo Ticket Context / Ticket references`
 - `ci/circleci: lighthouse-preview`
 - `Playwright (chromium)`
 - `Course picker screenshots`

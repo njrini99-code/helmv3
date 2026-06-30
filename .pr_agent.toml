@@ -1,0 +1,21 @@
+[github_app]
+pr_commands = [
+  "/agentic_describe",
+  "/agentic_review"
+]
+
+[linear]
+linear_base_url = "https://linear.app/helmmmm"
+
+[review_agent]
+comments_location_policy = "both"
+inline_comments_severity_threshold = 3
+issues_user_guidelines = """
+Use linked GitHub issues and Linear tickets as product-truth context. Verify that
+the PR actually satisfies the linked ticket acceptance criteria and call out any
+missing behavior, migration/RLS risk, route mismatch, or test gap.
+"""
+compliance_user_guidelines = """
+For BaseballHelm, prioritize role/access boundaries, route correctness, stat
+truth, product-trust states, and no silent success on failed writes or reads.
+"""
