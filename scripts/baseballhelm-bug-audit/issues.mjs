@@ -1201,4 +1201,544 @@ Mobile calendar views can overflow, double-scroll, or leave dead space compared 
 - No vertical double-scroll on mobile; month/week grid is usable without the last row hiding behind the bottom nav.
 - Height behavior matches the calendar wrapper pattern used in the golf app shell.`,
   },
+
+  // ---------------------------------------------------------------------
+  // Wave 2 (2026-06-30, follow-up pass): Video, Lineups, Lifting
+  // ---------------------------------------------------------------------
+  {
+    title: 'BaseballHelm: Route program publishes into the table player lift surfaces actually read',
+    labels: ['bug', 'baseball', 'high-risk'],
+    body: `## Problem
+\`publishLiftDay\` materializes player sessions into \`baseball_lift_sessions\`, but the player-facing Lift Home (\`/baseball/dashboard/lift\`) and Player Today lift summary both read \`helm_lifting_sessions\`. A coach who publishes from Program Editor creates workouts staff can see in Live Weight Room (\`baseball_lift_sessions\`) that never appear on the player's Lift/Today surfaces.
+
+## Evidence
+- \`src/app/baseball/actions/lifting-v11.ts\` (lines 1478-1481): upserts into \`baseball_lift_sessions\`
+- \`src/lib/baseball/read-models/player-lift.ts\` (lines 8-9, 153): reads \`helm_lifting_sessions\`
+- \`src/app/baseball/actions/player-today-lift.ts\` (lines 114-133): queries \`helm_lifting_sessions\`
+
+## Why it matters
+The primary coach workflow (build program → publish) silently fails for athletes — they see an empty lift while coaches believe assignments went out.
+
+## Acceptance criteria
+- Publishing a program day creates a session visible on \`/baseball/dashboard/lift\` and Player Today for every targeted athlete.
+- Live Weight Room and player surfaces show the same materialized session for a given publish.
+- Add an integration test: publish → player lift home returns at least one session for that date.
+
+## Note
+This is a distinct table-split bug from the existing "Unify Today lift/readiness reads onto helm_lifting tables" finding (which covers the readiness check-in path) — this one is the program-publish path.`,
+  },
+  {
+    title: 'BaseballHelm: Wire Video Library uploads through saveMyVideo server action',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+The Video Library uses \`VideoUpload\`, which uploads to storage and inserts directly into \`baseball_videos\` from the browser. The server action \`saveMyVideo\` (gated on \`can_upload_video\`) exists but is never called, so the Settings-level upload toggle is bypassed and uploads lack centralized server-side enforcement/logging.
+
+## Evidence
+- \`src/components/baseball/video/VideoLibraryClient.tsx\` (lines 29, 509): imports \`VideoUpload\`
+- \`src/components/features/video-upload.tsx\` (lines 139-147): \`supabase.from('baseball_videos').insert(...)\` client-side
+- \`saveMyVideo\` is only defined in \`src/app/baseball/actions/video-classes.ts\` (lines 353-398) with no component callers
+
+## Why it matters
+Programs that disable player uploads can still be circumvented; failed RLS inserts can orphan storage objects after a successful upload.
+
+## Acceptance criteria
+- \`VideoUpload\` calls \`saveMyVideo\` after storage upload instead of client-side \`insert\`.
+- When \`players_can_upload_video\` is off, upload fails server-side with a clear error before/at DB write.
+- Existing \`batchUploadStaffVideos\` staff path remains unchanged.`,
+  },
+  {
+    title: 'BaseballHelm: Refresh Video Library after upload/edit/delete mutations',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+After a player uploads, edits, deletes, or sets a primary video, \`LibraryView\` calls \`onMutated\`, but the root handler is explicitly a no-op. Server actions revalidate the path, but the client never refetches props, so the grid stays stale until a full page reload.
+
+## Evidence
+- \`src/components/baseball/video/VideoLibraryClient.tsx\` (lines 433, 451, 461): calls \`startTransition(onMutated)\` after mutations
+- \`src/components/baseball/video/VideoLibraryClient.tsx\` (lines 1242-1245): \`handleMutated\` is \`// Nothing\`
+
+## Why it matters
+Users get false "success" feedback while the library still shows deleted videos, missing new uploads, or stale primary badges.
+
+## Acceptance criteria
+- After any successful mutation, the library re-renders with updated data (e.g. \`router.refresh()\` or optimistic local state).
+- Upload → new card appears without manual reload; delete → card disappears immediately.`,
+  },
+  {
+    title: 'BaseballHelm: Check saveLineup result before showing roster success toast',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+\`RosterClient\` always shows "Lineup saved successfully" after \`await saveLineup(...)\`, without inspecting \`success\`. \`saveLineup\` returns \`{ success: false, error: '...' }\` for validation failures (duplicate orders, more than 9 players, missing coach) without throwing.
+
+## Evidence
+- \`src/app/baseball/(dashboard)/dashboard/roster/RosterClient.tsx\` (lines 933-939): awaits \`saveLineup\` then unconditionally \`showToast('Lineup saved successfully', 'success')\`
+- \`src/app/baseball/actions/lineups.ts\` (lines 80-81, 111): returns \`{ success: false, error: validationError }\`
+
+## Why it matters
+Coaches believe lineups were persisted when the server rejected them; debugging is painful because the UI contradicts the DB.
+
+## Acceptance criteria
+- Success toast only when \`result.success === true\`.
+- Error toast surfaces \`result.error\` on failure.
+- Failed saves do not clear the in-progress lineup builder state.`,
+  },
+  {
+    title: 'BaseballHelm: Swap or return displaced player when dropping into an occupied lineup slot',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+In \`LineupBuilder.handleDrop\`, dropping a player onto a slot that already has a player overwrites the incumbent with no swap and no return to "Available Players." The displaced player is removed from the lineup entirely.
+
+## Evidence
+- \`src/components/coach/lineup/LineupBuilder.tsx\` (lines 60-87): when \`draggedSlotIndex === null\` (roster → slot), the code sets \`newLineup[toSlotIndex] = { player: draggedPlayer }\` without preserving the previous \`slot.player\`
+
+## Why it matters
+A common drag-and-drop action silently deletes a batter from the saved lineup; coaches can publish incomplete orders without noticing.
+
+## Acceptance criteria
+- Dropping onto an occupied slot swaps players, or moves the displaced player back to the roster pool.
+- Repro test: place Player A in slot 3, drag Player B from roster onto slot 3 → both remain in the lineup (swapped or B in 3 / A in roster).`,
+  },
+  {
+    title: 'BaseballHelm: Treat empty Lift Builder player selection as "assign to none," not whole team',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+If a coach deselects every player in \`GroupAvailabilityGrid\`, \`handleSave\` passes \`playerIds: undefined\` when \`selectedPlayerIds.size === 0\`. \`saveLiftSessionPlan\` only intersects when \`playerIds.length > 0\`, so an empty selection assigns the session to the entire team/group.
+
+## Evidence
+- \`src/components/baseball/performance/LiftBuilderClient.tsx\` (line 262): \`playerIds: selectedPlayerIds.size > 0 ? [...selectedPlayerIds] : undefined\`
+- \`src/app/baseball/actions/lift-builder.ts\` (lines 325-328): skips filtering when \`playerIds\` is absent/empty
+
+## Why it matters
+The UI implies per-player targeting, but deselecting everyone does the opposite of "nobody" — it blasts the plan to the full roster.
+
+## Acceptance criteria
+- Zero selected players → save blocked with a clear error, or \`count: 0\` with no DB writes.
+- Selecting 2 of 10 players materializes exactly 2 sessions.
+- UI copy matches behavior ("Save — N selected athletes").`,
+  },
+  {
+    title: 'BaseballHelm: Deduplicate publishLiftDay assignments for the same program day and date',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+Each \`publishLiftDay\` call always \`insert\`s a new \`baseball_lift_program_assignments\` row and materializes new sessions keyed to that assignment. Re-publishing the same program day (e.g., after editing prescriptions) creates duplicate assignments and duplicate player sessions for the same date instead of updating the existing materialization.
+
+## Evidence
+- \`src/app/baseball/actions/lifting-v11.ts\` (lines 1449-1464): unconditional \`.insert\` into \`baseball_lift_program_assignments\`
+- \`src/app/baseball/actions/lifting-v11.ts\` (lines 1507-1523): skip exercise inserts only when a session already has rows, but never update exercises on existing sessions
+
+## Why it matters
+Athletes can see multiple "Lift" sessions for one day; coaches editing and re-publishing amplify stale and duplicate workouts.
+
+## Acceptance criteria
+- Re-publishing the same \`programId\` + \`liftDayId\` + \`scheduledDate\` updates the existing assignment/sessions (stage-and-swap exercises).
+- Player sees exactly one session per published day; edited prescriptions appear after re-publish.
+- Optional: prevent duplicate calendar lift events on re-publish when \`createCalendarEvent\` is true.`,
+  },
+
+  // ---------------------------------------------------------------------
+  // Wave 2: Scout Packets, Decision Room, Compare
+  // ---------------------------------------------------------------------
+  {
+    title: 'BaseballHelm: Fix Decision Room agenda detail crash when sourceRefs is null',
+    labels: ['bug', 'baseball', 'coachhelm'],
+    body: `## Problem
+Selecting an agenda item can throw at render time because the detail pane calls \`.length\` on \`sourceRefs\` without a null guard. The agenda read model sets \`sourceRefs\` to \`null\` when the DB column is absent.
+
+## Evidence
+- \`src/lib/baseball/read-models/decision-room/agenda-ledger.ts\` (lines 162, 179): \`sourceRefs: row.source_refs ?? null\`
+- \`src/components/baseball/staff-decision-room/StaffDecisionRoomClient.tsx\` (lines 1097-1103): \`{item.sourceRefs.length === 0 ? (\`
+
+## Why it matters
+Meeting mode is unusable for any item without structured sources — the right-hand detail pane hard-crashes instead of showing the action bar.
+
+## Acceptance criteria
+- Agenda detail renders safely when \`sourceRefs\` is \`null\`, \`[]\`, or populated.
+- Evidence section shows the "no structured sources" empty state for \`null\`/\`[]\`.
+- Regression test covers selecting an agenda row with \`source_refs = null\`.`,
+  },
+  {
+    title: "BaseballHelm: Map Decision Room agenda rows to kind: 'meeting_item' and correct UI fields",
+    labels: ['bug', 'baseball', 'coachhelm'],
+    body: `## Problem
+\`loadAgendaItems\` returns raw DB-shaped rows cast to \`DecisionRoomAgendaItem\`, but never sets \`kind\`, \`severityHint\`, \`playerName\`, or \`sourceRefCount\`. The UI treats missing \`kind\` as an open signal, so real meeting items get the wrong badges and wrong actions ("Raise to agenda" instead of "Mark discussed" / "Resolve").
+
+## Evidence
+- \`src/lib/baseball/read-models/decision-room/agenda-ledger.ts\` (lines 150-179): no \`kind\`/\`playerName\`/\`severityHint\`/\`sourceRefCount\`
+- \`src/components/baseball/staff-decision-room/StaffDecisionRoomClient.tsx\` (lines 868-869): \`const isMeetingItem = item.kind === 'meeting_item'\`; (lines 1171-1189): meeting-only vs signal-only actions
+
+## Why it matters
+Staff cannot run the intended meeting workflow on created agenda items; mutations exist server-side but the client routes users down the signal path.
+
+## Acceptance criteria
+- Every \`baseball_meeting_items\` row maps to \`kind: 'meeting_item'\`.
+- \`status\` maps to \`'open' | 'discussed'\` (resolved items excluded or labeled separately).
+- \`playerName\`, \`sourceRefCount\`, and normalized \`sourceRefs\` are populated.
+- Meeting items show Mark discussed / Resolve; signal items show Raise to agenda.`,
+  },
+  {
+    title: 'BaseballHelm: Map Decision Room ledger rows to kind/label/detail/at',
+    labels: ['bug', 'baseball', 'coachhelm'],
+    body: `## Problem
+The ledger loader returns \`decisionKind\`, \`title\`, \`rationale\`, and \`decidedAt\`, but the UI reads \`entry.kind\`, \`entry.label\`, \`entry.detail\`, and \`entry.at\`. Writes also insert \`detail\`, while reads select \`rationale\`.
+
+## Evidence
+- \`src/lib/baseball/read-models/decision-room/agenda-ledger.ts\` (lines 237-255)
+- \`src/components/baseball/staff-decision-room/StaffDecisionRoomClient.tsx\` (lines 1387-1422): \`entry.label\`, \`LEDGER_GLYPH[entry.kind]\`, \`entry.at\`
+- \`src/app/baseball/actions/decision-room.ts\` (lines 592-599): \`detail: args.resolution\` on insert
+
+## Why it matters
+The Decision Ledger renders blank titles/timestamps and wrong glyphs, so recorded decisions look like they never happened.
+
+## Acceptance criteria
+- Ledger mapper emits \`kind\`, \`label\`, \`detail\`, \`at\` expected by \`LedgerItem\`.
+- Resolution/note text appears in the ledger after resolve/note mutations.
+- Write and read paths use the same DB column for decision body text.`,
+  },
+  {
+    title: 'BaseballHelm: Fix Decision Room "Players to discuss" read-model shape',
+    labels: ['bug', 'baseball', 'coachhelm'],
+    body: `## Problem
+\`loadPlayerFocus\` returns developmental-plan/note objects (\`title\`, \`kind\`, etc.) cast to \`DecisionRoomPlayerFocus\`, but the UI expects \`name\`, \`openCount\`, and \`criticalCount\`. \`focus.name.slice(...)\` will throw when \`name\` is undefined.
+
+## Evidence
+- \`src/lib/baseball/read-models/decision-room/focus-imports.ts\` (lines 102-118, 134-140)
+- \`src/app/baseball/actions/decision-room.ts\` (lines 131-137): \`name\`, \`openCount\`, \`criticalCount\`
+- \`src/components/baseball/staff-decision-room/StaffDecisionRoomClient.tsx\` (lines 1227-1237): \`focus.name.slice\`, \`focus.openCount\`, \`focus.criticalCount\`
+
+## Why it matters
+The "Players to discuss" rail shows broken/empty data and can crash the whole Decision Room page.
+
+## Acceptance criteria
+- \`loadPlayerFocus\` returns only \`DecisionRoomPlayerFocus\` fields.
+- Player names and open/critical signal counts are computed from real open signals.
+- UI renders without optional chaining hacks or runtime errors.`,
+  },
+  {
+    title: 'BaseballHelm: Align Decision Room insights disposition filter with signal inbox dispositions',
+    labels: ['bug', 'baseball', 'coachhelm'],
+    body: `## Problem
+Operational and inbox signals are created with dispositions like \`'new'\` and \`'sample_too_small'\`, but Decision Room "Shared intelligence" filters on \`['pending', 'open', 'undecided', 'none']\`. Signals from \`runOperationalSignalDetection\` never qualify.
+
+## Evidence
+- \`src/app/baseball/actions/operational-signals.ts\` (lines 623-624): \`disposition: s.sampleTooSmall ? 'sample_too_small' : 'new'\`
+- \`src/lib/types/baseball-signals.ts\` (lines 486-490): \`OPEN_SIGNAL_DISPOSITIONS\` includes \`'new'\`, \`'sample_too_small'\`
+- \`src/lib/baseball/read-models/decision-room/insights.ts\` (lines 40, 111-112): \`.in('disposition', OPEN_DISPOSITIONS)\`
+
+## Why it matters
+Operational signals populate the Signal Inbox but are invisible in Decision Room intelligence, breaking the advertised source → signal → decision loop.
+
+## Acceptance criteria
+- Decision Room insights use the same open-disposition set as the Signal Inbox.
+- After "Scan now", new operational signals appear in Shared intelligence.
+- Expired/resolved/converted signals remain excluded.`,
+  },
+  {
+    title: 'BaseballHelm: Stop labeling stable practice-effectiveness reviews as "Moved the wrong way"',
+    labels: ['bug', 'baseball', 'coachhelm'],
+    body: `## Problem
+\`EffectivenessReviewRow\` treats any non-\`improved\` direction as regression, so \`'no_change'\` and \`null\` render as a red "Moved the wrong way" badge.
+
+## Evidence
+- \`src/lib/baseball/read-models/decision-room/effectiveness.ts\` (lines 71-79): \`stable\` → \`no_change\`, insufficient sample → \`null\`
+- \`src/components/baseball/staff-decision-room/StaffDecisionRoomClient.tsx\` (lines 1263-1273): \`const improved = review.direction === 'improved'\` then danger badge + "Moved the wrong way"
+
+## Why it matters
+Coaches are misled into thinking neutral or inconclusive practice reviews regressed performance.
+
+## Acceptance criteria
+- \`improved\`, \`regressed\`, \`no_change\`, and \`null\` each have distinct badge copy/tone.
+- \`no_change\`/\`null\` never use danger styling.
+- UI matches mapped directions from the effectiveness read model.`,
+  },
+  {
+    title: 'BaseballHelm: Preserve Compare player column order from URL players param',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+Compare loads players with \`.in('id', playerIds)\` and renders \`players\` in query result order. Postgres/Supabase does not guarantee order matches the comma-separated URL list, so columns can swap relative to how the coach added them.
+
+## Evidence
+- \`src/app/baseball/(dashboard)/dashboard/compare/CompareClient.tsx\` (lines 31, 44-50): \`playerIds\` from URL → \`.in('id', playerIds)\` → \`setPlayers(data)\`
+- \`src/components/features/player-comparison.tsx\` (lines 339-377): renders \`players.map\` in fetch order
+
+## Why it matters
+Side-by-side comparison becomes confusing when column positions don't match selection order or saved comparisons.
+
+## Acceptance criteria
+- Fetched players are re-sorted to match \`playerIds\` URL order.
+- Duplicate IDs in the URL are deduped or rejected consistently.
+- Removing/adding players keeps remaining columns in URL order.`,
+  },
+  {
+    title: 'BaseballHelm: Do not increment scout-packet view_count on CSV downloads',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+The public CSV route calls \`resolveScoutPacketByToken\`, which bumps \`view_count\` on every successful resolution. Each CSV download is counted as a packet view.
+
+## Evidence
+- \`src/app/baseball/(public)/packet/[token]/csv/route.ts\` (line 34): \`resolveScoutPacketByToken\`
+- \`src/app/baseball/actions/scout-packet.ts\` (lines 442-450): telemetry update when \`packet.ok\`
+
+## Why it matters
+Staff see inflated "views" and skewed last-viewed telemetry; export activity is indistinguishable from actual packet opens.
+
+## Acceptance criteria
+- CSV export does not increment \`view_count\` or \`last_viewed_at\`.
+- Page loads still increment telemetry once per open.
+- Staff link management shows accurate view metrics separate from exports.`,
+  },
+
+  // ---------------------------------------------------------------------
+  // Wave 2: Roles/Permissions, Program & Season Settings
+  // ---------------------------------------------------------------------
+  {
+    title: "BaseballHelm: Cap staff capability grants to the inviter's own permissions",
+    labels: ['bug', 'baseball', 'security', 'high-risk'],
+    body: `## Problem
+Any coach with \`can_invite_staff\` can grant arbitrary assignable capabilities (including \`can_manage_settings\` and \`can_invite_staff\`) to another staff member or to themselves. \`updateStaffCapabilities\` only blocks edits to primary/head coaches; it never compares the requested capability map to the caller's resolved capabilities or blocks self-escalation.
+
+## Evidence
+- \`src/app/baseball/actions/staff.ts\` — \`inviteStaff\`/\`updateStaffCapabilities\` sanitize client input but do not intersect with the caller's caps; \`resolveInviteCapabilities\` merges presets with explicit grants; target guard is only \`is_primary\`/\`is_head_coach\` (lines 422-451, 98-109, 142)
+
+## Why it matters
+A limited staffer can promote themselves or a confederate to full program control without head-coach involvement — a direct privilege-escalation path in the roles/permissions system.
+
+## Acceptance criteria
+- Server rejects any invite or capability update that grants a capability the actor does not hold (head/primary excepted).
+- Self-edits cannot increase the actor's own capabilities.
+- Regression test: assistant with only \`can_invite_staff\` cannot grant \`can_manage_settings\`.`,
+  },
+  {
+    title: 'BaseballHelm: Enforce team join policy (closed/approval-required) on join code redemption',
+    labels: ['bug', 'baseball', 'security'],
+    body: `## Problem
+Team Settings persist \`invite_policy\`, \`allow_player_self_join\`, and \`require_coach_approval\` on \`baseball_teams\`, but \`joinTeam\` and \`joinTeamByCode\` never read those columns. Setting "Closed" or "Require coach approval" does not block or pend membership creation.
+
+## Evidence
+- \`updateTeamJoinSettings\` writes \`invite_policy\` / \`require_coach_approval\` (\`team-season-settings.ts\` lines ~126-156)
+- \`TeamSettingsClient\` copy claims closed rosters block joins (\`TeamSettingsClient.tsx\` lines ~188-192)
+- \`joinTeam\` inserts directly into \`baseball_team_members\` after player-type validation only (\`teams.ts\` lines ~305-312)
+- \`joinTeamByCode\` resolves team by code and calls \`joinTeam\` with no policy read (\`teams.ts\` lines ~761-775)
+
+## Why it matters
+Coaches believe roster lock and approval gates are active; players can still self-join whenever any valid code path succeeds.
+
+## Acceptance criteria
+- \`invite_policy === 'closed'\` denies all player joins for that team.
+- \`require_coach_approval === true\` creates \`pending\` membership (or equivalent) instead of \`active\`.
+- \`code_self_join\` vs \`invite_only\` is honored on direct code redemption.
+
+## Note
+Distinct from the existing "Route direct join_code confirmations through joinTeamByCode" finding (which covers the broken join-code lookup path itself) — this finding covers policy enforcement once redemption is wired up correctly.`,
+  },
+  {
+    title: 'BaseballHelm: Enforce season module toggles at runtime, not just in settings storage',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+Season Settings exposes seven "What this season runs" toggles (\`roster_enabled\`, \`schedule_enabled\`, etc.) and persists them via \`updateSeason\`, but no other application code reads \`baseball_seasons\` or those columns — toggles are write-only configuration.
+
+## Evidence
+- Toggle keys written in \`updateSeason\` (\`team-season-settings.ts\` lines ~312-324)
+- UI renders \`BASEBALL_SEASON_MODULE_TOGGLES\` (\`SeasonSettingsClient.tsx\` lines ~332-347)
+- Repo-wide, \`baseball_seasons\` is referenced only in \`team-season-settings.ts\` and \`baseball-team-season-settings.ts\` types
+
+## Why it matters
+Coaches disable stats or roster for an archived/off-season record expecting modules to stop; routes and mutations keep working unchanged.
+
+## Acceptance criteria
+- Mutations/routes for roster, schedule, stats, practice templates, lift groups, baselines, and player status check the current season's corresponding \`*_enabled\` flag server-side.
+- Disabling a module returns a clear 403 and hides the nav entry.
+- Test: flip \`stats_enabled\` off → stat write action denied.`,
+  },
+  {
+    title: 'BaseballHelm: Enforce program module toggles (academics/travel) beyond settings storage',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+Program Settings lets coaches disable "Academics & class conflicts" and "Travel & team operations"; values are saved to \`baseball_program_settings\`, but nothing outside \`program-settings.ts\` / variant defaults reads \`academics_module_enabled\` or \`travel_module_enabled\` to gate routes or actions.
+
+## Evidence
+- Toggles in \`ProgramSettingsClient.tsx\` (lines ~582-593)
+- Persisted in \`mapSettingsRow\` (\`program-settings.ts\` lines ~971-972)
+- \`moduleMattersForMode\` only affects UI emphasis (\`program-type-variants.ts\` lines ~574-583)
+- Nav registry gates academics by \`can_view_academics\`, not module flags (\`nav-registry.ts\` lines ~576-583)
+
+## Why it matters
+Disabling travel or academics in Program Settings is misleading — those surfaces remain fully reachable for staff with the usual capabilities.
+
+## Acceptance criteria
+- Academics and travel server actions/pages check \`academics_module_enabled\` / \`travel_module_enabled\` and deny when off.
+- Nav/sidebar hides disabled modules for all roles.
+- Saved-off state survives reload and blocks API access.`,
+  },
+  {
+    title: "BaseballHelm: Align Staff Settings edit affordance with can_invite_staff server gate",
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+\`resolveCanManageStaff\` sets \`canManageStaff\` true when the viewer has \`can_manage_settings\`, but every staff mutation (\`inviteStaff\`, \`updateStaffCapabilities\`, \`removeStaff\`, etc.) requires \`can_invite_staff\` server-side. Coaches with settings-only access see invite/edit/remove UI that fails on save.
+
+## Evidence
+- \`resolveCanManageStaff\` returns true for \`can_manage_settings\` (\`staff-settings.ts\` lines ~276-279)
+- \`StaffSettingsClient\` gates all write UI on \`canManageStaff\` (\`StaffSettingsClient.tsx\` lines ~125, 339-347)
+- Staff mutations use \`requiredCapability: 'can_invite_staff'\` (\`staff.ts\` lines ~127-129, 422-424, 487-489)
+
+## Why it matters
+Settings-capable associate coaches get a broken Staff & Permissions experience — toggles appear editable but every action errors.
+
+## Acceptance criteria
+- \`canManageStaff\` is true only when the viewer has \`can_invite_staff\` or is head/primary coach.
+- View-only staff see roster/capabilities without edit controls.
+- Settings-capable coaches without invite permission see a clear "ask head coach" message.`,
+  },
+  {
+    title: 'BaseballHelm: Expose can_manage_documents in the staff capability matrix',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+The permissions reference page lists \`can_manage_documents\` under the Documents group, and document mutations require it server-side, but \`StaffSettingsClient\`'s \`CAPABILITY_DEFS\` omits it — coaches cannot assign document-library access through the staff UI.
+
+## Evidence
+- \`BASEBALL_CAPABILITY_GROUPS\` includes \`can_manage_documents\` (\`capability-groups.ts\` lines ~126-130)
+- \`ASSIGNABLE_CAPABILITY_KEYS\` includes it (\`staff.ts\` lines ~68-69, via \`BASEBALL_CAPABILITY_KEYS\`)
+- \`StaffSettingsClient\` matrix lists 16 keys and ends at \`can_export_reports\` with no documents entry (\`StaffSettingsClient.tsx\` lines ~60-77)
+- Documents actions require \`can_manage_documents\` (\`documents.ts\` lines ~208, 257)
+
+## Why it matters
+Permission UI and enforcement diverge — staff who should manage the document library cannot be granted that capability without a manual DB edit.
+
+## Acceptance criteria
+- Staff invite and edit matrices include "Manage documents" with help text.
+- Granting the toggle persists \`can_manage_documents\` and unlocks document mutations.
+- Permissions reference page and staff matrix stay in sync with \`BASEBALL_CAPABILITY_KEYS\`.`,
+  },
+
+  // ---------------------------------------------------------------------
+  // Wave 2: Coach Notes, AI Governance, Academics, Acknowledgements
+  // ---------------------------------------------------------------------
+  {
+    title: 'BaseballHelm: Fix Player Today coach-notes query against wrong table columns',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+The player Today read model queries \`baseball_coach_notes\` with columns and filters that do not exist on the typed row shape (\`deleted_at\` is the soft-delete column; there is no \`title\`, \`pinned\`, or \`archived_at\`). The query fails, so the "Notes from Coach" feed never loads player-visible notes even when they exist.
+
+## Evidence
+- \`src/lib/types/baseball-extended.ts\` (lines 480-489): define \`body\`, \`scope\`, \`deleted_at\` only
+- \`src/lib/baseball/read-models/player-today.ts\` (lines 602-614): select \`title, body, created_at, pinned\`, filter \`.is('archived_at', null)\`, and never filter \`deleted_at\`
+
+## Why it matters
+Players are told coach-shared notes appear on Today, but the read path is broken and surfaces an error/empty state instead of \`player_visible\` notes.
+
+## Acceptance criteria
+- Player Today coach-notes query uses only real columns and \`.is('deleted_at', null)\` with \`.eq('scope', 'player_visible')\`.
+- A seeded \`player_visible\` note renders in Player Today for the subject player.`,
+  },
+  {
+    title: 'BaseballHelm: Allow college programs to reach the Academics dashboard',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+The Academics page and middleware hard-block every program type except \`juco\`, while college program variants enable \`academics_module_enabled: true\` and nav exposes Academics to any coach with \`can_view_academics\`. College coaches see the nav link but are redirected away.
+
+## Evidence
+- \`src/lib/baseball/server-route-guards.ts\` (lines 86-91): restrict \`requireAcademicsCoachRoute\` to \`allowedCoachTypes: ['juco']\` and \`allowedProgramTypes: ['juco']\`
+- \`src/lib/supabase/middleware.ts\` (lines 253-257): redirect when \`isAcademicsRoute && programType !== 'juco'\`
+- \`src/lib/baseball/program-type-variants.ts\` (line 161): sets college \`academics_module_enabled: true\`
+- \`src/lib/baseball/nav-registry.ts\` (lines 576-584): registers Academics with \`requiredCapability: 'can_view_academics'\` and no JUCO-only gate
+
+## Why it matters
+College staff cannot manage the academics feature the product advertises and the nav implies they can access.
+
+## Acceptance criteria
+- A college coach with \`can_view_academics\` can load \`/baseball/dashboard/academics\` without redirect.
+- JUCO/HS/showcase gating still follows \`academics_module_enabled\` and capability rules consistently in middleware, page guard, and nav.`,
+  },
+  {
+    title: 'BaseballHelm: Scope academics eligibility reads and defaults to the active team',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+\`getTeamAcademics\` loads eligibility rows by \`player_id\` only, then takes the first match per player. It also defaults missing records to \`is_eligible: true\` and \`academic_standing: 'good'\`, inflating "Eligible" and understating "At Risk" summary cards.
+
+## Evidence
+- \`src/app/baseball/actions/academics.ts\` (lines 145-148): query \`.in('player_id', playerIds)\` with no \`team_id\` filter
+- \`src/app/baseball/actions/academics.ts\` (line 181): uses \`eligibilityRecords.find(e => e.player_id === m.player_id)\`
+- \`src/app/baseball/actions/academics.ts\` (lines 193-194): default \`is_eligible: eligibility?.is_eligible ?? true\` and \`academic_standing: eligibility?.academic_standing ?? 'good'\`
+
+## Why it matters
+Coaches can see wrong GPA/eligibility for transfers or multi-semester history, and roster-wide eligibility metrics lie when no record exists.
+
+## Acceptance criteria
+- Team academics reads filter eligibility by \`team_id\` (and prefer the latest semester for that team).
+- Players with no eligibility row show unknown/ineligible-safe UI defaults, not "Eligible / Good Standing".
+- Summary cards recompute from the scoped data only.`,
+  },
+  {
+    title: 'BaseballHelm: Block approveAiOutput from bypassing player-visible AI policy',
+    labels: ['bug', 'baseball', 'coachhelm', 'security'],
+    body: `## Problem
+The AI Settings UI only offers Approve for audits with \`withheld_reason === 'awaiting_approval'\`, but the server action approves any \`disposition === 'pending'\` row and promotes the paired signal to \`desired_visibility\`. A pending row withheld for \`player_visible_disabled\` can still be promoted to player-facing visibility via the action, bypassing the \`ai_player_visible_enabled\` toggle.
+
+## Evidence
+- \`src/components/baseball/settings/AiAuditLog.tsx\` (line 99, lines 233-235): gate UI on \`withheld_reason === 'awaiting_approval'\`
+- \`src/app/baseball/actions/ai-governance.ts\` (lines 115-120): approve whenever \`disposition === 'pending'\`; (lines 125-151): set \`visibility: targetVisibility\` from \`audit.desired_visibility\`
+- \`src/lib/baseball/ai-policy.ts\` (lines 292-301): create \`disposition: 'pending'\` with \`reason: 'player_visible_disabled'\`
+
+## Why it matters
+A coach (or crafted client call) can expose AI output to players while "Player-visible AI enabled" is off.
+
+## Acceptance criteria
+- \`approveAiOutput\` rejects pending audits unless \`withheld_reason === 'awaiting_approval'\` (and re-checks current AI policy).
+- Attempting to approve a \`player_visible_disabled\` audit returns a clear error and leaves the signal \`staff_only\`.
+- Add a unit/integration test covering this rejection path.`,
+  },
+  {
+    title: 'BaseballHelm: Add player-visible scope control when coaches author notes',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+The only baseball UI that creates coach notes hardcodes \`scope: 'staff_public'\`. There is no scope picker, and no UI calls \`updateCoachNote\` / \`deleteCoachNote\`. Coaches cannot share notes with players from the profile surface; player-visible Today/Timeline flows never receive those notes.
+
+## Evidence
+- \`src/components/baseball/player-profile/PlayerProfileClient.tsx\` (line 403): calls \`createCoachNote({ ..., scope: 'staff_public' })\`
+- \`src/app/baseball/actions/coach-notes.ts\` (lines 160-168): only emit \`player_only\` timeline events when \`scope === 'player_visible'\`
+- \`src/lib/baseball/read-models/player-today.ts\` (lines 602-610): only reads \`scope = 'player_visible'\`
+
+## Why it matters
+The staff-notes privacy model exists server-side, but the coach authoring UI cannot produce the player-facing notes the player surfaces are built to show.
+
+## Acceptance criteria
+- Coach note composer exposes the permitted scopes (at least \`staff_public\` and \`player_visible\`).
+- Creating a \`player_visible\` note appears on Player Today and the player timeline as \`player_only\`.
+- Notes created as \`staff_public\` remain absent from player surfaces.`,
+  },
+  {
+    title: 'BaseballHelm: Surface timeline acknowledgement state on the coach player profile',
+    labels: ['bug', 'baseball'],
+    body: `## Problem
+Players can acknowledge timeline events on \`/baseball/player/timeline\`, but the coach player-profile Timeline tab renders \`ProfileTimeline\` without acknowledgement data or toggles. Coaches cannot see whether a player acknowledged a shared coach note.
+
+## Evidence
+- \`src/app/baseball/(player-dashboard)/player/timeline/page.tsx\` (lines 68-69): load \`getTimelineAcksForViewer\` and pass \`initialAcks\` to \`PlayerTimelineClient\`
+- \`src/app/baseball/(dashboard)/dashboard/players/[id]/page.tsx\` (lines 126-129): fetch timeline events but never fetch acks
+- \`src/components/baseball/player-profile/PlayerProfileClient.tsx\` (lines 1332-1336): render \`<ProfileTimeline events={timelineEvents} ... />\` with no \`acknowledged\` / \`onToggleAck\` props
+
+## Why it matters
+The "source → signal → action → timeline → outcome" loop stops at the coach view; acknowledgement tracking is write-only from the player side.
+
+## Acceptance criteria
+- Coach player-profile Timeline shows per-event acknowledgement status for events the coach can see.
+- After a player acknowledges a \`player_only\` note event, the coach profile reflects it without a full reload beyond normal revalidation.`,
+  },
+  {
+    title: 'BaseballHelm: Enforce auth/capability checks on unwrapped academics server actions',
+    labels: ['bug', 'baseball', 'security'],
+    body: `## Problem
+Several academics server actions are plain exported functions without \`withBaseballAction\` or \`requireBaseballCapability\`, while the page guard only protects the route render. \`getTeamAcademics\`, class CRUD, and \`getPlayerClasses\` can be invoked directly with arbitrary IDs.
+
+## Evidence
+- \`src/app/baseball/actions/academics.ts\` (lines 113-201): define \`getTeamAcademics(teamId)\` with no auth/capability check
+- \`src/app/baseball/actions/academics.ts\` (lines 207-329): define \`getPlayerClasses\`, \`addPlayerClass\`, \`updatePlayerClass\`, \`deletePlayerClass\` similarly unguarded
+- Contrast \`upsertPlayerAcademics\` (lines 518-524) wrapped with \`requiredCapability: 'can_view_academics'\`
+
+## Why it matters
+Defense-in-depth fails if RLS is misconfigured: academics roster and class mutations are not uniformly server-gated like other baseball actions.
+
+## Acceptance criteria
+- All academics reads/mutations run inside \`withBaseballAction\` with \`requiredCapability: 'can_view_academics'\` (or stricter where appropriate).
+- Cross-team \`teamId\` / \`playerId\` / \`classId\` calls return authorization errors without leaking data.
+- Existing academics page flow continues to work for authorized JUCO/college staff after gate alignment.`,
+  },
 ];
