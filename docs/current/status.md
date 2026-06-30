@@ -17,13 +17,29 @@ Last updated: 2026-06-30
 | Business contracts | Green locally | `npm run test:business` includes route normalizer contract. |
 | Supabase RLS | Green in CI | `Supabase lint + RLS tests` passed on PR #358. |
 | Gitleaks | Green in CI | Current-tree scan reports zero findings. |
+| Review Gate | Green in CI | Semgrep + ast-grep + gitleaks passed on PR #358 (`66c14b3e`). |
 | Branch protection | Updated | `main` now requires `Business contracts` and `Route Hygiene P0/P1`. |
 | Playwright Smoke | Green in CI | Smoke checks passing on PR #358. |
+
+## Bug Discovery Stack
+
+Master map: [`docs/operations/BUG_DISCOVERY_STACK.md`](../operations/BUG_DISCOVERY_STACK.md)
+
+| Layer | Local entry | CI |
+|---|---|---|
+| PR | `npm run verify:bugs:pr` | Review Gate, Business contracts, Route Hygiene |
+| Runtime | `npm run verify:bugs:runtime` | Route crawler, visual regression (advisory) |
+| Data | `npm run verify:bugs:data` | RLS tests, prod DB audit (advisory) |
+| Advisory | `npm run verify:bugs:advisory` | ZAP, Schemathesis stub, static radar |
+
+External setup docs: [`METICULOUS.md`](../operations/integrations/METICULOUS.md). Manual: Meticulous token, Chromatic project token, StackHawk API key (optional).
 
 ## Known Follow-Ups
 
 - Full Playwright suite remains advisory until one week green ([#351](https://github.com/njrini99-code/helmv3/issues/351) closed; promotion deferred).
 - Production DB audit needs `PROD_AUDIT_DATABASE_URL` in CI to run live checks ([#365](https://github.com/njrini99-code/helmv3/issues/365) closed; skip path documented).
+- Playwright visual baselines: run `npm run e2e:visual:update` locally and commit `e2e/visual/__snapshots__/` before relying on visual CI signal.
+- Schemathesis: add `docs/openapi/openapi.json` when API schema is published.
 - [#107–#110](https://github.com/njrini99-code/helmv3/issues): Legacy Semgrep/schema tech-debt from May 2026 — separate from the production-readiness radar.
 
 ## Recently Closed (2026-06-30)

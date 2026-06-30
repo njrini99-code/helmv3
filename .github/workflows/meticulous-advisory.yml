@@ -1,0 +1,44 @@
+name: Meticulous AI (Advisory)
+
+# Meticulous requires a GitHub App install + project token.
+# See docs/operations/integrations/METICULOUS.md for setup.
+# This workflow is a placeholder until METICULOUS_API_TOKEN is configured.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  meticulous:
+    name: Meticulous visual diff
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: ${{ secrets.METICULOUS_API_TOKEN != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Meticulous test runner
+        uses: alwaysmeticulous/report-diffs@v1
+        with:
+          api-token: ${{ secrets.METICULOUS_API_TOKEN }}
+          # Uncomment and set METICULOUS_PROJECT_ID secret when project is created:
+          # project-id: ${{ secrets.METICULOUS_PROJECT_ID }}
+
+  meticulous-skipped:
+    name: Meticulous (not configured)
+    runs-on: ubuntu-latest
+    if: ${{ secrets.METICULOUS_API_TOKEN == '' }}
+    steps:
+      - name: Skip notice
+        run: |
+          echo "## Meticulous AI — skipped"
+          echo ""
+          echo "No \`METICULOUS_API_TOKEN\` repository secret. See \`docs/operations/integrations/METICULOUS.md\`."
+          echo "This job is advisory and does not block merge."

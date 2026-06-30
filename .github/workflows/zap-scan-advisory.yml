@@ -1,0 +1,50 @@
+name: ZAP Baseline Scan (Advisory)
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'URL to scan (defaults to ZAP_TARGET_URL secret or production landing)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  zap-baseline:
+    name: OWASP ZAP baseline
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Resolve scan target
+        id: target
+        run: |
+          INPUT="${{ github.event.inputs.target_url }}"
+          SECRET="${{ secrets.ZAP_TARGET_URL }}"
+          DEFAULT="https://helmsportslabs.com"
+          if [ -n "$INPUT" ]; then
+            echo "url=$INPUT" >> "$GITHUB_OUTPUT"
+          elif [ -n "$SECRET" ]; then
+            echo "url=$SECRET" >> "$GITHUB_OUTPUT"
+          else
+            echo "url=$DEFAULT" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ steps.target.outputs.url }}
+          allow_issue_writing: false
+          fail_action: false
+          cmd_options: '-a'
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zap-baseline-report
+          path: report_html.html
+          if-no-files-found: ignore
+          retention-days: 14
