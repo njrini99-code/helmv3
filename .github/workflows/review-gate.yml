@@ -141,11 +141,13 @@ jobs:
         with:
           fetch-depth: 0
       - name: Scan with helmv3 custom rules
+        shell: bash
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           set -eu
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           # Skip the `.coderabbit/semgrep/__test__/` positive fixtures —
           # they are intentionally broken code that exists only to verify
           # rule-pack behaviour locally. Letting them flow into CI would
@@ -160,11 +162,13 @@ jobs:
           fi
           semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions "${files[@]}"
       - name: Scan with default p/ci ruleset
+        shell: bash
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           set -eu
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           mapfile -t files < <(bash .github/scripts/changed-files.sh \
             | grep -E '\.(ts|tsx|js|jsx|sql|py|sh|bash|ya?ml)$' \
             | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
