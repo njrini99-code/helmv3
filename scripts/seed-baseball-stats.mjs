@@ -11,6 +11,15 @@
  *
  *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed-baseball-stats.mjs
  *   DOTENV_CONFIG_PATH=.env.local node -r dotenv/config scripts/seed-baseball-stats.mjs --confirm --team <uuid> --coach <uuid>
+ *
+ * SECURITY NOTE (#380): an earlier revision of this file (commit ef1dc926,
+ * superseded by #417) had a production Supabase URL, a long-lived
+ * `service_role` JWT, and production team/coach UUIDs hardcoded in source.
+ * That key MUST be treated as compromised and rotated from the Supabase
+ * dashboard by a human — this refactor only prevents *future* secrets from
+ * being committed, it does not retroactively invalidate the old key, which
+ * remains readable in git history. See
+ * docs/operations/2026-06-30-baseball-stats-seed-key-rotation.md.
  */
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';

@@ -21,6 +21,26 @@ id = "pgpassword-inline"
 regex = '''PGPASSWORD=['"][^'"\s]{8,}['"]'''
 tags = ["postgres", "credential"]
 
+[[rules]]
+description = "Supabase HS256 JWT (anon/service-role key) committed in source (#380)"
+id = "supabase-hs256-jwt"
+# Supabase issues all anon/service-role keys as HS256 JWTs, which always share
+# the fixed base64url header `{"alg":"HS256","typ":"JWT"}` below. Requiring the
+# full three-segment shape (header.payload.signature, each segment long enough
+# to be real) avoids matching short/truncated example tokens in docs.
+regex = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}'''
+tags = ["supabase", "credential", "jwt"]
+
+[[rules]]
+description = "Inline assignment of a Supabase key env var to a JWT literal (#380)"
+id = "supabase-key-env-assignment"
+# Catches `SUPABASE_SERVICE_ROLE_KEY = 'eyJ...'` / `SUPABASE_ANON_KEY=eyJ...`
+# style assignments regardless of the local variable name used to hold the
+# value, so a future seeder that copies the value into e.g. `const key = ...`
+# is still caught by the JWT-shape rule above.
+regex = '''(?i)(SUPABASE_SERVICE_ROLE_KEY|SUPABASE_ANON_KEY|NEXT_PUBLIC_SUPABASE_ANON_KEY)\s*[:=]\s*['"]?eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'''
+tags = ["supabase", "credential", "jwt", "env"]
+
 # Allowlist for the audit and plan documents that intentionally reference
 # the rotated credential to document the finding.
 [allowlist]
@@ -28,5 +48,6 @@ paths = [
   '''docs/superpowers/plans/2026-05-17-.*\.md''',
   '''\.full-review-2026-05-17-golfhelm-audit/.*\.md''',
   '''docs/operations/2026-05-17-p0-runbook\.md''',
+  '''docs/operations/2026-06-30-baseball-stats-seed-key-rotation\.md''',
   '''\.gitleaks\.toml''',
 ]
