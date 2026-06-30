@@ -4,7 +4,7 @@
 # (defaults to qmnssrrolpinvwjjnufo).
 set -euo pipefail
 
-PROJECT_REF="${SUPABASE_PROJECT_REF:-${SUPABASE_PROJECT_ID:-qmnssrrolpinvwjjnufo}}"
+PROJECT_REF="${SUPABASE_PROJECT_REF:-qmnssrrolpinvwjjnufo}"
 TMP="$(mktemp -t helmv3-types.XXXXXX)"
 trap 'rm -f "$TMP"' EXIT
 
