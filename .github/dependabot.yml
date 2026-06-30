@@ -4,6 +4,11 @@
 # regardless of the schedule/groups below. The groups here exist to batch the
 # routine version bumps so they arrive as a few reviewable PRs instead of dozens.
 #
+# Every ecosystem sets a 7-day `cooldown` so freshly published versions (a
+# common supply-chain attack window) are not proposed until they have been
+# public for a week. Security updates ignore the cooldown and still arrive
+# immediately.
+#
 # Not covered here (extend if/when needed):
 #   - iOS native deps (CocoaPods/Podfile under the Capacitor app)
 version: 2
@@ -16,6 +21,8 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "America/New_York"
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -40,6 +47,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "ci"
@@ -54,6 +63,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -70,6 +81,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -86,6 +99,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -102,6 +117,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -119,6 +136,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
