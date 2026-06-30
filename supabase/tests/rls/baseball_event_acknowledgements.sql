@@ -80,15 +80,15 @@ BEGIN
 END $$;
 
 SELECT ok(
-  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acks_insert'),
+  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acknowledgements_insert'),
   'INSERT policy is bound to user_id = auth.uid() (no forging as another user)'
 );
 SELECT ok(
-  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acks_update'),
+  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acknowledgements_update'),
   'UPDATE policy is bound to user_id = auth.uid()'
 );
 SELECT ok(
-  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acks_delete'),
+  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acknowledgements_delete'),
   'DELETE policy is bound to user_id = auth.uid()'
 );
 
@@ -98,20 +98,20 @@ SELECT ok(
 
 -- Own-row branch present.
 SELECT ok(
-  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acks_select'),
+  tests.policy_is_self_owned('baseball_event_acknowledgements', 'baseball_event_acknowledgements_select'),
   'SELECT policy includes the own-row branch (user_id = auth.uid())'
 );
 
--- Staff branch goes through the team-coach helper (not a raw player path).
+-- Staff branch goes through the team-staff helper (not a raw player path).
 SELECT ok(
-  (SELECT position('is_baseball_team_coach' IN pg_get_expr(polqual, polrelid)) > 0
+  (SELECT position('is_baseball_team_staff' IN pg_get_expr(polqual, polrelid)) > 0
      FROM pg_policy p
      JOIN pg_class c ON c.oid = p.polrelid
      JOIN pg_namespace n ON n.oid = c.relnamespace
      WHERE n.nspname = 'public'
        AND c.relname = 'baseball_event_acknowledgements'
-       AND p.polname = 'baseball_event_acks_select'),
-  'SELECT staff branch is gated by the team-coach helper'
+       AND p.polname = 'baseball_event_acknowledgements_select'),
+  'SELECT staff branch is gated by the team-staff helper'
 );
 
 -- The staff branch is scoped through the event''s team (joins baseball_events).
@@ -122,7 +122,7 @@ SELECT ok(
      JOIN pg_namespace n ON n.oid = c.relnamespace
      WHERE n.nspname = 'public'
        AND c.relname = 'baseball_event_acknowledgements'
-       AND p.polname = 'baseball_event_acks_select'),
+       AND p.polname = 'baseball_event_acknowledgements_select'),
   'SELECT staff branch resolves the team via the owning baseball_events row'
 );
 
