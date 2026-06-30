@@ -2,6 +2,21 @@
 
 Last updated: 2026-06-30
 
+## Bug Discovery Stack
+
+Full map: `docs/operations/BUG_DISCOVERY_STACK.md`
+
+| Entry point | Status |
+|---|---|
+| `npm run verify:bugs:pr` | Semgrep + deps + routes + gitleaks |
+| `npm run verify:bugs:runtime` | Crawler + critical E2E + visual regression |
+| `npm run verify:bugs:data` | RLS + prod DB audit |
+| `npm run verify:bugs:advisory` | Schemathesis stub (+ ZAP via workflow) |
+
+Installed this sprint: Playwright visual regression (`e2e/visual/`), ZAP advisory workflow, Schemathesis stub, Meticulous placeholder workflow.
+
+External setup still needed: `METICULOUS_API_TOKEN`, Greptile TREX dashboard toggle, `ZAP_TARGET_URL` (optional), `PROD_AUDIT_DATABASE_URL`, Chromatic/StackHawk (optional paid upgrades).
+
 ## Hard Gates
 
 | Gate | Status | Notes |
@@ -63,3 +78,5 @@ Static checks (`npm run routes:check`):
 - Semgrep companion rules at `.semgrep/helm-route-rules.yml`
 
 Runtime crawler (`npm run routes:crawl`) runs advisory in `free-production-readiness.yml`.
+
+Visual regression (`npm run e2e:visual`) runs advisory in `free-production-readiness.yml` → `visual-regression` job. Update baselines: `npm run e2e:visual:update`.

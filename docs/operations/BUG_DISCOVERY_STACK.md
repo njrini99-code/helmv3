@@ -1,173 +1,195 @@
 # Bug Discovery Stack
 
-Master map of how Helm finds bugs before and after merge. Layers align with **PR** (static + contracts), **runtime** (browser), **data** (DB + RLS), and **production** (live/staging signals).
+Multi-layer bug net for Helm Sports Labs. Each tool hunts a different failure class. Advisory jobs use `continue-on-error: true` until findings are triaged and promoted via `docs/operations/GATE_MATRIX.md`.
 
-See also: [`FREE_PRODUCTION_READINESS_STACK.md`](./FREE_PRODUCTION_READINESS_STACK.md), [`GATE_MATRIX.md`](./GATE_MATRIX.md), [`CI_RUNBOOK.md`](./CI_RUNBOOK.md).
-
-## Unified npm entry points
+**Unified entry points:**
 
 | Script | Layer | What it runs |
 |---|---|---|
-| `npm run verify:bugs:pr` | PR | Route hygiene, gitleaks, Semgrep, business contracts |
-| `npm run verify:bugs:runtime` | Runtime | Route crawler, critical E2E, a11y, Playwright visual |
-| `npm run verify:bugs:data` | Data | RLS tests, read-only prod DB audit |
-| `npm run verify:bugs:advisory` | Advisory | Schemathesis stub, dependency-cruiser, jscpd, Helm auditor |
+| `npm run verify:bugs:pr` | PR hunter | Semgrep, dependency-cruiser, route hygiene, gitleaks |
+| `npm run verify:bugs:runtime` | Runtime | Route inventory + crawler, critical E2E, visual regression |
+| `npm run verify:bugs:data` | Data / prod | RLS tests, read-only production DB audit |
+| `npm run verify:bugs:advisory` | Advisory | Schemathesis stub, documents ZAP/StackHawk |
 
-Run the full local sweep:
+---
+
+## Stack map (priority order)
+
+| # | Layer | Tool | Status | npm script / workflow | Bug class |
+|---|---|---|---|---|---|
+| 1 | Runtime | **Playwright route crawler** | Installed | `npm run routes:crawl` · `.github/workflows/free-production-readiness.yml` → `route-crawler` | Blank pages, 404/500 routes, console errors, wrong-sport redirects, error boundaries |
+| 2 | Data | **Production read-only DB audit** | Installed (secret-gated) | `npm run prod:audit:db` · `free-production-readiness.yml` → `prod-db-audit` | Missing RLS, tables without PK, unsafe `SECURITY DEFINER` functions |
+| 3 | Runtime | **Sentry + Session Replay** | Installed | `src/instrumentation-client.ts` · Vercel env | Client exceptions, hydration errors, slow traces, session replay on errors |
+| 4 | PR hunter | **Semgrep Helm rules** | Installed | `npm run analyze:semgrep` · `free-production-readiness.yml` → `static-radar` · `review-gate.yml` | Service-role in client, missing auth in actions, sport table violations |
+| 5 | PR hunter | **Greptile (+ TREX)** | External setup | GitHub App · `.greptile/instructions.md` | Cross-file drift, forgotten callers, architecture violations |
+| 6 | Runtime | **Meticulous AI** | Docs + placeholder workflow | `.github/workflows/meticulous-advisory.yml` · `docs/operations/integrations/METICULOUS.md` | Recorded workflow visual regressions, multi-step UI breaks |
+| 7 | Advisory | **Schemathesis** | Stub (no OpenAPI yet) | `npm run schemathesis:advisory` · `free-production-readiness.yml` → `schemathesis-advisory` | API schema violations, 500s on edge-case inputs |
+| 8 | Runtime | **Playwright visual regression** | Installed | `npm run e2e:visual` · `free-production-readiness.yml` → `visual-regression` | CSS/layout regressions on public routes |
+| 9 | Advisory | **OWASP ZAP baseline** | Installed (advisory) | `.github/workflows/zap-scan-advisory.yml` | XSS, missing security headers, exposed paths on public surface |
+| — | PR hunter | **CodeRabbit** | Installed | GitHub App · `.coderabbit.yaml` | Line-level lint, custom ast-grep/semgrep gate |
+| — | PR hunter | **dependency-cruiser** | Installed | `npm run analyze:deps` | Illegal cross-product imports, circular deps |
+| — | PR hunter | **Route hygiene** | Installed (hard gate) | `npm run routes:check` | Duplicate routes, stale links, dead routes, coverage gaps |
+| — | PR hunter | **Gitleaks** | Installed (hard gate) | `npm run secrets:scan` · `review-gate.yml` | Secrets in working tree |
+| — | Data | **Supabase RLS tests** | Installed (hard gate) | `npm run test:rls` · `ci.yml` | Policy gaps, cross-tenant leaks |
+| — | Runtime | **Playwright smoke / critical** | Installed | `npm run e2e:smoke` · `npm run e2e:critical` | Core paths load without 5xx |
+| — | Runtime | **axe a11y** | Installed | `npm run a11y:critical` | WCAG violations on public routes |
+| — | Advisory | **StackHawk** | External setup | See [StackHawk](#stackhawk-optional) | DAST with auth, OpenAPI-aware scanning |
+| — | Advisory | **Chromatic** | External setup | See [Chromatic](#chromatic-optional-upgrade) | Component-level visual diffs (Storybook) |
+
+---
+
+## Already wired (verified)
+
+### Playwright route crawler
+
+- Spec: `e2e/route-crawler/route-crawler.spec.ts`
+- Requires route inventory first: `npm run routes:inventory`
+- Report: `docs/operations/generated/route-crawler-report.md`
+- CI: advisory job in `free-production-readiness.yml`
+
+### Production DB audit
+
+- Script: `scripts/prod-audit/run-readonly-db-audit.mjs`
+- Secret: `PROD_AUDIT_DATABASE_URL` (read-only Postgres URL)
+- Skips gracefully when secret missing — see `docs/operations/FREE_PRODUCTION_READINESS_STACK.md`
+
+### Sentry + Session Replay
+
+Configured in `src/instrumentation-client.ts`:
+
+- `replaysOnErrorSampleRate: 1.0` — full replay on errors
+- `replaysSessionSampleRate: 0.1` — 10% session sample in production
+- `maskAllText: true` on replay integration
+- PII scrubbed in `beforeSend` (cookies, auth headers, query strings)
+
+Required env vars (see `.env.example`):
 
 ```bash
-npm run verify:bugs:pr && npm run verify:bugs:runtime && npm run verify:bugs:data && npm run verify:bugs:advisory
+NEXT_PUBLIC_SENTRY_DSN=...
+SENTRY_ORG=...
+SENTRY_PROJECT=...
+SENTRY_AUTH_TOKEN=...          # source maps upload at build
+NEXT_PUBLIC_SENTRY_RELEASE=... # optional; defaults to VERCEL_GIT_COMMIT_SHA
 ```
 
----
+### Semgrep
 
-## Layer map
+- Rules: `.semgrep/helm-rules.yml`, `.semgrep/helm-route-rules.yml`
+- CI: `npm run analyze:semgrep` in `static-radar` job + `review-gate.yml` on changed files
+- Output: `docs/operations/generated/semgrep.json` (gitignored)
 
-### PR hunter (static + contracts)
+### dependency-cruiser + route hygiene
 
-Catches wrong routes, leaked secrets, unsafe patterns, and product-truth regressions before code ships.
-
-| Tool | Status | npm script | Workflow / CI | Bug class |
-|---|---|---|---|---|
-| Route hygiene P0/P1 | **Hard gate** | `routes:check` | `free-production-readiness.yml` → Route Hygiene | Missing/duplicate routes, stale links, Golf/Baseball boundary leaks |
-| Business contracts | **Hard gate** | `verify:business` | `free-production-readiness.yml` → Business contracts | Stats/CoachHelm/product-trust regressions |
-| Business source-shape | Advisory | `test:business:advisory` | Same workflow, `continue-on-error` | Contracts that still need behavior tests |
-| Gitleaks | **Hard gate** | `secrets:scan` | `review-gate.yml` | Leaked secrets in working tree |
-| Semgrep (Helm rules) | **Hard gate** (Review Gate) + advisory radar | `analyze:semgrep` | `review-gate.yml`, `free-production-readiness.yml` → Static radar | Service-role in client, silent errors, route anti-patterns |
-| ast-grep | **Hard gate** | — | `review-gate.yml` | Banned project patterns |
-| dependency-cruiser | Advisory (P2/P3) | `analyze:deps` | Static radar job | Architecture boundary smells |
-| jscpd | Advisory | `analyze:duplicates` | Static radar job | Duplicate code clusters |
-| Knip | Advisory | `analyze:knip` | CircleCI weekly | Dead exports / unused files |
-| CodeRabbit + Greptile | External (installed) | — | GitHub App on every PR | Line-level + whole-repo drift review |
-| Greptile TREX | External setup | — | [Greptile dashboard](https://app.greptile.com) | AI test-generation from PR context — enable per repo in Greptile settings |
-
-### Runtime (browser + UX)
-
-Catches broken pages, navigation, accessibility, and visual regressions.
-
-| Tool | Status | npm script | Workflow / CI | Bug class |
-|---|---|---|---|---|
-| Playwright smoke | **Hard gate** | `verify:e2e:smoke` | `playwright-smoke.yml` | Critical entry paths |
-| Playwright full E2E | Advisory | `test:e2e` | `playwright.yml` | Auth flows, dashboards, round entry |
-| Route crawler | Advisory | `routes:crawl` | `free-production-readiness.yml` → Route Crawler | Unlinked routes, runtime 404/500 |
-| Critical E2E | Local + advisory | `e2e:critical` | — | High-value product paths |
-| axe a11y | Local + advisory | `a11y:critical` | — | WCAG violations on critical routes |
-| Playwright visual | Advisory | `e2e:visual` / `e2e:visual:update` | `free-production-readiness.yml` → Visual regression | Public landing CSS/layout regressions |
-| Meticulous AI | External setup | — | `meticulous-advisory.yml` | Recorded user-flow visual + workflow regressions |
-| Chromatic | External setup (optional) | — | See [Chromatic](#chromatic-optional) | Storybook/component snapshot diffs |
-
-Config: `playwright.visual.config.ts`, tests in `e2e/visual/`, baselines in `e2e/visual/__snapshots__/`.
-
-### Data (database + RLS)
-
-Catches schema/RLS mistakes and production DB posture issues.
-
-| Tool | Status | npm script | Workflow / CI | Bug class |
-|---|---|---|---|---|
-| Supabase RLS tests | **Hard gate** | `test:rls` | `ci.yml` → Supabase lint + RLS | Policy regressions |
-| Schema invariants | **Hard gate** | — | `ci.yml` | Known migration mistakes |
-| DB types drift | **Hard gate** | `check:types-drift` | `ci.yml` | Stale generated types |
-| Production DB audit | Advisory (skip without secret) | `prod:audit:db` | `free-production-readiness.yml` → Production DB audit | Missing RLS, unsafe SECURITY DEFINER |
-| Local DB audit | Local | `db:audit:local` | — | Same checks against local Supabase |
-
-Secret: `PROD_AUDIT_DATABASE_URL` (read-only Postgres URL). See [`FREE_PRODUCTION_READINESS_STACK.md`](./FREE_PRODUCTION_READINESS_STACK.md#production-db-audit-prod_audit_database_url).
-
-### Production & staging (live signals)
-
-Catches issues only visible against deployed environments.
-
-| Tool | Status | npm script | Workflow / CI | Bug class |
-|---|---|---|---|---|
-| Sentry + Session Replay | **Installed** (needs DSN in env) | — | Vercel prod/preview | Client errors, replay on failures |
-| OWASP ZAP baseline | Advisory | — | `zap-scan-advisory.yml` | XSS, misconfig, passive web vulns |
-| StackHawk | External setup (paid) | — | — | DAST with OpenAPI-aware auth flows |
-| Schemathesis | Advisory stub | `schemathesis:advisory` | `free-production-readiness.yml` → Schemathesis | API fuzzing when OpenAPI exists |
-| k6 staging load | Advisory | `load:staging` | CircleCI / manual | Latency and reliability under load |
-| Lighthouse CI | Advisory | `lighthouse` / `perf:lighthouse` | CircleCI preview job | Perf, a11y, CLS on public routes |
-| Promptfoo | Advisory | `evals` | CircleCI weekly | LLM prompt drift (round review) |
+- `npm run analyze:deps` → architecture graph
+- `npm run routes:check` → hard gate (P0/P1)
+- Semgrep companion: `.semgrep/helm-route-rules.yml`
 
 ---
 
-## Workflows reference
+## External setup required
 
-| Workflow file | Trigger | Merge blocker? |
-|---|---|---|
-| `ci.yml` | PR | Yes (typecheck, lint, build, RLS, …) |
-| `review-gate.yml` | PR | Yes (`Review Gate / all`) |
-| `playwright-smoke.yml` | PR | Yes |
-| `free-production-readiness.yml` | PR | Partial — Business contracts + Route Hygiene **block**; other jobs advisory |
-| `zap-scan-advisory.yml` | PR | No |
-| `meticulous-advisory.yml` | PR | No |
-| `playwright.yml` | PR | No (full E2E advisory) |
-| `codeql.yml` | PR | Yes |
+### Greptile TREX
 
----
+Greptile is installed as a GitHub App. **TREX** (Test Execution) runs generated tests against PR changes.
 
-## Schemathesis {#schemathesis}
+1. Open [Greptile dashboard](https://app.greptile.com) → your `helmv3` repo
+2. **Settings → Features → Enable TREX**
+3. Point TREX at Playwright config: `playwright.config.ts`
+4. Set base branch: `main`
+5. TREX complements (does not replace) `npm run routes:crawl` — it executes tests Greptile generates from codebase context
 
-Property-based API fuzzing. **Currently a stub**: no OpenAPI schema is checked in.
-
-1. Generate or add schema at `docs/openapi/openapi.json` (or `.yaml`).
-2. Install CLI: `pip install schemathesis` (or use Docker).
-3. Run locally: `npm run schemathesis:advisory` (respects `SCHEMATHESIS_TARGET_URL` or `PLAYWRIGHT_BASE_URL`).
-4. CI writes `docs/operations/generated/schemathesis-report.json` and skips with exit 0 when no schema.
-
----
-
-## External setup (manual)
+**Qodo alternative:** If Greptile TREX is unavailable, [Qodo](https://www.qodo.ai/) offers PR-level test generation via GitHub App. Install separately; no repo config required beyond the app. Use one or the other — both are PR-hunter layer tools.
 
 ### Meticulous AI
 
-Full guide: [`integrations/METICULOUS.md`](./integrations/METICULOUS.md)
+Full guide: `docs/operations/integrations/METICULOUS.md`
 
-1. Create account at [meticulous.ai](https://meticulous.ai).
-2. Install [GitHub App](https://github.com/apps/meticulous-ai/installations/new) on `helmv3`.
-3. Add repo secret `METICULOUS_API_TOKEN` (optional `METICULOUS_PROJECT_ID`).
-4. Connect Vercel preview deployments for session recording.
+Manual steps:
 
-### Chromatic (optional)
+1. Create account at [meticulous.ai](https://meticulous.ai)
+2. Install GitHub App on `helmv3`
+3. Add `METICULOUS_API_TOKEN` repository secret
+4. Connect Vercel preview for session recording
+5. Uncomment `upload-container` step in `.github/workflows/meticulous-advisory.yml`
 
-For Storybook/component-level visual regression (upgrade path from Playwright public-page baselines):
+### Schemathesis
 
-1. Sign up at [chromatic.com](https://www.chromatic.com).
-2. Link the GitHub repo and add `CHROMATIC_PROJECT_TOKEN` to CI secrets.
-3. Add a Chromatic step to your Storybook build workflow when Storybook is published for Golf/Baseball shared UI.
+**Current state:** No OpenAPI schema in repo. API routes exist under `src/app/api/` (46 route handlers) but are not documented as OpenAPI.
 
-Playwright visual (`e2e:visual`) covers marketing landings today; Chromatic is optional for component libraries.
+**Stub:** `npm run schemathesis:advisory` writes `docs/operations/generated/schemathesis-report.json` with `skipped: true`.
 
-### StackHawk (optional paid DAST)
+**To enable:**
 
-Alternative/complement to free ZAP baseline:
+1. Generate OpenAPI spec (pick one approach):
+   - **Manual:** Maintain `docs/openapi/openapi.json` from route handlers
+   - **next-swagger-doc / zod-to-openapi:** Derive from Zod schemas in API routes
+   - **typed routes:** Export from a central `src/lib/api/openapi.ts` registry
+2. Install CLI: `pip install schemathesis` (or `brew install schemathesis`)
+3. Run: `SCHEMATHESIS_TARGET_URL=https://preview-url.vercel.app npm run schemathesis:advisory`
+4. CI job `schemathesis-advisory` in `free-production-readiness.yml` will fuzz automatically once schema exists
 
-1. Sign up at [stackhawk.com](https://www.stackhawk.com).
-2. Create an app pointing at preview or staging URL.
-3. Add `HAWK_API_KEY` and `HAWK_APP_ID` as GitHub secrets.
-4. Add a StackHawk GitHub Action workflow (advisory) — not wired in-repo until license is chosen.
+Example minimal spec location:
 
-Free path today: `zap-scan-advisory.yml` with optional `ZAP_TARGET_URL` secret (defaults to production landing).
+```
+docs/openapi/openapi.json   ← schemathesis runner checks here first
+```
 
-### Sentry Session Replay
+### Chromatic (optional upgrade)
 
-Already configured in `src/instrumentation-client.ts`:
+In-repo Playwright visual tests (`e2e/visual/`) cover public marketing routes with baselines in `e2e/visual/__snapshots__/`.
 
-- `NEXT_PUBLIC_SENTRY_DSN` — required for any capture
-- Replay: 100% on error, 10% session sample in production (disabled in dev)
-- `maskAllText: true` on replay
+**Chromatic** adds component-level visual diffs if you adopt Storybook:
 
-Set DSN in Vercel project env and `.env.local` for local verification.
+1. Sign up at [chromatic.com](https://www.chromatic.com/)
+2. Add `CHROMATIC_PROJECT_TOKEN` secret
+3. Install: `npm i -D chromatic @chromatic-com/storybook`
+4. Add script: `"chromatic": "chromatic --exit-zero-on-changes"`
+5. Wire into CI on Storybook build
 
-### Greptile TREX / Qodo
+Until Storybook exists, use `npm run e2e:visual` for visual regression.
 
-- **Greptile TREX**: enable in Greptile project settings → Test Generation; no repo change required.
-- **Qodo**: alternative AI review — document-only unless team adds API key and workflow.
+### StackHawk (optional)
+
+**ZAP baseline** (free, in-repo) scans the public surface without auth. See `.github/workflows/zap-scan-advisory.yml`.
+
+**StackHawk** adds authenticated DAST + OpenAPI-aware scanning:
+
+1. Sign up at [stackhawk.com](https://www.stackhawk.com/)
+2. Add `HAWK_API_KEY` secret
+3. Create `.stackhawk.yml` with `app.applicationId` and `host` (preview URL)
+4. Add CI job using `stackhawk/hawkscan-action`
+
+StackHawk requires an OpenAPI spec for best results — generate alongside Schemathesis setup.
+
+### OWASP ZAP
+
+Workflow: `.github/workflows/zap-scan-advisory.yml`
+
+- Default target: `https://helmsportslabs.com` (public landing)
+- Override: repository secret `ZAP_TARGET_URL` or `workflow_dispatch` input
+- Advisory only — does not block merge
 
 ---
 
-## Generated artifacts
+## Promotion path
 
-Reports under `docs/operations/generated/` are gitignored. Issue drafts land in:
+| Tool | Current | Promote when |
+|---|---|---|
+| Route crawler | Advisory | 1 week green on main; triage P2 findings |
+| Visual regression | Advisory | Baselines stable; < 2% flake rate |
+| Prod DB audit | Advisory | Secret configured; zero false positives for 2 weeks |
+| ZAP | Advisory | Baseline established; only net-new highs block |
+| Schemathesis | Skipped | OpenAPI spec maintained; preview env available |
+| Meticulous | Not configured | Account + 50+ recorded sessions |
+| Greptile TREX | Dashboard toggle | TREX green for 2 weeks on PRs |
 
-- `docs/operations/revealed-bugs/routes/` — route crawler / hygiene
-- `docs/operations/revealed-bugs/production-readiness/` — auditor aggregation
+Update `docs/operations/GATE_MATRIX.md` when promoting a tool from advisory to hard gate.
 
-Run `npm run auditor:all` after static/DB scans to refresh drafts locally.
+---
+
+## Related docs
+
+- `docs/operations/FREE_PRODUCTION_READINESS_STACK.md` — free tooling foundation
+- `docs/operations/GATE_MATRIX.md` — hard vs advisory gates
+- `docs/operations/CI_RUNBOOK.md` — triage failing jobs
+- `docs/current/status.md` — current gate status
