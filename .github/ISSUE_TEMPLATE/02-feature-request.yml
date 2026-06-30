@@ -1,0 +1,47 @@
+name: ✨ Feature / enhancement
+description: New product behavior or an improvement to existing behavior.
+labels: ["feature"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - golf
+        - baseball
+        - coachhelm
+        - dashboard
+        - mobile
+        - stats
+        - import
+        - database
+        - ci
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / user need
+      description: What is the user trying to do, and why is it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope / non-goals
+      description: What is explicitly out of scope for this issue?
+  - type: checkboxes
+    id: considerations
+    attributes:
+      label: Considerations
+      options:
+        - label: Needs a migration / schema change
+        - label: Needs new RLS policies
+        - label: Affects mobile (Capacitor/iOS) as well as web
