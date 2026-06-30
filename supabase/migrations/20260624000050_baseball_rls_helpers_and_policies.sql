@@ -452,6 +452,12 @@ BEGIN
   IF to_regclass('public.baseball_staff_invitations') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.baseball_staff_invitations ENABLE ROW LEVEL SECURITY';
 
+    -- #386: defensive guard so a fresh migration replay never breaks here —
+    -- the policies below reference accepted_by_user_id, but the column's
+    -- defining migration is not guaranteed to have run first on every
+    -- environment. Idempotent / no-op once the column already exists.
+    EXECUTE 'ALTER TABLE public.baseball_staff_invitations ADD COLUMN IF NOT EXISTS accepted_by_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL';
+
     EXECUTE 'DROP POLICY IF EXISTS "baseball_staff_invitations_select" ON public.baseball_staff_invitations';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_staff_invitations_insert" ON public.baseball_staff_invitations';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_staff_invitations_update" ON public.baseball_staff_invitations';
