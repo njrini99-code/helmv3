@@ -551,10 +551,6 @@ BEGIN
     EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acknowledgements_insert" ON public.baseball_event_acknowledgements';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acknowledgements_update" ON public.baseball_event_acknowledgements';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acknowledgements_delete" ON public.baseball_event_acknowledgements';
-    EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acks_select" ON public.baseball_event_acknowledgements';
-    EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acks_insert" ON public.baseball_event_acknowledgements';
-    EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acks_update" ON public.baseball_event_acknowledgements';
-    EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acks_delete" ON public.baseball_event_acknowledgements';
 
     EXECUTE $p$CREATE POLICY "baseball_event_acknowledgements_select" ON public.baseball_event_acknowledgements
       FOR SELECT TO authenticated
