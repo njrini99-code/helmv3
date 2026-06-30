@@ -14,31 +14,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Detect deploy-config-only diffs
-        uses: dorny/paths-filter@v3
-        id: filter
         with:
-          filters: |
-            deploy_config:
-              - 'vercel.json'
-              - '.github/workflows/ci.yml'
-              - '.github/workflows/playwright.yml'
-            other:
-              - '**'
-              - '!vercel.json'
-              - '!.github/workflows/ci.yml'
-              - '!.github/workflows/playwright.yml'
+          fetch-depth: 0
 
       - name: Compute deploy_config_only
         id: gate
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: |
-          if [ "${{ steps.filter.outputs.deploy_config }}" = "true" ] && [ "${{ steps.filter.outputs.other }}" != "true" ]; then
-            echo "value=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=false" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          mapfile -t files < <(git diff --name-only "$BASE_SHA" HEAD)
+          allowed='^(vercel\.json|\.github/workflows/ci\.yml|\.github/workflows/playwright\.yml)$'
+          deploy_config_only=true
+          if [ "${#files[@]}" -eq 0 ]; then
+            deploy_config_only=false
           fi
-          echo "deploy_config=${{ steps.filter.outputs.deploy_config }} other=${{ steps.filter.outputs.other }}"
+          for f in "${files[@]}"; do
+            if [[ ! "$f" =~ $allowed ]]; then
+              deploy_config_only=false
+              break
+            fi
+          done
+          echo "value=$deploy_config_only" >> "$GITHUB_OUTPUT"
+          echo "changed files: ${files[*]:-none}"
 
   build:
     needs: changes
