@@ -76,7 +76,7 @@ export default async function BaseballDemoSessionsPage() {
 
         {/* Summary badge */}
         {result && (
-          <div className="flex items-center gap-2 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass px-4 py-2.5 self-start sm:self-auto">
+          <div className="flex items-center gap-2 glass-standard rounded-2xl px-4 py-2.5 self-start sm:self-auto">
             <IconUsers className="w-4 h-4 text-primary-600" />
             <span className="text-sm font-semibold text-warm-900">
               {total.toLocaleString()} {total === 1 ? 'entry' : 'entries'}
@@ -98,7 +98,7 @@ export default async function BaseballDemoSessionsPage() {
 
       {/* ── Empty state ────────────────────────────────────────────────── */}
       {!fetchError && sessions.length === 0 && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass flex flex-col items-center justify-center py-20 px-6 text-center">
+        <div className="glass-standard rounded-2xl flex flex-col items-center justify-center py-20 px-6 text-center">
           <div className="w-14 h-14 rounded-2xl bg-warm-50 flex items-center justify-center mb-4">
             <IconUsers className="w-7 h-7 text-warm-300" />
           </div>
@@ -111,12 +111,12 @@ export default async function BaseballDemoSessionsPage() {
 
       {/* ── Table ──────────────────────────────────────────────────────── */}
       {!fetchError && sessions.length > 0 && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+        <div className="glass-standard rounded-2xl overflow-hidden">
           {/* Scrollable wrapper for narrow viewports */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/30 bg-white/40">
+                <tr className="border-b border-white/30 bg-cream-50">
                   <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-warm-500 uppercase tracking-wider whitespace-nowrap">
                     Name
                   </th>
@@ -141,7 +141,7 @@ export default async function BaseballDemoSessionsPage() {
                 {sessions.map((s) => (
                   <tr
                     key={s.id}
-                    className="hover:bg-white/40 transition-colors duration-100 group"
+                    className="hover:bg-cream-50 transition-colors duration-100 group"
                   >
                     <td className="px-5 py-3.5 text-warm-900 font-medium whitespace-nowrap">
                       {s.name}
