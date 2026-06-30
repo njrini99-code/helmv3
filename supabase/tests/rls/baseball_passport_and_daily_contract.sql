@@ -25,7 +25,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(30);
+SELECT plan(31);
 
 -- ============================================================================
 -- PASSPORT SETTINGS
