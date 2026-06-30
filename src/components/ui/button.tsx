@@ -59,12 +59,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     );
 
     const variants = {
-      primary: 'bg-primary-700 text-white shadow-sm hover:bg-primary-800 hover:shadow-md hover:-translate-y-0.5 active:shadow-sm active:translate-y-0',
+      primary: 'bg-primary-600 text-white shadow-sm hover:bg-primary-700 hover:shadow-md hover:-translate-y-0.5 active:shadow-sm active:translate-y-0',
       secondary: 'bg-white text-warm-700 border border-warm-200 hover:bg-warm-50 hover:border-warm-300 hover:shadow-sm',
       ghost: 'text-warm-600 hover:bg-warm-100 hover:text-warm-900',
       danger: 'text-red-600 border border-red-200 bg-red-50/50 hover:bg-red-50 hover:border-red-300 hover:text-red-700',
       outline: 'bg-transparent text-warm-700 border border-warm-200 hover:bg-warm-50 hover:border-warm-300 hover:shadow-sm',
-      success: 'bg-primary-700 text-white shadow-sm hover:bg-primary-800 hover:shadow-md hover:-translate-y-0.5',
+      success: 'bg-primary-600 text-white shadow-sm hover:bg-primary-700 hover:shadow-md hover:-translate-y-0.5',
     };
 
     const sizes = {
@@ -154,7 +154,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
 
     const variants = {
       default: 'text-warm-500 hover:bg-warm-100 hover:text-warm-900',
-      primary: 'bg-primary-700 text-white hover:bg-primary-800 shadow-sm hover:shadow-md',
+      primary: 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm hover:shadow-md',
       ghost: 'text-warm-400 hover:text-warm-600 hover:bg-warm-50',
     };
 
