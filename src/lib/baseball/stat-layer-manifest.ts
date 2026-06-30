@@ -326,4 +326,18 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     note:
       "Contains the string only inside a `not.toContain('baseball_player_aggregates')` negative assertion on the command-center PAGE (proving it has already migrated to the adapter). Listed here so the naive string scan does not false-positive on a test that is enforcing the opposite of a violation.",
   },
+  {
+    path: 'src/contracts/baseball/source-trust/import-stamping.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      'Pins import-source provenance stamping (#377) by exercising imports.ts commitImport() against a fake baseball_player_stats table — mirrors imports-registry.test.ts above; production reference is the legacy-import-writer entry, not a new one.',
+  },
+  {
+    path: 'src/contracts/baseball/source-trust/lineage-and-raw-file.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note:
+      'Pins import lineage/raw-file hash recompute (#377) by exercising imports.ts against a fake baseball_player_stats table — mirrors imports-registry.test.ts above; production reference is the legacy-import-writer entry, not a new one.',
+  },
 ] as const;
