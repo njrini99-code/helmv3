@@ -438,7 +438,7 @@ export function ZoneChaseDamageHeatmap({
                   y={co.row * unit + unit / 2 + 4}
                   textAnchor="middle"
                   className={cn(
-                    'text-[11px] font-semibold tabular-nums',
+                    'text-micro font-semibold tabular-nums',
                     r !== null && r > 0.5 ? 'fill-white' : 'fill-warm-700',
                   )}
                 >
@@ -695,7 +695,7 @@ function LadderMetric({
         {label}
       </span>
       <BulletBar value={rate} max={1} tone={tone} />
-      <span className="w-9 text-right text-[11px] tabular-nums text-warm-600">{pct(rate, 0)}</span>
+      <span className="w-9 text-right text-micro tabular-nums text-warm-600">{pct(rate, 0)}</span>
     </div>
   );
 }
@@ -814,7 +814,7 @@ function PairedRow({
         {label}
       </span>
       <BulletBar value={value} max={max} tone={tone} height={7} />
-      <span className="w-12 text-right text-[11px] tabular-nums text-warm-600">
+      <span className="w-12 text-right text-micro tabular-nums text-warm-600">
         {value === null ? '—' : `${num(value, 1)}${unit ?? ''}`}
       </span>
     </div>

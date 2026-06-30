@@ -4,7 +4,7 @@ export default function ConversationLoading() {
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)]">
       {/* Header skeleton */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-warm-200 bg-white">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-warm-200 bg-cream-50">
         <Skeleton className="h-9 w-9 rounded-lg" />
         <Skeleton className="h-10 w-10 rounded-full" />
         <div className="flex-1">
@@ -47,7 +47,7 @@ export default function ConversationLoading() {
       </div>
 
       {/* Input area skeleton */}
-      <div className="p-4 border-t border-warm-200 bg-white">
+      <div className="p-4 border-t border-warm-200 bg-cream-50">
         <div className="flex items-center gap-3 max-w-[720px] mx-auto">
           <Skeleton className="flex-1 h-12 rounded-xl" />
           <Skeleton className="h-10 w-10 rounded-xl flex-shrink-0" />

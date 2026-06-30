@@ -104,7 +104,7 @@ export function AthleteProfileCard({ athlete, latestCheckin, size = 'card' }: Pr
             >
               {displayName}
             </p>
-            <span className="rounded-full bg-warm-100 px-2 py-0.5 text-[11px] font-medium text-warm-500">
+            <span className="rounded-full bg-warm-100 px-2 py-0.5 text-micro font-medium text-warm-500">
               {SPORT_LABELS[athlete.sport] ?? athlete.sport}
             </span>
           </div>

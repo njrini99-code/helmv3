@@ -368,14 +368,16 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
                   <IconMail size={18} className="text-primary-600" />
                   Invite a coach
                 </CardTitle>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setInviteOpen(false)}
-                  className="rounded-lg p-1 text-warm-400 hover:bg-warm-100 hover:text-warm-600"
+                  haptic="none"
+                  className="min-h-0 rounded-lg p-1 text-warm-400 hover:text-warm-600"
                   aria-label="Close invite form"
                 >
                   <IconX size={18} />
-                </button>
+                </Button>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -418,14 +420,16 @@ export function StaffSettingsClient({ initialData }: StaffSettingsClientProps) {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {ROLE_PRESETS.map((p) => (
-                      <button
+                      <Button
                         key={p.label}
                         type="button"
+                        variant="ghost"
                         onClick={() => applyPreset(p)}
-                        className="rounded-full border border-warm-200 bg-cream-50 px-3 py-1.5 text-xs font-medium text-warm-700 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
+                        haptic="none"
+                        className="min-h-0 rounded-full border border-warm-200 bg-cream-50 px-3 py-1.5 text-xs font-medium text-warm-700 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
                       >
                         {p.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -745,16 +749,18 @@ function CapabilityMatrix({ value, onChange, disabled }: CapabilityMatrixProps) 
       {CAPABILITY_DEFS.map((cap) => {
         const on = value[cap.key] === true;
         return (
-          <button
+          <Button
             key={cap.key}
             type="button"
+            variant="ghost"
             role="switch"
             aria-checked={on}
             disabled={disabled}
             onClick={() => toggle(cap.key)}
-            className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+            haptic="none"
+            className={`min-h-0 h-auto items-start justify-start gap-3 rounded-xl border p-3 text-left font-normal ${
               on
-                ? 'border-primary-300 bg-primary-50'
+                ? 'border-primary-300 bg-primary-50 hover:bg-primary-50'
                 : 'border-warm-200 bg-cream-50 hover:border-warm-300'
             }`}
           >
@@ -769,7 +775,7 @@ function CapabilityMatrix({ value, onChange, disabled }: CapabilityMatrixProps) 
               <span className="block text-sm font-medium text-warm-800">{cap.label}</span>
               <span className="block text-xs text-warm-500">{cap.help}</span>
             </span>
-          </button>
+          </Button>
         );
       })}
     </div>

@@ -398,12 +398,16 @@ export default function TeamsPage() {
       {/* Create Team Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             aria-label="Close modal"
-            className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm w-full h-full border-0 cursor-default"
+            haptic="none"
+            className="min-h-0 absolute inset-0 block w-full h-full rounded-none bg-warm-900/50 backdrop-blur-sm cursor-default hover:bg-warm-900/50"
             onClick={() => setShowCreateModal(false)}
-          />
+          >
+            {''}
+          </Button>
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
             <div className="px-6 py-4 border-b border-warm-100">
               <h2 className="text-lg font-semibold tracking-tight text-warm-900">Create New Team</h2>

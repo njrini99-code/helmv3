@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 // ============================================
 // TYPES
@@ -102,15 +103,17 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
 
           if (item.onClick) {
             return (
-              <button
+              <Button
                 key={`action-${item.label}`}
                 type="button"
+                variant="ghost"
                 onClick={item.onClick}
-                className={className}
+                haptic="none"
+                className={cn('min-h-0', className)}
                 aria-label={item.label}
               >
                 {content}
-              </button>
+              </Button>
             );
           }
 

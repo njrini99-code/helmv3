@@ -198,7 +198,7 @@ export default async function AthleteDetailPage({ params }: Props) {
                         </p>
                       </div>
                       <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${statusColor(s.status)}`}
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-micro font-medium ${statusColor(s.status)}`}
                       >
                         {statusLabel(s.status)}
                       </span>
