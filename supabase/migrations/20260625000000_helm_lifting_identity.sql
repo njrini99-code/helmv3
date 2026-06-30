@@ -47,10 +47,13 @@ CREATE TABLE IF NOT EXISTS public.helm_lifting_coaches (
   status                 text NOT NULL DEFAULT 'active'
     CHECK (status IN ('active', 'suspended', 'removed')),
   onboarding_completed   boolean NOT NULL DEFAULT false,
+  deleted_at             timestamptz,
   created_at             timestamptz NOT NULL DEFAULT now(),
   updated_at             timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT uq_helm_lifting_coach_user_org UNIQUE (user_id, organization_id)
 );
+ALTER TABLE public.helm_lifting_coaches
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 CREATE INDEX IF NOT EXISTS helm_lifting_coaches_user_idx
   ON public.helm_lifting_coaches (user_id);
 CREATE INDEX IF NOT EXISTS helm_lifting_coaches_org_idx
