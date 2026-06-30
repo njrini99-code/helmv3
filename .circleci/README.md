@@ -67,10 +67,12 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
 - **Exit codes from `wait-for-vercel-preview.sh`**:
   - `0` — preview READY; Lighthouse runs against `PREVIEW_URL`
   - `1` — deployment ERROR/CANCELED or wait timeout after a deployment was seen
-  - `2` — no deployment for commit SHA within grace window; job skips Lighthouse
+  - `2` — Vercel preview detection is not configured, or no deployment for
+    commit SHA exists within grace window; job skips Lighthouse
 - **Common failures**:
   - `npm ci` exits 137 in the install step → the container ran out of
     memory; keep `lighthouse-preview` on the `node-large` executor.
+  - Missing `VERCEL_TOKEN` or `VERCEL_PROJECT_ID` → skip (exit 2)
   - Missing `VERCEL_TEAM_ID` on team-scoped projects → empty deployment list → skip (exit 2)
   - Busy project with >20 deployments before match → raise `DEPLOYMENT_LIMIT` (default 100)
   - Vercel still building → polls until READY or timeout
