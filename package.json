@@ -112,7 +112,7 @@
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
     "deep-email-validator": "^0.1.27",
-    "eslint": "^9.39.2",
+    "eslint": "^10.6.0",
     "framer-motion": "^12.40.0",
     "geist": "^1.7.2",
     "html2canvas": "^1.4.1",
