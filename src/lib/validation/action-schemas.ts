@@ -8,6 +8,19 @@ import { z } from 'zod';
 import { CommonSchemas } from './server-action-validator';
 
 /**
+ * Recruiting Schemas
+ */
+export const RecruitingSchemas = {
+  addInterest: z.object({
+    organization_id: CommonSchemas.uuid,
+  }),
+
+  removeInterest: z.object({
+    organization_id: CommonSchemas.uuid,
+  }),
+};
+
+/**
  * Watchlist Schemas
  */
 export const WatchlistSchemas = {

@@ -70,6 +70,7 @@ CREATE INDEX IF NOT EXISTS baseball_exercises_team_idx
 CREATE INDEX IF NOT EXISTS baseball_exercises_global_idx
   ON public.baseball_exercises (is_global) WHERE is_global = true;
 
+ALTER TABLE public.baseball_exercises ENABLE ROW LEVEL SECURITY;
 -- ----------------------------------------------------------------------------
 -- 2. baseball_lift_assignments — prescribed lifts (player or scoped group)
 -- ----------------------------------------------------------------------------
@@ -96,6 +97,7 @@ CREATE INDEX IF NOT EXISTS baseball_lift_assignments_player_idx
 CREATE INDEX IF NOT EXISTS baseball_lift_assignments_due_idx
   ON public.baseball_lift_assignments (team_id, due_date);
 
+ALTER TABLE public.baseball_lift_assignments ENABLE ROW LEVEL SECURITY;
 -- ----------------------------------------------------------------------------
 -- 3. baseball_lift_results — player-logged set results (with import lineage)
 -- ----------------------------------------------------------------------------
@@ -142,6 +144,7 @@ CREATE INDEX IF NOT EXISTS baseball_lift_results_assignment_idx
 CREATE INDEX IF NOT EXISTS baseball_lift_results_import_run_idx
   ON public.baseball_lift_results (import_run_id) WHERE import_run_id IS NOT NULL;
 
+ALTER TABLE public.baseball_lift_results ENABLE ROW LEVEL SECURITY;
 -- ----------------------------------------------------------------------------
 -- 4. baseball_readiness_checkins — daily player wellness self-report
 -- ----------------------------------------------------------------------------
@@ -167,6 +170,7 @@ CREATE INDEX IF NOT EXISTS baseball_readiness_checkins_team_idx
 CREATE INDEX IF NOT EXISTS baseball_readiness_checkins_player_idx
   ON public.baseball_readiness_checkins (player_id, check_date DESC);
 
+ALTER TABLE public.baseball_readiness_checkins ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- ROW LEVEL SECURITY
 -- ============================================================================
@@ -177,7 +181,6 @@ CREATE INDEX IF NOT EXISTS baseball_readiness_checkins_player_idx
 -- baseball_exercises  — global readable by staff; team rows staff-scoped;
 --                       writes gated by can_manage_lifting.
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_exercises ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "baseball_exercises_select" ON public.baseball_exercises;
 DROP POLICY IF EXISTS "baseball_exercises_insert" ON public.baseball_exercises;
@@ -227,7 +230,6 @@ CREATE POLICY "baseball_exercises_delete" ON public.baseball_exercises
 -- ----------------------------------------------------------------------------
 -- baseball_lift_assignments — player reads OWN; staff manage scoped groups.
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_lift_assignments ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "baseball_lift_assignments_select" ON public.baseball_lift_assignments;
 DROP POLICY IF EXISTS "baseball_lift_assignments_insert" ON public.baseball_lift_assignments;
@@ -260,7 +262,6 @@ CREATE POLICY "baseball_lift_assignments_delete" ON public.baseball_lift_assignm
 -- baseball_lift_results — player INSERTs/reads OWN; staff read scoped; OTHER
 --                         players can NEVER read a teammate's loads.
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_lift_results ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "baseball_lift_results_select" ON public.baseball_lift_results;
 DROP POLICY IF EXISTS "baseball_lift_results_insert" ON public.baseball_lift_results;
@@ -310,7 +311,6 @@ CREATE POLICY "baseball_lift_results_delete" ON public.baseball_lift_results
 -- ----------------------------------------------------------------------------
 -- baseball_readiness_checkins — player owns; staff read only with can_view_readiness.
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_readiness_checkins ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "baseball_readiness_checkins_select" ON public.baseball_readiness_checkins;
 DROP POLICY IF EXISTS "baseball_readiness_checkins_insert" ON public.baseball_readiness_checkins;

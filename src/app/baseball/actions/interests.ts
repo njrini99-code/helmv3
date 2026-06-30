@@ -3,110 +3,171 @@
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
+import { RecruitingSchemas } from '@/lib/validation/action-schemas';
+import {
+  formatSafeErrorResponse,
+  logSecurityEvent,
+} from '@/lib/validation/server-action-validator';
+import { logServerError } from '@/lib/server-error-logger';
 
-export async function addToInterests(collegeId: string, schoolName: string, division?: string | null, conference?: string | null) {
-  const supabase = await createClient();
+const ALLOWED_ORG_TYPES = new Set(['college', 'juco']);
 
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('Unauthorized');
-  }
+export async function addToInterests(
+  organizationId: string,
+): Promise<{ success: boolean; alreadyExists?: boolean; error?: string }> {
+  try {
+    const validated = RecruitingSchemas.addInterest.parse({
+      organization_id: organizationId,
+    });
 
-  // Get player record
-  const { data: player } = await supabase
-    .from('baseball_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
 
-  if (!player) {
-    throw new Error('Player not found');
-  }
+    const { data: player } = await supabase
+      .from('baseball_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
 
-  // Check if already in interests
-  const { data: existing } = await supabase
-    .from('baseball_recruiting_interests')
-    .select('id')
-    .eq('player_id', player.id)
-    .eq('organization_id', collegeId)
-    .maybeSingle();
+    if (!player) {
+      throw new Error('Player not found');
+    }
 
-  if (existing) {
-    return { success: true, alreadyExists: true };
-  }
+    const { data: organization, error: orgError } = await supabase
+      .from('organizations')
+      .select('id, type')
+      .eq('id', validated.organization_id)
+      .maybeSingle();
 
-  // Add to interests
-  const { error } = await fromUntyped(supabase, 'baseball_recruiting_interests')
-    .insert({
+    if (orgError || !organization) {
+      throw new Error('College program not found');
+    }
+
+    if (!ALLOWED_ORG_TYPES.has(organization.type)) {
+      throw new Error('Only college and JUCO programs can be added to interests');
+    }
+
+    const { data: existing } = await supabase
+      .from('baseball_recruiting_interests')
+      .select('id')
+      .eq('player_id', player.id)
+      .eq('organization_id', validated.organization_id)
+      .maybeSingle();
+
+    if (existing) {
+      return { success: true, alreadyExists: true };
+    }
+
+    await logSecurityEvent({
+      event: 'recruiting_interest_add',
+      action: 'interests.addToInterests',
+      userId: user.id,
+      metadata: {
+        playerId: player.id,
+        organizationId: validated.organization_id,
+      },
+    });
+
+    const { error } = await fromUntyped(supabase, 'baseball_recruiting_interests').insert({
       player_id: player.id,
-      organization_id: collegeId,
-      school_name: schoolName,
-      division: division || null,
-      conference: conference || null,
+      organization_id: validated.organization_id,
       status: 'interested',
       interest_level: 'researching',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
 
-  if (error) {
-    throw new Error('Failed to add to interests');
+    if (error) {
+      await logServerError(`[interests] Failed to add interest: ${error.message}`, {
+        action: 'interests.addToInterests',
+        metadata: { playerId: player.id, organizationId: validated.organization_id },
+      });
+      throw new Error('Failed to add to interests');
+    }
+
+    revalidatePath('/baseball/dashboard/colleges');
+    revalidatePath('/baseball/dashboard/journey');
+
+    return { success: true };
+  } catch (err) {
+    return formatSafeErrorResponse(err);
   }
-
-  revalidatePath('/baseball/dashboard/colleges');
-  revalidatePath('/baseball/dashboard/journey');
-
-  return { success: true };
 }
 
-export async function removeFromInterests(collegeId: string) {
-  const supabase = await createClient();
+export async function removeFromInterests(
+  organizationId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const validated = RecruitingSchemas.removeInterest.parse({
+      organization_id: organizationId,
+    });
 
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('Unauthorized');
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+
+    const { data: player } = await supabase
+      .from('baseball_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      throw new Error('Player not found');
+    }
+
+    await logSecurityEvent({
+      event: 'recruiting_interest_remove',
+      action: 'interests.removeFromInterests',
+      userId: user.id,
+      metadata: {
+        playerId: player.id,
+        organizationId: validated.organization_id,
+      },
+    });
+
+    const { error } = await supabase
+      .from('baseball_recruiting_interests')
+      .delete()
+      .eq('player_id', player.id)
+      .eq('organization_id', validated.organization_id);
+
+    if (error) {
+      await logServerError(`[interests] Failed to remove interest: ${error.message}`, {
+        action: 'interests.removeFromInterests',
+        metadata: { playerId: player.id, organizationId: validated.organization_id },
+      });
+      throw new Error('Failed to remove from interests');
+    }
+
+    revalidatePath('/baseball/dashboard/colleges');
+    revalidatePath('/baseball/dashboard/journey');
+
+    return { success: true };
+  } catch (err) {
+    return formatSafeErrorResponse(err);
   }
-
-  // Get player record
-  const { data: player } = await supabase
-    .from('baseball_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!player) {
-    throw new Error('Player not found');
-  }
-
-  // Remove from interests
-  const { error } = await supabase
-    .from('baseball_recruiting_interests')
-    .delete()
-    .eq('player_id', player.id)
-    .eq('organization_id', collegeId);
-
-  if (error) {
-    throw new Error('Failed to remove from interests');
-  }
-
-  revalidatePath('/baseball/dashboard/colleges');
-  revalidatePath('/baseball/dashboard/journey');
-
-  return { success: true };
 }
 
 export async function getPlayerInterests() {
   const supabase = await createClient();
 
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     return { interests: [] };
   }
 
-  // Get player record
   const { data: player } = await supabase
     .from('baseball_players')
     .select('id')
@@ -117,7 +178,6 @@ export async function getPlayerInterests() {
     return { interests: [] };
   }
 
-  // Get interests
   const { data: interests } = await supabase
     .from('baseball_recruiting_interests')
     .select('*')

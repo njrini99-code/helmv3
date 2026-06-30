@@ -87,6 +87,12 @@ export function sanitizeAuthError(err: unknown, context: string): string {
 
   const msg = (err as SupabaseLikeError)?.message?.toLowerCase() ?? '';
 
+  if (
+    context === 'changePassword' &&
+    (msg.includes('invalid login credentials') || msg.includes('invalid credentials'))
+  ) {
+    return 'Current password is incorrect.';
+  }
   if (msg.includes('password') && (msg.includes('character') || msg.includes('length') || msg.includes('weak'))) {
     return 'Password must be at least 8 characters.';
   }
@@ -95,6 +101,11 @@ export function sanitizeAuthError(err: unknown, context: string): string {
   }
   if (msg.includes('same password')) {
     return 'New password must be different from your current password.';
+  }
+  if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
+    return context === 'updatePassword'
+      ? 'Current password is incorrect.'
+      : 'Invalid email or password.';
   }
   if (msg.includes('rate limit') || msg.includes('too many')) {
     return 'Too many attempts. Please wait a moment and try again.';

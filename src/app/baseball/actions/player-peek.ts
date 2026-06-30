@@ -117,7 +117,7 @@ export async function getPlayerPeekData(playerId: string): Promise<{
 
       // Log profile view engagement
       await fromUntyped(supabase, 'baseball_player_engagement_events')
-        .insert({
+        .insert({ // nosemgrep: helmv3-action-missing-revalidate -- fire-and-forget telemetry, no UI cache
           player_id: playerId,
           coach_id: coach.id,
           engagement_type: 'profile_view',

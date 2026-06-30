@@ -104,6 +104,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_stat_sources_team
 CREATE INDEX IF NOT EXISTS idx_baseball_stat_sources_category
   ON baseball_stat_sources(team_id, source_category);
 
+ALTER TABLE public.baseball_stat_sources ENABLE ROW LEVEL SECURITY;
 -- ----------------------------------------------------------------------------
 -- baseball_import_field_mappings — saved, user-confirmed header→canonical maps
 -- so a recurring vendor file maps with no re-work (V6 §baseball_import_field_mappings).
@@ -128,6 +129,7 @@ CREATE TABLE IF NOT EXISTS baseball_import_field_mappings (
 CREATE INDEX IF NOT EXISTS idx_baseball_import_field_mappings_team
   ON baseball_import_field_mappings(team_id);
 
+ALTER TABLE public.baseball_import_field_mappings ENABLE ROW LEVEL SECURITY;
 -- ----------------------------------------------------------------------------
 -- baseball_plate_appearances — PA grain; anchor for pitch/batted-ball events.
 -- ----------------------------------------------------------------------------
@@ -173,6 +175,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_pa_batter
 CREATE INDEX IF NOT EXISTS idx_baseball_pa_import
   ON baseball_plate_appearances(import_run_id);
 
+ALTER TABLE public.baseball_plate_appearances ENABLE ROW LEVEL SECURITY;
 -- ----------------------------------------------------------------------------
 -- baseball_pitch_events — pitch grain (official PBP + bullpen + TrackMan/Rapsodo).
 -- ----------------------------------------------------------------------------
@@ -235,6 +238,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_pitch_pa
   ON baseball_pitch_events(plate_appearance_id);
 CREATE INDEX IF NOT EXISTS idx_baseball_pitch_import
   ON baseball_pitch_events(import_run_id);
+ALTER TABLE public.baseball_pitch_events ENABLE ROW LEVEL SECURITY;
 -- Duplicate guard (V6 §Duplicate rules: pitch = source + external pitch id).
 CREATE UNIQUE INDEX IF NOT EXISTS uq_baseball_pitch_external
   ON baseball_pitch_events(source_id, external_pitch_id)
@@ -287,6 +291,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_bb_pa
   ON baseball_batted_ball_events(plate_appearance_id);
 CREATE INDEX IF NOT EXISTS idx_baseball_bb_import
   ON baseball_batted_ball_events(import_run_id);
+ALTER TABLE public.baseball_batted_ball_events ENABLE ROW LEVEL SECURITY;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_baseball_bb_external
   ON baseball_batted_ball_events(source_id, external_event_id)
   WHERE source_id IS NOT NULL AND external_event_id IS NOT NULL;
@@ -341,6 +346,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_swing_team_player
   ON baseball_swing_events(team_id, player_id, data_context);
 CREATE INDEX IF NOT EXISTS idx_baseball_swing_import
   ON baseball_swing_events(import_run_id);
+ALTER TABLE public.baseball_swing_events ENABLE ROW LEVEL SECURITY;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_baseball_swing_external
   ON baseball_swing_events(source_id, external_swing_id)
   WHERE source_id IS NOT NULL AND external_swing_id IS NOT NULL;
@@ -386,6 +392,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_field_team_player
   ON baseball_fielding_events(team_id, player_id, data_context);
 CREATE INDEX IF NOT EXISTS idx_baseball_field_import
   ON baseball_fielding_events(import_run_id);
+ALTER TABLE public.baseball_fielding_events ENABLE ROW LEVEL SECURITY;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_baseball_field_external
   ON baseball_fielding_events(source_id, external_event_id)
   WHERE source_id IS NOT NULL AND external_event_id IS NOT NULL;
@@ -430,6 +437,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_catch_team_catcher
   ON baseball_catching_events(team_id, catcher_id, data_context);
 CREATE INDEX IF NOT EXISTS idx_baseball_catch_import
   ON baseball_catching_events(import_run_id);
+ALTER TABLE public.baseball_catching_events ENABLE ROW LEVEL SECURITY;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_baseball_catch_external
   ON baseball_catching_events(source_id, external_event_id)
   WHERE source_id IS NOT NULL AND external_event_id IS NOT NULL;
@@ -475,6 +483,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_baserun_team_runner
   ON baseball_baserunning_events(team_id, runner_id, data_context);
 CREATE INDEX IF NOT EXISTS idx_baseball_baserun_import
   ON baseball_baserunning_events(import_run_id);
+ALTER TABLE public.baseball_baserunning_events ENABLE ROW LEVEL SECURITY;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_baseball_baserun_external
   ON baseball_baserunning_events(source_id, external_event_id)
   WHERE source_id IS NOT NULL AND external_event_id IS NOT NULL;
@@ -513,6 +522,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_workload_team_player_date
 CREATE INDEX IF NOT EXISTS idx_baseball_workload_import
   ON baseball_workload_events(import_run_id);
 
+ALTER TABLE public.baseball_workload_events ENABLE ROW LEVEL SECURITY;
 -- ----------------------------------------------------------------------------
 -- baseball_video_events — index video without owning storage (V6 §Video events).
 -- ----------------------------------------------------------------------------
@@ -552,6 +562,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_video_team_player
 CREATE INDEX IF NOT EXISTS idx_baseball_video_import
   ON baseball_video_events(import_run_id);
 
+ALTER TABLE public.baseball_video_events ENABLE ROW LEVEL SECURITY;
 -- ----------------------------------------------------------------------------
 -- baseball_stat_facts — generic source-linked metric facts (V6 §baseball_stat_facts).
 -- The escape hatch so a new vendor metric is never blocked on a bespoke table;
@@ -589,6 +600,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_facts_team_player_metric
 CREATE INDEX IF NOT EXISTS idx_baseball_facts_import
   ON baseball_stat_facts(import_run_id);
 
+ALTER TABLE public.baseball_stat_facts ENABLE ROW LEVEL SECURITY;
 -- ----------------------------------------------------------------------------
 -- baseball_player_development_metrics — periodic development snapshots
 -- (V6 §"Player development metrics" + §Derived insights). One row per player per
@@ -636,6 +648,7 @@ CREATE INDEX IF NOT EXISTS idx_baseball_dev_metrics_player
 CREATE INDEX IF NOT EXISTS idx_baseball_dev_metrics_team_group
   ON baseball_player_development_metrics(team_id, metric_group);
 
+ALTER TABLE public.baseball_player_development_metrics ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- RLS — enable + team-scoped policies for every new table.
 -- Reuses the 0050 capability helpers. Pattern:

@@ -26,6 +26,7 @@
  * subsequent reads return cached text.
  */
 
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { compose } from '@/lib/coachhelm/v3/llm/compose';
 import { pct } from '@/lib/golf/stat-formulas';
@@ -103,6 +104,8 @@ export async function generateRoundRecap(roundId: string): Promise<{ recap: stri
       ai_recap_generated_at: new Date().toISOString(),
     } as unknown as never)
     .eq('id', roundId);
+
+  revalidatePath(`/golf/dashboard/rounds/${roundId}`);
 
   return { recap, cached: false };
 }

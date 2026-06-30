@@ -187,7 +187,7 @@ async function main() {
     const email = isPlayerLogin ? PLAYER_EMAIL : `${p.first}.${p.last}@${FILLER_DOMAIN}`.toLowerCase();
     const userId = isPlayerLogin ? PLAYER_USER_ID : await ensureAuthUser(email, FILLER_PASSWORD);
     playerRows.push({
-      id: pid, user_id: userId, player_type: 'college', first_name: p.first, last_name: p.last, email,
+      id: pid, user_id: userId, player_type: 'college', recruiting_activated: false, first_name: p.first, last_name: p.last, email,
       primary_position: p.pos, secondary_position: p.sec, bats: p.bats, throws: p.throws, grad_year: p.grad,
       height_feet: 6, height_inches: p.jersey % 5, weight_lbs: 180 + (p.jersey % 30),
       onboarding_completed: true, profile_completion_percent: 100,

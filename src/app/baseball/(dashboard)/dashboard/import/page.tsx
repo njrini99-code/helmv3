@@ -21,6 +21,7 @@ import { ImportCenterShell } from '@/components/baseball/import-center/ImportCen
 import { CONCRETE_EVENT_ADAPTERS } from '@/lib/baseball/adapters';
 import { getSourceRegistryEntry } from '@/lib/baseball/stat-import-adapters';
 import { BASEBALL_IMPORT_SOURCES } from '@/lib/baseball/import-matching';
+import { isImportSourceEnabled } from '@/lib/baseball/import-source-enabled';
 import type { BaseballImportRunRow } from '@/lib/types/baseball-imports';
 import type { BaseballImportSourceConfig } from '@/lib/types/baseball-settings';
 import type { BaseballSourceKey } from '@/lib/types/baseball-stat-events';
@@ -166,7 +167,7 @@ function mergeRegisteredSources(
 ): RegisteredSourceOption[] {
   const byType = new Map<string, BaseballImportSourceConfig>();
   for (const r of registered) {
-    if (r.enabled === false) continue;
+    if (!isImportSourceEnabled(r)) continue;
     // First enabled registration per source_type wins as the policy annotation.
     if (!byType.has(r.source_type)) byType.set(r.source_type, r);
   }

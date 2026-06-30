@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_practice_block_objectives (
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz DEFAULT now()
 );
+ALTER TABLE public.baseball_practice_block_objectives ENABLE ROW LEVEL SECURITY;
 
 -- ----------------------------------------------------------------------------
 -- 2. baseball_practice_effectiveness_reviews
@@ -164,6 +165,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_practice_effectiveness_reviews (
   updated_at           timestamptz DEFAULT now(),
   CONSTRAINT uq_bpe_dedupe UNIQUE (team_id, dedupe_key)
 );
+ALTER TABLE public.baseball_practice_effectiveness_reviews ENABLE ROW LEVEL SECURITY;
 
 -- ----------------------------------------------------------------------------
 -- Indexes for the read paths (dashboard + decision-room + practice-intel feeds).
@@ -182,8 +184,6 @@ CREATE INDEX IF NOT EXISTS idx_bpe_disposition ON public.baseball_practice_effec
 -- ----------------------------------------------------------------------------
 -- RLS ENABLED (deny-by-default).
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_practice_block_objectives        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.baseball_practice_effectiveness_reviews   ENABLE ROW LEVEL SECURITY;
 
 -- Revoke any inherited anon grant defensively (matview/table recreate gotcha).
 REVOKE ALL ON public.baseball_practice_block_objectives      FROM anon;

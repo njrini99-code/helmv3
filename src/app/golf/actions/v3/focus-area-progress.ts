@@ -173,7 +173,7 @@ async function evaluateAreas(
     if (area.current_value != null && area.current_value === next) continue; // no-op
 
     const { error } = await fromUntyped(supabase, 'golf_player_focus_areas')
-      .update({ current_value: next, updated_at: nowIso })
+      .update({ current_value: next, updated_at: nowIso }) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
       .eq('id', area.id);
     if (!error) updated += 1;
   }

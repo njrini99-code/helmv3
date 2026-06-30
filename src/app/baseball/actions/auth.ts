@@ -16,6 +16,7 @@ import {
   formatLockoutMessage,
 } from '@/lib/auth/account-lockout';
 import { validatePassword } from '@/lib/auth/password-validation';
+import { sanitizeAuthError } from '@/lib/db-error';
 import { logServerError } from '@/lib/server-error-logger';
 
 export type LoginResult = {
@@ -450,4 +451,101 @@ export async function requestPasswordResetAction(
     success: true,
     message: 'If an account exists with this email, a password reset link will be sent.',
   };
+}
+
+export type ChangePasswordResult = {
+  success: boolean;
+  error?: string;
+};
+
+/**
+ * Change password for the signed-in user after verifying the current password.
+ *
+ * Security:
+ * - Requires an active session
+ * - Re-authenticates via signInWithPassword before updateUser
+ * - Rate limited per user id
+ * - Auth errors sanitized before returning to the client
+ */
+export async function changePasswordAction(
+  currentPassword: string,
+  newPassword: string,
+): Promise<ChangePasswordResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return { success: false, error: 'Your session has expired. Please sign in again.' };
+  }
+
+  if (!currentPassword.trim()) {
+    return { success: false, error: 'Current password is required.' };
+  }
+
+  if (currentPassword === newPassword) {
+    return {
+      success: false,
+      error: 'New password must be different from your current password.',
+    };
+  }
+
+  const passwordValidation = validatePassword(newPassword);
+  if (!passwordValidation.valid) {
+    return {
+      success: false,
+      error: passwordValidation.feedback[0] || 'Password does not meet security requirements',
+    };
+  }
+
+  const rateLimit = await checkRateLimit(
+    `password-change:user:${user.id}`,
+    RATE_LIMITS.PASSWORD_CHANGE,
+  );
+
+  if (!rateLimit.allowed) {
+    const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
+    return {
+      success: false,
+      error: `Too many password change attempts. Please try again in ${remaining}.`,
+    };
+  }
+
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+
+  if (verifyError) {
+    await logServerError(`[Auth] Password change reauth failed: ${verifyError.message}`, {
+      action: 'auth.changePasswordAction',
+      metadata: { userId: user.id },
+    });
+    return {
+      success: false,
+      error: sanitizeAuthError(verifyError, 'changePassword'),
+    };
+  }
+
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (updateError) {
+    await logServerError(`[Auth] Password change update failed: ${updateError.message}`, {
+      action: 'auth.changePasswordAction',
+      metadata: { userId: user.id },
+    });
+    return {
+      success: false,
+      error: sanitizeAuthError(updateError, 'changePassword'),
+    };
+  }
+
+  await resetRateLimit(`password-change:user:${user.id}`);
+  revalidatePath('/baseball/dashboard/settings');
+
+  return { success: true };
 }

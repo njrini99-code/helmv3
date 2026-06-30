@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_strength_groups (
 CREATE INDEX IF NOT EXISTS baseball_strength_groups_team_idx
   ON public.baseball_strength_groups (team_id) WHERE is_active = true;
 
+ALTER TABLE public.baseball_strength_groups ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_strength_group_members (
   id        uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id  uuid NOT NULL REFERENCES public.baseball_strength_groups(id) ON DELETE CASCADE,
@@ -109,6 +110,7 @@ CREATE INDEX IF NOT EXISTS baseball_strength_group_members_group_idx
 CREATE INDEX IF NOT EXISTS baseball_strength_group_members_player_idx
   ON public.baseball_strength_group_members (player_id);
 
+ALTER TABLE public.baseball_strength_group_members ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 2. EXERCISE LIBRARY (full V11 fields). Distinct from the Lite
 --    baseball_exercises table (kept) — this is the premium typed library the
@@ -157,6 +159,7 @@ CREATE INDEX IF NOT EXISTS baseball_lift_exercises_team_idx
   ON public.baseball_lift_exercises (team_id) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS baseball_lift_exercises_global_idx
   ON public.baseball_lift_exercises (is_global) WHERE is_global = true;
+ALTER TABLE public.baseball_lift_exercises ENABLE ROW LEVEL SECURITY;
 -- Guard against duplicate exercise names within a team (no destructive merge).
 CREATE UNIQUE INDEX IF NOT EXISTS baseball_lift_exercises_team_name_uq
   ON public.baseball_lift_exercises (team_id, lower(name)) WHERE team_id IS NOT NULL;
@@ -175,6 +178,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_lift_exercise_substitutions (
 CREATE INDEX IF NOT EXISTS baseball_lift_exercise_subs_exercise_idx
   ON public.baseball_lift_exercise_substitutions (exercise_id);
 
+ALTER TABLE public.baseball_lift_exercise_substitutions ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 3. PROGRAM MODEL — program -> week -> day -> section -> prescription.
 -- ============================================================================
@@ -203,6 +207,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_lift_programs (
 CREATE INDEX IF NOT EXISTS baseball_lift_programs_team_idx
   ON public.baseball_lift_programs (team_id, status);
 
+ALTER TABLE public.baseball_lift_programs ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_lift_weeks (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   program_id  uuid NOT NULL REFERENCES public.baseball_lift_programs(id) ON DELETE CASCADE,
@@ -216,6 +221,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_lift_weeks (
 CREATE INDEX IF NOT EXISTS baseball_lift_weeks_program_idx
   ON public.baseball_lift_weeks (program_id);
 
+ALTER TABLE public.baseball_lift_weeks ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_lift_days (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   week_id     uuid NOT NULL REFERENCES public.baseball_lift_weeks(id) ON DELETE CASCADE,
@@ -235,6 +241,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_lift_days (
 CREATE INDEX IF NOT EXISTS baseball_lift_days_week_idx
   ON public.baseball_lift_days (week_id);
 
+ALTER TABLE public.baseball_lift_days ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_lift_sections (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   lift_day_id   uuid NOT NULL REFERENCES public.baseball_lift_days(id) ON DELETE CASCADE,
@@ -249,6 +256,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_lift_sections (
 CREATE INDEX IF NOT EXISTS baseball_lift_sections_day_idx
   ON public.baseball_lift_sections (lift_day_id, section_order);
 
+ALTER TABLE public.baseball_lift_sections ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_lift_prescriptions (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   section_id    uuid NOT NULL REFERENCES public.baseball_lift_sections(id) ON DELETE CASCADE,
@@ -275,6 +283,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_lift_prescriptions (
 CREATE INDEX IF NOT EXISTS baseball_lift_prescriptions_section_idx
   ON public.baseball_lift_prescriptions (section_id, order_index);
 
+ALTER TABLE public.baseball_lift_prescriptions ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 4. PROGRAM ASSIGNMENT — turns a program day into materialized sessions.
 -- ============================================================================
@@ -303,6 +312,7 @@ CREATE INDEX IF NOT EXISTS baseball_lift_program_assignments_team_idx
 CREATE INDEX IF NOT EXISTS baseball_lift_program_assignments_event_idx
   ON public.baseball_lift_program_assignments (event_id) WHERE event_id IS NOT NULL;
 
+ALTER TABLE public.baseball_lift_program_assignments ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 5. MATERIALIZED SESSIONS — the player surface reads these directly. Created at
 --    publish time (no on-the-fly template math — spec L463).
@@ -340,6 +350,7 @@ CREATE INDEX IF NOT EXISTS baseball_lift_sessions_player_idx
 CREATE INDEX IF NOT EXISTS baseball_lift_sessions_status_idx
   ON public.baseball_lift_sessions (team_id, scheduled_date, status);
 
+ALTER TABLE public.baseball_lift_sessions ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_lift_session_exercises (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id    uuid NOT NULL REFERENCES public.baseball_lift_sessions(id) ON DELETE CASCADE,
@@ -364,6 +375,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_lift_session_exercises (
 CREATE INDEX IF NOT EXISTS baseball_lift_session_exercises_session_idx
   ON public.baseball_lift_session_exercises (session_id, order_index);
 
+ALTER TABLE public.baseball_lift_session_exercises ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_lift_set_results (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_exercise_id uuid NOT NULL REFERENCES public.baseball_lift_session_exercises(id) ON DELETE CASCADE,
@@ -389,6 +401,7 @@ CREATE INDEX IF NOT EXISTS baseball_lift_set_results_session_exercise_idx
 CREATE INDEX IF NOT EXISTS baseball_lift_set_results_player_idx
   ON public.baseball_lift_set_results (player_id);
 
+ALTER TABLE public.baseball_lift_set_results ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 6. READINESS EXTRAS — soreness maps / bodyweight / availability.
 -- ============================================================================
@@ -410,6 +423,7 @@ CREATE INDEX IF NOT EXISTS baseball_soreness_maps_checkin_idx
 CREATE INDEX IF NOT EXISTS baseball_soreness_maps_player_idx
   ON public.baseball_soreness_maps (player_id);
 
+ALTER TABLE public.baseball_soreness_maps ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_bodyweight_entries (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id     uuid NOT NULL REFERENCES public.baseball_teams(id) ON DELETE CASCADE,
@@ -424,6 +438,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_bodyweight_entries (
 CREATE INDEX IF NOT EXISTS baseball_bodyweight_entries_player_idx
   ON public.baseball_bodyweight_entries (player_id, entry_date DESC);
 
+ALTER TABLE public.baseball_bodyweight_entries ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_availability_statuses (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id     uuid NOT NULL REFERENCES public.baseball_teams(id) ON DELETE CASCADE,
@@ -446,6 +461,7 @@ CREATE INDEX IF NOT EXISTS baseball_availability_statuses_player_idx
 CREATE INDEX IF NOT EXISTS baseball_availability_statuses_team_idx
   ON public.baseball_availability_statuses (team_id, starts_at DESC);
 
+ALTER TABLE public.baseball_availability_statuses ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 7. PROGRESSION — maxes + PRs.
 -- ============================================================================
@@ -468,6 +484,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_strength_maxes (
 CREATE INDEX IF NOT EXISTS baseball_strength_maxes_player_idx
   ON public.baseball_strength_maxes (player_id, exercise_id, max_type);
 
+ALTER TABLE public.baseball_strength_maxes ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_strength_prs (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id     uuid NOT NULL REFERENCES public.baseball_teams(id) ON DELETE CASCADE,
@@ -485,6 +502,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_strength_prs (
 CREATE INDEX IF NOT EXISTS baseball_strength_prs_player_idx
   ON public.baseball_strength_prs (player_id, achieved_at DESC);
 
+ALTER TABLE public.baseball_strength_prs ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 8. IMPORTS — lift-specific import runs + staged rows (audited, rollback-able).
 -- ============================================================================
@@ -515,6 +533,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_lift_import_runs (
 CREATE INDEX IF NOT EXISTS baseball_lift_import_runs_team_idx
   ON public.baseball_lift_import_runs (team_id, created_at DESC);
 
+ALTER TABLE public.baseball_lift_import_runs ENABLE ROW LEVEL SECURITY;
 CREATE TABLE IF NOT EXISTS public.baseball_lift_import_rows (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   import_run_id uuid NOT NULL REFERENCES public.baseball_lift_import_runs(id) ON DELETE CASCADE,
@@ -530,6 +549,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_lift_import_rows (
 CREATE INDEX IF NOT EXISTS baseball_lift_import_rows_run_idx
   ON public.baseball_lift_import_rows (import_run_id);
 
+ALTER TABLE public.baseball_lift_import_rows ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 9. ROW LEVEL SECURITY
 --    Convention: every policy TO authenticated; service_role bypasses by design.
@@ -539,7 +559,6 @@ CREATE INDEX IF NOT EXISTS baseball_lift_import_rows_run_idx
 
 -- ---- helper macro pattern (inlined per table) -----------------------------
 -- 9.1 strength groups ------------------------------------------------------
-ALTER TABLE public.baseball_strength_groups ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bsg_select ON public.baseball_strength_groups;
 DROP POLICY IF EXISTS bsg_insert ON public.baseball_strength_groups;
 DROP POLICY IF EXISTS bsg_update ON public.baseball_strength_groups;
@@ -555,7 +574,6 @@ CREATE POLICY bsg_delete ON public.baseball_strength_groups FOR DELETE TO authen
   USING (public.has_baseball_staff_capability(team_id,'can_manage_lifting'));
 
 -- 9.2 strength group members ----------------------------------------------
-ALTER TABLE public.baseball_strength_group_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bsgm_select ON public.baseball_strength_group_members;
 DROP POLICY IF EXISTS bsgm_insert ON public.baseball_strength_group_members;
 DROP POLICY IF EXISTS bsgm_update ON public.baseball_strength_group_members;
@@ -585,7 +603,6 @@ CREATE POLICY bsgm_delete ON public.baseball_strength_group_members FOR DELETE T
                  AND public.has_baseball_staff_capability(g.team_id,'can_manage_lifting')));
 
 -- 9.3 exercise library + substitutions ------------------------------------
-ALTER TABLE public.baseball_lift_exercises ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS ble_select ON public.baseball_lift_exercises;
 DROP POLICY IF EXISTS ble_insert ON public.baseball_lift_exercises;
 DROP POLICY IF EXISTS ble_update ON public.baseball_lift_exercises;
@@ -606,7 +623,6 @@ CREATE POLICY ble_update ON public.baseball_lift_exercises FOR UPDATE TO authent
 CREATE POLICY ble_delete ON public.baseball_lift_exercises FOR DELETE TO authenticated
   USING (team_id IS NOT NULL AND public.has_baseball_staff_capability(team_id,'can_manage_lifting'));
 
-ALTER TABLE public.baseball_lift_exercise_substitutions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bles_select ON public.baseball_lift_exercise_substitutions;
 DROP POLICY IF EXISTS bles_insert ON public.baseball_lift_exercise_substitutions;
 DROP POLICY IF EXISTS bles_update ON public.baseball_lift_exercise_substitutions;
@@ -624,7 +640,6 @@ CREATE POLICY bles_delete ON public.baseball_lift_exercise_substitutions FOR DEL
 -- 9.4 program model (programs/weeks/days/sections/prescriptions) -----------
 -- Programs are staff-authored. assigned_players visibility is realized through
 -- the materialized SESSIONS, not the template — players never read raw programs.
-ALTER TABLE public.baseball_lift_programs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blp_select ON public.baseball_lift_programs;
 DROP POLICY IF EXISTS blp_insert ON public.baseball_lift_programs;
 DROP POLICY IF EXISTS blp_update ON public.baseball_lift_programs;
@@ -640,7 +655,6 @@ CREATE POLICY blp_delete ON public.baseball_lift_programs FOR DELETE TO authenti
   USING (public.has_baseball_staff_capability(team_id,'can_manage_lifting'));
 
 -- weeks/days/sections/prescriptions inherit gating through their program's team.
-ALTER TABLE public.baseball_lift_weeks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blw_all ON public.baseball_lift_weeks;
 CREATE POLICY blw_all ON public.baseball_lift_weeks FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM public.baseball_lift_programs p
@@ -649,7 +663,6 @@ CREATE POLICY blw_all ON public.baseball_lift_weeks FOR ALL TO authenticated
                  WHERE p.id = program_id
                    AND public.has_baseball_staff_capability(p.team_id,'can_manage_lifting')));
 
-ALTER TABLE public.baseball_lift_days ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bld_all ON public.baseball_lift_days;
 CREATE POLICY bld_all ON public.baseball_lift_days FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM public.baseball_lift_weeks w
@@ -660,7 +673,6 @@ CREATE POLICY bld_all ON public.baseball_lift_days FOR ALL TO authenticated
                  WHERE w.id = week_id
                    AND public.has_baseball_staff_capability(p.team_id,'can_manage_lifting')));
 
-ALTER TABLE public.baseball_lift_sections ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blsec_all ON public.baseball_lift_sections;
 CREATE POLICY blsec_all ON public.baseball_lift_sections FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM public.baseball_lift_days d
@@ -673,7 +685,6 @@ CREATE POLICY blsec_all ON public.baseball_lift_sections FOR ALL TO authenticate
                  WHERE d.id = lift_day_id
                    AND public.has_baseball_staff_capability(p.team_id,'can_manage_lifting')));
 
-ALTER TABLE public.baseball_lift_prescriptions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blpr_all ON public.baseball_lift_prescriptions;
 CREATE POLICY blpr_all ON public.baseball_lift_prescriptions FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM public.baseball_lift_sections s
@@ -689,7 +700,6 @@ CREATE POLICY blpr_all ON public.baseball_lift_prescriptions FOR ALL TO authenti
                    AND public.has_baseball_staff_capability(p.team_id,'can_manage_lifting')));
 
 -- 9.5 program assignments --------------------------------------------------
-ALTER TABLE public.baseball_lift_program_assignments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blpa_select ON public.baseball_lift_program_assignments;
 DROP POLICY IF EXISTS blpa_insert ON public.baseball_lift_program_assignments;
 DROP POLICY IF EXISTS blpa_update ON public.baseball_lift_program_assignments;
@@ -707,7 +717,6 @@ CREATE POLICY blpa_delete ON public.baseball_lift_program_assignments FOR DELETE
 -- 9.6 materialized sessions -----------------------------------------------
 -- A player reads/updates only their OWN session; staff read/manage scoped via
 -- can_manage_baseball_lift_group. NO broad team-member read path (private loads).
-ALTER TABLE public.baseball_lift_sessions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blsess_select ON public.baseball_lift_sessions;
 DROP POLICY IF EXISTS blsess_insert ON public.baseball_lift_sessions;
 DROP POLICY IF EXISTS blsess_update ON public.baseball_lift_sessions;
@@ -728,7 +737,6 @@ CREATE POLICY blsess_delete ON public.baseball_lift_sessions FOR DELETE TO authe
   USING (public.can_manage_baseball_lift_group(team_id, player_id));
 
 -- 9.7 session exercises ----------------------------------------------------
-ALTER TABLE public.baseball_lift_session_exercises ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blse_select ON public.baseball_lift_session_exercises;
 DROP POLICY IF EXISTS blse_insert ON public.baseball_lift_session_exercises;
 DROP POLICY IF EXISTS blse_update ON public.baseball_lift_session_exercises;
@@ -757,7 +765,6 @@ CREATE POLICY blse_delete ON public.baseball_lift_session_exercises FOR DELETE T
                    AND public.can_manage_baseball_lift_group(s.team_id, s.player_id)));
 
 -- 9.8 set results — player owns OWN; staff scoped; no peer read --------------
-ALTER TABLE public.baseball_lift_set_results ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blsr_select ON public.baseball_lift_set_results;
 DROP POLICY IF EXISTS blsr_insert ON public.baseball_lift_set_results;
 DROP POLICY IF EXISTS blsr_update ON public.baseball_lift_set_results;
@@ -779,7 +786,6 @@ CREATE POLICY blsr_delete ON public.baseball_lift_set_results FOR DELETE TO auth
          OR public.can_manage_baseball_lift_group(team_id, player_id));
 
 -- 9.9 soreness maps — player owns; staff need can_view_readiness -------------
-ALTER TABLE public.baseball_soreness_maps ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bsm_select ON public.baseball_soreness_maps;
 DROP POLICY IF EXISTS bsm_insert ON public.baseball_soreness_maps;
 DROP POLICY IF EXISTS bsm_update ON public.baseball_soreness_maps;
@@ -798,7 +804,6 @@ CREATE POLICY bsm_delete ON public.baseball_soreness_maps FOR DELETE TO authenti
   USING (player_id = public.get_my_baseball_player_id());
 
 -- 9.10 bodyweight — player owns; staff need can_view_readiness ---------------
-ALTER TABLE public.baseball_bodyweight_entries ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bbw_select ON public.baseball_bodyweight_entries;
 DROP POLICY IF EXISTS bbw_insert ON public.baseball_bodyweight_entries;
 DROP POLICY IF EXISTS bbw_update ON public.baseball_bodyweight_entries;
@@ -822,7 +827,6 @@ CREATE POLICY bbw_delete ON public.baseball_bodyweight_entries FOR DELETE TO aut
          OR public.has_baseball_staff_capability(team_id,'can_manage_lifting'));
 
 -- 9.11 availability — staff-authored; owning player may read theirs ----------
-ALTER TABLE public.baseball_availability_statuses ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bas_select ON public.baseball_availability_statuses;
 DROP POLICY IF EXISTS bas_insert ON public.baseball_availability_statuses;
 DROP POLICY IF EXISTS bas_update ON public.baseball_availability_statuses;
@@ -840,7 +844,6 @@ CREATE POLICY bas_delete ON public.baseball_availability_statuses FOR DELETE TO 
   USING (public.has_baseball_staff_capability(team_id,'can_manage_lifting'));
 
 -- 9.12 maxes — player reads OWN; staff scoped --------------------------------
-ALTER TABLE public.baseball_strength_maxes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bmax_select ON public.baseball_strength_maxes;
 DROP POLICY IF EXISTS bmax_insert ON public.baseball_strength_maxes;
 DROP POLICY IF EXISTS bmax_update ON public.baseball_strength_maxes;
@@ -857,7 +860,6 @@ CREATE POLICY bmax_delete ON public.baseball_strength_maxes FOR DELETE TO authen
   USING (public.can_manage_baseball_lift_group(team_id, player_id));
 
 -- 9.13 PRs — player reads OWN; staff scoped; PRs may be system-written --------
-ALTER TABLE public.baseball_strength_prs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS bpr_select ON public.baseball_strength_prs;
 DROP POLICY IF EXISTS bpr_insert ON public.baseball_strength_prs;
 DROP POLICY IF EXISTS bpr_update ON public.baseball_strength_prs;
@@ -878,7 +880,6 @@ CREATE POLICY bpr_delete ON public.baseball_strength_prs FOR DELETE TO authentic
          OR public.can_manage_baseball_lift_group(team_id, player_id));
 
 -- 9.14 import runs + rows — staff with can_manage_lifting only ---------------
-ALTER TABLE public.baseball_lift_import_runs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blir_select ON public.baseball_lift_import_runs;
 DROP POLICY IF EXISTS blir_insert ON public.baseball_lift_import_runs;
 DROP POLICY IF EXISTS blir_update ON public.baseball_lift_import_runs;
@@ -893,7 +894,6 @@ CREATE POLICY blir_update ON public.baseball_lift_import_runs FOR UPDATE TO auth
 CREATE POLICY blir_delete ON public.baseball_lift_import_runs FOR DELETE TO authenticated
   USING (public.has_baseball_staff_capability(team_id,'can_manage_lifting'));
 
-ALTER TABLE public.baseball_lift_import_rows ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS blirw_all ON public.baseball_lift_import_rows;
 CREATE POLICY blirw_all ON public.baseball_lift_import_rows FOR ALL TO authenticated
   USING (public.is_baseball_team_staff(team_id))

@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_meeting_items (
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.baseball_meeting_items ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.baseball_meeting_items ADD COLUMN IF NOT EXISTS source_signal_id uuid;
 ALTER TABLE public.baseball_meeting_items ADD COLUMN IF NOT EXISTS source_action_id uuid;
@@ -125,6 +126,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_coach_player_notes (
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.baseball_coach_player_notes ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.baseball_coach_player_notes ADD COLUMN IF NOT EXISTS source_signal_id uuid;
 ALTER TABLE public.baseball_coach_player_notes ADD COLUMN IF NOT EXISTS source_action_id uuid;
@@ -175,8 +177,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS baseball_practices_one_backlog_per_team_uidx
 -- =============================================================================
 -- 4. RLS — staff manage; players read only their own player-visible objects
 -- =============================================================================
-ALTER TABLE public.baseball_meeting_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.baseball_coach_player_notes ENABLE ROW LEVEL SECURITY;
 
 -- ---- baseball_meeting_items: STAFF ONLY (Decision Room is coach-only) --------
 DROP POLICY IF EXISTS "baseball_meeting_items_select" ON public.baseball_meeting_items;

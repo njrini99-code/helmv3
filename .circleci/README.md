@@ -58,7 +58,21 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
 | ------------- | ---------------------------------------- | ---------------------------------------------------- | ------------- |
 | `weekly`      | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk, npm-audit, stryker, promptfoo-evals | ~$2-3/week    |
 | `ios`         | Push to `main` / `release/*` / `ios/*` / `capacitor/*` | ios-compile (M-series macOS)                         | ~$0.15-0.30/run |
-| `lighthouse`  | Every push (except docs/* and noop branches) | lighthouse-preview (polls Vercel, runs lhci against landing + auth routes) | ~$0.02/run |
+| `lighthouse`  | Every push (except docs/* and noop branches) | lighthouse-preview (polls Vercel, runs lhci against landing + auth routes; skips cleanly when no preview exists) | ~$0.02/run |
+
+### Lighthouse preview runbook (#388)
+
+- **Owner**: platform/CI — check CircleCI `lighthouse-preview` job logs.
+- **Hard gate?** No — advisory until preview detection is stable.
+- **Exit codes from `wait-for-vercel-preview.sh`**:
+  - `0` — preview READY; Lighthouse runs against `PREVIEW_URL`
+  - `1` — deployment ERROR/CANCELED or wait timeout after a deployment was seen
+  - `2` — no deployment for commit SHA within grace window; job skips Lighthouse
+- **Common failures**:
+  - Missing `VERCEL_TEAM_ID` on team-scoped projects → empty deployment list → skip (exit 2)
+  - Busy project with >20 deployments before match → raise `DEPLOYMENT_LIMIT` (default 100)
+  - Vercel still building → polls until READY or timeout
+- **Rerun**: Re-run the `lighthouse-preview` workflow from CircleCI after the Vercel preview is READY.
 
 To run iOS on a feature branch, name it `ios/<thing>` or
 `capacitor/<thing>`. Or add the `circleci/path-filtering` orb later

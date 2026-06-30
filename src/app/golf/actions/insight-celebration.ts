@@ -18,6 +18,7 @@
  * loading the insight's `player_id`.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -128,6 +129,10 @@ export async function markCelebrationShown(
     );
     return { success: false, error: 'Failed to update insight' };
   }
+
+  revalidatePath('/golf/dashboard/my-insights');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/coachhelm');
 
   return { success: true, celebration_shown_at: shownAt };
 }

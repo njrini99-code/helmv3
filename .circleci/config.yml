@@ -227,11 +227,26 @@ jobs:
       - run:
           name: Wait for Vercel preview to be READY
           command: |
+            set +e
             URL=$(bash .circleci/scripts/wait-for-vercel-preview.sh)
+            WAIT_EXIT=$?
+            set -e
+            if [[ "$WAIT_EXIT" -eq 2 ]]; then
+              echo "No preview deployment available — skipping Lighthouse CI for this commit."
+              echo "export SKIP_LIGHTHOUSE=1" >> "$BASH_ENV"
+              exit 0
+            fi
+            if [[ "$WAIT_EXIT" -ne 0 ]]; then
+              exit "$WAIT_EXIT"
+            fi
             echo "export PREVIEW_URL='${URL}'" >> "$BASH_ENV"
       - run:
           name: Run Lighthouse CI
           command: |
+            if [[ "${SKIP_LIGHTHOUSE:-}" == "1" ]]; then
+              echo "Lighthouse skipped — no Vercel preview for this commit."
+              exit 0
+            fi
             npx lhci autorun --config=lighthouserc.cjs
       - store_artifacts:
           path: .lighthouseci/
@@ -299,9 +314,10 @@ workflows:
                 - /capacitor\/.*/
 
   # Lighthouse runs on every push (excluding the scheduled weekly).
-  # The wait-for-vercel-preview script returns early with a useful
-  # message if Vercel isn't deploying that branch (e.g. main pushes
-  # that re-use an existing deployment).
+  # The wait-for-vercel-preview script exits 2 when no preview exists
+  # for the commit (config/docs-only PRs, missing VERCEL_TEAM_ID, etc.)
+  # and the job skips Lighthouse instead of timing out.
+  # Advisory only — do not require in branch protection until stable.
   lighthouse:
     when:
       not: << pipeline.parameters.run-weekly >>

@@ -584,13 +584,88 @@ export async function saveFullBoxScore(
   ourScore: number,
   opponentScore: number
 ): Promise<SaveBoxScoreResult> {
-  const battingResult = await saveBoxScoreBatting(gameId, batting);
-  if (!battingResult.success) return battingResult;
+  const authResult = await requireCoachAuth();
+  if ('error' in authResult) return { success: false, error: authResult.error };
+  const { coach, supabase } = authResult;
 
-  const pitchingResult = await saveBoxScorePitching(gameId, pitching);
-  if (!pitchingResult.success) return pitchingResult;
+  const { data: game } = await (supabase as unknown as SupabaseClient)
+    .from('baseball_games')
+    .select('team_id')
+    .eq('id', gameId)
+    .single();
 
-  return markGameCompleted(gameId, ourScore, opponentScore);
+  if (!game) return { success: false, error: 'Game not found' };
+
+  const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
+  if (!hasAccess) return { success: false, error: 'Access denied' };
+
+  const battingPayload = batting.map((line) => {
+    const rates = computeBattingRates(line);
+    return {
+      player_id: line.player_id,
+      batting_order: line.batting_order ?? null,
+      ab: line.ab,
+      r: line.r,
+      h: line.h,
+      doubles: line.doubles,
+      triples: line.triples,
+      hr: line.hr,
+      rbi: line.rbi,
+      bb: line.bb,
+      k: line.k,
+      sb: line.sb,
+      cs: line.cs,
+      hbp: line.hbp,
+      sac: line.sac,
+      sf: line.sf,
+      lob: line.lob,
+      avg: rates.avg,
+      obp: rates.obp,
+      slg: rates.slg,
+      ops: rates.ops,
+    };
+  });
+
+  const pitchingPayload = pitching.map((line) => {
+    const rates = computePitchingRates(line);
+    return {
+      player_id: line.player_id,
+      ip: line.ip,
+      h: line.h,
+      r: line.r,
+      er: line.er,
+      bb: line.bb,
+      k: line.k,
+      hr: line.hr,
+      pitch_count: line.pitch_count ?? null,
+      strikes: line.strikes ?? null,
+      result: line.result ?? null,
+      era: rates.era,
+      whip: rates.whip,
+      k9: rates.k9,
+      bb9: rates.bb9,
+    };
+  });
+
+  const db = supabase as unknown as SupabaseClient;
+  const { data, error } = await db.rpc('save_baseball_full_box_score', {
+    p_game_id: gameId,
+    p_batting: battingPayload,
+    p_pitching: pitchingPayload,
+    p_our_score: ourScore,
+    p_opponent_score: opponentScore,
+  });
+
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+  const result = data as { success?: boolean; error?: string } | null;
+  if (!result?.success) {
+    return { success: false, error: result?.error ?? 'Box score save failed' };
+  }
+
+  revalidateStatsPaths();
+  revalidatePath(`/baseball/dashboard/players`);
+  return { success: true };
 }
 
 // ============================================================================

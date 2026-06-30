@@ -29,19 +29,28 @@ set -euo pipefail
 
 POLL_TIMEOUT_S="${POLL_TIMEOUT_S:-600}"
 POLL_INTERVAL_S="${POLL_INTERVAL_S:-10}"
+DEPLOYMENT_LIMIT="${DEPLOYMENT_LIMIT:-100}"
+NO_DEPLOYMENT_GRACE_S="${NO_DEPLOYMENT_GRACE_S:-120}"
 TEAM_QUERY=""
 if [[ -n "${VERCEL_TEAM_ID:-}" ]]; then
   TEAM_QUERY="&teamId=${VERCEL_TEAM_ID}"
+else
+  echo "WARNING: VERCEL_TEAM_ID is unset. Team-scoped projects may return an empty deployment list." >&2
 fi
 
-API="https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&limit=20${TEAM_QUERY}"
+API="https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&limit=${DEPLOYMENT_LIMIT}${TEAM_QUERY}"
 START_TS=$(date +%s)
+SEEN_DEPLOYMENT=0
 
 echo "Polling Vercel for preview at SHA ${CIRCLE_SHA1:0:7} (timeout: ${POLL_TIMEOUT_S}s)…" >&2
 
 while true; do
   ELAPSED=$(( $(date +%s) - START_TS ))
   if (( ELAPSED > POLL_TIMEOUT_S )); then
+    if (( SEEN_DEPLOYMENT == 0 )); then
+      echo "No Vercel deployment found for SHA ${CIRCLE_SHA1:0:7} after ${ELAPSED}s — skipping Lighthouse preview." >&2
+      exit 2
+    fi
     echo "Timeout after ${ELAPSED}s waiting for Vercel preview." >&2
     exit 1
   fi
@@ -61,10 +70,16 @@ while true; do
   ')
 
   if [[ -z "$MATCH" || "$MATCH" == "null" ]]; then
+    if (( ELAPSED >= NO_DEPLOYMENT_GRACE_S )); then
+      echo "No Vercel deployment found for SHA ${CIRCLE_SHA1:0:7} after ${ELAPSED}s — skipping Lighthouse preview." >&2
+      exit 2
+    fi
     echo "No Vercel deployment yet for SHA ${CIRCLE_SHA1:0:7} (elapsed ${ELAPSED}s)…" >&2
     sleep "$POLL_INTERVAL_S"
     continue
   fi
+
+  SEEN_DEPLOYMENT=1
 
   STATE=$(echo "$MATCH" | jq -r '.state')
   URL=$(echo "$MATCH" | jq -r '.url')
