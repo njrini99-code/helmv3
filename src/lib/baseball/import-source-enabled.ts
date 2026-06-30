@@ -25,6 +25,10 @@ export type ImportSourceRegistration = Pick<
   'source_name' | 'enabled'
 >;
 
+type ImportSourceRow = ImportSourceRegistration & {
+  source_type?: string | null;
+};
+
 /**
  * Unregistered sources (null/undefined) use adapter defaults and stay available.
  */
@@ -52,14 +56,17 @@ export function assertImportSourceEnabled(
 type ImportSourceLookupClient = {
   from: (table: string) => {
     select: (cols: string) => {
-      eq: (col: string, val: string) => {
-        or: (filter: string) => Promise<{ data: unknown[] | null; error: unknown }>;
-      };
+      eq: (col: string, val: string) => Promise<{ data: unknown[] | null; error: unknown }>;
     };
   };
 };
 
-/** Load the team's registry row for a source key, if any. */
+/**
+ * Deterministically resolve a registry row for `sourceKey`:
+ * 1. Any disabled match wins (block preview/commit).
+ * 2. Else prefer exact `source_type` match.
+ * 3. Else prefer exact `source_name` match.
+ */
 export async function loadImportSourceRegistration(
   db: ImportSourceLookupClient,
   teamId: string,
@@ -67,16 +74,22 @@ export async function loadImportSourceRegistration(
 ): Promise<ImportSourceRegistration | null> {
   const { data } = await db
     .from('baseball_import_sources')
-    .select('source_name, enabled')
-    .eq('team_id', teamId)
-    .or(`source_type.eq.${sourceKey},source_name.eq.${sourceKey}`);
+    .select('source_name, enabled, source_type')
+    .eq('team_id', teamId);
 
-  const rows = (data ?? []) as ImportSourceRegistration[];
+  const rows = ((data ?? []) as ImportSourceRow[]).filter(
+    (row) => row.source_type === sourceKey || row.source_name === sourceKey,
+  );
   if (rows.length === 0) return null;
 
-  // If any matching row is disabled, treat the source as disabled (#407).
   const disabled = rows.find((row) => row.enabled === false);
-  return disabled ?? rows[0] ?? null;
+  if (disabled) return disabled;
+
+  const byType = rows.find((row) => row.source_type === sourceKey);
+  if (byType) return byType;
+
+  const byName = rows.find((row) => row.source_name === sourceKey);
+  return byName ?? rows[0] ?? null;
 }
 
 /** Block preview/commit when the registry row exists and is disabled. */

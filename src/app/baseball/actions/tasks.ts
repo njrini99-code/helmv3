@@ -16,6 +16,16 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { logServerError } from '@/lib/server-error-logger';
+import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballNoActiveTeamError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
+
+const TASKS_PATH = '/baseball/dashboard/tasks';
+const TASK_TEMPLATES_PATH = '/baseball/dashboard/tasks/templates';
 
 // ============================================================================
 // TYPES
@@ -25,6 +35,25 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+function mapTaskActionError<T = void>(error: unknown): ActionResult<T> {
+  if (error instanceof BaseballUnauthorizedError) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  if (error instanceof BaseballNoActiveTeamError) {
+    return { success: false, error: 'Coach or team not found' };
+  }
+  if (error instanceof BaseballCapabilityError) {
+    return { success: false, error: 'You do not have permission to manage tasks' };
+  }
+  if (error instanceof BaseballActionError) {
+    return { success: false, error: 'Could not complete the task action. Please try again.' };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred' };
 }
 
 export interface BaseballTask {
@@ -84,38 +113,45 @@ interface TaskWithAssignment {
 // CREATE TASK (Coach only)
 // ============================================================================
 
-export async function createTask(
-  teamId: string,
-  data: {
-    title: string;
-    description?: string;
-    due_date?: string;
-    category?: string;
-    priority?: string;
-    reminder_at?: string;
-    player_ids: string[];
-  }
-): Promise<ActionResult<{ taskId: string }>> {
-  try {
+const createTaskAction = withBaseballAction(
+  'createTask',
+  {
+    featureArea: 'baseball-tasks',
+    requiredCapability: 'can_manage_settings',
+    teamFrom: (
+      teamId: string,
+      _data: {
+        title: string;
+        description?: string;
+        due_date?: string;
+        category?: string;
+        priority?: string;
+        reminder_at?: string;
+        player_ids: string[];
+      },
+    ) => teamId,
+  },
+  async (
+    ctx,
+    teamId: string,
+    data: {
+      title: string;
+      description?: string;
+      due_date?: string;
+      category?: string;
+      priority?: string;
+      reminder_at?: string;
+      player_ids: string[];
+    },
+  ): Promise<ActionResult<{ taskId: string }>> => {
     const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) return { success: false, error: 'Coach profile not found' };
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return { success: false, error: 'Not authenticated' };
+    if (teamId !== ctx.activeTeamId) {
+      await requireBaseballCapability(teamId, 'can_manage_settings');
     }
 
-    // Verify user is a coach
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Only coaches can create tasks' };
-    }
-
-    // Create the task
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: task, error: taskError } = await (supabase as any)
       .from('baseball_tasks')
@@ -129,20 +165,18 @@ export async function createTask(
         status: 'active',
         reminder_at: data.reminder_at || null,
         reminder_sent: false,
-        assigned_by: coach.id,
+        assigned_by: coachId,
         created_at: new Date().toISOString(),
       })
       .select('id')
       .single() as { data: { id: string } | null; error: Error | null };
 
     if (taskError || !task) {
-      await logServerError(`[createTask Error]: ${taskError instanceof Error ? taskError.message : String(taskError)}`, { action: 'tasks.createTask' });
       return { success: false, error: 'Failed to create task' };
     }
 
-    // Assign to players
     if (data.player_ids.length > 0) {
-      const assignments = data.player_ids.map(playerId => ({
+      const assignments = data.player_ids.map((playerId) => ({
         task_id: task.id,
         player_id: playerId,
         status: 'pending',
@@ -155,15 +189,38 @@ export async function createTask(
         .insert(assignments);
 
       if (assignError) {
-        await logServerError(`[createTask Assignment Error]: ${assignError instanceof Error ? assignError.message : String(assignError)}`, { action: 'tasks.createTask' });
+        await logServerError(
+          `[createTask Assignment Error]: ${assignError instanceof Error ? assignError.message : String(assignError)}`,
+          { action: 'tasks.createTask' },
+        );
       }
     }
 
-    revalidatePath('/baseball/dashboard/tasks');
+    revalidatePath(TASKS_PATH);
     return { success: true, data: { taskId: task.id } };
+  },
+);
+
+export async function createTask(
+  teamId: string,
+  data: {
+    title: string;
+    description?: string;
+    due_date?: string;
+    category?: string;
+    priority?: string;
+    reminder_at?: string;
+    player_ids: string[];
+  }
+): Promise<ActionResult<{ taskId: string }>> {
+  try {
+    return await createTaskAction(teamId, data);
   } catch (error) {
-    await logServerError(`[createTask Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.createTask' });
-    return formatSafeErrorResponse(error);
+    await logServerError(
+      `[createTask Error]: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'tasks.createTask' },
+    );
+    return mapTaskActionError(error);
   }
 }
 
@@ -381,34 +438,29 @@ export async function uncompleteTask(
 // DELETE TASK (Coach only)
 // ============================================================================
 
-export async function deleteTask(taskId: string): Promise<ActionResult> {
-  try {
+const deleteTaskAction = withBaseballAction(
+  'deleteTask',
+  { featureArea: 'baseball-tasks' },
+  async (_ctx, taskId: string): Promise<ActionResult> => {
     const supabase = await createClient();
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return { success: false, error: 'Not authenticated' };
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: task } = await (supabase as any)
+      .from('baseball_tasks')
+      .select('team_id')
+      .eq('id', taskId)
+      .single() as { data: { team_id: string } | null };
 
-    // Verify user is a coach
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
+    if (!task) return { success: false, error: 'Task not found' };
 
-    if (!coach) {
-      return { success: false, error: 'Only coaches can delete tasks' };
-    }
+    await requireBaseballCapability(task.team_id, 'can_manage_settings');
 
-    // Delete assignments first
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('baseball_task_assignments')
       .delete()
       .eq('task_id', taskId);
 
-    // Delete the task
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: deleteError } = await (supabase as any)
       .from('baseball_tasks')
@@ -416,15 +468,23 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
       .eq('id', taskId);
 
     if (deleteError) {
-      await logServerError(`[deleteTask Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'tasks.deleteTask' });
       return { success: false, error: deleteError.message };
     }
 
-    revalidatePath('/baseball/dashboard/tasks');
+    revalidatePath(TASKS_PATH);
     return { success: true };
+  },
+);
+
+export async function deleteTask(taskId: string): Promise<ActionResult> {
+  try {
+    return await deleteTaskAction(taskId);
   } catch (error) {
-    await logServerError(`[deleteTask Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.deleteTask' });
-    return formatSafeErrorResponse(error);
+    await logServerError(
+      `[deleteTask Error]: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'tasks.deleteTask' },
+    );
+    return mapTaskActionError(error);
   }
 }
 
@@ -567,33 +627,39 @@ export async function getTaskTemplates(
   }
 }
 
-export async function createTaskTemplate(
-  teamId: string,
-  data: {
-    title: string;
-    description?: string;
-    default_assignee_type?: string;
-    category?: string;
-    default_priority?: string;
-    default_due_days?: number;
-  }
-): Promise<ActionResult<{ templateId: string }>> {
-  try {
+const createTaskTemplateAction = withBaseballAction(
+  'createTaskTemplate',
+  {
+    featureArea: 'baseball-tasks',
+    requiredCapability: 'can_manage_settings',
+    teamFrom: (
+      teamId: string,
+      _data: {
+        title: string;
+        description?: string;
+        default_assignee_type?: string;
+        category?: string;
+        default_priority?: string;
+        default_due_days?: number;
+      },
+    ) => teamId,
+  },
+  async (
+    ctx,
+    teamId: string,
+    data: {
+      title: string;
+      description?: string;
+      default_assignee_type?: string;
+      category?: string;
+      default_priority?: string;
+      default_due_days?: number;
+    },
+  ): Promise<ActionResult<{ templateId: string }>> => {
     const supabase = await createClient();
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Only coaches can create templates' };
+    if (teamId !== ctx.activeTeamId) {
+      await requireBaseballCapability(teamId, 'can_manage_settings');
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -607,44 +673,58 @@ export async function createTaskTemplate(
         category: data.category || null,
         default_priority: data.default_priority || 'normal',
         default_due_days: data.default_due_days || null,
-        created_by: user.id,
+        created_by: ctx.user.id,
         created_at: new Date().toISOString(),
       })
       .select('id')
       .single() as { data: { id: string } | null; error: Error | null };
 
     if (templateError || !template) {
-      await logServerError(`[createTaskTemplate Error]: ${templateError instanceof Error ? templateError.message : String(templateError)}`, { action: 'tasks.createTaskTemplate' });
       return { success: false, error: 'Failed to create template' };
     }
 
     return { success: true, data: { templateId: template.id } };
+  },
+);
+
+export async function createTaskTemplate(
+  teamId: string,
+  data: {
+    title: string;
+    description?: string;
+    default_assignee_type?: string;
+    category?: string;
+    default_priority?: string;
+    default_due_days?: number;
+  }
+): Promise<ActionResult<{ templateId: string }>> {
+  try {
+    return await createTaskTemplateAction(teamId, data);
   } catch (error) {
-    await logServerError(`[createTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.createTaskTemplate' });
-    return formatSafeErrorResponse(error);
+    await logServerError(
+      `[createTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'tasks.createTaskTemplate' },
+    );
+    return mapTaskActionError(error);
   }
 }
 
-export async function deleteTaskTemplate(
-  templateId: string
-): Promise<ActionResult> {
-  try {
+const deleteTaskTemplateAction = withBaseballAction(
+  'deleteTaskTemplate',
+  { featureArea: 'baseball-tasks' },
+  async (_ctx, templateId: string): Promise<ActionResult> => {
     const supabase = await createClient();
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return { success: false, error: 'Not authenticated' };
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: template } = await (supabase as any)
+      .from('baseball_task_templates')
+      .select('team_id')
+      .eq('id', templateId)
+      .single() as { data: { team_id: string } | null };
 
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
+    if (!template) return { success: false, error: 'Template not found' };
 
-    if (!coach) {
-      return { success: false, error: 'Only coaches can delete templates' };
-    }
+    await requireBaseballCapability(template.team_id, 'can_manage_settings');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: deleteError } = await (supabase as any)
@@ -653,45 +733,54 @@ export async function deleteTaskTemplate(
       .eq('id', templateId);
 
     if (deleteError) {
-      await logServerError(`[deleteTaskTemplate Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'tasks.deleteTaskTemplate' });
       return { success: false, error: deleteError.message };
     }
 
     return { success: true };
+  },
+);
+
+export async function deleteTaskTemplate(
+  templateId: string
+): Promise<ActionResult> {
+  try {
+    return await deleteTaskTemplateAction(templateId);
   } catch (error) {
-    await logServerError(`[deleteTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.deleteTaskTemplate' });
-    return formatSafeErrorResponse(error);
+    await logServerError(
+      `[deleteTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'tasks.deleteTaskTemplate' },
+    );
+    return mapTaskActionError(error);
   }
 }
 
-export async function updateTaskTemplate(
-  templateId: string,
-  updates: {
-    title?: string;
-    description?: string;
-    defaultAssigneeType?: string;
-    category?: string;
-    defaultPriority?: string;
-    defaultDueDays?: number | null;
-  }
-): Promise<ActionResult> {
-  try {
+const updateTaskTemplateAction = withBaseballAction(
+  'updateTaskTemplate',
+  { featureArea: 'baseball-tasks' },
+  async (
+    _ctx,
+    templateId: string,
+    updates: {
+      title?: string;
+      description?: string;
+      defaultAssigneeType?: string;
+      category?: string;
+      defaultPriority?: string;
+      defaultDueDays?: number | null;
+    },
+  ): Promise<ActionResult> => {
     const supabase = await createClient();
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return { success: false, error: 'Not authenticated' };
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: template } = await (supabase as any)
+      .from('baseball_task_templates')
+      .select('team_id')
+      .eq('id', templateId)
+      .single() as { data: { team_id: string } | null };
 
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
+    if (!template) return { success: false, error: 'Template not found' };
 
-    if (!coach) {
-      return { success: false, error: 'Only coaches can update templates' };
-    }
+    await requireBaseballCapability(template.team_id, 'can_manage_settings');
 
     const updateObj: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -711,43 +800,64 @@ export async function updateTaskTemplate(
       .eq('id', templateId);
 
     if (updateError) {
-      await logServerError(`[updateTaskTemplate Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'tasks.updateTaskTemplate' });
       return { success: false, error: updateError.message };
     }
 
     return { success: true };
+  },
+);
+
+export async function updateTaskTemplate(
+  templateId: string,
+  updates: {
+    title?: string;
+    description?: string;
+    defaultAssigneeType?: string;
+    category?: string;
+    defaultPriority?: string;
+    defaultDueDays?: number | null;
+  }
+): Promise<ActionResult> {
+  try {
+    return await updateTaskTemplateAction(templateId, updates);
   } catch (error) {
-    await logServerError(`[updateTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.updateTaskTemplate' });
-    return formatSafeErrorResponse(error);
+    await logServerError(
+      `[updateTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'tasks.updateTaskTemplate' },
+    );
+    return mapTaskActionError(error);
   }
 }
 
-export async function createTaskFromTemplate(
-  templateId: string,
-  teamId: string,
-  playerIds?: string[],
-  customTitle?: string,
-  customDueDate?: string
-): Promise<ActionResult<{ taskId: string }>> {
-  try {
+const createTaskFromTemplateAction = withBaseballAction(
+  'createTaskFromTemplate',
+  {
+    featureArea: 'baseball-tasks',
+    requiredCapability: 'can_manage_settings',
+    teamFrom: (
+      _templateId: string,
+      teamId: string,
+      _playerIds?: string[],
+      _customTitle?: string,
+      _customDueDate?: string,
+    ) => teamId,
+  },
+  async (
+    ctx,
+    templateId: string,
+    teamId: string,
+    playerIds?: string[],
+    customTitle?: string,
+    customDueDate?: string,
+  ): Promise<ActionResult<{ taskId: string }>> => {
     const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) return { success: false, error: 'Coach profile not found' };
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return { success: false, error: 'Not authenticated' };
+    if (teamId !== ctx.activeTeamId) {
+      await requireBaseballCapability(teamId, 'can_manage_settings');
     }
 
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Only coaches can create tasks from templates' };
-    }
-
-    // Fetch template
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: template, error: templateError } = await (supabase as any)
       .from('baseball_task_templates')
@@ -759,7 +869,10 @@ export async function createTaskFromTemplate(
       return { success: false, error: 'Template not found' };
     }
 
-    // Calculate due date
+    if (template.team_id !== teamId) {
+      return { success: false, error: 'Template does not belong to this team' };
+    }
+
     let dueDate: string | null = customDueDate ?? null;
     if (!dueDate && template.default_due_days) {
       const date = new Date();
@@ -767,7 +880,6 @@ export async function createTaskFromTemplate(
       dueDate = date.toISOString().split('T')[0] ?? null;
     }
 
-    // Create the task
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: task, error: taskError } = await (supabase as any)
       .from('baseball_tasks')
@@ -779,7 +891,7 @@ export async function createTaskFromTemplate(
         priority: template.default_priority || 'normal',
         category: template.category || 'general',
         status: 'active',
-        assigned_by: coach.id,
+        assigned_by: coachId,
         created_at: new Date().toISOString(),
       })
       .select('id')
@@ -789,7 +901,6 @@ export async function createTaskFromTemplate(
       return { success: false, error: 'Failed to create task' };
     }
 
-    // Resolve player IDs
     let resolvedPlayerIds = playerIds || [];
 
     if (resolvedPlayerIds.length === 0 && template.default_assignee_type === 'all_players') {
@@ -798,12 +909,11 @@ export async function createTaskFromTemplate(
         .select('player_id')
         .eq('team_id', teamId);
 
-      resolvedPlayerIds = (teamMembers || []).map(tm => tm.player_id);
+      resolvedPlayerIds = (teamMembers || []).map((tm) => tm.player_id);
     }
 
-    // Create assignments
     if (resolvedPlayerIds.length > 0) {
-      const assignments = resolvedPlayerIds.map(pId => ({
+      const assignments = resolvedPlayerIds.map((pId) => ({
         task_id: task.id,
         player_id: pId,
         status: 'pending',
@@ -816,15 +926,33 @@ export async function createTaskFromTemplate(
         .insert(assignments);
 
       if (assignError) {
-        await logServerError(`[createTaskFromTemplate Assignment Error]: ${assignError instanceof Error ? assignError.message : String(assignError)}`, { action: 'tasks.createTaskFromTemplate' });
+        await logServerError(
+          `[createTaskFromTemplate Assignment Error]: ${assignError instanceof Error ? assignError.message : String(assignError)}`,
+          { action: 'tasks.createTaskFromTemplate' },
+        );
       }
     }
 
-    revalidatePath('/baseball/dashboard/tasks');
+    revalidatePath(TASKS_PATH);
     return { success: true, data: { taskId: task.id } };
+  },
+);
+
+export async function createTaskFromTemplate(
+  templateId: string,
+  teamId: string,
+  playerIds?: string[],
+  customTitle?: string,
+  customDueDate?: string
+): Promise<ActionResult<{ taskId: string }>> {
+  try {
+    return await createTaskFromTemplateAction(templateId, teamId, playerIds, customTitle, customDueDate);
   } catch (error) {
-    await logServerError(`[createTaskFromTemplate Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.createTaskFromTemplate' });
-    return formatSafeErrorResponse(error);
+    await logServerError(
+      `[createTaskFromTemplate Error]: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'tasks.createTaskFromTemplate' },
+    );
+    return mapTaskActionError(error);
   }
 }
 
@@ -832,18 +960,20 @@ export async function createTaskFromTemplate(
 // SEED DEFAULT TEMPLATES
 // ============================================================================
 
-export async function seedDefaultTemplates(
-  teamId: string
-): Promise<ActionResult> {
-  try {
+const seedDefaultTemplatesAction = withBaseballAction(
+  'seedDefaultTemplates',
+  {
+    featureArea: 'baseball-tasks',
+    requiredCapability: 'can_manage_settings',
+    teamFrom: (teamId: string) => teamId,
+  },
+  async (ctx, teamId: string): Promise<ActionResult> => {
     const supabase = await createClient();
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return { success: false, error: 'Not authenticated' };
+    if (teamId !== ctx.activeTeamId) {
+      await requireBaseballCapability(teamId, 'can_manage_settings');
     }
 
-    // Check if templates already exist
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing } = await (supabase as any)
       .from('baseball_task_templates')
@@ -864,7 +994,7 @@ export async function seedDefaultTemplates(
         category: 'game_prep',
         default_priority: 'high',
         default_due_days: 1,
-        created_by: user.id,
+        created_by: ctx.user.id,
       },
       {
         team_id: teamId,
@@ -874,7 +1004,7 @@ export async function seedDefaultTemplates(
         category: 'practice',
         default_priority: 'normal',
         default_due_days: 3,
-        created_by: user.id,
+        created_by: ctx.user.id,
       },
       {
         team_id: teamId,
@@ -884,7 +1014,7 @@ export async function seedDefaultTemplates(
         category: 'conditioning',
         default_priority: 'normal',
         default_due_days: 7,
-        created_by: user.id,
+        created_by: ctx.user.id,
       },
       {
         team_id: teamId,
@@ -894,7 +1024,7 @@ export async function seedDefaultTemplates(
         category: 'academic',
         default_priority: 'normal',
         default_due_days: 14,
-        created_by: user.id,
+        created_by: ctx.user.id,
       },
       {
         team_id: teamId,
@@ -904,7 +1034,7 @@ export async function seedDefaultTemplates(
         category: 'administrative',
         default_priority: 'low',
         default_due_days: 7,
-        created_by: user.id,
+        created_by: ctx.user.id,
       },
       {
         team_id: teamId,
@@ -914,7 +1044,7 @@ export async function seedDefaultTemplates(
         category: 'administrative',
         default_priority: 'high',
         default_due_days: 3,
-        created_by: user.id,
+        created_by: ctx.user.id,
       },
     ];
 
@@ -924,15 +1054,25 @@ export async function seedDefaultTemplates(
       .insert(defaultTemplates);
 
     if (insertError) {
-      await logServerError(`[seedDefaultTemplates Error]: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'tasks.seedDefaultTemplates' });
       return { success: false, error: 'Failed to seed templates' };
     }
 
-    revalidatePath('/baseball/dashboard/tasks');
-    revalidatePath('/baseball/dashboard/tasks/templates');
+    revalidatePath(TASKS_PATH);
+    revalidatePath(TASK_TEMPLATES_PATH);
     return { success: true };
+  },
+);
+
+export async function seedDefaultTemplates(
+  teamId: string
+): Promise<ActionResult> {
+  try {
+    return await seedDefaultTemplatesAction(teamId);
   } catch (error) {
-    await logServerError(`[seedDefaultTemplates Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.seedDefaultTemplates' });
-    return formatSafeErrorResponse(error);
+    await logServerError(
+      `[seedDefaultTemplates Error]: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'tasks.seedDefaultTemplates' },
+    );
+    return mapTaskActionError(error);
   }
 }

@@ -16,8 +16,8 @@ export interface BaseballCoachTeamOption {
 /**
  * Validate that `coachId` may act on `teamId`.
  *
- * Staff-strict when the coach has any `baseball_team_coach_staff` row; legacy
- * org fallback only when the coach has zero staff rows anywhere.
+ * Staff-strict when the coach has a staff row on the target team; otherwise any
+ * team in the coach's organization is accessible (multi-team org cookie selection).
  */
 export async function validateCoachTeamAccess(
   supabase: TypedSupabaseClient,
@@ -34,20 +34,22 @@ export async function validateCoachTeamAccess(
 
   if (staffRow) return true;
 
-  const { data: anyStaff } = await supabase
-    .from('baseball_team_coach_staff')
-    .select('id')
-    .eq('coach_id', coachId)
-    .limit(1);
-
-  if ((!anyStaff || anyStaff.length === 0) && organizationId) {
-    const { data: team } = await supabase
-      .from('baseball_teams')
-      .select('id')
-      .eq('id', teamId)
-      .eq('organization_id', organizationId)
+  if (organizationId) {
+    const { data: coach } = await supabase
+      .from('baseball_coaches')
+      .select('organization_id')
+      .eq('id', coachId)
       .maybeSingle();
-    if (team) return true;
+
+    if (coach?.organization_id === organizationId) {
+      const { data: team } = await supabase
+        .from('baseball_teams')
+        .select('id')
+        .eq('id', teamId)
+        .eq('organization_id', organizationId)
+        .maybeSingle();
+      if (team) return true;
+    }
   }
 
   return false;

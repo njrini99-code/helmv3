@@ -13,6 +13,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballNoActiveTeamError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
+
+const ANNOUNCEMENTS_PATH = '/baseball/dashboard/announcements';
 
 // ============================================================================
 // TYPES
@@ -22,6 +31,25 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+}
+
+function mapAnnouncementActionError<T = void>(error: unknown): ActionResult<T> {
+  if (error instanceof BaseballUnauthorizedError) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  if (error instanceof BaseballNoActiveTeamError) {
+    return { success: false, error: 'Coach or team not found' };
+  }
+  if (error instanceof BaseballCapabilityError) {
+    return { success: false, error: 'You do not have permission to manage announcements' };
+  }
+  if (error instanceof BaseballActionError) {
+    return { success: false, error: 'Could not complete the announcement action. Please try again.' };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred' };
 }
 
 export interface BaseballAnnouncementMeta {
@@ -75,22 +103,38 @@ export async function createAnnouncement(input: {
   content: string;
   urgency: 'low' | 'normal' | 'high' | 'urgent';
   isPinned?: boolean;
-  recipientPlayerIds: string[] | null; // null = all team
+  recipientPlayerIds: string[] | null;
 }): Promise<ActionResult<{ announcementId: string }>> {
   try {
+    return await createAnnouncementAction(input);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_announcements.createAnnouncement', featureArea: 'baseball_announcements' },
+    );
+    return mapAnnouncementActionError(error);
+  }
+}
+
+const createAnnouncementAction = withBaseballAction(
+  'createAnnouncement',
+  { featureArea: 'baseball-announcements', requiredCapability: 'can_manage_settings' },
+  async (ctx, input: {
+    teamId: string;
+    title: string;
+    content: string;
+    urgency: 'low' | 'normal' | 'high' | 'urgent';
+    isPinned?: boolean;
+    recipientPlayerIds: string[] | null;
+  }): Promise<ActionResult<{ announcementId: string }>> => {
     const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) return { success: false, error: 'Coach profile not found' };
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
+    if (input.teamId !== ctx.activeTeamId) {
+      await requireBaseballCapability(input.teamId, 'can_manage_settings');
+    }
 
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-    if (!coach) return { success: false, error: 'Coach profile not found' };
-
-    // 1. Create the announcement
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: announcement, error: annError } = await (supabase as any)
       .from('baseball_announcements')
@@ -101,7 +145,7 @@ export async function createAnnouncement(input: {
         urgency: input.urgency,
         is_pinned: input.isPinned ?? false,
         published_at: new Date().toISOString(),
-        created_by_id: coach.id,
+        created_by_id: coachId,
       })
       .select()
       .single();
@@ -110,9 +154,8 @@ export async function createAnnouncement(input: {
       return { success: false, error: 'Failed to create announcement' };
     }
 
-    const announcementId = announcement.id;
+    const announcementId = announcement.id as string;
 
-    // 2. Insert recipients (only if specific players selected)
     if (input.recipientPlayerIds && input.recipientPlayerIds.length > 0) {
       const recipientRows = input.recipientPlayerIds.map((pid: string) => ({
         announcement_id: announcementId,
@@ -124,17 +167,10 @@ export async function createAnnouncement(input: {
         .insert(recipientRows);
     }
 
-    revalidatePath('/baseball/dashboard/announcements');
+    revalidatePath(ANNOUNCEMENTS_PATH);
     return { success: true, data: { announcementId } };
-
-  } catch (error) {
-    await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
-      { action: 'baseball_announcements.createAnnouncement', featureArea: 'baseball_announcements' }
-    );
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
+  },
+);
 
 // ============================================================================
 // GET ANNOUNCEMENTS WITH META (list view)
@@ -315,31 +351,41 @@ export async function deleteAnnouncement(
   announcementId: string
 ): Promise<ActionResult> {
   try {
+    return await deleteAnnouncementAction(announcementId);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_announcements.deleteAnnouncement', featureArea: 'baseball_announcements' },
+    );
+    return mapAnnouncementActionError(error);
+  }
+}
+
+const deleteAnnouncementAction = withBaseballAction(
+  'deleteAnnouncement',
+  { featureArea: 'baseball-announcements' },
+  async (ctx, announcementId: string): Promise<ActionResult> => {
     const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) return { success: false, error: 'Coach not found' };
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-    if (!coach) return { success: false, error: 'Coach not found' };
-
-    // Verify ownership
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: ann } = await (supabase as any)
       .from('baseball_announcements')
-      .select('id, created_by_id')
+      .select('id, created_by_id, team_id')
       .eq('id', announcementId)
       .single();
 
-    if (!ann || ann.created_by_id !== coach.id) {
+    if (!ann) {
       return { success: false, error: 'Not authorized to delete this announcement' };
     }
 
-    // CASCADE handles junction tables
+    await requireBaseballCapability(String(ann.team_id), 'can_manage_settings');
+
+    if (ann.created_by_id !== coachId) {
+      return { success: false, error: 'Not authorized to delete this announcement' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('baseball_announcements')
@@ -348,14 +394,7 @@ export async function deleteAnnouncement(
 
     if (error) return { success: false, error: 'Failed to delete announcement' };
 
-    revalidatePath('/baseball/dashboard/announcements');
+    revalidatePath(ANNOUNCEMENTS_PATH);
     return { success: true };
-
-  } catch (error) {
-    await logServerError(
-      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
-      { action: 'baseball_announcements.deleteAnnouncement', featureArea: 'baseball_announcements' }
-    );
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
+  },
+);
