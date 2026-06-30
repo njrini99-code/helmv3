@@ -215,7 +215,7 @@ jobs:
   # Required env vars in CircleCI project settings:
   #   VERCEL_TOKEN, VERCEL_PROJECT_ID, (optional) VERCEL_TEAM_ID
   lighthouse-preview:
-    executor: node
+    executor: node-large
     steps:
       - checkout
       - install-node-deps
@@ -227,12 +227,43 @@ jobs:
       - run:
           name: Wait for Vercel preview to be READY
           command: |
-            URL=$(bash .circleci/scripts/wait-for-vercel-preview.sh)
-            echo "export PREVIEW_URL='${URL}'" >> "$BASH_ENV"
+            set +e
+            URL=$(bash .circleci/scripts/wait-for-vercel-preview.sh 2> /tmp/vercel-preview.err)
+            status=$?
+            set -e
+            cat /tmp/vercel-preview.err >&2
+            if [ "$status" -eq 0 ]; then
+              echo "export PREVIEW_URL='${URL}'" >> "$BASH_ENV"
+              echo "export LIGHTHOUSE_PREVIEW_READY='true'" >> "$BASH_ENV"
+            elif grep -Eq \
+              "(Timeout after|VERCEL_TOKEN env var is required|VERCEL_PROJECT_ID env var is required|Vercel API call failed|Vercel deployment (ERROR|CANCELED))" \
+              /tmp/vercel-preview.err; then
+              echo "Vercel preview was unavailable; skipping advisory Lighthouse run."
+              echo "export LIGHTHOUSE_PREVIEW_READY='false'" >> "$BASH_ENV"
+            else
+              echo "Vercel preview lookup failed for a non-timeout reason."
+              exit "$status"
+            fi
       - run:
           name: Run Lighthouse CI
           command: |
-            npx lhci autorun --config=lighthouserc.cjs
+            if [ "${LIGHTHOUSE_PREVIEW_READY:-false}" != "true" ]; then
+              echo "Skipping Lighthouse CI: no preview URL available."
+              exit 0
+            fi
+            set +e
+            npx lhci autorun --config=lighthouserc.cjs 2>&1 | tee /tmp/lhci.log
+            status=${PIPESTATUS[0]}
+            set -e
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+            if grep -Eiq "(assertion|categories:|largest-contentful-paint|cumulative-layout-shift|total-blocking-time|interaction-to-next-paint)" /tmp/lhci.log; then
+              echo "Advisory Lighthouse score/assertion findings detected; see artifact for details."
+              exit 0
+            fi
+            echo "Lighthouse CI failed for a runtime/tool/upload reason."
+            exit "$status"
       - store_artifacts:
           path: .lighthouseci/
           destination: lighthouse

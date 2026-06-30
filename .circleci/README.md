@@ -58,7 +58,7 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
 | ------------- | ---------------------------------------- | ---------------------------------------------------- | ------------- |
 | `weekly`      | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk, npm-audit, stryker, promptfoo-evals | ~$2-3/week    |
 | `ios`         | Push to `main` / `release/*` / `ios/*` / `capacitor/*` | ios-compile (M-series macOS)                         | ~$0.15-0.30/run |
-| `lighthouse`  | Every push (except docs/* and noop branches) | lighthouse-preview (polls Vercel, runs lhci against landing + auth routes) | ~$0.02/run |
+| `lighthouse`  | Every push (except docs/* and noop branches) | lighthouse-preview (polls Vercel, runs advisory lhci against landing + auth routes) | ~$0.02/run |
 
 To run iOS on a feature branch, name it `ios/<thing>` or
 `capacitor/<thing>`. Or add the `circleci/path-filtering` orb later
@@ -87,9 +87,11 @@ circleci local execute --job knip
   Plan 02 Task 9, add a `playwright` job that uses
   `circleci tests split` to run 4-8 shards in parallel. Reports flake
   via CircleCI Test Insights.
-- **Lighthouse on Vercel previews**: add a job that polls the Vercel
-  API for the PR's preview URL, then runs `lhci autorun`. Needs
-  `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` env vars.
+- **Lighthouse on Vercel previews**: the current job polls the Vercel
+  API for the PR's preview URL, then runs `lhci autorun` as an advisory
+  check. Needs `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` env vars. Promote it
+  to a required hard gate only after preview lookup and Lighthouse noise are
+  reliably green.
 - **LLM evals (Braintrust/LangFuse)**: when LLM observability is
   wired up, add a weekly job that runs scored evals against the
   CoachHelm composer outputs.

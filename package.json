@@ -34,6 +34,8 @@
     "test:all": "vitest run",
     "test:integration": "vitest run --project integration",
     "test:rls": "vitest run --project rls",
+    "test:business": "vitest run --project business",
+    "verify:business": "npm run test:business",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
@@ -48,7 +50,8 @@
     "ui:screenshots": "npm run ui:routes && npm run ui:auth && npm run ui:screenshots:capture && npm run ui:screenshots:index",
     "ui:atlas": "tsx scripts/ui-intelligence/generate-atlas.ts",
     "ui:refresh": "node scripts/ui-intelligence/refresh-landed.mjs",
-    "ui:dataflow": "tsx scripts/ui-intelligence/generate-data-flow.ts"
+    "ui:dataflow": "tsx scripts/ui-intelligence/generate-data-flow.ts",
+    "routes:hygiene:p0p1": "node scripts/check-route-hygiene-p0-p1.mjs"
   },
   "keywords": [],
   "author": "",

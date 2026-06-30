@@ -1,0 +1,12 @@
+* @njrini99-code
+
+.coderabbit.yaml @njrini99-code
+.github/ @njrini99-code
+.circleci/ @njrini99-code
+supabase/ @njrini99-code
+src/lib/supabase/ @njrini99-code
+src/app/**/actions/ @njrini99-code
+src/app/api/ @njrini99-code
+memory/registry.yml @njrini99-code
+AGENTS.md @njrini99-code
+CLAUDE.md @njrini99-code

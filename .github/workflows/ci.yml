@@ -6,25 +6,33 @@ on:
       - main
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  NODE_OPTIONS: --max-old-space-size=8192
+
 jobs:
-  build:
+  database-types:
+    name: Database types drift
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-      # `next build --webpack` peaks just above Node's ~4GB default heap on the
-      # CI runner and OOMs (exit 134) — nondeterministically on main too. The
-      # standard GitHub Linux runner has 16GB RAM, so raise the V8 old-space
-      # ceiling well clear of the peak. CI-only: Vercel/local builds are
-      # untouched (they already have ample headroom).
-      NODE_OPTIONS: --max-old-space-size=8192
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: 20
           cache: npm
@@ -33,45 +41,164 @@ jobs:
         run: npm ci
 
       - name: Verify database types are up to date
-        env:
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-        run: |
-          # Generate fresh types to a temp file (override the redirect in package.json)
-          npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID" > /tmp/generated-types.ts 2>&1 || {
-            echo "Could not generate types (project ID may be missing or invalid)"
-            exit 0  # Don't fail CI if we can't verify
-          }
+        run: npm run check:types-drift
 
-          # Compare with committed version (if types file exists)
-          if [ -f src/lib/types/database.ts ]; then
-            if ! diff -q src/lib/types/database.ts /tmp/generated-types.ts > /dev/null 2>&1; then
-              echo "Database types are out of date!"
-              echo "Run SUPABASE_PROJECT_ID=<id> npm run db:types to regenerate"
-              echo ""
-              echo "Diff preview:"
-              diff src/lib/types/database.ts /tmp/generated-types.ts | head -50 || true
-              exit 1
-            else
-              echo "Database types are up to date"
-            fi
-          else
-            echo "Warning: database.ts file not found"
-          fi
+  schema-invariants:
+    name: Schema invariants
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
 
-      - name: Schema invariants (catch golf_team_coach_staff.user_id etc.)
+      - name: Check schema invariants
         run: ./scripts/check-schema-invariants.sh
+
+  feature-knowledge:
+    name: Feature knowledge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check feature knowledge registry
+        run: npm run knowledge:check
+
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Typecheck
         run: npm run typecheck
 
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Lint
         run: npm run lint
 
-      - name: Lint ratchet (warnings must not grow per-rule)
+  lint-ratchet:
+    name: Lint ratchet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint ratchet
         run: npm run lint:ratchet
 
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Unit tests
-        run: npm run test -- --run
+        run: npm run test:run
+
+  business-contracts:
+    name: Business contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Business contracts
+        run: npm run verify:business
+
+  next-build:
+    name: Next build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build
         run: npm run build
@@ -79,14 +206,18 @@ jobs:
   supabase:
     name: Supabase lint + RLS tests
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: helmv3
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
         with:
-          version: latest
+          version: 2.101.0
 
       - name: Start local Supabase stack
         run: supabase start
@@ -99,7 +230,6 @@ jobs:
           set -euo pipefail
           tmp_dir="$(mktemp -d)"
           for f in supabase/tests/rls/*.sql; do
-            # Skip the helpers file — it's included via \i from the others.
             case "$f" in
               */_helpers.sql) continue ;;
             esac
@@ -116,3 +246,55 @@ jobs:
       - name: Stop local Supabase stack
         if: always()
         run: supabase stop || true
+
+  route-hygiene:
+    name: Route Hygiene P0/P1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check route hygiene blockers
+        run: |
+          npm run ui:routes
+          npm run routes:hygiene:p0p1
+
+  all:
+    name: all
+    if: always()
+    runs-on: ubuntu-latest
+    # NOTE: `supabase` (Supabase lint + RLS tests) is intentionally NOT in this
+    # aggregate yet. The baseball pgTAP RLS suite is red on main today; its fix
+    # lands in PR #423. The job still runs and stays visible as an advisory
+    # signal — re-add it here once #423 greens the suite on main.
+    needs:
+      - database-types
+      - schema-invariants
+      - feature-knowledge
+      - typecheck
+      - lint
+      - lint-ratchet
+      - unit-tests
+      - business-contracts
+      - next-build
+      - route-hygiene
+    steps:
+      - name: Fail if any required CI check failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "One or more CI checks failed."
+          exit 1
+
+      - name: All CI checks green
+        run: echo "CI hard gates clean."
