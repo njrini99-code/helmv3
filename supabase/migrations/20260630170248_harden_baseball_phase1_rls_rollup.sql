@@ -82,6 +82,7 @@ BEGIN
           SELECT 1
           FROM public.baseball_practices p
           WHERE p.id = baseball_practice_blocks.practice_id
+            AND baseball_practice_blocks.team_id = p.team_id
             AND (
               public.is_baseball_team_staff(p.team_id)
               OR (
@@ -93,14 +94,46 @@ BEGIN
       )$p$;
     EXECUTE $p$CREATE POLICY "baseball_practice_blocks_insert" ON public.baseball_practice_blocks
       FOR INSERT TO authenticated
-      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+      WITH CHECK (
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_blocks.practice_id
+            AND baseball_practice_blocks.team_id = p.team_id
+            AND public.has_baseball_staff_capability(p.team_id, 'can_manage_practice')
+        )
+      )$p$;
     EXECUTE $p$CREATE POLICY "baseball_practice_blocks_update" ON public.baseball_practice_blocks
       FOR UPDATE TO authenticated
-      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))
-      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_blocks.practice_id
+            AND baseball_practice_blocks.team_id = p.team_id
+            AND public.has_baseball_staff_capability(p.team_id, 'can_manage_practice')
+        )
+      )
+      WITH CHECK (
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_blocks.practice_id
+            AND baseball_practice_blocks.team_id = p.team_id
+            AND public.has_baseball_staff_capability(p.team_id, 'can_manage_practice')
+        )
+      )$p$;
     EXECUTE $p$CREATE POLICY "baseball_practice_blocks_delete" ON public.baseball_practice_blocks
       FOR DELETE TO authenticated
-      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_blocks.practice_id
+            AND baseball_practice_blocks.team_id = p.team_id
+            AND public.has_baseball_staff_capability(p.team_id, 'can_manage_practice')
+        )
+      )$p$;
   END IF;
 
   IF to_regclass('public.baseball_practice_attendance') IS NOT NULL THEN
@@ -112,18 +145,64 @@ BEGIN
     EXECUTE $p$CREATE POLICY "baseball_practice_attendance_select" ON public.baseball_practice_attendance
       FOR SELECT TO authenticated
       USING (
-        public.has_baseball_staff_capability(team_id, 'can_manage_practice')
-        OR player_id = public.get_my_baseball_player_id()
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_attendance.practice_id
+            AND baseball_practice_attendance.team_id = p.team_id
+            AND public.has_baseball_staff_capability(p.team_id, 'can_manage_practice')
+        )
+        OR (
+          player_id = public.get_my_baseball_player_id()
+          AND EXISTS (
+            SELECT 1
+            FROM public.baseball_practices p
+            WHERE p.id = baseball_practice_attendance.practice_id
+              AND baseball_practice_attendance.team_id = p.team_id
+          )
+        )
       )$p$;
     EXECUTE $p$CREATE POLICY "baseball_practice_attendance_insert" ON public.baseball_practice_attendance
       FOR INSERT TO authenticated
-      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+      WITH CHECK (
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_attendance.practice_id
+            AND baseball_practice_attendance.team_id = p.team_id
+            AND public.has_baseball_staff_capability(p.team_id, 'can_manage_practice')
+        )
+      )$p$;
     EXECUTE $p$CREATE POLICY "baseball_practice_attendance_update" ON public.baseball_practice_attendance
       FOR UPDATE TO authenticated
-      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))
-      WITH CHECK (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_attendance.practice_id
+            AND baseball_practice_attendance.team_id = p.team_id
+            AND public.has_baseball_staff_capability(p.team_id, 'can_manage_practice')
+        )
+      )
+      WITH CHECK (
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_attendance.practice_id
+            AND baseball_practice_attendance.team_id = p.team_id
+            AND public.has_baseball_staff_capability(p.team_id, 'can_manage_practice')
+        )
+      )$p$;
     EXECUTE $p$CREATE POLICY "baseball_practice_attendance_delete" ON public.baseball_practice_attendance
       FOR DELETE TO authenticated
-      USING (public.has_baseball_staff_capability(team_id, 'can_manage_practice'))$p$;
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_attendance.practice_id
+            AND baseball_practice_attendance.team_id = p.team_id
+            AND public.has_baseball_staff_capability(p.team_id, 'can_manage_practice')
+        )
+      )$p$;
   END IF;
 END $$;

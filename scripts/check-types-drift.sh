@@ -15,10 +15,10 @@ else
     echo "::error::supabase gen types failed for project $PROJECT_REF"
     exit 1
   fi
-  npx --no-install supabase gen types typescript --local > /dev/null 2>/dev/null \
+  npx --no-install supabase gen types typescript --local > "$TMP" 2>/dev/null \
     || { echo "::error::supabase gen types failed for local stack"; exit 1; }
-  echo "::warning::SUPABASE_ACCESS_TOKEN is not configured; verified local type generation but skipped production drift comparison."
-  exit 0
+  echo "::warning::SUPABASE_ACCESS_TOKEN is not configured; comparing against local Supabase stack types."
+  SOURCE_LABEL="local schema"
 fi
 
 if diff -q src/lib/types/database.ts "$TMP" >/dev/null 2>&1; then
