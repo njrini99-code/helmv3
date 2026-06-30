@@ -23,9 +23,17 @@ GRANT EXECUTE ON FUNCTION public.can_manage_baseball_lift_group(uuid, uuid) TO a
 REVOKE ALL ON TABLE public.baseball_staff_invitations FROM PUBLIC, anon;
 REVOKE ALL ON TABLE public.baseball_stat_uploads FROM PUBLIC, anon;
 REVOKE ALL ON TABLE public.baseball_team_coach_staff FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.baseball_box_score_batting FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.baseball_box_score_pitching FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.baseball_player_season_stats FROM PUBLIC, anon;
+REVOKE ALL ON TABLE public.baseball_games FROM PUBLIC, anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.baseball_staff_invitations TO authenticated, service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.baseball_stat_uploads TO authenticated, service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.baseball_team_coach_staff TO authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.baseball_box_score_batting TO authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.baseball_box_score_pitching TO authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.baseball_player_season_stats TO authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.baseball_games TO authenticated, service_role;
 
 DO $$
 BEGIN
