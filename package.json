@@ -26,6 +26,7 @@
     "knowledge:context": "node scripts/knowledge/generate-context-pack.mjs",
     "knowledge:check": "node scripts/knowledge/check.mjs",
     "knowledge:report": "node scripts/knowledge/workflow-report.mjs",
+    "baseball:route-coverage": "tsx scripts/baseball/generate-route-coverage-report.ts",
     "evals": "promptfoo eval -c evals/round-review.yaml",
     "evals:view": "promptfoo view",
     "lighthouse": "lhci autorun --config=lighthouserc.cjs",
