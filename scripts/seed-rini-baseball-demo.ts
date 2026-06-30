@@ -213,7 +213,11 @@ async function main() {
 
   // --- 5. Games (6 final + 2 scheduled) -----------------------------------
   const oppNames = ['Coastal State', 'Piedmont Tech', 'Lakeside College', 'Ironwood University', 'Granite Bay', 'Riverside A&M'];
-  const gameRows = oppNames.map((opp, i) => {
+  // Kept as its own array (not pushed into gameRows in place) so section 5b
+  // below can derive box-score lines from these exact 6 completed games
+  // without re-deriving scores/dates or fighting the `as unknown as number`
+  // null-casts the 2 scheduled games below need.
+  const pastGames = oppNames.map((opp, i) => {
     const us = 3 + ((i * 3) % 7);
     const them = 1 + ((i * 5) % 6);
     return {
@@ -223,11 +227,212 @@ async function main() {
       status: 'completed', notes: us > them ? 'W' : 'L', created_by: COACH_ID,
     };
   });
-  gameRows.push(
+  const gameRows = [
+    ...pastGames,
     { id: detId('game:next:0'), team_id: TEAM_ID, event_id: gameEventId, game_date: dateDaysFromNow(3), game_type: 'game', opponent_name: 'Coastal State', location: 'Rini Field', home_away: 'home', our_score: null as unknown as number, opponent_score: null as unknown as number, innings_played: null as unknown as number, status: 'scheduled', notes: null as unknown as string, created_by: COACH_ID },
     { id: detId('game:next:1'), team_id: TEAM_ID, event_id: null, game_date: dateDaysFromNow(6), game_type: 'game', opponent_name: 'Piedmont Tech', location: 'Piedmont Park', home_away: 'away', our_score: null as unknown as number, opponent_score: null as unknown as number, innings_played: null as unknown as number, status: 'scheduled', notes: null as unknown as string, created_by: COACH_ID },
-  );
+  ];
   await upsert('baseball_games', gameRows);
+
+  // --- 5b. Box scores + season/aggregate rollups (#382 — seeded smoke data) -
+  // Stats Center (src/lib/baseball/read-models/stats-center.ts), Command Center
+  // roster pulse, Box Score (/stats/games/[gameId]), and My Stats all read from
+  // baseball_box_score_batting/_pitching, baseball_player_aggregates, and
+  // baseball_player_season_stats — none of which this seed wrote before #382.
+  // This block derives deterministic box-score lines for a fixed lineup +
+  // pitching staff across the 6 completed games above, then rolls those SAME
+  // lines up into season stats + aggregates so every sink agrees (no drift
+  // between the box score, the season total, and the roster-pulse aggregate —
+  // the Stats Center "Needs recalc" badge would otherwise flag every player).
+  //
+  // Season year matches the read models' own default (current calendar year).
+  // Because the games above are dated relative to "now" (last ~28 days), this
+  // only drifts from the default `seasonYear` window in the first ~28 days of
+  // January — a pre-existing characteristic of this seed's relative-date
+  // scheme, not introduced here. See e2e/helpers/baseball-seed-manifest.ts.
+  const SEASON_YEAR = NOW.getFullYear();
+  const LINEUP_KEYS = ['p1', 'p2', 'p3', 'p5', 'p6', 'p8', 'p9', 'p10', 'p12'] as const; // 9 position players, incl. Marcus (p1)
+  const PITCHER_KEYS = ['p4', 'p7', 'p11', 'p13'] as const;
+
+  function battingRates(ab: number, h: number, doubles: number, triples: number, hr: number, bb: number) {
+    if (ab === 0) return { avg: null as number | null, obp: null as number | null, slg: null as number | null, ops: null as number | null };
+    const singles = h - doubles - triples - hr;
+    const avg = h / ab;
+    const slg = (singles + 2 * doubles + 3 * triples + 4 * hr) / ab;
+    const pa = ab + bb;
+    const obp = pa > 0 ? (h + bb) / pa : null;
+    const ops = obp !== null ? obp + slg : null;
+    return {
+      avg: parseFloat(avg.toFixed(3)),
+      obp: obp !== null ? parseFloat(obp.toFixed(3)) : null,
+      slg: parseFloat(slg.toFixed(3)),
+      ops: ops !== null ? parseFloat(ops.toFixed(3)) : null,
+    };
+  }
+
+  function pitchingRates(ip: number, h: number, er: number, bb: number, k: number) {
+    if (ip === 0) return { era: null as number | null, whip: null as number | null, k9: null as number | null, bb9: null as number | null };
+    return {
+      era: parseFloat(((er * 9) / ip).toFixed(2)),
+      whip: parseFloat(((bb + h) / ip).toFixed(3)),
+      k9: parseFloat(((k * 9) / ip).toFixed(2)),
+      bb9: parseFloat(((bb * 9) / ip).toFixed(2)),
+    };
+  }
+
+  interface BatterTotals {
+    g: number; ab: number; r: number; h: number; doubles: number; triples: number; hr: number;
+    rbi: number; bb: number; k: number; sb: number; cs: number; lastGameDate: string;
+  }
+  interface PitcherTotals {
+    g: number; gs: number; w: number; l: number; sv: number; ip: number;
+    h: number; r: number; er: number; bb: number; k: number; hr: number;
+  }
+  const batterTotals = new Map<string, BatterTotals>();
+  const pitcherTotals = new Map<string, PitcherTotals>();
+  const battingLineRows: Record<string, unknown>[] = [];
+  const pitchingLineRows: Record<string, unknown>[] = [];
+  const playerStatRows: Record<string, unknown>[] = [];
+
+  pastGames.forEach((game, gi) => {
+    const them = game.opponent_score;
+
+    LINEUP_KEYS.forEach((key, j) => {
+      const pid = playerIdByKey[key];
+      const seed = gi * LINEUP_KEYS.length + j;
+      const ab = 3 + (seed % 2);
+      const hitRoll = seed % 5;
+      const h = Math.min(ab, hitRoll === 0 ? 0 : hitRoll <= 2 ? 1 : hitRoll === 3 ? 2 : 3);
+      const doubles = h >= 2 && seed % 4 === 0 ? 1 : 0;
+      const hr = h >= 1 && seed % 7 === 0 && doubles + 1 <= h ? 1 : 0;
+      const triples = 0;
+      const r = h > 0 ? seed % 3 : 0;
+      const rbi = hr + (h > 0 ? seed % 2 : 0);
+      const bb = seed % 6 === 0 ? 1 : 0;
+      const k = ab - h > 0 && seed % 3 === 1 ? 1 : 0;
+      const sb = key === 'p1' && seed % 5 === 0 ? 1 : 0;
+      const rates = battingRates(ab, h, doubles, triples, hr, bb);
+
+      battingLineRows.push({
+        id: detId(`bs-bat:${gi}:${key}`), game_id: game.id, player_id: pid, team_id: TEAM_ID,
+        ab, r, h, doubles, triples, hr, rbi, bb, k, sb, cs: 0, hbp: 0, sac: 0, sf: 0, lob: 0,
+        batting_order: j + 1, ...rates,
+      });
+
+      playerStatRows.push({
+        id: detId(`pstat:${gi}:${key}`), player_id: pid, team_id: TEAM_ID, coach_id: COACH_ID,
+        stat_type: 'game', session_date: game.game_date, session_name: `vs ${game.opponent_name}`,
+        at_bats: ab, hits: h, doubles, triples, home_runs: hr, rbis: rbi, walks: bb,
+        strikeouts: k, stolen_bases: sb, source: 'manual', source_visibility: 'player_visible',
+      });
+
+      const prev = batterTotals.get(key);
+      batterTotals.set(key, {
+        g: (prev?.g ?? 0) + 1,
+        ab: (prev?.ab ?? 0) + ab,
+        r: (prev?.r ?? 0) + r,
+        h: (prev?.h ?? 0) + h,
+        doubles: (prev?.doubles ?? 0) + doubles,
+        triples: (prev?.triples ?? 0) + triples,
+        hr: (prev?.hr ?? 0) + hr,
+        rbi: (prev?.rbi ?? 0) + rbi,
+        bb: (prev?.bb ?? 0) + bb,
+        k: (prev?.k ?? 0) + k,
+        sb: (prev?.sb ?? 0) + sb,
+        cs: prev?.cs ?? 0,
+        lastGameDate: game.game_date,
+      });
+    });
+
+    // Starter (6 IP) + reliever (3 IP) — sums to the game's 9 innings_played.
+    // Non-null: gi % PITCHER_KEYS.length is always a valid in-bounds index.
+    const starterKey = PITCHER_KEYS[gi % PITCHER_KEYS.length]!;
+    const relieverKey = PITCHER_KEYS[(gi + 2) % PITCHER_KEYS.length]!;
+    const starterEr = Math.max(0, them - 1);
+    const relieverEr = Math.max(0, them - starterEr);
+    const pitchLines = [
+      {
+        key: starterKey, ip: 6.0, h: 4 + (gi % 3), er: starterEr, bb: 1 + (gi % 2), k: 5 + (gi % 4),
+        hr: them >= 4 ? 1 : 0, gs: 1,
+        result: (game.our_score > them ? 'W' : game.our_score < them ? 'L' : null) as string | null,
+      },
+      {
+        key: relieverKey, ip: 3.0, h: 2 + (gi % 2), er: relieverEr, bb: gi % 2, k: 2 + (gi % 3),
+        hr: 0, gs: 0, result: null as string | null,
+      },
+    ];
+
+    for (const line of pitchLines) {
+      const pid = playerIdByKey[line.key];
+      const rates = pitchingRates(line.ip, line.h, line.er, line.bb, line.k);
+      pitchingLineRows.push({
+        id: detId(`bs-pitch:${gi}:${line.key}`), game_id: game.id, player_id: pid, team_id: TEAM_ID,
+        ip: line.ip, h: line.h, r: line.er, er: line.er, bb: line.bb, k: line.k, hr: line.hr,
+        gs: line.gs, result: line.result, ...rates,
+      });
+      const prev = pitcherTotals.get(line.key);
+      pitcherTotals.set(line.key, {
+        g: (prev?.g ?? 0) + 1,
+        gs: (prev?.gs ?? 0) + line.gs,
+        w: (prev?.w ?? 0) + (line.result === 'W' ? 1 : 0),
+        l: (prev?.l ?? 0) + (line.result === 'L' ? 1 : 0),
+        sv: prev?.sv ?? 0,
+        ip: (prev?.ip ?? 0) + line.ip,
+        h: (prev?.h ?? 0) + line.h,
+        r: (prev?.r ?? 0) + line.er,
+        er: (prev?.er ?? 0) + line.er,
+        bb: (prev?.bb ?? 0) + line.bb,
+        k: (prev?.k ?? 0) + line.k,
+        hr: (prev?.hr ?? 0) + line.hr,
+      });
+    }
+  });
+
+  await upsert('baseball_box_score_batting', battingLineRows);
+  await upsert('baseball_box_score_pitching', pitchingLineRows);
+  await upsert('baseball_player_stats', playerStatRows);
+
+  // ---- Season-stat rollups: one row per player with a box-score sample, so
+  // the Stats Center "stored season row" reconcile target matches the
+  // official-derived totals exactly (drift would otherwise show a false
+  // "Needs recalc" on every seeded player). ----
+  const seasonRows: Record<string, unknown>[] = [];
+  for (const [key, t] of batterTotals) {
+    const rates = battingRates(t.ab, t.h, t.doubles, t.triples, t.hr, t.bb);
+    seasonRows.push({
+      id: detId(`season:${SEASON_YEAR}:${key}`), player_id: playerIdByKey[key], team_id: TEAM_ID,
+      season_year: SEASON_YEAR, g: t.g, ab: t.ab, r: t.r, h: t.h, doubles: t.doubles, triples: t.triples,
+      hr: t.hr, rbi: t.rbi, bb: t.bb, k: t.k, sb: t.sb, cs: t.cs, ...rates,
+    });
+  }
+  for (const [key, t] of pitcherTotals) {
+    const rates = pitchingRates(t.ip, t.h, t.er, t.bb, t.k);
+    seasonRows.push({
+      id: detId(`season:${SEASON_YEAR}:${key}`), player_id: playerIdByKey[key], team_id: TEAM_ID,
+      season_year: SEASON_YEAR, g_p: t.g, gs: t.gs, w: t.w, l: t.l, sv: t.sv, ip: t.ip,
+      h_allowed: t.h, r_allowed: t.r, er: t.er, bb_allowed: t.bb, k_thrown: t.k, hr_allowed: t.hr,
+      era: rates.era, whip: rates.whip, k9: rates.k9, bb9: rates.bb9,
+    });
+  }
+  await upsert('baseball_player_season_stats', seasonRows, 'player_id, team_id, season_year');
+
+  // ---- Roster-pulse aggregates (batters only — the 4 pitchers genuinely have
+  // no batting sample in this demo, so they honestly stay `noData` on Command
+  // Center, exactly as an all-pitching roster slot would in production). ----
+  const aggregateRows: Record<string, unknown>[] = [];
+  for (const [key, t] of batterTotals) {
+    const careerAvg = t.ab > 0 ? parseFloat((t.h / t.ab).toFixed(3)) : null;
+    aggregateRows.push({
+      id: detId(`agg:${key}`), player_id: playerIdByKey[key], team_id: TEAM_ID,
+      career_avg: careerAvg, game_avg: careerAvg, practice_avg: null,
+      last_5_avg: careerAvg, last_10_avg: careerAvg, pressure_gap: null,
+      total_at_bats: t.ab, total_hits: t.h, total_sessions: t.g,
+      recent_trend: key === 'p1' ? 'improving' : t.g % 3 === 0 ? 'declining' : 'stable',
+      trend_data: {}, last_session_at: `${t.lastGameDate}T18:00:00.000Z`,
+      updated_at: NOW.toISOString(),
+    });
+  }
+  await upsert('baseball_player_aggregates', aggregateRows, 'player_id, team_id');
 
   // --- 6. Practice -> blocks -> attendance --------------------------------
   const practiceId = detId('practice:1');
