@@ -727,7 +727,10 @@ export async function markGameCompleted(
 
 const saveFullBoxScoreAction = withBaseballAction(
   'saveFullBoxScore',
-  { featureArea: 'baseball-games' },
+  // Team identity for the capability check is derived from the game row
+  // itself (below), not from the cookie-resolved active team — skip that
+  // resolution since the body never reads ctx.
+  { featureArea: 'baseball-games', requireActiveContext: false },
   async (
     _ctx,
     gameId: string,
