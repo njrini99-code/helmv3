@@ -40,8 +40,62 @@ env:
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_config_only: ${{ steps.filter.outputs.deploy_config == 'true' && steps.filter.outputs.other != 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Detect deploy-config-only diffs
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            deploy_config:
+              - 'vercel.json'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/playwright.yml'
+            other:
+              - '**'
+              - '!vercel.json'
+              - '!.github/workflows/ci.yml'
+              - '!.github/workflows/playwright.yml'
+
+  smoke-checks:
+    name: Smoke checks
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        if: needs.changes.outputs.deploy_config_only != 'true'
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        if: needs.changes.outputs.deploy_config_only != 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: needs.changes.outputs.deploy_config_only != 'true'
+        run: npm ci
+
+      - name: Build (smoke)
+        if: needs.changes.outputs.deploy_config_only != 'true'
+        run: npm run build
+
+      - name: Skip smoke build for deploy-config-only PR
+        if: needs.changes.outputs.deploy_config_only == 'true'
+        run: echo "Deploy config only — smoke build skipped"
+
   e2e:
     name: Playwright (chromium)
+    needs: changes
+    if: needs.changes.outputs.deploy_config_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -102,6 +156,8 @@ jobs:
   # screenshots were never produced. This job finishes in ~8 min.
   picker-screenshots:
     name: Course picker screenshots
+    needs: changes
+    if: needs.changes.outputs.deploy_config_only != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

@@ -7,7 +7,32 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_config_only: ${{ steps.filter.outputs.deploy_config == 'true' && steps.filter.outputs.other != 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Detect deploy-config-only diffs
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            deploy_config:
+              - 'vercel.json'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/playwright.yml'
+            other:
+              - '**'
+              - '!vercel.json'
+              - '!.github/workflows/ci.yml'
+              - '!.github/workflows/playwright.yml'
+
   build:
+    needs: changes
+    if: needs.changes.outputs.deploy_config_only != 'true'
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -76,8 +101,22 @@ jobs:
       - name: Build
         run: npm run build
 
+  deploy-config:
+    name: Deploy config validation
+    needs: changes
+    if: needs.changes.outputs.deploy_config_only == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate vercel.json
+        run: node -e "JSON.parse(require('fs').readFileSync('vercel.json','utf8'))"
+
   supabase:
     name: Supabase lint + RLS tests
+    needs: changes
+    if: needs.changes.outputs.deploy_config_only != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -116,3 +155,29 @@ jobs:
       - name: Stop local Supabase stack
         if: always()
         run: supabase stop || true
+
+  all:
+    name: all
+    if: always()
+    needs:
+      - changes
+      - build
+      - supabase
+      - deploy-config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate CI result
+        run: |
+          if [ "${{ needs.changes.outputs.deploy_config_only }}" = "true" ]; then
+            if [ "${{ needs.deploy-config.result }}" != "success" ]; then
+              echo "deploy-config validation failed"
+              exit 1
+            fi
+            echo "CI fast path — deploy config only"
+            exit 0
+          fi
+          if [ "${{ needs.build.result }}" != "success" ] || [ "${{ needs.supabase.result }}" != "success" ]; then
+            echo "build=${{ needs.build.result }} supabase=${{ needs.supabase.result }}"
+            exit 1
+          fi
+          echo "CI all green"
