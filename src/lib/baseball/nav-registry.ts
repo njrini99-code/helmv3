@@ -193,6 +193,11 @@ export interface BaseballNavEntry {
    * group (settings/program). Sidebar groups by this; mobile nav ignores it.
    */
   section: 'primary' | 'secondary';
+  /**
+   * When set, the entry is only visible when the active team's program_type is
+   * in this list (#367 — showcase-only org surfaces).
+   */
+  allowedProgramTypes?: readonly BaseballProgramType[];
 }
 
 /**
@@ -237,6 +242,9 @@ export interface BaseballNavContext {
 //   Staff Settings        coach   /baseball/dashboard/settings/staff   (W11)
 //   Program Settings      coach   /baseball/dashboard/settings/program (W12)
 // -----------------------------------------------------------------------------
+
+// Showcase-style org surfaces (#367) — hidden from college/HS/JUCO program types.
+const SHOWCASE_ORG_PROGRAM_TYPES = ['showcase', 'academy', 'club'] as const satisfies readonly BaseballProgramType[];
 
 export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
   // --- Daily loops (no capability gate beyond role) ----------------------------
@@ -592,6 +600,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // non-head staff even within those orgs.
     role: 'coach',
     requiredCapability: 'can_manage_settings',
+    allowedProgramTypes: SHOWCASE_ORG_PROGRAM_TYPES,
     section: 'secondary',
   },
   {
@@ -603,6 +612,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // surfaces only to head staff in showcase-style programs.
     role: 'coach',
     requiredCapability: 'can_manage_settings',
+    allowedProgramTypes: SHOWCASE_ORG_PROGRAM_TYPES,
     section: 'secondary',
   },
   {
@@ -674,6 +684,7 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     // useTeams inside the client; RLS guards writes.
     role: 'both',
     requiredCapability: null,
+    allowedProgramTypes: SHOWCASE_ORG_PROGRAM_TYPES,
     section: 'primary',
   },
   {
@@ -851,6 +862,13 @@ export function isBaseballNavEntryVisible(
     // already excludes coach-only entries for players).
     if (ctx.role !== 'coach') return false;
     if (ctx.capabilities[entry.requiredCapability] !== true) return false;
+  }
+
+  // 3. Program-type gate (#367) — showcase-only org surfaces.
+  if (entry.allowedProgramTypes?.length) {
+    if (!ctx.programType || !entry.allowedProgramTypes.includes(ctx.programType)) {
+      return false;
+    }
   }
 
   return true;

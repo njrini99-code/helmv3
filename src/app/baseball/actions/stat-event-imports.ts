@@ -405,15 +405,36 @@ export const commitEventImport = withBaseballAction(
       rows,
     });
 
-    // GAP 4 — REVIEW HOLD. Branch on the registry + auto-commit band: a source
-    // that requires review (or whose detection band is hold_for_review /
-    // do_not_commit) never auto-writes. Re-validate server-side and recompute the
-    // decision (never trust the client band alone).
+    // GAP 4 — REVIEW HOLD (#415). Recompute detection band server-side when raw
+    // bytes are available; never trust client-supplied detectionAutoCommit alone.
     const validation = validateEventRows(rows);
+    let serverAutoCommit: SourceFileDetection['autoCommit'] | undefined;
+    if (args.rawFileBody && args.rawFileBody.length > 0) {
+      const parser = getConcreteParser(sourceKey)!;
+      const parsed = parser(args.rawFileBody);
+      const detection = detectFromParse(
+        parsed.sourceKey,
+        {
+          rows: parsed.rows,
+          rowsRead: parsed.rowsRead,
+          warnings: parsed.warnings,
+          preservedText: parsed.preservedText,
+        },
+        args.rawFileBody.slice(0, 4096),
+      );
+      serverAutoCommit = detection.autoCommit;
+    }
+
+    const autoCommitBand = serverAutoCommit ?? args.detectionAutoCommit;
+    if (autoCommitBand === 'do_not_commit') {
+      throw new Error(
+        'This file cannot be committed automatically. Detection confidence is too low — review the source format.',
+      );
+    }
+
     const requiresReview =
       !!entry?.requiresReviewByDefault ||
-      args.detectionAutoCommit === 'hold_for_review' ||
-      args.detectionAutoCommit === 'do_not_commit';
+      autoCommitBand === 'hold_for_review';
 
     // 1. Run header (held or committing). file_hash persisted for the dup index.
     const { data: runRow, error: runErr } = await db

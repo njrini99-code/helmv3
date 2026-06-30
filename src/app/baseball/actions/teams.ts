@@ -287,6 +287,21 @@ export async function joinTeam(playerId: string, teamId: string) {
     .eq('id', teamId)
     .single();
 
+  if (team?.team_type === 'juco') {
+    const { data: playerRow } = await supabase
+      .from('baseball_players')
+      .select('player_type')
+      .eq('id', playerId)
+      .maybeSingle();
+
+    if (playerRow?.player_type === 'college') {
+      return {
+        success: false,
+        error: 'College players cannot activate recruiting through team join.',
+      };
+    }
+  }
+
   // Add player to team
   const { error } = await supabase
     .from('baseball_team_members')
@@ -454,16 +469,33 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
       }
     }
 
+    // Reserve redemption atomically before creating membership (#395).
+    let redeemQuery = fromUntyped(supabase, 'baseball_team_invitations')
+      .update({ used_count: (invitation.used_count ?? 0) + 1 } as Record<string, unknown>)
+      .eq('id', invitation.id)
+      .eq('is_active', true)
+      .select('id');
+
+    if (invitation.max_uses != null) {
+      redeemQuery = redeemQuery.lt('used_count', invitation.max_uses);
+    }
+
+    const { data: redeemed } = await redeemQuery.maybeSingle();
+    if (!redeemed) {
+      return {
+        success: false,
+        error: 'This invitation has reached its maximum number of uses',
+      };
+    }
+
     // Join the team
     const joinResult = await joinTeam(validatedData.player_id, invitation.team_id);
     if (!joinResult.success) {
+      await fromUntyped(supabase, 'baseball_team_invitations')
+        .update({ used_count: invitation.used_count ?? 0 } as Record<string, unknown>)
+        .eq('id', invitation.id);
       return joinResult;
     }
-
-    // Record redemption against the invitation (best-effort; join already succeeded).
-    await fromUntyped(supabase, 'baseball_team_invitations')
-      .update({ used_count: (invitation.used_count ?? 0) + 1 } as Record<string, unknown>)
-      .eq('id', invitation.id);
 
     return joinResult;
   } catch (err) {
