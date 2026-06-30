@@ -4,8 +4,7 @@
 -- Security-critical invariants:
 --   * A PLAYER may read only their OWN lift results and readiness check-ins; a
 --     teammate's loads / readiness must never be reachable by another player.
---   * Staff reads of readiness require the can_view_medical health gate (there
---     is no can_view_readiness capability in the staff model).
+--   * Staff reads of readiness require the can_view_readiness performance gate.
 --   * Exercise-library / assignment WRITES are gated on can_manage_lifting.
 --   * RLS is enabled on all four tables and anon has no privileges.
 --
@@ -17,7 +16,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(34);
+SELECT plan(35);
 
 -- ============================================================================
 -- 1. RLS enabled + anon locked out on all four tables.
@@ -124,7 +123,7 @@ SELECT is(
 );
 
 -- ============================================================================
--- 3. baseball_readiness_checkins — player owns; staff need can_view_medical.
+-- 3. baseball_readiness_checkins — player owns; staff need can_view_readiness.
 -- ============================================================================
 SELECT ok(
   COALESCE((
@@ -143,8 +142,8 @@ SELECT ok(
       JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relname = 'baseball_readiness_checkins'
         AND p.polname = 'baseball_readiness_checkins_select'
-  ), '') ~ 'can_view_medical',
-  'readiness SELECT staff path requires the can_view_medical health gate'
+  ), '') ~ 'can_view_readiness',
+  'readiness SELECT staff path requires the can_view_readiness performance gate'
 );
 -- The staff path is doubly gated: capability AND can_view_baseball_player.
 SELECT ok(
