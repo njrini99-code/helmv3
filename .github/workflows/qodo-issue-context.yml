@@ -1,0 +1,52 @@
+name: Qodo Issue Context
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+permissions:
+  pull-requests: read
+
+jobs:
+  issue-reference:
+    name: Issue references
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR body for GitHub issue references
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+
+          if [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
+            echo "Dependabot PR; Qodo issue context is optional." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if printf '%s\n' "$PR_BODY" | grep -Eq '(#|issues/)[0-9]+'; then
+            echo "Qodo issue context detected." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo "### Qodo Issue Context Missing"
+            echo
+            echo "Qodo can fetch GitHub Issues when the PR description references them."
+            echo
+            echo "Add one of these to the PR body:"
+            echo
+            echo "- \`Closes #123\`"
+            echo "- \`Fixes #123\`"
+            echo "- \`Related to #123\`"
+            echo "- \`https://github.com/njrini99-code/helmv3/issues/123\`"
+            echo
+            echo "PR: $PR_TITLE"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::warning::Qodo issue context missing. Add a GitHub issue reference to the PR body."
