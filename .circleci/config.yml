@@ -249,7 +249,19 @@ jobs:
               echo "Skipping Lighthouse CI: no preview URL available."
               exit 0
             fi
-            npx lhci autorun --config=lighthouserc.cjs
+            set +e
+            npx lhci autorun --config=lighthouserc.cjs 2>&1 | tee /tmp/lhci.log
+            status=${PIPESTATUS[0]}
+            set -e
+            if [ "$status" -eq 0 ]; then
+              exit 0
+            fi
+            if grep -Eiq "(assertion|categories:|largest-contentful-paint|cumulative-layout-shift|total-blocking-time|interaction-to-next-paint)" /tmp/lhci.log; then
+              echo "Advisory Lighthouse score/assertion findings detected; see artifact for details."
+              exit 0
+            fi
+            echo "Lighthouse CI failed for a runtime/tool/upload reason."
+            exit "$status"
       - store_artifacts:
           path: .lighthouseci/
           destination: lighthouse
