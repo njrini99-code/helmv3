@@ -31,6 +31,11 @@ env:
   NEXT_PUBLIC_REDESIGN: 'true'
   E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
   E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+  # Service-role key for scripts/seed-baseball-e2e.ts (issue #375). Same
+  # "resolves to '' when unset" pattern as the golf E2E secrets above — the
+  # seed step below is skipped and the seeded baseball specs self-skip via
+  # PLAYWRIGHT_BASEBALL_SEEDED rather than failing the run.
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
   COMMIT_SHA: ${{ github.sha }}
   # The `npm run build` step (both jobs) OOMs at Node's ~4GB default heap on
   # the CI runner — the same OOM that fails the `build` check. The standard
@@ -95,7 +100,22 @@ jobs:
       - name: Build (so dev server boots fast)
         run: npm run build
 
+      - name: Seed BaseballHelm E2E fixtures (issue 375)
+        # Only runs when SUPABASE_SERVICE_ROLE_KEY is available (not present
+        # on fork PRs) — mirrors the existing E2E_GOLF_* secret gating below.
+        # --confirm is required by the script itself; without it the script
+        # only prints a dry-run plan and writes nothing.
+        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        run: npm run seed:baseball:e2e -- --confirm
+
       - name: Run Playwright tests
+        env:
+          # Gates the rewritten Camps/Pipeline/Box Score specs onto the
+          # fixtures the seed step above just provisioned. Left unset (falsy)
+          # when the seed step was skipped, so those specs self-skip instead
+          # of failing against an unseeded database.
+          PLAYWRIGHT_BASEBALL_SEEDED: >-
+            ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && '1' || '' }}
         # Don't fail the build on E2E flake while the suite is being
         # stabilized. Once it's reliably green for a week, replace the
         # `|| echo` shim with a hard `npm run test:e2e` and add as a

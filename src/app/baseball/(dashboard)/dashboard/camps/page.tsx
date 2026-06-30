@@ -72,7 +72,7 @@ function CampCard({
   const isFull = camp.capacity ? registrationCount >= camp.capacity : false;
 
   return (
-    <Card variant="glass" className="overflow-hidden">
+    <Card variant="glass" className="overflow-hidden" data-testid="camp-card">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -446,7 +446,7 @@ export default function CampsPage() {
             }
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="camps-grid">
             {camps.map(camp => (
               <CampCard
                 key={camp.id}

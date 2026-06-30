@@ -127,7 +127,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
       {/* Batting */}
       {batting.length > 0 && (
-        <div className="glass-standard rounded-2xl overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip" data-testid="batting-table">
           <div className="px-5 py-3 border-b border-warm-100">
             <h2 className="text-sm font-bold text-warm-700 uppercase tracking-wider">Batting</h2>
           </div>
@@ -175,7 +175,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
+                <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="batting-totals-row">
                   <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{totals.ab}</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{totals.r}</td>
@@ -199,7 +199,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
       {/* Pitching */}
       {pitching.length > 0 && (
-        <div className="glass-standard rounded-2xl overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip" data-testid="pitching-table">
           <div className="px-5 py-3 border-b border-warm-100">
             <h2 className="text-sm font-bold text-warm-700 uppercase tracking-wider">Pitching</h2>
           </div>
@@ -251,7 +251,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
               </tbody>
               {pitching.length > 1 && (
                 <tfoot>
-                  <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
+                  <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="pitching-totals-row">
                     <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
                     <td className="px-2 py-2.5 text-center font-mono tabular-nums">{fmtIP(pitchTotals.ip)}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums">{pitchTotals.h}</td>
