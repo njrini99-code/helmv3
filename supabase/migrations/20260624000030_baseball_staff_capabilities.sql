@@ -107,11 +107,17 @@ CREATE TABLE IF NOT EXISTS public.baseball_staff_invitations (
                  CHECK (status IN ('pending', 'accepted', 'revoked', 'expired')),
   expires_at   timestamptz NOT NULL DEFAULT (now() + interval '14 days'),
   accepted_at  timestamptz,
+  accepted_by_user_id uuid,
   created_at   timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE public.baseball_staff_invitations
+  ADD COLUMN IF NOT EXISTS accepted_by_user_id uuid;
+
 COMMENT ON TABLE public.baseball_staff_invitations IS
   'Pending invitations for additional coaching staff, with a pre-assigned role and capability set. Managed by a team head coach or a staffer with can_invite_staff.';
+COMMENT ON COLUMN public.baseball_staff_invitations.accepted_by_user_id IS
+  'Auth user id that accepted the staff invitation; added before 0050 RLS policies reference it.';
 
 -- Indexes + unique token.
 CREATE UNIQUE INDEX IF NOT EXISTS baseball_staff_invitations_token_key
