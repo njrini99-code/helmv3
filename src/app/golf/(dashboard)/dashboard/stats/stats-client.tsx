@@ -50,6 +50,7 @@ import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { cn } from '@/lib/utils';
+import { logError } from '@/lib/error-logging';
 import { FormatToggle } from '@/components/golf/stats/sections/shared-primitives';
 import type { HoleFormat } from '@/components/golf/stats/sections/shared-primitives';
 import { Button, IconButton } from '@/components/ui/button';
@@ -490,8 +491,11 @@ export default function StatsClient({
     if (!detailedStats || detailedStats.roundsPlayed < 3) return null;
     try {
       return generateStatisticalStrengthsWeaknesses(detailedStats);
-    } catch (_err) {
-      // Strengths/weaknesses computation failed — degrade gracefully
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error(String(err)), {
+        component: 'StatsClient',
+        action: 'strengthsWeaknesses',
+      }, 'low');
       return null;
     }
   }, [detailedStats]);

@@ -104,7 +104,12 @@ export default function BaseballPlayerOnboarding() {
   }, [authLoading, user, player, router]);
 
   if (authLoading || !user || user.role !== 'player' || player?.onboarding_completed) {
-    return <PageLoading />;
+    return (
+      <main aria-busy="true">
+        <h1 className="sr-only">Baseball player onboarding</h1>
+        <PageLoading />
+      </main>
+    );
   }
 
   // ─── Navigation ───────────────────────────────────────────────────────────
@@ -219,7 +224,8 @@ export default function BaseballPlayerOnboarding() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-dvh bg-auth-baseball relative">
+    <main className="min-h-dvh bg-auth-baseball relative">
+      <h1 className="sr-only">Baseball player onboarding</h1>
       {/* Floating Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-amber-400/40 to-helm-amber-500/25" />
@@ -806,6 +812,6 @@ export default function BaseballPlayerOnboarding() {
           </AnimatePresence>
         </LazyMotion>
       </div>
-    </div>
+    </main>
   );
 }

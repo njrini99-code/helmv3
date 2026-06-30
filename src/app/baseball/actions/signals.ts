@@ -731,7 +731,7 @@ export const convertSignalToAction = withBaseballAction(
     // materialized object shows up immediately.
     revalidatePath('/baseball/dashboard/practice');
     revalidatePath('/baseball/dashboard/decision-room');
-    revalidatePath('/baseball/dashboard/lifting');
+    revalidatePath('/baseball/dashboard/performance');
     return {
       success: true,
       ids: (inserted as Array<{ id: string }>).map((r) => r.id),

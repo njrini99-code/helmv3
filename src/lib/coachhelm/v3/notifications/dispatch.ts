@@ -27,7 +27,7 @@ import { Redis } from '@upstash/redis';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { sendEmailNotification } from '@/lib/notifications/email';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerException } from '@/lib/server-error-logger';
 import type { NotificationType } from '@/lib/notifications/types';
 import type { Database, Json } from '@/lib/types/database';
 import {
@@ -182,7 +182,14 @@ async function resolveRecipient(
     if (error || !data?.user_id) return null;
     const usersRel = (data as { users?: { email?: string | null } | null }).users;
     return { userId: data.user_id, email: usersRel?.email ?? null };
-  } catch {
+  } catch (err) {
+    await logServerException(err, {
+      action: 'resolvePlayerContact',
+      featureArea: 'coachhelm-notifications',
+      source: 'server_action',
+      handled: true,
+      extra: { playerId },
+    });
     return null;
   }
 }

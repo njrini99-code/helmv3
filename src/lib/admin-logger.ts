@@ -6,6 +6,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerException } from '@/lib/server-error-logger';
 
 // ============================================
 // TYPES
@@ -92,7 +93,12 @@ async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
 
     return data?.id ?? null;
   } catch (err) {
-    console.error('[AdminLogger] Error logging event:', err);
+    await logServerException(err, {
+      action: 'logAdminEvent',
+      featureArea: 'admin-logger',
+      source: 'background_job',
+      handled: true,
+    });
     return null;
   }
 }

@@ -118,7 +118,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
 
   const handleViewFullProfile = () => {
     if (player) {
-      router.push(`/baseball/player/${player.id}`);
+      router.push(`/baseball/profile/${player.id}`);
       onClose();
     }
   };

@@ -65,6 +65,7 @@ import {
 } from '@/components/golf/calendar/event-form-helpers';
 import { parseRecurrenceRule, describeRecurrenceRule } from '@/lib/golf/recurrence';
 import { tintFor } from './FairwayCalendarMemberRail';
+import { logError } from '@/lib/error-logging';
 
 interface TeamPlayer {
   id: string;
@@ -183,7 +184,11 @@ export function FairwayEventEditor({
         new Date(),
       );
       return parts.find((p) => p.type === 'timeZoneName')?.value ?? null;
-    } catch {
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error(String(err)), {
+        component: 'FairwayEventEditor',
+        action: 'tzAbbrev',
+      }, 'low');
       return null;
     }
   }, [timezone]);

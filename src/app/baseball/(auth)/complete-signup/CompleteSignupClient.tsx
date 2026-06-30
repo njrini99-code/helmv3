@@ -93,7 +93,8 @@ export default function CompleteSignupClient() {
 
   if (checking) {
     return (
-      <div className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center p-4">
+      <main className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center p-4" aria-busy="true">
+        <h1 className="sr-only">Complete your BaseballHelm account</h1>
         <div className="w-full max-w-md space-y-4 animate-pulse">
           <div className="h-16 w-16 rounded-full bg-warm-200 mx-auto" />
           <div className="h-6 w-48 rounded bg-warm-200 mx-auto" />
@@ -106,12 +107,12 @@ export default function CompleteSignupClient() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center p-4">
+    <main className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
@@ -227,6 +228,6 @@ export default function CompleteSignupClient() {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

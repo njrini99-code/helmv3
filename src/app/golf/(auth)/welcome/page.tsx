@@ -161,6 +161,9 @@ function WelcomeContent() {
           {ready ? heroText : ''}
         </div>
 
+        {/* Always-present heading for crawlers / a11y before identity loads */}
+        {!ready && <h1 className="sr-only">Welcome</h1>}
+
         {/* Centred greeting column */}
         <m.div
           className="relative z-10 h-full flex flex-col items-center justify-center px-6"
@@ -233,12 +236,15 @@ export default function GolfWelcomePage() {
   return (
     <Suspense
       fallback={
-        <div
+        <main
           role="status"
           aria-label="Loading greeting"
-          className="flex items-center justify-center"
+          className="flex flex-col items-center justify-center"
           style={{ height: '100svh', background: 'linear-gradient(180deg, #FFFEFA 0%, #FFF7E0 55%, #FDEAC0 100%)' }}
-        />
+        >
+          <h1 className="sr-only">Welcome</h1>
+          <p className="text-warm-600 text-sm">Loading your greeting…</p>
+        </main>
       }
     >
       <WelcomeContent />

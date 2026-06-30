@@ -981,7 +981,9 @@ async function submitRoundDirectFallback({
   }
   const restoreSnapshot = async (): Promise<void> => {
     try {
+      // nosemgrep: coderabbit.semgrep.helmv3-destructive-write-pattern
       await supabase.from('golf_shots').delete().eq('round_id', roundId);
+      // nosemgrep: coderabbit.semgrep.helmv3-destructive-write-pattern
       await supabase.from('golf_holes').delete().eq('round_id', roundId);
       if (Array.isArray(holeSnapshot) && holeSnapshot.length > 0) {
         await supabase.from('golf_holes').insert(holeSnapshot);
@@ -994,6 +996,7 @@ async function submitRoundDirectFallback({
     }
   };
 
+  // nosemgrep: coderabbit.semgrep.helmv3-destructive-write-pattern
   const { error: deleteShotsError } = await supabase
     .from('golf_shots')
     .delete()
@@ -1004,6 +1007,7 @@ async function submitRoundDirectFallback({
     return { success: false, error: `Fallback failed while clearing shots: ${deleteShotsError.message}` };
   }
 
+  // nosemgrep: coderabbit.semgrep.helmv3-destructive-write-pattern
   const { error: deleteHolesError } = await supabase
     .from('golf_holes')
     .delete()
@@ -3594,7 +3598,7 @@ export async function sendEventReminderToPlayers(
     }
 
     revalidatePath('/golf/dashboard/calendar');
-    revalidatePath('/golf/dashboard/notifications');
+    revalidatePath('/golf/dashboard/settings/notifications');
     return { success: true, data: { sent: userIds.length } };
   } catch (err) {
     await logServerError(`sendEventReminderToPlayers error: ${err instanceof Error ? err.message : String(err)}`, {

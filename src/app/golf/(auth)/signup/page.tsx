@@ -129,7 +129,7 @@ export default function SignupPage() {
                     />
                   </div>
                 </div>
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
+                <h1 className="text-lg sm:text-xl font-bold text-warm-900">
                   GolfHelm
                 </h1>
               </m.div>
@@ -198,7 +198,7 @@ export default function SignupPage() {
   }
   return (
     <LazyMotion features={domAnimation}>
-    <div className="min-h-dvh flex items-center justify-center relative overflow-hidden p-4 sm:p-6">
+    <main className="min-h-dvh flex items-center justify-center relative overflow-hidden p-4 sm:p-6">
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#signup-form"
@@ -243,7 +243,7 @@ export default function SignupPage() {
                 />
               </div>
             </div>
-            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
+            <h1 className="text-lg sm:text-xl font-bold text-warm-900">
               GolfHelm
             </h1>
           </m.div>
@@ -325,7 +325,7 @@ export default function SignupPage() {
           </div>
         </m.div>
       </div>
-    </div>
+    </main>
     </LazyMotion>
   );
 }

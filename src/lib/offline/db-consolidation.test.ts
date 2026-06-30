@@ -180,7 +180,13 @@ describe('offline DB consolidation — v1 rounds count + drain', () => {
     installFakeIndexedDB();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    try {
+      const { resetSyncEngineForTests } = await import('./sync-engine');
+      resetSyncEngineForTests();
+    } catch {
+      /* module may not be loaded */
+    }
     vi.unstubAllGlobals();
   });
 

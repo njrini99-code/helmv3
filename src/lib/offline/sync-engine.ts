@@ -490,7 +490,7 @@ class SyncEngine {
         // Prepare draft data for server
         const draftData = this.prepareRoundDraftData(round);
 
-        const saveRoundDraft = this.config.saveRoundDraft;
+        const saveRoundDraft = await resolveSaveRoundDraft(this.config.saveRoundDraft);
         if (!saveRoundDraft) {
           throw new Error('saveRoundDraft is not configured on SyncEngine');
         }
@@ -553,7 +553,7 @@ class SyncEngine {
       return { synced, failed, errors };
     }
 
-    const saveRoundDraft = this.config.saveRoundDraft;
+    const saveRoundDraft = await resolveSaveRoundDraft(this.config.saveRoundDraft);
     if (!saveRoundDraft) {
       return { synced, failed, errors };
     }
@@ -1156,6 +1156,28 @@ class SyncEngine {
 // ============================================================================
 
 let syncEngineInstance: SyncEngine | null = null;
+
+/**
+ * Resolve saveRoundDraft — uses explicit config when provided, otherwise lazy-loads
+ * the server action so v1/v2 round drains work outside OfflineProvider wiring.
+ */
+async function resolveSaveRoundDraft(
+  configured?: SaveRoundDraftFn,
+): Promise<SaveRoundDraftFn | undefined> {
+  if (configured) return configured;
+  try {
+    const mod = await import('@/app/golf/actions/round-drafts');
+    return mod.saveRoundDraft;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Test-only reset — clears the singleton between vitest cases. */
+export function resetSyncEngineForTests(): void {
+  syncEngineInstance?.destroy();
+  syncEngineInstance = null;
+}
 
 /**
  * Get the sync engine singleton instance

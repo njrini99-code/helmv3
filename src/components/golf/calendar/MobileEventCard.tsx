@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { logError } from '@/lib/error-logging';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isToday, isTomorrow, isPast } from 'date-fns';
 import {
@@ -42,7 +43,11 @@ function getRelativeDateLabel(dateStr: string): string | null {
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
     return null;
-  } catch {
+  } catch (err) {
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      component: 'MobileEventCard',
+      action: 'getRelativeDateLabel',
+    }, 'low');
     return null;
   }
 }

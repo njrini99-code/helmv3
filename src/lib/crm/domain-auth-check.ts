@@ -1,5 +1,6 @@
 import 'server-only';
 import { resolveTxt } from 'node:dns/promises';
+import { logServerException } from '@/lib/server-error-logger';
 
 // ============================================================================
 // DOMAIN AUTH SELF-CHECK (SPF / DKIM / DMARC)
@@ -31,7 +32,14 @@ async function txt(name: string): Promise<string[]> {
     // resolveTxt returns string[][] (each record can be split into chunks).
     const records = await resolveTxt(name);
     return records.map((chunks) => chunks.join(''));
-  } catch {
+  } catch (err) {
+    await logServerException(err, {
+      action: 'resolveTxt',
+      featureArea: 'crm-domain-auth',
+      source: 'server_action',
+      handled: true,
+      extra: { name },
+    });
     return [];
   }
 }

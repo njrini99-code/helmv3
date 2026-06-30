@@ -41,7 +41,7 @@ export default function ProfilePage() {
           : "Update your information and showcase your talents"
         }
       >
-        <Link href={`/baseball/player/${player.id}`} target="_blank">
+        <Link href={`/baseball/profile/${player.id}`} target="_blank">
           <Button variant="secondary" size="sm" className="gap-2">
             <IconGlobe size={14} />
             View Public Profile

@@ -195,12 +195,20 @@ function GolfPlayerOnboardingContent() {
 
   // ─── Loading ────────────────────────────────────────────────────────────
 
-  if (authLoading) return <PageLoading />;
+  if (authLoading) {
+    return (
+      <main aria-busy="true">
+        <h1 className="sr-only">Golf player onboarding</h1>
+        <PageLoading />
+      </main>
+    );
+  }
 
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-dvh bg-auth-golf relative">
+    <main className="min-h-dvh bg-auth-golf relative">
+      <h1 className="sr-only">Golf player onboarding</h1>
       {/* Floating Orbs (CSS-driven, matches login/signup) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-primary-400/40 to-helm-primary-500/25" />
@@ -526,7 +534,7 @@ function GolfPlayerOnboardingContent() {
           </AnimatePresence>
         </LazyMotion>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -537,7 +545,14 @@ function GolfPlayerOnboardingContent() {
 
 export default function GolfPlayerOnboarding() {
   return (
-    <Suspense fallback={<PageLoading />}>
+    <Suspense
+      fallback={
+        <main aria-busy="true">
+          <h1 className="sr-only">Golf player onboarding</h1>
+          <PageLoading />
+        </main>
+      }
+    >
       <GolfPlayerOnboardingContent />
     </Suspense>
   );

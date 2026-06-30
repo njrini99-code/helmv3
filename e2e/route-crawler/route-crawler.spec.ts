@@ -1,9 +1,10 @@
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 
 const INVENTORY_PATH = join(process.cwd(), 'docs/operations/generated/route-inventory.json');
 const REPORT_PATH = join(process.cwd(), 'docs/operations/generated/route-crawler-report.md');
+const CRAWL_TMP_DIR = join(process.cwd(), 'docs/operations/generated/.route-crawl-tmp');
 
 const DESTRUCTIVE_PATTERN = /\b(delete|archive|remove|send|invite|charge|submit final|publish)\b/i;
 
@@ -27,23 +28,18 @@ function loadInventory(): RouteRow[] {
   return (raw.routes ?? []).filter((r: RouteRow & { fileType: string }) => r.fileType === 'page');
 }
 
-const demoEmail = process.env.E2E_GOLF_EMAIL;
-const demoPassword = process.env.E2E_GOLF_PASSWORD;
-const authReady = Boolean(demoEmail && demoPassword && process.env.E2E_AUTH_SMOKE_ENABLED === 'true');
+function writeCrawlResult(testId: string, result: CrawlResult): void {
+  mkdirSync(CRAWL_TMP_DIR, { recursive: true });
+  const safeId = testId.replace(/[^\w-]+/g, '_');
+  writeFileSync(join(CRAWL_TMP_DIR, `${safeId}.json`), JSON.stringify(result));
+}
 
-const PUBLIC_PATHS = [
-  '/',
-  '/golf',
-  '/golf/login',
-  '/golf/signup',
-  '/baseball',
-  '/baseball/login',
-  '/baseball/signup',
-  '/privacy',
-  '/terms',
-];
-
-const results: CrawlResult[] = [];
+function collectCrawlResults(): CrawlResult[] {
+  if (!existsSync(CRAWL_TMP_DIR)) return [];
+  return readdirSync(CRAWL_TMP_DIR)
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => JSON.parse(readFileSync(join(CRAWL_TMP_DIR, f), 'utf8')) as CrawlResult);
+}
 
 async function crawlPage(
   page: import('@playwright/test').Page,
@@ -118,10 +114,20 @@ async function crawlPage(
 }
 
 test.describe('Route crawler — public routes', () => {
-  for (const path of PUBLIC_PATHS) {
-    test(`crawl ${path}`, async ({ page }) => {
+  for (const path of [
+    '/',
+    '/golf',
+    '/golf/login',
+    '/golf/signup',
+    '/baseball',
+    '/baseball/login',
+    '/baseball/signup',
+    '/privacy',
+    '/terms',
+  ]) {
+    test(`crawl ${path}`, async ({ page }, testInfo) => {
       const result = await crawlPage(page, path);
-      results.push(result);
+      writeCrawlResult(testInfo.testId, result);
       expect(result.issues, result.issues.join('; ')).toEqual([]);
     });
   }
@@ -130,9 +136,9 @@ test.describe('Route crawler — public routes', () => {
 test.describe('Route crawler — protected redirects', () => {
   const protectedPaths = ['/golf/dashboard', '/golf/dashboard/stats', '/baseball/dashboard'];
   for (const path of protectedPaths) {
-    test(`unauthenticated ${path} redirects safely`, async ({ page }) => {
+    test(`unauthenticated ${path} redirects safely`, async ({ page }, testInfo) => {
       const result = await crawlPage(page, path, { expectAuthRedirect: true });
-      results.push(result);
+      writeCrawlResult(testInfo.testId, result);
       expect(result.issues, result.issues.join('; ')).toEqual([]);
     });
   }
@@ -143,20 +149,24 @@ test.describe('Route crawler — inventory public pages', () => {
   const publicPages = inventory
     .filter((r) => r.authExpectation === 'public' && !r.dynamic)
     .map((r) => r.canonicalPath)
-    .filter((p) => !PUBLIC_PATHS.includes(p) && !p.startsWith('/api'))
+    .filter((p) => !['/golf/login', '/golf/signup', '/baseball/login', '/baseball/signup', '/privacy', '/terms', '/'].includes(p) && !p.startsWith('/api'))
     .slice(0, 15);
 
   for (const path of publicPages) {
-    test(`crawl inventory public ${path}`, async ({ page }) => {
+    test(`crawl inventory public ${path}`, async ({ page }, testInfo) => {
       const result = await crawlPage(page, path);
-      results.push(result);
+      writeCrawlResult(testInfo.testId, result);
       expect(result.issues, result.issues.join('; ')).toEqual([]);
     });
   }
 });
 
+const demoEmail = process.env.E2E_GOLF_EMAIL;
+const demoPassword = process.env.E2E_GOLF_PASSWORD;
+const authReady = Boolean(demoEmail && demoPassword && process.env.E2E_AUTH_SMOKE_ENABLED === 'true');
+
 const authCrawl = authReady ? test : test.skip;
-authCrawl('authenticated golf dashboard crawl', async ({ page }) => {
+authCrawl('authenticated golf dashboard crawl', async ({ page }, testInfo) => {
   await page.goto('/golf/login');
   await page.locator('input[type="email"], input[name="email"]').fill(demoEmail ?? '');
   await page.locator('input[type="password"], input[name="password"]').fill(demoPassword ?? '');
@@ -166,7 +176,7 @@ authCrawl('authenticated golf dashboard crawl', async ({ page }) => {
   const coachPaths = ['/golf/dashboard/stats', '/golf/dashboard/roster', '/golf/dashboard/messages'];
   for (const path of coachPaths) {
     const result = await crawlPage(page, path);
-    results.push(result);
+    writeCrawlResult(`${testInfo.testId}-${path.replace(/\//g, '_')}`, result);
     expect(result.issues, result.issues.join('; ')).toEqual([]);
   }
 
@@ -186,6 +196,7 @@ authCrawl('authenticated golf dashboard crawl', async ({ page }) => {
 });
 
 test.afterAll(() => {
+  const results = collectCrawlResults();
   mkdirSync(join(process.cwd(), 'docs/operations/generated'), { recursive: true });
   const fails = results.filter((r) => r.status === 'fail');
   const lines = [
@@ -206,4 +217,7 @@ test.afterAll(() => {
     lines.push('');
   }
   writeFileSync(REPORT_PATH, `${lines.join('\n')}\n`);
+  if (existsSync(CRAWL_TMP_DIR)) {
+    rmSync(CRAWL_TMP_DIR, { recursive: true, force: true });
+  }
 });

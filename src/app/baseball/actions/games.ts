@@ -569,7 +569,6 @@ export async function markGameCompleted(
   );
 
   revalidateStatsPaths();
-  revalidatePath(`/baseball/dashboard/players`);
   return { success: true };
 }
 

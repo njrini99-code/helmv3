@@ -44,6 +44,7 @@
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import { createClient } from '@/lib/supabase/server';
+import { logServerException } from '@/lib/server-error-logger';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import {
   getBaseballDefaultLandingHref,
@@ -73,7 +74,14 @@ async function readActiveProgramType(
       (BASEBALL_PROGRAM_TYPES as readonly string[]).includes(raw)
       ? (raw as BaseballProgramType)
       : null;
-  } catch {
+  } catch (err) {
+    await logServerException(err, {
+      action: 'readActiveProgramType',
+      featureArea: 'baseball-nav',
+      source: 'server_action',
+      handled: true,
+      extra: { teamId },
+    });
     return null;
   }
 }

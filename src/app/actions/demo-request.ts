@@ -87,7 +87,7 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
 
     // Refresh admin CRM lead lists so a new submission appears immediately.
     revalidatePath('/golf/admin');
-    revalidatePath('/baseball/admin');
+    revalidatePath('/golf/admin/crm');
 
     return { success: true };
   } catch (error) {

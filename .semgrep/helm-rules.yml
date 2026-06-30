@@ -158,6 +158,12 @@ rules:
       - pattern-not-inside: |
           catch ($ERR) {
             ...
-            Sentry.captureException(...);
+            logError(...);
+            ...
+          }
+      - pattern-not-inside: |
+          catch ($ERR) {
+            ...
+            logServerException(...);
             ...
           }

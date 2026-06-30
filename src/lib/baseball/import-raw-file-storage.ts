@@ -18,6 +18,8 @@
 
 export const BASEBALL_IMPORTS_BUCKET = 'baseball-imports';
 
+import { logServerException } from '@/lib/server-error-logger';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type StorageClient = { storage: any };
 
@@ -66,7 +68,13 @@ export async function uploadImportRawFile(
       .upload(path, blob, { contentType: args.contentType, upsert: true });
     if (error) return null;
     return path;
-  } catch {
+  } catch (err) {
+    void logServerException(err, {
+      action: 'uploadImportRawFile',
+      featureArea: 'baseball-imports',
+      source: 'server_action',
+      handled: true,
+    });
     return null;
   }
 }
@@ -87,7 +95,13 @@ export async function signImportRawFileUrl(
       .createSignedUrl(storagePath, expiresInSeconds);
     if (error || !data?.signedUrl) return null;
     return data.signedUrl as string;
-  } catch {
+  } catch (err) {
+    void logServerException(err, {
+      action: 'signImportRawFileUrl',
+      featureArea: 'baseball-imports',
+      source: 'server_action',
+      handled: true,
+    });
     return null;
   }
 }

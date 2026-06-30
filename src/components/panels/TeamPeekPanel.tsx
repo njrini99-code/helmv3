@@ -311,7 +311,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
                 roster={roster}
                 orgType={team.type}
                 onPlayerClick={(playerId) => {
-                  router.push(`/baseball/player/${playerId}`);
+                  router.push(`/baseball/profile/${playerId}`);
                   onClose();
                 }}
               />

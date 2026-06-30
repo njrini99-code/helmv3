@@ -13,7 +13,7 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/baseball/player/[id]"
+      route="/baseball/profile/[id]"
       component="PublicPlayerProfile"
       title="Failed to load player profile"
       message="We couldn't load this player's profile. The player may not exist or there might be a connection issue."

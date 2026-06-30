@@ -71,6 +71,7 @@ import { saveTextDocument } from '@/app/golf/actions/documents';
 import { createGolfEvent } from '@/app/golf/actions/golf';
 import { attachDocumentToEvent } from '@/app/golf/actions/event-documents';
 import { planToMarkdown } from './plan-markdown';
+import { logError } from '@/lib/error-logging';
 
 /* ──────────────────────────────────────────────────────────────────────────
  * The aspect handed in by the Brief — a flattened, presentation-ready view of
@@ -323,7 +324,11 @@ export function FairwayAspectDrillDown({
       }
       fairwayToast.danger(res.error ?? 'Could not save the document.');
       return null;
-    } catch {
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error(String(err)), {
+        component: 'FairwayAspectDrillDown',
+        action: 'savePracticeDoc',
+      }, 'medium');
       fairwayToast.danger('Could not save the document.');
       return null;
     } finally {

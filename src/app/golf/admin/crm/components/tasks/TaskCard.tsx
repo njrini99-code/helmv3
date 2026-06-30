@@ -11,6 +11,7 @@ import {
 } from '@/components/icons';
 import { completeCrmTask } from '@/app/golf/actions/crm-foundations';
 import { Button } from '@/components/ui/button';
+import { logError } from '@/lib/error-logging';
 import type {
   CrmTask,
   TaskKind,
@@ -87,7 +88,11 @@ export function TaskCard({
         }),
         overdue,
       };
-    } catch {
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error(String(err)), {
+        component: 'TaskCard',
+        action: 'formatDueDate',
+      }, 'low');
       return null;
     }
   }, [task.due_at, task.status]);

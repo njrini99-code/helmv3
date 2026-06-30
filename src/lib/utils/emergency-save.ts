@@ -9,6 +9,7 @@
  */
 
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
+import { logError } from '@/lib/error-logging';
 
 const EMERGENCY_SAVE_PREFIX = 'golf_emergency_save';
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -117,7 +118,11 @@ export function loadEmergencySave(roundId?: string | null): EmergencySaveData | 
     }
 
     return null;
-  } catch {
+  } catch (err) {
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      component: 'emergency-save',
+      action: 'loadEmergencySave',
+    }, 'medium');
     return null;
   }
 }

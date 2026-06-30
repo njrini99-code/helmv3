@@ -15,6 +15,7 @@
 
 import type { Ratelimit } from '@upstash/ratelimit';
 import type { Redis as UpstashRedis } from '@upstash/redis';
+import { logError } from '@/lib/error-logging';
 
 type RateLimitConfig = {
   maxAttempts: number;
@@ -81,7 +82,11 @@ async function getUpstashLimiter(
     _limiters.set(cacheKey, limiter);
     _upstashReady = true;
     return limiter;
-  } catch {
+  } catch (err) {
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      component: 'rate-limit',
+      action: 'initUpstashLimiter',
+    }, 'medium');
     _upstashReady = false;
     return null;
   }

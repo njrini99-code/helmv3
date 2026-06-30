@@ -163,7 +163,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
   };
 
   const handleViewPlayer = (playerId: string) => {
-    router.push(`/baseball/player/${playerId}`);
+    router.push(`/baseball/profile/${playerId}`);
   };
 
   if (loading) {

@@ -45,7 +45,7 @@ function EmailCapture() {
           </svg>
           <span className="text-primary-500 text-sm font-medium">You&apos;re on the list</span>
         </div>
-        <p className="text-white/25 text-sm mt-3">
+        <p className="text-white/60 text-sm mt-3">
           We&apos;ll notify you as soon as we launch.
         </p>
       </m.div>
@@ -191,7 +191,7 @@ export function Hero() {
               className="flex items-center gap-4 mb-5 lg:mb-8"
             >
               <div className="w-8 h-px bg-primary-600/70" />
-              <span className="text-primary-500/70 tracking-[0.25em] uppercase text-eyebrow font-medium">
+              <span className="text-primary-400 tracking-[0.25em] uppercase text-eyebrow font-medium">
                 College Golf Intelligence
               </span>
             </div>

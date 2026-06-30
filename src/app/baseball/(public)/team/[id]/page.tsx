@@ -412,7 +412,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                         >
                           {isRecruiting ? (
                             <Link
-                              href={`/baseball/player/${player.id}`}
+                              href={`/baseball/profile/${player.id}`}
                               className="flex items-center gap-4"
                             >
                               <RosterPlayerRow

@@ -55,6 +55,7 @@ import {
 } from '@/app/golf/actions/course-library';
 import { normalizeName } from '@/lib/golf/course-library';
 import type { GolfCourse, GolfCourseTee } from '@/lib/types/golf-course';
+import { logError } from '@/lib/error-logging';
 
 export interface FairwayCoursePickerProps {
   open: boolean;
@@ -114,7 +115,11 @@ export function FairwayCoursePicker({ open, onOpenChange, onPick }: FairwayCours
       setRecent(rec);
       setTeam(tm);
       return library;
-    } catch {
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error(String(err)), {
+        component: 'FairwayCoursePicker',
+        action: 'refreshCourses',
+      }, 'medium');
       showToastRef.current('Could not load the course library', 'error');
       return [];
     } finally {

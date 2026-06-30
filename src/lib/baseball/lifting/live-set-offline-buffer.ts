@@ -30,6 +30,8 @@
 // bundle only.
 // =============================================================================
 
+import { logError } from '@/lib/error-logging';
+
 export interface BufferedLiveSet {
   /** Stable client id — also the React key + dedupe key for a queued entry. */
   id: string;
@@ -88,7 +90,11 @@ function safeParse(raw: string | null): BufferedLiveSet[] {
         typeof e.sessionExerciseId === 'string' &&
         typeof e.setNumber === 'number',
     );
-  } catch {
+  } catch (err) {
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      component: 'live-set-offline-buffer',
+      action: 'safeParse',
+    }, 'medium');
     return [];
   }
 }
@@ -98,7 +104,11 @@ export function readPendingSets(): BufferedLiveSet[] {
   if (typeof window === 'undefined') return [];
   try {
     return safeParse(window.localStorage.getItem(STORAGE_KEY));
-  } catch {
+  } catch (err) {
+    logError(err instanceof Error ? err : new Error(String(err)), {
+      component: 'live-set-offline-buffer',
+      action: 'readPendingSets',
+    }, 'medium');
     return [];
   }
 }

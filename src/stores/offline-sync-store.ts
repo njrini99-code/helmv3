@@ -21,11 +21,9 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { useShallow } from 'zustand/shallow';
 
-import {
-  getSyncEngine,
-  type SyncProgress,
-  type SyncCallback,
-} from '@/lib/offline/sync-engine';
+import { getSyncEngine, type SyncProgress, type SyncCallback } from '@/lib/offline/sync-engine';
+import { saveRoundDraft } from '@/app/golf/actions/round-drafts';
+import { logError } from '@/lib/error-logging';
 
 import {
   getOfflineStats,
@@ -341,6 +339,11 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
             return result;
 
           } catch (error) {
+            logError(
+              error instanceof Error ? error : new Error(String(error)),
+              { component: 'offline-sync-store', action: 'startSync' },
+              'medium',
+            );
             const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
 
             set((s) => {
@@ -594,6 +597,7 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
           const engine = getSyncEngine({
             autoSyncInterval: 30000,
             syncOnReconnect: true,
+            saveRoundDraft,
           });
           engine.start();
         },

@@ -13,6 +13,7 @@ import {
 } from '@/components/icons';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
 import { getCoachTimeline } from '@/app/golf/actions/crm-timeline';
+import { logError } from '@/lib/error-logging';
 import type {
   CoachEngagement,
   CoachTemperature,
@@ -160,7 +161,11 @@ export function EngagementDetailDrawer({
     if (!engagement?.last_event_at) return null;
     try {
       return formatDistanceToNow(new Date(engagement.last_event_at), { addSuffix: true });
-    } catch {
+    } catch (err) {
+      logError(err instanceof Error ? err : new Error(String(err)), {
+        component: 'EngagementDetailDrawer',
+        action: 'formatLastEvent',
+      }, 'low');
       return null;
     }
   }, [engagement?.last_event_at]);

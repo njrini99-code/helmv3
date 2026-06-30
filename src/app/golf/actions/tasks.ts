@@ -1021,7 +1021,6 @@ export async function seedDefaultTemplates(teamId: string): Promise<ActionResult
     }
 
     revalidatePath('/golf/dashboard/tasks');
-    revalidatePath('/golf/dashboard/tasks/templates');
     return { success: true };
   } catch (error) {
     await logServerError(`[seedDefaultTemplates Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.seedDefaultTemplates' });
