@@ -43,7 +43,9 @@ test('seed scripts do not pair college player_type with recruiting_activated: tr
 test('college recruiting invariant migration exists', async () => {
   const migrationsDir = join(REPO_ROOT, 'supabase', 'migrations');
   const files = await readdir(migrationsDir);
-  const match = files.find((f) => f.includes('college_recruiting_invariant'));
+  const match = files.find(
+    (f) => f.includes('college_recruiting_invariant') || f.includes('college_recruiting_check'),
+  );
   assert.ok(match, 'expected a migration enforcing the college recruiting invariant');
   const sql = await readFile(join(migrationsDir, match), 'utf8');
   assert.match(sql, /player_type = 'college'/);

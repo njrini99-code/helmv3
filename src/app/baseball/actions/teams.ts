@@ -470,18 +470,12 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
     }
 
     // Reserve redemption atomically before creating membership (#395).
-    let redeemQuery = fromUntyped(supabase, 'baseball_team_invitations')
-      .update({ used_count: (invitation.used_count ?? 0) + 1 } as Record<string, unknown>)
-      .eq('id', invitation.id)
-      .eq('is_active', true)
-      .select('id');
+    const { data: redeemed, error: redeemError } = (await supabase.rpc(
+      'try_redeem_baseball_team_invitation' as never,
+      { p_invitation_id: invitation.id } as never,
+    )) as { data: boolean | null; error: unknown };
 
-    if (invitation.max_uses != null) {
-      redeemQuery = redeemQuery.lt('used_count', invitation.max_uses);
-    }
-
-    const { data: redeemed } = await redeemQuery.maybeSingle();
-    if (!redeemed) {
+    if (redeemError || !redeemed) {
       return {
         success: false,
         error: 'This invitation has reached its maximum number of uses',
@@ -491,9 +485,10 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
     // Join the team
     const joinResult = await joinTeam(validatedData.player_id, invitation.team_id);
     if (!joinResult.success) {
-      await fromUntyped(supabase, 'baseball_team_invitations')
-        .update({ used_count: invitation.used_count ?? 0 } as Record<string, unknown>)
-        .eq('id', invitation.id);
+      await supabase.rpc(
+        'release_baseball_team_invitation_redemption' as never,
+        { p_invitation_id: invitation.id } as never,
+      );
       return joinResult;
     }
 
