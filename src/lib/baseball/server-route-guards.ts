@@ -90,3 +90,16 @@ export async function requireAcademicsCoachRoute(redirectTo = '/baseball/dashboa
     redirectTo,
   });
 }
+
+export async function requireBaseballPlayerRoute(options?: {
+  redirectTo?: string;
+}) {
+  const coachRedirect = options?.redirectTo ?? '/baseball/dashboard/stats-center';
+  const session = await getSessionProfile();
+
+  if (!session) redirect('/baseball/login');
+  if (session.role === 'coach' || session.coach) redirect(coachRedirect);
+  if (session.role !== 'player' || !session.player) redirect('/baseball/login');
+
+  return session;
+}
