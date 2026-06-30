@@ -1,0 +1,30 @@
+# [Route Hygiene]: /player
+
+## Severity
+P2
+
+## Confidence
+medium
+
+## Finding type
+stale-link
+
+## Evidence
+- Source file: src/components/layout/mobile-bottom-nav.tsx
+- Canonical route: /player
+- Referenced route: /player
+- Detected by: routes:check:links
+
+## Why it matters
+Link target /player not found in route inventory.
+
+## Suggested resolution
+- needs-decision
+
+## Verification
+```bash
+npm run routes:check
+npm run routes:crawl
+npm run e2e:critical
+npm run typecheck
+```

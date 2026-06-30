@@ -2,7 +2,7 @@
   "(null)": 1,
   "@typescript-eslint/no-explicit-any": 41,
   "@typescript-eslint/no-unused-vars": 1,
-  "helm/no-arbitrary-bg-white": 1290,
+  "helm/no-arbitrary-bg-white": 1283,
   "helm/no-arbitrary-radius": 37,
   "helm/no-arbitrary-text-px": 34,
   "helm/no-banned-color": 131,

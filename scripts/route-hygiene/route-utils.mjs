@@ -1,13 +1,40 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, sep } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { globSync } from 'glob';
+import { normalizeAppFile } from './route-normalizer.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const generatedDir = join(repoRoot, 'docs/operations/generated');
+const revealedBugsDir = join(repoRoot, 'docs/operations/revealed-bugs/routes');
+
+export const REPO_ROOT = repoRoot;
+
+function walkFiles(rootDir, matcher) {
+  const results = [];
+  if (!existsSync(rootDir)) return results;
+  const stack = [rootDir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    for (const entry of readdirSync(current)) {
+      const full = join(current, entry);
+      const stat = statSync(full);
+      if (stat.isDirectory()) {
+        stack.push(full);
+        continue;
+      }
+      const rel = relative(repoRoot, full).split('\\').join('/');
+      if (matcher(rel)) results.push(rel);
+    }
+  }
+  return results.sort();
+}
 
 export function ensureGeneratedDir() {
   mkdirSync(generatedDir, { recursive: true });
+}
+
+export function ensureRevealedBugsDir() {
+  mkdirSync(revealedBugsDir, { recursive: true });
 }
 
 export function writeJson(name, data) {
@@ -27,38 +54,52 @@ export function readJson(name, fallback) {
 }
 
 export function appFiles() {
-  return globSync('src/app/**/{page,route,layout,loading,error,template,not-found}.{ts,tsx}', {
-    cwd: repoRoot,
-    nodir: true,
-    posix: true,
-  }).sort();
+  return walkFiles(join(repoRoot, 'src/app'), (rel) =>
+    /\/(page|route)\.(ts|tsx|js|jsx)$/.test(rel),
+  );
+}
+
+export function layoutFiles() {
+  return walkFiles(join(repoRoot, 'src/app'), (rel) =>
+    /\/(layout|loading|error|not-found)\.(ts|tsx)$/.test(rel),
+  );
 }
 
 export function sourceFiles() {
-  return globSync('src/**/*.{ts,tsx}', {
-    cwd: repoRoot,
-    nodir: true,
-    posix: true,
-    ignore: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/contracts/**'],
-  }).sort();
+  return walkFiles(join(repoRoot, 'src'), (rel) =>
+    /\.(ts|tsx)$/.test(rel) &&
+    !rel.includes('/contracts/') &&
+    !/\.test\.(ts|tsx)$/.test(rel),
+  );
 }
 
-export function routeFromFile(file) {
-  const parts = file.split(sep).join('/').replace(/^src\/app\//, '').split('/');
-  const leaf = parts.pop();
-  if (!leaf) return null;
-  if (!/^(page|route)\.(ts|tsx)$/.test(leaf)) return null;
-  const clean = parts.filter((part) => !part.startsWith('(') && !part.startsWith('@'));
-  return `/${clean.join('/')}`.replace(/\/+/g, '/').replace(/\/$/, '') || '/';
+export function e2eFiles() {
+  return walkFiles(join(repoRoot, 'e2e'), (rel) => /\.(ts|tsx)$/.test(rel));
 }
+
+/** @deprecated use normalizeAppFile */
+export function routeFromFile(file) {
+  const row = normalizeAppFile(file);
+  return row?.canonicalPath ?? null;
+}
+
+const HREF_PATTERNS = [
+  /(?:href|to)\s*=\s*["'`]([^"'`]+)["'`]/g,
+  /(?:router\.push|router\.replace|redirect|permanentRedirect|revalidatePath|navigate)\s*\(\s*["'`]([^"'`]+)["'`]/g,
+  /window\.location\.href\s*=\s*["'`]([^"'`]+)["'`]/g,
+  /href:\s*["'`]([^"'`]+)["'`]/g,
+];
 
 export function extractHrefLikeStrings(source) {
-  const out = [];
-  const re = /(?:href|to|redirect|router\.push|router\.replace)\s*(?:=|\()\s*["'`]([^"'`]+)["'`]/g;
-  for (const match of source.matchAll(re)) {
-    if (match[1]?.startsWith('/')) out.push(match[1]);
+  const out = new Set();
+  for (const re of HREF_PATTERNS) {
+    re.lastIndex = 0;
+    for (const match of source.matchAll(re)) {
+      const href = match[1]?.trim();
+      if (href?.startsWith('/')) out.add(href);
+    }
   }
-  return out;
+  return [...out];
 }
 
 export function canonicalRouteHref(href) {
@@ -82,4 +123,9 @@ export function readSource(file) {
 
 export function repoPath(file) {
   return relative(process.cwd(), join(repoRoot, file));
+}
+
+export function dirHasFile(dir, name) {
+  const base = dir.replace(/\/[^/]+$/, '');
+  return existsSync(join(repoRoot, base, name));
 }

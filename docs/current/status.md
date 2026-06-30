@@ -8,30 +8,40 @@ Last updated: 2026-06-30
 |---|---|---|
 | TypeScript | Green locally | `npm run typecheck` passed. |
 | ESLint | Green locally | `npm run lint` passed under the repo warning ceiling. |
-| Lint Ratchet | Green locally | Baseline locked at 2132 warnings after net cleanup. |
-| Unit Tests | Green locally | `npm run test:run` passed: 3434 passed, 39 skipped. |
+| Lint Ratchet | Green locally | Baseline locked at 2125 warnings after net cleanup. |
+| Unit Tests | Green locally | `npm run test:run` passed. |
 | Build | Green locally | `npm run build` passed with the 8GB heap setting. |
 | Workflow lint | Green locally | `actionlint .github/workflows/*.yml` passed. |
-| Repo Health | Green locally | `npm run repo:health` passed (iOS Capacitor bundle no longer tracked). |
+| Repo Health | Green locally | `npm run repo:health` passed. |
+| Route Hygiene | Green locally | `npm run routes:check` — 0 P0/P1 blockers across 262 routes. |
+| Business contracts | Green locally | `npm run test:business` includes route normalizer contract. |
 | Supabase RLS | Green in CI | `Supabase lint + RLS tests` passed on PR #358. |
 | Gitleaks | Green in CI | Current-tree scan reports zero findings. |
-| Playwright Smoke | Green locally | 3/3 runnable smoke tests passed; auth demo test skips without `E2E_AUTH_SMOKE_ENABLED`. |
-| Playwright Critical | Green locally | 3/3 public route critical tests passed. |
-| dependency-cruiser | Green | 0 errors (was 25); `npm run analyze:deps`. |
-| Semgrep advisory | Tuned | 19 `catch-collapses` warnings (was 56+); 0 service-role-in-client findings. |
+| Branch protection | Updated | `main` now requires `Business contracts` and `Route Hygiene P0/P1`. |
+| Playwright Smoke | Green in CI | Smoke checks passing on PR #358. |
+
+## Known Follow-Ups
+
+- [#351](https://github.com/njrini99-code/helmv3/issues/351): Stabilize the full Playwright suite before making it a hard gate (advisory workflow remains).
+- [#352](https://github.com/njrini99-code/helmv3/issues/352): Dense spatial controls in scoped files still use documented `helm/no-raw-button` exceptions where primitives cannot preserve geometry.
+- [#365](https://github.com/njrini99-code/helmv3/issues/365): Run production DB audit once `PROD_AUDIT_DATABASE_URL` secret is configured.
+- [#107–#110](https://github.com/njrini99-code/helmv3/issues): Legacy Semgrep/schema tech-debt from May 2026 — separate from the production-readiness radar.
 
 ## Recently Closed (2026-06-30)
 
-- [#350](https://github.com/njrini99-code/helmv3/issues/350): Branch protection includes `Business contracts` and `Route Hygiene P0/P1`.
-- [#351](https://github.com/njrini99-code/helmv3/issues/351): Playwright smoke + critical paths green locally (advisory full suite; not promoted to hard gate).
-- [#352](https://github.com/njrini99-code/helmv3/issues/352): Dense legacy raw-button surfaces migrated to design-system primitives where feasible; file-level disables removed.
-- [#355](https://github.com/njrini99-code/helmv3/issues/355): Capacitor iOS `public/` + `config.xml` untracked; regenerated via `cap sync` in Xcode Cloud.
-- [#362](https://github.com/njrini99-code/helmv3/issues/362): dependency-cruiser violations resolved (25 → 0).
-- [#363](https://github.com/njrini99-code/helmv3/issues/363): Semgrep Helm rules tuned; service-role false positives eliminated, catch-collapses scoped.
-- [#364](https://github.com/njrini99-code/helmv3/issues/364): JSCPD excludes generated paths via `.jscpd.json`.
-- [#365](https://github.com/njrini99-code/helmv3/issues/365): Prod DB audit skips gracefully without `PROD_AUDIT_DATABASE_URL`; documented in ops stack.
+- [#350](https://github.com/njrini99-code/helmv3/issues/350): Branch protection updated with `Business contracts` and `Route Hygiene P0/P1`.
+- [#355](https://github.com/njrini99-code/helmv3/issues/355): Capacitor iOS web bundle untracked; regenerated via `npx cap sync ios`.
+- [#362](https://github.com/njrini99-code/helmv3/issues/362): dependency-cruiser violations resolved (0 remaining).
+- [#363](https://github.com/njrini99-code/helmv3/issues/363): Semgrep noise reduced (254 → 19 advisory findings); exclusions tuned in `.semgrep/helm-rules.yml`.
+- [#364](https://github.com/njrini99-code/helmv3/issues/364): JSCPD exclusions added via `.jscpd.json`; scanner remains advisory.
 
-## Open Follow-Ups
+## Route Bug Catcher
 
-- Continue shrinking the 19 remaining Semgrep `catch-collapses` advisories in product UI loaders.
-- Optional: enable `E2E_AUTH_SMOKE_ENABLED` in CI for the demo-login smoke path.
+Static checks (`npm run routes:check`):
+
+- 262 routes inventoried
+- 0 P0/P1 blockers (duplicates, stale links, boundaries, coverage)
+- 131 advisory findings (dead-route candidates, coverage gaps)
+- Semgrep companion rules at `.semgrep/helm-route-rules.yml`
+
+Runtime crawler (`npm run routes:crawl`) runs advisory in `free-production-readiness.yml`.

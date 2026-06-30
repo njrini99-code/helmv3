@@ -1,0 +1,98 @@
+rules:
+  - id: helm-golf-links-baseball-login
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: Golf code must not link to Baseball login.
+    paths:
+      include:
+        - src/app/golf/**
+        - src/components/golf/**
+        - src/lib/golf/**
+        - src/lib/coachhelm/**
+    pattern-either:
+      - pattern: '"/baseball/login"'
+      - pattern: "'/baseball/login'"
+      - pattern: '`/baseball/login`'
+
+  - id: helm-golf-links-baseball-dashboard
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: Golf code must not link to Baseball dashboard.
+    paths:
+      include:
+        - src/app/golf/**
+        - src/components/golf/**
+        - src/lib/golf/**
+        - src/lib/coachhelm/**
+    pattern-either:
+      - pattern: '"/baseball/dashboard"'
+      - pattern: "'/baseball/dashboard'"
+      - pattern: '`/baseball/dashboard`'
+
+  - id: helm-baseball-links-golf-login
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: Baseball code must not link to Golf login.
+    paths:
+      include:
+        - src/app/baseball/**
+        - src/components/baseball/**
+        - src/lib/baseball/**
+    pattern-either:
+      - pattern: '"/golf/login"'
+      - pattern: "'/golf/login'"
+      - pattern: '`/golf/login`'
+
+  - id: helm-baseball-links-golf-dashboard
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: Baseball code must not link to Golf dashboard.
+    paths:
+      include:
+        - src/app/baseball/**
+        - src/components/baseball/**
+        - src/lib/baseball/**
+    pattern-either:
+      - pattern: '"/golf/dashboard"'
+      - pattern: "'/golf/dashboard'"
+      - pattern: '`/golf/dashboard`'
+
+  - id: helm-href-contains-route-group-auth
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: Customer-facing href must not include (auth) route group.
+    paths:
+      include:
+        - src/**
+    pattern-either:
+      - pattern-regex: 'href\\s*=\\s*["\`][^"\`]*\\/\\(auth\\)[^"\`]*["\`]'
+      - pattern-regex: 'href:\\s*["\`][^"\`]*\\/\\(auth\\)[^"\`]*["\`]'
+
+  - id: helm-href-contains-route-group-dashboard
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: Customer-facing href must not include (dashboard) route group.
+    paths:
+      include:
+        - src/**
+    pattern-either:
+      - pattern-regex: 'href\\s*=\\s*["\`][^"\`]*\\/\\(dashboard\\)[^"\`]*["\`]'
+      - pattern-regex: 'href:\\s*["\`][^"\`]*\\/\\(dashboard\\)[^"\`]*["\`]'
+
+  - id: helm-router-push-route-group
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: router.push/replace must not include route group folder names.
+    paths:
+      include:
+        - src/**
+    pattern-regex: 'router\\.(push|replace)\\([^)]*\\/\\([a-z-]+\\)'
+
+  - id: helm-redirect-route-group
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: redirect/permanentRedirect must not include route group folder names.
+    paths:
+      include:
+        - src/**
+    pattern-regex: '(redirect|permanentRedirect)\\([^)]*\\/\\([a-z-]+\\)'

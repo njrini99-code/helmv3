@@ -139,10 +139,10 @@ import { HomeIcon, UsersIcon, CalendarIcon, MessageSquareIcon } from 'lucide-rea
 
 <MobileBottomNav
   items={[
-    { label: 'Home', href: '/dashboard', icon: HomeIcon },
-    { label: 'Roster', href: '/dashboard/roster', icon: UsersIcon },
-    { label: 'Calendar', href: '/dashboard/calendar', icon: CalendarIcon },
-    { label: 'Messages', href: '/dashboard/messages', icon: MessageSquareIcon, badge: 3 },
+    { label: 'Home', href: '/baseball/dashboard/command-center', icon: HomeIcon },
+    { label: 'Roster', href: '/baseball/dashboard/roster', icon: UsersIcon },
+    { label: 'Calendar', href: '/baseball/dashboard/calendar', icon: CalendarIcon },
+    { label: 'Messages', href: '/baseball/dashboard/messages', icon: MessageSquareIcon, badge: 3 },
   ]}
 />
 
@@ -151,10 +151,10 @@ import { HomeIcon, TrophyIcon, VideoIcon, SettingsIcon } from 'lucide-react';
 
 <MobileBottomNav
   items={[
-    { label: 'Home', href: '/player', icon: HomeIcon },
-    { label: 'Journey', href: '/player/journey', icon: TrophyIcon },
-    { label: 'Videos', href: '/player/videos', icon: VideoIcon },
-    { label: 'Settings', href: '/player/settings', icon: SettingsIcon },
+    { label: 'Home', href: '/baseball/player/today', icon: HomeIcon },
+    { label: 'Journey', href: '/baseball/player/journey', icon: TrophyIcon },
+    { label: 'Videos', href: '/baseball/player/videos', icon: VideoIcon },
+    { label: 'Settings', href: '/baseball/player/settings', icon: SettingsIcon },
   ]}
 />
 
