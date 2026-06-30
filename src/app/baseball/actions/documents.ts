@@ -105,15 +105,6 @@ function handleError(error: unknown): string {
   return 'An unexpected error occurred';
 }
 
-async function assertDocumentWrite(teamId: string): Promise<string | null> {
-  try {
-    await requireBaseballCapability(teamId, 'can_manage_documents');
-    return null;
-  } catch {
-    return 'You do not have permission to manage documents';
-  }
-}
-
 // ============================================
 // DOCUMENT CRUD OPERATIONS
 // ============================================
@@ -469,16 +460,19 @@ export async function uploadNewVersion(
   error?: string;
 }> {
   try {
+    return await uploadNewVersionAction(documentId, file, teamId, coachId, changeNotes);
+  } catch (error) {
+    return mapDocumentActionError(error);
+  }
+}
+
+const uploadNewVersionAction = withBaseballAction(
+  'uploadNewVersion',
+  { featureArea: 'baseball-documents' },
+  async (ctx, documentId: string, file: File, teamId?: string, _coachId?: string, changeNotes?: string) => {
+    void _coachId;
     const supabase = await createClient();
 
-    // Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) throw new Error('Not authenticated');
-
-    // Get current document
     const { data: document, error: docError } = await (supabase as any)
       .from('baseball_documents')
       .select('team_id, version_count')
@@ -487,13 +481,11 @@ export async function uploadNewVersion(
 
     if (docError) throw docError;
 
-    const capError = await assertDocumentWrite(String(document.team_id));
-    if (capError) return { success: false, error: capError };
+    await requireBaseballCapability(String(document.team_id), 'can_manage_documents');
 
     const effectiveTeamId = teamId || document.team_id;
     const newVersionNumber = (document.version_count || 1) + 1;
 
-    // Upload new file
     const fileExt = file.name.split('.').pop();
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const storagePath = `baseball-documents/${effectiveTeamId}/${fileName}`;
@@ -506,7 +498,6 @@ export async function uploadNewVersion(
 
     const signedUrl = await signDocumentStoragePath(supabase, storagePath);
 
-    // Create version record
     const { data: version, error: versionError } = await (supabase as any)
       .from('baseball_document_versions')
       .insert({
@@ -517,7 +508,7 @@ export async function uploadNewVersion(
         mime_type: file.type,
         storage_path: storagePath,
         change_notes: changeNotes || null,
-        uploaded_by: user.id,
+        uploaded_by: ctx.user.id,
       })
       .select(`
         *,
@@ -530,7 +521,6 @@ export async function uploadNewVersion(
 
     if (versionError) throw versionError;
 
-    // Update main document with new version info
     const { error: updateError } = await (supabase as any)
       .from('baseball_documents')
       .update({
@@ -543,22 +533,17 @@ export async function uploadNewVersion(
 
     if (updateError) throw updateError;
 
-    // Suppress unused variable warnings for optional params
-    void coachId;
-
     revalidatePath(DOCUMENTS_PATH);
     return {
-      success: true,
+      success: true as const,
       version: {
         ...(version as unknown as BaseballDocumentVersion),
         file_url: signedUrl,
         file_size: file.size,
       },
     };
-  } catch (error) {
-    return { success: false, error: handleError(error) };
-  }
-}
+  },
+);
 
 export async function getVersionHistory(
   documentId: string

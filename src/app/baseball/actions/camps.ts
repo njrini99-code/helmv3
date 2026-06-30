@@ -4,33 +4,37 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
+import { BaseballCapabilityError } from '@/lib/baseball/capabilities';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballNoActiveTeamError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
+
+const CAMPS_PATH = '/baseball/dashboard/camps';
 
 // ============================================================================
-// AUTH HELPERS
+// HELPERS
 // ============================================================================
 
-async function requireAuthCoach() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return { supabase, user: null, coach: null, error: 'Not authenticated' as const };
+function mapCampsActionError(error: unknown): { success: false; error: string } {
+  if (error instanceof BaseballUnauthorizedError) {
+    return { success: false, error: 'Not authenticated' };
   }
-
-  const { data: coach } = await supabase
-    .from('baseball_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!coach) {
-    return { supabase, user, coach: null, error: 'Coach not found' as const };
+  if (error instanceof BaseballNoActiveTeamError) {
+    return { success: false, error: 'Coach not found' };
   }
-
-  return { supabase, user, coach, error: null };
+  if (error instanceof BaseballCapabilityError) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  if (error instanceof BaseballActionError) {
+    return { success: false, error: 'Could not complete the camp action. Please try again.' };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred' };
 }
 
 async function requireAuthPlayer() {
@@ -67,59 +71,72 @@ async function requireAuthPlayer() {
 export async function deleteCamp(
   campId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { supabase, coach, error: authError } = await requireAuthCoach();
-
-  if (authError || !coach) {
-    return { success: false, error: authError ?? 'Unauthorized' };
+  try {
+    return await deleteCampAction(campId);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'camps.deleteCamp', featureArea: 'baseball-camps' },
+    );
+    return mapCampsActionError(error);
   }
-
-  // Verify coach owns this camp
-  const { data: camp } = await fromUntyped(supabase, 'baseball_camps')
-    .select('id, coach_id')
-    .eq('id', campId)
-    .single();
-
-  if (!camp) {
-    return { success: false, error: 'Camp not found' };
-  }
-
-  if (camp.coach_id !== coach.id) {
-    await logServerError('[Security] deleteCamp: coach does not own camp', {
-      action: 'camps.deleteCamp',
-      metadata: { campId, coachId: coach.id, campCoachId: camp.coach_id },
-    });
-    return { success: false, error: 'Unauthorized' };
-  }
-
-  // Delete all registrations first (FK constraint)
-  const { error: regsError } = await fromUntyped(supabase, 'baseball_camp_registrations')
-    .delete()
-    .eq('camp_id', campId);
-
-  if (regsError) {
-    await logServerError(`deleteCamp: failed to delete registrations: ${regsError.message}`, {
-      action: 'camps.deleteCamp',
-      metadata: { campId },
-    });
-    return { success: false, error: 'Failed to delete camp registrations' };
-  }
-
-  // Delete the camp
-  const { error: campError } = await fromUntyped(supabase, 'baseball_camps')
-    .delete()
-    .eq('id', campId);
-
-  if (campError) {
-    await logServerError(`deleteCamp: failed to delete camp: ${campError.message}`, {
-      action: 'camps.deleteCamp',
-      metadata: { campId },
-    });
-    return { success: false, error: 'Failed to delete camp' };
-  }
-
-  revalidatePath('/baseball/dashboard/camps');
-  return { success: true };
 }
+
+const deleteCampAction = withBaseballAction(
+  'deleteCamp',
+  { featureArea: 'baseball-camps', requiredCapability: 'can_manage_settings' },
+  async (ctx, campId: string): Promise<{ success: boolean; error?: string }> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    const { data: camp } = await fromUntyped(supabase, 'baseball_camps')
+      .select('id, coach_id')
+      .eq('id', campId)
+      .single();
+
+    if (!camp) {
+      return { success: false, error: 'Camp not found' };
+    }
+
+    if (camp.coach_id !== coachId) {
+      await logServerError('[Security] deleteCamp: coach does not own camp', {
+        action: 'camps.deleteCamp',
+        metadata: { campId, coachId, campCoachId: camp.coach_id },
+      });
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const { error: regsError } = await fromUntyped(supabase, 'baseball_camp_registrations')
+      .delete()
+      .eq('camp_id', campId);
+
+    if (regsError) {
+      await logServerError(`deleteCamp: failed to delete registrations: ${regsError.message}`, {
+        action: 'camps.deleteCamp',
+        metadata: { campId },
+      });
+      return { success: false, error: 'Failed to delete camp registrations' };
+    }
+
+    const { error: campError } = await fromUntyped(supabase, 'baseball_camps')
+      .delete()
+      .eq('id', campId);
+
+    if (campError) {
+      await logServerError(`deleteCamp: failed to delete camp: ${campError.message}`, {
+        action: 'camps.deleteCamp',
+        metadata: { campId },
+      });
+      return { success: false, error: 'Failed to delete camp' };
+    }
+
+    revalidatePath(CAMPS_PATH);
+    return { success: true };
+  },
+);
 
 /**
  * Check in a player at a camp (set status to 'attended').
@@ -128,45 +145,60 @@ export async function deleteCamp(
 export async function checkInCampPlayer(
   registrationId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { supabase, coach, error: authError } = await requireAuthCoach();
-
-  if (authError || !coach) {
-    return { success: false, error: authError ?? 'Unauthorized' };
+  try {
+    return await checkInCampPlayerAction(registrationId);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'camps.checkInCampPlayer', featureArea: 'baseball-camps' },
+    );
+    return mapCampsActionError(error);
   }
-
-  // Verify the registration belongs to a camp owned by this coach
-  const { data: reg } = await fromUntyped(supabase, 'baseball_camp_registrations')
-    .select('id, camp_id, baseball_camps!inner(coach_id)')
-    .eq('id', registrationId)
-    .single();
-
-  if (!reg) {
-    return { success: false, error: 'Registration not found' };
-  }
-
-  const campCoachId = reg.baseball_camps?.coach_id;
-  if (campCoachId !== coach.id) {
-    await logServerError('[Security] checkInCampPlayer: coach does not own camp', {
-      action: 'camps.checkInCampPlayer',
-      metadata: { registrationId, coachId: coach.id },
-    });
-    return { success: false, error: 'Unauthorized' };
-  }
-
-  const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
-    .update({
-      status: 'attended',
-      attended_at: new Date().toISOString(),
-    })
-    .eq('id', registrationId);
-
-  if (error) {
-    return { success: false, error: 'Failed to check in player' };
-  }
-
-  revalidatePath('/baseball/dashboard/camps');
-  return { success: true };
 }
+
+const checkInCampPlayerAction = withBaseballAction(
+  'checkInCampPlayer',
+  { featureArea: 'baseball-camps', requiredCapability: 'can_manage_settings' },
+  async (ctx, registrationId: string): Promise<{ success: boolean; error?: string }> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    const { data: reg } = await fromUntyped(supabase, 'baseball_camp_registrations')
+      .select('id, camp_id, baseball_camps!inner(coach_id)')
+      .eq('id', registrationId)
+      .single();
+
+    if (!reg) {
+      return { success: false, error: 'Registration not found' };
+    }
+
+    const campCoachId = reg.baseball_camps?.coach_id;
+    if (campCoachId !== coachId) {
+      await logServerError('[Security] checkInCampPlayer: coach does not own camp', {
+        action: 'camps.checkInCampPlayer',
+        metadata: { registrationId, coachId },
+      });
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
+      .update({
+        status: 'attended',
+        attended_at: new Date().toISOString(),
+      })
+      .eq('id', registrationId);
+
+    if (error) {
+      return { success: false, error: 'Failed to check in player' };
+    }
+
+    revalidatePath(CAMPS_PATH);
+    return { success: true };
+  },
+);
 
 /**
  * Mark a player as no-show at a camp.
@@ -175,42 +207,57 @@ export async function checkInCampPlayer(
 export async function markCampNoShow(
   registrationId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { supabase, coach, error: authError } = await requireAuthCoach();
-
-  if (authError || !coach) {
-    return { success: false, error: authError ?? 'Unauthorized' };
+  try {
+    return await markCampNoShowAction(registrationId);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'camps.markCampNoShow', featureArea: 'baseball-camps' },
+    );
+    return mapCampsActionError(error);
   }
-
-  // Verify the registration belongs to a camp owned by this coach
-  const { data: reg } = await fromUntyped(supabase, 'baseball_camp_registrations')
-    .select('id, camp_id, baseball_camps!inner(coach_id)')
-    .eq('id', registrationId)
-    .single();
-
-  if (!reg) {
-    return { success: false, error: 'Registration not found' };
-  }
-
-  const campCoachId = reg.baseball_camps?.coach_id;
-  if (campCoachId !== coach.id) {
-    await logServerError('[Security] markCampNoShow: coach does not own camp', {
-      action: 'camps.markCampNoShow',
-      metadata: { registrationId, coachId: coach.id },
-    });
-    return { success: false, error: 'Unauthorized' };
-  }
-
-  const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
-    .update({ status: 'no_show' })
-    .eq('id', registrationId);
-
-  if (error) {
-    return { success: false, error: 'Failed to update status' };
-  }
-
-  revalidatePath('/baseball/dashboard/camps');
-  return { success: true };
 }
+
+const markCampNoShowAction = withBaseballAction(
+  'markCampNoShow',
+  { featureArea: 'baseball-camps', requiredCapability: 'can_manage_settings' },
+  async (ctx, registrationId: string): Promise<{ success: boolean; error?: string }> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Coach not found' };
+    }
+
+    const { data: reg } = await fromUntyped(supabase, 'baseball_camp_registrations')
+      .select('id, camp_id, baseball_camps!inner(coach_id)')
+      .eq('id', registrationId)
+      .single();
+
+    if (!reg) {
+      return { success: false, error: 'Registration not found' };
+    }
+
+    const campCoachId = reg.baseball_camps?.coach_id;
+    if (campCoachId !== coachId) {
+      await logServerError('[Security] markCampNoShow: coach does not own camp', {
+        action: 'camps.markCampNoShow',
+        metadata: { registrationId, coachId },
+      });
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
+      .update({ status: 'no_show' })
+      .eq('id', registrationId);
+
+    if (error) {
+      return { success: false, error: 'Failed to update status' };
+    }
+
+    revalidatePath(CAMPS_PATH);
+    return { success: true };
+  },
+);
 
 // ============================================================================
 // PLAYER — CAMP REGISTRATION
@@ -229,7 +276,6 @@ export async function registerForCamp(
     return { success: false, error: authError ?? 'Unauthorized' };
   }
 
-  // Check if already registered (non-cancelled)
   const { data: existing } = await fromUntyped(supabase, 'baseball_camp_registrations')
     .select('id, status')
     .eq('camp_id', campId)
@@ -241,7 +287,6 @@ export async function registerForCamp(
   }
 
   if (existing && existing.status === 'cancelled') {
-    // Re-activate cancelled registration
     const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
       .update({ status: 'registered', registered_at: new Date().toISOString() })
       .eq('id', existing.id);
@@ -250,7 +295,6 @@ export async function registerForCamp(
       return { success: false, error: 'Failed to register for camp' };
     }
   } else {
-    // Insert new registration
     const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
       .insert({
         camp_id: campId,
@@ -265,7 +309,7 @@ export async function registerForCamp(
     }
   }
 
-  revalidatePath('/baseball/dashboard/camps');
+  revalidatePath(CAMPS_PATH);
   return { success: true };
 }
 
@@ -291,6 +335,6 @@ export async function unregisterFromCamp(
     return { success: false, error: 'Failed to cancel registration' };
   }
 
-  revalidatePath('/baseball/dashboard/camps');
+  revalidatePath(CAMPS_PATH);
   return { success: true };
 }

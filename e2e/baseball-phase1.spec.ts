@@ -56,6 +56,10 @@ test.describe('BaseballHelm Phase 1 — route wiring (anonymous)', () => {
     '/baseball/dashboard/settings/imports',
     '/baseball/dashboard/settings/integrations',
     '/baseball/dashboard/settings/audit',
+    '/baseball/dashboard/announcements',
+    '/baseball/dashboard/travel',
+    '/baseball/dashboard/tasks',
+    '/baseball/dashboard/documents',
   ];
 
   for (const route of PROTECTED_ROUTES) {

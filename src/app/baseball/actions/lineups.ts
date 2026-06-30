@@ -2,6 +2,16 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-error-logger';
+import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballNoActiveTeamError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
+
+const ROSTER_PATH = '/baseball/dashboard/roster';
 
 interface LineupPosition {
   order: number;
@@ -14,215 +24,222 @@ interface SaveLineupParams {
   positions: LineupPosition[];
 }
 
+function mapLineupActionError(error: unknown): { success: false; error: string } {
+  if (error instanceof BaseballUnauthorizedError) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  if (error instanceof BaseballNoActiveTeamError) {
+    return { success: false, error: 'Coach or team not found' };
+  }
+  if (error instanceof BaseballCapabilityError) {
+    return { success: false, error: 'You do not have permission to manage lineups' };
+  }
+  if (error instanceof BaseballActionError) {
+    return { success: false, error: 'Could not complete the lineup action. Please try again.' };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred' };
+}
+
+function validateLineupPositions(positions: LineupPosition[]): string | null {
+  if (!positions || positions.length === 0) {
+    return 'Lineup must have at least one player';
+  }
+  if (positions.length > 9) {
+    return 'Lineup cannot have more than 9 players';
+  }
+  const orders = positions.map((p) => p.order);
+  if (new Set(orders).size !== orders.length) {
+    return 'Lineup cannot have duplicate batting orders';
+  }
+  const playerIds = positions.map((p) => p.playerId);
+  if (new Set(playerIds).size !== playerIds.length) {
+    return 'Lineup cannot have the same player in multiple positions';
+  }
+  return null;
+}
+
+const saveLineupAction = withBaseballAction(
+  'saveLineup',
+  {
+    featureArea: 'baseball-lineups',
+    requiredCapability: 'can_manage_lineups',
+    teamFrom: (params: SaveLineupParams) => params.teamId,
+  },
+  async (ctx, { teamId, name, positions }: SaveLineupParams) => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) return { success: false, error: 'Coach profile not found' };
+
+    if (teamId !== ctx.activeTeamId) {
+      await requireBaseballCapability(teamId, 'can_manage_lineups');
+    }
+
+    const validationError = validateLineupPositions(positions);
+    if (validationError) return { success: false, error: validationError };
+
+    const { data: lineup, error: lineupError } = await supabase
+      .from('baseball_team_lineups')
+      .insert({
+        team_id: teamId,
+        created_by_coach_id: coachId,
+        name: name || 'Untitled Lineup',
+      })
+      .select()
+      .single();
+
+    if (lineupError) throw lineupError;
+
+    const positionsData = positions.map((pos) => ({
+      lineup_id: lineup.id,
+      batting_order: pos.order,
+      player_id: pos.playerId,
+    }));
+
+    const { error: positionsError } = await supabase
+      .from('baseball_lineup_positions')
+      .insert(positionsData);
+
+    if (positionsError) {
+      await supabase.from('baseball_team_lineups').delete().eq('id', lineup.id);
+      throw positionsError;
+    }
+
+    revalidatePath(ROSTER_PATH);
+    return { success: true as const, lineupId: lineup.id };
+  },
+);
+
 /**
  * Save a new lineup for a team
  */
-export async function saveLineup({ teamId, name, positions }: SaveLineupParams) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
-
-  // Get coach record
-  const { data: coach } = await supabase
-    .from('baseball_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!coach) throw new Error('Only coaches can create lineups');
-
-  // Verify coach has access to this team
-  const { data: teamCoach } = await supabase
-    .from('baseball_team_coach_staff')
-    .select('id')
-    .eq('team_id', teamId)
-    .eq('coach_id', coach.id)
-    .single();
-
-  if (!teamCoach) throw new Error('You do not have access to this team');
-
-  // Validate lineup (must have positions, no duplicates)
-  if (!positions || positions.length === 0) {
-    throw new Error('Lineup must have at least one player');
+export async function saveLineup(params: SaveLineupParams) {
+  try {
+    return await saveLineupAction(params);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_lineups.saveLineup', featureArea: 'baseball-lineups' },
+    );
+    return mapLineupActionError(error);
   }
-
-  if (positions.length > 9) {
-    throw new Error('Lineup cannot have more than 9 players');
-  }
-
-  // Check for duplicate orders
-  const orders = positions.map(p => p.order);
-  if (new Set(orders).size !== orders.length) {
-    throw new Error('Lineup cannot have duplicate batting orders');
-  }
-
-  // Check for duplicate players
-  const playerIds = positions.map(p => p.playerId);
-  if (new Set(playerIds).size !== playerIds.length) {
-    throw new Error('Lineup cannot have the same player in multiple positions');
-  }
-
-  // Create lineup
-  const { data: lineup, error: lineupError } = await supabase
-    .from('baseball_team_lineups')
-    .insert({
-      team_id: teamId,
-      created_by_coach_id: coach.id,
-      name: name || 'Untitled Lineup',
-    })
-    .select()
-    .single();
-
-  if (lineupError) throw lineupError;
-
-  // Insert positions
-  const positionsData = positions.map(pos => ({
-    lineup_id: lineup.id,
-    batting_order: pos.order,
-    player_id: pos.playerId,
-  }));
-
-  const { error: positionsError } = await supabase
-    .from('baseball_lineup_positions')
-    .insert(positionsData);
-
-  if (positionsError) {
-    // Rollback: delete the lineup if positions insert failed
-    await supabase.from('baseball_team_lineups').delete().eq('id', lineup.id);
-    throw positionsError;
-  }
-
-  revalidatePath('/baseball/dashboard/roster');
-  return { success: true, lineupId: lineup.id };
 }
+
+const updateLineupAction = withBaseballAction(
+  'updateLineup',
+  { featureArea: 'baseball-lineups' },
+  async (
+    _ctx,
+    lineupId: string,
+    { name, positions }: { name: string; positions: LineupPosition[] },
+  ) => {
+    const supabase = await createClient();
+
+    const { data: lineup } = await supabase
+      .from('baseball_team_lineups')
+      .select('id, team_id')
+      .eq('id', lineupId)
+      .single();
+
+    if (!lineup) return { success: false, error: 'Lineup not found' };
+
+    await requireBaseballCapability(lineup.team_id, 'can_manage_lineups');
+
+    const validationError = validateLineupPositions(positions);
+    if (validationError) return { success: false, error: validationError };
+
+    const { error: updateError } = await supabase
+      .from('baseball_team_lineups')
+      .update({ name })
+      .eq('id', lineupId);
+
+    if (updateError) throw updateError;
+
+    const { error: deleteError } = await supabase
+      .from('baseball_lineup_positions')
+      .delete()
+      .eq('lineup_id', lineupId);
+
+    if (deleteError) throw deleteError;
+
+    const positionsData = positions.map((pos) => ({
+      lineup_id: lineupId,
+      batting_order: pos.order,
+      player_id: pos.playerId,
+    }));
+
+    const { error: insertError } = await supabase
+      .from('baseball_lineup_positions')
+      .insert(positionsData);
+
+    if (insertError) throw insertError;
+
+    revalidatePath(ROSTER_PATH);
+    return { success: true as const };
+  },
+);
 
 /**
  * Update an existing lineup
  */
 export async function updateLineup(
   lineupId: string,
-  { name, positions }: { name: string; positions: LineupPosition[] }
+  { name, positions }: { name: string; positions: LineupPosition[] },
 ) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
-
-  // Get coach record
-  const { data: coach } = await supabase
-    .from('baseball_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!coach) throw new Error('Only coaches can update lineups');
-
-  // Verify coach owns this lineup
-  const { data: lineup } = await supabase
-    .from('baseball_team_lineups')
-    .select('id, created_by_coach_id')
-    .eq('id', lineupId)
-    .single();
-
-  if (!lineup) throw new Error('Lineup not found');
-  if (lineup.created_by_coach_id !== coach.id) {
-    throw new Error('You can only update your own lineups');
+  try {
+    return await updateLineupAction(lineupId, { name, positions });
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_lineups.updateLineup', featureArea: 'baseball-lineups' },
+    );
+    return mapLineupActionError(error);
   }
-
-  // Validate positions
-  if (!positions || positions.length === 0) {
-    throw new Error('Lineup must have at least one player');
-  }
-
-  if (positions.length > 9) {
-    throw new Error('Lineup cannot have more than 9 players');
-  }
-
-  // Check for duplicates
-  const orders = positions.map(p => p.order);
-  if (new Set(orders).size !== orders.length) {
-    throw new Error('Lineup cannot have duplicate batting orders');
-  }
-
-  const playerIds = positions.map(p => p.playerId);
-  if (new Set(playerIds).size !== playerIds.length) {
-    throw new Error('Lineup cannot have the same player in multiple positions');
-  }
-
-  // Update lineup name
-  const { error: updateError } = await supabase
-    .from('baseball_team_lineups')
-    .update({ name })
-    .eq('id', lineupId);
-
-  if (updateError) throw updateError;
-
-  // Delete existing positions
-  const { error: deleteError } = await supabase
-    .from('baseball_lineup_positions')
-    .delete()
-    .eq('lineup_id', lineupId);
-
-  if (deleteError) throw deleteError;
-
-  // Insert new positions
-  const positionsData = positions.map(pos => ({
-    lineup_id: lineupId,
-    batting_order: pos.order,
-    player_id: pos.playerId,
-  }));
-
-  const { error: insertError } = await supabase
-    .from('baseball_lineup_positions')
-    .insert(positionsData);
-
-  if (insertError) throw insertError;
-
-  revalidatePath('/baseball/dashboard/roster');
-  return { success: true };
 }
+
+const deleteLineupAction = withBaseballAction(
+  'deleteLineup',
+  { featureArea: 'baseball-lineups' },
+  async (_ctx, lineupId: string) => {
+    const supabase = await createClient();
+
+    const { data: lineup } = await supabase
+      .from('baseball_team_lineups')
+      .select('id, team_id')
+      .eq('id', lineupId)
+      .single();
+
+    if (!lineup) return { success: false, error: 'Lineup not found' };
+
+    await requireBaseballCapability(lineup.team_id, 'can_manage_lineups');
+
+    const { error } = await supabase
+      .from('baseball_team_lineups')
+      .delete()
+      .eq('id', lineupId);
+
+    if (error) throw error;
+
+    revalidatePath(ROSTER_PATH);
+    return { success: true as const };
+  },
+);
 
 /**
  * Delete a lineup
  */
 export async function deleteLineup(lineupId: string) {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
-
-  // Get coach record
-  const { data: coach } = await supabase
-    .from('baseball_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!coach) throw new Error('Only coaches can delete lineups');
-
-  // Verify coach owns this lineup
-  const { data: lineup } = await supabase
-    .from('baseball_team_lineups')
-    .select('id, created_by_coach_id')
-    .eq('id', lineupId)
-    .single();
-
-  if (!lineup) throw new Error('Lineup not found');
-  if (lineup.created_by_coach_id !== coach.id) {
-    throw new Error('You can only delete your own lineups');
+  try {
+    return await deleteLineupAction(lineupId);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_lineups.deleteLineup', featureArea: 'baseball-lineups' },
+    );
+    return mapLineupActionError(error);
   }
-
-  // Delete lineup (positions will cascade)
-  const { error } = await supabase
-    .from('baseball_team_lineups')
-    .delete()
-    .eq('id', lineupId);
-
-  if (error) throw error;
-
-  revalidatePath('/baseball/dashboard/roster');
-  return { success: true };
 }
 
 /**
@@ -234,7 +251,6 @@ export async function getTeamLineups(teamId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  // Get lineups with positions
   const { data: lineups, error } = await supabase
     .from('baseball_team_lineups')
     .select(`
