@@ -19,17 +19,23 @@ This file is the current map of hard merge blockers versus advisory checks.
 | Review Gate / ast-grep | `review-gate.yml` | project-specific banned patterns |
 | Review Gate / semgrep | `review-gate.yml` | security and static-analysis risks |
 | Review Gate / gitleaks | `review-gate.yml` | leaked secrets |
+| Business Contracts | `npm run verify:business` / `Business contracts` | low-gray product-truth regressions in stats, CoachHelm evidence, and product trust mappers |
+| Route Hygiene P0/P1 | `npm run routes:check` | missing or duplicate critical routes and Golf/Baseball route-boundary leaks |
 
 ## Advisory Checks
 
 | Check | Why Advisory |
 |---|---|
 | Playwright E2E Advisory | full suite is still stabilizing |
-| Business Contracts | advisory product-truth radar for GolfHelm stats, CoachHelm evidence, access boundaries, and product trust states |
+| Business Contracts Advisory | source-shape radar for contracts that still need behavior-test replacements |
 | Course picker screenshots | visual evidence artifact, not a merge blocker |
 | Lighthouse | performance and accessibility visibility |
 | Knip | dead-code discovery |
 | Stryker | mutation-test signal |
+| jscpd | duplicate-code radar |
+| dependency-cruiser P2/P3 | architecture smell radar after P0/P1 boundaries are clean |
+| OSV Scanner | vulnerability triage report until reachability policy is finalized |
+| k6 staging load | staging reliability signal |
 | Promptfoo | AI output drift signal |
 | npm audit | dependency-risk triage |
 | full sqlfluff | SQL style and risk signal |

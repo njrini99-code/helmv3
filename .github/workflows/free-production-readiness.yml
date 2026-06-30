@@ -1,0 +1,104 @@
+name: Free Production Readiness
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  business-contracts:
+    name: Business contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run low-gray business contracts
+        run: npm run verify:business
+
+      - name: Run advisory source-shape contracts
+        run: npm run test:business:advisory
+        continue-on-error: true
+
+  route-hygiene:
+    name: Route Hygiene P0/P1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check route hygiene
+        run: npm run routes:check
+
+      - name: Upload route hygiene reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: route-hygiene-reports
+          path: docs/operations/generated/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  static-radar:
+    name: Static radar advisory
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Semgrep CE
+        run: python -m pip install semgrep
+
+      - name: Run Semgrep Helm rules
+        run: npm run analyze:semgrep
+
+      - name: Run dependency-cruiser
+        run: npm run analyze:deps
+
+      - name: Run duplicate-code radar
+        run: npm run analyze:duplicates
+
+      - name: Run Helm auditor
+        if: always()
+        run: npm run auditor:all
+
+      - name: Upload static radar reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: static-radar-reports
+          path: |
+            docs/operations/generated/
+            docs/operations/revealed-bugs/production-readiness/
+          if-no-files-found: ignore
+          retention-days: 14

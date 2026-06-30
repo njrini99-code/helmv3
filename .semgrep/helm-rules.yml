@@ -1,0 +1,89 @@
+rules:
+  - id: helm-service-role-in-client-code
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: Service-role/admin Supabase client must not be imported from client-facing code.
+    paths:
+      include:
+        - /src/**/*.ts
+        - /src/**/*.tsx
+      exclude:
+        - /src/lib/supabase/admin.ts
+        - /src/**/*.test.ts
+        - /src/**/*.test.tsx
+        - /src/contracts/**
+    patterns:
+      - pattern-either:
+          - pattern: import $X from '@/lib/supabase/admin'
+          - pattern: import { $X } from '@/lib/supabase/admin'
+          - pattern: createAdminClient(...)
+      - pattern-not-inside: |
+          "use server";
+          ...
+
+  - id: helm-golf-file-links-baseball-auth-or-dashboard
+    severity: ERROR
+    languages: [typescript]
+    message: Golf files must not link or redirect to Baseball auth/dashboard routes.
+    patterns:
+      - pattern-either:
+          - pattern: '"/baseball/$PATH"'
+          - pattern: "'/baseball/$PATH'"
+    paths:
+      include:
+        - /src/app/golf/**/*.ts
+        - /src/app/golf/**/*.tsx
+
+  - id: helm-baseball-file-links-golf-auth-or-dashboard
+    severity: ERROR
+    languages: [typescript]
+    message: Baseball files must not link or redirect to Golf auth/dashboard routes.
+    patterns:
+      - pattern-either:
+          - pattern: '"/golf/$PATH"'
+          - pattern: "'/golf/$PATH'"
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: ^(login|signup|dashboard).*
+    paths:
+      include:
+        - /src/app/baseball/**/*.ts
+        - /src/app/baseball/**/*.tsx
+
+  - id: helm-success-true-inside-catch
+    severity: ERROR
+    languages: [typescript, javascript]
+    message: Catch blocks must not return success:true.
+    pattern: |
+      catch ($ERR) {
+        ...
+        return { ..., success: true, ... };
+      }
+
+  - id: helm-llm-call-in-client-component
+    severity: ERROR
+    languages: [typescript]
+    message: LLM generation must stay server-side.
+    patterns:
+      - pattern-either:
+          - pattern: generateText(...)
+          - pattern: streamText(...)
+      - pattern-inside: |
+          "use client";
+          ...
+
+  - id: helm-catch-collapses-error-to-empty
+    severity: WARNING
+    languages: [typescript, javascript]
+    message: Catch block collapses a failure to []/null; prefer an explicit error state.
+    pattern-either:
+      - pattern: |
+          catch ($ERR) {
+            ...
+            return [];
+          }
+      - pattern: |
+          catch ($ERR) {
+            ...
+            return null;
+          }

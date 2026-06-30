@@ -13,6 +13,8 @@ Required checks for `main` should match the hard blockers in `docs/operations/GA
 - `Unit tests`
 - `Next build`
 - `Supabase lint + RLS tests`
+- `Business contracts`
+- `Route Hygiene P0/P1`
 - `Playwright Smoke / Smoke checks`
 - `Review Gate / all`
 - `CodeRabbit`
@@ -22,10 +24,14 @@ Required checks for `main` should match the hard blockers in `docs/operations/GA
 Do not require these until they are stable enough to block everyday work:
 
 - `Playwright E2E Advisory`
-- `Business contracts`
+- `Business contracts advisory`
 - `Course picker screenshots`
 - CircleCI weekly radar jobs
 - Lighthouse preview jobs
+- `Knip`
+- `jscpd`
+- `Stryker`
+- `k6 staging load`
 
 ## Change Rule
 

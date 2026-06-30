@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "mutate": [
+    "src/lib/coachhelm/v3/metrics/registry.ts",
+    "src/lib/coachhelm/v3/ranking/score.ts",
+    "src/lib/coachhelm/v3/llm/citations.ts",
+    "src/lib/coachhelm/shared/evidence-types.ts"
+  ],
+  "vitest": {
+    "configFile": "vitest.config.ts"
+  },
+  "testRunnerNodeArgs": ["--max-old-space-size=4096"],
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "progress", "html", "json"],
+  "jsonReporter": {
+    "fileName": "docs/operations/generated/stryker-coachhelm.json"
+  },
+  "htmlReporter": {
+    "fileName": "docs/operations/generated/stryker-coachhelm.html"
+  },
+  "checkers": ["typescript"],
+  "tsconfigFile": "tsconfig.json",
+  "thresholds": {
+    "high": 70,
+    "low": 50,
+    "break": 0
+  }
+}

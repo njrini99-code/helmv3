@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const repo = process.cwd();
 const read = (path: string) => readFileSync(join(repo, path), 'utf8');
 
-describe('Golf access and tenant-boundary contracts', () => {
+describe('Golf access and tenant-boundary source-shape advisory contracts', () => {
   it('CH-AI-010 preserves CoachHelm insight reads through player/team scope and RLS', () => {
     const insightDelivery = read('src/app/golf/actions/insight-delivery.ts');
 

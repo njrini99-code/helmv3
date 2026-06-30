@@ -139,6 +139,10 @@ scripts/rotate-demo-passwords.mjs
 /test-results/
 /playwright-report/
 
+# Production-readiness generated reports.
+/docs/operations/generated/
+/.stryker-tmp/
+
 # Large generated showcase binaries (repo already ignores GolfHelm-Prospect-Deck.pptx).
 GolfHelm-CoachHelm-Showcase.pdf
 GolfHelm-Fairway-Guide.pdf

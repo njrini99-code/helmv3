@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const repo = process.cwd();
 const read = (path: string) => readFileSync(join(repo, path), 'utf8');
 
-describe('Product trust state contracts', () => {
+describe('Product trust source-shape advisory contracts', () => {
   it('TRUST-001 and TRUST-004 keep failed stat loads separate from healthy empty states', () => {
     const source = read('src/app/golf/(dashboard)/dashboard/stats/stats-client.tsx');
     const errorState = source.indexOf('statsError ?');

@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "mutate": [
+    "src/lib/golf/stat-formulas.ts",
+    "src/lib/golf/sg-benchmarks.ts",
+    "src/lib/utils/golf-stats-calculator-shots.ts"
+  ],
+  "vitest": {
+    "configFile": "vitest.config.ts"
+  },
+  "testRunnerNodeArgs": ["--max-old-space-size=4096"],
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "progress", "html", "json"],
+  "jsonReporter": {
+    "fileName": "docs/operations/generated/stryker-golf-stats.json"
+  },
+  "htmlReporter": {
+    "fileName": "docs/operations/generated/stryker-golf-stats.html"
+  },
+  "checkers": ["typescript"],
+  "tsconfigFile": "tsconfig.json",
+  "thresholds": {
+    "high": 70,
+    "low": 50,
+    "break": 0
+  }
+}
