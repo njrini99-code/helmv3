@@ -21,10 +21,12 @@ function mockSupabaseForSave() {
   getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
   from.mockImplementation((table: string) => {
     if (table === 'baseball_coaches') {
+      // capabilities.ts resolves the coach profile via .maybeSingle().
       return {
         select: () => ({
           eq: () => ({
             single: async () => ({ data: { id: 'coach-1', organization_id: 'org-1' }, error: null }),
+            maybeSingle: async () => ({ data: { id: 'coach-1', organization_id: 'org-1' }, error: null }),
           }),
         }),
       };
@@ -39,11 +41,14 @@ function mockSupabaseForSave() {
       };
     }
     if (table === 'baseball_team_coach_staff') {
+      // capabilities.ts requests the full row via .select('*') and resolves
+      // with .maybeSingle() — primary coach holds every capability.
       return {
         select: () => ({
           eq: () => ({
             eq: () => ({
-              single: async () => ({ data: { id: 'staff-1' }, error: null }),
+              single: async () => ({ data: { id: 'staff-1', is_primary: true }, error: null }),
+              maybeSingle: async () => ({ data: { id: 'staff-1', is_primary: true }, error: null }),
             }),
           }),
         }),
@@ -51,7 +56,10 @@ function mockSupabaseForSave() {
     }
     return {
       select: () => ({
-        eq: () => ({ single: async () => ({ data: null, error: null }) }),
+        eq: () => ({
+          single: async () => ({ data: null, error: null }),
+          maybeSingle: async () => ({ data: null, error: null }),
+        }),
       }),
     };
   });

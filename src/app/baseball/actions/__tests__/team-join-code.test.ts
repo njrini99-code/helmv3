@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const getUser = vi.fn();
 const from = vi.fn();
+const rpc = vi.fn();
 const fromUntypedUpdate = vi.fn();
 const fromUntypedEq = vi.fn();
 
@@ -13,6 +14,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser },
     from,
+    rpc,
   })),
 }));
 vi.mock('@/lib/supabase/untyped', () => ({
@@ -70,6 +72,9 @@ describe('processTeamInvitation max_uses accounting', () => {
     vi.clearAllMocks();
     getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
     fromUntypedEq.mockResolvedValue({ error: null });
+    // try_redeem_baseball_team_invitation reserves a redemption atomically
+    // before joinTeam runs (#395); default to granting it.
+    rpc.mockResolvedValue({ data: true, error: null });
   });
 
   it('blocks when invitation used_count meets max_uses (not roster size)', async () => {
@@ -152,8 +157,75 @@ describe('processTeamInvitation max_uses accounting', () => {
     const result = await processTeamInvitation('ABC12345', PLAYER_ID);
 
     expect(result.success).toBe(true);
-    expect(fromUntypedUpdate).toHaveBeenCalledWith({ used_count: 2 });
-    expect(fromUntypedEq).toHaveBeenCalledWith('id', 'inv-1');
+    // Redemption is reserved atomically via RPC before joinTeam runs, not via
+    // a stale-read-then-update on used_count (#395 — avoids a lost-update
+    // race between two players redeeming the same invite concurrently).
+    expect(rpc).toHaveBeenCalledWith(
+      'try_redeem_baseball_team_invitation',
+      { p_invitation_id: 'inv-1' },
+    );
+  });
+
+  it('releases the reserved redemption when joinTeam fails after redeeming', async () => {
+    const invitationChain = chain(() => ({
+      data: {
+        id: 'inv-1',
+        team_id: 'team-1',
+        expires_at: null,
+        is_active: true,
+        max_uses: 5,
+        used_count: 1,
+        baseball_teams: { id: 'team-1', name: 'Eagles', team_type: 'college' },
+      },
+      error: null,
+    }));
+
+    let playerReads = 0;
+    from.mockImplementation((table: string) => {
+      if (table === 'baseball_players') {
+        playerReads += 1;
+        if (playerReads === 1) {
+          return chain(() => ({ data: { user_id: 'user-1' }, error: null }));
+        }
+        return chain(() => ({
+          data: { id: PLAYER_ID, user_id: 'user-1', player_type: 'college' },
+          error: null,
+        }));
+      }
+      if (table === 'baseball_team_invitations') return invitationChain;
+      if (table === 'baseball_teams') {
+        return chain(() => ({
+          data: { id: 'team-1', name: 'Eagles', team_type: 'college' },
+          error: null,
+        }));
+      }
+      if (table === 'baseball_team_members') {
+        // The membership insert fails AFTER the redemption was reserved —
+        // the reservation must be released, not left stranded (which would
+        // permanently shrink the invite's remaining uses).
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(async () => ({ data: [], error: null })),
+            })),
+          })),
+          insert: vi.fn(async () => ({ error: { message: 'insert failed' } })),
+        };
+      }
+      return chain(() => ({ data: null, error: null }));
+    });
+
+    const result = await processTeamInvitation('ABC12345', PLAYER_ID);
+
+    expect(result.success).toBe(false);
+    expect(rpc).toHaveBeenCalledWith(
+      'try_redeem_baseball_team_invitation',
+      { p_invitation_id: 'inv-1' },
+    );
+    expect(rpc).toHaveBeenCalledWith(
+      'release_baseball_team_invitation_redemption',
+      { p_invitation_id: 'inv-1' },
+    );
   });
 
   it('rejects IDOR when caller does not own the player profile', async () => {

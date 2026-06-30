@@ -136,6 +136,22 @@ test.describe('BaseballHelm Phase 1 — coach surfaces', () => {
     await page.goto('/baseball/dashboard/settings/audit');
     await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
   });
+
+  test('coach can open team-ops surfaces (announcements, travel, tasks, documents)', async ({ page }) => {
+    const ok = await tryLogin(page, TEST_USERS.coach);
+    test.skip(!ok, 'coach login fixture unavailable in this environment');
+    for (const route of [
+      '/baseball/dashboard/announcements',
+      '/baseball/dashboard/travel',
+      '/baseball/dashboard/tasks',
+      '/baseball/dashboard/documents',
+      '/baseball/dashboard/camps',
+    ]) {
+      await page.goto(route);
+      await expect(page.locator('body')).not.toContainText(/Application error|500/i);
+      await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10000 });
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
