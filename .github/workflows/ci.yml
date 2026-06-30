@@ -188,6 +188,8 @@ jobs:
   supabase:
     name: Supabase lint + RLS tests
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: helmv3
     steps:
       - name: Checkout
         uses: actions/checkout@v6
