@@ -235,7 +235,9 @@ jobs:
             if [ "$status" -eq 0 ]; then
               echo "export PREVIEW_URL='${URL}'" >> "$BASH_ENV"
               echo "export LIGHTHOUSE_PREVIEW_READY='true'" >> "$BASH_ENV"
-            elif grep -Eq "(Timeout after|VERCEL_TOKEN env var is required|VERCEL_PROJECT_ID env var is required|Vercel API call failed|Vercel deployment (ERROR|CANCELED))" /tmp/vercel-preview.err; then
+            elif grep -Eq \
+              "(Timeout after|VERCEL_TOKEN env var is required|VERCEL_PROJECT_ID env var is required|Vercel API call failed|Vercel deployment (ERROR|CANCELED))" \
+              /tmp/vercel-preview.err; then
               echo "Vercel preview was unavailable; skipping advisory Lighthouse run."
               echo "export LIGHTHOUSE_PREVIEW_READY='false'" >> "$BASH_ENV"
             else
