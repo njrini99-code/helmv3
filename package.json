@@ -8,6 +8,7 @@
     "check:env": "node scripts/check-required-env.mjs",
     "check:ledger": "node scripts/check-migration-ledger.mjs",
     "check:types-drift": "bash scripts/check-types-drift.sh",
+    "check:readiness-matrix": "tsx scripts/baseball/check-readiness-matrix.ts",
     "check:stats": "tsx -r dotenv/config scripts/verify-stats-consistency.ts",
     "coachhelm:refresh": "bash scripts/coachhelm-refresh-all.sh",
     "coachhelm:regen": "DOTENV_CONFIG_PATH=.env.local tsx -r dotenv/config scripts/regen-coachhelm-from-corrected-stats.ts",

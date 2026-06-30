@@ -1,0 +1,56 @@
+name: BaseballHelm Readiness Matrix
+
+# Advisory check for docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md
+# (issue #376). Validates that every route cited in the matrix's Route(s)
+# column resolves to a real App Router page, and — using the workflow's own
+# GITHUB_TOKEN — that every owner-issue URL cited in the Owner Issue column
+# is open and actually exists. Fails ONLY on a missing route or a
+# missing/closed owner issue; this is intentionally NOT part of the
+# `Review Gate / all` aggregate or `ci.yml`'s required `build` job, so a
+# stale link here never blocks a merge — see the matrix doc's Maintenance
+# section for the policy this check enforces.
+#
+# SECURITY: consumes ZERO untrusted user input. The only `${{ }}` expressions
+# are trusted refs/platform tokens, matching review-gate.yml's policy.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md'
+      - 'scripts/baseball/check-readiness-matrix.ts'
+      - 'scripts/baseball/resolve-route.ts'
+  pull_request:
+    paths:
+      - 'docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md'
+      - 'scripts/baseball/check-readiness-matrix.ts'
+      - 'scripts/baseball/resolve-route.ts'
+
+concurrency:
+  group: baseball-readiness-matrix-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  check:
+    name: check (advisory — routes + owner issues)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate readiness matrix routes + owner issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run check:readiness-matrix
