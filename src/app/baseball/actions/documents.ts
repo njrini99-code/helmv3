@@ -6,6 +6,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { requireBaseballCapability } from '@/lib/baseball/capabilities';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -57,6 +58,15 @@ function handleError(error: unknown): string {
   void logServerError(`Baseball document action error: ${error instanceof Error ? error.message : String(error)}`, { action: 'documents.handleError' });
   if (error instanceof Error) return error.message;
   return 'An unexpected error occurred';
+}
+
+async function assertDocumentWrite(teamId: string): Promise<string | null> {
+  try {
+    await requireBaseballCapability(teamId, 'can_manage_documents');
+    return null;
+  } catch {
+    return 'You do not have permission to manage documents';
+  }
 }
 
 // ============================================
@@ -160,6 +170,9 @@ export async function uploadBaseballDocument(
     } = await supabase.auth.getUser();
     if (userError || !user) throw new Error('Not authenticated');
 
+    const capError = await assertDocumentWrite(teamId);
+    if (capError) return { success: false, error: capError };
+
     // Upload file to storage
     const fileExt = file.name.split('.').pop();
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
@@ -206,6 +219,9 @@ export async function createBaseballDocument(data: {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) throw new Error('Not authenticated');
+
+    const capError = await assertDocumentWrite(data.team_id);
+    if (capError) return { success: false, error: capError };
 
     // Create document record
     const { data: document, error: insertError } = await (supabase as any)
@@ -273,6 +289,19 @@ export async function updateBaseballDocument(data: {
   try {
     const supabase = await createClient();
 
+    const { data: existing } = await (supabase as any)
+      .from('baseball_documents')
+      .select('team_id')
+      .eq('id', data.id)
+      .single();
+
+    if (!existing?.team_id) {
+      return { success: false, error: 'Document not found' };
+    }
+
+    const capError = await assertDocumentWrite(String(existing.team_id));
+    if (capError) return { success: false, error: capError };
+
     const updatePayload: Record<string, unknown> = {};
     if (data.title !== undefined) updatePayload.title = data.title;
     if (data.description !== undefined) updatePayload.description = data.description;
@@ -301,6 +330,19 @@ export async function deleteBaseballDocument(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
+
+    const { data: existing } = await (supabase as any)
+      .from('baseball_documents')
+      .select('team_id')
+      .eq('id', documentId)
+      .single();
+
+    if (!existing?.team_id) {
+      return { success: false, error: 'Document not found' };
+    }
+
+    const capError = await assertDocumentWrite(String(existing.team_id));
+    if (capError) return { success: false, error: capError };
 
     // Get all versions for cleanup
     const { data: versionsData } = await (supabase as any)
@@ -363,6 +405,9 @@ export async function uploadNewVersion(
       .single();
 
     if (docError) throw docError;
+
+    const capError = await assertDocumentWrite(String(document.team_id));
+    if (capError) return { success: false, error: capError };
 
     const effectiveTeamId = teamId || document.team_id;
     const newVersionNumber = (document.version_count || 1) + 1;

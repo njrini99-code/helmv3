@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageLoading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconCalendar, IconMapPin, IconUsers, IconPlus, IconHeart, IconHeartFilled, IconEdit, IconTrash, IconEye } from '@/components/icons';
 import { CreateCampModal } from '@/components/coach/CreateCampModal';
@@ -196,6 +197,7 @@ export default function CampsPage() {
   const [camps, setCamps] = useState<Camp[]>([]);
   const [registeredCamps, setRegisteredCamps] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCamp, setEditingCamp] = useState<Camp | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -209,10 +211,12 @@ export default function CampsPage() {
   useEffect(() => {
     async function fetchCamps() {
       setLoading(true);
+      setLoadError(null);
 
+      try {
       if (isCoach && coach) {
         // Fetch coach's own camps
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('baseball_camps')
           .select(`
             *,
@@ -222,10 +226,11 @@ export default function CampsPage() {
           .eq('coach_id', coach.id)
           .order('start_date', { ascending: true });
 
+        if (error) throw error;
         setCamps((data as Camp[]) || []);
       } else if (isPlayer && player) {
         // Fetch all active camps for players
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('baseball_camps')
           .select(`
             *,
@@ -235,6 +240,8 @@ export default function CampsPage() {
           .eq('status', 'active')
           .gte('end_date', new Date().toISOString())
           .order('start_date', { ascending: true });
+
+        if (error) throw error;
 
         // Fetch player's registrations (filter out cancelled via status)
         const { data: playerRegs } = await supabase
@@ -248,6 +255,10 @@ export default function CampsPage() {
         }
 
         setCamps((data as Camp[]) || []);
+      }
+      } catch {
+        setCamps([]);
+        setLoadError('Camps could not be loaded.');
       }
 
       setLoading(false);
@@ -271,12 +282,13 @@ export default function CampsPage() {
 
     if (!error) {
       setRegisteredCamps(prev => new Set(Array.from(prev).concat(campId)));
-      // Update registration count
       setCamps(prev => prev.map(c =>
         c.id === campId
           ? { ...c, registrations: [{ count: (c.registrations?.[0]?.count || 0) + 1 }] }
           : c
       ));
+    } else {
+      showToast('Failed to register for camp', 'error');
     }
   };
 
@@ -295,12 +307,13 @@ export default function CampsPage() {
         newSet.delete(campId);
         return newSet;
       });
-      // Update registration count
       setCamps(prev => prev.map(c =>
         c.id === campId
           ? { ...c, registrations: [{ count: Math.max(0, (c.registrations?.[0]?.count || 0) - 1) }] }
           : c
       ));
+    } else {
+      showToast('Failed to cancel camp registration', 'error');
     }
   };
 
@@ -349,6 +362,53 @@ export default function CampsPage() {
           subtitle={isCoach ? 'Manage your camps and events' : 'Browse and register for camps'}
         />
         <PageLoading />
+      </>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <>
+        <Header
+          title={isCoach ? 'My Camps' : 'Camps'}
+          subtitle={isCoach ? 'Manage your camps and events' : 'Browse and register for camps'}
+        />
+        <div className="p-6 lg:p-8">
+          <ReadModelStateNotice
+            state="error"
+            title="Camps unavailable"
+            onRetry={() => {
+              setLoading(true);
+              setLoadError(null);
+              void (async () => {
+                try {
+                  if (isCoach && coach) {
+                    const { data, error } = await supabase
+                      .from('baseball_camps')
+                      .select(`*, organization:organizations(id, name, logo_url), registrations:baseball_camp_registrations(count)`)
+                      .eq('coach_id', coach.id)
+                      .order('start_date', { ascending: true });
+                    if (error) throw error;
+                    setCamps((data as Camp[]) || []);
+                  } else if (isPlayer && player) {
+                    const { data, error } = await supabase
+                      .from('baseball_camps')
+                      .select(`*, organization:organizations(id, name, logo_url), registrations:baseball_camp_registrations(count)`)
+                      .eq('status', 'active')
+                      .gte('end_date', new Date().toISOString())
+                      .order('start_date', { ascending: true });
+                    if (error) throw error;
+                    setCamps((data as Camp[]) || []);
+                  }
+                } catch {
+                  setLoadError('Camps could not be loaded.');
+                } finally {
+                  setLoading(false);
+                }
+              })();
+            }}
+          />
+        </div>
       </>
     );
   }

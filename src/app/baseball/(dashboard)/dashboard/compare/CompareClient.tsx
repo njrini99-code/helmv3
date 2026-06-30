@@ -8,6 +8,7 @@ import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
+import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { PlayerComparison } from '@/components/features/player-comparison';
 import { IconSearch, IconPlus, IconX, IconTarget, IconUsers } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
@@ -19,6 +20,7 @@ function CompareContent() {
   const searchParams = useSearchParams();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Player[]>([]);
   const [searching, setSearching] = useState(false);
@@ -37,6 +39,7 @@ function CompareContent() {
       }
 
       setLoading(true);
+      setLoadError(null);
       try {
         const { data, error } = await supabase
           .from('baseball_players')
@@ -45,9 +48,9 @@ function CompareContent() {
 
         if (error) throw error;
         setPlayers(data || []);
-      } catch (error) {
-        console.error('Error fetching players:', error);
+      } catch {
         setPlayers([]);
+        setLoadError('Player comparison data could not be loaded.');
       } finally {
         setLoading(false);
       }
@@ -144,6 +147,21 @@ function CompareContent() {
               </div>
             ))}
           </div>
+        </div>
+      </>
+    );
+  }
+
+  if (loadError && playerIds.length > 0) {
+    return (
+      <>
+        <Header title="Compare Players" subtitle="Side-by-side player comparison" />
+        <div className="p-8">
+          <ReadModelStateNotice
+            state="error"
+            title="Comparison unavailable"
+            onRetry={() => router.refresh()}
+          />
         </div>
       </>
     );
