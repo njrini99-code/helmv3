@@ -26,6 +26,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { AlertTriangle, X, GripVertical } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BaseballDiamond, POSITION_COORDS } from '@/components/baseball/position-planner/BaseballDiamond';
 import {
@@ -191,17 +192,19 @@ export function ScrimmageLineupBuilder({
         {isIntrasquad ? (
           <div className="inline-flex rounded-lg border border-warm-200 bg-cream-50 p-0.5">
             {(['blue', 'white'] as BaseballScrimmageSide[]).map((s) => (
-              <button
+              <Button
                 key={s}
                 type="button"
+                variant="ghost"
                 onClick={() => setActiveSide(s)}
+                haptic="none"
                 className={cn(
-                  'rounded-md px-3 py-1 text-xs font-medium transition-colors',
-                  activeSide === s ? 'bg-primary-500 text-white' : 'text-warm-600 hover:bg-white',
+                  'min-h-0 rounded-md px-3 py-1 text-xs font-medium',
+                  activeSide === s ? 'bg-primary-500 text-white hover:bg-primary-500' : 'text-warm-600 hover:bg-white',
                 )}
               >
                 Team {SIDE_LABEL[s]}
-              </button>
+              </Button>
             ))}
           </div>
         ) : (
@@ -237,6 +240,7 @@ export function ScrimmageLineupBuilder({
                 const dupKey = `${sideOf() ?? ''}:${position}`;
                 const conflict = conflicts.dupPos.has(dupKey);
                 return (
+                  // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag-and-drop zone; the inner <button> handles click/keyboard placement
                   <div
                     key={position}
                     style={{
@@ -255,19 +259,21 @@ export function ScrimmageLineupBuilder({
                       setDragPlayerId(null);
                     }}
                   >
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       onClick={() => {
                         if (selectedPlayerId) assignToPosition(selectedPlayerId, position);
                         else if (slot) removeSlot(slot.playerId);
                       }}
+                      haptic="none"
                       aria-label={
                         player
                           ? `${coords.label}: ${player.name}. Tap to clear.`
                           : `${coords.label}: empty${selectedPlayerId ? '. Tap to place selected player.' : ''}`
                       }
                       className={cn(
-                        'flex min-w-[52px] flex-col items-center rounded-lg border px-1.5 py-1 text-center shadow-sm transition-colors',
+                        'min-h-0 flex min-w-[52px] flex-col items-center rounded-lg border px-1.5 py-1 text-center shadow-sm',
                         conflict
                           ? 'border-red-400 bg-red-50'
                           : player
@@ -275,23 +281,23 @@ export function ScrimmageLineupBuilder({
                             : 'border-dashed border-warm-300 bg-white/70 hover:bg-white',
                       )}
                     >
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-warm-500">
+                      <span className="text-micro font-bold uppercase tracking-wide text-warm-500">
                         {position}
                       </span>
                       {player ? (
-                        <span className="max-w-[64px] truncate text-[10px] font-semibold text-warm-900">
+                        <span className="max-w-[64px] truncate text-micro font-semibold text-warm-900">
                           {player.name}
                         </span>
                       ) : (
-                        <span className="text-[9px] text-warm-400">—</span>
+                        <span className="text-micro text-warm-400">—</span>
                       )}
                       {player && (player.bats || player.throws) && (
-                        <span className="text-[8px] text-warm-400">
+                        <span className="text-micro text-warm-400">
                           {player.bats ? `B:${player.bats}` : ''} {player.throws ? `T:${player.throws}` : ''}
                         </span>
                       )}
                       {conflict && <AlertTriangle className="h-3 w-3 text-red-500" />}
-                    </button>
+                    </Button>
                   </div>
                 );
               })}
@@ -309,6 +315,7 @@ export function ScrimmageLineupBuilder({
                 (s) => s.defensivePosition === pos && (s.side ?? null) === (sideOf() ?? null),
               );
               return (
+                // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- drag-and-drop zone, no click interaction
                 <div
                   key={pos}
                   onDragOver={(e) => dragPlayerId && e.preventDefault()}
@@ -318,26 +325,28 @@ export function ScrimmageLineupBuilder({
                   }}
                   className="rounded-lg border border-dashed border-warm-200 bg-cream-50/60 p-2"
                 >
-                  <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-warm-400">
+                  <div className="mb-1 text-micro font-bold uppercase tracking-wide text-warm-400">
                     {pos}
                   </div>
                   {held.length === 0 ? (
-                    <p className="text-[10px] text-warm-400">Drop here</p>
+                    <p className="text-micro text-warm-400">Drop here</p>
                   ) : (
                     <ul className="space-y-1">
                       {held.map((s) => (
                         <li key={s.playerId} className="flex items-center justify-between gap-1">
-                          <span className="truncate text-[10px] text-warm-800">
+                          <span className="truncate text-micro text-warm-800">
                             {rosterById.get(s.playerId)?.name ?? 'Player'}
                           </span>
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             onClick={() => removeSlot(s.playerId)}
+                            haptic="none"
                             aria-label="Remove"
-                            className="text-warm-400 hover:text-red-500"
+                            className="min-h-0 p-0 text-warm-400 hover:bg-transparent hover:text-red-500"
                           >
                             <X className="h-3 w-3" />
-                          </button>
+                          </Button>
                         </li>
                       ))}
                     </ul>
@@ -363,18 +372,20 @@ export function ScrimmageLineupBuilder({
                 const limited = p.availability === 'limited';
                 return (
                   <li key={p.id}>
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       draggable
                       onDragStart={() => setDragPlayerId(p.id)}
                       onDragEnd={() => setDragPlayerId(null)}
                       onClick={() => setSelectedPlayerId(selected ? null : p.id)}
+                      haptic="none"
                       className={cn(
-                        'flex w-full items-center gap-1.5 rounded-lg border px-2 py-1 text-left text-xs transition-colors',
+                        'min-h-0 w-full justify-start gap-1.5 rounded-lg border px-2 py-1 text-left text-xs font-normal',
                         selected
-                          ? 'border-primary-400 bg-primary-50'
+                          ? 'border-primary-400 bg-primary-50 hover:bg-primary-50'
                           : placed
-                            ? 'border-warm-200 bg-cream-100/70 text-warm-500'
+                            ? 'border-warm-200 bg-cream-100/70 text-warm-500 hover:bg-cream-100/70'
                             : 'border-warm-200 bg-white hover:bg-cream-50',
                       )}
                     >
@@ -383,7 +394,7 @@ export function ScrimmageLineupBuilder({
                         {p.name}
                       </span>
                       {p.primaryPosition && (
-                        <span className="shrink-0 text-[9px] text-warm-400">{p.primaryPosition}</span>
+                        <span className="shrink-0 text-micro text-warm-400">{p.primaryPosition}</span>
                       )}
                       {unavail && (
                         <Badge tone="red" appearance="soft" size="sm">
@@ -395,7 +406,7 @@ export function ScrimmageLineupBuilder({
                           Ltd
                         </Badge>
                       )}
-                    </button>
+                    </Button>
                   </li>
                 );
               })}
@@ -446,11 +457,11 @@ export function ScrimmageLineupBuilder({
                         {p?.name ?? 'Player'}
                       </span>
                       {s.defensivePosition && (
-                        <span className="shrink-0 text-[10px] font-semibold text-warm-500">
+                        <span className="shrink-0 text-micro font-semibold text-warm-500">
                           {s.defensivePosition}
                         </span>
                       )}
-                      {p?.bats && <span className="shrink-0 text-[9px] text-warm-400">B:{p.bats}</span>}
+                      {p?.bats && <span className="shrink-0 text-micro text-warm-400">B:{p.bats}</span>}
                       {orderDup && <AlertTriangle className="h-3 w-3 shrink-0 text-red-500" />}
                     </li>
                   );

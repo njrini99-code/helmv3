@@ -46,6 +46,97 @@ function fullName(
   return parts.length > 0 ? parts.join(' ') : null;
 }
 
+/** Row shape selected from `baseball_developmental_plans`. */
+interface PlanRow {
+  id: string;
+  player_id: string | null;
+  team_id: string;
+  title: string | null;
+  description: string | null;
+  status: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  goals: unknown;
+  updated_at: string | null;
+  created_at: string | null;
+}
+
+/** Row shape selected from `baseball_coach_notes`. */
+interface NoteRow {
+  id: string;
+  player_id: string | null;
+  team_id: string;
+  scope: string | null;
+  title: string | null;
+  body: string | null;
+  tags: unknown;
+  pinned: boolean | null;
+  archived_at: string | null;
+  updated_at: string | null;
+  created_at: string | null;
+}
+
+/** Internal projection shared by the plan/note mappers below — note this
+ * intentionally does NOT match `DecisionRoomPlayerFocus` (the canonical
+ * action-module type); the final `as unknown as` cast is the documented
+ * bridge between this read-model's richer shape and the UI type. */
+interface ProjectedPlayerFocus {
+  id: string;
+  playerId: string | null;
+  kind: 'plan' | 'note';
+  title: string;
+  summary: string | null;
+  status: string | null;
+  goals: unknown[];
+  pinned: boolean;
+  startDate: string | null;
+  endDate: string | null;
+  updatedAt: string | null;
+}
+
+/** Row shape selected from `baseball_import_runs`. */
+interface ImportRunRow {
+  id: string;
+  team_id: string;
+  source_id: string | null;
+  source_label: string | null;
+  import_type: string | null;
+  file_name: string | null;
+  status: string | null;
+  total_rows: number | null;
+  matched_rows: number | null;
+  unmatched_rows: number | null;
+  valid_row_count: number | null;
+  warning_count: number | null;
+  error_count: number | null;
+  review_state: string | null;
+  created_at: string | null;
+  committed_at: string | null;
+  rolled_back_at: string | null;
+}
+
+/** Embedded player relation as selected in `loadSummaryPlayers`. */
+interface EmbeddedPlayerRef {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  primary_position: string | null;
+  secondary_position: string | null;
+  grad_year: number | null;
+  avatar_url: string | null;
+}
+
+/** Row shape selected from `baseball_team_members` (joined to player). */
+interface TeamMemberRow {
+  id: string;
+  team_id: string;
+  player_id: string | null;
+  status: string | null;
+  jersey_number: number | null;
+  position: string | null;
+  player: EmbeddedPlayerRef | EmbeddedPlayerRef[] | null;
+}
+
 /**
  * PLAYER FOCUS — active developmental plans plus pinned/recent coach notes for
  * the team, surfaced as the "what to work on with each player" rail.
@@ -99,9 +190,9 @@ export async function loadPlayerFocus(
   const planRows = plansRes.data ?? [];
   const noteRows = notesRes.data ?? [];
 
-  const fromPlans: DecisionRoomPlayerFocus[] = planRows.map((row: any) => ({
-    id: row.id as string,
-    playerId: (row.player_id ?? null) as string | null,
+  const fromPlans: ProjectedPlayerFocus[] = (planRows as PlanRow[]).map((row) => ({
+    id: row.id,
+    playerId: row.player_id ?? null,
     kind: 'plan' as const,
     title: nonEmpty(row.title) ?? 'Developmental plan',
     summary: nonEmpty(row.description),
@@ -112,14 +203,14 @@ export async function loadPlayerFocus(
         ? [row.goals]
         : [],
     pinned: false,
-    startDate: (row.start_date ?? null) as string | null,
-    endDate: (row.end_date ?? null) as string | null,
-    updatedAt: (row.updated_at ?? row.created_at ?? null) as string | null,
-  })) as unknown as DecisionRoomPlayerFocus[];
+    startDate: row.start_date ?? null,
+    endDate: row.end_date ?? null,
+    updatedAt: row.updated_at ?? row.created_at ?? null,
+  }));
 
-  const fromNotes: DecisionRoomPlayerFocus[] = noteRows.map((row: any) => ({
-    id: row.id as string,
-    playerId: (row.player_id ?? null) as string | null,
+  const fromNotes: ProjectedPlayerFocus[] = (noteRows as NoteRow[]).map((row) => ({
+    id: row.id,
+    playerId: row.player_id ?? null,
     kind: 'note' as const,
     title: nonEmpty(row.title) ?? 'Coach note',
     summary: nonEmpty(row.body),
@@ -128,16 +219,16 @@ export async function loadPlayerFocus(
     pinned: row.pinned === true,
     startDate: null,
     endDate: null,
-    updatedAt: (row.updated_at ?? row.created_at ?? null) as string | null,
-  })) as unknown as DecisionRoomPlayerFocus[];
+    updatedAt: row.updated_at ?? row.created_at ?? null,
+  }));
 
   // Pinned notes first, then everything by recency (nulls last).
-  return [...fromNotes, ...fromPlans].sort((a: any, b: any) => {
+  return [...fromNotes, ...fromPlans].sort((a: ProjectedPlayerFocus, b: ProjectedPlayerFocus) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     const at = a.updatedAt ? Date.parse(a.updatedAt) : 0;
     const bt = b.updatedAt ? Date.parse(b.updatedAt) : 0;
     return bt - at;
-  });
+  }) as unknown as DecisionRoomPlayerFocus[];
 }
 
 /**
@@ -170,9 +261,9 @@ export async function loadImportIssues(
     throw new Error(`loadImportIssues: query failed — ${error.message}`);
   }
 
-  const rows = data ?? [];
+  const rows = (data ?? []) as ImportRunRow[];
 
-  const isIssue = (row: any): boolean => {
+  const isIssue = (row: ImportRunRow): boolean => {
     const status = String(row.status ?? '').toLowerCase();
     if (['failed', 'partial', 'error', 'errored'].includes(status)) return true;
     if ((row.error_count ?? 0) > 0) return true;
@@ -185,7 +276,7 @@ export async function loadImportIssues(
     return false;
   };
 
-  return rows.filter(isIssue).map((row: any) => ({
+  return rows.filter(isIssue).map((row) => ({
     id: row.id as string,
     sourceLabel: nonEmpty(row.source_label) ?? nonEmpty(row.source_id) ?? 'Import',
     importType: nonEmpty(row.import_type),
@@ -237,9 +328,9 @@ export async function loadSummaryPlayers(
     throw new Error(`loadSummaryPlayers: query failed — ${error.message}`);
   }
 
-  const rows = data ?? [];
+  const rows = (data ?? []) as TeamMemberRow[];
 
-  return rows.map((row: any) => {
+  return rows.map((row) => {
     // Embedded relation may arrive as an object or a single-element array
     // depending on how PostgREST infers cardinality.
     const player = Array.isArray(row.player) ? row.player[0] : row.player;

@@ -392,7 +392,7 @@ export default function PlayerDevPlanPage() {
         }
       });
     },
-    [plan, fetchPlan]
+    [plan, fetchPlan, showToast]
   );
 
   // Handle goal uncomplete
@@ -409,7 +409,7 @@ export default function PlayerDevPlanPage() {
         }
       });
     },
-    [plan, fetchPlan]
+    [plan, fetchPlan, showToast]
   );
 
   // Categorize goals

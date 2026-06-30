@@ -13,6 +13,7 @@
 import { memo } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getFullName } from '@/lib/utils';
 import {
@@ -127,13 +128,14 @@ const PlayerChip = memo(function PlayerChip({
   const attention = getAttention(member.status, member.aggregates);
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       onClick={() => onSelect(member.playerId)}
+      haptic="none"
       className={cn(
-        'group flex w-full items-center gap-3 rounded-xl border border-warm-200 bg-white p-2.5 text-left',
-        'transition-all duration-150 hover:border-primary-300 hover:shadow-sm active:scale-[0.98]',
-        'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
+        'min-h-0 h-auto group w-full justify-start gap-3 rounded-xl border border-warm-200 bg-white p-2.5 text-left font-normal',
+        'hover:border-primary-300 hover:bg-white hover:shadow-sm',
         attention.needsAttention && 'border-l-2 border-l-amber-400',
       )}
       aria-label={`Open ${fullName} preview`}
@@ -158,7 +160,7 @@ const PlayerChip = memo(function PlayerChip({
         </div>
       </div>
       <FreshnessBadge aggregates={member.aggregates} className="flex-shrink-0" />
-    </button>
+    </Button>
   );
 });
 

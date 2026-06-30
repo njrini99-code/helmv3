@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/select';
 import { PageLoading } from '@/components/ui/loading';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import {
@@ -148,7 +149,7 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
         if (data?.id) setResolvedTeamId(data.id);
         else setLoading(false);
       });
-  }, [selectedTeamId, authLoading, coach?.organization_id]);
+  }, [serverTeamId, selectedTeamId, authLoading, coach?.organization_id]);
 
   useEffect(() => {
     if (initialModel) return;
@@ -572,11 +573,11 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
                       {/* Position Filter */}
                       <div className="flex flex-col gap-1">
                         <label htmlFor="roster-position-filter" className="text-xs font-medium text-warm-500">Position</label>
-                        <select
+                        <NativeSelect
                           id="roster-position-filter"
                           value={positionFilter}
                           onChange={(e) => setPositionFilter(e.target.value)}
-                          className="px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="min-h-0 px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           <option value="">All Positions</option>
                           {POSITIONS.map((pos) => (
@@ -584,17 +585,17 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
                               {pos}
                             </option>
                           ))}
-                        </select>
+                        </NativeSelect>
                       </div>
 
                       {/* Grad Year Filter */}
                       <div className="flex flex-col gap-1">
                         <label htmlFor="roster-gradyear-filter" className="text-xs font-medium text-warm-500">Grad Year</label>
-                        <select
+                        <NativeSelect
                           id="roster-gradyear-filter"
                           value={gradYearFilter}
                           onChange={(e) => setGradYearFilter(e.target.value)}
-                          className="px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="min-h-0 px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           <option value="">All Years</option>
                           {GRAD_YEARS.map((year) => (
@@ -602,17 +603,17 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
                               Class of {year}
                             </option>
                           ))}
-                        </select>
+                        </NativeSelect>
                       </div>
 
                       {/* Status Filter */}
                       <div className="flex flex-col gap-1">
                         <label htmlFor="roster-status-filter" className="text-xs font-medium text-warm-500">Status</label>
-                        <select
+                        <NativeSelect
                           id="roster-status-filter"
                           value={statusFilter}
                           onChange={(e) => setStatusFilter(e.target.value)}
-                          className="px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="min-h-0 px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           <option value="">All Status</option>
                           <option value="active">Active</option>
@@ -620,7 +621,7 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
                           <option value="injured">Injured</option>
                           <option value="alumni">Alumni</option>
                           <option value="pending">Pending</option>
-                        </select>
+                        </NativeSelect>
                       </div>
 
                       {/* Clear Filters */}

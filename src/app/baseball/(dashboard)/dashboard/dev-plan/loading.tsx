@@ -38,7 +38,7 @@ export default function Loading() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="rounded-xl border border-warm-200 p-4 bg-white"
+              className="rounded-xl border border-warm-200 p-4 bg-cream-50"
               style={{ opacity: 1 - i * 0.2 }}
             >
               <div className="flex items-start gap-3">

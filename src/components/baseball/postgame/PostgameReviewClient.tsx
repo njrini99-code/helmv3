@@ -222,15 +222,17 @@ export function PostgameReviewClient({
               {recentGames.slice(0, 12).map((g) => {
                 const active = review?.gameId === g.gameId || selectedGameId === g.gameId;
                 return (
-                  <button
+                  <Button
                     key={g.gameId}
                     type="button"
+                    variant="ghost"
                     role="tab"
                     aria-selected={active}
                     onClick={() => router.replace(`/baseball/dashboard/postgame?game=${g.gameId}`)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-1 focus-visible:ring-offset-cream-100 ${
+                    haptic="none"
+                    className={`min-h-0 rounded-lg border px-3 py-1.5 text-xs font-medium ${
                       active
-                        ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                        ? 'border-primary-600 bg-primary-600 text-white shadow-sm hover:bg-primary-600'
                         : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300 hover:bg-warm-100'
                     }`}
                   >
@@ -244,7 +246,7 @@ export function PostgameReviewClient({
                         aria-label="has review"
                       />
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -476,8 +478,8 @@ function Section({
         </span>
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-[13px] font-semibold uppercase tracking-[0.08em] text-warm-700">{title}</h3>
-            <span className="rounded-full bg-warm-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-warm-500">
+            <h3 className="text-body-sm font-semibold uppercase tracking-[0.08em] text-warm-700">{title}</h3>
+            <span className="rounded-full bg-warm-100 px-1.5 py-0.5 text-micro font-semibold tabular-nums text-warm-500">
               {items.length}
             </span>
           </div>

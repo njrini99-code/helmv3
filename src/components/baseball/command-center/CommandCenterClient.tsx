@@ -247,10 +247,12 @@ function SortableHeader({
       aria-sort={isActive ? 'descending' : 'none'}
       className={`py-0 ${align === 'left' ? 'text-left' : 'text-center'} ${className}`}
     >
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => onSort(sortKey)}
-        className={`group inline-flex w-full items-center gap-1 py-3 text-eyebrow font-semibold uppercase tracking-wide transition-colors rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${
+        haptic="none"
+        className={`min-h-0 group w-full gap-1 py-3 text-eyebrow font-semibold uppercase tracking-wide hover:bg-transparent ${
           align === 'left' ? 'justify-start' : 'justify-center'
         } ${isActive ? 'text-primary-600' : 'text-warm-500 hover:text-warm-700'}`}
       >
@@ -260,7 +262,7 @@ function SortableHeader({
           aria-hidden
           className={`transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'}`}
         />
-      </button>
+      </Button>
     </th>
   );
 }

@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { Header } from '@/components/layout/header';
 import { Button, IconButton } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input, Textarea } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
@@ -471,12 +471,16 @@ export default function EventsPage() {
       {/* Create Event Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             aria-label="Close modal"
-            className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm w-full h-full border-0 cursor-default"
+            haptic="none"
+            className="min-h-0 absolute inset-0 block w-full h-full rounded-none bg-warm-900/50 backdrop-blur-sm cursor-default hover:bg-warm-900/50"
             onClick={() => setShowCreateModal(false)}
-          />
+          >
+            {''}
+          </Button>
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-warm-100 sticky top-0 bg-white">
               <h2 className="text-lg font-semibold tracking-tight text-warm-900">
@@ -521,12 +525,12 @@ export default function EventsPage() {
                   >
                     Start Time
                   </label>
-                  <input
+                  <Input
                     id="event-start-time"
                     type="datetime-local"
                     value={newEvent.start_time}
                     onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                    className="rounded-xl border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                     required
                   />
                 </div>
@@ -537,12 +541,12 @@ export default function EventsPage() {
                   >
                     End Time
                   </label>
-                  <input
+                  <Input
                     id="event-end-time"
                     type="datetime-local"
                     value={newEvent.end_time}
                     onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                    className="rounded-xl border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                   />
                 </div>
               </div>
@@ -559,13 +563,13 @@ export default function EventsPage() {
                 >
                   Description (Optional)
                 </label>
-                <textarea
+                <Textarea
                   id="event-description"
                   value={newEvent.description}
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                   placeholder="Add notes or details about this event..."
                   rows={3}
-                  className="w-full px-4 py-2.5 rounded-xl border border-warm-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 resize-none"
+                  className="rounded-xl border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                 />
               </div>
               <div className="flex items-center gap-3 pt-4">

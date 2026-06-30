@@ -256,7 +256,7 @@ export function BatteryMatrix({ cells, sources, height = 320, className }: Batte
                       >
                         <span
                           className={cn(
-                            'text-[11px] font-semibold tabular-nums',
+                            'text-micro font-semibold tabular-nums',
                             !cell.thinSample && cell.strikeRate !== null && cell.strikeRate > 0.55
                               ? 'text-white'
                               : 'text-warm-800',
@@ -264,7 +264,7 @@ export function BatteryMatrix({ cells, sources, height = 320, className }: Batte
                         >
                           {cell.strikeRate === null ? '—' : `${Math.round(cell.strikeRate * 100)}%`}
                         </span>
-                        <span className="text-[9px] text-warm-500">{cell.innings} ip</span>
+                        <span className="text-micro text-warm-500">{cell.innings} ip</span>
                       </div>
                     </td>
                   );

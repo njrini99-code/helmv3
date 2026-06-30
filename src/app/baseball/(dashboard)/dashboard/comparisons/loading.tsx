@@ -16,7 +16,7 @@ export default function ComparisonsLoading() {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-xl border border-warm-200 p-6"
+              className="bg-cream-50 rounded-xl border border-warm-200 p-6"
             >
               <Skeleton className="h-4 w-3/4 mb-3" />
               <Skeleton className="h-3 w-1/2 mb-4" />

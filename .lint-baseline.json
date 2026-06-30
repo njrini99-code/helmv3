@@ -1,17 +1,13 @@
 {
   "(null)": 2,
-  "@typescript-eslint/no-explicit-any": 49,
+  "@typescript-eslint/no-explicit-any": 38,
   "@typescript-eslint/no-unused-vars": 1,
-  "helm/no-arbitrary-bg-white": 1309,
+  "helm/no-arbitrary-bg-white": 1302,
   "helm/no-arbitrary-radius": 37,
-  "helm/no-arbitrary-text-px": 234,
+  "helm/no-arbitrary-text-px": 174,
   "helm/no-banned-color": 131,
-  "helm/no-raw-button": 135,
-  "helm/no-raw-input": 474,
+  "helm/no-raw-button": 101,
+  "helm/no-raw-input": 469,
   "jsx-a11y/anchor-is-valid": 1,
-  "jsx-a11y/aria-role": 23,
-  "jsx-a11y/click-events-have-key-events": 3,
-  "jsx-a11y/no-autofocus": 1,
-  "jsx-a11y/no-static-element-interactions": 5,
-  "react-hooks/exhaustive-deps": 1
+  "jsx-a11y/aria-role": 23
 }

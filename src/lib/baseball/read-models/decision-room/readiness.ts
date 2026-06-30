@@ -65,6 +65,41 @@ interface EmbeddedPlayer {
   primary_position: string | null;
 }
 
+/** Row shape selected from `baseball_availability_statuses` (joined to player). */
+interface AvailabilityRow {
+  id: string;
+  player_id: string;
+  status: string;
+  reason_category: string | null;
+  note: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  created_at: string | null;
+  player: EmbeddedPlayer | null;
+}
+
+/** Row shape selected from `baseball_readiness_checkins` (joined to player). */
+interface ReadinessRow {
+  id: string;
+  player_id: string;
+  check_date: string | null;
+  readiness_score: number | null;
+  readiness_band: string | null;
+  arm_status: string | null;
+  soreness_level: number | null;
+  illness_flag: boolean | null;
+  notes: string | null;
+  created_at: string | null;
+  player: EmbeddedPlayer | null;
+}
+
+/** Row shape selected from `baseball_practice_attendance`. */
+interface PracticeAttendanceRow {
+  id: string;
+  status: string | null;
+  created_at: string | null;
+}
+
 function playerName(player: EmbeddedPlayer | null | undefined): string {
   if (!player) return 'Unknown player';
   const name = [player.first_name, player.last_name]
@@ -137,9 +172,9 @@ export async function loadAvailabilityConcerns(
   const concerns: DecisionRoomAvailabilityConcern[] = [];
 
   // --- Availability flags --------------------------------------------------
-  for (const row of (availabilityRes.data ?? []) as any[]) {
-    const player = row.player as EmbeddedPlayer | null;
-    const status = row.status as string;
+  for (const row of (availabilityRes.data ?? []) as unknown as AvailabilityRow[]) {
+    const player = row.player;
+    const status = row.status;
     concerns.push({
       id: `availability:${row.id}`,
       playerId: row.player_id,
@@ -153,8 +188,8 @@ export async function loadAvailabilityConcerns(
   }
 
   // --- Readiness check-ins: keep latest per player, flag low readiness -----
-  const latestByPlayer = new Map<string, any>();
-  for (const row of (readinessRes.data ?? []) as any[]) {
+  const latestByPlayer = new Map<string, ReadinessRow>();
+  for (const row of (readinessRes.data ?? []) as unknown as ReadinessRow[]) {
     // Rows are ordered newest-first, so the first one seen per player wins.
     if (!latestByPlayer.has(row.player_id)) {
       latestByPlayer.set(row.player_id, row);
@@ -171,7 +206,7 @@ export async function loadAvailabilityConcerns(
 
     if (!lowBand && !lowScore && !illness) continue;
 
-    const player = row.player as EmbeddedPlayer | null;
+    const player = row.player;
     const severity: 'high' | 'medium' | 'low' = band === 'red' || (score != null && score <= 40)
       ? 'high'
       : illness || band === 'orange_lower' || band === 'orange_upper'
@@ -252,7 +287,7 @@ export async function loadAttendanceSummary(
 
   // --- Practice tallies ----------------------------------------------------
   const practice = { total: 0, present: 0, limited: 0, absent: 0, excused: 0 };
-  for (const row of (practiceRes.data ?? []) as any[]) {
+  for (const row of (practiceRes.data ?? []) as PracticeAttendanceRow[]) {
     practice.total += 1;
     switch (row.status) {
       case 'present':
