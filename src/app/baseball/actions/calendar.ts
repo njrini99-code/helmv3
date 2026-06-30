@@ -198,6 +198,21 @@ export async function updateBaseballEvent(eventId: string, input: UpdateEventInp
 
   if (!coach) return { success: false, error: 'Coach profile not found' };
 
+  const { data: eventRow } = await supabase
+    .from('baseball_events')
+    .select('id, team_id')
+    .eq('id', eventId)
+    .single();
+
+  if (!eventRow) {
+    return { success: false, error: 'Event not found or you do not have permission to update it' };
+  }
+
+  const allowed = await hasBaseballCapability(eventRow.team_id, 'can_manage_practice');
+  if (!allowed) {
+    return { success: false, error: 'You do not have permission to update events for this team' };
+  }
+
   const updateData: Record<string, unknown> = {};
 
   if (input.title !== undefined) updateData.title = input.title;
@@ -219,7 +234,6 @@ export async function updateBaseballEvent(eventId: string, input: UpdateEventInp
   const { data, error } = await fromUntyped(supabase, 'baseball_events')
     .update(updateData)
     .eq('id', eventId)
-    .eq('created_by', coach.id)
     .select()
     .single();
 

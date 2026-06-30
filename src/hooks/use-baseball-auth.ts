@@ -20,78 +20,35 @@ type AuthResult = {
   role: Role | null;
 };
 
+type VerifyResult =
+  | { ok: true; role: Role; coachProfile: BaseballProfile | null; playerProfile: BaseballProfile | null }
+  | { ok: false; redirectTo: string };
+
 /**
  * Shared auth check for all baseball dashboard layouts.
  *
- * Fast-path: reads Zustand auth store (persisted to localStorage) for instant
- * auth on repeat visits — no Supabase round-trip needed, no layout flash.
- * Background verification still confirms session validity.
- *
- * Full check: only runs on first visit (empty store) or on session expiry.
+ * Always revalidates against the server before authorizing protected shell
+ * content (#416). Cached Zustand state may hint at role but never gates access.
  */
 export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
   const router = useRouter();
   const supabaseRef = useRef(createClient());
 
-  // Read current store state imperatively — safe at render time since Zustand
-  // persist rehydrates synchronously from localStorage before first render.
-  const { user: storeUser, coach: storeCoach, player: storePlayer } = useAuthStore.getState();
-
-  // Derive initial auth state from persisted store data (runs once at mount)
-  const getInitialFromStore = (): { authorized: boolean; role: Role | null } => {
-    if (!storeUser) return { authorized: false, role: null };
-
-    const resolvedRole: Role | null = storeCoach
-      ? 'coach'
-      : storePlayer
-        ? 'player'
-        : (storeUser.role === 'coach' || storeUser.role === 'player')
-          ? (storeUser.role as Role)
-          : null;
-
-    if (!resolvedRole) return { authorized: false, role: null };
-    if (requiredRole && resolvedRole !== requiredRole) return { authorized: false, role: null };
-
-    if (resolvedRole === 'coach' && (!storeCoach || !storeCoach.onboarding_completed)) {
-      return { authorized: false, role: null };
-    }
-    if (resolvedRole === 'player' && (!storePlayer || !(storePlayer as { onboarding_completed?: boolean }).onboarding_completed)) {
-      return { authorized: false, role: null };
-    }
-
-    return { authorized: true, role: resolvedRole };
-  };
-
-  const initial = getInitialFromStore();
-
-  const [loading, setLoading] = useState(!initial.authorized);
-  const [authorized, setAuthorized] = useState(initial.authorized);
-  const [role, setRole] = useState<Role | null>(initial.role);
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
+  const [role, setRole] = useState<Role | null>(null);
 
   useEffect(() => {
-    // Fast-path: store had valid auth — verify session in background (non-blocking)
-    if (initial.authorized) {
-      void supabaseRef.current.auth.getUser().then(({ data: { user } }) => {
-        if (!user) {
-          // Session expired — clear store and redirect
-          useAuthStore.getState().clear();
-          router.push('/baseball/login');
-        }
-      });
-      return;
-    }
+    let cancelled = false;
 
-    // Full check: store was empty or invalid — do Supabase round-trip
-    async function checkAuth() {
+    async function verifyServerSession(): Promise<VerifyResult | null> {
       const supabase = supabaseRef.current;
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push('/baseball/login');
-        return;
+        return { ok: false, redirectTo: '/baseball/login' };
       }
 
-      // Single parallel fetch for user record + both profiles
       const [userResult, coachResult, playerResult] = await Promise.all([
         supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
         supabase.from('baseball_coaches').select('id, onboarding_completed, coach_type').eq('user_id', user.id).maybeSingle(),
@@ -102,7 +59,6 @@ export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
       const coachProfile = coachResult.data as BaseballProfile | null;
       const playerProfile = playerResult.data as BaseballProfile | null;
 
-      // Resolve role from profiles (profile presence is source of truth)
       const declaredRole = (userRole === 'coach' || userRole === 'player') ? userRole : null;
       const resolvedRole = coachProfile && playerProfile
         ? (declaredRole || 'coach')
@@ -112,38 +68,92 @@ export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
             ? 'player'
             : declaredRole;
 
-      // No role at all — send to complete-signup
       if (!resolvedRole) {
-        router.push('/baseball/complete-signup');
-        return;
+        return { ok: false, redirectTo: '/baseball/complete-signup' };
       }
 
-      // If a specific role is required, check it matches
       if (requiredRole && resolvedRole !== requiredRole) {
-        router.push(resolvedRole === 'coach' ? '/baseball/dashboard/command-center' : '/baseball/player/today');
-        return;
+        return {
+          ok: false,
+          redirectTo: resolvedRole === 'coach'
+            ? '/baseball/dashboard/command-center'
+            : '/baseball/player/today',
+        };
       }
 
-      // Check onboarding completion
       if (resolvedRole === 'coach') {
         if (!coachProfile || !coachProfile.onboarding_completed) {
-          router.push('/baseball/coach-onboarding');
-          return;
+          return { ok: false, redirectTo: '/baseball/coach-onboarding' };
         }
       } else if (resolvedRole === 'player') {
         if (!playerProfile || !playerProfile.onboarding_completed) {
-          router.push('/baseball/player');
-          return;
+          return { ok: false, redirectTo: '/baseball/player' };
         }
       }
 
-      setRole(resolvedRole as Role);
+      return { ok: true, role: resolvedRole as Role, coachProfile, playerProfile };
+    }
+
+    function reconcileStore(
+      coachProfile: BaseballProfile | null,
+      playerProfile: BaseballProfile | null,
+    ) {
+      const store = useAuthStore.getState();
+      const cachedCoachId = store.coach?.id ?? null;
+      const cachedPlayerId = store.player?.id ?? null;
+      const freshCoachId = coachProfile?.id ?? null;
+      const freshPlayerId = playerProfile?.id ?? null;
+
+      if (cachedCoachId !== freshCoachId || cachedPlayerId !== freshPlayerId) {
+        store.clear();
+      }
+
+      if (coachProfile) {
+        store.setCoach({
+          ...(store.coach ?? {}),
+          id: coachProfile.id,
+          onboarding_completed: coachProfile.onboarding_completed,
+          coach_type: coachProfile.coach_type,
+        } as NonNullable<typeof store.coach>);
+      } else {
+        store.setCoach(null);
+      }
+
+      if (playerProfile) {
+        store.setPlayer({
+          ...(store.player ?? {}),
+          id: playerProfile.id,
+          onboarding_completed: playerProfile.onboarding_completed,
+          player_type: playerProfile.player_type,
+        } as NonNullable<typeof store.player>);
+      } else {
+        store.setPlayer(null);
+      }
+    }
+
+    async function run() {
+      setLoading(true);
+      const result = await verifyServerSession();
+      if (cancelled || !result) return;
+
+      if (!result.ok) {
+        useAuthStore.getState().clear();
+        router.push(result.redirectTo);
+        return;
+      }
+
+      reconcileStore(result.coachProfile, result.playerProfile);
+      setRole(result.role);
       setAuthorized(true);
       setLoading(false);
     }
 
-    checkAuth();
-  }, [router, requiredRole]); // eslint-disable-line react-hooks/exhaustive-deps
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, requiredRole]);
 
   return { loading, authorized, role };
 }

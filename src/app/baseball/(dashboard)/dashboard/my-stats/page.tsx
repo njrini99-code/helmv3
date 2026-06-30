@@ -1,5 +1,4 @@
-import { getSessionProfile } from '@/lib/auth/session';
-import { redirect } from 'next/navigation';
+import { requireBaseballPlayerRoute } from '@/lib/baseball/server-route-guards';
 import { MyStatsClient } from './MyStatsClient';
 
 // Force dynamic rendering - requires Supabase auth at runtime
@@ -11,11 +10,6 @@ export const metadata = {
 };
 
 export default async function MyStatsPage() {
-  const session = await getSessionProfile();
-  if (!session) redirect('/baseball/login');
-  if (session.role === 'coach') {
-    redirect('/baseball/dashboard/stats-center');
-  }
-
+  await requireBaseballPlayerRoute();
   return <MyStatsClient />;
 }
