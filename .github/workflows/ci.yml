@@ -41,7 +41,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v2
         with:
-          version: latest
+          version: 2.101.0
 
       - name: Start local Supabase stack
         if: env.SUPABASE_ACCESS_TOKEN == ''
@@ -217,7 +217,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v2
         with:
-          version: latest
+          version: 2.101.0
 
       - name: Start local Supabase stack
         run: supabase start
