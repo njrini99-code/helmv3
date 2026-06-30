@@ -152,10 +152,11 @@ jobs:
           # they are intentionally broken code that exists only to verify
           # rule-pack behaviour locally. Letting them flow into CI would
           # block every PR that touches the rule pack.
-          mapfile -t files < <(bash .github/scripts/changed-files.sh \
+          changed_files="$(bash .github/scripts/changed-files.sh)"
+          mapfile -t files < <(printf '%s\n' "$changed_files" \
             | grep -E '\.(ts|tsx|js|jsx|sql|py)$' \
             | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
-            || true)
+            || :)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No changed files for semgrep."
             exit 0
@@ -169,10 +170,11 @@ jobs:
         run: |
           set -eu
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          mapfile -t files < <(bash .github/scripts/changed-files.sh \
+          changed_files="$(bash .github/scripts/changed-files.sh)"
+          mapfile -t files < <(printf '%s\n' "$changed_files" \
             | grep -E '\.(ts|tsx|js|jsx|sql|py|sh|bash|ya?ml)$' \
             | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
-            || true)
+            || :)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No changed files for semgrep p/ci."
             exit 0

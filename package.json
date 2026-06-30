@@ -34,7 +34,7 @@
     "test:all": "vitest run",
     "test:integration": "vitest run --project integration",
     "test:rls": "vitest run --project rls",
-    "test:business": "vitest run --config vitest.business.config.ts",
+    "test:business": "vitest run --project business",
     "verify:business": "npm run test:business",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",

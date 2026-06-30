@@ -20,6 +20,14 @@ GRANT EXECUTE ON FUNCTION public.can_view_baseball_player(uuid) TO authenticated
 GRANT EXECUTE ON FUNCTION public.is_baseball_team_member(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.can_manage_baseball_lift_group(uuid, uuid) TO authenticated, service_role;
 
+ALTER TABLE public.baseball_staff_invitations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.baseball_stat_uploads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.baseball_team_coach_staff ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.baseball_box_score_batting ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.baseball_box_score_pitching ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.baseball_player_season_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.baseball_games ENABLE ROW LEVEL SECURITY;
+
 REVOKE ALL ON TABLE public.baseball_staff_invitations FROM PUBLIC, anon;
 REVOKE ALL ON TABLE public.baseball_stat_uploads FROM PUBLIC, anon;
 REVOKE ALL ON TABLE public.baseball_team_coach_staff FROM PUBLIC, anon;
@@ -70,15 +78,17 @@ BEGIN
     EXECUTE $p$CREATE POLICY "baseball_practice_blocks_select" ON public.baseball_practice_blocks
       FOR SELECT TO authenticated
       USING (
-        public.is_baseball_team_staff(team_id)
-        OR (
-          public.is_baseball_team_member(team_id)
-          AND EXISTS (
-            SELECT 1
-            FROM public.baseball_practices p
-            WHERE p.id = baseball_practice_blocks.practice_id
-              AND p.status = 'published'
-          )
+        EXISTS (
+          SELECT 1
+          FROM public.baseball_practices p
+          WHERE p.id = baseball_practice_blocks.practice_id
+            AND (
+              public.is_baseball_team_staff(p.team_id)
+              OR (
+                p.status = 'published'
+                AND public.is_baseball_team_member(p.team_id)
+              )
+            )
         )
       )$p$;
     EXECUTE $p$CREATE POLICY "baseball_practice_blocks_insert" ON public.baseball_practice_blocks

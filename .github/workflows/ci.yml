@@ -16,15 +16,15 @@ permissions:
 env:
   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-  SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-  SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
   database-types:
     name: Database types drift
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -50,8 +50,6 @@ jobs:
         run: supabase start
 
       - name: Verify database types are up to date
-        env:
-          SUPABASE_PROJECT_ID: helmv3
         run: npm run check:types-drift
 
       - name: Stop local Supabase stack
@@ -260,7 +258,9 @@ jobs:
           node-version: 20
 
       - name: Check route hygiene blockers
-        run: npm run routes:hygiene:p0p1
+        run: |
+          npm run ui:routes
+          npm run routes:hygiene:p0p1
 
   all:
     name: all

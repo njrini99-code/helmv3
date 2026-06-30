@@ -227,12 +227,20 @@ jobs:
       - run:
           name: Wait for Vercel preview to be READY
           command: |
-            if URL=$(bash .circleci/scripts/wait-for-vercel-preview.sh); then
+            set +e
+            URL=$(bash .circleci/scripts/wait-for-vercel-preview.sh 2> /tmp/vercel-preview.err)
+            status=$?
+            set -e
+            cat /tmp/vercel-preview.err >&2
+            if [ "$status" -eq 0 ]; then
               echo "export PREVIEW_URL='${URL}'" >> "$BASH_ENV"
               echo "export LIGHTHOUSE_PREVIEW_READY='true'" >> "$BASH_ENV"
-            else
-              echo "Vercel preview was not ready or not discoverable; skipping advisory Lighthouse run."
+            elif grep -q "Timeout after" /tmp/vercel-preview.err; then
+              echo "Vercel preview was not ready before timeout; skipping advisory Lighthouse run."
               echo "export LIGHTHOUSE_PREVIEW_READY='false'" >> "$BASH_ENV"
+            else
+              echo "Vercel preview lookup failed for a non-timeout reason."
+              exit "$status"
             fi
       - run:
           name: Run Lighthouse CI
@@ -241,10 +249,7 @@ jobs:
               echo "Skipping Lighthouse CI: no preview URL available."
               exit 0
             fi
-            npx lhci autorun --config=lighthouserc.cjs || {
-              echo "Advisory Lighthouse findings detected; see artifact for details."
-              exit 0
-            }
+            npx lhci autorun --config=lighthouserc.cjs
       - store_artifacts:
           path: .lighthouseci/
           destination: lighthouse

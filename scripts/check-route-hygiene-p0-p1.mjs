@@ -25,7 +25,10 @@ const blockers = [];
 
 for (const file of findingFiles) {
   const payload = readJson(file);
-  const findings = Array.isArray(payload.findings) ? payload.findings : [];
+  if (!payload || !Array.isArray(payload.findings)) {
+    throw new Error(`Invalid route hygiene artifact shape: ${file} must contain a findings array`);
+  }
+  const findings = payload.findings;
   for (const finding of findings) {
     const severity = String(finding.severity ?? '').toUpperCase();
     if (severity === 'P0' || severity === 'P1') {
