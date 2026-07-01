@@ -20,13 +20,13 @@ interface PlayerRecruitingGateResult {
  *
  * Rules:
  * - `college` players → blocked entirely; recruiting does not apply.
- * - non-college players with `recruiting_activated !== true` → redirect
- *   to /baseball/player/today with an honest empty-state message.
- * - non-college players with `recruiting_activated === true` → allowed.
+ * - all other (non-college) players → redirected away, regardless of
+ *   `recruiting_activated`, since the calling component has no
+ *   player-facing rendering path (avoids a permanent blank page for
+ *   activated players who previously fell through every branch).
  *
- * The hook only redirects for the unactivated case. College-player
- * blocking is left to the calling component so it can render a richer
- * "not available" state rather than a silent redirect.
+ * College-player blocking is left to the calling component so it can
+ * render a richer "not available" state rather than a silent redirect.
  */
 export function usePlayerRecruitingGate(): PlayerRecruitingGateResult {
   const router = useRouter();
@@ -37,17 +37,17 @@ export function usePlayerRecruitingGate(): PlayerRecruitingGateResult {
   const isCollegePlayer = playerType === 'college';
   const isActivated = !isCollegePlayer && player?.recruiting_activated === true;
 
-  // Redirect unactivated (non-college) players away from recruiting pages.
+  // Redirect ANY non-college player away from recruiting pages gated by
+  // this hook (the calling component has no player-facing rendering path,
+  // so falling through to a null render previously left the page blank).
   // College players are NOT silently redirected — the calling component
   // renders an explicit "not available" state for them.
   useEffect(() => {
     if (isLoading) return;
     if (user?.role !== 'player') return;
     if (isCollegePlayer) return; // component handles this case with a locked state
-    if (!isActivated) {
-      router.replace('/baseball/player/today');
-    }
-  }, [isLoading, user?.role, isCollegePlayer, isActivated, router]);
+    router.replace('/baseball/dashboard/journey');
+  }, [isLoading, user?.role, isCollegePlayer, router]);
 
   return { isActivated, playerType, isLoading };
 }
