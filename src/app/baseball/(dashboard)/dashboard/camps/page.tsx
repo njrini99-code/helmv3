@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -218,6 +217,36 @@ function CampCard({
   );
 }
 
+// Lightweight editorial page header. The dashboard shell already renders the
+// global top bar (notifications + command palette), so this page must NOT mount
+// the legacy layout <Header> — doing so stacked a second search box + avatar
+// under the shell bar. This mirrors the premium Scout Packets header pattern:
+// eyebrow → title → subtitle, with the primary action inline on the right.
+function CampsPageHeader({
+  isCoach,
+  subtitle,
+  action,
+}: {
+  isCoach: boolean;
+  subtitle: string;
+  action?: ReactNode;
+}) {
+  return (
+    <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-eyebrow font-semibold uppercase tracking-wide text-primary-600">
+          Recruiting
+        </p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-warm-900">
+          {isCoach ? 'My Camps' : 'Camps'}
+        </h1>
+        <p className="mt-1 text-warm-500">{subtitle}</p>
+      </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </header>
+  );
+}
+
 export default function CampsPage() {
   const { user, coach, player } = useAuth();
   const { showToast } = useToast();
@@ -354,24 +383,24 @@ export default function CampsPage() {
 
   if (loading) {
     return (
-      <>
-        <Header
-          title={isCoach ? 'My Camps' : 'Camps'}
+      <div className="p-6 lg:p-8">
+        <CampsPageHeader
+          isCoach={isCoach}
           subtitle={isCoach ? 'Manage your camps and events' : 'Browse and register for camps'}
         />
         <PageLoading />
-      </>
+      </div>
     );
   }
 
   if (loadError) {
     return (
-      <>
-        <Header
-          title={isCoach ? 'My Camps' : 'Camps'}
+      <div className="p-6 lg:p-8">
+        <CampsPageHeader
+          isCoach={isCoach}
           subtitle={isCoach ? 'Manage your camps and events' : 'Browse and register for camps'}
         />
-        <div className="p-6 lg:p-8">
+        <div>
           <ReadModelStateNotice
             state="error"
             title="Camps unavailable"
@@ -394,24 +423,25 @@ export default function CampsPage() {
             }}
           />
         </div>
-      </>
+      </div>
     );
   }
 
   return (
     <>
-      <Header
-        title={isCoach ? 'My Camps' : 'Camps'}
-        subtitle={isCoach ? `${camps.length} camps` : `${camps.length} available camps`}
-      >
-        {isCoach && (
-          <Button onClick={() => setShowCreateModal(true)}>
-            <IconPlus size={18} className="mr-2" />
-            Create Camp
-          </Button>
-        )}
-      </Header>
       <div className="p-6 lg:p-8">
+        <CampsPageHeader
+          isCoach={isCoach}
+          subtitle={isCoach ? `${camps.length} camps` : `${camps.length} available camps`}
+          action={
+            isCoach ? (
+              <Button onClick={() => setShowCreateModal(true)}>
+                <IconPlus size={18} className="mr-2" />
+                Create Camp
+              </Button>
+            ) : undefined
+          }
+        />
         {camps.length === 0 ? (
           <EmptyState
             icon={<IconCalendar size={24} />}

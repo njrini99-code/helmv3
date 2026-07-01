@@ -163,6 +163,11 @@ async function main() {
 
   await upsert('baseball_teams', [{
     id: TEAM_ID, organization_id: ORG_ID, name: 'Rini University Baseball', team_type: 'college',
+    // program_type is the recruiting gate's source of truth (middleware.ts). It
+    // defaults to 'college' at the DB level, but set it explicitly so the demo
+    // team always resolves the college recruiting suite even on an environment
+    // where the program_type column backfill hasn't run.
+    program_type: 'college',
     join_code: 'RINIBB', primary_color: '#1f6f43', secondary_color: '#0f3d27',
     description: 'Rini University Baseball — full demo data.', created_by: COACH_ID,
   }]);
