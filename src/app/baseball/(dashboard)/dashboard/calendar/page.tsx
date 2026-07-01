@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -73,9 +74,10 @@ export default async function BaseballCalendarPage() {
 
   if (teamId) {
     const [eventsResult, membersResult, teamOrgResult] = await Promise.all([
-      supabase
-        .from('baseball_events')
-        .select('id, team_id, title, event_type, start_time, end_time, location, description, is_mandatory, max_attendees, rsvp_deadline, created_by')
+      // Read via fromUntyped because requires_rsvp is not yet in the generated
+      // baseball_events types (schema drift — the column exists in the DB).
+      fromUntyped(supabase, 'baseball_events')
+        .select('id, team_id, title, event_type, start_time, end_time, location, description, is_mandatory, max_attendees, rsvp_deadline, requires_rsvp, created_by')
         .eq('team_id', teamId)
         .order('start_time', { ascending: true }),
       supabase
@@ -106,7 +108,7 @@ export default async function BaseballCalendarPage() {
       max_attendees: event.max_attendees,
       rsvp_deadline: event.rsvp_deadline,
       created_by: event.created_by,
-      requires_rsvp: false,
+      requires_rsvp: event.requires_rsvp ?? false,
     }));
 
     // Coaches on this team. Read non-PII identity from the baseball_coaches_public

@@ -184,8 +184,10 @@ const createBaseballEventAction = withBaseballAction(
       input.timezoneOffset,
     );
 
-    const { data, error } = await supabase
-      .from('baseball_events')
+    // Routed through fromUntyped because requires_rsvp is not yet in the
+    // generated baseball_events types (schema drift — the column exists in
+    // the DB). Mirrors the update path below.
+    const { data, error } = await fromUntyped(supabase, 'baseball_events')
       .insert({
         team_id: resolvedTeamId,
         created_by: coachId,
@@ -198,6 +200,7 @@ const createBaseballEventAction = withBaseballAction(
         is_mandatory: input.isMandatory ?? false,
         max_attendees: input.maxAttendees || null,
         rsvp_deadline: buildRsvpDeadline(input.rsvpDeadline, input.timezoneOffset),
+        requires_rsvp: input.requiresRsvp ?? false,
         created_by_id: ctx.user.id,
       })
       .select()
@@ -270,6 +273,7 @@ const updateBaseballEventAction = withBaseballAction(
     if (input.location !== undefined) updateData.location = input.location;
     if (input.description !== undefined) updateData.description = input.description;
     if (input.isMandatory !== undefined) updateData.is_mandatory = input.isMandatory;
+    if (input.requiresRsvp !== undefined) updateData.requires_rsvp = input.requiresRsvp;
     if (input.maxAttendees !== undefined) updateData.max_attendees = input.maxAttendees;
     if (input.rsvpDeadline !== undefined) {
       updateData.rsvp_deadline = buildRsvpDeadline(input.rsvpDeadline, input.timezoneOffset);
