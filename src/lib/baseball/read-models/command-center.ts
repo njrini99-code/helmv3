@@ -255,10 +255,9 @@ export async function getCommandCenter(
       grad_year, bats, throws, height_feet, height_inches, weight_lbs, gpa, city, state
     ),
     baseball_player_aggregates (
-      player_id, team_id, total_sessions, practice_sessions, game_sessions,
-      career_avg, career_obp, career_slg, career_ops, practice_avg, game_avg,
-      pressure_gap, recent_trend, trend_magnitude, trend_velocity,
-      last_5_avg, last_10_avg, season_avg, last_session_at
+      player_id, team_id, total_sessions, total_at_bats, total_hits,
+      career_avg, practice_avg, game_avg, pressure_gap, recent_trend,
+      trend_data, last_5_avg, last_10_avg, last_session_at
     )`;
 
   const [insightsRes, membersRes, eventsRes] = await Promise.all([
