@@ -250,6 +250,13 @@ export function LiftBuilderClient({
       });
       return;
     }
+    if (selectedPlayerIds.size === 0) {
+      setSaveMsg({
+        text: 'Select at least one athlete before saving.',
+        tone: 'error',
+      });
+      return;
+    }
     setSaveMsg(null);
     startSave(async () => {
       try {
@@ -259,7 +266,9 @@ export function LiftBuilderClient({
           date: sessionDate,
           title: sessionTitle.trim(),
           blocks: draftBlocks,
-          playerIds: selectedPlayerIds.size > 0 ? [...selectedPlayerIds] : undefined,
+          // Always send the explicit per-player selection. An empty set means
+          // "nobody" — never fall back to the whole team/group.
+          playerIds: [...selectedPlayerIds],
         });
         if (res.success) {
           setSaveMsg({
@@ -519,7 +528,8 @@ export function LiftBuilderClient({
             onClick={handleSave}
             isLoading={saving}
           >
-            Save — {selectedGroupName}
+            Save — {selectedPlayerIds.size} selected athlete
+            {selectedPlayerIds.size === 1 ? '' : 's'}
           </Button>
         </div>
       </Card>
