@@ -24,6 +24,7 @@
 
 import * as React from 'react';
 import { useState, useMemo, useCallback, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/layout/header';
 import { VideoUpload } from '@/components/features/video-upload';
@@ -1229,6 +1230,7 @@ export function VideoLibraryClient({
 }: VideoLibraryClientProps) {
   const [activeView, setActiveView] = useState<VideoView>(initialView);
   const reduce = useReducedMotionGuard();
+  const router = useRouter();
 
   // Tab counts (honest: show 0 for views with no data)
   const counts: Record<VideoView, number> = {
@@ -1239,10 +1241,14 @@ export function VideoLibraryClient({
     evidence: evidence.totalCount,
   };
 
-  // For now, noop refresh — revalidation happens via router.refresh() if needed
+  // Mutations (upload / edit / delete / set-primary) call revalidatePath()
+  // server-side, but this client component's props are only re-fetched when the
+  // router actually re-renders the server tree — router.refresh() triggers that
+  // re-fetch so the grid reflects the mutation instead of staying stale until a
+  // manual reload.
   const handleMutated = useCallback(() => {
-    // Nothing; mutations call revalidatePath server-side; Next.js will re-render
-  }, []);
+    router.refresh();
+  }, [router]);
 
   return (
     <>
