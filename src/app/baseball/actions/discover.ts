@@ -499,19 +499,23 @@ export async function getDiscoverTeams(
           .from('baseball_team_coach_staff')
           .select(`
             team_id,
-            baseball_coaches!inner(first_name, last_name)
+            baseball_coaches!inner(full_name)
           `)
           .eq('is_primary', true)
           .in('team_id', teamIds),
       ]);
 
-      // Map orgId → primary head coach name
+      // Map orgId → primary head coach name. baseball_coaches stores the name
+      // in a single `full_name` column (there is no first_name/last_name), so
+      // read that — using the wrong columns here left head_coach_name null for
+      // every org, and the trailing `.filter(Boolean(head_coach_name))` then
+      // dropped every result.
       if (primaryCoachRows) {
         primaryCoachRows.forEach((row) => {
           const orgId = teamToOrgMap[row.team_id];
-          const coach = row.baseball_coaches as unknown as { first_name: string | null; last_name: string | null } | null;
+          const coach = row.baseball_coaches as unknown as { full_name: string | null } | null;
           if (!orgId || !coach) return;
-          const name = `${coach.first_name ?? ''} ${coach.last_name ?? ''}`.trim();
+          const name = (coach.full_name ?? '').trim();
           if (name && !headCoachByOrg[orgId]) {
             headCoachByOrg[orgId] = name;
           }
