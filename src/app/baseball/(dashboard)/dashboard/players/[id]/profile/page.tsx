@@ -2,10 +2,12 @@ import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { PlayerCard } from '@/components/player/profile/PlayerCard';
 import { Button } from '@/components/ui/button';
-import { IconArrowLeft, IconMessage, IconChartBar } from '@/components/icons';
+import { IconArrowLeft, IconChartBar } from '@/components/icons';
 import Link from 'next/link';
 import { resolveBaseballAthleteIds, resolveBaseballLiftingOrg } from '@/lib/lifting/resolve-baseball-context';
 import { PlayerPerformanceTab } from '@/components/lifting/performance/PlayerPerformanceTab';
+import { checkWatchlistStatus } from '@/app/baseball/actions/watchlist';
+import { PlayerProfileCoachActions } from '@/components/player/profile/PlayerProfileCoachActions';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -28,6 +30,13 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   if (!player) notFound();
 
   const isPublicView = !user || user.id !== player.user_id;
+
+  // Best-effort watchlist status for the coach CTAs in the sidebar (viewer must
+  // be a coach viewing someone else's profile — checkWatchlistStatus itself
+  // no-ops to false for non-coach users).
+  const isInWatchlist = isPublicView
+    ? await checkWatchlistStatus(id).then((r) => r.isInWatchlist).catch(() => false)
+    : false;
 
   // Fetch coach's team to pull season stats (best-effort — null if not a coach)
   let seasonStats: {
@@ -134,15 +143,11 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           {/* Sidebar */}
           <div className="space-y-4">
             {isPublicView && (
-              <>
-                <Button className="w-full">
-                  <IconMessage size={16} />
-                  Send Message
-                </Button>
-                <Button variant="secondary" className="w-full">
-                  Add to Watchlist
-                </Button>
-              </>
+              <PlayerProfileCoachActions
+                playerId={id}
+                playerUserId={(player.user_id as string | null) ?? null}
+                initialIsInWatchlist={isInWatchlist}
+              />
             )}
 
             {/* Season Stats Card */}
