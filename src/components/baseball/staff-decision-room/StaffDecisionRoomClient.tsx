@@ -53,6 +53,8 @@ import {
   IconGauge,
   IconTrendingUp,
   IconTrendingDown,
+  IconMinus,
+  IconHelp,
   IconTrophy,
   IconShieldAlert,
   IconCalendar,
@@ -151,6 +153,31 @@ function verdictPresentation(
       return { label: 'Not measurable', tone: 'secondary', arrow: null };
     default:
       return { label: 'Tracking', tone: 'secondary', arrow: null };
+  }
+}
+
+// --- Practice Effectiveness direction presentation --------------------------
+// Honest by construction: only 'regressed' earns danger styling. 'no_change'
+// (metric held steady) and null (insufficient sample) read neutral — they were
+// previously mislabeled as "Moved the wrong way" in red. (Issue #498)
+interface EffectivenessPresentation {
+  label: string;
+  tone: 'success' | 'danger' | 'secondary';
+  /** Direction glyph for the badge. */
+  glyph: 'up' | 'down' | 'flat' | 'unknown';
+}
+function effectivenessPresentation(
+  direction: DecisionRoomEffectivenessReview['direction'],
+): EffectivenessPresentation {
+  switch (direction) {
+    case 'improved':
+      return { label: 'Associated improvement', tone: 'success', glyph: 'up' };
+    case 'regressed':
+      return { label: 'Moved the wrong way', tone: 'danger', glyph: 'down' };
+    case 'no_change':
+      return { label: 'Held steady', tone: 'secondary', glyph: 'flat' };
+    default:
+      return { label: 'Not enough data', tone: 'secondary', glyph: 'unknown' };
   }
 }
 
@@ -1263,16 +1290,24 @@ function EffectivenessReviewRow({
 }: {
   review: DecisionRoomEffectivenessReview;
 }) {
-  const improved = review.direction === 'improved';
+  const pres = effectivenessPresentation(review.direction);
   return (
     <Card variant="raised" padding="md">
       <CardContent className="p-0">
         <div className="mb-1 flex flex-wrap items-center gap-2">
-          <Badge variant={improved ? 'success' : 'danger'}>
+          <Badge variant={pres.tone}>
             <span className="mr-1 inline-flex">
-              {improved ? <IconTrendingUp size={12} /> : <IconTrendingDown size={12} />}
+              {pres.glyph === 'up' ? (
+                <IconTrendingUp size={12} />
+              ) : pres.glyph === 'down' ? (
+                <IconTrendingDown size={12} />
+              ) : pres.glyph === 'flat' ? (
+                <IconMinus size={12} />
+              ) : (
+                <IconHelp size={12} />
+              )}
             </span>
-            {improved ? 'Associated improvement' : 'Moved the wrong way'}
+            {pres.label}
           </Badge>
           <span className="inline-flex items-center gap-1 text-xs text-warm-400">
             <IconGauge size={12} />
