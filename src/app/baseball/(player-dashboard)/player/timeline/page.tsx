@@ -43,9 +43,16 @@ export const metadata = {
 
 export default async function PlayerTimelinePage() {
   // 1. Server-validated active context (cookie re-validated against memberships).
+  //
+  // TEAMLESS (#463): a player can finish onboarding with NO team ("Skip for
+  // Now"), so context resolves null even though onboarding is already done.
+  // Redirecting to /baseball/player (the onboarding wizard) bounced such a
+  // player right back into setup instead of the honest join-team terminal
+  // Today already renders for this exact state (PlayerTodayTeamless). Send
+  // them to Today instead — same surface, no dead-end, no onboarding loop.
   const context = await getActiveBaseballContext();
   if (!context) {
-    redirect('/baseball/player');
+    redirect('/baseball/player/today');
   }
 
   // 2. Resolve the player's own membership on the active team. The context only
