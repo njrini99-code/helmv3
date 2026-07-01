@@ -97,6 +97,8 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
           const colors = priorityColors[insight.priority] || priorityColors.low;
           const isExpanded = expandedInsights.has(insight.id) || expanded;
           const panelId = `insight-panel-${insight.id}`;
+          // Engine rows persist detail copy in `body`; legacy/manual rows use `description`.
+          const detail = insight.body ?? insight.description;
 
           return (
             <li
@@ -116,9 +118,9 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                   <p className={`font-medium text-sm leading-snug ${colors?.text ?? ''}`}>
                     {insight.title}
                   </p>
-                  {!isExpanded && insight.description && (
+                  {!isExpanded && detail && (
                     <p className="text-xs text-warm-500 mt-0.5 line-clamp-1">
-                      {insight.description}
+                      {detail}
                     </p>
                   )}
                 </div>
@@ -143,9 +145,9 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                     className="overflow-hidden"
                   >
                     <div className="px-4 pb-4 pt-0">
-                      {insight.description && (
+                      {detail && (
                         <p className="text-sm text-warm-600 mb-3 leading-relaxed">
-                          {insight.description}
+                          {detail}
                         </p>
                       )}
 
