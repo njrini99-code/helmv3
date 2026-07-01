@@ -223,7 +223,7 @@ export default function TeamsPage() {
   };
 
   const handleCopyInvite = (code: string) => {
-    const url = `${window.location.origin}/join/${code}`;
+    const url = `${window.location.origin}/baseball/join/${code}`;
     navigator.clipboard.writeText(url);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
