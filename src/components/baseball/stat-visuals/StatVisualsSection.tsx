@@ -27,9 +27,16 @@
 // =============================================================================
 
 import * as React from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import type { Json } from '@/lib/types';
-import { IconStar, IconStarFilled, IconBookmark } from '@/components/icons';
+import {
+  IconStar,
+  IconStarFilled,
+  IconBookmark,
+  IconChartBar,
+  IconArrowRight,
+} from '@/components/icons';
 import { TabStrip } from './chart-primitives';
 import {
   // hitting
@@ -153,6 +160,74 @@ const PLAYER_FAMILIES: { value: Family; label: string }[] = [
   { value: 'performance', label: 'Performance' },
 ];
 
+/**
+ * Whether a family has ANY source-backed points to draw. Drives the collapse
+ * from a wall of identical "no captured events" frames (which reads as broken on
+ * a seeded team) into ONE honest, premium family empty state. As soon as a read
+ * model feeds a family real inputs, its charts render in full.
+ */
+function familyHasData(family: Family, data: StatVisualsData): boolean {
+  const some = (...arrs: (unknown[] | undefined)[]) =>
+    arrs.some((a) => Array.isArray(a) && a.length > 0);
+  switch (family) {
+    case 'hitting':
+      return some(data.evLa, data.zoneCells, data.spray, data.countLadder, data.gamePracticeGap);
+    case 'pitching':
+      return some(data.pitchShape, data.command, data.decaySegments, data.pitchMix, data.release);
+    case 'fielding':
+      return some(data.defensiveEvents, data.catcherWorkload, data.battery);
+    case 'baserunning':
+      return some(data.baserunning);
+    case 'performance':
+      return some(data.readiness, data.liftProgression, data.pitcherWorkload);
+    case 'quality':
+      return some(data.sourceCoverage, data.practiceFocus, data.importDiff);
+    case 'dna':
+      return some(data.playerDna);
+    default:
+      return false;
+  }
+}
+
+/**
+ * One honest, on-brand empty surface for a whole family — a single glass card
+ * that teaches what unlocks the charts, instead of a dead grid of empty frames.
+ */
+function FamilyEmptyState({ label, scope }: { label: string; scope: Scope }) {
+  return (
+    <div className="xl:col-span-2">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-warm-200/70 bg-cream-100/70 px-6 py-14 text-center shadow-glass backdrop-blur-glass">
+        <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-600/10 text-primary-600">
+          <IconChartBar size={22} aria-hidden />
+        </span>
+        <div className="max-w-md space-y-1.5">
+          <h3 className="text-lg font-semibold tracking-tight text-warm-900">
+            {label} charts light up with captured events
+          </h3>
+          <p className="text-sm leading-relaxed text-warm-500">
+            {scope === 'player'
+              ? 'Pitch-by-pitch, batted-ball, and workload events for this player render here as they’re captured from a connected source or uploaded box score.'
+              : 'These source-backed visuals draw from pitch-by-pitch, batted-ball, and workload events. Import a box score or connect a source and they populate automatically.'}
+          </p>
+        </div>
+        {scope === 'team' && (
+          <Link
+            href="/baseball/dashboard/import"
+            className="group mt-1 inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-white/70 px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+          >
+            Import stats
+            <IconArrowRight
+              size={15}
+              className="transition-transform group-hover:translate-x-0.5"
+              aria-hidden
+            />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // -----------------------------------------------------------------------------
 // Saved-view persistence — wires the additive baseball_stat_visual_views table
 // (migration 20260624000091). The gallery stays presentational: the parent owns
@@ -246,6 +321,10 @@ export function StatVisualsSection({
   const [family, setFamily] = React.useState<Family>(initialFamily);
   const open = onOpenSources;
 
+  const activeFamilyLabel =
+    families.find((f) => f.value === family)?.label ?? 'These';
+  const activeFamilyHasData = familyHasData(family, data);
+
   const canPersist = Boolean(onSaveView);
   const activeKey = familyVisualKey(family);
   const isPinned = savedByKey.get(activeKey)?.is_pinned ?? false;
@@ -278,6 +357,10 @@ export function StatVisualsSection({
           <h2 className="text-xl font-semibold tracking-tight text-warm-900">
             Source-backed charts
           </h2>
+          <p className="mt-0.5 max-w-xl text-sm text-warm-500">
+            Every point traces back to a captured event — click a datum to open
+            its source.
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <TabStrip
@@ -332,7 +415,11 @@ export function StatVisualsSection({
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {family === 'dna' && (
+        {!activeFamilyHasData && (
+          <FamilyEmptyState label={activeFamilyLabel} scope={scope} />
+        )}
+
+        {activeFamilyHasData && family === 'dna' && (
           <PlayerDnaPanel
             className="xl:col-span-2"
             dimensions={data.playerDna ?? []}
@@ -340,7 +427,7 @@ export function StatVisualsSection({
           />
         )}
 
-        {family === 'hitting' && (
+        {activeFamilyHasData && family === 'hitting' && (
           <>
             <EvLaContactMatrix points={data.evLa ?? []} onPointActivate={open} />
             <ZoneChaseDamageHeatmap
@@ -354,7 +441,7 @@ export function StatVisualsSection({
           </>
         )}
 
-        {family === 'pitching' && (
+        {activeFamilyHasData && family === 'pitching' && (
           <>
             <PitchShapeMap points={data.pitchShape ?? []} onPointActivate={open} />
             <CommandHeatmap
@@ -371,7 +458,7 @@ export function StatVisualsSection({
           </>
         )}
 
-        {family === 'fielding' && (
+        {activeFamilyHasData && family === 'fielding' && (
           <>
             <DefensiveEventMap points={data.defensiveEvents ?? []} onPointActivate={open} />
             <CatcherWorkloadBoard points={data.catcherWorkload ?? []} />
@@ -379,11 +466,11 @@ export function StatVisualsSection({
           </>
         )}
 
-        {family === 'baserunning' && (
+        {activeFamilyHasData && family === 'baserunning' && (
           <BaserunningBoard className="xl:col-span-2" rows={data.baserunning ?? []} />
         )}
 
-        {family === 'performance' && (
+        {activeFamilyHasData && family === 'performance' && (
           <>
             <ReadinessHeatStrip className="xl:col-span-2" rows={data.readiness ?? []} />
             <PitcherWorkloadOverlay days={data.pitcherWorkload ?? []} />
@@ -394,7 +481,7 @@ export function StatVisualsSection({
           </>
         )}
 
-        {family === 'quality' && (
+        {activeFamilyHasData && family === 'quality' && (
           <>
             <SourceCoverageBoard cards={data.sourceCoverage ?? []} />
             <PracticeFocusOutcomeBoard rows={data.practiceFocus ?? []} />
