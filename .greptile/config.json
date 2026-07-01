@@ -78,6 +78,7 @@
     "docs/operations/**/*.md",
     "docs/audits/**/*.md",
     "docs/security/**/*.md",
+    "docs/business/**/*.md",
     "src/app/golf/README.md",
     "memory/glossary.md",
     "memory/projects/golfhelm.md",
