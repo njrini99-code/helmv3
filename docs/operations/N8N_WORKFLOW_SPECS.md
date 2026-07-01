@@ -209,6 +209,14 @@ Trigger:
 Vercel deployment failure webhook
 ```
 
+Inputs:
+
+```text
+deployment id, project, branch/commit
+build + runtime error log summary
+linked PR (derived from commit)
+```
+
 Flow:
 
 ```text
@@ -224,6 +232,21 @@ Partner summary example:
 
 ```text
 The latest deployment failed before reaching production. The app is still running on the previous stable version. The failure was linked to PR #123 and is being reviewed.
+```
+
+Outputs:
+
+```text
+GitHub issue (created or updated) with error summary + likely PR
+Huly: related PR marked blocked + Telemetry "Failed Deploys" entry
+alert to Nick
+```
+
+Safety gate:
+
+```text
+Never redeploy, roll back, or change env automatically — Nick decides.
+Redact any log excerpt so no secret/token is posted into the issue.
 ```
 
 ---
@@ -299,6 +322,29 @@ top three things Nick should do today
 partner decisions needed
 ```
 
+Steps:
+
+```text
+pull each input source for the last 24h
+  → dedupe + classify by product/surface
+  → summarize each section in plain English via AI
+  → assemble the brief + top-3 priorities
+  → post to Huly Mission Control and send to Nick
+```
+
+Safety gate:
+
+```text
+Read-only aggregation — never mutates issues, PRs, or data.
+No raw tokens/PII in the brief; summaries only.
+```
+
+Summary behavior:
+
+```text
+Plain English, partner-safe wording (no secrets), skimmable in under a minute.
+```
+
 ---
 
 ## 8. Workflow G — Weekly Partner Update
@@ -324,6 +370,39 @@ Competitive intel
 Docs needing partner review
 Decisions needed
 Next week's focus
+```
+
+Inputs:
+
+```text
+merged PRs + shipped items (last 7 days)
+Git Activity Timeline entries
+open PRs + active blockers
+roadmap movement, telemetry signals, competitive/customer intel
+open partner decisions
+```
+
+Steps:
+
+```text
+collect the week's timeline + roadmap/telemetry/intel
+  → group by product and by shipped / in-progress / blocked
+  → draft each section in plain English via AI
+  → Nick reviews/approves the draft (not auto-sent)
+  → publish to Huly and send to partners
+```
+
+Safety gate:
+
+```text
+Draft requires Nick's approval before it is sent to partners.
+No secrets, internal-only notes, or customer PII in the partner-facing copy.
+```
+
+Summary behavior:
+
+```text
+The entire update is the partner-readable artifact — plain English, outcome-focused.
 ```
 
 ---
@@ -394,6 +473,37 @@ Arccos
 CoachNow
 ```
 
+Steps:
+
+```text
+check each source (pricing/feature/blog/jobs/integrations)
+  → detect a meaningful change vs the last snapshot
+  → summarize the change + Helm implication via AI
+  → create/update a Competitive Intel card (evidence link + opportunity)
+  → add a timeline entry; link a roadmap item if it implies action
+```
+
+Outputs:
+
+```text
+Competitive Intel card (competitor, feature observed, strength/weakness, Helm opportunity, evidence link)
+optional linked roadmap item
+Mission Control "Competitive Intel Highlights" entry
+```
+
+Safety gate:
+
+```text
+Observe-only — never contacts competitors or scrapes gated/paywalled data.
+Creates cards/notes only; never changes roadmap priority automatically.
+```
+
+Partner summary example:
+
+```text
+Teamworks added a scheduling feature this week. Helm's calendar already covers this, but their pricing page now leans into recruiting — worth watching for BaseballHelm positioning.
+```
+
 ---
 
 ## 11. Workflow J — Roadmap Auto-Sorter
@@ -426,6 +536,26 @@ new signal
   → update Huly roadmap
   → link evidence
   → avoid changing priority without confidence score and source
+```
+
+Outputs:
+
+```text
+Huly roadmap item created/updated with bucket + evidence link
+roadmap-movement timeline entry
+```
+
+Safety gate:
+
+```text
+Suggests bucket/priority only; never silently overrides an existing priority.
+A priority change requires a confidence score + a cited source, else it is flagged for Nick.
+```
+
+Partner summary example:
+
+```text
+A coach request to bulk-import stats was sorted into "stats/imports" on the roadmap, linked to the coach's message as evidence. No priority was changed automatically.
 ```
 
 ---

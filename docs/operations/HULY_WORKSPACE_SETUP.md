@@ -37,11 +37,13 @@ Launch / Sales
 Telemetry / App Health
 ```
 
+Every space below defines its **statuses**, **fields**, and **views** so n8n and partners see a consistent structure.
+
 ---
 
 ## 3. Mission Control home
 
-This is the partner home page.
+This is the partner home page. It is a dashboard composed of saved views rolled up from the other spaces.
 
 Sections:
 
@@ -56,6 +58,35 @@ Partner Decisions Needed
 Competitive Intel Highlights
 Customer / Coach Signals
 Docs That Need Review
+```
+
+Views (saved home layouts):
+
+```text
+Partner Home (default)
+Exec Brief (Today + Shipped + Blockers)
+Demo Readiness
+Weekly Review
+```
+
+Rollup fields (surfaced from linked spaces):
+
+```text
+Overall Helm State
+Active fix count
+Open PR count
+Shipped this week
+Blockers / demo risks
+Open partner decisions
+Docs needing review
+```
+
+Statuses (demo-readiness rollup):
+
+```text
+Green — demo-ready
+Yellow — minor risks
+Red — demo blocker open
 ```
 
 This page should answer:
@@ -109,6 +140,19 @@ Risk level
 Last Git update
 Demo blocker
 Customer impact
+```
+
+Views:
+
+```text
+New / Needs Triage
+Ready for Claude
+Claude Working
+In Review
+Deployed / Verified
+Demo Blockers
+Partner-Reported
+Closed / Won’t Fix
 ```
 
 Partner intake rule:
@@ -249,6 +293,17 @@ Priority
 Last reviewed
 ```
 
+Statuses:
+
+```text
+New
+Under Review
+Tracked
+Actioned (roadmap item created)
+Not a Threat
+Archived
+```
+
 Competitors to seed:
 
 ```text
@@ -302,6 +357,17 @@ Follow-up date
 Source
 ```
 
+Statuses:
+
+```text
+New Signal
+Reviewing
+Roadmap Candidate
+Linked to Roadmap
+Follow-Up Needed
+Closed
+```
+
 Views:
 
 ```text
@@ -340,6 +406,17 @@ Needs Review
 Stale
 Deprecated
 Draft
+```
+
+Views:
+
+```text
+Needs Review
+Stale / Deprecated
+Recently Updated
+By Product
+Decision-Relevant
+Current
 ```
 
 Core docs to track:
@@ -387,6 +464,16 @@ Deferred
 Reversed
 ```
 
+Views:
+
+```text
+Open — Needs Decision
+Needed This Week
+Decided (Decision Log)
+Deferred
+By Impact
+```
+
 Examples:
 
 ```text
@@ -416,6 +503,17 @@ Business impact
 Next action
 ```
 
+Statuses:
+
+```text
+New
+Investigating
+Fix In Progress
+Resolved
+Ignored / Expected
+Regressed
+```
+
 Sources:
 
 ```text
@@ -443,7 +541,52 @@ Resolved This Week
 
 ---
 
-## 12. Partner permissions
+## 12. Launch / Sales
+
+Purpose: track launch tasks, demos, prospects, and pricing experiments so product work and go-to-market stay linked.
+
+Statuses:
+
+```text
+Idea
+Planned
+In Progress
+Live / Launched
+Won
+Lost / Paused
+```
+
+Fields:
+
+```text
+Item (launch task or deal)
+Type (launch task / prospect / demo / offer)
+Product
+School / program / partner
+Owner
+Value / plan
+Stage
+Next step
+Target date
+Linked roadmap item
+Linked demo feedback
+Notes
+```
+
+Views:
+
+```text
+Launch Checklist
+Active Deals / Pipeline
+Demos Scheduled
+Offers / Pricing Experiments
+Won This Month
+Blocked on Product
+```
+
+---
+
+## 13. Partner permissions
 
 Recommended:
 
@@ -455,7 +598,7 @@ Recommended:
 
 ---
 
-## 13. Huly + GitHub sync rules
+## 14. Huly + GitHub sync rules
 
 Huly should sync or link GitHub issues and PRs, but GitHub remains the engineering truth.
 
@@ -472,7 +615,7 @@ Do not allow Huly status drift from GitHub. n8n should reconcile if needed.
 
 ---
 
-## 14. Definition of done
+## 15. Definition of done
 
 Huly is ready when:
 
