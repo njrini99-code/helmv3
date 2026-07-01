@@ -12,6 +12,7 @@ import {
 } from '@/app/baseball/actions/onboarding';
 import { setLiftingMode } from '@/app/lifting/actions/onboarding';
 import type { LiftingMode } from '@/app/lifting/actions/onboarding';
+import { validatePassword } from '@/lib/auth/password-validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
@@ -25,7 +26,6 @@ import {
   IconSchool,
   IconBaseball,
 } from '@/components/icons';
-import { Check } from 'lucide-react';
 import {
   StepIndicator,
   slideVariants,
@@ -35,19 +35,17 @@ import {
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
-type Step = 'type' | 'program' | 'account' | 'plan' | 'lifting' | 'complete';
+type Step = 'type' | 'program' | 'account' | 'lifting' | 'complete';
 
 const STEPS_CONFIG_FULL = [
   { id: 'program' as const, label: 'Program', Icon: IconBuilding },
   { id: 'account' as const, label: 'Account', Icon: IconUser },
-  { id: 'plan' as const, label: 'Plan', Icon: IconCheck },
   { id: 'lifting' as const, label: 'Lifting', Icon: IconCheck },
   { id: 'complete' as const, label: 'Done', Icon: IconCheck },
 ];
 
 const STEPS_CONFIG_AUTH = [
   { id: 'program' as const, label: 'Program', Icon: IconBuilding },
-  { id: 'plan' as const, label: 'Plan', Icon: IconCheck },
   { id: 'lifting' as const, label: 'Lifting', Icon: IconCheck },
   { id: 'complete' as const, label: 'Done', Icon: IconCheck },
 ];
@@ -65,102 +63,6 @@ const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA'];
 
 const STORAGE_KEY = 'baseballhelm_coach_onboarding';
 
-// ─── Plan Comparison Modal ──────────────────────────────────────────────────
-
-function PlanComparisonModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const prefersReducedMotion = useReducedMotion();
-  const features = [
-    {
-      category: 'Recruiting',
-      items: [
-        { name: 'Player discovery & search', free: true, elite: true },
-        { name: 'View player profiles', free: true, elite: true },
-        { name: 'Save to watchlist', free: true, elite: true },
-        { name: 'Basic messaging', free: true, elite: false },
-        { name: 'Unlimited messaging', free: false, elite: true },
-      ],
-    },
-    {
-      category: 'Team Management',
-      items: [
-        { name: 'Full roster management', free: false, elite: true },
-        { name: 'Attendance tracking', free: false, elite: true },
-        { name: 'Player development tracking', free: false, elite: true },
-      ],
-    },
-    {
-      category: 'Analytics & Admin',
-      items: [
-        { name: 'Team statistics', free: false, elite: true },
-        { name: 'Compliance calendar', free: false, elite: true },
-        { name: 'Priority support', free: false, elite: true },
-      ],
-    },
-  ];
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <m.div
-            initial={prefersReducedMotion ? false : ({ opacity: 0 })}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <m.div
-              initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.95, y: 20 })}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="auth-glass-card rounded-2xl shadow-2xl max-w-[768px] w-full max-h-[85vh] overflow-clip"
-            >
-              <div className="flex items-center justify-between p-6 border-b border-warm-200">
-                <h2 className="text-xl font-bold text-warm-900">Compare Plans</h2>
-                <Button variant="ghost" onClick={onClose} className="p-2 hover:bg-warm-100 rounded-lg transition-colors" aria-label="Close">
-                  <span className="text-warm-500 text-lg">&times;</span>
-                </Button>
-              </div>
-              <div className="overflow-y-auto max-h-[calc(85vh-80px)] p-6 space-y-6">
-                <div className="grid grid-cols-3 gap-4 sticky top-0 bg-white/90 backdrop-blur-sm pb-4">
-                  <div />
-                  <div className="text-center">
-                    <h3 className="font-semibold text-warm-900">Free</h3>
-                    <p className="text-sm text-warm-500">$0/mo</p>
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-semibold text-warm-900">Elite</h3>
-                    <p className="text-sm text-warm-500">$200/mo</p>
-                  </div>
-                </div>
-                {features.map((cat) => (
-                  <div key={cat.category}>
-                    <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">{cat.category}</p>
-                    <div className="space-y-2">
-                      {cat.items.map((item) => (
-                        <div key={item.name} className="grid grid-cols-3 gap-4 items-center py-2">
-                          <span className="text-sm text-warm-700">{item.name}</span>
-                          <div className="flex justify-center">
-                            {item.free ? <Check size={18} className="text-primary-600" /> : <span className="text-warm-300">&mdash;</span>}
-                          </div>
-                          <div className="flex justify-center">
-                            {item.elite ? <Check size={18} className="text-primary-600" /> : <span className="text-warm-300">&mdash;</span>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </m.div>
-          </div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function BaseballCoachOnboarding() {
@@ -172,11 +74,11 @@ export default function BaseballCoachOnboarding() {
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showComparison, setShowComparison] = useState(false);
 
   // Auth state - tracks if user is already signed up
-  // authChecked: true once checkAuth() resolves. Plan buttons are disabled until this is true
-  // to prevent race conditions where handleSubmit() runs before existingUser is set.
+  // authChecked: true once checkAuth() resolves. Final-step Continue buttons are disabled
+  // until this is true to prevent race conditions where handleSubmit() runs before
+  // existingUser is set.
   const [authChecked, setAuthChecked] = useState(false);
   const [existingUser, setExistingUser] = useState<{ id: string; email: string; fullName: string } | null>(null);
 
@@ -194,13 +96,12 @@ export default function BaseballCoachOnboarding() {
   const [title, setTitle] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  // Plan data
-  const [plan, setPlan] = useState<'free' | 'elite' | ''>('');
+  const passwordCheck = validatePassword(password);
 
   // Lifting step data
   const [liftingInviteEmail, setLiftingInviteEmail] = useState('');
-  // Stored after plan submission so the lifting step can call setLiftingMode
+  const liftingEmailInputRef = useRef<HTMLInputElement>(null);
+  // Stored after account/program submission so the lifting step can call setLiftingMode
   const [pendingRedirect, setPendingRedirect] = useState('');
 
   // ─── Detect Existing Auth Session ─────────────────────────────────────
@@ -215,10 +116,10 @@ export default function BaseballCoachOnboarding() {
         // Pre-fill form fields from auth metadata
         if (name) setFullName(name);
         if (user.email) setEmail(user.email);
-        // If user restored to the account step from localStorage but is already authenticated, skip forward
-        setStep((prev) => prev === 'account' ? 'plan' : prev);
+        // If user restored to the account step from localStorage but is already authenticated, skip back to program
+        setStep((prev) => prev === 'account' ? 'program' : prev);
       }
-      // Mark auth check complete — plan buttons are gated on this to prevent race conditions
+      // Mark auth check complete — final Continue buttons are gated on this to prevent race conditions
       setAuthChecked(true);
     }
     checkAuth();
@@ -352,14 +253,13 @@ export default function BaseballCoachOnboarding() {
     }
   }
 
-  function handlePlanSelectAndSubmit(selectedPlan: 'free' | 'elite') {
+  function handleFinalContinue() {
     // Guard: don't allow submission until checkAuth() has resolved.
     // Without this, a user who submits quickly could hit handleSubmit() before
     // existingUser is set, causing signupAndCompleteCoachOnboarding() to be called
     // for an already-authenticated email → "already registered" error → coach record never created.
     if (loading || !authChecked) return;
-    setPlan(selectedPlan);
-    // handleSubmit navigates to 'lifting' on success (or stays on plan with error).
+    // handleSubmit navigates to 'lifting' on success (or stays on the current step with an error).
     handleSubmit();
   }
 
@@ -367,6 +267,16 @@ export default function BaseballCoachOnboarding() {
 
   async function handleLiftingAnswer(mode: LiftingMode) {
     if (loading) return;
+
+    // Block the invite path until a valid email is provided — don't silently
+    // call setLiftingMode('yes') without one (it will fail server-side and,
+    // previously, that failure was swallowed and onboarding completed anyway).
+    if (mode === 'yes' && !liftingInviteEmail.trim()) {
+      setError("Enter the lifting coach's email address.");
+      liftingEmailInputRef.current?.focus();
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -389,13 +299,19 @@ export default function BaseballCoachOnboarding() {
             .eq('organization_id', coach.organization_id)
             .maybeSingle();
 
-          await setLiftingMode({
+          const result = await setLiftingMode({
             mode,
             orgId: coach.organization_id,
             sport: 'baseball',
             teamId: team?.id ?? '',
-            inviteEmail: mode === 'yes' ? liftingInviteEmail || undefined : undefined,
+            inviteEmail: mode === 'yes' ? liftingInviteEmail.trim() : undefined,
           });
+
+          if (!result.success && mode === 'yes') {
+            // Surface the failure inline; the user can retry or still "Skip for now".
+            setError(result.error || 'Could not send the invite. Please try again or skip for now.');
+            return;
+          }
         }
         // Non-fatal: if the coach/team lookup fails we still advance.
       }
@@ -598,8 +514,8 @@ export default function BaseballCoachOnboarding() {
 
                     <div className="mt-8">
                       <Button
-                        onClick={() => goForward(existingUser ? 'plan' : 'account')}
-                        disabled={!schoolName.trim() || (!!existingUser && !title.trim())}
+                        onClick={() => (existingUser ? handleFinalContinue() : goForward('account'))}
+                        disabled={!schoolName.trim() || (!!existingUser && (!title.trim() || loading || !authChecked))}
                         className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
                         size="lg"
                       >
@@ -607,6 +523,16 @@ export default function BaseballCoachOnboarding() {
                         <IconArrowRight size={16} className="ml-2" />
                       </Button>
                     </div>
+
+                    {existingUser && error && (
+                      <m.p
+                        initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
+                      >
+                        {error}
+                      </m.p>
+                    )}
                   </m.div>
                 </m.div>
               </m.div>
@@ -678,14 +604,21 @@ export default function BaseballCoachOnboarding() {
                           placeholder="Create a password"
                           required
                         />
-                        <p className="text-xs text-warm-400 mt-1.5">At least 8 characters with uppercase, lowercase, number, and special character</p>
+                        <p className={cn(
+                          'text-xs mt-1.5',
+                          password && !passwordCheck.valid ? 'text-red-600' : 'text-warm-400'
+                        )}>
+                          {password && !passwordCheck.valid
+                            ? passwordCheck.feedback[0]
+                            : 'At least 8 characters with uppercase, lowercase, number, and special character'}
+                        </p>
                       </div>
                     </div>
 
                     <div className="mt-8">
                       <Button
-                        onClick={() => goForward('plan')}
-                        disabled={!fullName.trim() || !title.trim() || !email.trim() || password.length < 8}
+                        onClick={handleFinalContinue}
+                        disabled={!fullName.trim() || !title.trim() || !email.trim() || !passwordCheck.valid || loading || !authChecked}
                         className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
                         size="lg"
                       >
@@ -693,114 +626,22 @@ export default function BaseballCoachOnboarding() {
                         <IconArrowRight size={16} className="ml-2" />
                       </Button>
                     </div>
+
+                    {error && (
+                      <m.p
+                        initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
+                      >
+                        {error}
+                      </m.p>
+                    )}
                   </m.div>
                 </m.div>
               </m.div>
             )}
 
-            {/* ─── Step 3: Plan Selection ─────────────────────────────── */}
-            {step === 'plan' && (
-              <m.div
-                key="plan"
-                custom={direction}
-                variants={slideVariants}
-                initial={prefersReducedMotion ? false : "initial"}
-                animate="animate"
-                exit="exit"
-                className="w-full max-w-[560px]"
-              >
-                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
-                  <m.div variants={staggerItem}>
-                    <Button variant="ghost"
-                      onClick={() => goBack(existingUser ? 'program' : 'account')}
-                      className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
-                    >
-                      <IconArrowLeft size={16} />
-                      Back
-                    </Button>
-                  </m.div>
-
-                  <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
-                      Choose your plan
-                    </h1>
-                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
-                      You can change plans anytime from settings
-                    </p>
-                  </m.div>
-
-                  <m.div variants={staggerItem} className="grid sm:grid-cols-2 gap-4">
-                    <Button variant="ghost"
-                      onClick={() => handlePlanSelectAndSubmit('free')}
-                      disabled={loading || !authChecked}
-                      className={cn(
-                        'auth-glass-card rounded-2xl p-6 text-left transition-colors hover:bg-white/90',
-                        plan === 'free' && 'ring-2 ring-primary-500',
-                        !authChecked && 'opacity-60 cursor-wait'
-                      )}
-                    >
-                      <h3 className="text-lg font-bold text-warm-900 mb-1">Free</h3>
-                      <p className="text-2xl font-bold text-warm-900 mb-4">$0<span className="text-sm font-normal text-warm-500">/mo</span></p>
-                      <div className="space-y-2">
-                        {['Player discovery', 'View profiles', 'Save to watchlist', 'Basic messaging'].map((f) => (
-                          <div key={f} className="flex items-center gap-2">
-                            <Check size={14} className="text-primary-600 flex-shrink-0" />
-                            <span className="text-sm text-warm-600">{f}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </Button>
-
-                    <Button variant="ghost"
-                      onClick={() => handlePlanSelectAndSubmit('elite')}
-                      disabled={loading || !authChecked}
-                      className={cn(
-                        'auth-glass-card rounded-2xl p-6 text-left transition-colors hover:bg-white/90 relative',
-                        plan === 'elite' ? 'ring-2 ring-primary-500' : 'ring-1 ring-primary-200',
-                        !authChecked && 'opacity-60 cursor-wait'
-                      )}
-                    >
-                      <div className="absolute -top-2.5 left-4">
-                        <span className="bg-primary-600 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                          Recommended
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-bold text-warm-900 mb-1">Elite</h3>
-                      <p className="text-2xl font-bold text-warm-900 mb-4">$200<span className="text-sm font-normal text-warm-500">/mo</span></p>
-                      <div className="space-y-2">
-                        {['Everything in Free', 'Full roster management', 'Team analytics', 'Player development', 'Priority support'].map((f) => (
-                          <div key={f} className="flex items-center gap-2">
-                            <Check size={14} className="text-primary-600 flex-shrink-0" />
-                            <span className="text-sm text-warm-600">{f}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </Button>
-                  </m.div>
-
-                  <m.div variants={staggerItem} className="text-center">
-                    <Button variant="ghost"
-                      onClick={() => setShowComparison(true)}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                    >
-                      Compare all features
-                    </Button>
-                  </m.div>
-
-                  {error && (
-                    <m.p
-                      initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
-                    >
-                      {error}
-                    </m.p>
-                  )}
-                </m.div>
-              </m.div>
-            )}
-
-            {/* ─── Step 4: Lifting Coach Question ─────────────────────── */}
+            {/* ─── Step 3: Lifting Coach Question ─────────────────────── */}
             {step === 'lifting' && (
               <m.div
                 key="lifting"
@@ -865,6 +706,7 @@ export default function BaseballCoachOnboarding() {
                       Invite by email (optional — you can do this later from settings)
                     </p>
                     <Input
+                      ref={liftingEmailInputRef}
                       label="S&C Coach Email"
                       type="email"
                       value={liftingInviteEmail}
@@ -906,7 +748,7 @@ export default function BaseballCoachOnboarding() {
               </m.div>
             )}
 
-            {/* ─── Step 5: Complete ────────────────────────────────────── */}
+            {/* ─── Step 4: Complete ────────────────────────────────────── */}
             {step === 'complete' && (
               <m.div
                 key="complete"
@@ -977,7 +819,7 @@ export default function BaseballCoachOnboarding() {
                       <m.div variants={staggerItem} className="text-center">
                         <Button
                           variant="secondary"
-                          onClick={() => { setError(''); goBack('plan'); }}
+                          onClick={() => { setError(''); goBack(existingUser ? 'program' : 'account'); }}
                         >
                           Try Again
                         </Button>
@@ -1012,8 +854,6 @@ export default function BaseballCoachOnboarding() {
           </AnimatePresence>
         </LazyMotion>
       </div>
-
-      <PlanComparisonModal isOpen={showComparison} onClose={() => setShowComparison(false)} />
     </div>
   );
 }
