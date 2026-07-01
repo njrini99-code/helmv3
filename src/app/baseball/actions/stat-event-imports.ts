@@ -29,6 +29,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { appendImportTimelineEvent } from '@/lib/baseball/timeline-writer';
+import { logServerError } from '@/lib/server-error-logger';
 import {
   getConcreteParser,
   hasConcreteEventAdapter,
@@ -735,6 +736,17 @@ async function applyEventImportPlan(
         } else {
           skipped += 1;
           byGrain[row.grain].skipped += 1;
+          await logServerError(
+            `Failed to insert superseding ${row.grain} event row (row #${row.sourceRowNumber}): ${insErr.message}`,
+            {
+              action: 'stat-event-imports.applyEventImportPlan',
+              featureArea: 'baseball-import',
+              errorCode: insErr.code,
+              errorDetails: insErr.details ?? undefined,
+              errorHint: insErr.hint ?? undefined,
+              metadata: { table: GRAIN_TO_TABLE[row.grain], importRunId, teamId, sourceKey },
+            },
+          );
         }
         continue;
       }
@@ -748,6 +760,17 @@ async function applyEventImportPlan(
     } else {
       skipped += 1;
       byGrain[row.grain].skipped += 1;
+      await logServerError(
+        `Failed to insert ${row.grain} event row (row #${row.sourceRowNumber}): ${error.message}`,
+        {
+          action: 'stat-event-imports.applyEventImportPlan',
+          featureArea: 'baseball-import',
+          errorCode: error.code,
+          errorDetails: error.details ?? undefined,
+          errorHint: error.hint ?? undefined,
+          metadata: { table: GRAIN_TO_TABLE[row.grain], importRunId, teamId, sourceKey },
+        },
+      );
     }
   }
 
