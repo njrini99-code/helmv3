@@ -1,4 +1,8 @@
 @import '../styles/tokens.css';
+/* BaseballHelm "Living Annual" baseball-native tokens (ADDITIVE — §4.2).
+   Namespaced --clay/--chalk/--pursuit-*/--grade-*/--sodium/--paper/--hairline
+   custom properties; consumed only by opted-in Living-Annual components. */
+@import '../styles/baseball-living-annual.css';
 
 @tailwind base;
 @tailwind components;

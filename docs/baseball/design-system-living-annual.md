@@ -1,5 +1,26 @@
 <!-- Source: design-direction judge panel (4 lenses → synthesis), 2026-07-01. North-star for all BaseballHelm UI/UX enhancement waves. -->
 
+> ## ADDENDUM (founder direction, 2026-07-01): CONTRAST + MORE GREEN
+> The Fairway system's weak spot was **low contrast — especially in stats** (warm-gray
+> numerals on warm cream washed out) and **not enough green**. These rules OVERRIDE any
+> softer default and apply to the whole kit:
+> 1. **Stat numerals = maximum contrast, never warm-gray-on-cream.** Every `StatReadout` /
+>    `RuledStatLine` value renders in near-black `--graphite` on paper (target ≥7:1), OR in
+>    `--team-ink` green for an emphasis/leader value. Labels stay quiet (`graphite/60`
+>    small-caps); the **number carries the contrast**.
+> 2. **Green does real emphasis + wayfinding work** (more assertively than Fairway did). In
+>    team lanes (Pressbox/Passport) the `RuledStatLine` **baseline rule is green** (`--team-ink`),
+>    not hairline-gray — it adds green presence and separates rows crisply. Clay rule in the
+>    War Room lane only.
+> 3. **Leaders/bests get green.** In Stats Center / roster / KPI strips, the team-leading value
+>    in a column gets a green treatment (green numeral or green underline + a small `LEADS`/HOT
+>    tick) so the eye lands on green.
+> 4. **Active/selected/focus states = green** (active tab, selected row, focus ring, section-
+>    masthead accent rule) — more visible green than Fairway's subtle accents.
+> 5. Clay stays strictly recruiting; green is used everywhere team/dev and used **boldly for
+>    contrast**, not as a faint tint. No gray card-soup — contrast comes from green rules +
+>    high-contrast numerals + whitespace.
+
 # BaseballHelm Design Spec — "The Living Annual"
 *Design director's decision + build-ready architecture. This document is the north star for all BaseballHelm redesign waves.*
 

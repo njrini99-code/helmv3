@@ -76,6 +76,26 @@ const config: Config = {
         'nav-text-dim': 'var(--fw-color-nav-text-dim)',
         'nav-accent':   'var(--fw-color-nav-accent)',
 
+        // ═══════════════════════════════════════════════════════════════
+        // BASEBALLHELM "LIVING ANNUAL" — baseball-native inks (ADDITIVE)
+        // ---------------------------------------------------------------
+        // Backed by the --clay/--chalk/--pursuit-*/--grade-*/--sodium CSS
+        // vars in src/styles/baseball-living-annual.css (spec §4.2). ALL
+        // names are NEW. Two-ink law: `grade-plus`/accent = team+dev,
+        // `pursuit` = recruiting; `pursuit-deep` (oxblood) = seals only;
+        // `clay` is the reserved dark viz surface — never a page/card bg.
+        // ═══════════════════════════════════════════════════════════════
+        clay:           'var(--clay)',
+        chalk:          'var(--chalk)',
+        pursuit:        'var(--pursuit-ink)',
+        'pursuit-deep': 'var(--pursuit-deep)',
+        sodium:         'var(--sodium)',
+        grade: {
+          low:  'var(--grade-low)',
+          avg:  'var(--grade-avg)',
+          plus: 'var(--grade-plus)',
+        },
+
         // W0 token unification (2026-05-28): `helm-green-*` and
         // `helm-amber-*` OKLCH scales were deleted. The single canonical
         // brand green lives under `primary-*` below (sourced from
@@ -271,6 +291,14 @@ const config: Config = {
         'stat-lg':    ['56px', { lineHeight: '60px', letterSpacing: '-0.018em', fontWeight: '600' }],
         'microlabel': ['11px', { lineHeight: '14px', letterSpacing: '0.004em', fontWeight: '500' }],
         'microbadge': ['9px',  { lineHeight: '12px', letterSpacing: '0.01em',  fontWeight: '700' }],
+
+        // ── BaseballHelm "Living Annual" hero numerals (ADDITIVE — §4.1) ──
+        // Serif ink numerals that sit ON a hairline rule. Fluid clamp sizes
+        // with locked, tabular line-heights so digits never jitter as they
+        // roll. `ink-hero` = passport/cover 80–160px figures; `ink` = the
+        // ruled-stat-line row numeral.
+        'ink-hero': ['clamp(4rem, 9vw, 10rem)',   { lineHeight: '0.9',  letterSpacing: '-0.02em' }],
+        'ink':      ['clamp(2.5rem, 5vw, 4.5rem)', { lineHeight: '0.95' }],
 
         // ═══════════════════════════════════════════════════════════════
         // iOS TYPE SCALE — Apple HIG (San Francisco)

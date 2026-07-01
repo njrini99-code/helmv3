@@ -1,0 +1,48 @@
+/* ============================================================================
+ * BaseballHelm — "The Living Annual" design tokens (ADDITIVE / FOUNDATION)
+ * ----------------------------------------------------------------------------
+ * The baseball-native custom properties from the north-star spec
+ * (docs/baseball/design-system-living-annual.md §4.2). These graft a single
+ * editorial accent lane (infield-clay terracotta / oxblood), a 20-80 grade
+ * ramp, and the ONE reserved dark viz canvas onto the existing Fairway + Helm
+ * cream system.
+ *
+ * IMPORTANT — THIS FILE IS PURELY ADDITIVE. Every property below is NEW and
+ * namespaced so it can never collide with the existing token sets in
+ * src/styles/tokens.css, src/styles/design-tokens.css, or src/app/globals.css.
+ * Nothing here is consumed unless a Living-Annual component opts in via the
+ * Tailwind utilities wired in tailwind.config.ts (bg-clay, text-pursuit,
+ * text-grade-plus, …) or reads a `var(--…)` directly.
+ *
+ * Loaded once via `@import` from src/app/globals.css (mirroring the existing
+ * `@import '../styles/tokens.css';` at the top of that file), so the vars are
+ * always defined on :root and available inside the `.fairway-ds` redesign scope.
+ *
+ * Colour law (spec §4.2) — enforced in components, documented here:
+ *   • green (--grade-plus / Fairway accent) = team + development
+ *   • clay  (--pursuit-ink)                 = recruiting + pursuit
+ *   • oxblood (--pursuit-deep)              = seals & stamps ONLY
+ *   • sodium (--sodium)                     = a single PR / live flash, then rest
+ *   • --clay dark canvas appears ONLY inside a <ClayCanvas> viz frame — NEVER
+ *     a page, sidebar, or card background.
+ * ========================================================================== */
+
+:root {
+  /* ---- Base editorial neutrals ---- */
+  --paper:        #FFFEFA;   /* cream canvas (alias — not previously defined) */
+  --hairline:     #E7E3D8;   /* THE border — does the work of most cards */
+
+  /* ---- Two inks ---- */
+  --pursuit-ink:  #C2703D;   /* infield-clay terracotta — recruiting & urgency */
+  --pursuit-deep: #7A2E22;   /* oxblood — seals & stamps only */
+
+  /* ---- Grade ramp (20–80 scouting scale) ---- */
+  --grade-low:    #B4573F;   /* 20–40 muted clay-red */
+  --grade-avg:    #6B655B;   /* 45–55 ink-neutral */
+  --grade-plus:   #16A34A;   /* 60–80 team green */
+
+  /* ---- Reserved viz canvas — the ONE dark surface ---- */
+  --clay:         #17130F;   /* warm dirt-black, never blue-black */
+  --chalk:        #F4EFE6;   /* chalk hairlines/grid on clay */
+  --sodium:       #F5A623;   /* PR / live / in-progress accent — sparingly */
+}
