@@ -4,6 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from '@/components/ui/sonner';
+import {
+  addToWatchlist as addToWatchlistAction,
+  removeFromWatchlist as removeFromWatchlistAction,
+  updateWatchlistStatus,
+  addWatchlistNote,
+} from '@/app/baseball/actions/watchlist';
 import type { WatchlistWithPlayer, PipelineStage } from '@/lib/types';
 
 export function useWatchlist() {
@@ -53,21 +59,16 @@ export function useWatchlist() {
     fetchWatchlist();
   }, [fetchWatchlist]);
 
-  const addToWatchlist = async (playerId: string, notes?: string) => {
+  const addToWatchlist = async (playerId: string) => {
     if (!coach) {
       toast.error('Authentication required', 'Please sign in to add players to your watchlist');
       return false;
     }
 
-    const { error } = await supabase.from('baseball_watchlists').insert({
-      coach_id: coach.id,
-      player_id: playerId,
-      notes: notes || null,
-    });
+    const result = await addToWatchlistAction(coach.id, playerId);
 
-    if (error) {
-      console.error('[Watchlist] Failed to add player:', error);
-      toast.error('Failed to add player', 'Could not add player to watchlist. Please try again.');
+    if (!result.success) {
+      toast.error('Failed to add player', result.message || 'Could not add player to watchlist. Please try again.');
       return false;
     }
 
@@ -82,15 +83,10 @@ export function useWatchlist() {
       return false;
     }
 
-    const { error } = await supabase
-      .from('baseball_watchlists')
-      .delete()
-      .eq('coach_id', coach.id)
-      .eq('player_id', playerId);
+    const result = await removeFromWatchlistAction(coach.id, playerId);
 
-    if (error) {
-      console.error('[Watchlist] Failed to remove player:', error);
-      toast.error('Failed to remove player', 'Could not remove player from watchlist. Please try again.');
+    if (!result.success) {
+      toast.error('Failed to remove player', result.message || 'Could not remove player from watchlist. Please try again.');
       return false;
     }
 
@@ -105,15 +101,16 @@ export function useWatchlist() {
       return false;
     }
 
-    const { error } = await supabase
-      .from('baseball_watchlists')
-      .update({ pipeline_stage: stage })
-      .eq('coach_id', coach.id)
-      .eq('player_id', playerId);
+    const item = watchlist.find(w => w.player_id === playerId);
+    if (!item) {
+      toast.error('Failed to update stage', 'Player not found in your watchlist.');
+      return false;
+    }
 
-    if (error) {
-      console.error('[Watchlist] Failed to update stage:', error);
-      toast.error('Failed to update stage', 'Could not update pipeline stage. Please try again.');
+    const result = await updateWatchlistStatus(item.id, stage);
+
+    if (!result.success) {
+      toast.error('Failed to update stage', result.error || 'Could not update pipeline stage. Please try again.');
       return false;
     }
 
@@ -128,15 +125,16 @@ export function useWatchlist() {
       return false;
     }
 
-    const { error } = await supabase
-      .from('baseball_watchlists')
-      .update({ notes })
-      .eq('coach_id', coach.id)
-      .eq('player_id', playerId);
+    const item = watchlist.find(w => w.player_id === playerId);
+    if (!item) {
+      toast.error('Failed to update notes', 'Player not found in your watchlist.');
+      return false;
+    }
 
-    if (error) {
-      console.error('[Watchlist] Failed to update notes:', error);
-      toast.error('Failed to update notes', 'Could not save notes. Please try again.');
+    const result = await addWatchlistNote(item.id, notes);
+
+    if (!result.success) {
+      toast.error('Failed to update notes', result.error || 'Could not save notes. Please try again.');
       return false;
     }
 
