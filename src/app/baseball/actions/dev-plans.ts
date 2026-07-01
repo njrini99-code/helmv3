@@ -126,16 +126,15 @@ export async function getActiveDevPlan(playerId: string): Promise<DevelopmentalP
 }
 
 /**
- * Update a goal's progress (player can update their own goals)
+ * Verify the authenticated user is the player who owns the given plan.
+ * Shared by every player-scoped goal mutation below (progress updates,
+ * complete, uncomplete). Throws a user-friendly error on any failure.
  */
-export async function updateGoalProgress(
+async function assertPlayerOwnsDevPlan(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   planId: string,
-  goalId: string,
-  progress: number
-): Promise<void> {
-  const supabase = await createClient();
-
-  // SECURITY: Verify the authenticated user is the player who owns this plan
+  actionName: string
+): Promise<{ goals: DevPlanGoal[] }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -154,18 +153,55 @@ export async function updateGoalProgress(
     .eq('id', planId)
     .single();
 
-  if (!fetchError && plan && plan.player_id !== playerProfile.id) {
-    throw new Error('You do not have permission to update this plan');
-  }
-
   if (fetchError) {
-    await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.updateGoalProgress' });
+    await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: actionName });
     throw fetchError;
   }
 
-  const goals = parseGoals(plan.goals);
-  const goalIndex = goals.findIndex((g) => g.id === goalId);
+  if (!plan || plan.player_id !== playerProfile.id) {
+    throw new Error('You do not have permission to update this plan');
+  }
 
+  return { goals: parseGoals(plan.goals) };
+}
+
+/**
+ * Persist a mutated goals array back onto the plan.
+ */
+async function saveDevPlanGoals(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  planId: string,
+  goals: DevPlanGoal[],
+  actionName: string
+): Promise<void> {
+  const { error: updateError } = await supabase
+    .from('baseball_developmental_plans')
+    .update({
+      goals: goals as unknown as Json,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', planId);
+
+  if (updateError) {
+    await logServerError(`Error saving goals: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: actionName });
+    throw updateError;
+  }
+
+  revalidatePath(DEV_PLAN_PATH);
+}
+
+/**
+ * Update a goal's progress (player can update their own goals)
+ */
+export async function updateGoalProgress(
+  planId: string,
+  goalId: string,
+  progress: number
+): Promise<void> {
+  const supabase = await createClient();
+  const { goals } = await assertPlayerOwnsDevPlan(supabase, planId, 'dev_plans.updateGoalProgress');
+
+  const goalIndex = goals.findIndex((g) => g.id === goalId);
   if (goalIndex === -1 || !goals[goalIndex]) {
     throw new Error('Goal not found');
   }
@@ -180,27 +216,81 @@ export async function updateGoalProgress(
     category: goal.category,
     target_date: goal.target_date,
     coach_notes: goal.coach_notes,
-    completed_at: goal.completed_at,
+    completed_at: newProgress >= 100 ? new Date().toISOString() : goal.completed_at,
     created_at: goal.created_at,
     progress: newProgress,
     status: newProgress >= 100 ? 'completed' : newProgress > 0 ? 'in_progress' : 'not_started',
   };
 
-  // Save back
-  const { error: updateError } = await supabase
-    .from('baseball_developmental_plans')
-    .update({
-      goals: goals as unknown as Json,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', planId);
+  await saveDevPlanGoals(supabase, planId, goals, 'dev_plans.updateGoalProgress');
+}
 
-  if (updateError) {
-    await logServerError(`Error updating goal progress: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.updateGoalProgress' });
-    throw updateError;
+/**
+ * Mark a goal as complete (player-owned operation — the player marking
+ * their own development-plan goal complete). Verifies the authenticated
+ * user is the player who owns this plan before mutating.
+ */
+export async function completeGoalAsPlayer(
+  planId: string,
+  goalId: string
+): Promise<void> {
+  const supabase = await createClient();
+  const { goals } = await assertPlayerOwnsDevPlan(supabase, planId, 'dev_plans.completeGoalAsPlayer');
+
+  const goalIndex = goals.findIndex((g) => g.id === goalId);
+  const currentGoal = goals[goalIndex];
+  if (!currentGoal) {
+    throw new Error('Goal not found');
   }
 
-  revalidatePath('/baseball/dashboard/dev-plan');
+  goals[goalIndex] = {
+    id: currentGoal.id,
+    title: currentGoal.title,
+    description: currentGoal.description,
+    category: currentGoal.category,
+    target_date: currentGoal.target_date,
+    coach_notes: currentGoal.coach_notes,
+    created_at: currentGoal.created_at,
+    progress: 100,
+    status: 'completed',
+    completed_at: new Date().toISOString(),
+  };
+
+  await saveDevPlanGoals(supabase, planId, goals, 'dev_plans.completeGoalAsPlayer');
+}
+
+/**
+ * Unmark a goal as complete — set back to in progress (player-owned
+ * operation). Verifies the authenticated user is the player who owns
+ * this plan before mutating.
+ */
+export async function uncompleteGoalAsPlayer(
+  planId: string,
+  goalId: string
+): Promise<void> {
+  const supabase = await createClient();
+  const { goals } = await assertPlayerOwnsDevPlan(supabase, planId, 'dev_plans.uncompleteGoalAsPlayer');
+
+  const goalIndex = goals.findIndex((g) => g.id === goalId);
+  const currentGoal = goals[goalIndex];
+  if (!currentGoal) {
+    throw new Error('Goal not found');
+  }
+
+  goals[goalIndex] = {
+    id: currentGoal.id,
+    title: currentGoal.title,
+    description: currentGoal.description,
+    category: currentGoal.category,
+    target_date: currentGoal.target_date,
+    coach_notes: currentGoal.coach_notes,
+    created_at: currentGoal.created_at,
+    progress: 90,
+    status: 'in_progress',
+    completed_at: undefined,
+  };
+
+  await saveDevPlanGoals(supabase, planId, goals, 'dev_plans.uncompleteGoalAsPlayer');
 }
 
 /**
