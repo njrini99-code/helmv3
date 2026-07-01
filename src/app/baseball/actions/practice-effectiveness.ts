@@ -570,6 +570,25 @@ async function measureForTeam(
     }
 
     // ---- PERSIST — UPSERT on (team_id, dedupe_key); never delete-then-insert -
+    //
+    // A coach who triaged a review (dismissed/resolved/converted_to_task) must
+    // NOT see it snap back to 'new' the next time this engine re-runs (e.g. the
+    // auto-measure savePracticeRecap kicks off on every recap save). Load the
+    // CURRENT disposition for every dedupe_key this run would touch and carry it
+    // forward on the upsert; a genuinely new dedupe_key (no existing row) still
+    // lands as 'new'. Measurement fields (metric_before/after, confidence, etc.)
+    // always refresh — only the coach-owned triage state is preserved.
+    const dedupeKeys = [...new Set(reviews.map((r) => r.dedupeKey))];
+    const { data: existingRows } = await fromUntyped(supabase, 'baseball_practice_effectiveness_reviews')
+      .select('dedupe_key, disposition')
+      .eq('team_id', teamId)
+      .in('dedupe_key', dedupeKeys);
+    const existingDisposition = new Map<string, string>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const row of (existingRows ?? []) as any[]) {
+      existingDisposition.set(row.dedupe_key, row.disposition);
+    }
+
     const nowIso = now.toISOString();
     const expiresIso = new Date(now.getTime() + 30 * 86_400_000).toISOString();
     const rows = reviews.map((r) => ({
@@ -596,7 +615,7 @@ async function measureForTeam(
       source_refs: r.sourceRefs,
       // Reviews are staff_only by default (they blend scopes + carry confounders).
       visibility: 'staff_only',
-      disposition: 'new',
+      disposition: existingDisposition.get(r.dedupeKey) ?? 'new',
       generated_by: r.generatedBy,
       generated_by_model: PRACTICE_EFFECTIVENESS_ENGINE_ID,
       generated_at: nowIso,
