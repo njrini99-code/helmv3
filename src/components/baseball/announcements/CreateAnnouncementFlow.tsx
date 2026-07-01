@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
@@ -21,11 +20,12 @@ interface Player {
 interface CreateAnnouncementFlowProps {
   players: Player[];
   teamId: string;
+  /** Called after a successful create so the parent can refetch the list. */
+  onCreated?: () => void;
 }
 
-export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFlowProps) {
+export function CreateAnnouncementFlow({ players, teamId, onCreated }: CreateAnnouncementFlowProps) {
   const prefersReducedMotion = useReducedMotion();
-  const router = useRouter();
   const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -83,7 +83,7 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
       showToast('Announcement posted successfully', 'success');
       resetForm();
       setIsOpen(false);
-      router.refresh();
+      onCreated?.();
     } catch {
       showToast('Failed to create announcement', 'error');
     } finally {
