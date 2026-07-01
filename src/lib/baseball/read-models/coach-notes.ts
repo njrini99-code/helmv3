@@ -188,7 +188,7 @@ async function resolveNotesViewer(
 
 /**
  * Read a player's staff notes, filtered to the scopes the current viewer is
- * allowed to see. Soft-deleted rows (deleted_at) are excluded. Newest first.
+ * allowed to see. Soft-deleted rows (archived_at) are excluded. Newest first.
  *
  * Never throws — returns an honest error string + empty notes on failure.
  */
@@ -228,16 +228,17 @@ export async function getPlayerCoachNotes(
     return empty(viewer.role, [], false, null);
   }
 
-  // baseball_coach_notes ships in 20260624000900 but database.ts lags the shared
-  // prod DB; use the established `as any` table-accessor pattern. The row shape
-  // is strongly typed below via the hand-written BaseballCoachNoteRow.
+  // baseball_coach_notes ships in 20260624000900; database.ts reflects the real
+  // shared prod columns (updated_at/archived_at, not edited_at/deleted_at), so
+  // use the established `as any` table-accessor pattern. The row shape is
+  // strongly typed below via the hand-written BaseballCoachNoteRow.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = (await (supabase as any)
     .from('baseball_coach_notes')
-    .select('id, player_id, team_id, author_coach_id, body, scope, edited_at, deleted_at, created_at')
+    .select('id, player_id, team_id, author_coach_id, body, scope, updated_at, archived_at, created_at')
     .eq('team_id', teamId)
     .eq('player_id', playerId)
-    .is('deleted_at', null)
+    .is('archived_at', null)
     .order('created_at', { ascending: false })
     .limit(limit)) as {
     data: BaseballCoachNoteRow[] | null;
@@ -294,7 +295,7 @@ export async function getPlayerCoachNotes(
       body: r.body,
       scope: r.scope,
       createdAt: r.created_at,
-      editedAt: r.edited_at,
+      editedAt: r.updated_at,
       canEdit,
     });
   }
