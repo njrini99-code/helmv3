@@ -161,11 +161,16 @@ const getTeamAcademicsAction = withBaseballAction(
     let eligibilityRecords: BaseballAcademicEligibility[] = [];
 
     if (playerIds.length > 0) {
+      // Scope to the active team so transfers / multi-team players don't leak
+      // another team's record. Order latest-first so the per-player `.find`
+      // below picks this team's most recent (latest semester) record.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: eligData } = await (supabase as any)
         .from('baseball_academic_eligibility')
         .select('*')
-        .in('player_id', playerIds);
+        .eq('team_id', teamId)
+        .in('player_id', playerIds)
+        .order('updated_at', { ascending: false });
       eligibilityRecords = (eligData || []) as BaseballAcademicEligibility[];
     }
 
@@ -210,8 +215,10 @@ const getTeamAcademicsAction = withBaseballAction(
         gpa: eligibility?.gpa ?? player?.gpa ?? null,
         credits_completed: eligibility?.credits_completed ?? null,
         credits_required: eligibility?.credits_required ?? 60,
-        is_eligible: eligibility?.is_eligible ?? true,
-        academic_standing: eligibility?.academic_standing ?? 'good' as const,
+        // No eligibility record => treat as unknown / ineligible-safe rather
+        // than inflating "Eligible" / "Good Standing" summary cards.
+        is_eligible: eligibility?.is_eligible ?? false,
+        academic_standing: eligibility?.academic_standing ?? null,
         class_count: classCounts[m.player_id] || 0,
         eligibility_id: eligibility?.id ?? null,
       };
