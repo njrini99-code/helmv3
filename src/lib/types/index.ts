@@ -263,6 +263,7 @@ export interface BaseballCoachInsight {
 
   title: string;
   description: string;
+  body?: string | null; // Engine-persisted insight text (baseball_coach_insights.body); UI reads body ?? description
   recommendation?: string;
   recommended_action?: string; // Alias for recommendation
 

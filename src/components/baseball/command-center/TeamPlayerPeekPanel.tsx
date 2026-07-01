@@ -260,7 +260,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                               {insight.title}
                             </p>
                             <p className="text-xs text-primary-700 line-clamp-2">
-                              {insight.description}
+                              {insight.body ?? insight.description}
                             </p>
                           </div>
                         ))}
