@@ -68,6 +68,15 @@ export function CommandPalette({ navContext }: CommandPaletteProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Imperative open (mirrors GolfHelm's CommandPalette): lets a shell's top-bar
+  // search entry open this SAME palette instance without a synthetic ⌘K
+  // keystroke. Additive — the ⌘K shortcut above is unchanged.
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener('helm:open-command-palette', onOpen);
+    return () => window.removeEventListener('helm:open-command-palette', onOpen);
+  }, []);
+
   // Focus input when opened
   useEffect(() => {
     if (open) {

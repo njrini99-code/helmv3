@@ -44,10 +44,11 @@
  * ========================================================================== */
 
 import { useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-import { AppShell, useSidebarCollapsed } from '@/components/fairway/app-shell';
+import { AppShell, FairwayBottomNav, useSidebarCollapsed } from '@/components/fairway/app-shell';
 import type { Breadcrumb, NavItem, NavSection, ShellLinkComponent } from '@/components/fairway/app-shell';
 
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
@@ -55,6 +56,7 @@ import { SessionActivityProvider } from '@/components/providers/SessionActivityP
 import { PageLoading } from '@/components/ui/loading';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { PeekPanelProvider } from '@/components/baseball/peek-panel';
+import { NotificationBell } from '@/components/baseball/NotificationBell';
 
 import { useBaseballAuth } from '@/hooks/use-baseball-auth';
 import { useBaseballNavContext } from '@/hooks/use-baseball-nav-context';
@@ -71,7 +73,36 @@ import {
 import { IconSettings, IconLogout } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
+// PERF: lazy-load the same heavy global the legacy BaseballDashboardShell
+// mounts unconditionally (mirrors GolfHelm's FairwayDashboardShell).
+const CommandPalette = dynamic(
+  () => import('@/components/CommandPalette').then((m) => ({ default: m.CommandPalette })),
+  { ssr: false },
+);
+
 type Role = 'coach' | 'player';
+
+/**
+ * P413-equivalent: the 3 highest-frequency destinations for the persistent
+ * MOBILE bottom-tab bar, matching the legacy `MobileBottomNav`'s preferred ids
+ * exactly (dashboard-shell.tsx's `buildMobileNavFromContext`) — the drawer
+ * (opened by AppShell's own hamburger) keeps the long tail, so the 4th "Menu"
+ * slot the legacy bar shows is redundant here rather than dropped.
+ */
+function buildBottomNavItems(ctx: BaseballNavContext, unreadCount: number): NavItem[] {
+  const primary = getVisibleBaseballNav(ctx).filter((e) => e.section === 'primary');
+  const preferredIds =
+    ctx.role === 'coach'
+      ? ['command-center', 'calendar', 'roster']
+      : ['player-today', 'calendar', 'player-profile'];
+  const top3 = preferredIds
+    .map((id) => primary.find((e) => e.id === id))
+    .filter((e): e is NonNullable<typeof e> => Boolean(e));
+  const fill = primary.filter((e) => !top3.some((selected) => selected.id === e.id));
+  return [...top3, ...fill].slice(0, 3).map((e) =>
+    toNavItem(e, e.showUnreadBadge && unreadCount > 0 ? unreadCount : undefined),
+  );
+}
 
 /** Next <Link> adapter for the shell's link contract (module scope = stable identity). */
 const ShellLink: ShellLinkComponent = ({ href, children, ...rest }) => (
@@ -249,33 +280,69 @@ function BaseballFairwayContent({
 
   const sections = useMemo(() => buildNavSections(ctx, unreadCount), [ctx, unreadCount]);
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname, ctx, homeHref), [pathname, ctx, homeHref]);
+  // P413-equivalent: persistent mobile bottom-tab bar (subset of the rail).
+  const bottomNavItems = useMemo(() => buildBottomNavItems(ctx, unreadCount), [ctx, unreadCount]);
 
   const name = coach?.full_name || (player ? `${player.first_name} ${player.last_name}` : 'User');
   const avatarUrl = coach?.avatar_url || player?.avatar_url || undefined;
   const teamName = selectedTeam?.name || coach?.organization?.name;
 
-  return (
-    <AppShell
-      sections={sections}
-      user={{ name, teamName: teamName ?? undefined, avatarUrl: avatarUrl ?? undefined }}
-      brand={<Brand homeHref={homeHref} />}
-      sidebarFooter={<ShellFooter role={role} />}
-      pathname={pathname}
-      linkComponent={ShellLink}
-      breadcrumbs={breadcrumbs}
-      collapsible
-      mobileOpen={mobileOpen}
-      onMobileOpenChange={setMobileOpen}
-      // Pages own their own gutters + titles (the legacy <main> in
-      // dashboard-shell.tsx had no content padding either) — the shell keeps
-      // only the bottom home-indicator pad.
-      contentPadding={false}
-      constrainContent={false}
+  // Imperative open (mirrors GolfHelm's FairwayDashboardShell): the shell's
+  // own ⌘K entry point dispatches the same global event CommandPalette listens
+  // for, rather than synthesizing a keystroke.
+  const openCommandPalette = useCallback(() => {
+    window.dispatchEvent(new Event('helm:open-command-palette'));
+  }, []);
+
+  // Same "Skip to main content" anchor the legacy BaseballDashboardShell
+  // renders (and GolfHelm's FairwayDashboardShell mirrors) — keyboard/SR users
+  // must keep skip-nav when the flag is ON, not just flag-OFF.
+  const skipLink = (
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
     >
-      <div id="main-content" tabIndex={-1} className="outline-none">
-        {children}
-      </div>
-    </AppShell>
+      Skip to main content
+    </a>
+  );
+
+  return (
+    <>
+      {skipLink}
+
+      <AppShell
+        sections={sections}
+        user={{ name, teamName: teamName ?? undefined, avatarUrl: avatarUrl ?? undefined }}
+        brand={<Brand homeHref={homeHref} />}
+        sidebarFooter={<ShellFooter role={role} />}
+        topBarActions={<NotificationBell />}
+        pathname={pathname}
+        linkComponent={ShellLink}
+        breadcrumbs={breadcrumbs}
+        collapsible
+        mobileOpen={mobileOpen}
+        onMobileOpenChange={setMobileOpen}
+        onSearchOpen={openCommandPalette}
+        searchPlaceholder="Search players, teams, pages…"
+        // P413-equivalent: persistent mobile bottom-tab bar for the core
+        // destinations (md:hidden; drawer keeps the long tail).
+        bottomNav={
+          <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={ShellLink} />
+        }
+        // Pages own their own gutters + titles (the legacy <main> in
+        // dashboard-shell.tsx had no content padding either) — the shell keeps
+        // only the bottom home-indicator pad.
+        contentPadding={false}
+        constrainContent={false}
+      >
+        <div id="main-content" tabIndex={-1} className="outline-none">
+          {children}
+        </div>
+      </AppShell>
+
+      {/* Same global the legacy BaseballDashboardShell mounts unconditionally. */}
+      <CommandPalette navContext={ctx} />
+    </>
   );
 }
 
