@@ -9,7 +9,7 @@
 -- This suite guards that contract against regression. Two migrations define a
 -- SELECT policy on this table (0040: "baseball_timeline_select" using the
 -- 'staff_only' vocabulary; 0050: "baseball_player_timeline_events_select"
--- using the 'restricted' / 'player_visible' vocabulary). Both are PERMISSIVE,
+-- using the same 'staff_only' vocabulary). Both are PERMISSIVE,
 -- so the EFFECTIVE player-readable set is their union — meaning EACH player
 -- branch must independently exclude staff-private rows. We assert that:
 --   1. RLS is enabled; anon has no privileges.
@@ -32,7 +32,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(18);
+SELECT plan(17);
 
 -- ============================================================================
 -- 1. RLS enabled; anon locked out.
@@ -119,15 +119,15 @@ SELECT ok(
   'baseball_timeline_select (0040) gates the player branch with visibility <> staff_only'
 );
 
--- The 0050 SELECT policy: the player branch is bound to 'player_visible' AND a
--- player-identity check, and the staff branch excludes 'restricted'.
+-- The 0050 SELECT policy: the player branch excludes 'staff_only' AND is bound
+-- to a player-identity check. The staff branch is coach-gated.
 SELECT ok(
   CASE WHEN EXISTS (
     SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'baseball_player_timeline_events'
       AND policyname = 'baseball_player_timeline_events_select'
   ) THEN
-    position('player_visible' IN COALESCE((
+    position('staff_only' IN COALESCE((
       SELECT pg_get_expr(p.polqual, p.polrelid)
         FROM pg_policy p
         JOIN pg_class c ON c.oid = p.polrelid
@@ -136,7 +136,7 @@ SELECT ok(
           AND p.polname = 'baseball_player_timeline_events_select'
     ), '')) > 0
   ELSE true END,
-  'baseball_player_timeline_events_select (0050) binds the player branch to player_visible'
+  'baseball_player_timeline_events_select (0050) references the staff_only exclusion'
 );
 
 SELECT ok(
@@ -145,16 +145,16 @@ SELECT ok(
     WHERE schemaname = 'public' AND tablename = 'baseball_player_timeline_events'
       AND policyname = 'baseball_player_timeline_events_select'
   ) THEN
-    position('restricted' IN COALESCE((
+    COALESCE((
       SELECT pg_get_expr(p.polqual, p.polrelid)
         FROM pg_policy p
         JOIN pg_class c ON c.oid = p.polrelid
         JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE n.nspname = 'public' AND c.relname = 'baseball_player_timeline_events'
           AND p.polname = 'baseball_player_timeline_events_select'
-    ), '')) > 0
+    ), '') ~ 'visibility[^)]*<>[^)]*''staff_only'''
   ELSE true END,
-  'baseball_player_timeline_events_select (0050) references the restricted (staff-private) exclusion'
+  'baseball_player_timeline_events_select (0050) gates the player branch with visibility <> staff_only'
 );
 
 -- A player-identity function is referenced by the SELECT policy set, so the

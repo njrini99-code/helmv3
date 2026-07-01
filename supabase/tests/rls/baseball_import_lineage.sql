@@ -22,7 +22,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(24);
+SELECT plan(20);
 
 -- ============================================================================
 -- 1. RLS enabled on both lineage tables.
