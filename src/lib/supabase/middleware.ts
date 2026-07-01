@@ -225,10 +225,19 @@ async function checkRouteAuthorization(
 
   const { data: team } = await supabase
     .from('baseball_teams')
-    .select('program_type')
+    .select('program_type, team_type')
     .eq('id', String(staffRow.team_id))
     .maybeSingle();
-  const programType = normalizeProgramType(team?.program_type);
+  // Effective program type: prefer the explicit program_type, but fall back to
+  // the team's team_type when program_type is unset. program_type is nullable and
+  // some teams (e.g. the demo, created with team_type:'college' but no
+  // program_type) would otherwise be treated as "recruiting disabled" here and
+  // have Pipeline/Discover/Watchlist/Compare silently bounced to the Command
+  // Center — even though the sidebar advertised them. nav-context.ts derives the
+  // SAME effective type, so nav visibility and route gating share one source of
+  // truth and a college team is never stripped of its recruiting surfaces.
+  const programType =
+    normalizeProgramType(team?.program_type) ?? normalizeProgramType(team?.team_type);
 
   if (requiredCapability && !staffHasCapability(staffRow, requiredCapability)) {
     return {

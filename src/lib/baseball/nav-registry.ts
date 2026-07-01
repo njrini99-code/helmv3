@@ -290,11 +290,16 @@ export const BASEBALL_NAV_REGISTRY: readonly BaseballNavEntry[] = [
     label: 'Roster',
     href: '/baseball/dashboard/roster',
     icon: IconUsers,
-    // Coaches need can_manage_roster to manage; players read their roster. We
-    // gate the COACH view on the capability and let players see it ungated by
-    // splitting role: this single entry is 'both' but only requires the cap for
-    // staff. requireBaseballCapability is enforced server-side on writes.
-    role: 'both',
+    // COACH-ONLY. The /baseball/dashboard/roster surface is the staff roster
+    // MANAGEMENT workspace: its read model (read-models/roster.ts → isTeamStaff)
+    // authorizes staff only, and RosterClient renders add-player / lineup /
+    // export affordances. Advertising it to players routed them straight into a
+    // "You do not have permission to view this team roster" wall (QA nav dead-end
+    // — the nav pointed a role at a page it could never use). Players reach their
+    // teammates/day-to-day surfaces through Today, Schedule, and the Team hub
+    // (announcements / tasks / documents) instead; there is no player-facing
+    // roster-management page, so this entry is correctly staff-scoped.
+    role: 'coach',
     requiredCapability: null,
     section: 'primary',
   },
