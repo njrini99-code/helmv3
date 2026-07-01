@@ -20,6 +20,19 @@
 > 5. Clay stays strictly recruiting; green is used everywhere team/dev and used **boldly for
 >    contrast**, not as a faint tint. No gray card-soup — contrast comes from green rules +
 >    high-contrast numerals + whitespace.
+>
+> ## ADDENDUM 2 (founder direction, 2026-07-01): FONT + CREAM
+> These OVERRIDE §4.1's Fraunces/mono type roles for BaseballHelm:
+> - **Type = Space Grotesk** for player names / hero numerals / section titles AND stat figures
+>   (`--font-space-grotesk` → Tailwind `font-annual`, always `tabular-nums` on numbers). ONE
+>   athletic grotesk for display + numbers. **Fraunces (serif) and Fragment Mono are dropped
+>   from the baseball kit.** Chrome/body labels stay on the existing sans (Geist/DM Sans).
+> - **Less white, more cream.** Surfaces are warm cream, NOT white cards. Palette: canvas
+>   deep warm cream (~`#EDE5D3`), card/surface a lighter cream (~`#F5EEDD` — still clearly
+>   cream, never `#FFF`/near-white), hairline warm (~`#DED3BC`). `--paper` is redefined to the
+>   cream, and baseball surfaces override the Fairway white `--fw-color-surface` with cream
+>   **inside a baseball scope only** (golf untouched). Green rules + graphite numerals read
+>   even better on the deeper cream.
 
 # BaseballHelm Design Spec — "The Living Annual"
 *Design director's decision + build-ready architecture. This document is the north star for all BaseballHelm redesign waves.*

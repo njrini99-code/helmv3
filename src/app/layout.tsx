@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Playfair_Display, DM_Sans } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
-import { fraunces, fragmentMono } from '@/lib/fonts';
+import { fraunces, fragmentMono, spaceGrotesk } from '@/lib/fonts';
 import './globals.css';
 // Fairway design-system tokens (ADDITIVE — imported AFTER globals.css so it
 // only introduces new --fw-* custom properties; it overrides nothing). The
@@ -101,7 +101,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} ${dmSans.variable} ${fraunces.variable} ${fragmentMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} ${dmSans.variable} ${fraunces.variable} ${fragmentMono.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
       <head>
         <meta name="x-deployment-id" content={process.env.VERCEL_DEPLOYMENT_ID ?? 'dev'} />
       </head>

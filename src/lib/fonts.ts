@@ -8,12 +8,25 @@
  * and the large strokes-impact numerals — body + nav type stays on DM Sans
  * (our existing sans). Rule 9 of the Insight Delivery design contract.
  */
-import { Fraunces, Fragment_Mono } from 'next/font/google';
+import { Fraunces, Fragment_Mono, Space_Grotesk } from 'next/font/google';
 
 export const fraunces = Fraunces({
   subsets: ['latin'],
   weight: ['600'],
   variable: '--font-fraunces',
+  display: 'swap',
+});
+
+/**
+ * Space Grotesk — the BaseballHelm "Living Annual" display + number face.
+ * One athletic grotesk carries both player names/hero numerals AND the stat
+ * figures (tabular-nums), per founder direction (2026-07-01). Chrome/body type
+ * stays on the existing sans. Exposed as `--font-space-grotesk` → `font-annual`.
+ */
+export const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-space-grotesk',
   display: 'swap',
 });
 

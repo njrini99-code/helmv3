@@ -4,9 +4,14 @@
  * RuledStatLine — THE signature atom of the Living Annual.
  *
  * A small-caps, hung-left label sits above a serif ink numeral that rests ON a
- * hairline baseline rule. On mount the rule DRAWS (`scaleX 0→1`, spec §4.4 #2)
- * and the numeral SETTLES in (opacity + translateY + blur). The value rolls via
- * `<StatReadout>` (odometer truth).
+ * baseline rule. Per the founder addendum the rule is GREEN by default in team
+ * lanes (`--team-ink`, ~1.5px) — real green presence + crisp row separation —
+ * and clay in the War Room. On mount the rule DRAWS (`scaleX 0→1`, spec §4.4
+ * #2) and the numeral SETTLES in. The value rolls via `<StatReadout>`.
+ *
+ * CONTRAST LAW: the numeral carries the contrast — near-black `--graphite` by
+ * default (≥7:1), or lane-ink for an `emphasis`/`leader` value. Labels stay
+ * quiet (graphite/60 small-caps).
  *
  * Stacks fractally: three of these make a slash line (`.341 / .420 / .611`),
  * a column of them makes a passport stat stack.
@@ -14,7 +19,9 @@
  * Variants:
  *   • `verified` → a green `ON THE RECORD` check on the label row.
  *   • `ink`      → the lane accent: `team` = green (team/dev), `pursuit` = clay
- *     (recruiting). The numeral itself stays graphite; ink tints the check.
+ *     (recruiting). Drives the baseline rule + emphasis colour.
+ *   • `emphasis` → renders the numeral in lane ink (green in team lanes).
+ *   • `leader`   → team-best treatment: green numeral + a green `LEADS` tick.
  *   • `ghost`    → 40% placeholder for an unfilled measurable (em-dash figure).
  *
  * `prefers-reduced-motion` → rule renders drawn, numeral set, no pulse.

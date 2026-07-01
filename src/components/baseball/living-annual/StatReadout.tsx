@@ -9,6 +9,12 @@
  * slash-line fragment or an em-dash placeholder) renders statically in the
  * same mono figures.
  *
+ * CONTRAST LAW (founder addendum): the number carries the contrast. By default
+ * a figure renders in near-black `--graphite` (`text-text-primary`, ≥7:1 on
+ * paper) — never warm-gray-on-cream. `emphasis` renders it in `--team-ink`
+ * green for a leader / highlighted value. A passed `className` colour wins
+ * (twMerge) so a lane can tint it clay in the War Room.
+ *
  * Signature accents:
  *   • `flashOnChange` → a green rule pulses under the figure when it changes
  *     (a background sync landed a value).
@@ -31,6 +37,8 @@ export interface StatReadoutProps {
   decimals?: number;
   prefix?: string;
   suffix?: string;
+  /** Render the figure in team-ink green (a leader / highlighted value). */
+  emphasis?: boolean;
   /** Pulse a green rule under the figure whenever `value` changes. */
   flashOnChange?: boolean;
   /** Fire a single sodium flash (personal record / live threshold cross). */
@@ -47,6 +55,7 @@ export function StatReadout({
   decimals = 0,
   prefix = '',
   suffix = '',
+  emphasis = false,
   flashOnChange = false,
   pr = false,
   className,
@@ -80,7 +89,11 @@ export function StatReadout({
 
   return (
     <span
-      className={cn('relative inline-flex items-baseline font-fw-mono tabular-nums', className)}
+      className={cn(
+        'relative inline-flex items-baseline font-fw-mono tabular-nums',
+        emphasis ? 'text-grade-plus' : 'text-text-primary',
+        className,
+      )}
       aria-label={ariaLabel}
     >
       {isNumber ? (

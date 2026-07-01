@@ -250,6 +250,12 @@ const config: Config = {
         serif: ['var(--font-fraunces)', 'var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
         display: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        // ── BaseballHelm "Living Annual" display + number face (ADDITIVE) ──
+        // Space Grotesk carries player names, hero numerals, section titles AND
+        // stat figures (always `tabular-nums`). Loaded by next/font in layout.tsx
+        // (`--font-space-grotesk`). Founder-locked 2026-07-01; replaces the serif
+        // + Fragment-Mono roles for baseball surfaces only.
+        annual: ['var(--font-space-grotesk)', 'Space Grotesk', 'var(--font-geist-sans)', 'system-ui', 'sans-serif'],
         // ── Fairway design-system type roles (ADDITIVE) ──
         // Distinct names (`font-fw-*`) so they never override the active
         // `font-sans` / `font-display` / `font-mono` utilities above. Mirror

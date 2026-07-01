@@ -22,6 +22,18 @@ export { Eyebrow } from './Eyebrow';
 export type { EyebrowProps } from './Eyebrow';
 export { Masthead } from './Masthead';
 export type { MastheadProps } from './Masthead';
+export { SectionMasthead } from './SectionMasthead';
+export type { SectionMastheadProps } from './SectionMasthead';
+export { HairlineRule } from './HairlineRule';
+export type { HairlineRuleProps } from './HairlineRule';
+export { PositionChip } from './PositionChip';
+export type { PositionChipProps } from './PositionChip';
+export { InkBadge } from './InkBadge';
+export type { InkBadgeProps } from './InkBadge';
+export { AgingBar } from './AgingBar';
+export type { AgingBarProps } from './AgingBar';
+export { LiveDot } from './LiveDot';
+export type { LiveDotProps } from './LiveDot';
 
 // ── Evaluation (recruiting lane) ──
 export { GradeStamp } from './GradeStamp';
@@ -34,6 +46,8 @@ export { PaperCard } from './PaperCard';
 export type { PaperCardProps } from './PaperCard';
 export { ClayCanvas } from './ClayCanvas';
 export type { ClayCanvasProps } from './ClayCanvas';
+export { Trace } from './Trace';
+export type { TraceProps } from './Trace';
 
 // ── Composed states + ceremony ──
 export { EditorsLetter } from './EditorsLetter';

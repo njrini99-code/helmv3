@@ -10,12 +10,21 @@
  * `scrollShrink` opts into the passport behavior: the name scales toward a
  * sticky byline as the page scrolls (transform-only, GPU-cheap). Reduced
  * motion → no scroll transform and no settle (names render final).
+ *
+ * `accentRule` (founder addendum) hangs a bold section accent under the name —
+ * GREEN in team lanes, clay in the War Room — the visible green wayfinding a
+ * section masthead should carry.
  */
 import { m, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Eyebrow } from './Eyebrow';
-import { inkColumn, inkSettles } from './motion';
+import { inkColumn, inkSettles, rulesDraw } from './motion';
+
+const ACCENT_RULE: Record<'team' | 'pursuit', string> = {
+  team: 'bg-grade-plus',
+  pursuit: 'bg-pursuit',
+};
 
 export interface MastheadProps {
   /** Given name — serif regular. */
@@ -28,6 +37,8 @@ export interface MastheadProps {
   ink?: 'team' | 'pursuit';
   /** Die-cut registration crop-mark at the top-left. */
   registrationTick?: boolean;
+  /** Bold lane-ink section accent rule under the name (green in team lanes). */
+  accentRule?: boolean;
   /** Scroll-linked shrink-to-byline behavior. */
   scrollShrink?: boolean;
   className?: string;
@@ -39,6 +50,7 @@ export function Masthead({
   dateline,
   ink = 'team',
   registrationTick = false,
+  accentRule = false,
   scrollShrink = false,
   className,
 }: MastheadProps) {
@@ -85,6 +97,14 @@ export function Masthead({
       >
         {surname}
       </m.div>
+
+      {accentRule ? (
+        <m.div
+          aria-hidden
+          variants={rulesDraw(reduced)}
+          className={cn('mt-3 h-[3px] w-16 origin-left rounded-full', ACCENT_RULE[ink])}
+        />
+      ) : null}
     </m.div>
   );
 }
