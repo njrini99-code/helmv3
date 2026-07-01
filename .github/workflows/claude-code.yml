@@ -54,11 +54,11 @@ jobs:
               core.setFailed(`Claude auto-run blocked by label(s): ${hit.join(', ')}. Nick must review this manually.`);
             }
 
-      # Enable this step only after ANTHROPIC_API_KEY is added to repo secrets
-      # and the exact action version is verified against Anthropic's current docs.
-      # Keep the action pinned to a release SHA or trusted version before broad use.
+      # Enable by setting repository variable ENABLE_CLAUDE_CODE_ACTION=true
+      # and adding ANTHROPIC_API_KEY to repository secrets.
+      # Verify and pin the action version before broad use.
       - name: Run Claude Code
-        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        if: ${{ vars.ENABLE_CLAUDE_CODE_ACTION == 'true' }}
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
