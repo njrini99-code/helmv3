@@ -225,10 +225,19 @@ async function checkRouteAuthorization(
 
   const { data: team } = await supabase
     .from('baseball_teams')
-    .select('program_type')
+    .select('program_type, team_type')
     .eq('id', String(staffRow.team_id))
     .maybeSingle();
-  const programType = normalizeProgramType(team?.program_type);
+  // Resolve the program mode with a defense-in-depth fallback: program_type is
+  // the controlling setting, but if it is ever null/absent (e.g. a team created
+  // before the program_type column was backfilled, or a transient read gap) we
+  // derive it from the always-present team_type enum. college/high_school/juco/
+  // showcase are all valid program_type values, so a real coach is never
+  // silently stripped of recruiting just because program_type wasn't populated.
+  // This resolves the mode; it does NOT weaken the gate — a high_school program
+  // still fails the recruiting check below exactly as before.
+  const programType =
+    normalizeProgramType(team?.program_type) ?? normalizeProgramType(team?.team_type);
 
   if (requiredCapability && !staffHasCapability(staffRow, requiredCapability)) {
     return {

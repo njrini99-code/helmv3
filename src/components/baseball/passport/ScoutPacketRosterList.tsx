@@ -23,6 +23,7 @@ import {
   IconLock,
   IconArrowRight,
   IconCheckCircle2,
+  IconUsers,
 } from '@/components/icons';
 import type { ScoutPacketRosterEntry } from '@/app/baseball/actions/scout-packet';
 import { Button } from '@/components/ui/button';
@@ -96,16 +97,47 @@ export function ScoutPacketRosterList({ entries }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <m.p
-          initial={reduceMotion ? false : { opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          className="rounded-xl border border-dashed border-warm-200 bg-warm-50 px-4 py-6 text-center text-sm text-warm-500"
-        >
-          {entries.length === 0
-            ? 'No players on the roster yet.'
-            : 'No players match this filter.'}
-        </m.p>
+        entries.length === 0 ? (
+          <m.div
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.24 }}
+            className="flex flex-col items-center rounded-2xl border border-dashed border-warm-200 bg-warm-50/70 px-6 py-12 text-center"
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
+              <IconUsers size={22} />
+            </span>
+            <h3 className="mt-4 text-base font-semibold text-warm-900">
+              No players on the roster yet
+            </h3>
+            <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-warm-500">
+              Add players to your roster to build source-backed scout packets and share
+              verified profiles with college coaches.
+            </p>
+            <Link
+              href="/baseball/dashboard/roster"
+              className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+            >
+              Go to Roster
+              <IconArrowRight size={15} />
+            </Link>
+          </m.div>
+        ) : (
+          <m.div
+            initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col items-center rounded-2xl border border-dashed border-warm-200 bg-warm-50/70 px-6 py-10 text-center"
+          >
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-warm-100 text-warm-400">
+              <IconSearch size={18} />
+            </span>
+            <p className="mt-3 text-sm font-medium text-warm-600">No players match this filter</p>
+            <p className="mt-1 text-sm text-warm-400">
+              Try a different filter or clear your search.
+            </p>
+          </m.div>
+        )
       ) : (
         <ul className="divide-y divide-warm-100 overflow-hidden rounded-2xl border border-warm-200 bg-cream-50 shadow-card">
           {filtered.map((e, idx) => (
