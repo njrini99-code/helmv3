@@ -383,6 +383,71 @@ export async function getTeamGames(
   return { success: true, data: games };
 }
 
+export interface TeamSeasonRecord {
+  played: number;
+  wins: number;
+  losses: number;
+  ties: number;
+}
+
+export interface GetTeamSeasonRecordResult {
+  success: boolean;
+  data?: TeamSeasonRecord;
+  error?: string;
+}
+
+/**
+ * Season win-loss record computed over ALL completed games in the season —
+ * independent of any display `limit`. Both the Games & Scrimmages page and the
+ * Season Stats "Recent Games" widget derive their record from this single
+ * selector so the two surfaces can never disagree. Previously each surface
+ * computed the record from its own (sometimes limit-truncated) fetch, which is
+ * why a limit-5 "Recent Games" list read "3 played · 3W-0L" while the full
+ * Games page read "6 played · 5W-0L-1T".
+ */
+export async function getTeamSeasonRecord(
+  teamId: string,
+  seasonYear?: number,
+  gameType?: BaseballGameType,
+): Promise<GetTeamSeasonRecordResult> {
+  const authResult = await requireCoachAuth();
+  if ('error' in authResult) return { success: false, error: authResult.error };
+  const { coach, supabase } = authResult;
+
+  const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
+  if (!hasAccess) return { success: false, error: 'Access denied' };
+
+  const year = seasonYear ?? new Date().getFullYear();
+
+  let query = (supabase as unknown as SupabaseClient)
+    .from('baseball_games')
+    .select('our_score, opponent_score, status, game_type')
+    .eq('team_id', teamId)
+    .eq('status', 'completed')
+    .gte('game_date', `${year}-01-01`)
+    .lte('game_date', `${year}-12-31`);
+
+  if (gameType) query = query.eq('game_type', gameType);
+
+  const { data, error } = await query;
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+  type ScoreRow = { our_score: number | null; opponent_score: number | null };
+  const record = ((data ?? []) as ScoreRow[]).reduce<TeamSeasonRecord>(
+    (acc, g) => {
+      if (g.our_score == null || g.opponent_score == null) return acc;
+      acc.played += 1;
+      if (g.our_score > g.opponent_score) acc.wins += 1;
+      else if (g.our_score < g.opponent_score) acc.losses += 1;
+      else acc.ties += 1;
+      return acc;
+    },
+    { played: 0, wins: 0, losses: 0, ties: 0 },
+  );
+
+  return { success: true, data: record };
+}
+
 export interface GetGameBoxScoreResult {
   success: boolean;
   game?: BaseballGame;

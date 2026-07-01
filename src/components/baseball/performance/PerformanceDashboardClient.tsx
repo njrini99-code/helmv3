@@ -76,6 +76,15 @@ interface PerformanceDashboardClientProps {
   groups?: Pick<BaseballStrengthGroupRow, 'id' | 'name'>[];
   /** Show skeleton loaders while data is loading. */
   isLoading?: boolean;
+  /**
+   * Rendered as a section BELOW the PerformanceCommandCenter (default on the
+   * main Performance page). In embedded mode this drops the duplicate
+   * "Performance" hero header, the duplicate KPI summary strip, and the
+   * Readiness tab — all of which the Command Center already owns — so the page
+   * no longer stacks two full dashboards with two headers and two readiness
+   * lists. Only the unique prescribe/library management tools remain.
+   */
+  embedded?: boolean;
 }
 
 // V11 exercise vocabulary (mirrors the migration CHECK constraints). Surfaced as
@@ -146,8 +155,13 @@ export function PerformanceDashboardClient({
   readiness,
   groups,
   isLoading = false,
+  embedded = false,
 }: PerformanceDashboardClientProps) {
   void teamId; // team scope is enforced server-side; kept for prop-contract clarity.
+
+  // In embedded mode the Command Center above owns readiness, so this section
+  // only offers the prescribe/library management tabs.
+  const showReadinessTab = canViewReadiness && !embedded;
 
   const [assignments, setAssignments] = useState(initialAssignments);
   const [exercises, setExercises] = useState(initialExercises);
@@ -155,7 +169,7 @@ export function PerformanceDashboardClient({
   const [notice, setNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const defaultTab = canViewReadiness ? 'readiness' : 'assignments';
+  const defaultTab = showReadinessTab ? 'readiness' : 'assignments';
   const [tab, setTab] = useState(defaultTab);
   const prefersReducedMotion = useReducedMotion();
 
@@ -445,19 +459,31 @@ export function PerformanceDashboardClient({
 
   return (
     <motion.div
-      className="p-4 lg:p-8 space-y-6"
+      className={embedded ? 'space-y-6' : 'p-4 lg:p-8 space-y-6'}
       initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
     >
         {/* Header */}
-        <div>
-          <p className="text-eyebrow uppercase text-primary-700">Strength &amp; conditioning</p>
-          <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-warm-900">Performance</h1>
-          <p className="mt-1 text-sm text-warm-500">
-            Track readiness, prescribe lifts, and keep your exercise library in one place.
-          </p>
-        </div>
+        {embedded ? (
+          <div className="border-t border-warm-100 pt-8">
+            <p className="text-eyebrow uppercase text-primary-700">Prescribe &amp; library</p>
+            <h2 className="mt-0.5 text-xl font-semibold tracking-tight text-warm-900">
+              Assignments &amp; exercise library
+            </h2>
+            <p className="mt-1 text-sm text-warm-500">
+              Prescribe lifts and keep your team&apos;s exercise library in one place.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <p className="text-eyebrow uppercase text-primary-700">Strength &amp; conditioning</p>
+            <h1 className="mt-0.5 text-3xl font-semibold tracking-tight text-warm-900">Performance</h1>
+            <p className="mt-1 text-sm text-warm-500">
+              Track readiness, prescribe lifts, and keep your exercise library in one place.
+            </p>
+          </div>
+        )}
 
         {/* Notices */}
         {error && (
@@ -488,7 +514,8 @@ export function PerformanceDashboardClient({
           </div>
         )}
 
-        {/* Summary */}
+        {/* Summary — hidden when embedded (Command Center owns the KPI strip). */}
+        {!embedded && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
           <SummaryCard
             icon={<IconActivity size={20} className="text-primary-600" />}
@@ -519,10 +546,11 @@ export function PerformanceDashboardClient({
             </>
           )}
         </div>
+        )}
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
-            {canViewReadiness && (
+            {showReadinessTab && (
               <TabsTrigger value="readiness">Readiness</TabsTrigger>
             )}
             {canManageLifting && (
@@ -536,7 +564,7 @@ export function PerformanceDashboardClient({
           {/* ---------------------------------------------------------------- */}
           {/* READINESS                                                         */}
           {/* ---------------------------------------------------------------- */}
-          {canViewReadiness && (
+          {showReadinessTab && (
             <TabsContent value="readiness">
               <AnimatePresence mode="wait">
                 {tab === 'readiness' && (

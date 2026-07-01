@@ -1241,6 +1241,17 @@ export function VideoLibraryClient({
     evidence: evidence.totalCount,
   };
 
+  // Honest header subtitle: derive from the real clip count, never a fixed
+  // number. The old copy read "Team film — 5 views" (meaning 5 organizational
+  // tabs), which reads as a play/view count and directly contradicted the
+  // "No videos yet" empty state below it on a library with zero clips.
+  const totalClips = library.totalCount;
+  const headerSubtitle = isCoach
+    ? totalClips > 0
+      ? `Team film · ${totalClips} ${totalClips === 1 ? 'clip' : 'clips'}`
+      : 'Team film and tagged clips'
+    : 'Your videos and team film';
+
   // Mutations (upload / edit / delete / set-primary) call revalidatePath()
   // server-side, but this client component's props are only re-fetched when the
   // router actually re-renders the server tree — router.refresh() triggers that
@@ -1252,10 +1263,7 @@ export function VideoLibraryClient({
 
   return (
     <>
-      <Header
-        title="Video Library"
-        subtitle={isCoach ? 'Team film, clips, and evidence' : 'Your videos and team film'}
-      />
+      <Header title="Video Library" subtitle={headerSubtitle} />
 
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Tab bar */}
