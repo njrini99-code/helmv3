@@ -1,0 +1,90 @@
+name: Feature / Enhancement
+description: Suggest a product improvement, roadmap item, competitive gap, or partner request
+title: "[Feature]: "
+labels: ["workflow:feature", "agent:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for new product ideas, coach requests, competitive gaps, UX improvements, or roadmap suggestions.
+
+        The command center should turn this into roadmap signal, not just a random task.
+
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      options:
+        - BaseballHelm
+        - GolfHelm
+        - CoachHelm
+        - TrainHelm
+        - Helm Platform
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Request type
+      options:
+        - Customer/coach request
+        - Partner idea
+        - Competitive gap
+        - UX polish
+        - Revenue feature
+        - Technical improvement
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: request
+    attributes:
+      label: What should Helm do?
+      placeholder: The coach dashboard should show who missed lifts this week and flag players trending down.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does this matter?
+      description: Connect it to coaches, players, revenue, demos, competitive advantage, or partner visibility.
+      placeholder: This gives coaches immediate accountability visibility and would be valuable in demos.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Customer, coach, competitor, or market evidence
+      placeholder: A coach said..., Teamworks does..., GameChanger has..., This came up during demo...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority guess
+      options:
+        - Must have now
+        - Should build soon
+        - Later but valuable
+        - Cool idea only
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: What would “done” look like?
+      placeholder: A coach can open the dashboard and instantly see missed lifts, downward trends, and players needing follow-up.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: This does not include passwords, API keys, private tokens, or sensitive personal data.
+          required: true
