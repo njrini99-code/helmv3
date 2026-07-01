@@ -1,0 +1,78 @@
+name: Generate visual baselines
+
+# One-click generation of Fairway visual-regression baselines.
+# Baselines are OS/browser-specific and MUST be produced on the Linux CI runner
+# (not committed from a laptop), or every diff will be a false positive. Run this
+# once on a branch to seed baselines, and again whenever a Fairway change is
+# intentional. It commits the generated snapshots back to the branch you ran it on.
+
+on:
+  workflow_dispatch:
+    inputs:
+      routes:
+        description: "Optional: extra note for the run (unused by the job)"
+        required: false
+        default: "fairway-preview + login shells"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: visual-baselines-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  generate:
+    name: Generate + commit baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate baselines (update snapshots)
+        run: npx playwright test e2e/visual-regression.spec.ts --project=chromium --update-snapshots
+
+      - name: Open baselines PR if changed
+        env:
+          # Pass values via env (never interpolate ${{ }} into a shell command).
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if ! git status --porcelain -- 'e2e/**-snapshots/**' | grep -q .; then
+            echo "No baseline changes — snapshots already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BRANCH="chore/visual-baselines-$RUN_ID"
+          git checkout -b "$BRANCH"
+          git add e2e/*-snapshots
+          git commit -m "test(visual): Fairway visual baselines [skip ci]"
+          git push origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "test(visual): Fairway visual baselines" \
+            --body "Auto-generated Linux visual-regression baselines for the Fairway design system (/fairway-preview + login shells). Merge to activate visual-regression diffing on future PRs."
+          echo "Opened baselines PR from $BRANCH."
