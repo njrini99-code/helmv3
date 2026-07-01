@@ -79,7 +79,6 @@ export interface BaseballTaskAssignment {
   status: string | null;
   completed_at: string | null;
   notes: string | null;
-  created_at: string | null;
 }
 
 export interface BaseballTaskTemplate {
@@ -277,9 +276,12 @@ export async function getPlayerTasks(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: assignments, error: assignmentsError } = await (supabase as any)
       .from('baseball_task_assignments')
-      .select('id, task_id, status, completed_at, notes, created_at')
-      .eq('player_id', playerId)
-      .order('created_at', { ascending: false }) as { data: BaseballTaskAssignment[] | null; error: Error | null };
+      // NB: baseball_task_assignments has no created_at column (only id, task_id,
+      // player_id, status, completed_at, notes) — selecting/ordering by it 42703'd
+      // and broke every player Tasks fetch. Order the final list by the joined
+      // task's created_at (a real column) after the merge below instead.
+      .select('id, task_id, status, completed_at, notes')
+      .eq('player_id', playerId) as { data: BaseballTaskAssignment[] | null; error: Error | null };
 
     if (assignmentsError) {
       await logServerError(`[getPlayerTasks Error]: ${assignmentsError instanceof Error ? assignmentsError.message : String(assignmentsError)}`, { action: 'tasks.getPlayerTasks' });
@@ -328,7 +330,10 @@ export async function getPlayerTasks(
           completed_at: assignment.completed_at,
           notes: assignment.notes,
         };
-      });
+      })
+      // Newest-first by the task's own created_at (the assignment row has no
+      // created_at column to sort on).
+      .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
 
     return { success: true, data: playerTasks };
   } catch (error) {
