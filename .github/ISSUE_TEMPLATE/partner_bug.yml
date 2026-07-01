@@ -1,0 +1,104 @@
+name: Partner Bug / App Issue
+description: Report something broken, confusing, or risky in Helm
+title: "[Partner Bug]: "
+labels: ["source:partner", "agent:needs-triage", "workflow:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when something in Helm is broken, confusing, risky for a demo, or not behaving the way partners/coaches would expect.
+
+        Write naturally. The automation layer will clean this into a structured engineering issue and decide whether it is ready for Claude or needs human review.
+
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      description: Which Helm product is affected?
+      options:
+        - BaseballHelm
+        - GolfHelm
+        - CoachHelm
+        - TrainHelm
+        - Helm Platform
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: surface
+    attributes:
+      label: Page, tab, workflow, or area
+      placeholder: Calendar, stats import, player dashboard, coach dashboard, auth, onboarding, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Explain it like you would text Nick.
+      placeholder: The coach dashboard loads, but the workload trend card is blank even though the player has lifts this week.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened?
+      placeholder: The dashboard should show who missed lifts this week and flag players trending down.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Add steps if you know them. If not, say what screen/account/context you were in.
+      placeholder: |
+        1. Log in as a coach
+        2. Go to ...
+        3. Click ...
+        4. See ...
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      description: How much does this matter right now?
+      options:
+        - Demo blocker
+        - Customer blocker
+        - Revenue/sales blocker
+        - Annoying but usable
+        - Cosmetic
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      options:
+        - Fix today
+        - Fix this week
+        - Fix before next demo
+        - Backlog
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot, video, link, account, or extra notes
+      description: Paste links, screenshots, screen recordings, browser, device, or anything else useful.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: This does not include passwords, API keys, private tokens, or sensitive personal data.
+          required: true

@@ -7,6 +7,10 @@
 
 <!-- What changes and why. Link issues with "Closes #123". -->
 
+## Partner-readable summary
+
+<!-- Plain English for Helm partners. What was broken or missing? What changed? Why does it matter for demos, coaches, revenue, or product confidence? -->
+
 ## Type of change
 
 - [ ] Bug fix
@@ -18,7 +22,17 @@
 
 ## Area
 
-<!-- golf · baseball · coachhelm · dashboard · mobile · stats · import · ci -->
+<!-- golf · baseball · coachhelm · dashboard · mobile · stats · import · ci · mission-control -->
+
+## Risk level
+
+- [ ] Low — docs, copy, isolated UI, or small safe fix
+- [ ] Medium — product behavior or shared component changed
+- [ ] High — auth, RLS, migrations, cron, secrets, payments, destructive data flow, or broad architecture
+
+## Git Activity Timeline note
+
+<!-- One sentence n8n can reuse in the partner timeline, e.g. "This improves demo reliability by fixing calendar events that appeared on the wrong day after a timezone change." -->
 
 ## Checklist
 
@@ -28,6 +42,7 @@
 - [ ] **RLS:** any new/changed table has RLS enabled with one policy per command, anon is revoked where appropriate, and the pgTAP suite (`supabase/tests/rls/`) covers it
 - [ ] **No secrets** in the diff (keys, tokens, service-role creds, `.env` values) — push protection is on, don't bypass it
 - [ ] UI changes use design-system primitives (no raw `<button>`/`<input>`/arbitrary `px`/`bg-white`) and include before/after screenshots
+- [ ] If this should appear in Helm Mission Control, the PR includes a clear partner-readable summary and timeline note
 
 ## Screenshots / notes
 
