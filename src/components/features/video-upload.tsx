@@ -10,10 +10,11 @@ import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { IconVideo, IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import type { Video } from '@/lib/types';
+import { saveMyVideo, setMyPrimaryVideo } from '@/app/baseball/actions/video-classes';
 
 interface VideoUploadProps {
-  onUploadComplete?: (video: Video) => void;
+  /** Called after the video row is saved server-side (via saveMyVideo). */
+  onUploadComplete?: () => void;
   onCancel?: () => void;
 }
 
@@ -117,45 +118,64 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
     setProgress(0);
     setError(null);
 
-    try {
-      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'mp4';
-      const fileName = user.id + '/' + Date.now() + '-' + Math.random().toString(36).substr(2, 9) + '.' + fileExt;
+    // Only the storage client is needed client-side; the DB write goes through
+    // the saveMyVideo server action, which is GATED on the can_upload_video
+    // player-access toggle so a program that disables player uploads blocks it
+    // server-side, not just by hiding this button.
+    const fileExt = file.name.split('.').pop()?.toLowerCase() || 'mp4';
+    const fileName = user.id + '/' + Date.now() + '-' + Math.random().toString(36).substr(2, 9) + '.' + fileExt;
+    let dbSaved = false;
 
+    try {
       const result = await supabase.storage.from('baseball_videos').upload(fileName, file, {
         cacheControl: '3600',
         upsert: false,
       });
 
       if (result.error) throw result.error;
-      setProgress(70);
+      setProgress(60);
 
       const urlData = supabase.storage.from('baseball_videos').getPublicUrl(fileName);
       const publicUrl = urlData.data.publicUrl;
 
-      if (form.is_primary) {
-        await supabase.from('baseball_videos').update({ is_primary: false }).eq('player_id', player.id);
-      }
-
-      const insertResult = await supabase.from('baseball_videos').insert({
-        player_id: player.id,
+      const saveResult = await saveMyVideo({
         title: form.title.trim(),
         description: form.description.trim() || null,
-        video_type: form.video_type || null,
+        videoType: form.video_type || null,
         url: publicUrl,
-        is_primary: form.is_primary,
-        duration: null,
-      }).select().single();
+      });
 
-      if (insertResult.error) throw insertResult.error;
-      setProgress(90);
+      if (!saveResult.success) {
+        // Server action rejected the save (e.g. uploads disabled) — remove the
+        // just-uploaded storage object so it doesn't become an orphan.
+        await supabase.storage.from('baseball_videos').remove([fileName]);
+        setError(saveResult.error ?? 'Could not save the video. Please try again.');
+        return;
+      }
+      dbSaved = true;
+      setProgress(85);
 
-      await supabase.from('baseball_players').update({ has_video: true }).eq('id', player.id);
+      const newVideoId = saveResult.ids?.[0];
+      if (form.is_primary && newVideoId) {
+        // The video itself saved fine; only the "make primary" step can fail
+        // (it returns {success:false} rather than throwing). Surface a
+        // non-blocking notice instead of silently dropping the user's choice.
+        const primaryResult = await setMyPrimaryVideo({ videoId: newVideoId });
+        if (!primaryResult.success) {
+          setError(primaryResult.error ?? 'Video uploaded, but it could not be set as your primary video. You can set it from your video library.');
+        }
+      }
       setProgress(100);
 
       if (preview) URL.revokeObjectURL(preview);
-      onUploadComplete?.(insertResult.data);
+      onUploadComplete?.();
     } catch (err) {
       console.error('Upload error:', err);
+      // Only clean up the storage object if the row was never saved — once
+      // saveMyVideo succeeds, the file is referenced by a real row and must stay.
+      if (!dbSaved) {
+        await supabase.storage.from('baseball_videos').remove([fileName]).catch(() => undefined);
+      }
       setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
