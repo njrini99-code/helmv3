@@ -176,9 +176,30 @@ export const generatePostgameReview = withBaseballAction(
     //    overwrite content + re-open NEW items; never clobber a coach conversion.
     // -------------------------------------------------------------------------
     const emittedKeys = new Set<string>();
+
+    // Preserve any coach disposition (converted_to_timeline/converted_to_task/
+    // dismissed/resolved) across re-runs. The upsert below (ignoreDuplicates:
+    // false) would otherwise reset every conflicting row's disposition to
+    // mapItem's default 'new', re-opening items the coach already actioned.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: priorItems } = await (supabase as any)
+      .from('baseball_postgame_review_items')
+      .select('dedupe_key, disposition')
+      .eq('review_id', reviewId);
+    const priorDisposition = new Map<string, string>(
+      ((priorItems ?? []) as { dedupe_key: string; disposition: string }[]).map(
+        (r) => [r.dedupe_key, r.disposition],
+      ),
+    );
+
     const itemRows: BaseballPostgameReviewItemInsert[] = built.items.map((c) => {
       emittedKeys.add(c.dedupeKey);
-      return mapItem(c, teamId, reviewId);
+      const row = mapItem(c, teamId, reviewId);
+      const prior = priorDisposition.get(c.dedupeKey);
+      if (prior && prior !== 'new') {
+        row.disposition = prior as BaseballPostgameReviewItemInsert['disposition'];
+      }
+      return row;
     });
 
     let itemsGenerated = 0;
