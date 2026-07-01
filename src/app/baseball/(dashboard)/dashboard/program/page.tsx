@@ -153,6 +153,7 @@ export default function ProgramPage() {
       const fileExt = file.name.split('.').pop();
       const fileName = `${organization.id}-logo-${Date.now()}.${fileExt}`;
       const filePath = `organizations/${fileName}`;
+      const previousLogoUrl = organization.logo_url;
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
@@ -160,7 +161,7 @@ export default function ProgramPage() {
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
-        showToast('Failed to upload logo', 'error');
+        showToast(uploadError.message || 'Failed to upload logo', 'error');
         return;
       }
 
@@ -176,7 +177,7 @@ export default function ProgramPage() {
         .eq('id', organization.id);
 
       if (updateError) {
-        showToast('Failed to update logo', 'error');
+        showToast(updateError.message || 'Failed to update logo', 'error');
         return;
       }
 
@@ -184,6 +185,15 @@ export default function ProgramPage() {
       setFormData(prev => ({ ...prev, logo_url: publicUrl }));
       setOrganization(prev => prev ? { ...prev, logo_url: publicUrl } : null);
       showToast('Logo updated successfully', 'success');
+
+      // Best-effort cleanup of the previous logo object so re-uploads don't
+      // orphan objects in the bucket (each upload uses a Date.now() path).
+      const previousPath = previousLogoUrl?.includes('/logos/organizations/')
+        ? `organizations/${previousLogoUrl.split('/logos/organizations/')[1]}`
+        : null;
+      if (previousPath && previousPath !== filePath) {
+        void supabase.storage.from('logos').remove([previousPath]);
+      }
     } catch {
       showToast('An error occurred while uploading', 'error');
     } finally {
