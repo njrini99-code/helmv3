@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useId } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Button, IconButton } from '@/components/ui/button';
 import { IconX } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
+import { createCamp, updateCamp, type CampInput } from '@/app/baseball/actions/camps';
 
 interface Camp {
   id: string;
@@ -71,9 +71,14 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
     }
 
     setLoading(true);
-    const supabase = createClient();
 
-    const campData = {
+    // Go through the audited server-action layer (createCamp/updateCamp)
+    // instead of a raw client-side write. Camps are always written with
+    // status: 'published' so the player-facing RLS SELECT policy (which
+    // only exposes status = 'published' to non-owners) shows them
+    // immediately — a coach-only 'active'/'draft' status left new camps
+    // invisible to players.
+    const campData: CampInput = {
       name: formData.name,
       description: formData.description || null,
       location: formData.location || null,
@@ -84,31 +89,16 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
       is_free: formData.is_free || !formData.price,
     };
 
-    let error;
-
-    if (isEditing && camp) {
-      // Update existing camp
-      const result = await supabase
-        .from('baseball_camps')
-        .update(campData)
-        .eq('id', camp.id);
-      error = result.error;
-    } else {
-      // Create new camp
-      const result = await supabase.from('baseball_camps').insert({
-        ...campData,
-        coach_id: coach.id,
-        organization_id: coach.organization_id,
-        status: 'active',
-      });
-      error = result.error;
-    }
+    const result =
+      isEditing && camp
+        ? await updateCamp(camp.id, campData)
+        : await createCamp(campData);
 
     setLoading(false);
 
-    if (error) {
-      console.error(`Error ${isEditing ? 'updating' : 'creating'} camp:`, error);
-      showToast(`Failed to ${isEditing ? 'update' : 'create'} camp. Please try again.`, 'error');
+    if (!result.success) {
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} camp:`, result.error);
+      showToast(result.error || `Failed to ${isEditing ? 'update' : 'create'} camp. Please try again.`, 'error');
       return;
     }
 
