@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { SeasonStatsTable } from '@/components/baseball/season-stats/SeasonStatsTable';
+import { SeasonStatsClient } from '@/components/baseball/season-stats/SeasonStatsClient';
 import { GamesList } from '@/components/baseball/games/GamesList';
-import type { BaseballPlayerSeasonStats } from '@/lib/types';
+import { getTeamSeasonStats } from '@/app/baseball/actions/games';
 
 export default async function SeasonStatsPage() {
   const supabase = await createClient();
@@ -29,16 +29,10 @@ export default async function SeasonStatsPage() {
   if (!team) redirect('/baseball/dashboard/program');
 
   const currentYear = new Date().getFullYear();
+  const availableYears = [currentYear, currentYear - 1, currentYear - 2];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: seasonStats } = await (supabase as any)
-    .from('baseball_player_season_stats')
-    .select(`
-      *,
-      player:baseball_players!player_id(first_name, last_name, primary_position)
-    `)
-    .eq('team_id', team.id)
-    .eq('season_year', currentYear) as { data: BaseballPlayerSeasonStats[] | null };
+  const seasonStatsResult = await getTeamSeasonStats(team.id, currentYear);
+  const seasonStats = seasonStatsResult.success ? (seasonStatsResult.data ?? []) : [];
 
   return (
     <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8 space-y-8">
@@ -51,10 +45,11 @@ export default async function SeasonStatsPage() {
       </div>
 
       {/* Season stats table */}
-      <SeasonStatsTable
-        stats={seasonStats ?? []}
-        seasonYear={currentYear}
+      <SeasonStatsClient
+        initialStats={seasonStats}
+        initialSeasonYear={currentYear}
         teamId={team.id}
+        availableYears={availableYears}
       />
 
       {/* Recent games */}
