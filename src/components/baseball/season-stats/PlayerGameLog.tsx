@@ -275,9 +275,9 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                     <td className="px-2 py-2 text-center tabular-nums font-semibold">{row.k}</td>
                     <td className="px-2 py-2 text-center tabular-nums">{row.hr}</td>
                     <td className="px-2 py-2 text-center tabular-nums text-warm-400">{row.pitch_count ?? '—'}</td>
-                    <td className="px-3 py-2 text-center font-mono text-warm-700">{fmtERA(row.er, row.ip)}</td>
+                    <td className="px-3 py-2 text-center font-mono text-warm-700">{fmtERA(row.er, ipToInnings(row.ip))}</td>
                     <td className="px-3 py-2 text-center font-mono text-warm-500">
-                      {row.ip > 0 ? ((row.h + row.bb) / row.ip).toFixed(3) : '—'}
+                      {ipToInnings(row.ip) > 0 ? ((row.h + row.bb) / ipToInnings(row.ip)).toFixed(3) : '—'}
                     </td>
                     <td className="px-2 py-2 text-center">
                       {row.result && (
