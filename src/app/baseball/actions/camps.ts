@@ -1,5 +1,6 @@
 'use server';
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -276,41 +277,34 @@ export async function registerForCamp(
     return { success: false, error: authError ?? 'Unauthorized' };
   }
 
-  const { data: existing } = await fromUntyped(supabase, 'baseball_camp_registrations')
-    .select('id, status')
-    .eq('camp_id', campId)
-    .eq('player_id', player.id)
-    .maybeSingle();
+  // Capacity is enforced atomically in the DB. baseball_register_for_camp locks
+  // the camp row, counts active (non-cancelled) registrations, and rejects
+  // over-capacity joins inside one transaction — a client-side insert (or this
+  // action's old count-free insert) could overbook under concurrent sign-ups.
+  const { data, error } = await (supabase as unknown as SupabaseClient).rpc(
+    'baseball_register_for_camp',
+    { p_camp_id: campId },
+  );
 
-  if (existing && existing.status !== 'cancelled') {
-    return { success: false, error: 'Already registered for this camp' };
+  if (error) {
+    return { success: false, error: 'Failed to register for camp' };
   }
 
-  if (existing && existing.status === 'cancelled') {
-    const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
-      .update({ status: 'registered', registered_at: new Date().toISOString() })
-      .eq('id', existing.id);
-
-    if (error) {
+  switch (data as string) {
+    case 'registered':
+      revalidatePath(CAMPS_PATH);
+      return { success: true };
+    case 'full':
+      return { success: false, error: 'This camp is full' };
+    case 'already_registered':
+      return { success: false, error: 'Already registered for this camp' };
+    case 'not_found':
+      return { success: false, error: 'Camp not found' };
+    case 'unauthorized':
+      return { success: false, error: 'Unauthorized' };
+    default:
       return { success: false, error: 'Failed to register for camp' };
-    }
-  } else {
-    const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
-      .insert({
-        camp_id: campId,
-        player_id: player.id,
-        status: 'registered',
-        registered_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-      });
-
-    if (error) {
-      return { success: false, error: 'Failed to register for camp' };
-    }
   }
-
-  revalidatePath(CAMPS_PATH);
-  return { success: true };
 }
 
 /**
