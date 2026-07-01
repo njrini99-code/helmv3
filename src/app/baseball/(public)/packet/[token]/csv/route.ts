@@ -31,7 +31,8 @@ function fileName(name: string | null): string {
 
 export async function GET(_req: Request, { params }: RouteParams): Promise<Response> {
   const { token } = await params;
-  const model = await resolveScoutPacketByToken(token ?? '');
+  // A CSV download isn't a packet "view" — don't bump view_count/last_viewed_at.
+  const model = await resolveScoutPacketByToken(token ?? '', { trackView: false });
   const csv = scoutPacketToCsv(model);
   const status = model.ok ? 200 : model.reason === 'not_found' ? 404 : 403;
   return new Response(csv, {
