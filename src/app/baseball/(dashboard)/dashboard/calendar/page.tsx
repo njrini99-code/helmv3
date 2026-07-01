@@ -3,6 +3,8 @@ import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { BaseballCalendarWrapper } from '@/components/baseball/calendar/BaseballCalendarWrapper';
+import { CalendarFairway } from '@/components/baseball/calendar/CalendarFairway';
+import { isRedesignEnabled } from '@/lib/redesign/flag';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { Metadata } from 'next';
 
@@ -156,6 +158,20 @@ export default async function BaseballCalendarPage() {
   // ── College coach with no team: recruiting-focused empty state ─────────────
 
   if (isCollegeCoach && !teamId) {
+    if (isRedesignEnabled()) {
+      return (
+        <CalendarFairway
+          recruitingEmpty
+          events={events}
+          teamMembers={teamMembers}
+          teamId={teamId}
+          isCoach={isCoach}
+          currentUserId={currentUserId}
+          upcomingEvents={upcomingEvents}
+          eventTypeCounts={eventTypeCounts}
+        />
+      );
+    }
     return (
       <div
         className="h-[calc(100vh-5.5rem-env(safe-area-inset-bottom))] md:h-screen flex flex-col"
@@ -192,6 +208,21 @@ export default async function BaseballCalendarPage() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (isRedesignEnabled()) {
+    return (
+      <CalendarFairway
+        recruitingEmpty={false}
+        events={events}
+        teamMembers={teamMembers}
+        teamId={teamId}
+        isCoach={isCoach}
+        currentUserId={currentUserId}
+        upcomingEvents={upcomingEvents}
+        eventTypeCounts={eventTypeCounts}
+      />
     );
   }
 
