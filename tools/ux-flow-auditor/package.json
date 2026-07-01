@@ -14,7 +14,7 @@
     "scan:knowledge": "node src/knowledge/scanner.js ../.."
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.27.0",
+    "@anthropic-ai/sdk": "^0.105.0",
     "chalk": "^5.3.0",
     "chokidar": "^3.5.3",
     "commander": "^11.1.0",
@@ -22,7 +22,7 @@
     "fast-glob": "^3.3.2",
     "marked": "^11.1.1",
     "ora": "^8.0.1",
-    "playwright": "^1.40.0",
+    "playwright": "^1.61.1",
     "ws": "^8.14.2"
   },
   "devDependencies": {
