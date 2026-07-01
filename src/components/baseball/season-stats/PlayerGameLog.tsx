@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { BaseballBoxScoreBatting, BaseballBoxScorePitching, BaseballGame } from '@/lib/types';
 import { IconCalendar } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { sumInningsPitched, ipToInnings } from '@/lib/baseball/innings';
 
 type BattingWithGame = BaseballBoxScoreBatting & { game: Partial<BaseballGame> };
 type PitchingWithGame = BaseballBoxScorePitching & { game: Partial<BaseballGame> };
@@ -59,14 +60,16 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
     { ab: 0, r: 0, h: 0, doubles: 0, triples: 0, hr: 0, rbi: 0, bb: 0, k: 0 }
   );
 
-  // Running pitching totals
+  // Running pitching totals — .1/.2 are outs, so sum IP via outs (6.1 + 6.2 → 13.0). (#434)
   const pitchingTotals = filteredPitching.reduce(
     (acc, r) => ({
-      ip: acc.ip + r.ip, h: acc.h + r.h, r: acc.r + r.r, er: acc.er + r.er,
+      ip: sumInningsPitched([acc.ip, r.ip]), h: acc.h + r.h, r: acc.r + r.r, er: acc.er + r.er,
       bb: acc.bb + r.bb, k: acc.k + r.k, hr: acc.hr + r.hr,
     }),
     { ip: 0, h: 0, r: 0, er: 0, bb: 0, k: 0, hr: 0 }
   );
+  // Rates divide by TRUE innings (outs / 3), not the notation value. (#434)
+  const pitchingInnings = ipToInnings(pitchingTotals.ip);
 
   const hasBatting = batting.length > 0;
   const hasPitching = pitching.length > 0;
@@ -303,10 +306,10 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                     <td className="px-2 py-2.5 text-center tabular-nums font-bold">{pitchingTotals.k}</td>
                     <td colSpan={2} />
                     <td className="px-3 py-2.5 text-center font-mono font-bold">
-                      {fmtERA(pitchingTotals.er, pitchingTotals.ip)}
+                      {fmtERA(pitchingTotals.er, pitchingInnings)}
                     </td>
                     <td className="px-3 py-2.5 text-center font-mono">
-                      {pitchingTotals.ip > 0 ? ((pitchingTotals.h + pitchingTotals.bb) / pitchingTotals.ip).toFixed(3) : '—'}
+                      {pitchingInnings > 0 ? ((pitchingTotals.h + pitchingTotals.bb) / pitchingInnings).toFixed(3) : '—'}
                     </td>
                     <td />
                   </tr>
