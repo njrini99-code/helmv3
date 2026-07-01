@@ -203,6 +203,10 @@ export default function EventsPage() {
         endTime,
         location: newEvent.location || null,
         description: newEvent.description || null,
+        // datetime-local inputs are wall-clock time in the coach's browser tz;
+        // without this, the server stores it assuming UTC (mirrors the golf
+        // calendar fix in src/app/golf/actions/golf.ts).
+        timezoneOffset: new Date().getTimezoneOffset(),
       });
 
       if (!result.success) {
