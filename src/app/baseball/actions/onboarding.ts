@@ -31,6 +31,8 @@ export type OnboardingResult = {
 
 const VALID_COACH_TYPES: CoachType[] = ['college', 'juco', 'high_school', 'showcase'];
 const VALID_PLAYER_TYPES: PlayerType[] = ['high_school', 'showcase', 'juco', 'college'];
+const VALID_BATS = ['L', 'R', 'S'];
+const VALID_THROWS = ['L', 'R'];
 
 function generateJoinCode(): string {
   return randomBytes(4).toString('hex').toUpperCase().slice(0, 8);
@@ -38,6 +40,21 @@ function generateJoinCode(): string {
 
 function sanitizeString(input: string, maxLength = 255): string {
   return input.trim().slice(0, maxLength);
+}
+
+/** Coerce to a finite number within [min, max], or null for anything else (empty/NaN/out of range). */
+function clampNullableNumber(value: unknown, min: number, max: number): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num)) return null;
+  return Math.max(min, Math.min(max, num));
+}
+
+/** Whitelist-validate a handedness value; anything not in `allowed` is dropped (null). */
+function sanitizeHandedness(value: string | null | undefined, allowed: string[]): string | null {
+  if (!value) return null;
+  const upper = value.trim().toUpperCase();
+  return allowed.includes(upper) ? upper : null;
 }
 
 /**
@@ -529,6 +546,22 @@ export type PlayerOnboardingInput = {
   city?: string | null;
   state?: string | null;
   highSchoolName?: string | null;
+  // Measurables — these are core recruiting metrics (read by Discover's
+  // velo/exit filters, the recruiting match-calculator + min-standards
+  // gate, and the public player profile headline cards). height_feet,
+  // pitch_velo, exit_velo, and sixty_time have NO other write path in the
+  // app (updateMyPlayerProfile's whitelist omits all four); bats/throws
+  // only recover via a coach-gated toggle. All six must be threaded
+  // through here or they become permanently uncapturable on the normal
+  // signup → onboarding happy path.
+  heightFeet?: number | null;
+  heightInches?: number | null;
+  weightLbs?: number | null;
+  bats?: string | null;
+  throws?: string | null;
+  pitchVelo?: number | null;
+  exitVelo?: number | null;
+  sixtyTime?: number | null;
   profileCompletionPercent?: number | null;
 };
 
@@ -582,6 +615,17 @@ export async function completePlayerOnboarding(
   const state = input.state ? sanitizeString(input.state, 2) : null;
   const highSchoolName = input.highSchoolName ? sanitizeString(input.highSchoolName) : null;
 
+  // Measurables — same bounds as updateMyPlayerProfile's whitelist where one
+  // exists (height_inches, weight_lbs), sane physical/on-field ranges otherwise.
+  const heightFeet = clampNullableNumber(input.heightFeet, 3, 8);
+  const heightInches = clampNullableNumber(input.heightInches, 0, 11);
+  const weightLbs = clampNullableNumber(input.weightLbs, 60, 400);
+  const pitchVelo = clampNullableNumber(input.pitchVelo, 30, 110);
+  const exitVelo = clampNullableNumber(input.exitVelo, 30, 130);
+  const sixtyTime = clampNullableNumber(input.sixtyTime, 5, 12);
+  const bats = sanitizeHandedness(input.bats, VALID_BATS);
+  const throwsHand = sanitizeHandedness(input.throws, VALID_THROWS);
+
   // All writes use the admin client (service role) so RLS never blocks the
   // first-write onboarding. Identity is already verified above via getUser().
   const admin = createAdminClient();
@@ -600,6 +644,14 @@ export async function completePlayerOnboarding(
       city,
       state,
       high_school_name: highSchoolName,
+      height_feet: heightFeet,
+      height_inches: heightInches,
+      weight_lbs: weightLbs,
+      bats,
+      throws: throwsHand,
+      pitch_velo: pitchVelo,
+      exit_velo: exitVelo,
+      sixty_time: sixtyTime,
       profile_completion_percent: profileCompletionPercent,
       // Privacy-first: NEVER auto-activate recruiting at onboarding.
       recruiting_activated: false,

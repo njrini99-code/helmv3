@@ -19,6 +19,7 @@ import {
   IconUsers,
 } from '@/components/icons';
 import { processTeamInvitation } from '@/app/baseball/actions/teams';
+import { completePlayerOnboarding } from '@/app/baseball/actions/onboarding';
 import {
   StepIndicator,
   slideVariants,
@@ -165,39 +166,41 @@ export default function BaseballPlayerOnboarding() {
     setError('');
 
     try {
+      // NOTE: profile_completion_percent only scores fields that are actually
+      // captured AND persisted via completePlayerOnboarding below — every
+      // field referenced here (secondaryPosition/city/state/bats/throws_/
+      // height/weight/velo/sixty) is part of that same upsert payload, so
+      // this score never overstates what got saved.
       let completionScore = 40;
-      if (secondaryPosition) completionScore += 5;
+      if (secondaryPosition) completionScore += 10;
+      if (city && state) completionScore += 10;
       if (bats && throws_) completionScore += 10;
       if (heightFeet && heightInches && weight) completionScore += 15;
-      if (pitchVelo || exitVelo || sixtyTime) completionScore += 20;
-      if (pitchVelo && exitVelo && sixtyTime) completionScore += 10;
+      if (pitchVelo || exitVelo || sixtyTime) completionScore += 10;
+      if (pitchVelo && exitVelo && sixtyTime) completionScore += 5;
 
-      const { error: updateError } = await supabase
-        .from('baseball_players')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          grad_year: gradYear,
-          city: city || null,
-          state: state || null,
-          primary_position: primaryPosition,
-          secondary_position: secondaryPosition || null,
-          bats: bats || null,
-          throws: throws_ || null,
-          height_feet: heightFeet,
-          height_inches: heightInches,
-          weight_lbs: weight ? parseInt(weight) : null,
-          pitch_velo: pitchVelo ? parseFloat(pitchVelo) : null,
-          exit_velo: exitVelo ? parseFloat(exitVelo) : null,
-          sixty_time: sixtyTime ? parseFloat(sixtyTime) : null,
-          player_type: playerType || undefined,
-          onboarding_completed: true,
-          profile_completion_percent: completionScore,
-        })
-        .eq('user_id', user.id);
+      const result = await completePlayerOnboarding({
+        playerType,
+        firstName,
+        lastName,
+        gradYear,
+        primaryPosition,
+        secondaryPosition: secondaryPosition || null,
+        city: city || null,
+        state: state || null,
+        bats: bats || null,
+        throws: throws_ || null,
+        heightFeet: heightFeet || null,
+        heightInches: heightInches || null,
+        weightLbs: weight ? parseInt(weight, 10) : null,
+        pitchVelo: pitchVelo ? parseFloat(pitchVelo) : null,
+        exitVelo: exitVelo ? parseFloat(exitVelo) : null,
+        sixtyTime: sixtyTime ? parseFloat(sixtyTime) : null,
+        profileCompletionPercent: completionScore,
+      });
 
-      if (updateError) {
-        setError(updateError.message);
+      if (!result.success) {
+        setError(result.error || 'Unable to complete your profile. Please try again.');
         setLoading(false);
         return;
       }
@@ -207,7 +210,7 @@ export default function BaseballPlayerOnboarding() {
         sessionStorage.removeItem('baseball_signup_returnTo');
         router.push(storedReturnTo);
       } else {
-        router.push('/baseball/player/today');
+        router.push(result.redirectTo || '/baseball/player/today');
       }
       router.refresh();
     } catch {
