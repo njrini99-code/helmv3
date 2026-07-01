@@ -261,7 +261,7 @@ done
 - [ ] Create GitHub Project: `Helm Engineering Control`.
 - [ ] Add custom fields.
 - [ ] Add views.
-- [ ] Add repo secret: `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`, uses a Pro/Max subscription) — or `ANTHROPIC_API_KEY` for API billing — only when ready.
+- [ ] Add one auth secret (the workflow accepts either, no edit needed): `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`, uses a Pro/Max subscription) or `ANTHROPIC_API_KEY` (API billing) — only when ready.
 - [ ] Add repo variable: `ENABLE_CLAUDE_CODE_ACTION=true` only after testing.
 - [ ] Confirm branch protections prevent direct pushes to `main`.
 - [ ] Confirm high-risk labels block the Claude workflow.

@@ -661,12 +661,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Illustrative only. The canonical, fully-guarded workflow is
+      # .github/workflows/claude-code.yml (unsafe-label precheck, auth guard,
+      # SHA-pinned actions). Copy from there, not from this snippet.
       - name: Run Claude Code
+        if: ${{ vars.ENABLE_CLAUDE_CODE_ACTION == 'true' }}
         uses: anthropics/claude-code-action@v1
         with:
-          # Claude Pro/Max subscription auth (generate with `claude setup-token`).
-          # Or use `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}` for API billing.
+          # Provide ONE: subscription token (`claude setup-token`) OR API key.
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
             --max-turns 10
             --append-system-prompt "Follow CLAUDE.md. Create a branch and PR. Do not push to main. For high-risk changes, stop and ask for human review. Always include a partner-readable summary."
