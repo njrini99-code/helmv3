@@ -11,19 +11,23 @@
 //   2. recentStats — their last few captured stat sessions (active captures),
 //                    source-labeled, so "Today" can show real recent activity.
 //   3. assignments — today's (and near-term upcoming) lift sessions for THIS
-//                    player, read from baseball_lift_sessions — the unified V11
-//                    model that both publishLiftDay and the Lifting-Lite
-//                    quick-assign bridge write into (lifting.ts). This is the same
-//                    source the player lift route + the CoachHelm engine consume,
-//                    so the daily loop, the lift route, and the coach board no
-//                    longer read three different tables.
+//                    player, read from helm_lifting_sessions — the unified Lab
+//                    table the W2-G rewire moved publishLiftDay materialization,
+//                    the Lifting-Lite quick-assign bridge (lifting.ts), and the
+//                    Lift & Check-in card (player-today-lift.ts) onto. Reading the
+//                    same table here keeps the daily loop's "Lifts Due" count in
+//                    sync with what the card actually shows instead of two
+//                    surfaces disagreeing on the same day's data (#456).
 //   4. readiness   — the player's own most-recent readiness check-in
-//                    (baseball_readiness_checkins + soreness map + bodyweight
+//                    (helm_lifting_readiness_checkins + soreness map + bodyweight
 //                    trend + staff availability) run through the SAME transparent
 //                    computeReadiness() the coach Readiness board uses. This puts
 //                    the readiness gate ON the daily loop (the whole point of the
 //                    "Today -> assignments/lift -> readiness gate" cycle) instead
 //                    of leaving it only on the coach /dashboard/readiness page.
+//                    Reads the unified Lab table (not the legacy
+//                    baseball_readiness_checkins) so a check-in submitted via the
+//                    Lift & Check-in card shows up here within one refresh.
 //
 // SELF ONLY: this read model resolves the current player from the auth session
 // and only ever returns THAT player's data. It does not accept a player id from
@@ -41,6 +45,11 @@
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
+import {
+  resolveBaseballLiftingOrg,
+  resolveMyBaseballAthleteId,
+} from '@/lib/lifting/resolve-baseball-context';
 import { buildSourceRef, type SourceRef } from '@/lib/baseball/source-record';
 import {
   buildStampedSourceTrust,
@@ -161,7 +170,7 @@ export interface PlayerTodayStat {
 }
 
 /**
- * A real lift session due for THIS player, read from baseball_lift_sessions.
+ * A real lift session due for THIS player, read from helm_lifting_sessions.
  * `isToday` distinguishes today's work from near-term upcoming so the daily view
  * can lead with what's due now. `sourceRef` cites the session row (source ->
  * signal -> action: the player can open the session to log it).
@@ -296,7 +305,7 @@ export interface PlayerTodayReadModel {
   authorized: boolean;
   schedule: PlayerTodayEvent[];
   recentStats: PlayerTodayStat[];
-  /** Today's + near-term lift sessions for this player (baseball_lift_sessions). */
+  /** Today's + near-term lift sessions for this player (helm_lifting_sessions). */
   assignments: PlayerTodayAssignmentsFeed;
   /**
    * Coach-assigned actions (the player-side of source -> signal -> action). Reads
@@ -508,6 +517,16 @@ export async function getPlayerToday(
   // hand-written domain contracts below.
   const db = supabase as UntypedClient;
 
+  // Resolve Helm Lifting Lab context (org + this player's athlete id) once, up
+  // front, so the Lifts Due + Readiness gate queries below read the SAME
+  // unified helm_lifting_* tables the Lift & Check-in card
+  // (player-today-lift.ts) and the write paths (lifting.ts, lifting-v11.ts)
+  // already read from / write to (#456). A team with no lifting organization
+  // configured, or a player not yet seeded in helm_lifting_athletes, degrades
+  // to an honest empty feed below rather than an error.
+  const liftCtx = await resolveBaseballLiftingOrg(teamId);
+  const athleteId = liftCtx ? await resolveMyBaseballAthleteId(liftCtx.organizationId) : null;
+
   const [
     eventsRes,
     statsRes,
@@ -537,20 +556,24 @@ export async function getPlayerToday(
       .order('session_date', { ascending: false })
       .limit(Math.min(Math.max(recentStatLimit, 1), 25)),
     // Assignments: this player's open lift sessions from today through the
-    // near-term horizon. Same table publishLiftDay + the quick-assign bridge
-    // write, and the same table getPlayerLiftHome / the engine read — one source.
-    db
-      .from('baseball_lift_sessions')
-      .select(
-        'id, title, scheduled_date, status, day_type, baseball_context, estimated_minutes',
-      )
-      .eq('player_id', playerId)
-      .eq('team_id', teamId)
-      .gte('scheduled_date', day)
-      .lte('scheduled_date', horizonYmd)
-      .in('status', ['assigned', 'started', 'modified'])
-      .order('scheduled_date', { ascending: true })
-      .limit(20),
+    // near-term horizon. Reads helm_lifting_sessions — the unified Lab table
+    // publishLiftDay materializes into and the Lift & Check-in card
+    // (player-today-lift.ts) reads — so "Lifts Due" agrees with the card (#456).
+    // Degrades to an honest empty result when the team has no lifting
+    // organization or this player has no helm_lifting_athletes row yet.
+    liftCtx && athleteId
+      ? fromUntyped(supabase, 'helm_lifting_sessions')
+          .select(
+            'id, title, scheduled_date, status, day_type, sport_context, estimated_minutes',
+          )
+          .eq('athlete_id', athleteId)
+          .eq('organization_id', liftCtx.organizationId)
+          .gte('scheduled_date', day)
+          .lte('scheduled_date', horizonYmd)
+          .in('status', ['assigned', 'started', 'modified'])
+          .order('scheduled_date', { ascending: true })
+          .limit(20)
+      : Promise.resolve({ data: [], error: null }),
     // Coach-assigned actions (the PLAYER side of source -> signal -> action). The
     // staff Signal Inbox converts a signal into a baseball_actions row assigned to
     // a player; this is the read that finally surfaces it ON the player. RLS
@@ -559,9 +582,12 @@ export async function getPlayerToday(
     // a staff_only action. We additionally filter to the player-facing action
     // types + active statuses + non-staff visibility as defense in depth, and
     // exclude lift_modification: its conversion (signals.ts materializeActionObject
-    // case 'lift_modification') bridges into a baseball_lift_sessions row, which the
-    // Lifts-Due feed above (status IN ['assigned','started','modified']) surfaces —
-    // so it shows up under Lifts Due, not here, and never double-shows.
+    // case 'lift_modification') bridges into a legacy baseball_lift_sessions row.
+    // NOTE (#456 follow-up): the Lifts-Due feed above now reads the unified
+    // helm_lifting_sessions table, so a lift_modification action no longer
+    // surfaces there either until signals.ts is rewired onto the same table —
+    // tracked separately; still excluded here either way (never double-shows,
+    // never a staff-internal action leaking onto the player).
     db
       .from('baseball_actions')
       .select(
@@ -576,17 +602,21 @@ export async function getPlayerToday(
       .order('created_at', { ascending: false })
       .limit(30),
     // Readiness: this player's most-recent check-in (any day) so the gate can show
-    // a band + flag staleness honestly. RLS scopes to self.
-    db
-      .from('baseball_readiness_checkins')
-      .select(
-        'id, check_date, sleep_hours, energy_level, stress_level, soreness_level, arm_status, lower_body_status, illness_flag',
-      )
-      .eq('player_id', playerId)
-      .eq('team_id', teamId)
-      .order('check_date', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    // a band + flag staleness honestly. Reads helm_lifting_readiness_checkins —
+    // the unified Lab table submitReadinessCheckin (lifting.ts) writes and the
+    // Lift & Check-in card reads — so a submitted check-in shows up on the
+    // readiness gate within one refresh (#456). RLS scopes to self.
+    liftCtx && athleteId
+      ? fromUntyped(supabase, 'helm_lifting_readiness_checkins')
+          .select(
+            'id, checkin_date, sleep_quality, energy_level, stress_level, soreness_overall, lower_body_status, illness_flag, notes',
+          )
+          .eq('athlete_id', athleteId)
+          .eq('organization_id', liftCtx.organizationId)
+          .order('checkin_date', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
     // My Tasks (spec line 81): baseball_task_assignments JOIN baseball_tasks for
     // this player — active assignments only (not completed/cancelled). The typed
     // client covers these tables (they are in database.ts). We join via a
@@ -602,14 +632,16 @@ export async function getPlayerToday(
     // Player-visible coach notes (spec line 85): baseball_coach_notes where
     // scope = 'player_visible' AND player_id = me AND team_id = teamId AND
     // NOT soft-deleted (deleted_at is null). Staff-only scopes are NEVER shown.
+    // Real columns only (verified against migration 20260624000900 /
+    // BaseballCoachNoteRow): the table has no title, pinned, or archived_at
+    // column — selecting/filtering on those made this query fail outright (#507).
     supabase
       .from('baseball_coach_notes')
-      .select('id, title, body, created_at, pinned')
+      .select('id, body, created_at')
       .eq('player_id', playerId)
       .eq('team_id', teamId)
       .eq('scope', 'player_visible')
-      .is('archived_at', null)
-      .order('pinned', { ascending: false })
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(5),
     // Practice group (spec line 84): today's published practice plan for the
@@ -744,7 +776,7 @@ export async function getPlayerToday(
       scheduled_date: string;
       status: string;
       day_type: string | null;
-      baseball_context: string | null;
+      sport_context: string | null;
       estimated_minutes: number | null;
     }>;
     const items: PlayerTodayAssignment[] = rows.map((r) => ({
@@ -753,7 +785,7 @@ export async function getPlayerToday(
       scheduledDate: r.scheduled_date,
       status: r.status,
       dayType: r.day_type,
-      baseballContext: r.baseball_context,
+      baseballContext: r.sport_context,
       estimatedMinutes: r.estimated_minutes,
       isToday: r.scheduled_date === day,
       // The lift session row is the source object (source -> signal -> action:
@@ -865,24 +897,43 @@ export async function getPlayerToday(
   } else {
     const checkin = (checkinRes?.data ?? null) as {
       id: string;
-      check_date: string;
-      sleep_hours: number | null;
+      checkin_date: string;
+      sleep_quality: number | null;
       energy_level: number | null;
       stress_level: number | null;
-      soreness_level: number | null;
-      arm_status: 'fresh' | 'normal' | 'tight' | 'sore' | 'pain' | null;
+      soreness_overall: number | null;
       lower_body_status: number | null;
       illness_flag: boolean | null;
+      notes: string | null;
     } | null;
 
     if (checkin) {
+      // helm_lifting_readiness_checkins has no dedicated arm_status column;
+      // submitReadinessCheckin (lifting.ts) encodes it into notes as
+      // "arm_status: <value>" on write — extract it the same way the Lift &
+      // Check-in card's adapter (adaptHelmReadinessCheckin) does.
+      type ArmStatus = 'fresh' | 'normal' | 'tight' | 'sore' | 'pain' | null;
+      let armStatus: ArmStatus = null;
+      if (checkin.notes) {
+        const armMatch = checkin.notes.match(/arm_status:\s*(fresh|normal|tight|sore|pain)/i);
+        if (armMatch?.[1]) {
+          armStatus = armMatch[1].toLowerCase() as ArmStatus;
+        }
+      }
+      // sleep_hours -> sleep_quality was a lossy 1-5 quintile mapping on write
+      // (submitReadinessCheckin); reverse it the same way the adapter does.
+      const sleepHours = checkin.sleep_quality != null ? checkin.sleep_quality * 2 : null;
+
       // Enrich with the same signals the coach board uses: the soreness map for
       // this check-in, a 7-day bodyweight trend, and active staff availability.
       // All best-effort: a missing enrichment read degrades the band's inputs to
       // null (computeReadiness stays honest) rather than failing the daily loop.
+      // The soreness map is keyed off THIS checkin's id, so it reads the same
+      // unified helm_lifting_soreness_maps table the checkin now lives in.
+      // Bodyweight + availability remain on their existing baseball_* tables —
+      // those are player-keyed, not part of the W2-G lifting/readiness rewire.
       const [soreRes, bwRes, availRes] = await Promise.all([
-        db
-          .from('baseball_soreness_maps')
+        fromUntyped(supabase, 'helm_lifting_soreness_maps')
           .select('body_region, severity')
           .eq('checkin_id', checkin.id),
         db
@@ -931,13 +982,16 @@ export async function getPlayerToday(
 
       const comp = computeReadiness({
         playerId,
-        checkDate: checkin.check_date,
+        checkDate: checkin.checkin_date,
         today: day,
-        sleepHours: checkin.sleep_hours,
+        sleepHours,
         energyLevel: checkin.energy_level,
         stressLevel: checkin.stress_level,
-        sorenessLevel: checkin.soreness_level,
-        armStatus: checkin.arm_status,
+        // soreness_overall is written 1-5 by submitReadinessCheckin (same
+        // semantics as the legacy 1-5 soreness_level — see
+        // adaptHelmReadinessCheckin), so no rescale is needed here.
+        sorenessLevel: checkin.soreness_overall,
+        armStatus,
         lowerBodyStatus: checkin.lower_body_status,
         illnessFlag: Boolean(checkin.illness_flag),
         maxSorenessSeverity: maxSeverity,
@@ -950,7 +1004,7 @@ export async function getPlayerToday(
       readiness = {
         available: true,
         hasEverChecked: true,
-        submittedToday: checkin.check_date === day,
+        submittedToday: checkin.checkin_date === day,
         band: comp.band,
         bandLabel: readinessBandLabel(comp.band),
         tone: readinessBandTone(comp.band),
@@ -959,9 +1013,9 @@ export async function getPlayerToday(
         stale: comp.stale,
         confidence: comp.confidence,
         suggestedAction: comp.suggested_action,
-        checkDate: checkin.check_date,
+        checkDate: checkin.checkin_date,
         note:
-          checkin.check_date === day
+          checkin.checkin_date === day
             ? 'Your readiness for today.'
             : 'Based on your last check-in — submit a new one for today.',
       };
@@ -1034,17 +1088,17 @@ export async function getPlayerToday(
   } else {
     const noteRows = (coachNotesRes?.data ?? []) as Array<{
       id: string;
-      title: string | null;
       body: string;
       created_at: string;
-      pinned: boolean;
     }>;
+    // baseball_coach_notes has no title/pinned columns — always render an
+    // honest null/false rather than a value the table never actually stores.
     const noteItems: PlayerTodayCoachNote[] = noteRows.map((n) => ({
       id: n.id,
       body: n.body,
-      title: n.title,
+      title: null,
       createdAt: n.created_at,
-      pinned: n.pinned,
+      pinned: false,
     }));
     coachNotes = {
       available: true,
