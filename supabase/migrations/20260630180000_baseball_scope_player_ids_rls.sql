@@ -1,35 +1,20 @@
 -- #406 — Canonicalize staff player-scope enforcement on scope_player_ids.
-
-UPDATE public.baseball_team_coach_staff
-SET scope_player_ids = sub.ids
-FROM (
-  SELECT
-    tcs.id,
-    CASE
-      WHEN jsonb_typeof(tcs.player_scope) = 'object'
-           AND tcs.player_scope ? 'player_ids'
-           AND jsonb_typeof(tcs.player_scope->'player_ids') = 'array'
-           AND jsonb_array_length(tcs.player_scope->'player_ids') > 0
-        THEN ARRAY(
-          SELECT jsonb_array_elements_text(tcs.player_scope->'player_ids')::uuid
-        )
-      WHEN jsonb_typeof(tcs.player_scope) = 'array'
-           AND jsonb_array_length(tcs.player_scope) > 0
-        THEN ARRAY(
-          SELECT jsonb_array_elements_text(tcs.player_scope)::uuid
-        )
-      ELSE NULL::uuid[]
-    END AS ids
-  FROM public.baseball_team_coach_staff tcs
-  WHERE tcs.scope_player_ids IS NULL
-    AND tcs.player_scope IS NOT NULL
-) sub
-WHERE baseball_team_coach_staff.id = sub.id
-  AND sub.ids IS NOT NULL
-  AND cardinality(sub.ids) > 0;
-
-COMMENT ON COLUMN public.baseball_team_coach_staff.player_scope IS
-  'LEGACY compatibility jsonb — superseded by scope_player_ids. Retained for audit; RLS reads scope_player_ids only.';
+--
+-- ADAPTED to live schema (2026-07-01): the original authored version referenced
+-- legacy columns `player_scope` and `position_scope` on
+-- baseball_team_coach_staff, neither of which exists on the live/deployed
+-- database (only `scope_player_ids` and `scope_group_ids` do — the
+-- prod_public_baseline never added player_scope/position_scope). The original
+-- version therefore failed to apply (SQLSTATE 42703). This version:
+--   * drops the player_scope -> scope_player_ids backfill entirely (there is no
+--     player_scope column and no legacy data to migrate; scope_player_ids is
+--     already the canonical column), and
+--   * removes the position_scope fallback branch from the function.
+-- Intent preserved: a scoped (non-head) assistant coach only sees players in
+-- their scope_player_ids; suspended/removed/invited staff see nothing.
+-- Applied to prod via MCP on 2026-07-01 in this exact form.
+--
+-- ADDITIVE / re-runnable: CREATE OR REPLACE only. No destructive DDL.
 
 CREATE OR REPLACE FUNCTION public.can_view_baseball_player(
   p_team_id uuid,
@@ -80,17 +65,7 @@ BEGIN
     RETURN p_player_id = ANY (v_staff.scope_player_ids);
   END IF;
 
-  IF v_staff.position_scope IS NOT NULL AND cardinality(v_staff.position_scope) > 0 THEN
-    RETURN EXISTS (
-      SELECT 1
-      FROM public.baseball_players bp
-      JOIN public.baseball_team_members btm ON btm.player_id = bp.id
-      WHERE bp.id = p_player_id
-        AND btm.team_id = p_team_id
-        AND bp.primary_position = ANY (v_staff.position_scope)
-    );
-  END IF;
-
+  -- No explicit player scope set -> full team visibility for active staff.
   RETURN true;
 END;
 $$;
