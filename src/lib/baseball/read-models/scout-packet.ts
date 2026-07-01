@@ -302,13 +302,16 @@ export async function assembleScoutPacket(
       const { data: vids } = await supabase
         .from('baseball_video_events')
         .select(
-          'id, clip_title, source_label, source_vendor, source_confidence, external_video_url, thumbnail_url, review_status, visibility',
+          'id, clip_title, source_label, source_vendor, source_confidence, video_url, thumbnail_url, review_status, visibility',
         )
         .eq('player_id', args.playerId)
         .eq('team_id', args.teamId)
         .limit(24);
       for (const v of (vids as Array<Record<string, unknown>> | null) ?? []) {
-        const url = (v.external_video_url as string | null) ?? null;
+        // baseball_video_events has NO video_id / external_video_url columns —
+        // the real shareable-link column is video_url (verified against the
+        // live schema; see the enclosing comment block above).
+        const url = (v.video_url as string | null) ?? null;
         if (!url) continue; // a scout can only open an external link
         if (v.review_status !== 'approved') continue; // staff-approved only
         // Row floor: never surface a staff_only clip to a scout.

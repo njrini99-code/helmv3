@@ -999,10 +999,17 @@ async function assembleFullSections(
           v.clip_title?.trim() ||
           v.source_label?.trim() ||
           'Video clip';
+        // BaseballVideoLink types video_id/external_video_url (the
+        // hand-written, not-yet-applied 0080/0220 shape), but the LIVE
+        // baseball_video_events table has neither — the real shareable-link
+        // column is video_url. Read the raw row directly so the passport
+        // media section stops always rendering url:null.
+        const videoUrl =
+          (v as unknown as { video_url?: string | null }).video_url ?? null;
         return {
           id: v.id,
           title,
-          url: v.external_video_url ?? null,
+          url: videoUrl,
           thumbnailUrl: v.thumbnail_url ?? null,
           capturedAt: v.captured_at ?? null,
           durationSeconds:
