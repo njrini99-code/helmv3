@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACTIVE_BASEBALL_TEAM_COOKIE } from '@/lib/baseball/active-context-shared';
+import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
 
 /**
  * STAFF_CAPABILITY_ROUTES — the middleware mirror of every nav-registry entry
@@ -250,11 +251,32 @@ async function checkRouteAuthorization(
     };
   }
 
-  if (isAcademicsRoute && programType !== 'juco') {
-    return {
-      authorized: false,
-      redirectTo: COACH_HOME,
-    };
+  if (isAcademicsRoute) {
+    // Academics is a capability-gated feature module (`can_view_academics`,
+    // enforced above), not a program-type-only surface (fixes #508 — college
+    // programs were hard-blocked here even though nav + program-type
+    // defaults enable Academics for them). Every program type can turn the
+    // module on/off via `baseball_program_settings.academics_module_enabled`.
+    // College/JUCO default it ON, HS/showcase/academy/club default it OFF,
+    // but a team can override that default either way, so read the team's
+    // actual persisted setting instead of hard-coding a single allowed
+    // program type. Falls back to the program-type default only when the
+    // team has no settings row yet (matches getProgramSettings' lazy-create
+    // behavior).
+    const { data: settings } = await supabase
+      .from('baseball_program_settings')
+      .select('academics_module_enabled')
+      .eq('team_id', String(staffRow.team_id))
+      .maybeSingle();
+    const raw = (settings as { academics_module_enabled?: unknown } | null)?.academics_module_enabled;
+    const academicsEnabled =
+      typeof raw === 'boolean'
+        ? raw
+        : getDefaultProgramSettings(programType ?? 'college').academics_module_enabled;
+
+    if (!academicsEnabled) {
+      return { authorized: false, redirectTo: COACH_HOME };
+    }
   }
 
   return { authorized: true };

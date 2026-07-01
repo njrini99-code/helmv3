@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getSessionProfile, type CoachType } from '@/lib/auth/session';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import { getDefaultProgramSettings } from '@/lib/baseball/program-type-variants';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import {
   BASEBALL_PROGRAM_TYPES,
@@ -83,12 +84,40 @@ export async function requireShowcaseOrgRoute(redirectTo = '/baseball/dashboard/
   });
 }
 
+/**
+ * Academics is a capability-gated feature module (`can_view_academics`), not a
+ * program-type-only surface (fixes #508 — college programs were hard-blocked
+ * even though nav + program-type defaults enable Academics for them). Every
+ * program type can turn the module on or off via
+ * `baseball_program_settings.academics_module_enabled`. College/JUCO default
+ * the module ON, HS/showcase/academy/club default it OFF, but a team can
+ * override that default either way, so this guard reads the team's actual
+ * persisted setting rather than hard-coding a single allowed program type.
+ * Falls back to the program-type default only when the team has no settings
+ * row yet (matches getProgramSettings' lazy-create behavior).
+ */
 export async function requireAcademicsCoachRoute(redirectTo = '/baseball/dashboard/command-center') {
-  return requireBaseballCoachRoute({
-    allowedCoachTypes: ['juco'],
-    allowedProgramTypes: ['juco'],
-    redirectTo,
-  });
+  const session = await requireBaseballCoachRoute({ redirectTo });
+
+  const ctx = await getActiveBaseballContext();
+  if (!ctx?.activeTeamId) redirect(redirectTo);
+
+  const programType = await getActiveProgramType();
+  const supabase = await createClient();
+  const { data } = await fromUntyped(supabase, 'baseball_program_settings')
+    .select('academics_module_enabled')
+    .eq('team_id', ctx.activeTeamId)
+    .maybeSingle();
+
+  const raw = (data as { academics_module_enabled?: unknown } | null)?.academics_module_enabled;
+  const academicsEnabled =
+    typeof raw === 'boolean'
+      ? raw
+      : getDefaultProgramSettings(programType ?? 'college').academics_module_enabled;
+
+  if (!academicsEnabled) redirect(redirectTo);
+
+  return session;
 }
 
 export async function requireBaseballPlayerRoute(options?: {
