@@ -11,18 +11,24 @@ updated.
 
 ## 1. Status classification — hard gate vs. advisory
 
+The four **required contexts** actually enforced on `main` are: `all`,
+`Smoke checks`, `CodeRabbit`, `CodeQL`. Everything below labeled "Hard gate"
+rolls up into one of those. (The context name `all` is shared by both the
+`CI / all` and `Review Gate / all` aggregate jobs, so both must pass.)
+
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
-| `build` | `ci.yml` | typecheck, lint, vitest, `next build` | **Hard gate** |
-| `Supabase lint + RLS tests` | `ci.yml` | migration replay, `supabase db lint`, RLS test suite | **Hard gate** |
-| `Review Gate / all` | `review-gate.yml` | aggregates ast-grep, semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint | **Hard gate** |
+| `all` (CI) | `ci.yml` | aggregate: DB-types drift, schema invariants, feature knowledge, typecheck, ESLint, lint-ratchet, unit tests, business contracts, `next build`, route hygiene, **Supabase lint + RLS tests** | **Hard gate** (required context `all`) |
+| `all` (Review Gate) | `review-gate.yml` | aggregate: ast-grep, semgrep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint | **Hard gate** (required context `all`) |
+| `Smoke checks` | `playwright.yml` | build-only smoke: `npm ci` + `next build` (no E2E) | **Hard gate** |
 | `CodeRabbit` | CodeRabbit GitHub App | assertive line-level review + blocking custom checks (`.coderabbit.yaml`) | **Hard gate** |
-| `Greptile` | Greptile GitHub App | whole-codebase review + hard rules (`.greptile/instructions.md`) | **Hard gate** |
-| `Playwright (chromium)` / `picker-screenshots` | `playwright.yml` | E2E suite — currently wrapped with a soft `\|\| echo` shim during suite-stabilization | Advisory (promote to hard gate once green for a week — see `.github/branch-protection.md`) |
-| `lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; a11y + CLS are hard errors *within the job*, but the check itself is advisory until added as required | Advisory (for now) |
+| `CodeQL` | `codeql.yml` | code-scanning security analysis | **Hard gate** |
+| `Greptile Review` | Greptile GitHub App | whole-codebase review + hard rules (`.greptile/instructions.md`) | Advisory — *not* a required context; Greptile skips `dependabot` PRs, so requiring it would block the bot flow. CodeRabbit is the blocking AI reviewer. |
+| `Playwright (chromium)` / `Course picker screenshots` | `playwright.yml` | full E2E suite — advisory until stable for a week (see `.github/branch-protection.md`) | Advisory |
+| `ci/circleci: lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; a11y + CLS are hard errors *within the job*, but the check itself is advisory | Advisory |
 | `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, only relevant when `ios/**` / `capacitor.config.ts` changed | Advisory unless the PR touches iOS |
-| CodeQL | `codeql.yml` | weekly security scan | Advisory |
-| Vercel preview deploy | Vercel | preview build/deploy status | Advisory (informational; Lighthouse depends on it reaching `READY`) |
+| `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | Advisory |
+| `Vercel` / `Vercel Preview Comments` | Vercel | preview build/deploy status | Advisory (informational; Lighthouse depends on it reaching `READY`) |
 
 ## 2. Expected wait windows
 
