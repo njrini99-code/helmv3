@@ -4,208 +4,73 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button, IconButton } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { toast } from '@/components/ui/sonner';
 
-interface PlayerSettings {
-  id?: string;
-  player_id?: string;
-  show_full_name?: boolean;
-  show_location?: boolean;
-  show_school?: boolean;
-  show_contact_email?: boolean;
-  show_phone?: boolean;
-  show_social_links?: boolean;
-  show_height_weight?: boolean;
-  show_position?: boolean;
-  show_grad_year?: boolean;
-  show_bats_throws?: boolean;
-  show_videos?: boolean;
-  show_dream_schools?: boolean;
-  show_calendar?: boolean;
-  show_stats?: boolean;
-  show_gpa?: boolean;
-  show_test_scores?: boolean;
-  allow_messages?: boolean;
-  show_in_discover?: boolean;
+/**
+ * Only the privacy toggles that map to real columns on
+ * `baseball_player_settings` (profile_visibility, show_academics,
+ * show_contact_info, show_dream_schools). The form previously rendered ~18
+ * toggles — none of which existed as columns — so every save failed on an
+ * "unknown column" error. Toggles without a backing column were removed rather
+ * than left as controls that silently do nothing.
+ */
+export interface PlayerPrivacySettings {
+  show_contact_info: boolean;
+  show_academics: boolean;
+  show_dream_schools: boolean;
 }
 
 interface PrivacySettingsFormProps {
   playerId: string;
-  initialSettings?: PlayerSettings;
-  onSave?: (settings: PlayerSettings) => void;
+  initialSettings?: Partial<PlayerPrivacySettings>;
+  onSave?: (settings: PlayerPrivacySettings) => void;
 }
 
-interface SettingGroup {
-  title: string;
+const SETTING_ITEMS: {
+  key: keyof PlayerPrivacySettings;
+  label: string;
   description: string;
-  settings: {
-    key: keyof PlayerSettings;
-    label: string;
-    description: string;
-  }[];
-}
-
-const SETTING_GROUPS: SettingGroup[] = [
+}[] = [
   {
-    title: 'Profile Visibility',
-    description: 'Control what information appears on your public profile',
-    settings: [
-      {
-        key: 'show_full_name',
-        label: 'Show Full Name',
-        description: 'Display your full name (otherwise shows first name and last initial)',
-      },
-      {
-        key: 'show_location',
-        label: 'Show Location',
-        description: 'Display your city and state',
-      },
-      {
-        key: 'show_school',
-        label: 'Show School',
-        description: 'Display your high school or current school',
-      },
-      {
-        key: 'show_position',
-        label: 'Show Position',
-        description: 'Display your primary and secondary positions',
-      },
-      {
-        key: 'show_grad_year',
-        label: 'Show Graduation Year',
-        description: 'Display your class year',
-      },
-    ],
+    key: 'show_contact_info',
+    label: 'Show Contact Info',
+    description: 'Display your email and phone on your public profile so coaches can reach you directly',
   },
   {
-    title: 'Physical Information',
-    description: 'Control visibility of physical stats',
-    settings: [
-      {
-        key: 'show_height_weight',
-        label: 'Show Height & Weight',
-        description: 'Display your physical measurements',
-      },
-      {
-        key: 'show_bats_throws',
-        label: 'Show Bats/Throws',
-        description: 'Display your batting and throwing preferences',
-      },
-    ],
+    key: 'show_academics',
+    label: 'Show Academics',
+    description: 'Display your GPA and test scores',
   },
   {
-    title: 'Academic Information',
-    description: 'Control visibility of academic data',
-    settings: [
-      {
-        key: 'show_gpa',
-        label: 'Show GPA',
-        description: 'Display your grade point average',
-      },
-      {
-        key: 'show_test_scores',
-        label: 'Show Test Scores',
-        description: 'Display SAT/ACT scores',
-      },
-    ],
-  },
-  {
-    title: 'Contact Information',
-    description: 'Control who can see your contact details',
-    settings: [
-      {
-        key: 'show_contact_email',
-        label: 'Show Email Address',
-        description: 'Display your email on your public profile',
-      },
-      {
-        key: 'show_phone',
-        label: 'Show Phone Number',
-        description: 'Display your phone number on your public profile',
-      },
-      {
-        key: 'show_social_links',
-        label: 'Show Social Media',
-        description: 'Display your Twitter/Instagram handles',
-      },
-    ],
-  },
-  {
-    title: 'Content Visibility',
-    description: 'Control what content appears on your profile',
-    settings: [
-      {
-        key: 'show_videos',
-        label: 'Show Videos',
-        description: 'Display your highlight videos and clips',
-      },
-      {
-        key: 'show_stats',
-        label: 'Show Statistics',
-        description: 'Display your performance statistics',
-      },
-      {
-        key: 'show_dream_schools',
-        label: 'Show Dream Schools',
-        description: 'Display your list of top college choices',
-      },
-      {
-        key: 'show_calendar',
-        label: 'Show Calendar',
-        description: 'Display your schedule and availability',
-      },
-    ],
-  },
-  {
-    title: 'Recruiting Settings',
-    description: 'Control recruiting-related visibility',
-    settings: [
-      {
-        key: 'show_in_discover',
-        label: 'Appear in Discover',
-        description: 'Allow coaches to find you in the Discover section',
-      },
-      {
-        key: 'allow_messages',
-        label: 'Allow Messages',
-        description: 'Allow coaches to send you direct messages',
-      },
-    ],
+    key: 'show_dream_schools',
+    label: 'Show Dream Schools',
+    description: 'Display your list of top college choices',
   },
 ];
+
+// Defaults for a player who has never saved settings. Kept consistent with the
+// read side (public profile treats show_dream_schools !== false as visible);
+// contact info defaults to hidden since it's the most sensitive.
+const DEFAULT_SETTINGS: PlayerPrivacySettings = {
+  show_contact_info: false,
+  show_academics: true,
+  show_dream_schools: true,
+};
 
 export function PrivacySettingsForm({
   playerId,
   initialSettings,
   onSave,
 }: PrivacySettingsFormProps) {
-  const [settings, setSettings] = useState<PlayerSettings>(
-    initialSettings || {
-      show_full_name: true,
-      show_location: true,
-      show_school: true,
-      show_contact_email: false,
-      show_phone: false,
-      show_social_links: true,
-      show_height_weight: true,
-      show_position: true,
-      show_grad_year: true,
-      show_bats_throws: true,
-      show_videos: true,
-      show_dream_schools: true,
-      show_calendar: false,
-      show_stats: true,
-      show_gpa: true,
-      show_test_scores: true,
-      allow_messages: true,
-      show_in_discover: true,
-    }
-  );
+  const [settings, setSettings] = useState<PlayerPrivacySettings>({
+    show_contact_info: initialSettings?.show_contact_info ?? DEFAULT_SETTINGS.show_contact_info,
+    show_academics: initialSettings?.show_academics ?? DEFAULT_SETTINGS.show_academics,
+    show_dream_schools: initialSettings?.show_dream_schools ?? DEFAULT_SETTINGS.show_dream_schools,
+  });
 
   const [saving, setSaving] = useState(false);
 
-  const handleToggle = (key: keyof PlayerSettings) => {
+  const handleToggle = (key: keyof PlayerPrivacySettings) => {
     setSettings((prev) => ({
       ...prev,
       [key]: !prev[key],
@@ -216,8 +81,17 @@ export function PrivacySettingsForm({
     setSaving(true);
     const supabase = createClient();
 
+    // Write ONLY the real privacy columns. Using the typed client (not
+    // fromUntyped) means an unknown column would now be a compile error.
+    // profile_visibility is deliberately left untouched — it gates public
+    // access and is managed elsewhere.
+    const payload = {
+      show_contact_info: settings.show_contact_info,
+      show_academics: settings.show_academics,
+      show_dream_schools: settings.show_dream_schools,
+    };
+
     try {
-      // Check if settings exist
       const { data: existing } = await supabase
         .from('baseball_player_settings')
         .select('id')
@@ -225,17 +99,15 @@ export function PrivacySettingsForm({
         .maybeSingle();
 
       if (existing) {
-        // Update existing
-        const { error } = await fromUntyped(supabase, 'baseball_player_settings')
-          .update(settings)
+        const { error } = await supabase
+          .from('baseball_player_settings')
+          .update(payload)
           .eq('player_id', playerId);
-
         if (error) throw error;
       } else {
-        // Insert new
-        const { error } = await fromUntyped(supabase, 'baseball_player_settings')
-          .insert({ ...settings, player_id: playerId });
-
+        const { error } = await supabase
+          .from('baseball_player_settings')
+          .insert({ ...payload, player_id: playerId });
         if (error) throw error;
       }
 
@@ -251,39 +123,41 @@ export function PrivacySettingsForm({
 
   return (
     <div className="space-y-6">
-      {SETTING_GROUPS.map((group) => (
-        <Card key={group.title} className="overflow-hidden">
-          <div className="relative p-6 border-b border-warm-200">
-            <h3 className="text-lg font-semibold text-warm-900 mb-1">
-              {group.title}
-            </h3>
-            <p className="text-sm leading-relaxed text-warm-500">{group.description}</p>
-          </div>
+      <Card className="overflow-hidden">
+        <div className="relative p-6 border-b border-warm-200">
+          <h3 className="text-lg font-semibold text-warm-900 mb-1">Profile Visibility</h3>
+          <p className="text-sm leading-relaxed text-warm-500">
+            Control what information appears on your public profile
+          </p>
+        </div>
 
-          <div className="relative p-6 space-y-4 bg-warm-50/50">
-            {group.settings.map((setting) => (
+        <div className="relative p-6 space-y-4 bg-warm-50/50">
+          {SETTING_ITEMS.map((setting) => (
+            <div
+              key={setting.key}
+              className="relative flex items-start justify-between gap-4 p-4 glass-subtle rounded-lg overflow-clip"
+            >
               <div
-                key={setting.key}
-                className="relative flex items-start justify-between gap-4 p-4 glass-subtle rounded-lg overflow-clip"
-              >
-                <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-                  }}
-                />
-                <div className="relative flex-1">
-                  <label
-                    htmlFor={setting.key}
-                    className="text-sm font-medium text-warm-900 block mb-1 cursor-pointer"
-                  >
-                    {setting.label}
-                  </label>
-                  <p className="text-xs text-warm-500">{setting.description}</p>
-                </div>
+                className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+                }}
+              />
+              <div className="relative flex-1">
+                <label
+                  htmlFor={setting.key}
+                  className="text-sm font-medium text-warm-900 block mb-1 cursor-pointer"
+                >
+                  {setting.label}
+                </label>
+                <p className="text-xs text-warm-500">{setting.description}</p>
+              </div>
 
-                {/* Toggle Switch */}
-                <div className="relative">
-                <IconButton variant="primary" aria-label={setting.label}
+              {/* Toggle Switch */}
+              <div className="relative">
+                <IconButton
+                  variant="primary"
+                  aria-label={setting.label}
                   id={setting.key}
                   type="button"
                   role="switch"
@@ -303,12 +177,11 @@ export function PrivacySettingsForm({
                     `}
                   />
                 </IconButton>
-                </div>
               </div>
-            ))}
-          </div>
-        </Card>
-      ))}
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {/* Save Button */}
       <div className="flex justify-end">
