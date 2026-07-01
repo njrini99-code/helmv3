@@ -127,7 +127,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
         teamIds.length > 0
           ? supabase
               .from('baseball_team_coach_staff')
-              .select('is_primary, role, baseball_coaches!inner(id, first_name, last_name, email, avatar_url)')
+              .select('is_primary, role, baseball_coaches!inner(id, full_name, email, avatar_url)')
               .in('team_id', teamIds)
           : Promise.resolve({ data: null }),
         teamIds.length > 0
@@ -148,12 +148,12 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
       }>;
       const sortedStaff = [...rawStaff].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
       sortedStaff.forEach((row) => {
-        const c = row.baseball_coaches as { id: string; first_name: string | null; last_name: string | null; email: string | null; avatar_url: string | null } | null;
+        const c = row.baseball_coaches as { id: string; full_name: string | null; email: string | null; avatar_url: string | null } | null;
         if (!c || seenCoaches.has(c.id)) return;
         seenCoaches.add(c.id);
         staffList.push({
           id: c.id,
-          name: `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Coach',
+          name: c.full_name?.trim() || 'Coach',
           title: row.is_primary ? 'Head Coach' : (row.role ?? 'Assistant Coach'),
           avatarUrl: c.avatar_url,
           email: c.email,

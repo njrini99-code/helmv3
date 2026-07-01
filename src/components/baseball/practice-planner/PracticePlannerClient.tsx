@@ -266,7 +266,7 @@ export function PracticePlannerClient() {
 
     const { data: coaches } = await supabase
       .from('baseball_team_coach_staff')
-      .select('coach:baseball_coaches(id, first_name, last_name)')
+      .select('coach:baseball_coaches(id, full_name)')
       .eq('team_id', selectedTeamId);
 
     const staffList: StaffCoach[] = (coaches ?? [])
@@ -274,7 +274,7 @@ export function PracticePlannerClient() {
       .map((c: any) => {
         const co = Array.isArray(c.coach) ? c.coach[0] : c.coach;
         if (!co) return null;
-        const name = [co.first_name, co.last_name].filter(Boolean).join(' ') || 'Coach';
+        const name = (co.full_name as string | null)?.trim() || 'Coach';
         return { id: co.id as string, name };
       })
       .filter((c): c is StaffCoach => c !== null)
@@ -877,6 +877,14 @@ export function PracticePlannerClient() {
           />
         ) : (
           <div className="space-y-4">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.08em] text-warm-500">
+                {isCoach ? 'Practices' : 'Your schedule'}
+              </h2>
+              <span className="text-xs font-medium text-warm-400">
+                {practices.length} {practices.length === 1 ? 'plan' : 'plans'}
+              </span>
+            </div>
             {practices.map((p, idx) => (
               <m.div
                 key={p.id}
