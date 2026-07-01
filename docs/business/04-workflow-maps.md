@@ -10,7 +10,7 @@ All workflows below are College Golf (GolfHelm). The one BaseballHelm workflow i
 
 ## 1. Round & Shot Entry
 
-The highest-frequency, highest-stakes data-entry workflow in the product: every downstream stat, insight, qualifier standing, and AI review is derived from this pipeline. This is also the primary destructive-write-ban battleground (`.greptile/instructions.md:69-72`).
+The highest-frequency, highest-stakes data-entry workflow in the product: every downstream stat, insight, qualifier standing, and AI review is derived from this pipeline. This is also the primary destructive-write-ban battleground (`.greptile/rules.md:69-72`).
 
 ### 1a. New round (happy path)
 
@@ -31,7 +31,7 @@ Client:  new-round-client.tsx — 4-step wizard
 - **Fan-out (async, non-blocking)**:
   - `invalidateOnRoundComplete()` marks `golf_player_stats_cache` stale (Redis) and attempts SG-recalculation RPCs — SG columns remain the source of truth only once populated; a broken recalculation must not silently leave a stale number, it must leave `null`. `[INVARIANT: SG correctness — SG is cached, not recomputed on read, per golf_player_stats_cache; do not let a failed recompute serve a stale/wrong SG]`
   - `triggerPlayerInsightsAfterRound()` -> CoachHelm V2 pipeline (pattern mining -> insight persistence). `[INVARIANT: LLM budget — any LLM-backed step here must check golf_coachhelm_llm_budget before composing]`
-  - `generateRoundReview()` -> AI round review (`src/app/golf/actions/round-reviews.ts`). Must verify citations against real shot data and regenerate-once before falling back to a template (`.greptile/instructions.md:139-146`).
+  - `generateRoundReview()` -> AI round review (`src/app/golf/actions/round-reviews.ts`). Must verify citations against real shot data and regenerate-once before falling back to a template (`.greptile/rules.md:139-146`).
   - `updateQualifierEntryStats()` (only if `qualifier_id` set) — see workflow 2.
 - **Result**: player sees a completed round, stats cache is (lazily) refreshed on next read, coach sees the round in roster/round-history views.
 
@@ -158,7 +158,7 @@ Route (player): /golf/dashboard/coachhelm            -> player-facing insight da
 Route (player): /golf/dashboard/coachhelm/chat       -> composeCoachChat()
 ```
 
-- **Invariant surface (`v2/` scoring functions)**: pattern-mining and composite-scoring functions under `v2/insights/`, `v2/composite/` **must stay pure — no fetches/Supabase calls inside scoring** (`.greptile/instructions.md:139-146`). Flag any PR that adds a network or DB call inside a `mining/` or `prediction/` scorer.
+- **Invariant surface (`v2/` scoring functions)**: pattern-mining and composite-scoring functions under `v2/insights/`, `v2/composite/` **must stay pure — no fetches/Supabase calls inside scoring** (`.greptile/rules.md:139-146`). Flag any PR that adds a network or DB call inside a `mining/` or `prediction/` scorer.
 - **LLM discipline**: `composeRoundReview`, `composeHeroNarrative`, `composeCoachChat` must (a) verify citations against real underlying data, (b) regenerate once on failure, (c) fall back to a deterministic template rather than surface a hallucinated narrative — and must **never be called client-side**. `[INVARIANT: LLM budget]`
 - **Budget enforcement**: `src/lib/coachhelm/v3/llm/budget.ts` checks `golf_coachhelm_llm_budget` (coach_id + date, `budget_usd`/`spent_usd`) before every `compose()` call, governed by `golf_coachhelm_settings.llm_budget_usd_per_day`. On exhaustion, the priority fallback order is **round_review > coach_chat > hero_narrative -> template**. A PR that lets any composer skip this check, or that hardcodes a $/token number instead of reading the per-team setting, is a budget-bypass bug — one of the six named high-severity classes for this business.
 - **Effectiveness ledger**: `golf_insight_effectiveness`, `golf_insight_feedback`, `golf_prediction_model_performance`, `golf_review_events`/`golf_review_insights` close the loop on whether an insight was acted on and whether the outcome improved — insights carry `outcome_status`: `pending | improved | no_change | worsened | inconclusive`. Any insight-generation PR that doesn't wire into this ledger should be flagged as incomplete, not silently accepted.
@@ -246,7 +246,7 @@ Route (shared): /golf/dashboard/roster/[id] — player profile detail
 ```
 
 - **Coach<->team binding**: coach access to a roster is via `golf_team_coach_staff`, never `golf_coaches.team_id` — this is called out repeatedly in the RLS template (`docs/v3-rls-template.md:11-57`) and is the single most common tenancy foot-gun in this codebase. `[INVARIANT: RLS/tenancy]`
-- **Destructive-write risk**: roster is named explicitly as one of the highest-risk surfaces for the delete-then-insert ban (`.greptile/instructions.md:69-72`) — removing/reactivating a player must be a status UPDATE (or upsert), never a delete-then-reinsert of `golf_team_members`. A transient failure mid-operation must not be able to permanently drop a real roster row; there is a documented prior incident of exactly this class of bug. `[INVARIANT: destructive-write ban]`
+- **Destructive-write risk**: roster is named explicitly as one of the highest-risk surfaces for the delete-then-insert ban (`.greptile/rules.md:69-72`) — removing/reactivating a player must be a status UPDATE (or upsert), never a delete-then-reinsert of `golf_team_members`. A transient failure mid-operation must not be able to permanently drop a real roster row; there is a documented prior incident of exactly this class of bug. `[INVARIANT: destructive-write ban]`
 - **Minors' PII**: roster rows carry academic + athletic PII for players who are frequently minors — any new roster export, bulk-action, or admin view must be checked against FERPA/COPPA-adjacent handling expectations, not just RLS. `[COMPLIANCE SURFACE]`
 
 ---
@@ -290,7 +290,7 @@ At the highest, stable level, the shape mirrors GolfHelm's tenancy pattern (orga
 
 ## For the reviewer
 
-- **Flag a PR when** a save/submit/sync path (round submit, qualifier selections, roster status change, event RSVP, notification fan-out) uses DELETE-then-INSERT instead of `upsert(...).onConflict(...)` or stage-and-swap — this is a named, previously-incident-causing pattern (`.greptile/instructions.md:69-72`).
+- **Flag a PR when** a save/submit/sync path (round submit, qualifier selections, roster status change, event RSVP, notification fan-out) uses DELETE-then-INSERT instead of `upsert(...).onConflict(...)` or stage-and-swap — this is a named, previously-incident-causing pattern (`.greptile/rules.md:69-72`).
 - **Flag a PR when** a new query against a coach/player/team-scoped table filters by `team_id` or `organization_id` in application code instead of relying on RLS + the canonical helpers (`current_player_id()`, `is_team_coach()`, `is_team_player()`), or when a coach<->team check uses `golf_coaches.team_id` instead of `golf_team_coach_staff`.
 - **Flag a PR when** SG values are read from `golf_player_stats_cache` without handling `null` (unpopulated SG), or when SG math changes without re-grounding in `docs/v3-research-golf-domain.md`.
 - **Flag a PR when** any LLM composer (`composeRoundReview`, `composeHeroNarrative`, `composeCoachChat`, `composeTravelBrief`, or any new one) is callable client-side, skips the `golf_coachhelm_llm_budget` check, hardcodes a dollar/token figure instead of reading `golf_coachhelm_settings.llm_budget_usd_per_day`, or drops the citation-verify -> regenerate-once -> template fallback chain.

@@ -1,0 +1,27 @@
+{
+  "$comment": "Files Greptile pre-loads as review context. Entries WITHOUT a scope load on every review; entries WITH a scope load only when the file under review matches one of the globs (keeps context focused per surface). Greptile already indexes the whole repo automatically — this is about PRIORITIZING the highest-signal intent/context docs, not making files visible.",
+  "files": [
+    { "path": "CLAUDE.md", "description": "Primary Helm engineering + product guide: code patterns, file structure, type imports, auth flow, design tokens, per-product routing, pre-submit checklist." },
+    { "path": "AGENTS.md", "description": "Agent/build/review + mobile UI rules (Standard vs Action header, bottom nav, side drawer, empty-state shape)." },
+    { "path": "memory/glossary.md", "description": "Canonical table names, enums, and where each TypeScript type lives." },
+    { "path": "docs/business/00-business-context.md", "description": "Company + 4-product overview, org→team→coach/player tenancy, buyer-vs-user, product promise." },
+    { "path": "docs/business/01-personas.md", "description": "Every role, permission scope, and data sensitivity (players are often minors — academic + athletic PII)." },
+    { "path": "docs/business/02-jobs-to-be-done.md", "description": "The real jobs coaches/players hire Helm to do — check features against jobs, not a checklist." },
+    { "path": "docs/business/03-product-invariants.md", "description": "THE enforceable must/never rules: RLS/tenancy, calendar/timezone, SG correctness, recruiting pipeline, LLM budget, no destructive writes, permissions, imports." },
+    { "path": "docs/business/04-workflow-maps.md", "description": "route → action → table → result traces for core workflows, with failure states to review for." },
+    { "path": "docs/business/05-revenue-and-packaging.md", "description": "What the repo does/doesn't implement around money (no billing in-repo; per-coach daily LLM budget is the only enforced cost control)." },
+    { "path": "docs/business/06-competitor-positioning.md", "description": "Clippd/DECADE/Arccos/Whoop; Helm's deliberate differentiators — use when judging whether a change strengthens or dulls the edge." },
+    { "path": "docs/v3-master-plan.md", "description": "34-wave upgrade plan, organizational rules, schema inventory, locked decisions." },
+    { "path": "docs/business/08-golfhelm-business-context.md", "description": "GolfHelm buyer promise, feature purpose, never-break list.", "scope": ["src/app/golf/**", "src/lib/coachhelm/**", "supabase/migrations/**golf*"] },
+    { "path": "docs/business/09-coachhelm-business-context.md", "description": "CoachHelm LLM budget/trust invariants, citation-verification contract, effectiveness ledger.", "scope": ["src/lib/coachhelm/**", "src/app/golf/**"] },
+    { "path": "docs/business/07-baseballhelm-context.md", "description": "BaseballHelm buyer promise, personas, recruiting/roster invariants, high-level workflows.", "scope": ["src/app/baseball/**", "src/lib/baseball/**", "src/lib/recruiting/**", "supabase/migrations/**baseball*"] },
+    { "path": "memory/context/golfhelm-features.md", "description": "GolfHelm feature map, routes, action files, data flows, gaps.", "scope": ["src/app/golf/**"] },
+    { "path": "memory/context/golfhelm-database.md", "description": "GolfHelm schema — every column of every golf_* table and its meaning.", "scope": ["src/app/golf/**", "supabase/**"] },
+    { "path": "memory/context/coachhelm-ai.md", "description": "CoachHelm AI/insight engine architecture, scoring, NLG behavior.", "scope": ["src/lib/coachhelm/**", "src/app/golf/**"] },
+    { "path": "memory/context/baseballhelm-database.md", "description": "BaseballHelm schema — baseball_* tables, pipeline-stage enum, RLS helpers, known drift/gotchas.", "scope": ["src/app/baseball/**", "src/lib/baseball/**", "src/lib/recruiting/**", "supabase/**"] },
+    { "path": "memory/context/baseballhelm-features.md", "description": "BaseballHelm route/feature inventory + data flows + access-control gates (point-in-time; product under rework).", "scope": ["src/app/baseball/**", "src/lib/baseball/**", "src/lib/recruiting/**"] },
+    { "path": "memory/context/baseballhelm-workflows.md", "description": "BaseballHelm step-by-step user journeys (route → action → table) with invariants that must never break.", "scope": ["src/app/baseball/**", "src/lib/baseball/**", "src/lib/recruiting/**"] },
+    { "path": "docs/v3-research-golf-domain.md", "description": "Strokes Gained canonical reference — every causal claim in golf insights must trace here.", "scope": ["src/app/golf/**", "src/lib/coachhelm/**"] },
+    { "path": "docs/v3-rls-template.md", "description": "RLS policy patterns + required tests for every new table.", "scope": ["supabase/**", "src/app/**/actions/**"] }
+  ]
+}

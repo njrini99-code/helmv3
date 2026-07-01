@@ -36,14 +36,14 @@ Every product sits on the same four load-bearing layers. A reviewer should assum
   - RLS helper functions: `current_player_id()`, `is_team_coach(team_uuid)`, `is_team_player(team_uuid)` — all `SECURITY DEFINER` with `SET search_path` pinned, specifically to close the Postgres search-path-hijack attack class against `SECURITY DEFINER` functions (`docs/v3-rls-template.md:9`).
 
 ### 2.2 CoachHelm (the AI layer)
-- A composition engine that generates round reviews, hero narratives, and coach-chat responses, all citation-verified against real data before being shown to a coach or player, with a template fallback when the LLM path isn't available or affordable (`.greptile/instructions.md:139-146`).
+- A composition engine that generates round reviews, hero narratives, and coach-chat responses, all citation-verified against real data before being shown to a coach or player, with a template fallback when the LLM path isn't available or affordable (`.greptile/rules.md:139-146`).
 - This is the layer most exposed to real dollar cost (LLM API spend) and the layer most exposed to trust risk (a hallucinated or uncited claim about a specific athlete is a credibility-ending failure for a coaching product). See §4 and §5.
 
 ### 2.3 Capacitor iOS
 - The web app ships as a native iOS shell via Capacitor, with a dedicated CircleCI `ios` workflow compiling on Apple-silicon macOS runners (`CLAUDE.md:414-416`). This means UI and data-fetching changes have a second, slower-to-verify deployment target beyond the web app — treat iOS compile as part of "does this ship," not an afterthought.
 
 ### 2.4 Stack summary
-Next.js 16 App Router, TypeScript strict, Supabase (Postgres + RLS + Deno Edge Functions), Tailwind, Capacitor iOS, Vercel, Datadog, Sentry, plus Python helper scripts under `tools/` (`.greptile/instructions.md:17-19`).
+Next.js 16 App Router, TypeScript strict, Supabase (Postgres + RLS + Deno Edge Functions), Tailwind, Capacitor iOS, Vercel, Datadog, Sentry, plus Python helper scripts under `tools/` (`.greptile/rules.md:17-19`).
 
 ---
 
@@ -70,9 +70,9 @@ GolfHelm's promise has two layers: a system-of-record layer and an intelligence 
 **System of record.** Full college golf team management: round and shot-by-shot tracking (50+ stats per round), roster, calendar/scheduling, qualifiers and travel selection, messaging, announcements, tasks, documents, travel logistics, class-schedule conflict detection (`src/app/golf/README.md:16-31`).
 
 **Intelligence layer — CoachHelm.** The differentiated promise is turning that round/shot data into decision support:
-- **Strokes Gained analytics** — the canonical statistical model. `SG = baseline_expected_strokes(start_lie) − baseline_expected_strokes(end_lie) − 1`, computed per shot and summed into four categories (Off-the-Tee, Approach, Around-the-Green, Putting) that roll up to `SG:Total` (`docs/v3-research-golf-domain.md`, cited in `.greptile/instructions.md:81-82`). This is the reference model every causal claim the AI layer makes must trace back to.
+- **Strokes Gained analytics** — the canonical statistical model. `SG = baseline_expected_strokes(start_lie) − baseline_expected_strokes(end_lie) − 1`, computed per shot and summed into four categories (Off-the-Tee, Approach, Around-the-Green, Putting) that roll up to `SG:Total` (`docs/v3-research-golf-domain.md`, cited in `.greptile/rules.md:81-82`). This is the reference model every causal claim the AI layer makes must trace back to.
   - SG values are **cached, not recomputed on read**, in `golf_player_stats_cache` (`docs/v3-master-plan.md` Part II: "SG ALREADY COMPUTED — read, don't recompute"). A reviewer should treat any new code path that recomputes SG inline, or that reads a stale cache without a documented invalidation trigger, as suspect.
-  - Because SG is the platform's flagship numeric claim and its most direct point of comparison against competitors (see below), **SG math correctness gets the highest scrutiny bar in the codebase** (`.greptile/instructions.md:81-82`).
+  - Because SG is the platform's flagship numeric claim and its most direct point of comparison against competitors (see below), **SG math correctness gets the highest scrutiny bar in the codebase** (`.greptile/rules.md:81-82`).
 - **Insights, patterns, predictions, round reviews** — the CoachHelm engine turns SG and shot-level data into natural-language coaching narrative, always citation-checked against underlying data before display, with a template fallback if the LLM path fails or is over budget.
 - **Qualifying / travel-roster selection** — a first-class workflow (`golf_qualifiers`, `golf_qualifier_entries`, `golf_qualifier_selections`) explicitly built because this is described in competitive research as "the most-painful, most-frequent, most-poorly-tooled workflow in college golf" (`docs/v3-research-competitive-landscape.md:393`) and is treated internally as a stated differentiator.
 - **Coach-approved player-set Goals** as a first-class object (superseding the older `golf_player_focus_areas` model per `docs/v3-master-plan.md` Part II) — framed competitively as something no rival product treats as first-class.
@@ -109,7 +109,7 @@ A meaningful share of end users (student-athlete players) are minors, and the da
 - None of the above is asserted as a current legal violation — it is the compliance surface a reviewer should weigh before adding new PII-holding surfaces (new tables, new fields, new third-party integrations that receive player data).
 
 ### 5.3 Destructive-write ban
-DELETE-then-INSERT in **any** save/submit/sync code path is forbidden platform-wide. This is not a style preference — there is a documented prior incident where a transient failure between the DELETE and the INSERT permanently lost user data (`.greptile/instructions.md:69-72`). Use `upsert`/`ON CONFLICT` or stage-and-swap instead. The highest-risk surfaces for this pattern are roster edits, qualifier selections, and round-save — exactly the workflows where a coach or player is mid-task and a lost write is both invisible until too late and impossible to explain. This rule is enforced as a blocking CodeRabbit check platform-wide (`CLAUDE.md:430-435`).
+DELETE-then-INSERT in **any** save/submit/sync code path is forbidden platform-wide. This is not a style preference — there is a documented prior incident where a transient failure between the DELETE and the INSERT permanently lost user data (`.greptile/rules.md:69-72`). Use `upsert`/`ON CONFLICT` or stage-and-swap instead. The highest-risk surfaces for this pattern are roster edits, qualifier selections, and round-save — exactly the workflows where a coach or player is mid-task and a lost write is both invisible until too late and impossible to explain. This rule is enforced as a blocking CodeRabbit check platform-wide (`CLAUDE.md:430-435`).
 
 ### 5.4 SG / scoring correctness
 Because Strokes Gained analytics is GolfHelm's flagship quantitative claim and its most direct comparison point against Clippd, an incorrect SG calculation is not a cosmetic bug — it directly undermines the core value proposition to a coach deciding whether to trust the product's numbers over a competitor's. Every causal or comparative claim CoachHelm's narrative layer makes about a player's performance must trace back to `docs/v3-research-golf-domain.md`.

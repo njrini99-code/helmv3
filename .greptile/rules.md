@@ -1,10 +1,18 @@
 # Greptile review instructions — helmv3 (Helm Sports Labs)
 
 > Greptile is installed as a GitHub App at https://app.greptile.com.
-> This file is the natural-language project context the reviewer reads
-> before commenting on PRs. Dashboard settings (which repos, which
-> branches, comment style, learning toggles) override anything here —
-> see the dashboard if a setting feels stuck.
+> This is `.greptile/rules.md` — one of the three files Greptile auto-reads
+> from a `.greptile/` folder (`config.json`, `rules.md`, `files.json`). It is
+> the natural-language rules + context the reviewer reads before commenting.
+> Machine-readable settings and structured rules live in `.greptile/config.json`;
+> the context files to pre-load live in `.greptile/files.json`. Nested
+> `.greptile/` folders (e.g. `src/app/golf/.greptile/rules.md`) cascade and add
+> surface-specific rules. Dashboard settings can override repo config — check
+> the dashboard if a setting feels stuck.
+>
+> Greptile also builds its own semantic index of the whole repo automatically;
+> you do NOT need to describe the code here. Use this file for INTENT, RULES,
+> and PRIORITIES the code can't express.
 
 ## Role
 
@@ -48,24 +56,63 @@ it alongside the architecture docs:
 - `docs/business/04-workflow-maps.md` — route → action → table traces for core GolfHelm workflows, invariants flagged inline.
 - `docs/business/05-revenue-and-packaging.md` — what the repo does/doesn't implement around money (no billing in-repo; the per-coach daily LLM budget is the only enforced cost control).
 - `docs/business/06-competitor-positioning.md` — Clippd/DECADE/Arccos/Whoop; where Helm is deliberately differentiated.
+- `docs/business/07-baseballhelm-context.md` — BaseballHelm buyer promise, personas, recruiting/roster invariants, high-level workflows.
 - `docs/business/08-golfhelm-business-context.md` — GolfHelm buyer promise + feature purpose + never-break list.
 - `docs/business/09-coachhelm-business-context.md` — CoachHelm LLM budget/trust invariants, citation-verification contract, effectiveness ledger.
 
-BaseballHelm and Lift Lab business docs (`07-*`, `10-*`) plus their
-`memory/context/*` brains are in progress. Until they land, enforce baseball
-recruiting rules only as the stable invariants in `03-product-invariants.md`
-§(d), and do NOT flag current baseball implementation detail as if it were a
-settled contract — that subsystem is under active rework.
+Deep code-level brains (schema, routes, data flows), pre-loaded via
+`.greptile/files.json`, scoped per surface:
+
+- `memory/context/golfhelm-features.md`, `memory/context/golfhelm-database.md`, `memory/context/coachhelm-ai.md` — GolfHelm/CoachHelm.
+- `memory/context/baseballhelm-database.md`, `memory/context/baseballhelm-features.md`, `memory/context/baseballhelm-workflows.md` — BaseballHelm. NOTE: BaseballHelm is under active rework; these are a point-in-time map. Trust the DB enums/RLS as ground truth, but treat route/behavior detail as current-state, not a frozen contract.
+- Lift Lab (strength & conditioning, `helm_lifting_*` tables) has no dedicated brain yet.
 
 When reviewing a PR, flag not only code bugs but **product-context violations**:
 
-- Does this make the coach's core workflow (pick who travels, know who's improving and why) harder or slower?
+- Does this make the coach's core workflow (pick who travels, know who's improving and why; manage recruiting pipeline) harder or slower?
 - Does this violate the buyer promise, or add noise/cost for the paid buyer (the program) while barely helping a player?
 - Does this create duplicate manual work the product exists to eliminate?
-- Does this ignore a timezone, permissions, role, roster, recruiting, or import invariant from `03-product-invariants.md`?
+- Does this ignore a timezone, permissions, role, roster, recruiting, import, or data-quality invariant from `03-product-invariants.md`?
 - Does this create confusion for players (e.g. a required event that doesn't read as required)?
 - Does this dull a stated differentiator, or copy a competitor weakness we criticized (`06-*`)?
 - Does an insight/narrative make a causal claim not traceable to `docs/v3-research-golf-domain.md`?
+
+## Suggest enhancements — don't only catch bugs
+
+This repo wants you to review like a **product-minded staff engineer who also
+proposes improvements**, not only a defect finder. On every PR, in addition to
+blocking real problems, surface **non-blocking enhancement suggestions** (use
+`info`-level comments; never block a merge on these). Ground each suggestion in
+the business docs — a good suggestion cites a persona, job-to-be-done, workflow,
+or the buyer promise, not just personal taste.
+
+Look for and propose, where genuinely applicable to the changed surface:
+
+- **Completeness vs. the buyer promise / workflow maps** — the PR builds most of
+  a workflow but leaves an obvious gap (`04-workflow-maps.md` failure states,
+  `02-jobs-to-be-done.md`). E.g. "adds event creation but no attendance
+  visibility for the coach — the job isn't done until the coach can see who's
+  coming."
+- **Coach/player friction removed** — a small addition that eliminates manual or
+  repeated work (bulk action, sensible default, one fewer click on a
+  high-frequency coach task).
+- **Competitor-parity or differentiation** — a cheap add that closes a gap vs.
+  Clippd/DECADE or strengthens a stated differentiator (`06-*`): conversational
+  round review, coach-approved Goals, the qualifier/travel-selection workspace.
+- **Data model that unlocks future automation** — capturing a field now (source,
+  timestamp, confidence, timezone) that a later insight/automation will need.
+- **Missing test lanes for critical workflows** — RLS test, business-contract
+  test, or E2E for a money/trust/data-loss surface the PR touches.
+- **Observability & telemetry** — an event/log that would let the team measure
+  whether the feature actually helped (ties to the CoachHelm effectiveness
+  ledger philosophy).
+- **Player clarity & mobile** — the player-facing surface could be made
+  unambiguous or thumb-reachable with a small change.
+
+Keep suggestions concrete and few (quality over quantity) — the best PR comment
+is one sharp "here's the enhancement that finishes the job," not ten vague
+wishes. If a suggestion is large enough to be its own PR, say so and suggest a
+follow-up issue rather than expanding scope here.
 
 ## Hard rules (block the PR)
 

@@ -22,7 +22,7 @@ Served by: Qualifiers (`golf_qualifiers`, `golf_qualifier_entries`, `golf_qualif
 
 Competitive framing: `docs/v3-research-competitive-landscape.md:393` names the qualifying/travel-selection workflow "the most-painful, most-frequent, most-poorly-tooled workflow in college golf" and calls it a stated differentiator — no competitor (Clippd, Golfstat, Golf Genius) has built a coach-facing selection workspace. This job is the single highest-leverage job in the product; treat regressions here as severe regardless of surface area touched.
 
-Invariant tie-in: qualifier selection is a save/submit surface. Any change to how selections are written must use upsert/`ON CONFLICT`, never DELETE-then-INSERT (`.greptile/instructions.md:69-72`) — a transient failure between the two statements has previously caused permanent data loss on save paths.
+Invariant tie-in: qualifier selection is a save/submit surface. Any change to how selections are written must use upsert/`ON CONFLICT`, never DELETE-then-INSERT (`.greptile/rules.md:69-72`) — a transient failure between the two statements has previously caused permanent data loss on save paths.
 
 ### 1.2 Know who is improving and why (Strokes Gained + CoachHelm insights)
 
@@ -32,7 +32,7 @@ Invariant tie-in: qualifier selection is a save/submit surface. Any change to ho
 
 Served by: Stats & Analytics (`golf_player_stats_cache`; §2), CoachHelm AI Engine — alerts, patterns, insights (§12–16), Coaching Intelligence Settings / philosophy weighting (§18).
 
-SG correctness stakes: SG is defined as `baseline_expected_strokes(start) - baseline_expected_strokes(end) - 1`, summed across four categories to SG:Total, and is **cached, not recomputed on read**, in `golf_player_stats_cache` (`.greptile/instructions.md:81-82`, `docs/v3-master-plan.md:98`). Getting this number wrong doesn't just produce a bad chart — it undermines the entire "know who is improving and why" job and the core value prop against Clippd, whose own SG display users already find hard to interpret (competitive doc, §1 "what users complain about"). This is the single highest-scrutiny numeric surface in GolfHelm.
+SG correctness stakes: SG is defined as `baseline_expected_strokes(start) - baseline_expected_strokes(end) - 1`, summed across four categories to SG:Total, and is **cached, not recomputed on read**, in `golf_player_stats_cache` (`.greptile/rules.md:81-82`, `docs/v3-master-plan.md:98`). Getting this number wrong doesn't just produce a bad chart — it undermines the entire "know who is improving and why" job and the core value prop against Clippd, whose own SG display users already find hard to interpret (competitive doc, §1 "what users complain about"). This is the single highest-scrutiny numeric surface in GolfHelm.
 
 Known gap (be honest with the reviewer, not the user-facing doc): as of the last feature-registry pass, SG columns in the stats cache are populated as null in places — "SG framework exists but not populated from shot data" (`memory/context/golfhelm-features.md`, Round Tracking §1 and Stats & Analytics §2 gap tables). Any PR claiming to "fix stats" should be checked against whether it actually populates SG, not just whether it changes UI.
 
@@ -120,19 +120,19 @@ Served by: Round Review AI (`golf_round_reviews`; §23) — V2 pipeline (`V2Revi
 
 Competitive framing: this is named directly in the competitive doc as the product's clearest white space — "nobody has it." Clippd's round summaries are static dashboards, not narrative explanations, and public discourse confirms Clippd has no native AI chat / no LLM round narrative (competitive doc §1). 18Birdies has an AI Coach for swing video, not round narrative (competitive doc §8). This job is a genuine category-first, not a me-too feature — treat any regression to citation-checking or fallback behavior on this path as high severity.
 
-Invariant tie-in: `composeRoundReview` must verify citations and regenerate once before falling back to template, and must never be called client-side (`.greptile/instructions.md:139-146`). The per-coach daily LLM budget (`golf_coachhelm_llm_budget`, checked in `src/lib/coachhelm/v3/llm/budget.ts` before every `compose()`) determines whether this job is served by a real narrative or a template; on exhaustion the priority fallback order is `round_review > coach_chat > hero_narrative -> template` — meaning round review is protected *first* when budget runs low, which matches its priority as the flagship job. A PR that changes fallback priority order should be scrutinized against this stated intent.
+Invariant tie-in: `composeRoundReview` must verify citations and regenerate once before falling back to template, and must never be called client-side (`.greptile/rules.md:139-146`). The per-coach daily LLM budget (`golf_coachhelm_llm_budget`, checked in `src/lib/coachhelm/v3/llm/budget.ts` before every `compose()`) determines whether this job is served by a real narrative or a template; on exhaustion the priority fallback order is `round_review > coach_chat > hero_narrative -> template` — meaning round review is protected *first* when budget runs low, which matches its priority as the flagship job. A PR that changes fallback priority order should be scrutinized against this stated intent.
 
 ### 3.2 Talk to a coaching assistant about my team
 
 - **When** I have a question about a player or a trend that isn't already surfaced as an alert, **I want** to ask it in natural language and get an answer grounded in that player's actual data, **so I can** get the same value as scrolling through raw stats without doing the scrolling myself.
 
-Served by: `composeCoachChat` (part of the same LLM budget/citation/fallback contract as round review, per `.greptile/instructions.md:139-146`).
+Served by: `composeCoachChat` (part of the same LLM budget/citation/fallback contract as round review, per `.greptile/rules.md:139-146`).
 
 ### 3.3 Trust the number behind the narrative
 
 - **When** CoachHelm tells me a player is improving or declining, **I want** that claim traceable back to actual round/shot data and the golf-domain research baseline (`docs/v3-research-golf-domain.md`), not a plausible-sounding LLM guess, **so I can** act on it with confidence in front of a player or a parent.
 
-This is a cross-cutting invariant more than a standalone feature, but it is worth stating as a job because it is the thing that makes jobs 1.2 and 3.1 trustworthy rather than merely fluent: `.greptile/instructions.md` states every causal assertion in v3 generators must trace back to `docs/v3-research-golf-domain.md`, and the v2 scoring functions (`v2/insights/`, `v2/composite/`) must stay pure (no fetches/Supabase inside scoring) so their output is deterministic and auditable.
+This is a cross-cutting invariant more than a standalone feature, but it is worth stating as a job because it is the thing that makes jobs 1.2 and 3.1 trustworthy rather than merely fluent: `.greptile/rules.md` states every causal assertion in v3 generators must trace back to `docs/v3-research-golf-domain.md`, and the v2 scoring functions (`v2/insights/`, `v2/composite/`) must stay pure (no fetches/Supabase inside scoring) so their output is deterministic and auditable.
 
 ---
 
@@ -147,7 +147,7 @@ BaseballHelm and Lift Lab are actively being rebuilt at the time of writing; do 
 
 ## For the reviewer
 
-- Flag a PR when it changes qualifier-selection save/submit logic without preserving upsert/`ON CONFLICT` semantics — this is job 1.1 and a documented destructive-write incident class (`.greptile/instructions.md:69-72`).
+- Flag a PR when it changes qualifier-selection save/submit logic without preserving upsert/`ON CONFLICT` semantics — this is job 1.1 and a documented destructive-write incident class (`.greptile/rules.md:69-72`).
 - Flag a PR when it touches SG calculation, `golf_player_stats_cache`, or round-review causal narrative and does not cite `docs/v3-research-golf-domain.md` for the underlying claim — this undermines jobs 1.2, 2.2, and 3.1 simultaneously.
 - Flag a PR that adds or changes CoachHelm LLM output (round review, coach chat, hero narrative) without going through the budget check in `src/lib/coachhelm/v3/llm/budget.ts` or without preserving the citation-verify-then-regenerate-once-then-template-fallback contract — this can silently break job 3.1 into either runaway cost or silent quality downgrade.
 - Flag a PR that changes round submission, roster writes, or any other save path to DELETE-then-INSERT — this directly threatens job 2.1 (a player's just-logged round) and the documented prior data-loss incident.

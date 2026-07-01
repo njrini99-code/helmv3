@@ -39,7 +39,7 @@ PRs are reviewed by **two AI reviewers in parallel** on every push:
   `supabase/migrations/**`, `supabase/functions/**`, `ios/App/**`,
   `tools/**`, `.github/workflows/**`, and `e2e/**`.
 - **Greptile** — whole-codebase view, catches drift from architecture
-  docs and duplicated logic. Config at `.greptile/instructions.md`
+  docs and duplicated logic. Config at `.greptile/rules.md`
   (natural-language rules) and `.greptile/config.json` (ignores,
   additional-context docs). Installed via GitHub App at
   https://app.greptile.com.
