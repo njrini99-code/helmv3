@@ -1,0 +1,72 @@
+name: Claude Code Agent
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  claude:
+    name: Claude guarded PR agent
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issues' && github.event.label.name == 'agent:ready')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refuse unsafe labels before agent run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            if (!issue) return;
+
+            const labels = issue.labels.map((label) => label.name);
+            const blocked = [
+              'risk:high',
+              'agent:needs-human-review',
+              'severity:p0',
+              'source:security'
+            ];
+            const hit = labels.filter((label) => blocked.includes(label));
+
+            if (hit.length > 0) {
+              core.setFailed(`Claude auto-run blocked by label(s): ${hit.join(', ')}. Nick must review this manually.`);
+            }
+
+      # Enable this step only after ANTHROPIC_API_KEY is added to repo secrets
+      # and the exact action version is verified against Anthropic's current docs.
+      # Keep the action pinned to a release SHA or trusted version before broad use.
+      - name: Run Claude Code
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --max-turns 10
+            --append-system-prompt "Follow CLAUDE.md and docs/operations/HELM_MISSION_CONTROL_OS.md. Never push to main. Create a branch and PR. Do not expose secrets. Do not perform high-risk auth, RLS, migration, payment, cron, secret, or destructive-data changes without human review. Include a partner-readable summary and a Git Activity Timeline note."
+
+      - name: Agent safety reminder
+        if: always()
+        run: |
+          echo "Claude agent workflow is intentionally PR-only. High-risk labels must be handled manually."
