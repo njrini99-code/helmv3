@@ -45,6 +45,14 @@ export async function validatePlayerCanJoinTeam(
 ): Promise<TeamValidationResult> {
   const supabase = await createClient();
 
+  // Every exported server action must gate on auth before touching Supabase
+  // (helmv3-server-action-missing-auth-check). RLS already backstops the reads
+  // below, but an unauthenticated caller has no business probing membership.
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { canJoin: false, reason: 'Not authenticated' };
+  }
+
   // Fetch all required data in parallel (3 queries → 1 round trip)
   const [playerResult, teamResult, membershipsResult] = await Promise.all([
     supabase
