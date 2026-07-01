@@ -1254,7 +1254,7 @@ export function VideoLibraryClient({
     <>
       <Header
         title="Video Library"
-        subtitle={isCoach ? "Team film — 5 views" : "Your videos and team film"}
+        subtitle={isCoach ? 'Team film, clips, and evidence' : 'Your videos and team film'}
       />
 
       <div className="p-4 sm:p-6 lg:p-8">
