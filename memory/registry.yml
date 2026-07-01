@@ -107,6 +107,44 @@ features:
         - npm run test -- --run src/test/coachhelm
         - npm run build
 
+  baseball_core:
+    name: BaseballHelm (recruiting + team management + Lift Lab)
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: CLAUDE.md
+      flows: []
+      ui:
+        - CLAUDE.md
+      business_logic:
+        - CLAUDE.md
+      incidents: []
+    code:
+      routes:
+        - src/app/baseball/**
+      components:
+        - src/components/baseball/**
+      api:
+        - src/app/api/baseball/**
+      actions:
+        - src/app/baseball/**/actions/**
+      services:
+        - src/lib/baseball/**
+      db:
+        - supabase/migrations/*baseball*.sql
+      tests:
+        - supabase/tests/rls/baseball_*.sql
+        - e2e/baseball-*.spec.ts
+    integrations:
+      - supabase
+      - sentry
+    review:
+      required_docs: []
+      required_checks:
+        - npm run typecheck
+        - npm run build
+
   golf_round_lifecycle:
     name: Golf Round Lifecycle
     status: active
