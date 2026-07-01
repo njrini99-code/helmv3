@@ -1,0 +1,16 @@
+-- A3c: remove the blanket public-read on baseball_coaches.
+--
+-- baseball_coaches_select_all (qual: true) let ANY authenticated user read
+-- EVERY coach row, including PII columns (email, phone). Drop it. The existing
+-- baseball_coaches_select policy is retained:
+--     (auth.uid() = user_id) OR (get_my_coach_id() IS NOT NULL)
+-- so coaches still see all coaches and every user still sees their own row.
+--
+-- Non-PII coach identity for player-facing surfaces (messaging, the calendar
+-- roster panel, email greetings) is served by the security-definer view
+-- public.baseball_coaches_public (20260701011000); those call sites read from
+-- the view, so narrowing the base table does not break them.
+--
+-- Tightening coach-sees-all further (recruiting cross-program visibility) is a
+-- separate product decision and intentionally NOT done here.
+DROP POLICY IF EXISTS baseball_coaches_select_all ON public.baseball_coaches;
