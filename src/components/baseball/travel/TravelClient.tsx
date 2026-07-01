@@ -57,7 +57,13 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
 
   function isUpcoming(dateStr: string | null) {
     if (!dateStr) return true;
-    return new Date(dateStr) >= new Date(new Date().toISOString().split('T')[0]!);
+    // Anchor the date-only departure at local noon (same as formatDate) and
+    // compare against local midnight today. Parsing "YYYY-MM-DD" as UTC and
+    // comparing to a UTC "today" pushed trips departing today into "Past" for
+    // US timezones once UTC had rolled over to the next day.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return new Date(dateStr + 'T12:00:00') >= today;
   }
 
   const loadExpenses = useCallback(async (itineraryId: string) => {
