@@ -1365,7 +1365,7 @@ function PracticeGroupSection({
         action={
           feed.practiceId ? (
             <Link
-              href="/baseball/dashboard/practice"
+              href="/baseball/player/practice"
               className="group inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-eyebrow font-semibold uppercase tracking-wide text-primary-600 transition-colors hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
             >
               View plan
@@ -1414,7 +1414,7 @@ function PracticeGroupSection({
             </ul>
           )}
           <Link
-            href="/baseball/dashboard/practice"
+            href="/baseball/player/practice"
             className="group mt-4 flex items-center gap-1.5 border-t border-warm-100 pt-3 text-eyebrow font-semibold uppercase tracking-wide text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
           >
             View full practice plan
@@ -1517,7 +1517,7 @@ function PrimaryCtaRow({
       <Link
         href={
           practiceId
-            ? '/baseball/dashboard/practice'
+            ? '/baseball/player/practice'
             : '/baseball/dashboard/calendar'
         }
         className="inline-flex items-center gap-1.5 rounded-full border border-warm-200 bg-cream-50 px-4 py-2 text-sm font-semibold text-warm-700 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
