@@ -6,31 +6,42 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 //
 // Packet: stat-visuals (BaseballHelm — stats-integrations)
 //
-// Server actions that WIRE the additive baseball_stat_visual_views table
-// (migration 20260624000091) to the V10 stat-visual gallery. They persist the
-// "saved chart filter state + pinned charts" capability the visual contracts
-// call for (v10_baseball_stat_visual_contracts.md §"Source-Linked Trend Ribbon"
-// / §"Player DNA Panel" + v10_premium_ui_system_by_tab.md §"Stats Lab" and
-// §"Player Profile / Snapshot Cards") — until now the table/type/RLS were
-// scaffolded but no code read or wrote them.
+// Server actions that WIRE the baseball_stat_visual_views table to the V10
+// stat-visual gallery. They persist the "saved chart filter state + pinned
+// charts" capability the visual contracts call for (v10_baseball_stat_visual_
+// contracts.md §"Source-Linked Trend Ribbon" / §"Player DNA Panel").
+//
+// SCHEMA (the DEPLOYED table — verified against information_schema, NOT the
+// never-applied scaffold migration):
+//   id, team_id, player_id, created_by_coach_id (→ baseball_coaches.id),
+//   view_name (text, NOT NULL — we store the stable chart key here),
+//   view_type / period_type / visibility / stat_keys (defaulted),
+//   config_json (jsonb — we store the serialized filter/tab state here),
+//   is_pinned, is_template, created_at, updated_at.
+//
+// The earlier revision of this file queried a hypothetical `owner_user_id` /
+// `visual_key` / `view_state` shape from a scaffold migration that was never
+// applied, which threw `column baseball_stat_visual_views.owner_user_id does
+// not exist` and broke the Stats Center gallery. This revision reads/writes the
+// real columns and aliases them back to the gallery's contract (visual_key /
+// view_state) via PostgREST column aliases, so the client contract is unchanged.
 //
 // SECURITY / CONTRACT
 //   * Every action runs inside withBaseballAction so auth + the server-validated
 //     active baseball team/role are resolved before any query. The wrapper
 //     sanitizes thrown errors so raw DB internals never reach the client.
-//   * Authorization for THIS table is per-user personalization, not a staff
-//     capability: saved views/pins must work for BOTH staff (Stats Center) AND
-//     players (player-profile pins, who hold no staff capability). So we set NO
-//     requiredCapability and rely on the table's OWNER-scoped + team-scoped RLS
-//     (owner_user_id = auth.uid() AND is_baseball_team_member(team_id)) for
-//     server-side enforcement — a user can only ever read/write their OWN rows
-//     on a team they belong to.
-//   * owner_user_id + team_id are stamped from the resolved server context on
-//     every write (never trusted from the client), so a row can't be written
-//     against another user or team.
-//   * NO destructive writes: the save path UPSERTs on the
-//     (owner_user_id, visual_key, player_id) UNIQUE constraint; pin/unpin and
-//     delete are explicit in-place operations a user performs on their own row.
+//   * The deployed table's RLS is STAFF-scoped for writes
+//     (is_baseball_team_staff(team_id)); players may only SELECT player-visible
+//     rows scoped to their own player_id. So writes require a resolved
+//     activeCoachId — we fail closed with an honest message otherwise, and RLS
+//     is the real enforcement boundary regardless.
+//   * created_by_coach_id + team_id are stamped from the resolved server context
+//     on every write (never trusted from the client), so a row can't be written
+//     against another coach or team.
+//   * NO destructive writes: the save/pin path is a non-destructive manual
+//     upsert (SELECT the owning row → UPDATE in place, else INSERT). There is no
+//     unique constraint on the deployed table to `onConflict` against, so we
+//     never delete-then-insert.
 //   * revalidatePath refreshes the two surfaces that mount the gallery.
 // =============================================================================
 
@@ -47,9 +58,16 @@ const FEATURE = { featureArea: 'baseball-stat-visuals' } as const;
 const STATS_CENTER_PATH = '/baseball/dashboard/stats-center';
 const PLAYER_STATS_PATH = '/baseball/dashboard/players';
 
+const TABLE = 'baseball_stat_visual_views';
+
+// The gallery's contract (visual_key / view_state) mapped onto the deployed
+// columns via PostgREST aliases so callers keep the stable field names.
+const SELECT_COLS =
+  'id, team_id, player_id, created_by_coach_id, is_pinned, created_at, updated_at, visual_key:view_name, view_state:config_json';
+
 type ActionResult<T = unknown> = { success: boolean; error?: string; data?: T };
 
-/** Bound the visual_key to the table CHECK (1..80 chars) before it hits the DB. */
+/** Bound the visual_key to the column length (1..80 chars) before it hits the DB. */
 function normalizeVisualKey(key: string): string | null {
   const trimmed = key.trim();
   if (trimmed.length < 1 || trimmed.length > 80) return null;
@@ -57,9 +75,9 @@ function normalizeVisualKey(key: string): string | null {
 }
 
 // -----------------------------------------------------------------------------
-// READ — the saved views (and pins) the current user owns, optionally scoped to
-// a single player profile. RLS already restricts to owner + team; the explicit
-// filters keep payloads small and let the player profile ask only for its pins.
+// READ — the saved views (and pins) the current coach owns, optionally scoped to
+// a single player profile. RLS already restricts to team staff (or a player's
+// own visible rows); the explicit filters keep payloads small and per-coach.
 // -----------------------------------------------------------------------------
 
 export const getStatVisualViews = withBaseballAction(
@@ -71,12 +89,15 @@ export const getStatVisualViews = withBaseballAction(
   ): Promise<ActionResult<BaseballStatVisualView[]>> => {
     const supabase = await createClient();
 
-    let query = fromUntyped(supabase, 'baseball_stat_visual_views')
-      .select(
-        'id, team_id, owner_user_id, visual_key, player_id, view_state, is_pinned, created_at, updated_at',
-      )
-      .eq('owner_user_id', ctx.user.id)
+    let query = fromUntyped(supabase, TABLE)
+      .select(SELECT_COLS)
       .eq('team_id', ctx.targetTeamId);
+
+    // Coaches see only their own saved views; a player (no activeCoachId) falls
+    // back to what RLS exposes (their player-visible rows).
+    if (ctx.activeCoachId) {
+      query = query.eq('created_by_coach_id', ctx.activeCoachId);
+    }
 
     // Player profile asks for its player-scoped rows; team Stats Center asks for
     // team-scoped rows (player_id IS NULL) so a player's pins don't bleed in.
@@ -94,11 +115,13 @@ export const getStatVisualViews = withBaseballAction(
 );
 
 // -----------------------------------------------------------------------------
-// SAVE — upsert a user's filter/tab state for one chart (no delete-then-insert).
+// SAVE — non-destructive manual upsert of a coach's filter/tab state for one
+// chart. There is no unique constraint on the deployed table, so we resolve the
+// owning row first and UPDATE it in place (never delete-then-insert).
 // -----------------------------------------------------------------------------
 
 export interface SaveStatVisualViewInput {
-  /** Stable chart key, e.g. 'ev_la_matrix', 'player_dna', or a family tab key. */
+  /** Stable chart key, e.g. 'family:hitting' or 'ev_la_matrix'. Stored in view_name. */
   visualKey: string;
   /** Serialized filter/tab state (context filter, pitch-type tab, date window). */
   viewState: Json;
@@ -108,6 +131,28 @@ export interface SaveStatVisualViewInput {
   isPinned?: boolean;
 }
 
+/**
+ * Find the coach's existing saved-view row id for (visual_key, player scope).
+ * Returns null when none exists yet. Scoped to the resolved coach + team.
+ */
+async function findOwnedRowId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  coachId: string,
+  teamId: string,
+  visualKey: string,
+  playerId: string | null,
+): Promise<{ id: string | null; error: unknown }> {
+  let q = fromUntyped(supabase, TABLE)
+    .select('id')
+    .eq('created_by_coach_id', coachId)
+    .eq('team_id', teamId)
+    .eq('view_name', visualKey);
+  q = playerId ? q.eq('player_id', playerId) : q.is('player_id', null);
+
+  const { data, error } = await q.maybeSingle();
+  return { id: (data as { id: string } | null)?.id ?? null, error };
+}
+
 export const saveStatVisualView = withBaseballAction(
   'saveStatVisualView',
   FEATURE,
@@ -115,41 +160,66 @@ export const saveStatVisualView = withBaseballAction(
     ctx,
     input: SaveStatVisualViewInput,
   ): Promise<ActionResult<{ viewId: string }>> => {
-    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Only coaching staff can save chart views.' };
+    }
 
     const visualKey = normalizeVisualKey(input.visualKey);
     if (!visualKey) return { success: false, error: 'Invalid chart key.' };
 
+    const supabase = await createClient();
+    const playerId = input.playerId ?? null;
     const nowIso = new Date().toISOString();
-    const row = {
-      team_id: ctx.targetTeamId,
-      owner_user_id: ctx.user.id,
-      visual_key: visualKey,
-      player_id: input.playerId ?? null,
-      view_state: input.viewState ?? {},
-      ...(input.isPinned !== undefined ? { is_pinned: input.isPinned } : {}),
-      updated_at: nowIso,
-    };
 
-    const { data, error } = await fromUntyped(supabase, 'baseball_stat_visual_views')
-      .upsert(row, {
-        onConflict: 'owner_user_id,visual_key,player_id',
-        ignoreDuplicates: false,
+    const { id: existingId, error: findErr } = await findOwnedRowId(
+      supabase,
+      coachId,
+      ctx.targetTeamId,
+      visualKey,
+      playerId,
+    );
+    if (findErr) return { success: false, error: sanitizeDbError(findErr, 'stats') };
+
+    if (existingId) {
+      const { error } = await fromUntyped(supabase, TABLE)
+        .update({
+          config_json: input.viewState ?? {},
+          ...(input.isPinned !== undefined ? { is_pinned: input.isPinned } : {}),
+          updated_at: nowIso,
+        })
+        .eq('id', existingId);
+      if (error) return { success: false, error: sanitizeDbError(error, 'stats') };
+
+      revalidatePath(STATS_CENTER_PATH);
+      if (playerId) revalidatePath(`${PLAYER_STATS_PATH}/${playerId}`);
+      return { success: true, data: { viewId: existingId } };
+    }
+
+    const { data, error } = await fromUntyped(supabase, TABLE)
+      .insert({
+        team_id: ctx.targetTeamId,
+        created_by_coach_id: coachId,
+        view_name: visualKey,
+        config_json: input.viewState ?? {},
+        player_id: playerId,
+        is_pinned: input.isPinned ?? false,
+        updated_at: nowIso,
       })
       .select('id')
       .single();
     if (error) return { success: false, error: sanitizeDbError(error, 'stats') };
 
     revalidatePath(STATS_CENTER_PATH);
-    if (input.playerId) revalidatePath(`${PLAYER_STATS_PATH}/${input.playerId}`);
+    if (playerId) revalidatePath(`${PLAYER_STATS_PATH}/${playerId}`);
 
     return { success: true, data: { viewId: (data as { id: string }).id } };
   },
 );
 
 // -----------------------------------------------------------------------------
-// PIN — flip whether a chart is pinned to the owner's snapshot. Upserts so a
-// pin can be set even before any filter state was saved (no destructive write).
+// PIN — flip whether a chart is pinned to the coach's snapshot. Non-destructive
+// upsert so a pin can be set even before any filter state was saved.
 // -----------------------------------------------------------------------------
 
 export const setStatVisualPinned = withBaseballAction(
@@ -159,34 +229,53 @@ export const setStatVisualPinned = withBaseballAction(
     ctx,
     input: { visualKey: string; isPinned: boolean; playerId?: string | null },
   ): Promise<ActionResult> => {
-    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Only coaching staff can pin chart views.' };
+    }
 
     const visualKey = normalizeVisualKey(input.visualKey);
     if (!visualKey) return { success: false, error: 'Invalid chart key.' };
 
-    const { error } = await fromUntyped(supabase, 'baseball_stat_visual_views')
-      .upsert(
-        {
-          team_id: ctx.targetTeamId,
-          owner_user_id: ctx.user.id,
-          visual_key: visualKey,
-          player_id: input.playerId ?? null,
-          is_pinned: input.isPinned,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'owner_user_id,visual_key,player_id', ignoreDuplicates: false },
-      );
-    if (error) return { success: false, error: sanitizeDbError(error, 'stats') };
+    const supabase = await createClient();
+    const playerId = input.playerId ?? null;
+    const nowIso = new Date().toISOString();
+
+    const { id: existingId, error: findErr } = await findOwnedRowId(
+      supabase,
+      coachId,
+      ctx.targetTeamId,
+      visualKey,
+      playerId,
+    );
+    if (findErr) return { success: false, error: sanitizeDbError(findErr, 'stats') };
+
+    if (existingId) {
+      const { error } = await fromUntyped(supabase, TABLE)
+        .update({ is_pinned: input.isPinned, updated_at: nowIso })
+        .eq('id', existingId);
+      if (error) return { success: false, error: sanitizeDbError(error, 'stats') };
+    } else {
+      const { error } = await fromUntyped(supabase, TABLE).insert({
+        team_id: ctx.targetTeamId,
+        created_by_coach_id: coachId,
+        view_name: visualKey,
+        player_id: playerId,
+        is_pinned: input.isPinned,
+        updated_at: nowIso,
+      });
+      if (error) return { success: false, error: sanitizeDbError(error, 'stats') };
+    }
 
     revalidatePath(STATS_CENTER_PATH);
-    if (input.playerId) revalidatePath(`${PLAYER_STATS_PATH}/${input.playerId}`);
+    if (playerId) revalidatePath(`${PLAYER_STATS_PATH}/${playerId}`);
 
     return { success: true };
   },
 );
 
 // -----------------------------------------------------------------------------
-// DELETE — drop a user's own saved view (explicit user action on their own row).
+// DELETE — drop a coach's own saved view (explicit action on their own row).
 // -----------------------------------------------------------------------------
 
 export const deleteStatVisualView = withBaseballAction(
@@ -196,16 +285,21 @@ export const deleteStatVisualView = withBaseballAction(
     ctx,
     input: { visualKey: string; playerId?: string | null },
   ): Promise<ActionResult> => {
-    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) {
+      return { success: false, error: 'Only coaching staff can remove chart views.' };
+    }
 
     const visualKey = normalizeVisualKey(input.visualKey);
     if (!visualKey) return { success: false, error: 'Invalid chart key.' };
 
-    let query = fromUntyped(supabase, 'baseball_stat_visual_views')
+    const supabase = await createClient();
+
+    let query = fromUntyped(supabase, TABLE)
       .delete()
-      .eq('owner_user_id', ctx.user.id)
+      .eq('created_by_coach_id', coachId)
       .eq('team_id', ctx.targetTeamId)
-      .eq('visual_key', visualKey);
+      .eq('view_name', visualKey);
     query = input.playerId
       ? query.eq('player_id', input.playerId)
       : query.is('player_id', null);

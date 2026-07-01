@@ -833,6 +833,10 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
   const hasActiveFilters = positions.length > 0 || side !== 'both';
 
   const rows = model.rows;
+  // When EVERY rostered player has zero captured box-score lines, a grid of N
+  // identical "no data" cards reads as broken. Collapse to one honest, premium
+  // team-level empty state (the moment any player has a line, the grid returns).
+  const allNoData = rows.length > 0 && rows.every((r) => r.noData);
 
   const handleExport = useCallback(() => {
     const csv = buildCsv(rows, gameSet);
@@ -1031,6 +1035,27 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                   : 'Once players are rostered and box scores are captured, their stats will appear here.'
               }
               action={
+                hasActiveFilters
+                  ? { label: 'Clear filters', onClick: clearFilters }
+                  : { label: 'Go to roster', href: '/baseball/dashboard/roster' }
+              }
+            />
+          ) : allNoData ? (
+            <EmptyState
+              variant="card"
+              icon={<IconDatabase size={48} className="text-warm-300" />}
+              title={
+                hasActiveFilters
+                  ? 'No box scores for this filter yet'
+                  : `No box scores captured for ${model.seasonYear} yet`
+              }
+              description={
+                hasActiveFilters
+                  ? `All ${rows.length} matching players are without a captured line in this game set. Clear the filter or import a box score to populate production.`
+                  : `Your ${rows.length}-player roster is set, but no box-score lines have been captured this season. Import a box score or enter one to light up team-wide production, splits, and the source-backed charts below.`
+              }
+              action={{ label: 'Import stats', href: '/baseball/dashboard/import' }}
+              secondaryAction={
                 hasActiveFilters
                   ? { label: 'Clear filters', onClick: clearFilters }
                   : { label: 'Go to roster', href: '/baseball/dashboard/roster' }

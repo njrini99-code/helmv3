@@ -467,15 +467,22 @@ export interface PlayerDnaDimension {
 export interface BaseballStatVisualView {
   id: string;
   team_id: string;
-  /** the owning staff/player user; views are per-user, not global. */
-  owner_user_id: string;
-  /** stable chart key, e.g. 'ev_la_matrix', 'pitch_shape_map'. */
+  /** the owning coach (baseball_coaches.id); views are per-coach, not global. */
+  created_by_coach_id: string | null;
+  /**
+   * stable chart key, e.g. 'family:hitting', 'ev_la_matrix'. Stored in the
+   * deployed table's `view_name` column and aliased back to `visual_key` by the
+   * getStatVisualViews read so the gallery contract stays stable.
+   */
   visual_key: string;
   /** optional player this saved view is scoped to. */
   player_id: string | null;
-  /** serialized filter/tab state (context filter, pitch-type tab, window). */
+  /**
+   * serialized filter/tab state (context filter, pitch-type tab, window).
+   * Stored in the deployed table's `config_json` column, aliased to `view_state`.
+   */
   view_state: Json;
-  /** whether the player pinned this chart to their profile snapshot. */
+  /** whether the chart is pinned to the coach's snapshot. */
   is_pinned: boolean;
   created_at: string;
   updated_at: string;
