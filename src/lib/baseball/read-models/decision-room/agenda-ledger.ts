@@ -17,10 +17,12 @@
  *
  * TYPES: `DecisionRoomAgendaItem` / `DecisionRoomLedgerEntry` are imported from
  * the canonical action module — never redefined here — so these mappers stay
- * locked to the exact shapes the UI consumes. The final `as unknown as T[]`
- * cast mirrors the sibling read-models (effectiveness/focus-imports/lift) in
- * this directory and is the repo's sanctioned bridge between a snake_case row
- * and the camelCase UI type.
+ * locked to the exact shapes the UI consumes. Both mappers below produce the
+ * EXACT declared fields (no `as unknown as` cast): `loadAgendaItems` sets
+ * `kind: 'meeting_item'` for every row (there is no signal-sourced agenda item
+ * today) and `loadDecisionLedger` selects the real `baseball_decision_log`
+ * columns (`title`/`detail`/`created_at`, not the nonexistent
+ * `rationale`/`decided_at`) and maps them onto `{kind,label,detail,at}`.
  *
  * This is a plain server module — NO 'use server'. Reads only; no writes.
  */
@@ -30,6 +32,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   DecisionRoomAgendaItem,
   DecisionRoomLedgerEntry,
+  DecisionRoomSourceRef,
 } from '@/app/baseball/actions/decision-room';
 
 /**
@@ -54,76 +57,82 @@ function nonEmpty(value: string | null | undefined): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-/** Coerce a Postgres text/uuid array column into a plain string[] (honest empty). */
-function toStringArray(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((v): v is string => typeof v === 'string' && v.length > 0);
-  }
-  return [];
+function fullName(
+  first: string | null | undefined,
+  last: string | null | undefined,
+): string | null {
+  const parts = [nonEmpty(first), nonEmpty(last)].filter(
+    (p): p is string => p != null,
+  );
+  return parts.length > 0 ? parts.join(' ') : null;
 }
 
 /**
- * Open agenda statuses sort ahead of resolved ones. `baseball_meeting_items`
- * has no numeric priority column, so we derive an ordering rank from `status`
- * (verified columns: status, resolution, discussed_at, resolved_at). Lower rank
- * surfaces first.
+ * One entry persisted in `baseball_meeting_items.source_refs` /
+ * `baseball_signals.source_refs` (jsonb). Mirrors `BaseballSignalSourceRef` —
+ * duplicated here (rather than imported) since this module intentionally has
+ * no dependency on the signals type module; only the fields we read are typed.
  */
-function agendaStatusRank(status: string | null): number {
-  const s = (status ?? '').toLowerCase();
-  switch (s) {
-    case 'open':
-    case 'new':
-    case 'pending':
-      return 0;
-    case 'in_progress':
-    case 'in-progress':
-    case 'discussing':
-    case 'discussed':
-      return 1;
-    case 'deferred':
-    case 'parked':
-    case 'tabled':
-      return 2;
-    case 'resolved':
-    case 'closed':
-    case 'done':
-      return 3;
-    default:
-      return 1; // unknown / future statuses sort with active work, not resolved
-  }
+interface SourceRefJson {
+  source_table?: string;
+  column?: string;
+  sample_n?: number;
+  label?: string;
+}
+
+/** Coerce a jsonb `source_refs` column into the UI's `{label, detail}` shape. */
+function toSourceRefs(value: unknown): DecisionRoomSourceRef[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((v): v is SourceRefJson => v != null && typeof v === 'object')
+    .map((ref) => {
+      const label = nonEmpty(ref.label ?? null) ?? nonEmpty(ref.source_table ?? null) ?? 'Source';
+      const detailParts: string[] = [];
+      if (nonEmpty(ref.column ?? null)) detailParts.push(ref.column as string);
+      if (typeof ref.sample_n === 'number') detailParts.push(`n=${ref.sample_n}`);
+      return {
+        label,
+        detail: detailParts.length > 0 ? detailParts.join(' · ') : null,
+      };
+    });
 }
 
 /**
- * Row shape selected from `baseball_meeting_items` (mirrors the live schema
- * verified via information_schema — no guessed columns).
+ * Row shape selected from `baseball_meeting_items` (mirrors the live schema —
+ * verified against `supabase/migrations/20260624000230_baseball_signal_action_materialization.sql`
+ * and `20260624000310_baseball_decision_log.sql`).
  */
 interface MeetingItemRow {
   id: string;
   team_id: string;
   source_signal_id: string | null;
-  source_action_id: string | null;
   player_id: string | null;
   title: string;
   detail: string | null;
   source_refs: unknown;
-  owner_coach_id: string | null;
   status: string;
-  resolution: string | null;
-  resolved_at: string | null;
-  resolved_by: string | null;
-  discussed_at: string | null;
-  discussed_by: string | null;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
+}
+
+/** Row shape selected from `baseball_players`, joined in a second round-trip. */
+interface PlayerNameRow {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 /**
  * AGENDA — the Decision Room meeting agenda for a team.
  *
- * Source: `baseball_meeting_items`, scoped by team_id under RLS. Ordered by
- * status (open/active first, resolved last) then by recency of creation so the
- * freshest open items lead the rail.
+ * Source: `baseball_meeting_items`, scoped by team_id under RLS. Only 'open'
+ * and 'discussed' items are surfaced — a 'resolved'/'archived' item has left
+ * the active agenda (its resolution is already recorded in the Decision
+ * Ledger via `resolveMeetingItem`). Every row maps to `kind: 'meeting_item'`
+ * (there is no signal-sourced agenda item in this read model today), open
+ * items sort ahead of discussed ones, newest-created first within each group.
+ *
+ * `severityHint` is always null: `baseball_meeting_items` has no severity
+ * column (severity only exists on `baseball_signals`, which this loader does
+ * not read from) — honestly omitted rather than guessed.
  *
  * @param supabase AUTHENTICATED server client (RLS-bound to the caller).
  * @param teamId   The caller's team id; rows are additionally scoped to it.
@@ -136,10 +145,9 @@ export async function loadAgendaItems(
 
   const { data, error } = await supabase
     .from('baseball_meeting_items')
-    .select(
-      'id, team_id, source_signal_id, source_action_id, player_id, title, detail, source_refs, owner_coach_id, status, resolution, resolved_at, resolved_by, discussed_at, discussed_by, created_by, created_at, updated_at',
-    )
+    .select('id, team_id, source_signal_id, player_id, title, detail, source_refs, status')
     .eq('team_id', teamId)
+    .in('status', ['open', 'discussed'])
     .order('created_at', { ascending: false, nullsFirst: false })
     .limit(MAX_ROWS);
 
@@ -147,60 +155,82 @@ export async function loadAgendaItems(
 
   const rows = data as MeetingItemRow[];
 
-  return rows
-    .map((row) => ({
+  const playerIds = Array.from(
+    new Set(rows.map((r) => r.player_id).filter((id): id is string => Boolean(id))),
+  );
+
+  const playerNames = new Map<string, string>();
+  if (playerIds.length > 0) {
+    const { data: playerRows } = await supabase
+      .from('baseball_players')
+      .select('id, first_name, last_name')
+      .in('id', playerIds);
+    for (const p of (playerRows ?? []) as PlayerNameRow[]) {
+      const name = fullName(p.first_name, p.last_name);
+      if (name) playerNames.set(p.id, name);
+    }
+  }
+
+  const items: DecisionRoomAgendaItem[] = rows.map((row) => {
+    const sourceRefs = toSourceRefs(row.source_refs);
+    return {
       id: row.id,
-      teamId: row.team_id,
-      playerId: row.player_id,
+      kind: 'meeting_item',
       title: nonEmpty(row.title) ?? 'Agenda item',
       detail: nonEmpty(row.detail),
-      status: nonEmpty(row.status) ?? 'open',
-      resolution: nonEmpty(row.resolution),
-      ownerCoachId: row.owner_coach_id,
+      status: row.status === 'discussed' ? 'discussed' : 'open',
+      severityHint: null,
+      playerId: row.player_id,
+      playerName: row.player_id ? (playerNames.get(row.player_id) ?? null) : null,
       sourceSignalId: row.source_signal_id,
-      sourceActionId: row.source_action_id,
-      sourceRefs: row.source_refs ?? null,
-      discussedAt: row.discussed_at,
-      discussedBy: row.discussed_by,
-      resolvedAt: row.resolved_at,
-      resolvedBy: row.resolved_by,
-      createdBy: row.created_by,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }))
-    // Stable client-side ordering: open/active items before resolved ones, then
-    // newest-created first within each rank.
-    .sort((a, b) => {
-      const rankDelta = agendaStatusRank(a.status) - agendaStatusRank(b.status);
-      if (rankDelta !== 0) return rankDelta;
-      const at = a.createdAt ? Date.parse(a.createdAt) : 0;
-      const bt = b.createdAt ? Date.parse(b.createdAt) : 0;
-      return bt - at;
-    }) as unknown as DecisionRoomAgendaItem[];
+      sourceRefCount: sourceRefs.length,
+      sourceRefs,
+    };
+  });
+
+  // Stable sort: open items before discussed ones. Array.prototype.sort is
+  // spec-guaranteed stable, so within each group the query's newest-first
+  // `created_at` order is preserved.
+  return items.sort(
+    (a, b) => (a.status === 'discussed' ? 1 : 0) - (b.status === 'discussed' ? 1 : 0),
+  );
 }
 
 /**
- * Row shape selected from `baseball_decision_log` (mirrors the live schema
- * verified via information_schema — no guessed columns). `participants` is a
- * uuid[], `tags` is a text[], `source_refs` is jsonb.
+ * Set of `decision_kind` values the `baseball_decision_log` CHECK constraint
+ * allows (see `20260624000310_baseball_decision_log.sql`). Matches the
+ * non-invite members of `DecisionRoomLedgerEntry['kind']` exactly.
+ */
+const VALID_LEDGER_KINDS = new Set<DecisionRoomLedgerEntry['kind']>([
+  'discussed',
+  'resolved',
+  'converted_task',
+  'converted_note',
+  'converted_practice',
+  'raised',
+  'reopened',
+  'note',
+]);
+
+function toLedgerKind(value: string | null): DecisionRoomLedgerEntry['kind'] {
+  if (value && VALID_LEDGER_KINDS.has(value as DecisionRoomLedgerEntry['kind'])) {
+    return value as DecisionRoomLedgerEntry['kind'];
+  }
+  return 'note';
+}
+
+/**
+ * Row shape selected from `baseball_decision_log` (mirrors the live schema —
+ * verified against `supabase/migrations/20260624000310_baseball_decision_log.sql`).
+ * The table has no `rationale`, `decided_at`, `meeting_item_id`,
+ * `participants`, `outcome_summary`, `tags`, or `created_by` columns — the
+ * decision body is `detail`, and the only timestamp is `created_at`.
  */
 interface DecisionLogRow {
   id: string;
-  team_id: string;
-  player_id: string | null;
-  meeting_item_id: string | null;
-  signal_id: string | null;
-  action_id: string | null;
   decision_kind: string;
   title: string;
-  rationale: string | null;
-  decided_by: string | null;
-  decided_at: string;
-  participants: string[] | null;
-  outcome_summary: string | null;
-  source_refs: unknown;
-  tags: string[] | null;
-  created_by: string | null;
+  detail: string | null;
   created_at: string;
 }
 
@@ -208,8 +238,7 @@ interface DecisionLogRow {
  * DECISION LEDGER — the team's logged decisions, most recent first.
  *
  * Source: `baseball_decision_log`, scoped by team_id under RLS. Ordered by
- * `decided_at` (the canonical "when the decision was made" timestamp) newest
- * first, falling back to `created_at` for ties.
+ * `created_at` (the only timestamp the table has) newest first.
  *
  * @param supabase AUTHENTICATED server client (RLS-bound to the caller).
  * @param teamId   The caller's team id; rows are additionally scoped to it.
@@ -222,11 +251,8 @@ export async function loadDecisionLedger(
 
   const { data, error } = await supabase
     .from('baseball_decision_log')
-    .select(
-      'id, team_id, player_id, meeting_item_id, signal_id, action_id, decision_kind, title, rationale, decided_by, decided_at, participants, outcome_summary, source_refs, tags, created_by, created_at',
-    )
+    .select('id, decision_kind, title, detail, created_at')
     .eq('team_id', teamId)
-    .order('decided_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false, nullsFirst: false })
     .limit(MAX_ROWS);
 
@@ -236,21 +262,9 @@ export async function loadDecisionLedger(
 
   return rows.map((row) => ({
     id: row.id,
-    teamId: row.team_id,
-    playerId: row.player_id,
-    meetingItemId: row.meeting_item_id,
-    signalId: row.signal_id,
-    actionId: row.action_id,
-    decisionKind: nonEmpty(row.decision_kind) ?? 'decision',
-    title: nonEmpty(row.title) ?? 'Decision',
-    rationale: nonEmpty(row.rationale),
-    outcomeSummary: nonEmpty(row.outcome_summary),
-    decidedBy: row.decided_by,
-    decidedAt: row.decided_at,
-    participants: toStringArray(row.participants),
-    tags: toStringArray(row.tags),
-    sourceRefs: row.source_refs ?? null,
-    createdBy: row.created_by,
-    createdAt: row.created_at,
-  })) as unknown as DecisionRoomLedgerEntry[];
+    kind: toLedgerKind(row.decision_kind),
+    label: nonEmpty(row.title) ?? 'Decision',
+    detail: nonEmpty(row.detail),
+    at: row.created_at,
+  }));
 }
