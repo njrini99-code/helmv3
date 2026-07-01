@@ -555,18 +555,27 @@ export function DailyContract({ model, readOnly = false }: DailyContractProps) {
   const [showComplete, setShowComplete] = useState(false);
 
   const runAction = useCallback(
-    (fn: () => Promise<{ success: boolean; error?: string }>, onOk?: () => void) => {
+    (
+      fn: () => Promise<{ success: boolean; error?: string }>,
+      onOk?: () => void,
+      // Called on a failed write (server rejection or thrown error) so callers
+      // that mutated state optimistically before the round-trip can roll it
+      // back — otherwise the UI keeps showing a state that was never saved.
+      onFail?: () => void,
+    ) => {
       setError(null);
       startTransition(async () => {
         try {
           const res = await fn();
           if (!res.success) {
             setError(res.error ?? 'Something went wrong. Please try again.');
+            onFail?.();
             return;
           }
           onOk?.();
         } catch {
           setError('Something went wrong. Please try again.');
+          onFail?.();
         }
       });
     },
@@ -604,6 +613,10 @@ export function DailyContract({ model, readOnly = false }: DailyContractProps) {
   };
 
   const handleToggle = (itemId: string, state: 'done' | 'skipped' | 'reset') => {
+    // Snapshot pre-click state so a failed server write can revert the
+    // optimistic update below instead of leaving the UI showing an
+    // honored/skipped state that was never persisted.
+    const previous = today;
     // Optimistic local update.
     setToday((prev) =>
       prev
@@ -620,7 +633,11 @@ export function DailyContract({ model, readOnly = false }: DailyContractProps) {
           }
         : prev,
     );
-    runAction(() => toggleContractItem({ itemId, state }));
+    runAction(
+      () => toggleContractItem({ itemId, state }),
+      undefined,
+      () => setToday(previous),
+    );
   };
 
   const handleComplete = () => {
@@ -643,6 +660,10 @@ export function DailyContract({ model, readOnly = false }: DailyContractProps) {
   };
 
   const handleShare = (next: DailyContractVisibility) => {
+    // Snapshot pre-click state so a failed server write can revert the
+    // optimistic update below instead of leaving the share control showing an
+    // audience that was never persisted.
+    const previous = today;
     // Optimistic local update so the segmented control snaps instantly.
     setToday((prev) =>
       prev
@@ -655,7 +676,11 @@ export function DailyContract({ model, readOnly = false }: DailyContractProps) {
           }
         : prev,
     );
-    runAction(() => setContractVisibility({ visibility: next }));
+    runAction(
+      () => setContractVisibility({ visibility: next }),
+      undefined,
+      () => setToday(previous),
+    );
   };
 
   // Map status -> phase. 'missed' is its own render path: collapsing it into
