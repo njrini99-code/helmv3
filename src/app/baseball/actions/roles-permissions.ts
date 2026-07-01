@@ -50,11 +50,11 @@ export const getRoleTemplates = withBaseballAction(
     const caps = await resolveBaseballCapabilities(teamId);
 
     const { data: row } = await supabase.from('baseball_teams')
-      .select('program_type')
+      .select('team_type')
       .eq('id', teamId)
       .maybeSingle();
 
-    const programType = (((row as Record<string, unknown> | null)?.program_type as string) ??
+    const programType = (((row as Record<string, unknown> | null)?.team_type as string) ??
       'college') as BaseballProgramType;
     const variant = getProgramVariant(programType);
 
