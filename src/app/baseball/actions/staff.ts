@@ -28,6 +28,15 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 //     upserted, never delete-then-reinsert. Removing a staffer flips status to
 //     'removed' (and zeroes capabilities) rather than deleting the row, so the
 //     audit/contact history is preserved.
+//   - PRIVILEGE-ESCALATION GUARD (Issue #501): holding `can_invite_staff` only
+//     lets a coach manage staff — it does NOT let them grant a capability they
+//     do not themselves hold. inviteStaff and updateStaffCapabilities both
+//     resolve the ACTOR's own capability map (resolveBaseballCapabilities,
+//     the app-side mirror of has_baseball_staff_capability) and clamp the
+//     candidate write — whether it came from a role preset or an explicit
+//     tick — down to that map before it ever reaches the DB. This blocks both
+//     escalating another staffer and self-escalating. Head/primary coaches
+//     resolve to holding every capability, so the clamp is a no-op for them.
 //
 // All errors are routed through withBaseballAction's logger and a sanitized
 // error is rethrown — raw DB errors never reach the client.
@@ -42,7 +51,9 @@ import {
 } from '@/lib/baseball/with-baseball-action';
 import {
   BASEBALL_CAPABILITY_KEYS,
+  resolveBaseballCapabilities,
   type BaseballCapability,
+  type BaseballCapabilityMap,
 } from '@/lib/baseball/capabilities';
 import {
   getBaseballStaffRolePreset,
@@ -86,6 +97,31 @@ function sanitizeCapabilities(
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+/**
+ * PRIVILEGE-ESCALATION GUARD (Issue #501)
+ *
+ * Cap a candidate capability map (whatever inviteStaff/updateStaffCapabilities
+ * is about to write, whether it came from an explicit tick or a role preset)
+ * to the ACTOR'S OWN resolved capabilities on this team. A coach — including
+ * one who holds `can_invite_staff` — can never grant (to someone else, or to
+ * themselves) a capability they do not themselves hold. Head/primary coaches
+ * hold every capability implicitly (resolveBaseballCapabilities returns all
+ * true for them), so this is a no-op for full-authority actors and only
+ * clamps limited staffers. Fail-closed: any assignable key not `true` in the
+ * actor's own resolved map is forced to `false` regardless of what was
+ * requested.
+ */
+function clampToActorCapabilities(
+  requested: Record<BaseballCapability, boolean>,
+  actorCaps: BaseballCapabilityMap,
+): Record<BaseballCapability, boolean> {
+  const out = {} as Record<BaseballCapability, boolean>;
+  for (const key of ASSIGNABLE_CAPABILITY_KEYS) {
+    out[key] = requested[key] === true && actorCaps[key] === true;
+  }
+  return out;
 }
 
 /**
@@ -138,8 +174,14 @@ export const inviteStaff = withBaseballAction(
     const staffRole = isBaseballStaffRole(args.staffRole) ? args.staffRole : null;
     const title =
       typeof args.title === 'string' && args.title.trim() ? args.title.trim() : null;
-    // Capabilities = role preset overlaid with any explicit ticks.
-    const capabilities = resolveInviteCapabilities(staffRole, args.capabilities);
+    // Capabilities = role preset overlaid with any explicit ticks, then clamped
+    // (Issue #501) so the inviter can never grant a capability — via preset or
+    // explicit tick — that they do not themselves hold on this team.
+    const actorCaps = await resolveBaseballCapabilities(ctx.targetTeamId);
+    const capabilities = clampToActorCapabilities(
+      resolveInviteCapabilities(staffRole, args.capabilities),
+      actorCaps,
+    );
     const role =
       typeof args.role === 'string' && args.role.trim()
         ? args.role.trim()
@@ -455,9 +497,15 @@ export const updateStaffCapabilities = withBaseballAction(
       args.capabilities && Object.keys(args.capabilities).length > 0;
     // If a role is set with no explicit caps, apply that role's preset; otherwise
     // overlay explicit caps onto the (possibly-null-role) preset.
-    const caps = hasExplicitCaps
+    const candidateCaps = hasExplicitCaps
       ? resolveInviteCapabilities(staffRole, args.capabilities)
       : sanitizeCapabilities(getBaseballStaffRolePreset(staffRole));
+    // PRIVILEGE-ESCALATION GUARD (Issue #501): clamp to the actor's own
+    // resolved capabilities on this team, whether they are editing another
+    // staffer or (non-head-coach) themselves — a limited staffer can never
+    // grant, or self-grant, a capability they do not hold.
+    const actorCaps = await resolveBaseballCapabilities(ctx.targetTeamId);
+    const caps = clampToActorCapabilities(candidateCaps, actorCaps);
     const role =
       typeof args.role === 'string'
         ? args.role.trim() || null
