@@ -76,8 +76,9 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      // Password updated successfully - redirect to login
-      router.push('/baseball/login?message=Password updated successfully');
+      // Password updated successfully - redirect to login with the
+      // predefined message code (login page only renders known keys)
+      router.push('/baseball/login?message=password_reset');
     } catch {
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
