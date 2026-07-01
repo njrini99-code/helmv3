@@ -92,8 +92,23 @@ export default async function BaseballCalendarPage() {
         .maybeSingle(),
     ]);
 
-    // Map baseball_events → CalendarEvent
-    events = (eventsResult.data || []).map((event) => ({
+    // Map baseball_events → CalendarEvent. Row is annotated because the query
+    // uses fromUntyped (requires_rsvp not yet in generated types).
+    events = (eventsResult.data || []).map((event: {
+      id: string;
+      team_id: string | null;
+      title: string;
+      event_type: string | null;
+      start_time: string;
+      end_time: string | null;
+      location: string | null;
+      description: string | null;
+      is_mandatory: boolean | null;
+      max_attendees: number | null;
+      rsvp_deadline: string | null;
+      requires_rsvp: boolean | null;
+      created_by: string | null;
+    }) => ({
       id: event.id,
       team_id: event.team_id || '',
       title: event.title,
