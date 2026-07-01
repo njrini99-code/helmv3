@@ -157,7 +157,13 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
 
       const newVideoId = saveResult.ids?.[0];
       if (form.is_primary && newVideoId) {
-        await setMyPrimaryVideo({ videoId: newVideoId });
+        // The video itself saved fine; only the "make primary" step can fail
+        // (it returns {success:false} rather than throwing). Surface a
+        // non-blocking notice instead of silently dropping the user's choice.
+        const primaryResult = await setMyPrimaryVideo({ videoId: newVideoId });
+        if (!primaryResult.success) {
+          setError(primaryResult.error ?? 'Video uploaded, but it could not be set as your primary video. You can set it from your video library.');
+        }
       }
       setProgress(100);
 
