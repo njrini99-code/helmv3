@@ -41,9 +41,11 @@ import {
 } from '@/components/baseball/roster';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 import type { RosterReadModel } from '@/lib/baseball/read-models/roster';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { RosterFairway } from './RosterFairway';
 
 type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
-type RosterSurface = 'cards' | 'position' | 'status' | 'development';
+export type RosterSurface = 'cards' | 'position' | 'status' | 'development';
 
 export interface RosterClientProps {
   teamId: string | null;
@@ -53,7 +55,7 @@ export interface RosterClientProps {
   >;
 }
 
-interface PlayerData {
+export interface PlayerData {
   id: string;
   first_name: string | null;
   last_name: string | null;
@@ -67,7 +69,7 @@ interface PlayerData {
   recruiting_activated: boolean | null;
 }
 
-interface TeamMember {
+export interface TeamMember {
   id: string;
   player: PlayerData;
   jersey_number: number | null;
@@ -435,6 +437,88 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
             <p className="text-warm-500">Only coaches can access roster management.</p>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // ── Fairway (warm-premium) presentation — flag-gated, presentation-only.
+  // Passes the SAME computed state/data/handlers this component already owns.
+  // The lineup roster map + onSave closure are duplicated here (rather than
+  // extracted) so the legacy return below stays byte-for-byte unchanged.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full')}>
+        <RosterFairway
+          teamName={selectedTeam?.name || 'Your Team'}
+          activeView={activeView}
+          onActiveViewChange={setActiveView}
+          rosterSurface={rosterSurface}
+          onRosterSurfaceChange={setRosterSurface}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          positionFilter={positionFilter}
+          onPositionFilterChange={setPositionFilter}
+          gradYearFilter={gradYearFilter}
+          onGradYearFilterChange={setGradYearFilter}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={clearFilters}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSortChange={handleSortChange}
+          members={filteredRoster}
+          boardMembers={boardMembers}
+          aggregates={aggregates}
+          stats={rosterStats}
+          loading={loading}
+          aggregatesWarning={aggregatesWarning}
+          onSelectPlayer={handleSelectPlayer}
+          onExport={handleExport}
+          lineupRoster={roster.map((m) => ({
+            id: m.player.id,
+            first_name: m.player.first_name,
+            last_name: m.player.last_name,
+            primary_position: m.player.primary_position,
+            jersey_number: m.jersey_number,
+            avatar_url: m.player.avatar_url,
+          }))}
+          onSaveLineup={async (lineup, name) => {
+            if (!resolvedTeamId) {
+              showToast('No team selected', 'error');
+              return;
+            }
+            const positions = lineup
+              .filter((slot) => slot.player !== null)
+              .map((slot) => ({ order: slot.order, playerId: slot.player!.id }));
+            if (positions.length === 0) {
+              showToast('Please add at least one player to the lineup', 'error');
+              return;
+            }
+            setSavingLineup(true);
+            try {
+              await saveLineup({
+                teamId: resolvedTeamId,
+                name: name || 'Untitled Lineup',
+                positions,
+              });
+              showToast('Lineup saved successfully', 'success');
+            } catch (error) {
+              showToast(
+                error instanceof Error ? error.message : 'Failed to save lineup',
+                'error',
+              );
+            } finally {
+              setSavingLineup(false);
+            }
+          }}
+          onInvite={() => setShowInviteModal(true)}
+          showInviteModal={showInviteModal}
+          onCloseInvite={() => setShowInviteModal(false)}
+          inviteTeamId={resolvedTeamId}
+          inviteTeamName={selectedTeam?.name || 'Your Team'}
+          inviteCoachId={coach?.id ?? null}
+        />
       </div>
     );
   }
