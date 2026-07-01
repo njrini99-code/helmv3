@@ -23,11 +23,6 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null);
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNewPlayer: true,
-    emailMessages: true,
-    emailWeeklyDigest: false,
-  });
 
   // Calculate password strength
   const updatePasswordStrength = (password: string) => {
@@ -156,65 +151,33 @@ export default function SettingsPage() {
           </Link>
         )}
 
-        {/* Notification Settings (Coaches) */}
+        {/* Notification Preferences (Coaches) — the real, persisted store lives on
+            Program Settings (baseball_program_settings.notification_defaults via
+            ProgramSettingsClient + updateProgramSettings). This used to be a
+            second, disconnected card that only updated local React state and
+            toasted "success" with no server call (#454, #466) — removed in
+            favor of a single link to the real surface so there is exactly one
+            place to configure notifications and no fake toggle to drift out of
+            sync with what's actually saved. */}
         {user?.role === 'coach' && (
-          <Card variant="glass">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <IconBell size={20} className="text-warm-600" />
-                <h2 className="font-semibold text-warm-900">Notification Preferences</h2>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <label aria-label="New Player Alerts" className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
-                <div>
-                  <p className="font-medium text-warm-900">New Player Alerts</p>
-                  <p className="text-sm leading-relaxed text-warm-500">Get notified when new players match your criteria</p>
+          <Link href="/baseball/dashboard/settings/program#notifications">
+            <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                      <IconBell size={24} className="text-primary-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-warm-900 mb-1">Notification Preferences</h3>
+                      <p className="text-sm leading-relaxed text-warm-500">Manage quiet hours and per-type notification defaults for your program</p>
+                    </div>
+                  </div>
+                  <IconChevronRight size={20} className="text-warm-400" />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.emailNewPlayer}
-                  onChange={(e) => {
-                    setNotificationSettings(prev => ({ ...prev, emailNewPlayer: e.target.checked }));
-                    showToast(e.target.checked ? 'Player alerts enabled' : 'Player alerts disabled', 'success');
-                  }}
-                  className="w-5 h-5 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                />
-              </label>
-
-              <label aria-label="Message Notifications" className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
-                <div>
-                  <p className="font-medium text-warm-900">Message Notifications</p>
-                  <p className="text-sm leading-relaxed text-warm-500">Email me when I receive new messages</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.emailMessages}
-                  onChange={(e) => {
-                    setNotificationSettings(prev => ({ ...prev, emailMessages: e.target.checked }));
-                    showToast(e.target.checked ? 'Message notifications enabled' : 'Message notifications disabled', 'success');
-                  }}
-                  className="w-5 h-5 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                />
-              </label>
-
-              <label aria-label="Weekly Recruiting Digest" className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
-                <div>
-                  <p className="font-medium text-warm-900">Weekly Recruiting Digest</p>
-                  <p className="text-sm leading-relaxed text-warm-500">Get a weekly summary of new prospects</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notificationSettings.emailWeeklyDigest}
-                  onChange={(e) => {
-                    setNotificationSettings(prev => ({ ...prev, emailWeeklyDigest: e.target.checked }));
-                    showToast(e.target.checked ? 'Weekly digest enabled' : 'Weekly digest disabled', 'success');
-                  }}
-                  className="w-5 h-5 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                />
-              </label>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         )}
 
         <Card variant="glass">

@@ -35,6 +35,38 @@ interface SendMessageOptions {
 }
 
 /**
+ * Whether the program that owns this conversation still wants new-message
+ * bell notifications created. Reads the real, persisted preference at
+ * baseball_program_settings.notification_defaults.message.in_app (set via the
+ * Program Settings > Notifications UI, ProgramSettingsClient +
+ * updateProgramSettings). Defaults to enabled (true) when the conversation
+ * has no team_id (not every baseball conversation is team-scoped) or when the
+ * program has no explicit preference recorded yet — matches the same
+ * "missing key => true" default the settings UI itself uses.
+ */
+async function isBaseballMessageNotificationEnabled(conversationId: string): Promise<boolean> {
+  const supabase = await createClient();
+
+  const { data: conversation } = await supabase
+    .from('baseball_conversations' as any)
+    .select('team_id')
+    .eq('id', conversationId)
+    .maybeSingle() as { data: { team_id: string | null } | null };
+
+  const teamId = conversation?.team_id;
+  if (!teamId) return true;
+
+  const { data: settings } = await supabase
+    .from('baseball_program_settings' as any)
+    .select('notification_defaults')
+    .eq('team_id', teamId)
+    .maybeSingle() as { data: { notification_defaults: Record<string, { in_app?: boolean }> | null } | null };
+
+  const pref = settings?.notification_defaults?.message;
+  return pref?.in_app ?? true;
+}
+
+/**
  * Send a message in a conversation
  * @param conversationId - The conversation ID
  * @param content - The message content
@@ -133,8 +165,16 @@ export async function sendMessage({
       .update({ updated_at: new Date().toISOString() })
       .eq('id', validatedData.conversation_id);
 
-    // Create notifications for other participants (if enabled)
-    if (createNotifications) {
+    // Create notifications for other participants (if enabled AND the program
+    // hasn't disabled message notifications — honors the real, persisted
+    // baseball_program_settings.notification_defaults.message preference set
+    // on Program Settings; see #454/#466).
+    const messageNotificationsEnabled =
+      createNotifications && sport === 'baseball'
+        ? await isBaseballMessageNotificationEnabled(validatedData.conversation_id)
+        : true;
+
+    if (createNotifications && messageNotificationsEnabled) {
       const { data: otherParticipants } = await supabase
         .from(participantsTable as any)
         .select('user_id')
