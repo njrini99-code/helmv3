@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { PageLoading } from '@/components/ui/loading';
+import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import {
   IconUsers,
@@ -405,38 +407,52 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
 
   if (authLoading) return <PageLoading />;
 
-  if (loadError === 'unauthorized') {
+  // Role-aware "back home" target for the coach-only walls below, so a player
+  // who lands here by direct URL is guided back to their own home rather than a
+  // coach surface (the nav no longer advertises Roster to players).
+  const homeHref =
+    user?.role === 'player'
+      ? '/baseball/player/today'
+      : '/baseball/dashboard/command-center';
+
+  if (loadError === 'unauthorized' || (loadError === null && user?.role !== 'coach')) {
     return (
-      <div className="p-8">
-        <Card variant="glass">
-          <CardContent className="p-12 text-center">
-            <p className="text-warm-500">You do not have permission to view this team roster.</p>
-          </CardContent>
-        </Card>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <EmptyState
+          variant="card"
+          glass
+          className="mx-auto max-w-lg"
+          icon={<IconUsers size={40} />}
+          title="Roster is coach-only"
+          description="The team roster workspace — lineups, player management, and exports — is available to coaches and staff. Your schedule, stats, and assignments live on your own dashboard."
+          action={
+            <Link href={homeHref}>
+              <Button variant="primary" size="md">
+                {user?.role === 'player' ? 'Back to My Today' : 'Back to Command Center'}
+              </Button>
+            </Link>
+          }
+        />
       </div>
     );
   }
 
   if (loadError === 'roster') {
     return (
-      <div className="p-8">
-        <Card variant="glass">
-          <CardContent className="p-12 text-center">
-            <p className="text-warm-500">We could not load the roster. Try refreshing the page.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (user?.role !== 'coach') {
-    return (
-      <div className="p-8">
-        <Card variant="glass">
-          <CardContent className="p-12 text-center">
-            <p className="text-warm-500">Only coaches can access roster management.</p>
-          </CardContent>
-        </Card>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <EmptyState
+          variant="card"
+          glass
+          className="mx-auto max-w-lg"
+          icon={<IconUsers size={40} />}
+          title="We couldn't load the roster"
+          description="Something went wrong fetching your team roster. Refresh the page to try again."
+          action={
+            <Button variant="primary" size="md" onClick={() => router.refresh()}>
+              Try again
+            </Button>
+          }
+        />
       </div>
     );
   }

@@ -1,26 +1,55 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
+import { EmptyState } from '@/components/ui/empty-state';
 import { ProfileEditor } from '@/components/features/profile-editor';
 import { CollegeProfileEditor } from '@/components/baseball/profile';
 import { useAuth } from '@/hooks/use-auth';
-import { IconGlobe } from '@/components/icons';
+import { IconGlobe, IconUser } from '@/components/icons';
 import { Player } from '@/lib/types';
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { user, player, loading, updatePlayer } = useAuth();
 
-  if (loading) return <PageLoading />;
+  const isCoach = user?.role === 'coach';
+
+  // "My Profile" is the PLAYER's own athlete profile — coaches have no player
+  // record here. Rather than strand a coach on a bare "players only" wall (the
+  // QA nav dead-end), send them to their own home, mirroring how Analytics and
+  // the coach-only settings surfaces already redirect coaches to the Command
+  // Center. A coach's own account/program identity lives under Settings.
+  useEffect(() => {
+    if (!loading && isCoach) {
+      router.replace('/baseball/dashboard/command-center');
+    }
+  }, [loading, isCoach, router]);
+
+  if (loading || isCoach) return <PageLoading />;
 
   if (user?.role !== 'player' || !player) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-warm-600">This page is only available to players</p>
-        </div>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <EmptyState
+          variant="card"
+          glass
+          className="mx-auto max-w-lg"
+          icon={<IconUser size={40} />}
+          title="Profile unavailable"
+          description="We couldn't load a player profile for this account. If you're a player, refresh to try again — otherwise head back to your dashboard."
+          action={
+            <Link href="/baseball/dashboard/command-center">
+              <Button variant="primary" size="md">
+                Go to Command Center
+              </Button>
+            </Link>
+          }
+        />
       </div>
     );
   }
