@@ -14,7 +14,9 @@ import type { BaseballTask } from '@/app/baseball/actions/tasks';
 import { TasksList } from '@/components/baseball/tasks/TasksList';
 import { CreateTaskModal } from '@/components/baseball/tasks/CreateTaskModal';
 import { ReminderBanner } from '@/components/baseball/tasks/ReminderBanner';
+import { TasksFairway } from '@/components/baseball/tasks/TasksFairway';
 import { TaskListSkeleton } from '@/components/ui/skeleton';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 
 interface RosterPlayer {
   id: string;
@@ -156,6 +158,27 @@ export default function BaseballTasksPage() {
     { value: 'completed', label: 'Completed' },
     { value: 'overdue', label: 'Overdue' },
   ];
+
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <TasksFairway
+          tasks={tasks}
+          filter={filter}
+          onFilterChange={setFilter}
+          isCoach={isCoach}
+          currentPlayerId={player?.id || null}
+          selectedTeamId={selectedTeamId}
+          loading={loading}
+          overdueCount={overdueCount}
+          players={players}
+          showCreateModal={showCreateModal}
+          onShowCreateModal={setShowCreateModal}
+          onRefresh={fetchData}
+        />
+      </div>
+    );
+  }
 
   return (
     <>
