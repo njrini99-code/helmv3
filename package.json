@@ -105,7 +105,7 @@
     "@types/react-dom": "^19.2.3",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
-    "@vercel/analytics": "^1.6.1",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "@visx/visx": "^3.12.0",
     "ai": "6.0.197",
