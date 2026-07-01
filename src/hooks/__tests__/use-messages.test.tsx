@@ -10,10 +10,15 @@
  *    matching message in place so the checkmark upgrades live.
  *  - INSERT dedup: the realtime INSERT handler must not double-add a message
  *    it has already seen.
+ *  - #451: useConversations must NOT subscribe unfiltered to every row of
+ *    baseball_messages platform-wide; it must scope its realtime
+ *    subscription to the viewer's own rows (baseball_conversation_participants
+ *    filtered by user_id).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { useMessages } from '../use-messages';
+import { useMessages, useConversations } from '../use-messages';
+import { useAuthStore } from '@/stores/auth-store';
 import type { Message } from '@/lib/types';
 
 // ── Server action mocks (controllable per test) ─────────────────────────────
@@ -29,12 +34,18 @@ vi.mock('@/app/baseball/actions/messages', () => ({
 // records `.on(...)` handlers so tests can fire simulated realtime events ──
 type Handler = (payload: { new: unknown }) => void;
 const channelHandlers = new Map<string, Handler[]>();
+// Every `.on('postgres_changes', config, handler)` call across every channel
+// created during a test, so #451 can assert exactly which tables/filters the
+// hook actually subscribed to (not just which events fired).
+type SubscriptionConfig = { event: string; schema?: string; table?: string; filter?: string };
+let subscriptionConfigs: SubscriptionConfig[] = [];
 
 let queryResult: { data: Message[] | null } = { data: [] };
+let rpcResult: { data: unknown[]; error: null | { message: string } } = { data: [], error: null };
 
 function makeQueryChain() {
   const chain: Record<string, unknown> = {};
-  for (const method of ['select', 'eq', 'order']) {
+  for (const method of ['select', 'eq', 'order', 'in']) {
     chain[method] = () => chain;
   }
   (chain as { then: (resolve: (v: unknown) => void) => void }).then = (resolve) => {
@@ -52,9 +63,11 @@ function fireChannelEvent(event: string, payload: { new: unknown }) {
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     from: () => makeQueryChain(),
+    rpc: () => Promise.resolve(rpcResult),
     channel: () => {
       const channelStub = {
-        on: (_type: string, config: { event: string }, handler: Handler) => {
+        on: (_type: string, config: SubscriptionConfig, handler: Handler) => {
+          subscriptionConfigs.push(config);
           const list = channelHandlers.get(config.event) ?? [];
           list.push(handler);
           channelHandlers.set(config.event, list);
@@ -66,6 +79,10 @@ vi.mock('@/lib/supabase/client', () => ({
     },
     removeChannel: () => undefined,
   }),
+}));
+
+vi.mock('@/stores/auth-store', () => ({
+  useAuthStore: vi.fn(),
 }));
 
 function makeMessage(overrides: Partial<Message> = {}): Message {
@@ -83,9 +100,12 @@ function makeMessage(overrides: Partial<Message> = {}): Message {
 describe('useMessages', () => {
   beforeEach(() => {
     channelHandlers.clear();
+    subscriptionConfigs = [];
     queryResult = { data: [] };
+    rpcResult = { data: [], error: null };
     sendMessageMock.mockReset();
     markMessagesAsReadMock.mockReset().mockResolvedValue({ success: true });
+    vi.mocked(useAuthStore).mockReturnValue({ user: { id: 'me' } } as unknown as ReturnType<typeof useAuthStore>);
   });
 
   describe('sendMessage (#450)', () => {
@@ -160,5 +180,35 @@ describe('useMessages', () => {
 
       await waitFor(() => expect(result.current.messages).toHaveLength(1));
     });
+  });
+});
+
+describe('useConversations realtime scoping (#451)', () => {
+  beforeEach(() => {
+    channelHandlers.clear();
+    subscriptionConfigs = [];
+    rpcResult = { data: [], error: null };
+    vi.mocked(useAuthStore).mockReturnValue({ user: { id: 'me' } } as unknown as ReturnType<typeof useAuthStore>);
+  });
+
+  it('does not subscribe unfiltered to baseball_messages platform-wide', async () => {
+    const { result } = renderHook(() => useConversations());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const unfilteredMessagesSub = subscriptionConfigs.find(
+      (c) => c.table === 'baseball_messages' && !c.filter
+    );
+    expect(unfilteredMessagesSub).toBeUndefined();
+  });
+
+  it('subscribes to baseball_conversation_participants filtered by the viewer\'s user_id', async () => {
+    const { result } = renderHook(() => useConversations());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    const participantsSub = subscriptionConfigs.find(
+      (c) => c.table === 'baseball_conversation_participants'
+    );
+    expect(participantsSub).toBeDefined();
+    expect(participantsSub?.filter).toBe('user_id=eq.me');
   });
 });
