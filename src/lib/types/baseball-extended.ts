@@ -484,8 +484,10 @@ export interface BaseballCoachNoteRow {
   author_coach_id: string | null;
   body: string;
   scope: BaseballNoteScope;
-  edited_at: string | null;
-  deleted_at: string | null;
+  /** Edit-tracking timestamp (the table has no separate edited_at column). */
+  updated_at: string;
+  /** Soft-delete timestamp (the table has no separate deleted_at column). */
+  archived_at: string | null;
   created_at: string;
 }
 
@@ -496,14 +498,14 @@ export interface BaseballCoachNoteInsert {
   author_coach_id?: string | null;
   body: string;
   scope?: BaseballNoteScope;
-  edited_at?: string | null;
-  deleted_at?: string | null;
+  updated_at?: string;
+  archived_at?: string | null;
   created_at?: string;
 }
 
 export interface BaseballCoachNoteUpdate {
   body?: string;
   scope?: BaseballNoteScope;
-  edited_at?: string | null;
-  deleted_at?: string | null;
+  updated_at?: string;
+  archived_at?: string | null;
 }

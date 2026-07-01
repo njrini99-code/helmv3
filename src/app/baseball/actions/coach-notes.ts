@@ -14,9 +14,11 @@
 //   * Sentry scope + centralized error logging (sanitized rethrow)
 //
 // NON-DESTRUCTIVE BY CONTRACT:
-//   * edit  -> UPDATE body/scope + edited_at (prior body is replaced in place,
-//              but there is no delete-then-reinsert; edited_at records the touch)
-//   * delete -> SOFT delete (deleted_at = now()); the row is never hard-deleted.
+//   * edit  -> UPDATE body/scope + updated_at (prior body is replaced in place,
+//              but there is no delete-then-reinsert; updated_at records the touch
+//              — the live table has no separate edited_at column)
+//   * delete -> SOFT delete (archived_at = now()); the row is never hard-deleted
+//              — the live table has no separate deleted_at column.
 //
 // TIMELINE LOOP: creating a note appends a 'note' timeline event (staff_only by
 // default, or 'player_only' when the note is player_visible) via the existing
@@ -181,10 +183,11 @@ export const createCoachNote = withBaseballAction(
 // -----------------------------------------------------------------------------
 
 /**
- * Edit a note's body and/or scope in place (non-destructive: edited_at is
- * stamped; no delete-then-reinsert). The author may edit their own note; a
- * head/primary coach may edit any. Changing scope requires authoring permission
- * for the NEW scope. RLS is the real boundary; this re-checks app-side too.
+ * Edit a note's body and/or scope in place (non-destructive: updated_at is
+ * stamped; no delete-then-reinsert — the live table has no separate edited_at
+ * column). The author may edit their own note; a head/primary coach may edit
+ * any. Changing scope requires authoring permission for the NEW scope. RLS is
+ * the real boundary; this re-checks app-side too.
  */
 export const updateCoachNote = withBaseballAction(
   'updateCoachNote',
@@ -202,11 +205,11 @@ export const updateCoachNote = withBaseballAction(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing } = await (supabase as any)
       .from('baseball_coach_notes')
-      .select('id, player_id, team_id, author_coach_id, scope, deleted_at')
+      .select('id, player_id, team_id, author_coach_id, scope, archived_at')
       .eq('id', noteId)
       .maybeSingle();
 
-    if (!existing || existing.deleted_at) {
+    if (!existing || existing.archived_at) {
       return { success: false, error: 'That note could not be found.' };
     }
 
@@ -221,7 +224,7 @@ export const updateCoachNote = withBaseballAction(
       return { success: false, error: 'You can only edit your own notes.' };
     }
 
-    const patch: BaseballCoachNoteUpdate = { edited_at: new Date().toISOString() };
+    const patch: BaseballCoachNoteUpdate = { updated_at: new Date().toISOString() };
 
     if (typeof args.body === 'string') {
       const body = args.body.trim();
@@ -258,8 +261,9 @@ export const updateCoachNote = withBaseballAction(
 // -----------------------------------------------------------------------------
 
 /**
- * Soft-delete a note (deleted_at = now()). NEVER a hard row delete. The author
- * may delete their own; head/primary may delete any.
+ * Soft-delete a note (archived_at = now() — the live table has no separate
+ * deleted_at column). NEVER a hard row delete. The author may delete their
+ * own; head/primary may delete any.
  */
 export const deleteCoachNote = withBaseballAction(
   'deleteCoachNote',
@@ -273,11 +277,11 @@ export const deleteCoachNote = withBaseballAction(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing } = await (supabase as any)
       .from('baseball_coach_notes')
-      .select('id, player_id, team_id, author_coach_id, deleted_at')
+      .select('id, player_id, team_id, author_coach_id, archived_at')
       .eq('id', noteId)
       .maybeSingle();
 
-    if (!existing || existing.deleted_at) {
+    if (!existing || existing.archived_at) {
       // Idempotent: deleting an already-deleted/absent note is a no-op success.
       return { success: true, noteId };
     }
@@ -296,7 +300,7 @@ export const deleteCoachNote = withBaseballAction(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('baseball_coach_notes')
-      .update({ deleted_at: new Date().toISOString() } satisfies BaseballCoachNoteUpdate)
+      .update({ archived_at: new Date().toISOString() } satisfies BaseballCoachNoteUpdate)
       .eq('id', noteId);
 
     if (error) throw error;
