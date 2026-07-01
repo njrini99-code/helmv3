@@ -108,6 +108,10 @@ export type BaseballInsightType =
   | 'breakout_candidate'
   | 'position_opportunity'
   | 'development_milestone'
+  // Milestone-kind-specific types so a player crossing both a hit and an HR
+  // milestone in one run persists both (reconcile keys by playerId::insight_type).
+  | 'milestone_hits'
+  | 'milestone_hr'
   | 'comparison_alert'
   // Additional types for AI insights engine
   | 'decline'
