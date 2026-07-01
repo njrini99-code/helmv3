@@ -29,8 +29,10 @@ export default function ProfilePage() {
     await updatePlayer(updates);
   };
 
-  // Use CollegeProfileEditor for college/juco players
-  const isCollegePlayer = player.player_type === 'college' || player.player_type === 'juco';
+  // Only true college players get the team-only editor. JUCO players are
+  // transfer-recruiting-eligible (opt-in activation), so they need the
+  // recruiting ProfileEditor with showcase fields like videos — same as HS.
+  const isCollegePlayer = player.player_type === 'college';
 
   return (
     <>
