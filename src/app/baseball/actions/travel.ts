@@ -192,13 +192,16 @@ const createItineraryAction = withBaseballAction(
       await requireBaseballCapability(teamId, 'can_manage_settings');
     }
 
+    const coachId = ctx.activeCoachId;
+    if (!coachId) return { success: false as const, error: 'Coach profile not found.' };
+
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: created, error } = await (supabase as any)
       .from('baseball_travel_itineraries')
       .insert({
         ...validated,
-        created_by: ctx.user.id,
+        created_by: coachId,
       })
       .select()
       .single();
