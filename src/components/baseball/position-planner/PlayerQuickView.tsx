@@ -351,7 +351,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             'backdrop-blur-sm'
           )}
         >
-          <Link href={`/baseball/dashboard/players/${player.id}`} className="block">
+          <Link href={`/baseball/player/${player.id}`} className="block">
             <Button
               variant="primary"
               className={cn(
