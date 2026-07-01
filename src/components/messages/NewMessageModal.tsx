@@ -72,9 +72,13 @@ export function NewMessageModal({
 
         setResults(playerResults);
       } else {
-        // Player searching for coaches
+        // Player searching for coaches.
+        // Read from the baseball_coaches_public view (non-PII columns only:
+        // no email/phone) so coaches remain discoverable after baseball_coaches
+        // RLS is narrowed to self-or-teammate. The view keeps the FK
+        // relationship to organizations, so the org-name embed still resolves.
         let coachQuery = supabase
-          .from('baseball_coaches')
+          .from('baseball_coaches_public')
           .select('id, user_id, full_name, title, avatar_url, organization:organizations(name)');
 
         if (query.trim()) {
@@ -89,7 +93,7 @@ export function NewMessageModal({
         }
 
         const coachResults: SearchResult[] = (coaches || [])
-          .filter(c => c.user_id)
+          .filter((c): c is typeof c & { id: string; user_id: string } => Boolean(c.id && c.user_id))
           .map(c => ({
             id: c.id,
             userId: c.user_id,
