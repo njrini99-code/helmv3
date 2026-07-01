@@ -142,11 +142,17 @@ function templateForInsightType(insightType: string): StationTemplate {
   return DEFAULT_TEMPLATE;
 }
 
-/** Normalize a raw visibility value to the V2 vocabulary (staff_only floor). */
-function normalizeVisibility(raw: unknown): BaseballBlockVisibility {
-  if (raw === 'player_visible' || raw === 'restricted' || raw === 'staff_only') return raw;
-  // Insights default to staff_only unless explicitly marked player-visible.
-  return 'staff_only';
+/**
+ * Map the engine's `player_visible` boolean (baseball_coach_insights.player_visible,
+ * migration 20260624000070) to the V2 block visibility vocabulary. Mirrors the
+ * same boolean -> ladder mapping used by convertInsightToAction
+ * (coachhelm-actions.ts: `insight.player_visible ? 'team' : 'staff_only'`) and
+ * insightVisibility (signal-from-insight.ts). The column has no "restricted"
+ * state — a signal is either player_visible (the subject player may read it) or
+ * staff_only (the default; never leaked to players).
+ */
+function insightVisibility(playerVisible: unknown): BaseballBlockVisibility {
+  return playerVisible === true ? 'player_visible' : 'staff_only';
 }
 
 // -----------------------------------------------------------------------------
@@ -174,7 +180,7 @@ export const getPracticeIntelligence = withBaseballAction(
       .select(
         `
         id, insight_type, title, body, priority, status, confidence, metadata,
-        player_id, created_at,
+        player_id, player_visible, created_at,
         player:baseball_players(id, first_name, last_name)
       `,
       )
@@ -212,7 +218,7 @@ export const getPracticeIntelligence = withBaseballAction(
       const playerName = player
         ? [player.first_name, player.last_name].filter(Boolean).join(' ') || null
         : null;
-      const visibility = normalizeVisibility(meta.visibility);
+      const visibility = insightVisibility(row.player_visible);
       // confidence column is canonical; metadata.confidence is a mirror.
       const confidence =
         typeof row.confidence === 'number'
