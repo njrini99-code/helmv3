@@ -77,3 +77,11 @@ export {
   GRADE_VAR,
 } from './grades';
 export type { GradeBand } from './grades';
+
+// Baseball number formatters (leading-zero-drop for rate stats, etc.)
+export { formatRate, formatRatio, formatInnings } from './format';
+
+// L2 molecules — the reusable surface building blocks composed from the atoms.
+export * from './molecules';
+// L2 viz molecules — BreakPlot / SprayChart / ClimbArc (clay-canvas + paper).
+export * from './viz';
