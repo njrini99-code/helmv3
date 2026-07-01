@@ -34,6 +34,39 @@ cross-file, whole-codebase view that diff-level review misses**:
 Leave the line-level lint/style/syntax findings to CodeRabbit unless
 they're load-bearing for a cross-file problem.
 
+## Business/product context to read before reviewing
+
+helmv3 is a commercial product, not a toy repo. Review like a product-aware
+staff engineer: a change can be syntactically perfect and still be wrong for
+the business. The `docs/business/` set is the product brain — read and enforce
+it alongside the architecture docs:
+
+- `docs/business/00-business-context.md` — company + 4-product overview, tenancy, buyer-vs-user.
+- `docs/business/01-personas.md` — every role, permission scope, data sensitivity (players are often minors).
+- `docs/business/02-jobs-to-be-done.md` — the jobs coaches/players hire the product to do.
+- `docs/business/03-product-invariants.md` — THE enforceable must/never rules (RLS/tenancy, calendar/timezone, SG correctness, recruiting pipeline, LLM budget, no destructive writes, permissions). Your primary product-rule checklist.
+- `docs/business/04-workflow-maps.md` — route → action → table traces for core GolfHelm workflows, invariants flagged inline.
+- `docs/business/05-revenue-and-packaging.md` — what the repo does/doesn't implement around money (no billing in-repo; the per-coach daily LLM budget is the only enforced cost control).
+- `docs/business/06-competitor-positioning.md` — Clippd/DECADE/Arccos/Whoop; where Helm is deliberately differentiated.
+- `docs/business/08-golfhelm-business-context.md` — GolfHelm buyer promise + feature purpose + never-break list.
+- `docs/business/09-coachhelm-business-context.md` — CoachHelm LLM budget/trust invariants, citation-verification contract, effectiveness ledger.
+
+BaseballHelm and Lift Lab business docs (`07-*`, `10-*`) plus their
+`memory/context/*` brains are in progress. Until they land, enforce baseball
+recruiting rules only as the stable invariants in `03-product-invariants.md`
+§(d), and do NOT flag current baseball implementation detail as if it were a
+settled contract — that subsystem is under active rework.
+
+When reviewing a PR, flag not only code bugs but **product-context violations**:
+
+- Does this make the coach's core workflow (pick who travels, know who's improving and why) harder or slower?
+- Does this violate the buyer promise, or add noise/cost for the paid buyer (the program) while barely helping a player?
+- Does this create duplicate manual work the product exists to eliminate?
+- Does this ignore a timezone, permissions, role, roster, recruiting, or import invariant from `03-product-invariants.md`?
+- Does this create confusion for players (e.g. a required event that doesn't read as required)?
+- Does this dull a stated differentiator, or copy a competitor weakness we criticized (`06-*`)?
+- Does an insight/narrative make a causal claim not traceable to `docs/v3-research-golf-domain.md`?
+
 ## Hard rules (block the PR)
 
 1. **Sport-prefixed table names.** All Supabase tables are
