@@ -612,6 +612,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_actions_assignee_coach_id_fkey"
+            columns: ["assignee_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_actions_assignee_player_id_fkey"
             columns: ["assignee_player_id"]
             isOneToOne: false
@@ -623,6 +630,13 @@ export type Database = {
             columns: ["owner_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_actions_owner_coach_id_fkey"
+            columns: ["owner_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -650,64 +664,124 @@ export type Database = {
       }
       baseball_ai_audit: {
         Row: {
+          confidence: number | null
           cost_usd: number | null
           created_at: string
+          created_by: string | null
           dedupe_key: string | null
+          desired_visibility: string | null
+          disposition: string | null
           error_message: string | null
+          generated_at: string
+          generator: string | null
+          guardrail_academic: boolean
+          guardrail_medical: boolean
+          guardrail_redacted: boolean
           id: string
           input_token_count: number | null
           latency_ms: number | null
           metadata: Json
+          model: string | null
           model_id: string | null
           outcome: string | null
           outcome_at: string | null
           outcome_by: string | null
           output_hash: string | null
+          output_id: string | null
           output_kind: string
+          output_table: string | null
           output_token_count: number | null
           player_id: string | null
           prompt_hash: string | null
+          prompt_version: string | null
+          provider: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_refs: Json
           team_id: string
+          updated_at: string
+          visibility: string | null
+          withheld_reason: string | null
         }
         Insert: {
+          confidence?: number | null
           cost_usd?: number | null
           created_at?: string
+          created_by?: string | null
           dedupe_key?: string | null
+          desired_visibility?: string | null
+          disposition?: string | null
           error_message?: string | null
+          generated_at?: string
+          generator?: string | null
+          guardrail_academic?: boolean
+          guardrail_medical?: boolean
+          guardrail_redacted?: boolean
           id?: string
           input_token_count?: number | null
           latency_ms?: number | null
           metadata?: Json
+          model?: string | null
           model_id?: string | null
           outcome?: string | null
           outcome_at?: string | null
           outcome_by?: string | null
           output_hash?: string | null
+          output_id?: string | null
           output_kind: string
+          output_table?: string | null
           output_token_count?: number | null
           player_id?: string | null
           prompt_hash?: string | null
+          prompt_version?: string | null
+          provider?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_refs?: Json
           team_id: string
+          updated_at?: string
+          visibility?: string | null
+          withheld_reason?: string | null
         }
         Update: {
+          confidence?: number | null
           cost_usd?: number | null
           created_at?: string
+          created_by?: string | null
           dedupe_key?: string | null
+          desired_visibility?: string | null
+          disposition?: string | null
           error_message?: string | null
+          generated_at?: string
+          generator?: string | null
+          guardrail_academic?: boolean
+          guardrail_medical?: boolean
+          guardrail_redacted?: boolean
           id?: string
           input_token_count?: number | null
           latency_ms?: number | null
           metadata?: Json
+          model?: string | null
           model_id?: string | null
           outcome?: string | null
           outcome_at?: string | null
           outcome_by?: string | null
           output_hash?: string | null
+          output_id?: string | null
           output_kind?: string
+          output_table?: string | null
           output_token_count?: number | null
           player_id?: string | null
           prompt_hash?: string | null
+          prompt_version?: string | null
+          provider?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_refs?: Json
           team_id?: string
+          updated_at?: string
+          visibility?: string | null
+          withheld_reason?: string | null
         }
         Relationships: [
           {
@@ -841,6 +915,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_announcements_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_announcements_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -895,6 +976,13 @@ export type Database = {
             columns: ["created_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_availability_statuses_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -1470,6 +1558,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_box_score_uploads_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_box_score_uploads_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
@@ -1588,6 +1683,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_camps_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -1900,6 +2002,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_coach_insights_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_coach_insights_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
@@ -1970,6 +2079,13 @@ export type Database = {
             columns: ["author_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_coach_notes_author_coach_id_fkey"
+            columns: ["author_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -2054,6 +2170,13 @@ export type Database = {
             referencedRelation: "baseball_coaches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "baseball_coach_philosophy_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: true
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       baseball_coach_player_notes: {
@@ -2108,6 +2231,13 @@ export type Database = {
             columns: ["author_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_coach_player_notes_author_coach_id_fkey"
+            columns: ["author_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -2213,6 +2343,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: true
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_coach_recruiting_philosophy_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: true
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2548,6 +2685,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_developmental_plans_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_developmental_plans_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
@@ -2845,6 +2989,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_events_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -2893,6 +3044,13 @@ export type Database = {
             columns: ["created_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_exercises_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -3041,6 +3199,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_games_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -3358,6 +3523,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_lift_assignments_assigned_by_coach_id_fkey"
+            columns: ["assigned_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_lift_assignments_exercise_id_fkey"
             columns: ["exercise_id"]
             isOneToOne: false
@@ -3462,6 +3634,13 @@ export type Database = {
             columns: ["created_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_lift_exercise_substitutions_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -3574,6 +3753,13 @@ export type Database = {
             columns: ["created_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_lift_exercises_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -3710,6 +3896,13 @@ export type Database = {
             columns: ["created_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_lift_import_runs_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -3873,6 +4066,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_lift_program_assignments_assigned_by_coach_id_fkey"
+            columns: ["assigned_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_lift_program_assignments_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -3971,6 +4171,13 @@ export type Database = {
             columns: ["created_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_lift_programs_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -4181,6 +4388,13 @@ export type Database = {
             columns: ["modified_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_lift_session_exercises_modified_by_coach_id_fkey"
+            columns: ["modified_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -4530,6 +4744,13 @@ export type Database = {
             columns: ["owner_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_meeting_items_owner_coach_id_fkey"
+            columns: ["owner_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -5023,6 +5244,13 @@ export type Database = {
             referencedRelation: "baseball_coaches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "baseball_player_comparisons_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       baseball_player_daily_contracts: {
@@ -5182,6 +5410,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_player_engagement_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -5789,6 +6024,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_player_stats_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_player_stats_import_run_id_fkey"
             columns: ["import_run_id"]
             isOneToOne: false
@@ -6112,6 +6354,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_postgame_reviews_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_postgame_reviews_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
@@ -6309,6 +6558,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_practice_blocks_coach_owner_id_fkey"
+            columns: ["coach_owner_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_practice_blocks_practice_id_fkey"
             columns: ["practice_id"]
             isOneToOne: false
@@ -6389,6 +6645,13 @@ export type Database = {
             columns: ["reviewed_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_practice_effectiveness_revie_reviewed_by_coach_id_fkey"
+            columns: ["reviewed_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -6857,6 +7120,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_seasons_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_seasons_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -7015,6 +7285,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_signals_owner_coach_id_fkey"
+            columns: ["owner_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_signals_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
@@ -7125,10 +7402,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_staff_audit_events_actor_coach_id_fkey"
+            columns: ["actor_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_staff_audit_events_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_staff_audit_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -7201,10 +7492,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_staff_invitations_invited_by_coach_id_fkey"
+            columns: ["invited_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_staff_invitations_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_staff_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -7418,6 +7723,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_stat_uploads_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_stat_uploads_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -7481,6 +7793,13 @@ export type Database = {
             columns: ["created_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_stat_visual_views_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -7600,6 +7919,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_strength_group_members_added_by_coach_id_fkey"
+            columns: ["added_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_strength_group_members_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -7658,6 +7984,13 @@ export type Database = {
             columns: ["created_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_strength_groups_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -7810,6 +8143,13 @@ export type Database = {
             columns: ["verified_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_strength_prs_verified_by_coach_id_fkey"
+            columns: ["verified_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
         ]
@@ -7977,6 +8317,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_task_templates_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_task_templates_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -8043,6 +8390,13 @@ export type Database = {
             columns: ["created_by_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_tasks_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -8169,6 +8523,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_team_coach_staff_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_team_coach_staff_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -8223,6 +8584,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "baseball_team_invitations_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "baseball_team_invitations_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -8262,6 +8630,13 @@ export type Database = {
             columns: ["created_by_coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_team_lineups_created_by_coach_id_fkey"
+            columns: ["created_by_coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -8319,6 +8694,13 @@ export type Database = {
             columns: ["approved_by"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_team_members_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -8425,6 +8807,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_teams_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -8610,6 +8999,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_travel_itineraries_created_by_id_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -8935,6 +9331,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_watchlists_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_coaches_public"
             referencedColumns: ["id"]
           },
           {
@@ -19431,6 +19834,51 @@ export type Database = {
       }
     }
     Views: {
+      baseball_coaches_public: {
+        Row: {
+          avatar_url: string | null
+          coach_type: Database["public"]["Enums"]["baseball_coach_type"] | null
+          full_name: string | null
+          id: string | null
+          organization_id: string | null
+          title: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          coach_type?: Database["public"]["Enums"]["baseball_coach_type"] | null
+          full_name?: string | null
+          id?: string | null
+          organization_id?: string | null
+          title?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          coach_type?: Database["public"]["Enums"]["baseball_coach_type"] | null
+          full_name?: string | null
+          id?: string | null
+          organization_id?: string | null
+          title?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "baseball_coaches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_coaches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_coach_engagement: {
         Row: {
           clicks_90d: number | null
