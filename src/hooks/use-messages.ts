@@ -169,20 +169,17 @@ export function useConversations() {
       });
     });
 
-    // Batch fetch user details (single query for all users)
+    // Batch fetch user details (single query for all users).
+    // Players stay embedded; coaches are fetched separately from the
+    // baseball_coaches_public view (non-PII columns only) so they remain
+    // resolvable after baseball_coaches RLS is narrowed to self-or-teammate.
+    const otherUserIdList = Array.from(otherUserIds);
     const { data: usersData } = await supabase
       .from('users')
       .select(`
         id,
         email,
         role,
-        baseball_coaches (
-          id,
-          full_name,
-          avatar_url,
-          coach_type,
-          organization:organizations(name)
-        ),
         baseball_players (
           id,
           first_name,
@@ -192,7 +189,44 @@ export function useConversations() {
           avatar_url
         )
       `)
-      .in('id', Array.from(otherUserIds));
+      .in('id', otherUserIdList);
+
+    // Coaches: two-step fetch via the public view + org names, keyed by user_id
+    // (avoids depending on reverse view-embedding through the users table).
+    const { data: coachesData } = await supabase
+      .from('baseball_coaches_public')
+      .select('id, user_id, full_name, avatar_url, coach_type, organization_id')
+      .in('user_id', otherUserIdList);
+
+    const coachOrgIds = Array.from(
+      new Set(
+        (coachesData || [])
+          .map((c) => c.organization_id)
+          .filter((v): v is string => Boolean(v)),
+      ),
+    );
+    const orgNameById = new Map<string, string | null>();
+    if (coachOrgIds.length) {
+      const { data: orgs } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .in('id', coachOrgIds);
+      (orgs || []).forEach((o) => orgNameById.set(o.id, o.name));
+    }
+
+    const coachByUserId = new Map<string, UserDetail['baseball_coaches']>();
+    (coachesData || []).forEach((c) => {
+      if (!c.id || !c.user_id) return;
+      coachByUserId.set(c.user_id, {
+        id: c.id,
+        full_name: c.full_name,
+        avatar_url: c.avatar_url,
+        coach_type: c.coach_type,
+        organization: c.organization_id
+          ? { name: orgNameById.get(c.organization_id) ?? null }
+          : null,
+      });
+    });
 
     // Define user detail type for the map
     interface UserDetail {
@@ -216,9 +250,19 @@ export function useConversations() {
       } | null;
     }
 
-    // Create a lookup map for user details
+    // Create a lookup map for user details, merging in coach data from the
+    // public-view fetch above (coaches are no longer embedded in usersData).
     const userDetailsMap = new Map<string, UserDetail>(
-      (usersData || []).map((u: UserDetail) => [u.id, u])
+      (usersData || []).map((u) => [
+        u.id,
+        {
+          id: u.id,
+          email: u.email,
+          role: u.role,
+          baseball_coaches: coachByUserId.get(u.id) ?? null,
+          baseball_players: u.baseball_players,
+        },
+      ])
     );
 
     // Transform to ConversationWithMeta format
