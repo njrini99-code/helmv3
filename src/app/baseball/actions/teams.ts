@@ -473,6 +473,19 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
       .single();
 
     if (inviteError || !invitation) {
+      // The code wasn't found in baseball_team_invitations, but it may be a
+      // persistent team join_code (baseball_teams.join_code) rather than an
+      // invitation-table code. Mirror the dual-lookup the /baseball/join/[code]
+      // page does server-side, so a valid join_code typed into onboarding or the
+      // teamless-player widget (which call processTeamInvitation directly) still
+      // joins the team instead of failing with "Invalid invitation code".
+      // Auth + player-ownership are already verified above; joinTeamByCode →
+      // joinTeam re-validates the join independently.
+      const fallback = await joinTeamByCode(validatedData.invite_code, validatedData.player_id);
+      if (fallback.success) {
+        return fallback;
+      }
+
       console.warn('[Security] Invalid team invitation attempt:', { inviteCode: validatedData.invite_code, playerId: validatedData.player_id });
       return {
         success: false,
