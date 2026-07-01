@@ -113,6 +113,24 @@ function buildEndDateTime(
   return endTime ? `${date}T${endTime}${tz}` : `${date}T23:59:59${tz}`;
 }
 
+/**
+ * Build the rsvp_deadline (timestamptz) value from the raw form input.
+ * The RSVP deadline picker is a `datetime-local` input, so it yields a
+ * wall-clock string like "2026-07-01T18:00" with no timezone info — same
+ * shape as startDate/startTime. Without routing it through the same
+ * timezoneOffset convention as start_time/end_time, the deadline drifts by
+ * the coach's UTC offset (mirrors buildRsvpDeadlineString in
+ * src/app/golf/actions/golf.ts).
+ */
+function buildRsvpDeadline(deadline?: string | null, timezoneOffset?: number): string | null {
+  if (!deadline) return null;
+  // Already has an explicit offset/Z — pass through as-is.
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/.test(deadline)) return deadline;
+  const [date, time] = deadline.split('T');
+  if (!date) return null;
+  return buildDateTime(date, time || '00:00', timezoneOffset);
+}
+
 function mapCalendarActionError(error: unknown): ActionResult {
   if (error instanceof BaseballUnauthorizedError) {
     return { success: false, error: 'Not authenticated' };
@@ -179,7 +197,7 @@ const createBaseballEventAction = withBaseballAction(
         description: input.description || null,
         is_mandatory: input.isMandatory ?? false,
         max_attendees: input.maxAttendees || null,
-        rsvp_deadline: input.rsvpDeadline || null,
+        rsvp_deadline: buildRsvpDeadline(input.rsvpDeadline, input.timezoneOffset),
         created_by_id: ctx.user.id,
       })
       .select()
@@ -253,7 +271,9 @@ const updateBaseballEventAction = withBaseballAction(
     if (input.description !== undefined) updateData.description = input.description;
     if (input.isMandatory !== undefined) updateData.is_mandatory = input.isMandatory;
     if (input.maxAttendees !== undefined) updateData.max_attendees = input.maxAttendees;
-    if (input.rsvpDeadline !== undefined) updateData.rsvp_deadline = input.rsvpDeadline;
+    if (input.rsvpDeadline !== undefined) {
+      updateData.rsvp_deadline = buildRsvpDeadline(input.rsvpDeadline, input.timezoneOffset);
+    }
 
     if (input.startDate !== undefined) {
       updateData.start_time = buildDateTime(input.startDate, input.startTime, input.timezoneOffset);
