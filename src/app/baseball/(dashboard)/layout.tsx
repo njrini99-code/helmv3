@@ -37,9 +37,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BaseballShellLayout } from '@/components/baseball/BaseballShellLayout';
+import { BaseballFairwayShell } from './BaseballFairwayShell';
 import { PageLoading } from '@/components/ui/loading';
 import { useBaseballAuth } from '@/hooks/use-baseball-auth';
 import { useBaseballNavContext } from '@/hooks/use-baseball-nav-context';
+import { isRedesignEnabled } from '@/lib/redesign/flag';
 
 // ---------------------------------------------------------------------------
 // Inner guard — rendered after BaseballShellLayout's auth gate has passed.
@@ -96,6 +98,15 @@ function DashboardSessionGuard({ children }: { children: React.ReactNode }) {
 // BaseballShellLayout. Both components are client components; the guard runs
 // its hooks before the shell renders, so the shell always receives a non-null
 // navContext (or the user has already been redirected away).
+//
+// FAIRWAY MIGRATION — PHASE A (shell only): the team-context guard above is
+// shared verbatim by both branches below — it is not part of "the shell" and
+// stays byte-for-byte unchanged regardless of the flag. Only what renders
+// INSIDE the guard is gated: flag ON mounts BaseballFairwayShell (the Fairway
+// AppShell frame, presentation-only); flag OFF keeps the existing
+// BaseballShellLayout -> BaseballDashboardShell composition exactly as it
+// shipped before this change. Default (flag unset) is OFF — dark and
+// reversible.
 // ---------------------------------------------------------------------------
 export default function DashboardLayout({
   children,
@@ -104,7 +115,11 @@ export default function DashboardLayout({
 }) {
   return (
     <DashboardSessionGuard>
-      <BaseballShellLayout requiredRole={null}>{children}</BaseballShellLayout>
+      {isRedesignEnabled() ? (
+        <BaseballFairwayShell>{children}</BaseballFairwayShell>
+      ) : (
+        <BaseballShellLayout requiredRole={null}>{children}</BaseballShellLayout>
+      )}
     </DashboardSessionGuard>
   );
 }
