@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { PageLoading } from '@/components/ui/loading';
@@ -32,61 +32,65 @@ export default function BaseballAnnouncementsPage() {
 
   const isCoach = user?.role === 'coach';
 
+  // Stable refetch used both by the initial load effect and by the create/delete
+  // success callbacks below — router.refresh() alone cannot re-run this because
+  // the announcements list lives in useState, not in server-rendered data.
+  const fetchAnnouncements = useCallback(async () => {
+    if (!selectedTeamId || !user) return;
+
+    setLoading(true);
+    setLoadError(null);
+
+    const playerId = player?.id || null;
+
+    const result = await getAnnouncementsWithMeta(
+      selectedTeamId,
+      user.id,
+      isCoach,
+      playerId
+    );
+
+    if (result.success && result.data) {
+      setAnnouncements(result.data);
+    } else {
+      setAnnouncements([]);
+      setLoadError(result.error ?? 'Announcements could not be loaded.');
+    }
+
+    // For coaches: also fetch roster for the create flow
+    if (isCoach && selectedTeamId) {
+      const supabase = createClient();
+      const { data: members } = await supabase
+        .from('baseball_team_members')
+        .select('player_id, player:baseball_players(id, first_name, last_name)')
+        .eq('team_id', selectedTeamId)
+        .eq('status', 'active');
+
+      const rosterPlayers = (members || [])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((m: any) => m.player)
+        .filter(Boolean)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((p: any) => ({
+          id: p.id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+        }));
+
+      setPlayers(rosterPlayers);
+    }
+
+    setLoading(false);
+  }, [selectedTeamId, user, isCoach, player?.id]);
+
   useEffect(() => {
     if (authLoading) return;
     if (!selectedTeamId || !user) {
       setLoading(false);
       return;
     }
-
-    async function fetchData() {
-      setLoading(true);
-      setLoadError(null);
-
-      const playerId = player?.id || null;
-
-      const result = await getAnnouncementsWithMeta(
-        selectedTeamId!,
-        user!.id,
-        isCoach,
-        playerId
-      );
-
-      if (result.success && result.data) {
-        setAnnouncements(result.data);
-      } else {
-        setAnnouncements([]);
-        setLoadError(result.error ?? 'Announcements could not be loaded.');
-      }
-
-      // For coaches: also fetch roster for the create flow
-      if (isCoach && selectedTeamId) {
-        const supabase = createClient();
-        const { data: members } = await supabase
-          .from('baseball_team_members')
-          .select('player_id, player:baseball_players(id, first_name, last_name)')
-          .eq('team_id', selectedTeamId)
-          .eq('status', 'active');
-
-        const rosterPlayers = (members || [])
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((m: any) => m.player)
-          .filter(Boolean)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((p: any) => ({
-            id: p.id,
-            first_name: p.first_name,
-            last_name: p.last_name,
-          }));
-
-        setPlayers(rosterPlayers);
-      }
-
-      setLoading(false);
-    }
-
-    fetchData();
-  }, [authLoading, selectedTeamId, user, isCoach, player?.id]);
+    void fetchAnnouncements();
+  }, [authLoading, selectedTeamId, user, fetchAnnouncements]);
 
   if (authLoading) return <PageLoading />;
 
@@ -105,6 +109,7 @@ export default function BaseballAnnouncementsPage() {
           <CreateAnnouncementFlow
             players={players}
             teamId={selectedTeamId}
+            onCreated={fetchAnnouncements}
           />
         )}
       </Header>
@@ -150,25 +155,7 @@ export default function BaseballAnnouncementsPage() {
           <ReadModelStateNotice
             state="error"
             title="Announcements unavailable"
-            onRetry={() => {
-              if (!selectedTeamId || !user) return;
-              setLoading(true);
-              setLoadError(null);
-              void getAnnouncementsWithMeta(
-                selectedTeamId,
-                user.id,
-                isCoach,
-                player?.id || null,
-              ).then((result) => {
-                if (result.success && result.data) {
-                  setAnnouncements(result.data);
-                  setLoadError(null);
-                } else {
-                  setLoadError(result.error ?? 'Announcements could not be loaded.');
-                }
-                setLoading(false);
-              });
-            }}
+            onRetry={() => void fetchAnnouncements()}
           />
         ) : announcements.length === 0 ? (
           <Card variant="glass">
@@ -186,12 +173,13 @@ export default function BaseballAnnouncementsPage() {
                 <CreateAnnouncementFlow
                   players={players}
                   teamId={selectedTeamId}
+                  onCreated={fetchAnnouncements}
                 />
               )}
             </CardContent>
           </Card>
         ) : isCoach ? (
-          <AnnouncementsCoachView announcements={announcements} />
+          <AnnouncementsCoachView announcements={announcements} onDeleted={fetchAnnouncements} />
         ) : (
           <AnnouncementsPlayerView
             announcements={announcements}

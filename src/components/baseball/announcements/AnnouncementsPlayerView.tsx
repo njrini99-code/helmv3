@@ -114,8 +114,9 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
     : '';
 
   const isRecent = ann.published_at && (Date.now() - new Date(ann.published_at).getTime()) < 7 * 86400000;
-  // Show acknowledge button if this announcement has any acknowledgements tracked and player hasn't yet
-  const needsAck = ann.acknowledged_count > 0 && !hasAcknowledged;
+  // Every targeted announcement is ack-able: show the CTA to any player who hasn't acked yet,
+  // independent of whether anyone else has (tracking must be able to start from zero).
+  const needsAck = !hasAcknowledged;
 
   return (
     <div
@@ -192,7 +193,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
                 {/* Full content */}
                 <p className="text-sm text-warm-700 whitespace-pre-wrap">{ann.content}</p>
 
-                {/* Acknowledge button — shown when acks are tracked and player hasn't yet */}
+                {/* Acknowledge button — shown to any recipient who hasn't acked yet */}
                 {needsAck && (
                   <div className="pt-2 border-t border-warm-100">
                     <Button

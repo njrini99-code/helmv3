@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconTrash, IconUsers, IconClock } from '@/components/icons';
@@ -39,6 +38,8 @@ const urgencyBadgeColors: Record<string, { bg: string; text: string }> = {
 interface AnnouncementsCoachViewProps {
   announcements: BaseballAnnouncementMeta[];
   loading?: boolean;
+  /** Called after a successful delete so the parent can refetch the list. */
+  onDeleted?: () => void;
 }
 
 function AnnouncementSkeleton() {
@@ -56,7 +57,7 @@ function AnnouncementSkeleton() {
   );
 }
 
-export function AnnouncementsCoachView({ announcements, loading = false }: AnnouncementsCoachViewProps) {
+export function AnnouncementsCoachView({ announcements, loading = false, onDeleted }: AnnouncementsCoachViewProps) {
   const prefersReducedMotion = useReducedMotion();
 
   if (loading) {
@@ -78,16 +79,15 @@ export function AnnouncementsCoachView({ announcements, loading = false }: Annou
     >
       {announcements.map((ann) => (
         <motion.div key={ann.id} variants={itemVariants}>
-          <CoachAnnouncementCard announcement={ann} />
+          <CoachAnnouncementCard announcement={ann} onDeleted={onDeleted} />
         </motion.div>
       ))}
     </motion.div>
   );
 }
 
-function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAnnouncementMeta }) {
+function CoachAnnouncementCard({ announcement: ann, onDeleted }: { announcement: BaseballAnnouncementMeta; onDeleted?: () => void }) {
   const prefersReducedMotion = useReducedMotion();
-  const router = useRouter();
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -102,7 +102,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
     if (result.success) {
       showToast('Announcement deleted', 'success');
       setShowDeleteConfirm(false);
-      router.refresh();
+      onDeleted?.();
     } else {
       showToast(result.error || 'Failed to delete', 'error');
     }
@@ -164,7 +164,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
                   All team
                 </span>
               )}
-              {ann.acknowledged_count > 0 && (
+              {ann.total_recipients > 0 && (
                 <AcknowledgementPill count={ann.acknowledged_count} total={ann.total_recipients} />
               )}
             </div>
@@ -193,8 +193,8 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
                   {/* Full content */}
                   <p className="text-sm text-warm-700 whitespace-pre-wrap">{ann.content}</p>
 
-                  {/* Acknowledgements progress */}
-                  {ann.acknowledged_count > 0 && (
+                  {/* Acknowledgements progress — render 0/N for fresh posts, not just once acks exist */}
+                  {ann.total_recipients > 0 && (
                     <div>
                       <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">
                         Acknowledgements ({ann.acknowledged_count}/{ann.total_recipients})
