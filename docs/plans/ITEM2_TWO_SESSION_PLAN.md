@@ -68,6 +68,19 @@ The scout agent for this area hit the output cap — **re-investigate before fix
 
 ---
 
+## LANE A — LIVE STATUS (this session; updated as PRs open — **Lane B: defer the files listed here**)
+_As of 2026-07-01 (newest first):_
+- ✅ **PR #624** — A1 join_code residual: `src/components/coach/InviteModal.tsx`, `src/app/baseball/actions/teams.ts`. _(Lane B doesn't touch these.)_
+- 🔜 **A2 signals** (next): `operational-signals.ts`, `engine-run.ts`, `signals.ts` + 1 migration. _(Lane B: `signals` surface is Wave 7 — safe, different files, but rebase if timing overlaps.)_
+- 🔜 **A3 coaches-PII** (3 PRs): will touch `NewMessageModal.tsx`, `use-messages.ts`, `TeamPeekPanel.tsx`, `program/[id]/page.tsx`, `team/[id]/page.tsx`, `CollegeInterestClient.tsx` + 2 migrations. **⚠ Lane B: DEFER `discover`, `college-interest`, and `messages` surfaces until A3b merges.**
+- 🔜 **A4 elite-stat/ai_audit**: `engine-run.ts` (+ reconcile migration) — re-scout pending.
+- 🔜 **A5 tasks/camps phantom cols**: `tasks.ts`, `camps/[id]/page.tsx`. **⚠ Lane B: defer `camps` surface until this + #564 merge.**
+- 🔜 **A6**: shepherd PR #564 (camps capacity).
+
+**Lane B — clear to start NOW:** Wave 1 (command-center, roster, calendar, tasks, announcements) and Wave 2 items `documents`, `travel`, `team` do **not** overlap any Lane A file. Only `messages` (Wave 2), `discover`/`college-interest` (Wave 5), `signals` (Wave 7), `camps` (Wave 7) are gated on Lane A per the collision table below.
+
+---
+
 # LANE B — another session (Fairway Phase B, presentation only)
 
 **Scope:** migrate `src/app/baseball/(dashboard)/dashboard/**` leaf UIs to `src/components/fairway/*`, **flag-gated behind `isRedesignEnabled()`**, **presentation-only** (per `docs/fairway-baseballhelm-migration-plan.md` §6: never touch server actions, read-models, RLS, migrations, data paths). Phase A shell (`BaseballFairwayShell`, #591) is merged. **36 surfaces, ~36 PRs, 10 waves.** One surface per PR; reuse `fairway/*`, never copy into `components/baseball/`; green typecheck + lint-ratchet + baseball smoke + visual-parity per §6.
