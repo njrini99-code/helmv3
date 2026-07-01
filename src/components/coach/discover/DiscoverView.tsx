@@ -362,12 +362,19 @@ export function DiscoverView({
   // Watchlist handlers
   const handleWatchlist = async (playerId: string) => {
     try {
+      // The server actions return { success: false } (no throw) when a
+      // add/remove is rejected. Only flip the star when it actually persisted,
+      // so the UI can't claim a player is (un)watchlisted when they aren't.
       if (watchlistIds.includes(playerId)) {
-        await removeFromWatchlist(coachId, playerId);
-        setWatchlistIds((prev) => prev.filter((id) => id !== playerId));
+        const result = await removeFromWatchlist(coachId, playerId);
+        if (result.success) {
+          setWatchlistIds((prev) => prev.filter((id) => id !== playerId));
+        }
       } else {
-        await addToWatchlist(coachId, playerId);
-        setWatchlistIds((prev) => [...prev, playerId]);
+        const result = await addToWatchlist(coachId, playerId);
+        if (result.success) {
+          setWatchlistIds((prev) => [...prev, playerId]);
+        }
       }
     } catch (error) {
       console.error('Error updating watchlist:', error);
@@ -396,8 +403,10 @@ export function DiscoverView({
   const handleAddAllToWatchlist = async () => {
     for (const playerId of selectedForCompare) {
       if (!watchlistIds.includes(playerId)) {
-        await addToWatchlist(coachId, playerId);
-        setWatchlistIds((prev) => [...prev, playerId]);
+        const result = await addToWatchlist(coachId, playerId);
+        if (result.success) {
+          setWatchlistIds((prev) => [...prev, playerId]);
+        }
       }
     }
     clearCompareSelection();
