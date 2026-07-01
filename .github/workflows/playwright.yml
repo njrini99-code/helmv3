@@ -26,8 +26,13 @@ permissions:
 # then test.skip()). NEXT_PUBLIC_REDESIGN renders the Fairway shell — what
 # production serves — so authed specs exercise FairwayCoursePicker.
 env:
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  # Fall back to a valid-format DUMMY on secretless runs (Dependabot / fork PRs
+  # get no repo secrets) so the build-only "Smoke checks" job passes. The dummy
+  # just has to be non-empty and NOT `placeholder.supabase.co` so the Supabase
+  # client guard doesn't throw; cookies()->dynamic keeps auth pages out of
+  # prerender, so no network call is made to it. Real PRs use the real secret.
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
   NEXT_PUBLIC_REDESIGN: 'true'
   E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
   E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}

@@ -14,8 +14,14 @@ permissions:
   contents: read
 
 env:
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  # Fall back to a valid-format DUMMY on secretless runs (Dependabot / fork PRs
+  # get no repo secrets). It only needs to be non-empty and NOT match
+  # `placeholder.supabase.co` so the Supabase client guard doesn't throw — then
+  # Next's cookies()->dynamic detection excludes auth/dashboard pages from
+  # prerender, so the build makes no network call to it. Real PRs still use the
+  # real secret; the dummy is never used at runtime.
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
   NODE_OPTIONS: --max-old-space-size=8192
 
 jobs:
