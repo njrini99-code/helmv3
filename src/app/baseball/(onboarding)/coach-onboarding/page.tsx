@@ -132,7 +132,13 @@ export default function BaseballCoachOnboarding() {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (parsed.step) setStep(parsed.step);
+        // Guard against a stale persisted step from a prior build (e.g. the
+        // removed 'plan' step, #471): only restore a step that is still valid,
+        // otherwise the wizard would render into a nonexistent state.
+        const VALID_STEPS: readonly Step[] = ['type', 'program', 'account', 'lifting', 'complete'];
+        if (parsed.step && (VALID_STEPS as readonly string[]).includes(parsed.step)) {
+          setStep(parsed.step as Step);
+        }
         if (parsed.coachType) setCoachType(parsed.coachType);
         if (parsed.division) setDivision(parsed.division);
         if (parsed.schoolName) setSchoolName(parsed.schoolName);
