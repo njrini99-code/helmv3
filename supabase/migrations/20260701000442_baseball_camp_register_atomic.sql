@@ -74,5 +74,8 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.baseball_register_for_camp(uuid) FROM PUBLIC;
+-- Revoke PUBLIC *and* anon explicitly: Supabase default privileges auto-grant
+-- EXECUTE on new functions to anon, and REVOKE ... FROM PUBLIC does not remove
+-- that explicit anon grant. Registration must be authenticated-only.
+REVOKE ALL ON FUNCTION public.baseball_register_for_camp(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.baseball_register_for_camp(uuid) TO authenticated, service_role;
