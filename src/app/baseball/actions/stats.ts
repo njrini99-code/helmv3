@@ -19,6 +19,7 @@ import {
   BaseballActionError,
 } from '@/lib/baseball/with-baseball-action';
 import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import { computeCareerSlashLine } from '@/lib/baseball/aggregates/career-slash-line';
 
 /**
  * Shared error-message mapping for every action in this file. All exported
@@ -551,6 +552,10 @@ const recalculatePlayerAggregatesAction = withBaseballAction(
   const totalAtBats = stats.reduce((sum, s) => sum + (s.at_bats || 0), 0);
   const totalHits = stats.reduce((sum, s) => sum + (s.hits || 0), 0);
 
+  // Slash line — OBP/SLG/OPS from summed counting stats (null on zero
+  // denominators). Pure helper is unit-tested; see #436.
+  const { obp: careerObp, slg: careerSlg, ops: careerOps } = computeCareerSlashLine(stats);
+
   // Last 5 and 10 sessions
   const last5 = stats.slice(0, 5);
   const last10 = stats.slice(0, 10);
@@ -584,6 +589,9 @@ const recalculatePlayerAggregatesAction = withBaseballAction(
     team_id: teamId,
     total_sessions: stats.length,
     career_avg: careerAvg,
+    career_obp: careerObp,
+    career_slg: careerSlg,
+    career_ops: careerOps,
     practice_avg: practiceAvg,
     game_avg: gameAvg,
     pressure_gap: pressureGap,
