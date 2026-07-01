@@ -30,6 +30,7 @@ import { usePathname } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { BaseballNavIcon } from '@/lib/baseball/nav-registry';
+import type { BaseballCapability } from '@/lib/baseball/capabilities';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -51,6 +52,10 @@ export interface HubSubNavTab {
    * its parent tab.
    */
   matchPrefixes?: string[];
+  /** Staff capability required to show this tab (coaches only). */
+  requiredCapability?: BaseballCapability;
+  /** Staff must hold at least one of these capabilities (#370 / #408). */
+  requiredAnyCapabilities?: readonly BaseballCapability[];
 }
 
 export interface HubSubNavProps {

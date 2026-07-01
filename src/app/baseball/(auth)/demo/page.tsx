@@ -11,7 +11,11 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { BASEBALL_DEMO_LANDING_PATH } from '@/lib/demo/baseball-config';
-import { enterBaseballDemo } from '@/app/baseball/actions/demo-access';
+import {
+  enterBaseballDemo,
+  isBaseballDemoAvailable,
+  isBaseballDemoSession,
+} from '@/app/baseball/actions/demo-access';
 
 // ---------------------------------------------------------------------------
 // Value-prop pills shown below the headline (the "why bother" scan).
@@ -66,9 +70,17 @@ function DemoGateContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // Already-signed-in shortcut
-  const [isSignedIn, setIsSignedIn] = useState(false);
+  // Already-signed-in shortcut — server-verified against the actual demo
+  // coach identity (not a bare client-side getUser() truthiness check), so a
+  // real coach/player who happens to have a session open elsewhere in this
+  // browser sees the normal gate form instead of a misleading "continue".
+  const [isDemoSession, setIsDemoSession] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Kill-switch — checked up front so a disabled demo shows a clear message
+  // instead of only failing after the visitor fills out the whole form.
+  const [demoEnabled, setDemoEnabled] = useState(true);
+  const [checkingAvailability, setCheckingAvailability] = useState(true);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -77,10 +89,11 @@ function DemoGateContent() {
     async function checkAuth() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        // We can't reliably detect the shared demo account client-side (its
-        // email is a server-only value), so any signed-in visitor gets a
-        // "continue" shortcut rather than re-authenticating.
-        if (active && user) setIsSignedIn(true);
+        if (!user) return;
+        // The client can't detect the shared demo account itself (its email
+        // is a server-only secret) — verify it server-side.
+        const { isDemo } = await isBaseballDemoSession();
+        if (active && isDemo) setIsDemoSession(true);
       } finally {
         if (active) setCheckingAuth(false);
       }
@@ -88,6 +101,20 @@ function DemoGateContent() {
     void checkAuth();
     return () => { active = false; };
   }, [supabase]);
+
+  useEffect(() => {
+    let active = true;
+    async function checkAvailability() {
+      try {
+        const { enabled } = await isBaseballDemoAvailable();
+        if (active) setDemoEnabled(enabled);
+      } finally {
+        if (active) setCheckingAvailability(false);
+      }
+    }
+    void checkAvailability();
+    return () => { active = false; };
+  }, []);
 
   const nameError = touched.name ? validateName(name) : undefined;
   const emailError = touched.email ? validateEmail(email) : undefined;
@@ -100,6 +127,11 @@ function DemoGateContent() {
     e.preventDefault();
     setTouched({ name: true, email: true, program: true });
     if (!isFormValid) return;
+
+    if (!demoEnabled) {
+      setServerError('The demo is not available right now. Please check back later.');
+      return;
+    }
 
     setIsLoading(true);
     setServerError(null);
@@ -228,7 +260,7 @@ function DemoGateContent() {
             </p>
           </div>
 
-          {checkingAuth ? (
+          {checkingAuth || checkingAvailability ? (
             <div className="flex justify-center py-6">
               <span role="status" aria-label="Checking sign-in status" className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-helm-amber-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
@@ -236,10 +268,10 @@ function DemoGateContent() {
                 <span className="w-2 h-2 rounded-full bg-helm-amber-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
               </span>
             </div>
-          ) : isSignedIn ? (
+          ) : isDemoSession ? (
             <div className="space-y-3">
               <div className="bg-helm-amber-400/10 border border-helm-amber-400/30 text-helm-amber-600 px-4 py-3 rounded-xl text-sm text-center">
-                You&apos;re already signed in — continue where you left off.
+                You&apos;re already in the live demo — continue where you left off.
               </div>
               <Button
                 variant="primary"
@@ -249,6 +281,17 @@ function DemoGateContent() {
               >
                 Continue to dashboard
               </Button>
+            </div>
+          ) : !demoEnabled ? (
+            <div
+              className="bg-helm-amber-400/10 border border-helm-amber-400/30 text-helm-amber-700 px-4 py-3 rounded-xl text-sm text-center"
+              role="status"
+            >
+              The live demo is temporarily unavailable. Please check back later, or{' '}
+              <Link href="/baseball/login" className="font-semibold underline underline-offset-2 hover:text-helm-amber-600">
+                sign in
+              </Link>{' '}
+              if you already have an account.
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4" noValidate aria-label="Demo access form">
@@ -328,8 +371,9 @@ function DemoGateContent() {
               </Button>
 
               <p className="text-center text-xs text-warm-500 leading-relaxed pt-1">
-                You&apos;ll be signed into a shared demo account instantly. No
-                password needed.
+                You&apos;ll get instant, read-only access to a live demo
+                program. No password, no setup — and nothing you do affects
+                other visitors.
               </p>
             </form>
           )}

@@ -4,6 +4,38 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { logServerError } from '@/lib/server-error-logger';
+import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballNoActiveTeamError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
+
+const TRAVEL_PATH = '/baseball/dashboard/travel';
+
+type TravelMutationResult<T = void> =
+  | { success: true; data?: T }
+  | { success: false; error: string };
+
+function mapTravelActionError(error: unknown): TravelMutationResult {
+  if (error instanceof BaseballUnauthorizedError) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  if (error instanceof BaseballNoActiveTeamError) {
+    return { success: false, error: 'Coach or team not found' };
+  }
+  if (error instanceof BaseballCapabilityError) {
+    return { success: false, error: 'You do not have permission to manage travel' };
+  }
+  if (error instanceof BaseballActionError) {
+    return { success: false, error: 'Could not complete the travel action. Please try again.' };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred.' };
+}
 
 // ============================================================================
 // TYPES
@@ -123,6 +155,28 @@ export async function createItinerary(teamId: string, data: {
   notes?: string;
 }) {
   try {
+    return await createItineraryAction(teamId, data);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
+    }
+    await logServerError(`[Baseball Travel] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'travel.createItinerary' });
+    return mapTravelActionError(err);
+  }
+}
+
+const createItineraryAction = withBaseballAction(
+  'createItinerary',
+  { featureArea: 'baseball-travel', requiredCapability: 'can_manage_settings' },
+  async (ctx, teamId: string, data: {
+    event_name: string;
+    departure_date?: string;
+    return_date?: string;
+    location?: string;
+    accommodation?: string;
+    transportation?: string;
+    notes?: string;
+  }) => {
     const validated = createItinerarySchema.parse({
       team_id: teamId,
       event_name: data.event_name,
@@ -134,16 +188,17 @@ export async function createItinerary(teamId: string, data: {
       notes: data.notes || null,
     });
 
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false as const, error: 'Unauthorized' };
+    if (teamId !== ctx.activeTeamId) {
+      await requireBaseballCapability(teamId, 'can_manage_settings');
+    }
 
+    const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: created, error } = await (supabase as any)
       .from('baseball_travel_itineraries')
       .insert({
         ...validated,
-        created_by: user.id,
+        created_by: ctx.user.id,
       })
       .select()
       .single();
@@ -153,16 +208,10 @@ export async function createItinerary(teamId: string, data: {
       return { success: false as const, error: 'Failed to create itinerary.' };
     }
 
-    revalidatePath('/baseball/dashboard/travel');
+    revalidatePath(TRAVEL_PATH);
     return { success: true as const, data: created as BaseballTravelItinerary };
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
-    }
-    await logServerError(`[Baseball Travel] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'travel.createItinerary' });
-    return { success: false as const, error: 'An unexpected error occurred.' };
-  }
-}
+  },
+);
 
 export async function updateItinerary(id: string, data: {
   event_name?: string;
@@ -174,10 +223,45 @@ export async function updateItinerary(id: string, data: {
   notes?: string | null;
 }) {
   try {
+    return await updateItineraryAction(id, data);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
+    }
+    await logServerError(`[Baseball Travel] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'travel.updateItinerary' });
+    return mapTravelActionError(err);
+  }
+}
+
+const updateItineraryAction = withBaseballAction(
+  'updateItinerary',
+  { featureArea: 'baseball-travel' },
+  async (_ctx, id: string, data: {
+    event_name?: string;
+    departure_date?: string | null;
+    return_date?: string | null;
+    location?: string | null;
+    accommodation?: string | null;
+    transportation?: string | null;
+    notes?: string | null;
+  }) => {
     const validated = updateItinerarySchema.parse({ id, ...data });
     const { id: _id, ...updateData } = validated;
+    void _id;
 
     const supabase = await createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase as any)
+      .from('baseball_travel_itineraries')
+      .select('team_id')
+      .eq('id', id)
+      .single();
+
+    if (!existing?.team_id) {
+      return { success: false as const, error: 'Itinerary not found.' };
+    }
+
+    await requireBaseballCapability(String(existing.team_id), 'can_manage_settings');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: updated, error } = await (supabase as any)
@@ -192,41 +276,59 @@ export async function updateItinerary(id: string, data: {
       return { success: false as const, error: 'Failed to update itinerary.' };
     }
 
-    revalidatePath('/baseball/dashboard/travel');
+    revalidatePath(TRAVEL_PATH);
     return { success: true as const, data: updated as BaseballTravelItinerary };
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
-    }
-    await logServerError(`[Baseball Travel] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'travel.updateItinerary' });
-    return { success: false as const, error: 'An unexpected error occurred.' };
-  }
-}
+  },
+);
 
 export async function deleteItinerary(id: string) {
-  const supabase = await createClient();
-
-  // Delete associated expenses first
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
-    .from('baseball_travel_expenses')
-    .delete()
-    .eq('itinerary_id', id);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
-    .from('baseball_travel_itineraries')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    await logServerError(`[Baseball Travel] Delete error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.deleteItinerary' });
-    return { success: false as const, error: 'Failed to delete itinerary.' };
+  try {
+    return await deleteItineraryAction(id);
+  } catch (error) {
+    return mapTravelActionError(error);
   }
-
-  revalidatePath('/baseball/dashboard/travel');
-  return { success: true as const };
 }
+
+const deleteItineraryAction = withBaseballAction(
+  'deleteItinerary',
+  { featureArea: 'baseball-travel' },
+  async (_ctx, id: string) => {
+    const supabase = await createClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase as any)
+      .from('baseball_travel_itineraries')
+      .select('team_id')
+      .eq('id', id)
+      .single();
+
+    if (!existing?.team_id) {
+      return { success: false as const, error: 'Itinerary not found.' };
+    }
+
+    await requireBaseballCapability(String(existing.team_id), 'can_manage_settings');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('baseball_travel_expenses')
+      .delete()
+      .eq('itinerary_id', id);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('baseball_travel_itineraries')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      await logServerError(`[Baseball Travel] Delete error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.deleteItinerary' });
+      return { success: false as const, error: 'Failed to delete itinerary.' };
+    }
+
+    revalidatePath(TRAVEL_PATH);
+    return { success: true as const };
+  },
+);
 
 // ============================================================================
 // EXPENSE ACTIONS
@@ -242,6 +344,28 @@ export async function addExpense(itineraryId: string, teamId: string, data: {
   notes?: string;
 }) {
   try {
+    return await addExpenseAction(itineraryId, teamId, data);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
+    }
+    await logServerError(`[Baseball Travel] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'travel.addExpense' });
+    return mapTravelActionError(err);
+  }
+}
+
+const addExpenseAction = withBaseballAction(
+  'addExpense',
+  { featureArea: 'baseball-travel', requiredCapability: 'can_manage_settings' },
+  async (ctx, itineraryId: string, teamId: string, data: {
+    category: ExpenseCategory;
+    amount: number;
+    description?: string;
+    paid_by?: ExpensePaidBy;
+    expense_date?: string;
+    vendor_name?: string;
+    notes?: string;
+  }) => {
     const validated = createExpenseSchema.parse({
       itinerary_id: itineraryId,
       team_id: teamId,
@@ -254,16 +378,17 @@ export async function addExpense(itineraryId: string, teamId: string, data: {
       notes: data.notes || null,
     });
 
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false as const, error: 'Unauthorized' };
+    if (teamId !== ctx.activeTeamId) {
+      await requireBaseballCapability(teamId, 'can_manage_settings');
+    }
 
+    const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: created, error } = await (supabase as any)
       .from('baseball_travel_expenses')
       .insert({
         ...validated,
-        created_by: user.id,
+        created_by: ctx.user.id,
       })
       .select()
       .single();
@@ -273,16 +398,10 @@ export async function addExpense(itineraryId: string, teamId: string, data: {
       return { success: false as const, error: 'Failed to add expense.' };
     }
 
-    revalidatePath('/baseball/dashboard/travel');
+    revalidatePath(TRAVEL_PATH);
     return { success: true as const, data: created as BaseballTravelExpense };
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
-    }
-    await logServerError(`[Baseball Travel] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'travel.addExpense' });
-    return { success: false as const, error: 'An unexpected error occurred.' };
-  }
-}
+  },
+);
 
 export async function getItineraryExpenses(itineraryId: string) {
   const supabase = await createClient();
@@ -303,22 +422,47 @@ export async function getItineraryExpenses(itineraryId: string) {
 }
 
 export async function deleteExpense(expenseId: string) {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
-    .from('baseball_travel_expenses')
-    .delete()
-    .eq('id', expenseId);
-
-  if (error) {
-    await logServerError(`[Baseball Travel] Delete expense error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.deleteExpense' });
-    return { success: false as const, error: 'Failed to delete expense.' };
+  try {
+    return await deleteExpenseAction(expenseId);
+  } catch (error) {
+    return mapTravelActionError(error);
   }
-
-  revalidatePath('/baseball/dashboard/travel');
-  return { success: true as const };
 }
+
+const deleteExpenseAction = withBaseballAction(
+  'deleteExpense',
+  { featureArea: 'baseball-travel' },
+  async (_ctx, expenseId: string) => {
+    const supabase = await createClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing } = await (supabase as any)
+      .from('baseball_travel_expenses')
+      .select('team_id')
+      .eq('id', expenseId)
+      .single();
+
+    if (!existing?.team_id) {
+      return { success: false as const, error: 'Expense not found.' };
+    }
+
+    await requireBaseballCapability(String(existing.team_id), 'can_manage_settings');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('baseball_travel_expenses')
+      .delete()
+      .eq('id', expenseId);
+
+    if (error) {
+      await logServerError(`[Baseball Travel] Delete expense error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.deleteExpense' });
+      return { success: false as const, error: 'Failed to delete expense.' };
+    }
+
+    revalidatePath(TRAVEL_PATH);
+    return { success: true as const };
+  },
+);
 
 export async function getExpenseSummary(itineraryId: string): Promise<{ success: boolean; data?: BaseballExpenseSummary; error?: string }> {
   const supabase = await createClient();

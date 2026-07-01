@@ -100,6 +100,7 @@ function RelabelEditor({
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- stopPropagation-only wrapper prevents the row click from closing this inline editor
     <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
       <Input
         type="text"
@@ -114,26 +115,31 @@ function RelabelEditor({
           if (e.key === 'Enter') save();
           if (e.key === 'Escape') onCancel();
         }}
+        // eslint-disable-next-line jsx-a11y/no-autofocus -- inline editor opens in response to an explicit user action (Rename click); focusing the field it just revealed is the expected behavior
         autoFocus
       />
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={save}
         disabled={pending}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 disabled:opacity-50"
+        haptic="none"
+        className="min-h-0 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-50 p-0 text-primary-600 hover:bg-primary-100"
         aria-label="Save label"
       >
         <IconCheckCircle2 size={14} />
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
+        variant="ghost"
         onClick={onCancel}
         disabled={pending}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-warm-400 hover:bg-warm-100 hover:text-warm-600 disabled:opacity-50"
+        haptic="none"
+        className="min-h-0 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg p-0 text-warm-400 hover:bg-warm-100 hover:text-warm-600"
         aria-label="Cancel"
       >
         <IconX size={14} />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -331,14 +337,16 @@ export function ScoutPacketManager({
                             {link.recipientLabel ?? 'Unlabeled link'}
                           </p>
                           {link.status !== 'revoked' && (
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
                               onClick={() => setEditingId(link.id)}
                               title="Edit recipient label"
-                              className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-warm-300 transition-colors hover:text-warm-500"
+                              haptic="none"
+                              className="min-h-0 flex h-5 w-5 shrink-0 items-center justify-center rounded p-0 text-warm-300 hover:bg-transparent hover:text-warm-500"
                             >
                               <IconPencil size={12} />
-                            </button>
+                            </Button>
                           )}
                         </div>
                       )}
@@ -353,14 +361,16 @@ export function ScoutPacketManager({
                     <div className="flex shrink-0 items-center gap-1">
                       {link.isLive && (
                         <>
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
                             onClick={() => onCopy(link.url)}
                             title="Copy link"
-                            className="flex h-8 w-8 items-center justify-center rounded-lg text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-700"
+                            haptic="none"
+                            className="min-h-0 flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-500 hover:text-warm-700"
                           >
                             <IconCopy size={15} />
-                          </button>
+                          </Button>
                           <a
                             href={link.url}
                             target="_blank"
@@ -373,15 +383,17 @@ export function ScoutPacketManager({
                         </>
                       )}
                       {link.status !== 'revoked' && (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
                           onClick={() => onRevoke(link.id)}
                           disabled={pending}
                           title="Revoke link"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-warm-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                          haptic="none"
+                          className="min-h-0 flex h-8 w-8 items-center justify-center rounded-lg p-0 text-warm-500 hover:bg-red-50 hover:text-red-600"
                         >
                           <IconTrash size={15} />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </m.li>

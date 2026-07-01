@@ -7,7 +7,7 @@ export default function Loading() {
         <Skeleton className="h-7 w-56 rounded-lg" />
         <Skeleton className="h-4 w-96 rounded-lg" />
       </div>
-      <div className="rounded-2xl border border-warm-200 bg-white/70 p-6 space-y-4">
+      <div className="rounded-2xl border border-warm-200 bg-cream-50/70 p-6 space-y-4">
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
             <div className="space-y-1.5">

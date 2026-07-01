@@ -128,7 +128,7 @@ async function evaluatePlayerGoals(
     }
 
     const { error } = await fromUntyped(supabase, 'golf_goals')
-      .update(patch)
+      .update(patch) // nosemgrep: helmv3-action-missing-revalidate -- invoked from server renders/cron, not cached routes
       .eq('id', goal.id);
 
     if (!error) {

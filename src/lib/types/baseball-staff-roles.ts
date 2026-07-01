@@ -309,6 +309,8 @@ export interface BaseballStaffScope {
   staff_role: BaseballStaffRole | null;
   /** Player visibility scope; null = all team players. */
   player_scope: BaseballPlayerScope | null;
+  /** Canonical uuid[] player allowlist (#406); null = all team players. */
+  scope_player_ids?: string[] | null;
   /** Position codes a staffer is scoped to; null/empty = all positions. */
   position_scope: string[] | null;
   /** Lift/player group ids a staffer is scoped to; null/empty = all groups. */

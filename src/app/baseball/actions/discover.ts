@@ -586,21 +586,28 @@ export async function getWatchlistIds(): Promise<string[]> {
  *
  * coachType gates which player/org types appear in the map counts so the map
  * reflects what the coach can actually recruit (same rules as getDiscoverPlayers
- * and getDiscoverTeams):
- *   - college : HS + showcase + JUCO players; HS + showcase + JUCO orgs
- *   - juco    : HS + showcase players only; HS orgs only
- *   - high_school / showcase : no recruiting (map returns empty)
+ * and getDiscoverTeams).
  *
- * SECURITY: When this function is called from a server action, the caller MUST
- * derive coachType from the authenticated session (not from client input).
- * The coachId parameter is used only to exclude the coach's own roster.
+ * SECURITY: Coach identity and type are derived from the authenticated session.
  */
 export async function getStateCounts(
   mode: 'players' | 'teams',
-  coachId?: string,
-  coachType?: CoachType,
 ): Promise<Record<string, number>> {
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return {};
+
+  const { data: coachProfile } = await supabase
+    .from('baseball_coaches')
+    .select('id, coach_type')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coachProfile) return {};
+
+  const coachId = coachProfile.id as string;
+  const coachType = coachProfile.coach_type as CoachType;
 
   // Non-recruiting coach types see nothing in discover map.
   if (coachType === 'high_school' || coachType === 'showcase') {

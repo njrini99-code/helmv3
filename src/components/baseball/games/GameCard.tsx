@@ -44,7 +44,10 @@ export function GameCard({ game }: GameCardProps) {
   });
 
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl border border-warm-200/45 rounded-2xl p-4 shadow-glass hover:shadow-glass-hover transition-all duration-200 group">
+    <div
+      data-testid="game-card"
+      className="bg-cream-100/75 backdrop-blur-xl border border-warm-200/45 rounded-2xl p-4 shadow-glass hover:shadow-glass-hover transition-all duration-200 group"
+    >
       <div className="flex items-start justify-between gap-3">
         {/* Left: game info */}
         <div className="flex-1 min-w-0">

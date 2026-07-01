@@ -1,170 +1,154 @@
 import { test, expect } from '@playwright/test';
+import { loginAsCoach, loginAsPlayer } from './helpers/auth';
+import { waitForPageLoad } from './helpers/common';
 
 /**
  * Baseball Camps E2E Test
- * Tests camp browsing, registration, and management
+ *
+ * Exercises the real camp browse/register (player) and create/manage
+ * (coach) flows against the deterministic fixtures provisioned by
+ * `scripts/seed-baseball-e2e.ts` (issue #375):
+ *   - one open camp ("E2E Prospect Camp") owned by the seeded test coach
+ *   - one bench roster player ("Riley Bennett") pre-registered for it
+ *   - the shared test-player login intentionally left UNREGISTERED so the
+ *     register/unregister round trip always starts from a clean state
+ *
+ * Gated on PLAYWRIGHT_BASEBALL_SEEDED=1, with a per-test self-skip if the
+ * login fixture is unavailable in the target environment — same pattern as
+ * baseball-phase1.spec.ts.
  */
 
-const TEST_PLAYER = {
-  email: 'player@helmsportslabs.com',
-  password: 'TestPassword123!',
-};
+const SEEDED =
+  process.env.PLAYWRIGHT_BASEBALL_SEEDED === '1' ||
+  process.env.PLAYWRIGHT_BASEBALL_SEEDED === 'true';
 
-const TEST_COACH = {
-  email: 'coach@helmsportslabs.com',
-  password: 'TestPassword123!',
-};
+const SEEDED_CAMP_NAME = 'E2E Prospect Camp';
+const SEEDED_REGISTRANT_NAME = 'Riley Bennett';
 
 test.describe('Camps - Player Flow', () => {
-  test.skip('should browse available camps', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_PLAYER.email);
-    await page.fill('input[type="password"]', TEST_PLAYER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test.skip(!SEEDED, 'no seeded baseball camp fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
 
-    // Navigate to camps
-    await page.goto('http://localhost:3000/baseball/dashboard/camps');
+  test.beforeEach(async ({ page }) => {
+    try {
+      await loginAsPlayer(page);
+    } catch {
+      test.skip(true, 'player login fixture unavailable in this environment');
+    }
+    await waitForPageLoad(page);
+  });
 
-    // Should see camps heading
+  test('should browse available camps and see the seeded camp', async ({ page }) => {
+    await page.goto('/baseball/dashboard/camps');
+    await waitForPageLoad(page);
+
     await expect(page.locator('h1')).toContainText(/Camp/i);
+    await expect(page.locator('[data-testid="camps-grid"]')).toBeVisible();
 
-    // Should see list of camps or empty state
-    const campCards = page.locator('[data-testid="camp-card"], .camp-card');
-    const emptyState = page.locator('text=No camps available, text=No upcoming camps');
-
-    // Either camps exist or empty state is shown
-    const hasCamps = await campCards.count() > 0;
-    const hasEmptyState = await emptyState.isVisible();
-
-    expect(hasCamps || hasEmptyState).toBe(true);
+    const seededCard = page.locator('[data-testid="camp-card"]', { hasText: SEEDED_CAMP_NAME });
+    await expect(seededCard).toBeVisible();
   });
 
-  test.skip('should filter camps by date', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_PLAYER.email);
-    await page.fill('input[type="password"]', TEST_PLAYER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test('should view camp details including date, location, and registration button', async ({ page }) => {
+    await page.goto('/baseball/dashboard/camps');
+    await waitForPageLoad(page);
 
-    await page.goto('http://localhost:3000/baseball/dashboard/camps');
-
-    // Look for date filter
-    const dateFilter = page.locator('[data-testid="date-filter"], select[name="month"]');
-
-    if (await dateFilter.isVisible()) {
-      // Filter by upcoming month
-      await dateFilter.selectOption({ index: 1 });
-
-      // Wait for filter to apply
-      await page.waitForTimeout(500);
-    }
+    const seededCard = page.locator('[data-testid="camp-card"]', { hasText: SEEDED_CAMP_NAME });
+    await expect(seededCard).toBeVisible();
+    await expect(seededCard.getByText('Test University Field')).toBeVisible();
+    await expect(
+      seededCard.getByRole('button', { name: /^Register$/i })
+    ).toBeVisible();
   });
 
-  test.skip('should view camp details', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_PLAYER.email);
-    await page.fill('input[type="password"]', TEST_PLAYER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test('should register for the seeded camp and then unregister', async ({ page }) => {
+    await page.goto('/baseball/dashboard/camps');
+    await waitForPageLoad(page);
 
-    await page.goto('http://localhost:3000/baseball/dashboard/camps');
+    const seededCard = page.locator('[data-testid="camp-card"]', { hasText: SEEDED_CAMP_NAME });
+    await expect(seededCard).toBeVisible();
 
-    // Click on a camp if one exists
-    const campCard = page.locator('[data-testid="camp-card"], .camp-card').first();
+    // Register — the seeded test player starts unregistered (seed script
+    // resets this every run, see resetTestPlayerCampRegistration).
+    const registerButton = seededCard.getByRole('button', { name: /^Register$/i });
+    await expect(registerButton).toBeVisible();
+    await registerButton.click();
 
-    if (await campCard.isVisible()) {
-      await campCard.click();
+    const registeredButton = seededCard.getByRole('button', { name: /Registered/i });
+    await expect(registeredButton).toBeVisible({ timeout: 5000 });
 
-      // Should see camp details
-      await expect(page.locator('text=Date, text=Location, text=Price').first()).toBeVisible({ timeout: 3000 });
-
-      // Should see registration button
-      await expect(page.locator('button:has-text("Register"), button:has-text("Sign Up")').first()).toBeVisible();
-    }
-  });
-
-  test.skip('should register for a camp', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_PLAYER.email);
-    await page.fill('input[type="password"]', TEST_PLAYER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
-
-    await page.goto('http://localhost:3000/baseball/dashboard/camps');
-
-    const campCard = page.locator('[data-testid="camp-card"], .camp-card').first();
-
-    if (await campCard.isVisible()) {
-      await campCard.click();
-
-      // Click register
-      const registerButton = page.locator('button:has-text("Register"), button:has-text("Sign Up")').first();
-
-      if (await registerButton.isVisible()) {
-        await registerButton.click();
-
-        // Should see confirmation or payment flow
-        await expect(page.locator('text=Confirm, text=Registration, text=Payment').first()).toBeVisible({ timeout: 3000 });
-      }
-    }
+    // Unregister — clicking the "Registered" pill cancels the registration.
+    await registeredButton.click();
+    await expect(seededCard.getByRole('button', { name: /^Register$/i })).toBeVisible({ timeout: 5000 });
   });
 });
 
 test.describe('Camps - Coach Flow', () => {
-  test.skip('should create a new camp', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_COACH.email);
-    await page.fill('input[type="password"]', TEST_COACH.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test.skip(!SEEDED, 'no seeded baseball camp fixture (set PLAYWRIGHT_BASEBALL_SEEDED=1)');
 
-    await page.goto('http://localhost:3000/baseball/dashboard/camps');
-
-    // Click create camp
-    const createButton = page.locator('button:has-text("Create Camp"), button:has-text("New Camp")');
-
-    if (await createButton.isVisible()) {
-      await createButton.click();
-
-      // Fill camp form
-      await page.fill('input[name="name"]', 'E2E Test Camp');
-      await page.fill('input[name="location"]', 'University Stadium');
-      await page.fill('input[name="price"]', '150');
-      await page.fill('textarea[name="description"]', 'Test camp for E2E testing');
-
-      // Submit
-      await page.click('button:has-text("Create"), button:has-text("Save")');
-
-      // Should see success message or new camp in list
-      await expect(page.locator('text=E2E Test Camp')).toBeVisible({ timeout: 3000 });
+  test.beforeEach(async ({ page }) => {
+    try {
+      await loginAsCoach(page);
+    } catch {
+      test.skip(true, 'coach login fixture unavailable in this environment');
     }
+    await waitForPageLoad(page);
   });
 
-  test.skip('should view camp registrations', async ({ page }) => {
-    await page.goto('http://localhost:3000/baseball/login');
-    await page.fill('input[type="email"]', TEST_COACH.email);
-    await page.fill('input[type="password"]', TEST_COACH.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/baseball/dashboard**', { timeout: 10000 });
+  test('should list the seeded camp with a registration count', async ({ page }) => {
+    await page.goto('/baseball/dashboard/camps');
+    await waitForPageLoad(page);
 
-    await page.goto('http://localhost:3000/baseball/dashboard/camps');
+    const seededCard = page.locator('[data-testid="camp-card"]', { hasText: SEEDED_CAMP_NAME });
+    await expect(seededCard).toBeVisible();
+    await expect(seededCard.getByText(/registered$/i)).toBeVisible();
+  });
 
-    // Click on a camp to view details
-    const campCard = page.locator('[data-testid="camp-card"], .camp-card').first();
+  test('should view camp roster and see the seeded registration', async ({ page }) => {
+    await page.goto('/baseball/dashboard/camps');
+    await waitForPageLoad(page);
 
-    if (await campCard.isVisible()) {
-      await campCard.click();
+    const seededCard = page.locator('[data-testid="camp-card"]', { hasText: SEEDED_CAMP_NAME });
+    await seededCard.getByRole('button', { name: new RegExp(`View roster for ${SEEDED_CAMP_NAME}`, 'i') }).click();
+    await waitForPageLoad(page);
 
-      // Look for registrations tab/section
-      const registrationsTab = page.locator('button:has-text("Registrations"), a:has-text("Registrations")');
+    await expect(page).toHaveURL(/\/dashboard\/camps\/[a-zA-Z0-9-]+$/);
+    await expect(page.locator('body')).not.toContainText(/Application error|500/i);
+    await expect(page.getByRole('heading', { name: /Roster/i })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(SEEDED_REGISTRANT_NAME)).toBeVisible();
+  });
 
-      if (await registrationsTab.isVisible()) {
-        await registrationsTab.click();
+  test('should create a new camp and then delete it', async ({ page }) => {
+    await page.goto('/baseball/dashboard/camps');
+    await waitForPageLoad(page);
 
-        // Should see list of registered players
-        await expect(page.locator('text=Registered, text=Participants').first()).toBeVisible({ timeout: 3000 });
-      }
-    }
+    const campName = `E2E Created Camp ${Date.now()}`;
+
+    await page.getByRole('button', { name: 'Create Camp', exact: true }).click();
+
+    const closeModalButton = page.getByRole('button', { name: 'Close create camp modal' });
+    await expect(closeModalButton).toBeVisible();
+    const modal = closeModalButton.locator('xpath=ancestor::div[contains(@class, "glass-prominent")]');
+
+    await modal.getByLabel(/Camp Name/i).fill(campName);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 30);
+    const startDateStr = startDate.toISOString().slice(0, 10);
+    await modal.getByLabel(/Start Date/i).fill(startDateStr);
+    await modal.getByLabel(/^Location$/i).fill('E2E Created Field');
+
+    await modal.getByRole('button', { name: 'Create Camp', exact: true }).click();
+
+    const createdCard = page.locator('[data-testid="camp-card"]', { hasText: campName });
+    await expect(createdCard).toBeVisible({ timeout: 8000 });
+
+    // Clean up: delete the camp we just created so repeated CI runs don't
+    // accumulate test data outside the deterministic seed namespace.
+    await createdCard.getByRole('button', { name: new RegExp(`Delete ${campName}`, 'i') }).click();
+
+    const deleteDialog = page.getByRole('dialog', { name: 'Delete Camp' });
+    await expect(deleteDialog).toBeVisible();
+    await deleteDialog.getByRole('button', { name: 'Delete', exact: true }).click();
+
+    await expect(page.locator('[data-testid="camp-card"]', { hasText: campName })).toHaveCount(0, { timeout: 8000 });
   });
 });

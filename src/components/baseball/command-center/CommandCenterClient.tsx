@@ -22,6 +22,7 @@ import {
 import type { BaseballRosterPlayer } from '@/lib/types';
 import type { RiskFeedItem } from '@/lib/baseball/read-models/command-center';
 import type { CoachDailyContractsReadModel } from '@/lib/baseball/read-models/coach-daily-contracts';
+import type { ReadModelLoadState } from '@/lib/product-trust/read-model-state';
 import { Button } from '@/components/ui/button';
 import { RiskFeedStrip } from './RiskFeedStrip';
 import { DailyBriefPanel } from './DailyBriefPanel';
@@ -57,6 +58,14 @@ interface CommandCenterClientProps {
   riskFeed?: RiskFeedItem[];
   riskFeedError?: string | null;
   coachDailyContracts?: CoachDailyContractsReadModel;
+  summary?: {
+    openRisks: number;
+    criticalRisks: number;
+    rosterSize: number;
+    playersWithData: number;
+    eventsToday: number;
+  };
+  loadState?: ReadModelLoadState;
 }
 
 type MainTab = 'roster' | 'stats';
@@ -238,10 +247,12 @@ function SortableHeader({
       aria-sort={isActive ? 'descending' : 'none'}
       className={`py-0 ${align === 'left' ? 'text-left' : 'text-center'} ${className}`}
     >
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => onSort(sortKey)}
-        className={`group inline-flex w-full items-center gap-1 py-3 text-eyebrow font-semibold uppercase tracking-wide transition-colors rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${
+        haptic="none"
+        className={`min-h-0 group w-full gap-1 py-3 text-eyebrow font-semibold uppercase tracking-wide hover:bg-transparent ${
           align === 'left' ? 'justify-start' : 'justify-center'
         } ${isActive ? 'text-primary-600' : 'text-warm-500 hover:text-warm-700'}`}
       >
@@ -251,7 +262,7 @@ function SortableHeader({
           aria-hidden
           className={`transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'}`}
         />
-      </button>
+      </Button>
     </th>
   );
 }
@@ -267,6 +278,8 @@ export function CommandCenterClient({
   riskFeed = [],
   riskFeedError = null,
   coachDailyContracts,
+  summary,
+  loadState,
 }: CommandCenterClientProps) {
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -392,7 +405,18 @@ export function CommandCenterClient({
               </p>
               <h1 className="text-2xl sm:text-3xl font-bold text-warm-900 tracking-tight">Command Center</h1>
               <p className="text-warm-500 mt-1 text-sm">
-                {players.length} player{players.length !== 1 ? 's' : ''} on your roster
+                {loadState === 'error' || loadState === 'partial'
+                  ? (riskFeedError ?? 'Some Command Center data could not be loaded.')
+                  : loadState === 'unauthorized'
+                    ? 'You do not have staff access to this team.'
+                    : `${summary?.rosterSize ?? players.length} player${(summary?.rosterSize ?? players.length) !== 1 ? 's' : ''} on your roster`}
+                {summary && loadState !== 'unauthorized' && loadState !== 'error' && (
+                  <span className="text-warm-400">
+                    {' '}
+                    · {summary.openRisks} open signal{summary.openRisks !== 1 ? 's' : ''}
+                    {summary.eventsToday > 0 ? ` · ${summary.eventsToday} event${summary.eventsToday !== 1 ? 's' : ''} today` : ''}
+                  </span>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-2.5">

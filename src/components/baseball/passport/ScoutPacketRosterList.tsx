@@ -25,6 +25,7 @@ import {
   IconCheckCircle2,
 } from '@/components/icons';
 import type { ScoutPacketRosterEntry } from '@/app/baseball/actions/scout-packet';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   entries: ScoutPacketRosterEntry[];
@@ -62,18 +63,20 @@ export function ScoutPacketRosterList({ entries }: Props) {
             { key: 'shared', label: `Shared · ${sharedCount}` },
           ] as Array<{ key: Filter; label: string }>
         ).map((f) => (
-          <button
+          <Button
             key={f.key}
             type="button"
+            variant="ghost"
             onClick={() => setFilter(f.key)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+            haptic="none"
+            className={`min-h-0 rounded-full px-3 py-1.5 text-sm font-medium ${
               filter === f.key
-                ? 'bg-primary-600 text-white'
+                ? 'bg-primary-600 text-white hover:bg-primary-600'
                 : 'bg-cream-50 text-warm-600 ring-1 ring-warm-200 hover:bg-warm-50'
             }`}
           >
             {f.label}
-          </button>
+          </Button>
         ))}
       </div>
 

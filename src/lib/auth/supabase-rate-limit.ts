@@ -59,6 +59,10 @@ export const RATE_LIMITS = {
     windowMs: 60 * 60 * 1000, // 1 hour
     blockDurationMs: 60 * 60 * 1000, // 1 hour block
   },
+  PASSWORD_CHANGE: {
+    maxAttempts: 5,
+    windowMs: 15 * 60 * 1000, // 15 minutes
+  },
   API_GENERAL: {
     maxAttempts: 100,
     windowMs: 60 * 1000, // 1 minute

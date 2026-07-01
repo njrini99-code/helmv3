@@ -694,9 +694,11 @@ export default function PipelinePage() {
                           onChange={() => togglePlayerSelection(item.id)}
                           className="mt-1 rounded border-warm-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
                         />
-                        <button
+                        <Button
                           type="button"
-                          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer text-left appearance-none bg-transparent border-0 p-0"
+                          variant="ghost"
+                          haptic="none"
+                          className="min-h-0 h-auto flex-1 min-w-0 justify-start gap-3 rounded-none p-0 text-left font-normal hover:bg-transparent"
                           onClick={() => setPeekPlayerId(item.player?.id || null)}
                         >
                           <Avatar
@@ -712,7 +714,7 @@ export default function PipelinePage() {
                               {item.player?.primary_position || 'N/A'} {item.player?.grad_year ? `\u2022 ${item.player.grad_year}` : ''}
                             </p>
                           </div>
-                        </button>
+                        </Button>
                         <Badge
                           variant={
                             item.pipeline_stage === 'committed' ? 'success'
@@ -854,9 +856,11 @@ export default function PipelinePage() {
                               />
                             </td>
                             <td className="px-6 py-4">
-                              <button
+                              <Button
                                 type="button"
-                                className="flex items-center gap-3 cursor-pointer group text-left appearance-none bg-transparent border-0 p-0 w-full"
+                                variant="ghost"
+                                haptic="none"
+                                className="min-h-0 h-auto w-full justify-start gap-3 rounded-none p-0 text-left font-normal group hover:bg-transparent"
                                 onClick={() => setPeekPlayerId(item.player?.id || null)}
                               >
                                 <Avatar
@@ -872,7 +876,7 @@ export default function PipelinePage() {
                                     {item.player?.high_school_name || 'No school'}
                                   </p>
                                 </div>
-                              </button>
+                              </Button>
                             </td>
                             <td className="px-6 py-4 text-sm text-warm-600">
                               {item.player?.primary_position}

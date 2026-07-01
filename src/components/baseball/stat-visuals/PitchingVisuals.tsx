@@ -652,7 +652,7 @@ function MixMetric({
         {label}
       </span>
       <BulletBar value={rate} max={1} tone={tone} height={6} />
-      <span className="w-8 text-right text-[11px] tabular-nums text-warm-600">{pct(rate, 0)}</span>
+      <span className="w-8 text-right text-micro tabular-nums text-warm-600">{pct(rate, 0)}</span>
     </div>
   );
 }

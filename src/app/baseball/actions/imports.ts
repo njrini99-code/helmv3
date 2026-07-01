@@ -30,6 +30,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/lib/supabase/server';
+import { assertImportSourceEnabled } from '@/lib/baseball/import-source-enabled';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { appendImportTimelineEvent } from '@/lib/baseball/timeline-writer';
 import { runBaseballEngine } from '@/app/baseball/actions/coachhelm';
@@ -61,6 +62,7 @@ import {
   type ExistingStatRecord,
   type IncomingRowForVerdict,
 } from '@/lib/baseball/import-matching';
+import { assertImportSourceAllowed } from '@/lib/baseball/import-source-enabled';
 import type {
   BaseballImportRunRow,
   BaseballImportRowMatch,
@@ -425,6 +427,7 @@ async function loadSourcePolicy(
   const row = (data ?? [])[0] as
     | {
         id: string;
+        source_name: string;
         trust_level: BaseballSourceTrustLevel;
         default_visibility: BaseballDefaultVisibility;
         required_review: boolean;
@@ -436,6 +439,11 @@ async function loadSourcePolicy(
     | undefined;
 
   if (!row) return { configId: null, ...ADAPTER_DEFAULT_POLICY };
+
+  assertImportSourceEnabled(
+    { source_name: row.source_name, enabled: row.enabled },
+    sourceId,
+  );
 
   return {
     configId: row.id,
@@ -619,6 +627,9 @@ export const previewImport = withBaseballAction(
   ): Promise<ImportPreview> => {
     const supabase = await createClient();
     const { teamId, sourceId } = args;
+    const db = supabase as unknown as LooseClient;
+
+    await assertImportSourceAllowed(db, teamId, sourceId);
 
     // Resolve the registered source policy up front — it governs matching
     // strategy + namespace below and is surfaced in the preview either way.

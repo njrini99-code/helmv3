@@ -4,6 +4,31 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Json } from '@/lib/types/database';
 import { logServerError } from '@/lib/server-error-logger';
+import { BaseballCapabilityError } from '@/lib/baseball/capabilities';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballNoActiveTeamError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
+
+const DEV_PLAN_PATH = '/baseball/dashboard/dev-plan';
+
+function mapDevPlanCoachError(error: unknown): never {
+  if (error instanceof BaseballUnauthorizedError) {
+    throw new Error('Not authenticated');
+  }
+  if (error instanceof BaseballNoActiveTeamError) {
+    throw new Error('Coach profile not found');
+  }
+  if (error instanceof BaseballCapabilityError) {
+    throw new Error('You do not have permission to modify this plan');
+  }
+  if (error instanceof BaseballActionError) {
+    throw new Error('Something went wrong. Please try again.');
+  }
+  throw error;
+}
 
 // Goal status types
 export type GoalStatus = 'not_started' | 'in_progress' | 'completed';
@@ -185,74 +210,77 @@ export async function completeGoal(
   planId: string,
   goalId: string
 ): Promise<void> {
-  const supabase = await createClient();
-
-  // SECURITY: Require authenticated coach for completing goals
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data: coachProfile } = await supabase
-    .from('baseball_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!coachProfile) throw new Error('Coach profile not found');
-
-  // Fetch current plan — include coach_id for ownership check
-  const { data: plan, error: fetchError } = await supabase
-    .from('baseball_developmental_plans')
-    .select('goals, coach_id')
-    .eq('id', planId)
-    .single();
-
-  if (!fetchError && plan && plan.coach_id !== coachProfile.id) {
-    throw new Error('You do not have permission to modify this plan');
+  try {
+    await completeGoalAction(planId, goalId);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'dev_plans.completeGoal', featureArea: 'baseball-dev-plans' },
+    );
+    mapDevPlanCoachError(error);
   }
-
-  if (fetchError) {
-    await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.completeGoal' });
-    throw fetchError;
-  }
-
-  const goals = parseGoals(plan.goals);
-  const goalIndex = goals.findIndex((g) => g.id === goalId);
-  const currentGoal = goals[goalIndex];
-  
-  if (!currentGoal) {
-    throw new Error('Goal not found');
-  }
-
-  // Mark complete (preserve required fields explicitly)
-  goals[goalIndex] = {
-    id: currentGoal.id,
-    title: currentGoal.title,
-    description: currentGoal.description,
-    category: currentGoal.category,
-    target_date: currentGoal.target_date,
-    coach_notes: currentGoal.coach_notes,
-    created_at: currentGoal.created_at,
-    progress: 100,
-    status: 'completed',
-    completed_at: new Date().toISOString(),
-  };
-
-  // Save back
-  const { error: updateError } = await supabase
-    .from('baseball_developmental_plans')
-    .update({
-      goals: goals as unknown as Json,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', planId);
-
-  if (updateError) {
-    await logServerError(`Error completing goal: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.completeGoal' });
-    throw updateError;
-  }
-
-  revalidatePath('/baseball/dashboard/dev-plan');
 }
+
+const completeGoalAction = withBaseballAction(
+  'completeGoal',
+  { featureArea: 'baseball-dev-plans', requiredCapability: 'can_manage_settings' },
+  async (ctx, planId: string, goalId: string): Promise<void> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) throw new Error('Coach profile not found');
+
+    const { data: plan, error: fetchError } = await supabase
+      .from('baseball_developmental_plans')
+      .select('goals, coach_id')
+      .eq('id', planId)
+      .single();
+
+    if (!fetchError && plan && plan.coach_id !== coachId) {
+      throw new Error('You do not have permission to modify this plan');
+    }
+
+    if (fetchError) {
+      await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.completeGoal' });
+      throw fetchError;
+    }
+
+    const goals = parseGoals(plan.goals);
+    const goalIndex = goals.findIndex((g) => g.id === goalId);
+    const currentGoal = goals[goalIndex];
+
+    if (!currentGoal) {
+      throw new Error('Goal not found');
+    }
+
+    goals[goalIndex] = {
+      id: currentGoal.id,
+      title: currentGoal.title,
+      description: currentGoal.description,
+      category: currentGoal.category,
+      target_date: currentGoal.target_date,
+      coach_notes: currentGoal.coach_notes,
+      created_at: currentGoal.created_at,
+      progress: 100,
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+    };
+
+    const { error: updateError } = await supabase
+      .from('baseball_developmental_plans')
+      .update({
+        goals: goals as unknown as Json,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', planId);
+
+    if (updateError) {
+      await logServerError(`Error completing goal: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.completeGoal' });
+      throw updateError;
+    }
+
+    revalidatePath(DEV_PLAN_PATH);
+  },
+);
 
 /**
  * Unmark a goal as complete — set back to in progress (coach-only operation)
@@ -261,74 +289,77 @@ export async function uncompleteGoal(
   planId: string,
   goalId: string
 ): Promise<void> {
-  const supabase = await createClient();
-
-  // SECURITY: Require authenticated coach for uncompleting goals
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { data: coachProfile } = await supabase
-    .from('baseball_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!coachProfile) throw new Error('Coach profile not found');
-
-  // Fetch current plan — include coach_id for ownership check
-  const { data: plan, error: fetchError } = await supabase
-    .from('baseball_developmental_plans')
-    .select('goals, coach_id')
-    .eq('id', planId)
-    .single();
-
-  if (!fetchError && plan && plan.coach_id !== coachProfile.id) {
-    throw new Error('You do not have permission to modify this plan');
+  try {
+    await uncompleteGoalAction(planId, goalId);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'dev_plans.uncompleteGoal', featureArea: 'baseball-dev-plans' },
+    );
+    mapDevPlanCoachError(error);
   }
-
-  if (fetchError) {
-    await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.uncompleteGoal' });
-    throw fetchError;
-  }
-
-  const goals = parseGoals(plan.goals);
-  const goalIndex = goals.findIndex((g) => g.id === goalId);
-  const currentGoal = goals[goalIndex];
-  
-  if (!currentGoal) {
-    throw new Error('Goal not found');
-  }
-
-  // Unmark complete (preserve required fields explicitly)
-  goals[goalIndex] = {
-    id: currentGoal.id,
-    title: currentGoal.title,
-    description: currentGoal.description,
-    category: currentGoal.category,
-    target_date: currentGoal.target_date,
-    coach_notes: currentGoal.coach_notes,
-    created_at: currentGoal.created_at,
-    progress: 90, // Set to 90% so it's close but not complete
-    status: 'in_progress',
-    completed_at: undefined,
-  };
-
-  // Save back
-  const { error: updateError } = await supabase
-    .from('baseball_developmental_plans')
-    .update({
-      goals: goals as unknown as Json,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', planId);
-
-  if (updateError) {
-    await logServerError(`Error uncompleting goal: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.uncompleteGoal' });
-    throw updateError;
-  }
-
-  revalidatePath('/baseball/dashboard/dev-plan');
 }
+
+const uncompleteGoalAction = withBaseballAction(
+  'uncompleteGoal',
+  { featureArea: 'baseball-dev-plans', requiredCapability: 'can_manage_settings' },
+  async (ctx, planId: string, goalId: string): Promise<void> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) throw new Error('Coach profile not found');
+
+    const { data: plan, error: fetchError } = await supabase
+      .from('baseball_developmental_plans')
+      .select('goals, coach_id')
+      .eq('id', planId)
+      .single();
+
+    if (!fetchError && plan && plan.coach_id !== coachId) {
+      throw new Error('You do not have permission to modify this plan');
+    }
+
+    if (fetchError) {
+      await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.uncompleteGoal' });
+      throw fetchError;
+    }
+
+    const goals = parseGoals(plan.goals);
+    const goalIndex = goals.findIndex((g) => g.id === goalId);
+    const currentGoal = goals[goalIndex];
+
+    if (!currentGoal) {
+      throw new Error('Goal not found');
+    }
+
+    goals[goalIndex] = {
+      id: currentGoal.id,
+      title: currentGoal.title,
+      description: currentGoal.description,
+      category: currentGoal.category,
+      target_date: currentGoal.target_date,
+      coach_notes: currentGoal.coach_notes,
+      created_at: currentGoal.created_at,
+      progress: 90,
+      status: 'in_progress',
+      completed_at: undefined,
+    };
+
+    const { error: updateError } = await supabase
+      .from('baseball_developmental_plans')
+      .update({
+        goals: goals as unknown as Json,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', planId);
+
+    if (updateError) {
+      await logServerError(`Error uncompleting goal: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.uncompleteGoal' });
+      throw updateError;
+    }
+
+    revalidatePath(DEV_PLAN_PATH);
+  },
+);
 
 // Helper to parse goals from JSON
 function parseGoals(goalsJson: Json | null): DevPlanGoal[] {

@@ -114,6 +114,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_signals (
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.baseball_signals ENABLE ROW LEVEL SECURITY;
 
 -- Additive guards (in case a partial table already exists).
 ALTER TABLE public.baseball_signals ADD COLUMN IF NOT EXISTS player_id                uuid;
@@ -214,6 +215,7 @@ CREATE TABLE IF NOT EXISTS public.baseball_actions (
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.baseball_actions ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.baseball_actions ADD COLUMN IF NOT EXISTS signal_id           uuid;
 ALTER TABLE public.baseball_actions ADD COLUMN IF NOT EXISTS player_id           uuid;
@@ -252,8 +254,6 @@ CREATE INDEX IF NOT EXISTS baseball_actions_assignee_coach_idx
 -- =============================================================================
 -- 3. RLS — staff triage; players see only their own player-visible work
 -- =============================================================================
-ALTER TABLE public.baseball_signals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.baseball_actions ENABLE ROW LEVEL SECURITY;
 
 -- ---- baseball_signals -------------------------------------------------------
 -- SELECT: staff see all team signals. A player may see ONLY a non-staff_only

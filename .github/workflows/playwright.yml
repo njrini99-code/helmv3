@@ -22,9 +22,13 @@ concurrency:
 permissions:
   contents: read
 
-# Shared across jobs. Secrets resolve to '' when unset (the authed specs
-# then test.skip()). NEXT_PUBLIC_REDESIGN renders the Fairway shell — what
-# production serves — so authed specs exercise FairwayCoursePicker.
+# Shared across jobs. Secrets resolve to '' when unset (the Golf authed
+# specs then test.skip()). The BaseballHelm mandatory smoke suite (#372)
+# diverges: playwright/baseball-auth.setup.ts THROWS on missing/broken
+# E2E_BASEBALL_* secrets here (CI is always truthy on GitHub Actions), so
+# that suite fails the job loudly instead of silently skipping.
+# NEXT_PUBLIC_REDESIGN renders the Fairway shell — what production serves —
+# so authed specs exercise FairwayCoursePicker.
 env:
   # Fall back to a valid-format DUMMY on secretless runs (Dependabot / fork PRs
   # get no repo secrets) so the build-only "Smoke checks" job passes. The dummy
@@ -36,6 +40,18 @@ env:
   NEXT_PUBLIC_REDESIGN: 'true'
   E2E_GOLF_EMAIL: ${{ secrets.E2E_GOLF_EMAIL }}
   E2E_GOLF_PASSWORD: ${{ secrets.E2E_GOLF_PASSWORD }}
+  # Service-role key for scripts/seed-baseball-e2e.ts (issue #375) and
+  # scripts/seed-baseball-demo.ts (issue #372). Same "resolves to '' when
+  # unset" pattern as the golf E2E secrets above — the #375 seed step is
+  # skipped and its specs self-skip via PLAYWRIGHT_BASEBALL_SEEDED, while
+  # the #372 mandatory smoke (below) fails loudly instead, since it's meant
+  # to be a hard CI gate rather than an opportunistic/skippable suite.
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  # BaseballHelm mandatory smoke (#372) — see e2e/README.md.
+  E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
+  E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
+  E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
+  E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
   COMMIT_SHA: ${{ github.sha }}
   # The `npm run build` step (both jobs) OOMs at Node's ~4GB default heap on
   # the CI runner — the same OOM that fails the `build` check. The standard
@@ -70,7 +86,10 @@ jobs:
   e2e:
     name: Playwright (chromium)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 30 -> 40: the BaseballHelm mandatory smoke (#372) adds a seed step plus
+    # two extra `playwright test` invocations, each of which boots its own
+    # `npm run dev` webServer (CI disables reuseExistingServer).
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -100,12 +119,46 @@ jobs:
       - name: Build (so dev server boots fast)
         run: npm run build
 
+      - name: Seed BaseballHelm E2E fixtures (issue 375)
+        # Only runs when SUPABASE_SERVICE_ROLE_KEY is available (not present
+        # on fork PRs) — mirrors the existing E2E_GOLF_* secret gating below.
+        # --confirm is required by the script itself; without it the script
+        # only prints a dry-run plan and writes nothing.
+        if: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        run: npm run seed:baseball:e2e -- --confirm
+
+      - name: Seed BaseballHelm CI accounts
+        # scripts/seed-baseball-demo.ts validates SUPABASE_SERVICE_ROLE_KEY /
+        # NEXT_PUBLIC_SUPABASE_URL itself and exits non-zero with a clear
+        # message if either is absent — that failure is the "secrets are
+        # missing" guard for the blocking step below. Idempotent: safe to
+        # re-run on every CI build (upserts by deterministic id).
+        run: npm run seed:baseball:ci
+
+      - name: Run BaseballHelm mandatory smoke (blocking)
+        # #372 — these must actually execute for CI to be green. No `|| echo`
+        # soft-fail shim: a failure here (including baseball-auth.setup.ts
+        # throwing on missing/broken E2E_BASEBALL_* secrets) fails the job.
+        run: |
+          npx playwright test --project=baseball-coach --project=baseball-player
+          npx playwright test --project=chromium e2e/baseball-onboarding-smoke.spec.ts
+
       - name: Run Playwright tests
+        env:
+          # Gates the rewritten Camps/Pipeline/Box Score specs onto the
+          # fixtures the seed step above just provisioned. Left unset (falsy)
+          # when the seed step was skipped, so those specs self-skip instead
+          # of failing against an unseeded database.
+          PLAYWRIGHT_BASEBALL_SEEDED: >-
+            ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' && '1' || '' }}
         # Don't fail the build on E2E flake while the suite is being
         # stabilized. Once it's reliably green for a week, replace the
         # `|| echo` shim with a hard `npm run test:e2e` and add as a
         # required status check via .github/branch-protection.md.
-        run: npm run test:e2e || echo "Playwright suite has failures — see report artifact"
+        # Scoped to --project=chromium: the BaseballHelm mandatory smoke
+        # (setup/baseball-coach/baseball-player projects, run above) is
+        # intentionally excluded from this soft-fail path.
+        run: npx playwright test --project=chromium || echo "Playwright suite has failures — see report artifact"
 
       - name: Upload Playwright report
         if: always()
@@ -182,3 +235,87 @@ jobs:
           name: picker-playwright-report
           path: playwright-report/
           retention-days: 14
+
+  # Isolated, advisory job for the seeded BaseballHelm stats-surface smoke
+  # (#382). Isolated for the same reason as `picker-screenshots`: the shared
+  # `e2e` job's full suite has pre-existing failing specs that would exhaust
+  # its 30-min budget before this ever ran, AND baseball-phase1.spec.ts /
+  # this spec's Tier-2 assertions are gated by the SAME PLAYWRIGHT_BASEBALL_SEEDED
+  # flag — running them in the shared job would make `e2e`'s pass/fail depend
+  # on baseball fixture credentials it doesn't otherwise need. The seeded
+  # credentials below are therefore scoped to ONLY this job's `env:`, not the
+  # workflow-level `env:` block, so no other job's specs see them.
+  #
+  # ADVISORY/NON-BLOCKING: the `|| echo` guard on the test step means this job
+  # can never fail the PR. Promotion path: once it has been green across
+  # several consecutive runs (recommend N >= 10, or one week of merges to
+  # main), remove the `|| echo "..."` suffix below so a real failure fails the
+  # job — at that point also remove `continue-on-error` from any branch
+  # protection config that references this job, if one was added.
+  #
+  # Required repo secrets (Settings → Secrets and variables → Actions):
+  #   PLAYWRIGHT_BASEBALL_SEEDED   = "1"
+  #   E2E_BASEBALL_COACH_EMAIL     (a seeded BaseballHelm college coach, e.g.
+  #                                  the Rini demo's njrini99@gmail.com)
+  #   E2E_BASEBALL_COACH_PASSWORD
+  #   E2E_BASEBALL_PLAYER_EMAIL    (a seeded player on that coach's team, e.g.
+  #                                  the Rini demo's rinin376@gmail.com)
+  #   E2E_BASEBALL_PLAYER_PASSWORD
+  #   NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are inherited
+  #   from the workflow-level env: block above (same Supabase project the
+  #   fixture accounts were seeded into).
+  #
+  # One-time seeding command (run locally / from a trusted shell against the
+  # target Supabase project — needs SUPABASE_SERVICE_ROLE_KEY, which is NOT a
+  # CI secret consumed by this job):
+  #   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config \
+  #     scripts/seed-rini-baseball-demo.ts --confirm
+  baseball-smoke:
+    name: BaseballHelm seeded smoke (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_BASEBALL_SEEDED: ${{ secrets.PLAYWRIGHT_BASEBALL_SEEDED }}
+      E2E_BASEBALL_COACH_EMAIL: ${{ secrets.E2E_BASEBALL_COACH_EMAIL }}
+      E2E_BASEBALL_COACH_PASSWORD: ${{ secrets.E2E_BASEBALL_COACH_PASSWORD }}
+      E2E_BASEBALL_PLAYER_EMAIL: ${{ secrets.E2E_BASEBALL_PLAYER_EMAIL }}
+      E2E_BASEBALL_PLAYER_PASSWORD: ${{ secrets.E2E_BASEBALL_PLAYER_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build (so dev server boots fast)
+        run: npm run build
+
+      - name: Run baseball-smoke spec
+        # Advisory only — see job comment above for the promotion path.
+        run: npx playwright test baseball-stats-smoke.spec.ts --reporter=line || echo "baseball-smoke had failures — see report artifact"
+
+      - name: Upload Playwright report (baseball-smoke)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: baseball-smoke-playwright-report
+          path: playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore

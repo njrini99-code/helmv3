@@ -38,6 +38,12 @@
 //     (NOT an error, NOT partial data) for non-staff. RLS backs every query;
 //     this is the in-process gate on top. A player-visible variant lives in the
 //     development-metrics action (snapshot read), gated by row visibility.
+//
+// CANONICAL READ PATH: this file is the designated canonical entry point for
+// elite event/fact stat data — see docs/baseball/stats-architecture.md for the
+// full three-layer model (legacy flat, official box-score/season, this layer)
+// and src/lib/baseball/stat-layer-manifest.ts for the enforced deprecated-table
+// allowlist.
 // =============================================================================
 
 import 'server-only';

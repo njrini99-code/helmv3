@@ -26,6 +26,12 @@
 // error, NOT partial data) when the current user is not staff on the team. RLS
 // backs every query; this is the in-process gate + honest envelope on top.
 //
+// CANONICAL READ PATH: this file is the designated canonical entry point for
+// box-score/season stat data — see docs/baseball/stats-architecture.md for the
+// full three-layer model (legacy flat, this layer, elite event-grain) and
+// src/lib/baseball/stat-layer-manifest.ts for the enforced deprecated-table
+// allowlist.
+//
 // HONESTY: players with zero captured box-score lines are marked `noData` (not a
 // fabricated .000); the season-stat reconcile reports a real `reconciled` flag
 // + drift deltas rather than masking a mismatch; counts are real counts.

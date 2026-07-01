@@ -65,6 +65,27 @@ import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 
+// ---------------------------------------------------------------------------
+// CI guard (#372): fail loudly and immediately when the Supabase credentials
+// this script needs are absent, instead of crashing deep inside an async
+// upsert with a confusing Postgres/PostgREST error. Checked at import time —
+// before any async work — so `npm run seed:baseball:ci` exits non-zero with
+// a clear message the moment a required secret is missing.
+// ---------------------------------------------------------------------------
+function assertRequiredSeedEnv(): void {
+  const required = {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  } as const;
+  for (const [name, value] of Object.entries(required)) {
+    if (!value || !value.trim()) {
+      console.error(`Missing required env var: ${name} — cannot seed baseball CI accounts`);
+      process.exit(1);
+    }
+  }
+}
+assertRequiredSeedEnv();
+
 import type { BaseballPlayerTimelineEventInsert } from '../src/lib/types/baseball-extended';
 import type { BaseballEventAcknowledgementInsert } from '../src/lib/types/baseball-acknowledgements';
 import type {
@@ -86,6 +107,13 @@ import type { BaseballInsightSourceRef } from '../src/lib/types/baseball-coachhe
 
 // ---------------------------------------------------------------------------
 // Stable demo identity (deterministic — survives re-runs).
+//
+// SINGLE SOURCE OF TRUTH (#372): these are the credentials the Playwright
+// baseball auth setup (playwright/baseball-auth.setup.ts) expects to find in
+// E2E_BASEBALL_COACH_EMAIL / E2E_BASEBALL_COACH_PASSWORD /
+// E2E_BASEBALL_PLAYER_EMAIL / E2E_BASEBALL_PLAYER_PASSWORD. If you point CI
+// at this shipped demo seed (rather than a separate dedicated CI fixture),
+// set those four env vars to the values below.
 // ---------------------------------------------------------------------------
 const DEMO_DOMAIN = 'baseballhelmdemo.com';
 const DEMO_COACH_EMAIL = `demo-coach@${DEMO_DOMAIN}`;
@@ -194,9 +222,9 @@ async function main() {
   // SAFE BY DEFAULT: dry run unless --confirm is passed explicitly.
   const confirmed = process.argv.includes('--confirm');
   DRY = !confirmed;
+  // Required env already validated by assertRequiredSeedEnv() at import time.
   const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
   const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
-  if (!url || !key) throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
   supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
   if (DRY) {
@@ -250,6 +278,20 @@ async function main() {
     created_by: COACH_ID,
   }]);
 
+  // --- 1c. Activate demo mode on the seeded team's settings document ------
+  // Issue #392: makes the dormant `demo_mode_enabled` flag explicit/discoverable
+  // for UI affordances (e.g. a "you're in the live demo" banner). The
+  // authoritative write-block for the shared demo coach is enforced at runtime
+  // by withBaseballAction's demo read-only guard (see with-baseball-action.ts),
+  // not by this flag — this only documents intent on the settings row.
+  // baseball_program_settings.team_id is UNIQUE, so onConflict: 'team_id' is
+  // the natural key (no deterministic `id` needed here).
+  await upsert(
+    'baseball_program_settings',
+    [{ team_id: TEAM_ID, demo_mode_enabled: true }],
+    'team_id',
+  );
+
   // --- 2. Players + memberships -----------------------------------
 
   const playerIdByKey: Record<string, string> = {};
@@ -271,6 +313,7 @@ async function main() {
       id: pid,
       user_id: playerAuth.userId,
       player_type: 'college',
+      recruiting_activated: false,
       first_name: p.first,
       last_name: p.last,
       email: playerEmail,

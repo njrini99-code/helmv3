@@ -46,6 +46,40 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      // baseball-smoke.spec.ts requires an authenticated storageState from
+      // the `setup` project below — it must not also run anonymously here.
+      testIgnore: /baseball-smoke\.spec\.ts/,
+    },
+
+    // BaseballHelm mandatory smoke (#372) — durable per-role auth. `setup`
+    // logs coach + player in once and persists storageState; the two
+    // role-scoped projects below depend on it and consume the persisted
+    // state instead of re-authenticating per test. See
+    // playwright/baseball-auth.setup.ts and e2e/baseball-smoke.spec.ts.
+    {
+      name: 'setup',
+      testDir: './playwright',
+      testMatch: /baseball-auth\.setup\.ts/,
+    },
+    {
+      name: 'baseball-coach',
+      testMatch: /baseball-smoke\.spec\.ts/,
+      grep: /@coach/,
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/baseball-coach.json',
+      },
+    },
+    {
+      name: 'baseball-player',
+      testMatch: /baseball-smoke\.spec\.ts/,
+      grep: /@player/,
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/baseball-player.json',
+      },
     },
 
     // Uncomment to test on other browsers

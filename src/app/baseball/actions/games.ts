@@ -11,6 +11,14 @@ import {
   type CSVRow,
 } from '@/lib/baseball/csv-utils';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import { BaseballCapabilityError, requireBaseballCapability } from '@/lib/baseball/capabilities';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballNoActiveTeamError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
+import { logServerError } from '@/lib/server-error-logger';
 import {
   getStatsCenter,
   type StatsCenterOptions,
@@ -39,6 +47,25 @@ const STATS_PATHS = [
 
 function revalidateStatsPaths() {
   STATS_PATHS.forEach((p) => revalidatePath(p));
+}
+
+function mapGameActionError(error: unknown): { success: false; error: string } {
+  if (error instanceof BaseballUnauthorizedError) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  if (error instanceof BaseballNoActiveTeamError) {
+    return { success: false, error: 'Coach or team not found' };
+  }
+  if (error instanceof BaseballCapabilityError) {
+    return { success: false, error: 'You do not have permission to manage games and stats' };
+  }
+  if (error instanceof BaseballActionError) {
+    return { success: false, error: 'Could not complete the game action. Please try again.' };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred' };
 }
 
 // ============================================================================
@@ -94,72 +121,145 @@ export interface CreateGameResult {
   error?: string;
 }
 
+const createGameAction = withBaseballAction(
+  'createGame',
+  {
+    featureArea: 'baseball-games',
+    requiredCapability: 'can_manage_stats',
+    teamFrom: (teamId: string, _input: CreateGameInput) => teamId,
+  },
+  async (
+    ctx,
+    teamId: string,
+    input: CreateGameInput,
+  ): Promise<CreateGameResult> => {
+    const supabase = await createClient();
+    const coachId = ctx.activeCoachId;
+    if (!coachId) return { success: false, error: 'Coach profile not found' };
+
+    if (teamId !== ctx.activeTeamId) {
+      await requireBaseballCapability(teamId, 'can_manage_stats');
+    }
+
+    let eventId = input.event_id ?? null;
+
+    if (input.create_calendar_event && !eventId) {
+      const startDateTime = input.event_time
+        ? `${input.game_date}T${input.event_time}`
+        : `${input.game_date}T12:00:00`;
+
+      const { data: event } = await supabase
+        .from('baseball_events')
+        .insert({
+          team_id: teamId,
+          created_by: coachId,
+          title: input.opponent_name
+            ? `${input.game_type === 'scrimmage' ? 'Scrimmage' : 'Game'} vs ${input.opponent_name}`
+            : input.game_type === 'scrimmage'
+              ? 'Scrimmage'
+              : 'Game',
+          event_type: input.game_type,
+          start_time: startDateTime,
+          end_time: `${input.game_date}T15:00:00`,
+          location: input.location ?? null,
+          is_mandatory: true,
+          created_by_id: ctx.user.id,
+        })
+        .select('id')
+        .single();
+
+      if (event) eventId = event.id;
+    }
+
+    const { data: game, error } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .insert({
+        team_id: teamId,
+        event_id: eventId,
+        game_date: input.game_date,
+        game_type: input.game_type,
+        opponent_name: input.opponent_name ?? null,
+        location: input.location ?? null,
+        home_away: input.home_away ?? null,
+        innings_played: input.innings_played ?? 9,
+        notes: input.notes ?? null,
+        weather: input.weather ?? null,
+        created_by: coachId,
+        status: 'scheduled',
+      })
+      .select()
+      .single();
+
+    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+    revalidateStatsPaths();
+    return { success: true, data: game as BaseballGame };
+  },
+);
+
 export async function createGame(
   teamId: string,
   input: CreateGameInput
 ): Promise<CreateGameResult> {
-  const authResult = await requireCoachAuth();
-  if ('error' in authResult) return { success: false, error: authResult.error };
-  const { coach, supabase } = authResult;
+  try {
+    return await createGameAction(teamId, input);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_games.createGame', featureArea: 'baseball-games' },
+    );
+    return mapGameActionError(error);
+  }
+}
 
-  const hasAccess = await verifyTeamAccess(supabase, coach.id, teamId);
-  if (!hasAccess) return { success: false, error: 'You do not have access to this team' };
+const updateGameAction = withBaseballAction(
+  'updateGame',
+  { featureArea: 'baseball-games' },
+  async (
+    _ctx,
+    gameId: string,
+    input: Partial<CreateGameInput> & {
+      our_score?: number;
+      opponent_score?: number;
+      status?: BaseballGameStatus;
+    },
+  ): Promise<{ success: boolean; error?: string }> => {
+    const supabase = await createClient();
 
-  // Optionally create a linked calendar event first
-  let eventId = input.event_id ?? null;
-
-  if (input.create_calendar_event && !eventId) {
-    const startDateTime = input.event_time
-      ? `${input.game_date}T${input.event_time}`
-      : `${input.game_date}T12:00:00`;
-
-    const { data: event } = await supabase
-      .from('baseball_events')
-      .insert({
-        team_id: teamId,
-        created_by: coach.id,
-        title: input.opponent_name
-          ? `${input.game_type === 'scrimmage' ? 'Scrimmage' : 'Game'} vs ${input.opponent_name}`
-          : input.game_type === 'scrimmage'
-            ? 'Scrimmage'
-            : 'Game',
-        event_type: input.game_type,
-        start_time: startDateTime,
-        end_time: `${input.game_date}T15:00:00`,
-        location: input.location ?? null,
-        is_mandatory: true,
-        created_by_id: authResult.user.id,
-      })
-      .select('id')
+    const { data: game } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .select('team_id')
+      .eq('id', gameId)
       .single();
 
-    if (event) eventId = event.id;
-  }
+    if (!game) return { success: false, error: 'Game not found' };
 
-  const { data: game, error } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_games')
-    .insert({
-      team_id: teamId,
-      event_id: eventId,
-      game_date: input.game_date,
-      game_type: input.game_type,
-      opponent_name: input.opponent_name ?? null,
-      location: input.location ?? null,
-      home_away: input.home_away ?? null,
-      innings_played: input.innings_played ?? 9,
-      notes: input.notes ?? null,
-      weather: input.weather ?? null,
-      created_by: coach.id,
-      status: 'scheduled',
-    })
-    .select()
-    .single();
+    await requireBaseballCapability(game.team_id, 'can_manage_stats');
 
-  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+    const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (input.game_date !== undefined) updateData.game_date = input.game_date;
+    if (input.game_type !== undefined) updateData.game_type = input.game_type;
+    if (input.opponent_name !== undefined) updateData.opponent_name = input.opponent_name;
+    if (input.location !== undefined) updateData.location = input.location;
+    if (input.home_away !== undefined) updateData.home_away = input.home_away;
+    if (input.innings_played !== undefined) updateData.innings_played = input.innings_played;
+    if (input.notes !== undefined) updateData.notes = input.notes;
+    if (input.weather !== undefined) updateData.weather = input.weather;
+    if (input.our_score !== undefined) updateData.our_score = input.our_score;
+    if (input.opponent_score !== undefined) updateData.opponent_score = input.opponent_score;
+    if (input.status !== undefined) updateData.status = input.status;
 
-  revalidateStatsPaths();
-  return { success: true, data: game as BaseballGame };
-}
+    const { error } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .update(updateData)
+      .eq('id', gameId);
+
+    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+    revalidateStatsPaths();
+    return { success: true };
+  },
+);
 
 export async function updateGame(
   gameId: string,
@@ -169,67 +269,55 @@ export async function updateGame(
     status?: BaseballGameStatus;
   }
 ): Promise<{ success: boolean; error?: string }> {
-  const authResult = await requireCoachAuth();
-  if ('error' in authResult) return { success: false, error: authResult.error };
-  const { coach, supabase } = authResult;
-
-  const { data: game } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_games')
-    .select('team_id')
-    .eq('id', gameId)
-    .single();
-
-  if (!game) return { success: false, error: 'Game not found' };
-
-  const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
-  if (!hasAccess) return { success: false, error: 'Access denied' };
-
-  const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (input.game_date !== undefined) updateData.game_date = input.game_date;
-  if (input.game_type !== undefined) updateData.game_type = input.game_type;
-  if (input.opponent_name !== undefined) updateData.opponent_name = input.opponent_name;
-  if (input.location !== undefined) updateData.location = input.location;
-  if (input.home_away !== undefined) updateData.home_away = input.home_away;
-  if (input.innings_played !== undefined) updateData.innings_played = input.innings_played;
-  if (input.notes !== undefined) updateData.notes = input.notes;
-  if (input.weather !== undefined) updateData.weather = input.weather;
-  if (input.our_score !== undefined) updateData.our_score = input.our_score;
-  if (input.opponent_score !== undefined) updateData.opponent_score = input.opponent_score;
-  if (input.status !== undefined) updateData.status = input.status;
-
-  const { error } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_games')
-    .update(updateData)
-    .eq('id', gameId);
-
-  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
-
-  revalidateStatsPaths();
-  return { success: true };
+  try {
+    return await updateGameAction(gameId, input);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_games.updateGame', featureArea: 'baseball-games' },
+    );
+    return mapGameActionError(error);
+  }
 }
 
+const deleteGameAction = withBaseballAction(
+  'deleteGame',
+  { featureArea: 'baseball-games' },
+  async (_ctx, gameId: string): Promise<{ success: boolean; error?: string }> => {
+    const supabase = await createClient();
+
+    const { data: game } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .select('team_id')
+      .eq('id', gameId)
+      .single();
+
+    if (!game) return { success: false, error: 'Game not found' };
+
+    await requireBaseballCapability(game.team_id, 'can_manage_stats');
+
+    const { error } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .delete()
+      .eq('id', gameId);
+
+    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+    revalidateStatsPaths();
+    return { success: true };
+  },
+);
+
 export async function deleteGame(gameId: string): Promise<{ success: boolean; error?: string }> {
-  const authResult = await requireCoachAuth();
-  if ('error' in authResult) return { success: false, error: authResult.error };
-  const { coach, supabase } = authResult;
-
-  const { data: game } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_games')
-    .select('team_id')
-    .eq('id', gameId)
-    .single();
-
-  if (!game) return { success: false, error: 'Game not found' };
-
-  const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
-  if (!hasAccess) return { success: false, error: 'Access denied' };
-
-  const { error } = await (supabase as unknown as SupabaseClient).from('baseball_games').delete().eq('id', gameId);
-
-  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
-
-  revalidateStatsPaths();
-  return { success: true };
+  try {
+    return await deleteGameAction(gameId);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_games.deleteGame', featureArea: 'baseball-games' },
+    );
+    return mapGameActionError(error);
+  }
 }
 
 // ============================================================================
@@ -396,186 +484,342 @@ export interface SaveBoxScoreResult {
   error?: string;
 }
 
+const saveBoxScoreBattingAction = withBaseballAction(
+  'saveBoxScoreBatting',
+  { featureArea: 'baseball-games' },
+  async (
+    _ctx,
+    gameId: string,
+    battingLines: BoxScoreBattingInput[],
+  ): Promise<SaveBoxScoreResult> => {
+    const supabase = await createClient();
+
+    const { data: game } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .select('team_id')
+      .eq('id', gameId)
+      .single();
+
+    if (!game) return { success: false, error: 'Game not found' };
+
+    await requireBaseballCapability(game.team_id, 'can_manage_stats');
+
+    await (supabase as unknown as SupabaseClient)
+      .from('baseball_box_score_batting')
+      .delete()
+      .eq('game_id', gameId);
+
+    const rows = battingLines.map((line) => {
+      const rates = computeBattingRates(line);
+      return {
+        game_id: gameId,
+        player_id: line.player_id,
+        team_id: game.team_id,
+        batting_order: line.batting_order ?? null,
+        ab: line.ab,
+        r: line.r,
+        h: line.h,
+        doubles: line.doubles,
+        triples: line.triples,
+        hr: line.hr,
+        rbi: line.rbi,
+        bb: line.bb,
+        k: line.k,
+        sb: line.sb,
+        cs: line.cs,
+        hbp: line.hbp,
+        sac: line.sac,
+        sf: line.sf,
+        lob: line.lob,
+        avg: rates.avg,
+        obp: rates.obp,
+        slg: rates.slg,
+        ops: rates.ops,
+      };
+    });
+
+    const { error } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_box_score_batting')
+      .insert(rows);
+
+    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+    return { success: true };
+  },
+);
+
 export async function saveBoxScoreBatting(
   gameId: string,
   battingLines: BoxScoreBattingInput[]
 ): Promise<SaveBoxScoreResult> {
-  const authResult = await requireCoachAuth();
-  if ('error' in authResult) return { success: false, error: authResult.error };
-  const { coach, supabase } = authResult;
-
-  const { data: game } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_games')
-    .select('team_id')
-    .eq('id', gameId)
-    .single();
-
-  if (!game) return { success: false, error: 'Game not found' };
-
-  const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
-  if (!hasAccess) return { success: false, error: 'Access denied' };
-
-  // Delete existing batting lines for this game before re-inserting
-  await (supabase as unknown as SupabaseClient).from('baseball_box_score_batting').delete().eq('game_id', gameId);
-
-  const rows = battingLines.map((line) => {
-    const rates = computeBattingRates(line);
-    return {
-      game_id: gameId,
-      player_id: line.player_id,
-      team_id: game.team_id,
-      batting_order: line.batting_order ?? null,
-      ab: line.ab,
-      r: line.r,
-      h: line.h,
-      doubles: line.doubles,
-      triples: line.triples,
-      hr: line.hr,
-      rbi: line.rbi,
-      bb: line.bb,
-      k: line.k,
-      sb: line.sb,
-      cs: line.cs,
-      hbp: line.hbp,
-      sac: line.sac,
-      sf: line.sf,
-      lob: line.lob,
-      avg: rates.avg,
-      obp: rates.obp,
-      slg: rates.slg,
-      ops: rates.ops,
-    };
-  });
-
-  const { error } = await (supabase as unknown as SupabaseClient).from('baseball_box_score_batting').insert(rows);
-
-  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
-
-  return { success: true };
+  try {
+    return await saveBoxScoreBattingAction(gameId, battingLines);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_games.saveBoxScoreBatting', featureArea: 'baseball-games' },
+    );
+    return mapGameActionError(error);
+  }
 }
+
+const saveBoxScorePitchingAction = withBaseballAction(
+  'saveBoxScorePitching',
+  { featureArea: 'baseball-games' },
+  async (
+    _ctx,
+    gameId: string,
+    pitchingLines: BoxScorePitchingInput[],
+  ): Promise<SaveBoxScoreResult> => {
+    const supabase = await createClient();
+
+    const { data: game } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .select('team_id')
+      .eq('id', gameId)
+      .single();
+
+    if (!game) return { success: false, error: 'Game not found' };
+
+    await requireBaseballCapability(game.team_id, 'can_manage_stats');
+
+    await (supabase as unknown as SupabaseClient)
+      .from('baseball_box_score_pitching')
+      .delete()
+      .eq('game_id', gameId);
+
+    const rows = pitchingLines.map((line) => {
+      const rates = computePitchingRates(line);
+      return {
+        game_id: gameId,
+        player_id: line.player_id,
+        team_id: game.team_id,
+        ip: line.ip,
+        h: line.h,
+        r: line.r,
+        er: line.er,
+        bb: line.bb,
+        k: line.k,
+        hr: line.hr,
+        pitch_count: line.pitch_count ?? null,
+        strikes: line.strikes ?? null,
+        result: line.result ?? null,
+        era: rates.era,
+        whip: rates.whip,
+        k9: rates.k9,
+        bb9: rates.bb9,
+      };
+    });
+
+    const { error } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_box_score_pitching')
+      .insert(rows);
+
+    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+    return { success: true };
+  },
+);
 
 export async function saveBoxScorePitching(
   gameId: string,
   pitchingLines: BoxScorePitchingInput[]
 ): Promise<SaveBoxScoreResult> {
-  const authResult = await requireCoachAuth();
-  if ('error' in authResult) return { success: false, error: authResult.error };
-  const { coach, supabase } = authResult;
-
-  const { data: game } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_games')
-    .select('team_id')
-    .eq('id', gameId)
-    .single();
-
-  if (!game) return { success: false, error: 'Game not found' };
-
-  const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
-  if (!hasAccess) return { success: false, error: 'Access denied' };
-
-  await (supabase as unknown as SupabaseClient).from('baseball_box_score_pitching').delete().eq('game_id', gameId);
-
-  const rows = pitchingLines.map((line) => {
-    const rates = computePitchingRates(line);
-    return {
-      game_id: gameId,
-      player_id: line.player_id,
-      team_id: game.team_id,
-      ip: line.ip,
-      h: line.h,
-      r: line.r,
-      er: line.er,
-      bb: line.bb,
-      k: line.k,
-      hr: line.hr,
-      pitch_count: line.pitch_count ?? null,
-      strikes: line.strikes ?? null,
-      result: line.result ?? null,
-      era: rates.era,
-      whip: rates.whip,
-      k9: rates.k9,
-      bb9: rates.bb9,
-    };
-  });
-
-  const { error } = await (supabase as unknown as SupabaseClient).from('baseball_box_score_pitching').insert(rows);
-
-  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
-
-  return { success: true };
+  try {
+    return await saveBoxScorePitchingAction(gameId, pitchingLines);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_games.saveBoxScorePitching', featureArea: 'baseball-games' },
+    );
+    return mapGameActionError(error);
+  }
 }
+
+const markGameCompletedAction = withBaseballAction(
+  'markGameCompleted',
+  { featureArea: 'baseball-games' },
+  async (
+    _ctx,
+    gameId: string,
+    ourScore: number,
+    opponentScore: number,
+  ): Promise<{ success: boolean; error?: string }> => {
+    const supabase = await createClient();
+
+    const { data: game } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .select('team_id')
+      .eq('id', gameId)
+      .single();
+
+    if (!game) return { success: false, error: 'Game not found' };
+
+    await requireBaseballCapability(game.team_id, 'can_manage_stats');
+
+    const { error } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .update({
+        status: 'completed',
+        our_score: ourScore,
+        opponent_score: opponentScore,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', gameId);
+
+    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+    const { data: battingPlayers } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_box_score_batting')
+      .select('player_id')
+      .eq('game_id', gameId);
+
+    const { data: pitchingPlayers } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_box_score_pitching')
+      .select('player_id')
+      .eq('game_id', gameId);
+
+    const allPlayerIds = [
+      ...new Set([
+        ...(battingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
+        ...(pitchingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
+      ]),
+    ];
+
+    const currentYear = new Date().getFullYear();
+
+    const db2 = supabase as unknown as SupabaseClient;
+    await Promise.all(
+      allPlayerIds.map((playerId) =>
+        db2.rpc('recalculate_baseball_season_stats', {
+          p_player_id: playerId,
+          p_team_id: game.team_id,
+          p_season_year: currentYear,
+        })
+      )
+    );
+
+    revalidateStatsPaths();
+    revalidatePath(`/baseball/dashboard/players`);
+    return { success: true };
+  },
+);
 
 export async function markGameCompleted(
   gameId: string,
   ourScore: number,
   opponentScore: number
 ): Promise<{ success: boolean; error?: string }> {
-  const authResult = await requireCoachAuth();
-  if ('error' in authResult) return { success: false, error: authResult.error };
-  const { coach, supabase } = authResult;
-
-  const { data: game } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_games')
-    .select('team_id')
-    .eq('id', gameId)
-    .single();
-
-  if (!game) return { success: false, error: 'Game not found' };
-
-  const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
-  if (!hasAccess) return { success: false, error: 'Access denied' };
-
-  const { error } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_games')
-    .update({
-      status: 'completed',
-      our_score: ourScore,
-      opponent_score: opponentScore,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', gameId);
-
-  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
-
-  // Recalculate season stats for all players who appeared in this game
-  const { data: battingPlayers } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_box_score_batting')
-    .select('player_id')
-    .eq('game_id', gameId);
-
-  const { data: pitchingPlayers } = await (supabase as unknown as SupabaseClient)
-    .from('baseball_box_score_pitching')
-    .select('player_id')
-    .eq('game_id', gameId);
-
-  const allPlayerIds = [
-    ...new Set([
-      ...(battingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
-      ...(pitchingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
-    ]),
-  ];
-
-  const currentYear = new Date().getFullYear();
-
-  const db2 = supabase as unknown as SupabaseClient;
-  await Promise.all(
-    allPlayerIds.map((playerId) =>
-      db2.rpc('recalculate_baseball_season_stats', {
-        p_player_id: playerId,
-        p_team_id: game.team_id,
-        p_season_year: currentYear,
-      })
-    )
-  );
-
-  revalidateStatsPaths();
-  revalidatePath(`/baseball/dashboard/players`);
-  return { success: true };
+  try {
+    return await markGameCompletedAction(gameId, ourScore, opponentScore);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_games.markGameCompleted', featureArea: 'baseball-games' },
+    );
+    return mapGameActionError(error);
+  }
 }
 
 // ============================================================================
 // FULL BOX SCORE SAVE (batting + pitching + complete)
 // ============================================================================
+
+const saveFullBoxScoreAction = withBaseballAction(
+  'saveFullBoxScore',
+  // Team identity for the capability check is derived from the game row
+  // itself (below), not from the cookie-resolved active team — skip that
+  // resolution since the body never reads ctx.
+  { featureArea: 'baseball-games', requireActiveContext: false },
+  async (
+    _ctx,
+    gameId: string,
+    batting: BoxScoreBattingInput[],
+    pitching: BoxScorePitchingInput[],
+    ourScore: number,
+    opponentScore: number,
+  ): Promise<SaveBoxScoreResult> => {
+    const supabase = await createClient();
+
+    const { data: game } = await (supabase as unknown as SupabaseClient)
+      .from('baseball_games')
+      .select('team_id')
+      .eq('id', gameId)
+      .single();
+
+    if (!game) return { success: false, error: 'Game not found' };
+
+    await requireBaseballCapability(game.team_id, 'can_manage_stats');
+
+    const battingPayload = batting.map((line) => {
+      const rates = computeBattingRates(line);
+      return {
+        player_id: line.player_id,
+        batting_order: line.batting_order ?? null,
+        ab: line.ab,
+        r: line.r,
+        h: line.h,
+        doubles: line.doubles,
+        triples: line.triples,
+        hr: line.hr,
+        rbi: line.rbi,
+        bb: line.bb,
+        k: line.k,
+        sb: line.sb,
+        cs: line.cs,
+        hbp: line.hbp,
+        sac: line.sac,
+        sf: line.sf,
+        lob: line.lob,
+        avg: rates.avg,
+        obp: rates.obp,
+        slg: rates.slg,
+        ops: rates.ops,
+      };
+    });
+
+    const pitchingPayload = pitching.map((line) => {
+      const rates = computePitchingRates(line);
+      return {
+        player_id: line.player_id,
+        ip: line.ip,
+        h: line.h,
+        r: line.r,
+        er: line.er,
+        bb: line.bb,
+        k: line.k,
+        hr: line.hr,
+        pitch_count: line.pitch_count ?? null,
+        strikes: line.strikes ?? null,
+        result: line.result ?? null,
+        era: rates.era,
+        whip: rates.whip,
+        k9: rates.k9,
+        bb9: rates.bb9,
+      };
+    });
+
+    const db = supabase as unknown as SupabaseClient;
+    const { data, error } = await db.rpc('save_baseball_full_box_score', {
+      p_game_id: gameId,
+      p_batting: battingPayload,
+      p_pitching: pitchingPayload,
+      p_our_score: ourScore,
+      p_opponent_score: opponentScore,
+    });
+
+    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+    const result = data as { success?: boolean; error?: string } | null;
+    if (!result?.success) {
+      return { success: false, error: result?.error ?? 'Box score save failed' };
+    }
+
+    revalidateStatsPaths();
+    revalidatePath(`/baseball/dashboard/players`);
+    return { success: true };
+  },
+);
 
 export async function saveFullBoxScore(
   gameId: string,
@@ -584,13 +828,15 @@ export async function saveFullBoxScore(
   ourScore: number,
   opponentScore: number
 ): Promise<SaveBoxScoreResult> {
-  const battingResult = await saveBoxScoreBatting(gameId, batting);
-  if (!battingResult.success) return battingResult;
-
-  const pitchingResult = await saveBoxScorePitching(gameId, pitching);
-  if (!pitchingResult.success) return pitchingResult;
-
-  return markGameCompleted(gameId, ourScore, opponentScore);
+  try {
+    return await saveFullBoxScoreAction(gameId, batting, pitching, ourScore, opponentScore);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_games.saveFullBoxScore', featureArea: 'baseball-games' },
+    );
+    return mapGameActionError(error);
+  }
 }
 
 // ============================================================================

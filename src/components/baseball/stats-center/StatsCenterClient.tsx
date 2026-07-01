@@ -710,21 +710,23 @@ function SegmentedControl<T extends string>({
       {options.map((opt) => {
         const active = opt.value === value;
         return (
-          <button
+          <Button
             key={opt.value}
             type="button"
+            variant="ghost"
             role="radio"
             aria-checked={active}
             onClick={() => onChange(opt.value)}
+            haptic="none"
             className={cn(
-              'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+              'min-h-0 rounded-lg px-3 py-1.5 text-sm font-medium',
               active
-                ? 'bg-primary-600 text-white shadow-sm'
+                ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600'
                 : 'text-warm-600 hover:bg-warm-100',
             )}
           >
             {opt.label}
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -928,25 +930,29 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                   Season
                 </span>
                 <div className="inline-flex items-center rounded-xl border border-warm-200 bg-cream-50">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     aria-label="Previous season"
                     onClick={() => changeSeason(-1)}
-                    className="px-2.5 py-1.5 text-warm-600 transition-colors hover:bg-warm-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-l-xl"
+                    haptic="none"
+                    className="min-h-0 rounded-l-xl rounded-r-none px-2.5 py-1.5 text-warm-600"
                   >
                     −
-                  </button>
+                  </Button>
                   <span className="min-w-[3.5rem] px-2 text-center text-sm font-semibold tabular-nums text-warm-900">
                     {seasonYear}
                   </span>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     aria-label="Next season"
                     onClick={() => changeSeason(1)}
-                    className="px-2.5 py-1.5 text-warm-600 transition-colors hover:bg-warm-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-r-xl"
+                    haptic="none"
+                    className="min-h-0 rounded-r-xl rounded-l-none px-2.5 py-1.5 text-warm-600"
                   >
                     +
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -965,14 +971,16 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
 
               {/* Clear */}
               {hasActiveFilters && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={clearFilters}
-                  className="ml-auto flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-warm-500 transition-colors hover:bg-warm-100 hover:text-warm-700"
+                  haptic="none"
+                  className="ml-auto min-h-0 gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-warm-500 hover:text-warm-700"
                 >
                   <IconX size={14} />
                   Clear
-                </button>
+                </Button>
               )}
             </div>
 
@@ -985,20 +993,22 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
                 {positionOptions.map((pos) => {
                   const active = positions.includes(pos);
                   return (
-                    <button
+                    <Button
                       key={pos}
                       type="button"
+                      variant="ghost"
                       aria-pressed={active}
                       onClick={() => togglePosition(pos)}
+                      haptic="none"
                       className={cn(
-                        'rounded-full border px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+                        'min-h-0 rounded-full border px-3 py-1 text-sm font-medium',
                         active
-                          ? 'border-primary-600 bg-primary-600 text-white'
+                          ? 'border-primary-600 bg-primary-600 text-white hover:bg-primary-600'
                           : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300 hover:bg-warm-50',
                       )}
                     >
                       {prettyPosition(pos)}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>

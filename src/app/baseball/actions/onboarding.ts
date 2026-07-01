@@ -9,6 +9,12 @@ import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/sup
 import { validatePassword } from '@/lib/auth/password-validation';
 import type { User } from '@supabase/supabase-js';
 import { logServerError } from '@/lib/server-error-logger';
+import { CommonSchemas } from '@/lib/validation/server-action-validator';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -54,41 +60,35 @@ function describeDbError(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-// ─── Complete Coach Onboarding (authenticated users) ────────────────────────
+type CoachOnboardingInput = {
+  coachType: string;
+  schoolName: string;
+  division?: string;
+  city?: string;
+  state?: string;
+  fullName: string;
+  title?: string;
+};
 
-export async function completeCoachOnboarding(
-  data: {
-    coachType: string;
-    schoolName: string;
-    division?: string;
-    city?: string;
-    state?: string;
-    fullName: string;
-    title?: string;
-  },
-  // Optional: pass pre-verified user from signupAndCompleteCoachOnboarding
-  // to avoid a redundant getUser() round-trip
-  _preVerifiedUser?: User
-): Promise<OnboardingResult> {
-  // Verify identity via the SSR client (reads session cookies)
-  // Use pre-verified user if provided (from signUp in the same server action)
-  let user: User | null = _preVerifiedUser ?? null;
-
-  if (!user) {
-    const supabase = await createClient();
-    const { data: { user: sessionUser } } = await supabase.auth.getUser();
-    user = sessionUser;
-  }
-
-  if (!user) {
+function mapOnboardingCoachActionError(error: unknown): OnboardingResult {
+  if (error instanceof BaseballUnauthorizedError) {
     return { success: false, error: 'You must be signed in to complete onboarding.' };
   }
+  if (error instanceof BaseballActionError) {
+    return { success: false, error: error.message };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred.' };
+}
 
-  // All DB writes use the admin client (service role) so RLS never blocks onboarding.
-  // Identity is already verified above via getUser() — this is intentional.
+async function runCompleteCoachOnboardingCore(
+  user: User,
+  data: CoachOnboardingInput,
+): Promise<OnboardingResult> {
   const admin = createAdminClient();
 
-  // Validate inputs
   const coachType = data.coachType as CoachType;
   if (!VALID_COACH_TYPES.includes(coachType)) {
     return { success: false, error: 'Invalid coach type.' };
@@ -105,7 +105,6 @@ export async function completeCoachOnboarding(
   const city = data.city ? sanitizeString(data.city, 100) : null;
   const state = data.state ? sanitizeString(data.state, 2) : null;
 
-  // Check if coach profile already exists
   const { data: existingCoach } = await admin
     .from('baseball_coaches')
     .select('id')
@@ -113,14 +112,12 @@ export async function completeCoachOnboarding(
     .maybeSingle();
 
   if (existingCoach) {
-    // Already onboarded — redirect to dashboard
     return {
       success: true,
       redirectTo: '/baseball/dashboard/command-center',
     };
   }
 
-  // Upsert user record (ensure role is set correctly)
   const { error: userError } = await admin
     .from('users')
     .upsert({ id: user.id, email: user.email || '', role: 'coach' }, { onConflict: 'id' });
@@ -130,7 +127,6 @@ export async function completeCoachOnboarding(
     return { success: false, error: 'Unable to set up your account. Please try again.' };
   }
 
-  // Create organization
   const { data: org, error: orgError } = await admin
     .from('organizations')
     .insert({
@@ -148,9 +144,6 @@ export async function completeCoachOnboarding(
     return { success: false, error: 'Unable to create your program. Please try again.' };
   }
 
-  // Create coach profile. Capture the new coach id — baseball_teams.created_by is a
-  // FK to baseball_coaches(id), NOT auth.users(id). Passing user.id here was an FK
-  // violation that silently failed team creation for EVERY coach at onboarding.
   const { data: coachRow, error: coachError } = await admin
     .from('baseball_coaches')
     .insert({
@@ -170,7 +163,6 @@ export async function completeCoachOnboarding(
     return { success: false, error: 'Unable to create your profile. Please try again.' };
   }
 
-  // Create team. created_by references baseball_coaches(id) — use the coach row id.
   const joinCode = generateJoinCode();
   const { data: teamRow, error: teamError } = await admin
     .from('baseball_teams')
@@ -185,12 +177,8 @@ export async function completeCoachOnboarding(
     .single();
 
   if (teamError || !teamRow) {
-    // Non-fatal — log but don't block onboarding
     await logServerError(`[Onboarding] Failed to create team (non-fatal): ${describeDbError(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
   } else {
-    // Staff-link the new coach to their team as head coach. WITHOUT this row,
-    // getActiveBaseballContext() resolves zero memberships, the coach dashboard has
-    // no active team, and the user is bounced back into onboarding — the trap.
     const { error: staffError } = await admin
       .from('baseball_team_coach_staff')
       .insert({
@@ -226,6 +214,38 @@ export async function completeCoachOnboarding(
     redirectTo: '/baseball/dashboard/command-center',
   };
 }
+
+// ─── Complete Coach Onboarding (authenticated users) ────────────────────────
+
+export async function completeCoachOnboarding(
+  data: CoachOnboardingInput,
+  // Optional: pass pre-verified user from signupAndCompleteCoachOnboarding
+  // to avoid a redundant getUser() round-trip when the session cookie is not
+  // yet readable in the same request.
+  _preVerifiedUser?: User,
+): Promise<OnboardingResult> {
+  if (_preVerifiedUser) {
+    return runCompleteCoachOnboardingCore(_preVerifiedUser, data);
+  }
+
+  try {
+    return await completeCoachOnboardingAction(data);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'onboarding.completeCoachOnboarding', featureArea: 'baseball-onboarding' },
+    );
+    return mapOnboardingCoachActionError(error);
+  }
+}
+
+const completeCoachOnboardingAction = withBaseballAction(
+  'completeCoachOnboarding',
+  { featureArea: 'baseball-onboarding', requireActiveContext: false },
+  async (ctx, data: CoachOnboardingInput): Promise<OnboardingResult> => {
+    return runCompleteCoachOnboardingCore(ctx.user, data);
+  },
+);
 
 // ─── Signup + Complete Coach Onboarding (unauthenticated users) ─────────────
 
@@ -420,26 +440,15 @@ export async function completeBaseballSignup(data: {
     .upsert({ id: user.id, email: userEmail, role: data.role }, { onConflict: 'id' });
 
   if (data.role === 'coach') {
-    const coachType = data.coachType as CoachType;
-    if (!coachType || !VALID_COACH_TYPES.includes(coachType)) {
-      return { success: false, error: 'Please select a valid coach type.' };
+    try {
+      return await completeBaseballSignupCoachAction(data);
+    } catch (error) {
+      await logServerError(
+        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'onboarding.completeBaseballSignup', featureArea: 'baseball-onboarding' },
+      );
+      return mapOnboardingCoachActionError(error);
     }
-
-    const { error: coachError } = await admin.from('baseball_coaches').insert({
-      user_id: user.id,
-      coach_type: coachType,
-      full_name: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Coach',
-      email: userEmail,
-      onboarding_completed: false,
-    });
-
-    if (coachError) {
-      await logServerError(`[Onboarding] Failed to create coach profile: ${describeDbError(coachError)}`, { action: 'onboarding.completeBaseballSignup' });
-      return { success: false, error: 'Unable to create your profile. Please try again.' };
-    }
-
-    revalidatePath('/baseball');
-    return { success: true, redirectTo: '/baseball/coach-onboarding' };
   } else {
     const playerType = data.playerType as PlayerType;
     if (!playerType || !VALID_PLAYER_TYPES.includes(playerType)) {
@@ -449,12 +458,18 @@ export async function completeBaseballSignup(data: {
     const fullName = user.user_metadata?.full_name || userEmail.split('@')[0] || 'Player';
     const [firstName, ...lastParts] = fullName.split(' ');
 
+    const recruitingActivated = playerType !== 'college';
+    CommonSchemas.recruitingPlayerState.parse({
+      player_type: playerType,
+      recruiting_activated: recruitingActivated,
+    });
+
     const { error: playerError } = await admin.from('baseball_players').insert({
       user_id: user.id,
       player_type: playerType,
       first_name: firstName,
       last_name: lastParts.join(' ') || '',
-      recruiting_activated: playerType !== 'college',
+      recruiting_activated: recruitingActivated,
       onboarding_completed: false,
       profile_completion_percent: 0,
     });
@@ -468,6 +483,39 @@ export async function completeBaseballSignup(data: {
     return { success: true, redirectTo: '/baseball/player' };
   }
 }
+
+const completeBaseballSignupCoachAction = withBaseballAction(
+  'completeBaseballSignupCoach',
+  { featureArea: 'baseball-onboarding', requireActiveContext: false },
+  async (ctx, data: { coachType?: string }): Promise<OnboardingResult> => {
+    const coachType = data.coachType as CoachType;
+    if (!coachType || !VALID_COACH_TYPES.includes(coachType)) {
+      return { success: false, error: 'Please select a valid coach type.' };
+    }
+
+    const userEmail = ctx.user.email;
+    if (!userEmail) {
+      return { success: false, error: 'Email is required.' };
+    }
+
+    const admin = createAdminClient();
+    const { error: coachError } = await admin.from('baseball_coaches').insert({
+      user_id: ctx.user.id,
+      coach_type: coachType,
+      full_name: ctx.user.user_metadata?.full_name || userEmail.split('@')[0] || 'Coach',
+      email: userEmail,
+      onboarding_completed: false,
+    });
+
+    if (coachError) {
+      await logServerError(`[Onboarding] Failed to create coach profile: ${describeDbError(coachError)}`, { action: 'onboarding.completeBaseballSignup' });
+      return { success: false, error: 'Unable to create your profile. Please try again.' };
+    }
+
+    revalidatePath('/baseball');
+    return { success: true, redirectTo: '/baseball/coach-onboarding' };
+  },
+);
 
 // ─── Complete Player Onboarding (authenticated players) ───────────────────────
 

@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { IconSearch, IconChevronRight } from '@/components/icons';
 import {
-  IconSearch, IconUsers, IconCalendar, IconChart, IconMessage,
-  IconSettings, IconTarget, IconChevronRight
-} from '@/components/icons';
+  buildBaseballCommandPaletteItems,
+  type BaseballCommandPaletteItem,
+} from '@/lib/baseball/command-palette-nav';
+import type { BaseballNavContext } from '@/lib/baseball/nav-registry';
 
 interface CommandItem {
   id: string;
@@ -19,121 +21,28 @@ interface CommandItem {
 }
 
 interface CommandPaletteProps {
-  isCoach?: boolean;
+  navContext: BaseballNavContext;
 }
 
-export function CommandPalette({ isCoach }: CommandPaletteProps) {
+export function CommandPalette({ navContext }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const coachCommands: CommandItem[] = [
-    {
-      id: 'roster',
-      label: 'Go to Roster',
-      description: 'Manage your team players',
-      icon: <IconUsers size={18} />,
-      action: () => router.push('/baseball/dashboard/roster'),
-      keywords: ['players', 'team', 'members'],
-    },
-    {
-      id: 'pipeline',
-      label: 'Recruiting Pipeline',
-      description: 'Manage recruiting prospects',
-      icon: <IconTarget size={18} />,
-      action: () => router.push('/baseball/dashboard/pipeline'),
-      keywords: ['recruits', 'prospects'],
-    },
-    {
-      id: 'discover',
-      label: 'Discover Players',
-      description: 'Find new recruits',
-      icon: <IconSearch size={18} />,
-      action: () => router.push('/baseball/dashboard/discover'),
-      keywords: ['search', 'find', 'recruits'],
-    },
-    {
-      id: 'stats',
-      label: 'View Team Stats',
-      description: 'Player performance analytics',
-      icon: <IconChart size={18} />,
-      action: () => router.push('/baseball/dashboard/stats-center'),
-      keywords: ['analytics', 'performance', 'scores'],
-    },
-    {
-      id: 'calendar',
-      label: 'Open Calendar',
-      description: 'Events and schedule',
-      icon: <IconCalendar size={18} />,
-      action: () => router.push('/baseball/dashboard/calendar'),
-      keywords: ['schedule', 'events', 'dates'],
-    },
-    {
-      id: 'messages',
-      label: 'Messages',
-      description: 'Team communication',
-      icon: <IconMessage size={18} />,
-      action: () => router.push('/baseball/dashboard/messages'),
-      keywords: ['chat', 'communication'],
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      description: 'Account settings',
-      icon: <IconSettings size={18} />,
-      action: () => router.push('/baseball/dashboard/settings'),
-      keywords: ['account', 'profile'],
-    },
-  ];
+  const registryCommands: CommandItem[] = useMemo(() => {
+    return buildBaseballCommandPaletteItems(navContext).map((item: BaseballCommandPaletteItem) => ({
+      id: item.id,
+      label: item.label,
+      description: item.description,
+      icon: <item.icon size={18} />,
+      action: () => router.push(item.href),
+      keywords: item.keywords,
+    }));
+  }, [navContext, router]);
 
-  const playerCommands: CommandItem[] = [
-    {
-      id: 'profile',
-      label: 'My Profile',
-      description: 'View and edit your profile',
-      icon: <IconTarget size={18} />,
-      action: () => router.push('/baseball/dashboard/profile'),
-      keywords: ['me', 'info'],
-    },
-    {
-      id: 'stats',
-      label: 'My Stats',
-      description: 'Performance analytics',
-      icon: <IconChart size={18} />,
-      action: () => router.push('/baseball/dashboard/my-stats'),
-      keywords: ['analytics', 'performance'],
-    },
-    {
-      id: 'calendar',
-      label: 'Calendar',
-      description: 'Team events',
-      icon: <IconCalendar size={18} />,
-      action: () => router.push('/baseball/dashboard/calendar'),
-      keywords: ['schedule', 'events'],
-    },
-    {
-      id: 'messages',
-      label: 'Messages',
-      description: 'Chat with coaches',
-      icon: <IconMessage size={18} />,
-      action: () => router.push('/baseball/dashboard/messages'),
-      keywords: ['chat'],
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      description: 'Account settings',
-      icon: <IconSettings size={18} />,
-      action: () => router.push('/baseball/dashboard/settings'),
-      keywords: ['account', 'profile'],
-    },
-  ];
-
-  const commands = isCoach === true ? coachCommands : playerCommands;
-
-  const filteredCommands = commands.filter((cmd) => {
+  const filteredCommands = registryCommands.filter((cmd) => {
     if (!search) return true;
     const searchLower = search.toLowerCase();
     return (
@@ -183,7 +92,7 @@ export function CommandPalette({ isCoach }: CommandPaletteProps) {
         setOpen(false);
       }
     },
-    [filteredCommands, selectedIndex]
+    [filteredCommands, selectedIndex],
   );
 
   if (!open) return null;
@@ -199,13 +108,15 @@ export function CommandPalette({ isCoach }: CommandPaletteProps) {
 
       {/* Dialog */}
       <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg animate-scale-in">
-        <div className={cn(
-          'bg-cream-100/68 backdrop-blur-[24px]',
-          'rounded-2xl',
-          'shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.5)]',
-          'border border-warm-200/45',
-          'overflow-hidden'
-        )}>
+        <div
+          className={cn(
+            'bg-cream-100/68 backdrop-blur-[24px]',
+            'rounded-2xl',
+            'shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.5)]',
+            'border border-warm-200/45',
+            'overflow-hidden',
+          )}
+        >
           {/* Search Input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/20 bg-white/30">
             <IconSearch size={20} className="text-warm-400" aria-hidden="true" />
@@ -232,7 +143,8 @@ export function CommandPalette({ isCoach }: CommandPaletteProps) {
             id="command-list"
             role="listbox"
             aria-label="Available commands"
-            className="max-h-80 overflow-y-auto p-2" data-scroll-container
+            className="max-h-80 overflow-y-auto p-2"
+            data-scroll-container
           >
             {filteredCommands.length === 0 ? (
               <div className="text-center py-8 text-sm text-warm-500" role="status">
@@ -240,7 +152,8 @@ export function CommandPalette({ isCoach }: CommandPaletteProps) {
               </div>
             ) : (
               filteredCommands.map((cmd, index) => (
-                <Button variant="primary"
+                <Button
+                  variant="primary"
                   key={cmd.id}
                   id={`cmd-${cmd.id}`}
                   role="option"
@@ -253,13 +166,13 @@ export function CommandPalette({ isCoach }: CommandPaletteProps) {
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
                     index === selectedIndex
                       ? 'bg-primary-50/80 backdrop-blur-sm text-primary-900'
-                      : 'hover:bg-white/40 text-warm-700'
+                      : 'hover:bg-white/40 text-warm-700',
                   )}
                 >
                   <div
                     className={cn(
                       'w-8 h-8 rounded-lg flex items-center justify-center',
-                      index === selectedIndex ? 'bg-primary-100' : 'bg-cream-100/68 backdrop-blur-sm'
+                      index === selectedIndex ? 'bg-primary-100' : 'bg-cream-100/68 backdrop-blur-sm',
                     )}
                     aria-hidden="true"
                   >

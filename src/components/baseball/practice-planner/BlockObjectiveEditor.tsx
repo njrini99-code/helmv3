@@ -217,7 +217,7 @@ export function BlockObjectiveEditor({
         )}
       </div>
 
-      <p className="mb-2 text-[11px] leading-relaxed text-warm-500">
+      <p className="mb-2 text-micro leading-relaxed text-warm-500">
         Attach a target metric to make this focus <span className="font-medium text-warm-700">measurable</span> —
         CoachHelm will read whether it transferred to later games, scrimmages and
         practice. Leave the metric blank to track completion only.
@@ -233,7 +233,7 @@ export function BlockObjectiveEditor({
             >
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium text-warm-800">{o.focusArea}</p>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-warm-500">
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-micro text-warm-500">
                   {o.targetMetric ? (
                     <span className="inline-flex items-center gap-1 text-primary-600">
                       <Ruler className="h-3 w-3" />
@@ -251,29 +251,31 @@ export function BlockObjectiveEditor({
                   {o.repsPlanned != null && <span>{o.repsPlanned} reps planned</span>}
                 </p>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => handleDelete(o.id)}
                 disabled={isPending}
+                haptic="none"
                 aria-label={`Remove objective ${o.focusArea}`}
-                className="shrink-0 rounded-md p-1 text-warm-400 transition-colors hover:bg-error/10 hover:text-error disabled:opacity-50"
+                className="min-h-0 shrink-0 rounded-md p-1 text-warm-400 hover:bg-error/10 hover:text-error"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
       )}
 
       {blockObjectives.length === 0 && !adding && (
-        <p className="text-[11px] italic text-warm-400">No objectives on this block yet.</p>
+        <p className="text-micro italic text-warm-400">No objectives on this block yet.</p>
       )}
 
       {/* Add form */}
       {adding && (
         <div className="space-y-2 rounded-lg border border-warm-200 bg-white/80 p-2.5">
           <label className="block">
-            <span className="mb-1 block text-[11px] font-medium text-warm-600">Focus area</span>
+            <span className="mb-1 block text-micro font-medium text-warm-600">Focus area</span>
             <input
               type="text"
               value={focusArea}
@@ -285,7 +287,7 @@ export function BlockObjectiveEditor({
 
           <div className="grid grid-cols-2 gap-2">
             <label className="block">
-              <span className="mb-1 block text-[11px] font-medium text-warm-600">
+              <span className="mb-1 block text-micro font-medium text-warm-600">
                 Target metric (optional)
               </span>
               <select
@@ -307,7 +309,7 @@ export function BlockObjectiveEditor({
               </select>
             </label>
             <label className="block">
-              <span className="mb-1 block text-[11px] font-medium text-warm-600">Reps planned</span>
+              <span className="mb-1 block text-micro font-medium text-warm-600">Reps planned</span>
               <input
                 type="number"
                 min={0}
@@ -322,32 +324,34 @@ export function BlockObjectiveEditor({
           {/* Assigned players */}
           {roster.length > 0 && (
             <div>
-              <span className="mb-1 block text-[11px] font-medium text-warm-600">
+              <span className="mb-1 block text-micro font-medium text-warm-600">
                 Assigned players {assigned.size > 0 && `(${assigned.size})`}
               </span>
               <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
                 {roster.map((p) => {
                   const on = assigned.has(p.id);
                   return (
-                    <button
+                    <Button
                       key={p.id}
                       type="button"
+                      variant="ghost"
                       onClick={() => togglePlayer(p.id)}
-                      className={`rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                      haptic="none"
+                      className={`min-h-0 rounded-full border px-2 py-0.5 text-micro font-medium ${
                         on
-                          ? 'border-primary-500 bg-primary-600 text-white'
+                          ? 'border-primary-500 bg-primary-600 text-white hover:bg-primary-600'
                           : 'border-warm-200 bg-white text-warm-600 hover:border-primary-300'
                       }`}
                     >
                       {p.name}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
             </div>
           )}
 
-          {error && <p className="text-[11px] text-error">{error}</p>}
+          {error && <p className="text-micro text-error">{error}</p>}
 
           <div className="flex items-center gap-2 pt-0.5">
             <Button

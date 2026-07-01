@@ -16,6 +16,7 @@
 // =============================================================================
 
 import { IconDownload } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import {
   scoutPacketToCsv,
   type ScoutPacketModel,
@@ -57,13 +58,15 @@ export function ScoutPacketCsvButton({ token, model }: Props) {
   };
 
   return (
-    <button
+    <Button
       type="button"
+      variant="secondary"
       onClick={onDownload}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-warm-200 bg-white px-3 py-1.5 text-sm font-medium text-warm-700 transition-colors hover:border-primary-200 hover:text-primary-700"
+      haptic="none"
+      className="min-h-0 gap-1.5 rounded-lg border-warm-200 bg-white px-3 py-1.5 text-sm font-medium text-warm-700 hover:border-primary-200 hover:text-primary-700"
     >
       <IconDownload size={14} />
       CSV summary
-    </button>
+    </Button>
   );
 }

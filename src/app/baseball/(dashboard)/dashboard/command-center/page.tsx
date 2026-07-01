@@ -1,38 +1,11 @@
-'use server';
-
 import { createClient } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { CommandCenterClient } from '@/components/baseball/command-center/CommandCenterClient';
 import { getCommandCenter } from '@/lib/baseball/read-models/command-center';
+import { assembleCommandCenterClientProps } from '@/lib/baseball/read-models/command-center-adapter';
 import { getCoachDailyContracts } from '@/lib/baseball/read-models/coach-daily-contracts';
-import type { BaseballPlayerAggregates } from '@/lib/types';
-
-interface BaseballPlayerData {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-  primary_position: string | null;
-  secondary_position: string | null;
-  grad_year: number | null;
-  bats: string | null;
-  throws: string | null;
-  height_feet: number | null;
-  height_inches: number | null;
-  weight_lbs: number | null;
-  gpa: number | null;
-  city: string | null;
-  state: string | null;
-}
-
-interface BaseballRosterPlayerLocal extends BaseballPlayerData {
-  aggregates?: BaseballPlayerAggregates;
-  jersey_number?: number | null;
-  team_position?: string | null;
-  team_status?: string | null;
-  joined_at?: string | null;
-}
+import { resolveCoachTeamIdWithCookie } from '@/lib/baseball/resolve-team-server';
 
 export default async function CommandCenterPage() {
   const supabase = await createClient();
@@ -66,13 +39,13 @@ export default async function CommandCenterPage() {
     );
   }
 
-  const { data: team, error: teamError } = await supabase
-    .from('baseball_teams')
-    .select('id, name, team_type, join_code')
-    .eq('organization_id', coach.organization_id)
-    .single() as { data: { id: string; name: string; team_type: string; join_code: string | null } | null; error: unknown };
+  const teamId = await resolveCoachTeamIdWithCookie(
+    supabase,
+    coach.organization_id,
+    coach.id,
+  );
 
-  if (teamError || !team) {
+  if (!teamId) {
     return (
       <CommandCenterClient
         team={{ id: '', name: 'Your Program', teamType: coach.coach_type, inviteCode: null }}
@@ -86,90 +59,43 @@ export default async function CommandCenterPage() {
     );
   }
 
-  const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
+  type TeamRow = { id: string; name: string; team_type: string; join_code: string | null };
+  const { data: teamRow } = await supabase
+    .from('baseball_teams')
+    .select('id, name, team_type, join_code')
+    .eq('id', teamId)
+    .maybeSingle() as { data: TeamRow | null };
 
-  const [commandCenter, coachDailyContracts, teamMembersRes, calendarRes] = await Promise.all([
-    getCommandCenter(team.id),
-    getCoachDailyContracts(team.id),
-    supabase
-      .from('baseball_team_members')
-      .select(`
-        player_id,
-        position,
-        jersey_number,
-        status,
-        joined_at,
-        baseball_players!inner (
-          id,
-          first_name,
-          last_name,
-          avatar_url,
-          primary_position,
-          secondary_position,
-          grad_year,
-          bats,
-          throws,
-          height_feet,
-          height_inches,
-          weight_lbs,
-          gpa,
-          city,
-          state
-        )
-      `)
-      .eq('team_id', team.id),
-    supabase
-      .from('baseball_events')
-      .select('id, title, event_type, start_time, end_time')
-      .eq('team_id', team.id)
-      .gte('start_time', weekStart.toISOString())
-      .lt('start_time', weekEnd.toISOString()),
+  const teamMeta = {
+    id: teamRow?.id ?? teamId,
+    name: teamRow?.name ?? 'Your Program',
+    teamType: teamRow?.team_type ?? coach.coach_type,
+    inviteCode: teamRow?.join_code ?? null,
+  };
+
+  const [commandCenter, coachDailyContracts] = await Promise.all([
+    getCommandCenter(teamId, { includeWeekEvents: true }),
+    getCoachDailyContracts(teamId),
   ]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: aggregates } = await (supabase as any)
-    .from('baseball_player_aggregates')
-    .select('*')
-    .eq('team_id', team.id) as { data: BaseballPlayerAggregates[] | null };
-
-  const teamMembers = teamMembersRes.data;
-
-  const players: BaseballRosterPlayerLocal[] = (teamMembers || []).map((member) => {
-    const player = member.baseball_players as unknown as BaseballPlayerData;
-    const playerAggregates = (aggregates || []).find(
-      (a: BaseballPlayerAggregates) => a.player_id === player.id,
-    );
-
-    return {
-      ...player,
-      aggregates: playerAggregates || undefined,
-      jersey_number: member.jersey_number,
-      team_position: member.position,
-      team_status: member.status,
-      joined_at: member.joined_at,
-    };
+  const assembled = assembleCommandCenterClientProps({
+    team: teamMeta,
+    model: commandCenter,
+    coachDailyContracts,
   });
 
   return (
     <CommandCenterClient
-      team={{
-        id: team.id,
-        name: team.name,
-        teamType: team.team_type,
-        inviteCode: team.join_code,
-      }}
-      players={players as unknown as import('@/lib/types').BaseballRosterPlayer[]}
+      team={assembled.team}
+      players={assembled.players}
       coachId={coach.id}
       coachName={coach.full_name || 'Coach'}
-      calendarEvents={calendarRes.data ?? []}
-      riskFeed={commandCenter.authorized ? commandCenter.riskFeed : []}
-      riskFeedError={commandCenter.error}
-      coachDailyContracts={coachDailyContracts}
+      calendarEvents={assembled.calendarEvents}
+      riskFeed={assembled.riskFeed}
+      riskFeedError={assembled.riskFeedError}
+      coachDailyContracts={assembled.coachDailyContracts}
+      summary={assembled.summary}
+      loadState={assembled.loadState}
     />
   );
 }

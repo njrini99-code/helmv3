@@ -182,6 +182,7 @@ COMMENT ON TABLE public.baseball_program_settings IS
 CREATE INDEX IF NOT EXISTS baseball_program_settings_team_id_idx
   ON public.baseball_program_settings (team_id);
 
+ALTER TABLE public.baseball_program_settings ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- SECTION 3 — baseball_import_sources (the import source registry)
 -- ============================================================================
@@ -217,6 +218,7 @@ COMMENT ON TABLE public.baseball_import_sources IS
 CREATE INDEX IF NOT EXISTS baseball_import_sources_team_id_idx
   ON public.baseball_import_sources (team_id);
 
+ALTER TABLE public.baseball_import_sources ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- SECTION 4 — baseball_integration_configs (adapter contracts, NOT vendor calls)
 -- ============================================================================
@@ -252,6 +254,7 @@ COMMENT ON TABLE public.baseball_integration_configs IS
 CREATE INDEX IF NOT EXISTS baseball_integration_configs_team_id_idx
   ON public.baseball_integration_configs (team_id);
 
+ALTER TABLE public.baseball_integration_configs ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 -- SECTION 5 — baseball_settings_audit_log (sensitive setting changes)
 -- ============================================================================
@@ -309,6 +312,7 @@ BEGIN
       FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
   END IF;
 END $$;
+ALTER TABLE public.baseball_settings_audit_log ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- SECTION 7 — RLS POLICIES
@@ -322,7 +326,6 @@ END $$;
 -- ----------------------------------------------------------------------------
 -- baseball_program_settings
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_program_settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "baseball_program_settings_select" ON public.baseball_program_settings;
 DROP POLICY IF EXISTS "baseball_program_settings_insert" ON public.baseball_program_settings;
@@ -351,7 +354,6 @@ CREATE POLICY "baseball_program_settings_delete" ON public.baseball_program_sett
 -- ----------------------------------------------------------------------------
 -- baseball_import_sources  (staff with can_manage_imports)
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_import_sources ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "baseball_import_sources_select" ON public.baseball_import_sources;
 DROP POLICY IF EXISTS "baseball_import_sources_insert" ON public.baseball_import_sources;
@@ -375,7 +377,6 @@ CREATE POLICY "baseball_import_sources_delete" ON public.baseball_import_sources
 -- ----------------------------------------------------------------------------
 -- baseball_integration_configs  (staff with can_manage_settings)
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_integration_configs ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "baseball_integration_configs_select" ON public.baseball_integration_configs;
 DROP POLICY IF EXISTS "baseball_integration_configs_insert" ON public.baseball_integration_configs;
@@ -399,7 +400,6 @@ CREATE POLICY "baseball_integration_configs_delete" ON public.baseball_integrati
 -- ----------------------------------------------------------------------------
 -- baseball_settings_audit_log  (append-only; staff read; no staff update/delete)
 -- ----------------------------------------------------------------------------
-ALTER TABLE public.baseball_settings_audit_log ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "baseball_settings_audit_log_select" ON public.baseball_settings_audit_log;
 DROP POLICY IF EXISTS "baseball_settings_audit_log_insert" ON public.baseball_settings_audit_log;

@@ -235,7 +235,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
 
       {/* Batting table */}
       {activeTab === 'batting' && (
-        <div className="glass-standard rounded-2xl overflow-clip">
+        <div className="glass-standard rounded-2xl overflow-clip" data-testid="batting-entry-table">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -289,7 +289,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               </tbody>
               {/* Totals row */}
               <tfoot>
-                <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
+                <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="batting-entry-totals-row">
                   <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-sm">TOTALS</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.ab}</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.r}</td>
@@ -350,7 +350,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               </p>
             </div>
           ) : (
-            <div className="glass-standard rounded-2xl overflow-clip">
+            <div className="glass-standard rounded-2xl overflow-clip" data-testid="pitching-entry-table">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
@@ -442,7 +442,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                   </tbody>
                   {pitchingRows.length > 1 && (
                     <tfoot>
-                      <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
+                      <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700" data-testid="pitching-entry-totals-row">
                         <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-sm">TOTALS</td>
                         <td className="px-2 py-2.5 text-center tabular-nums font-mono">
                           {pitchingRows.reduce((s, r) => s + r.ip, 0).toFixed(1)}

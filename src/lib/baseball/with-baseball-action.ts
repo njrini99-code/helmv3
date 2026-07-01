@@ -23,6 +23,14 @@
 //                    rethrow a sanitized error so internals never leak to the
 //                    client.
 //
+// DEMO READ-ONLY GUARD (Issue #392)
+//   - Immediately after AUTH, every action is checked against the shared
+//     Baseball demo coach session (isCurrentSessionBaseballDemo). Unless the
+//     action was registered with `demoSafe: true`, the demo session is
+//     short-circuited with BaseballDemoReadOnlyError before CONTEXT/CAPABILITY
+//     resolution even runs — no visitor can use the shared demo login to
+//     mutate state another visitor would then see.
+//
 // SECURITY
 //   - Capability checks are enforced here on the server. The client never gets
 //     to assert a capability; requiredCapability is wired by the action author,
@@ -66,6 +74,8 @@ import {
   PlayerAccessError,
   type PlayerAccessKey,
 } from '@/lib/baseball/player-access';
+import { BaseballDisabledSourceError } from '@/lib/baseball/import-source-enabled';
+import { isCurrentSessionBaseballDemo } from '@/lib/demo/baseball-config.server';
 
 // -----------------------------------------------------------------------------
 // Public error types
@@ -104,6 +114,20 @@ export class BaseballActionError extends Error {
   constructor(message = 'Something went wrong. Please try again.') {
     super(message);
     this.name = 'BaseballActionError';
+  }
+}
+
+/**
+ * Thrown when the active session is the shared Baseball demo coach and the
+ * action is not marked `demoSafe`. The demo coach account is shared by every
+ * visitor at once, so it must never be able to persist a mutation that other
+ * visitors would then see (Issue #392). Carries HTTP-403.
+ */
+export class BaseballDemoReadOnlyError extends Error {
+  readonly status = 403;
+  constructor(message = "This isn't available in the live demo.") {
+    super(message);
+    this.name = 'BaseballDemoReadOnlyError';
   }
 }
 
@@ -152,6 +176,24 @@ export interface WithBaseballActionOptions<TArgs extends unknown[] = unknown[]> 
    *                       passed through as ctx.targetTeamId.
    */
   teamFrom?: 'active' | ((...args: TArgs) => string | null | undefined);
+  /**
+   * When false, skip resolving an active baseball team context. Use only for
+   * first-write flows (onboarding) where the user is authenticated but has no
+   * team membership yet. Capability / player-access checks still run when set
+   * but require a teamFrom resolver or an existing activeTeamId.
+   */
+  requireActiveContext?: boolean;
+  /**
+   * Marks this action as safe to run for the shared Baseball demo coach
+   * session — i.e. it performs no write a visitor could use to alter state
+   * every other visitor also sees. Defaults to `false`: EVERY wrapped action
+   * is blocked for the demo session unless explicitly opted in here. This is
+   * an intentional fail-closed default (Issue #392) so a future mutating
+   * action can never become demo-reachable just by omission; an action
+   * author must affirmatively mark it `demoSafe: true` after confirming it
+   * never writes.
+   */
+  demoSafe?: boolean;
 }
 
 /**
@@ -201,7 +243,14 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
   opts: WithBaseballActionOptions<TArgs>,
   fn: BaseballActionFn<TArgs, TResult>,
 ): (...args: TArgs) => Promise<TResult> {
-  const { featureArea, requiredCapability, requiredPlayerAccess, teamFrom = 'active' } = opts;
+  const {
+    featureArea,
+    requiredCapability,
+    requiredPlayerAccess,
+    teamFrom = 'active',
+    requireActiveContext = true,
+    demoSafe = false,
+  } = opts;
 
   return async (...args: TArgs): Promise<TResult> => {
     return Sentry.withScope(async (scope) => {
@@ -230,27 +279,43 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         scope.setUser({ id: user.id, email: user.email ?? undefined });
 
         // -------------------------------------------------------------------
+        // 1b. DEMO READ-ONLY GUARD — the shared Baseball demo coach account
+        //     must never be able to mutate state that every other visitor's
+        //     session also sees. Fail closed: only actions explicitly marked
+        //     `demoSafe: true` run for the demo session; everything else is
+        //     short-circuited here with a friendly, expected (non-Sentry)
+        //     error. Reuses the `user` already resolved above — no extra
+        //     auth round-trip.
+        // -------------------------------------------------------------------
+        if (!demoSafe && (await isCurrentSessionBaseballDemo(user.email ?? null))) {
+          throw new BaseballDemoReadOnlyError();
+        }
+
+        // -------------------------------------------------------------------
         // 2. CONTEXT — resolve the server-validated active baseball context.
         // -------------------------------------------------------------------
-        const context = await getActiveBaseballContext();
-        if (!context) {
-          throw new BaseballNoActiveTeamError();
+        let context: ActiveBaseballContext | null = null;
+        if (requireActiveContext) {
+          context = await getActiveBaseballContext();
+          if (!context) {
+            throw new BaseballNoActiveTeamError();
+          }
+          scope.setTag('baseball_team', context.activeTeamId);
+          scope.setTag('baseball_role', context.activeRole);
+          scope.addBreadcrumb({
+            category: 'baseball.action',
+            message: `context resolved for ${name}`,
+            level: 'info',
+            data: {
+              activeTeamId: context.activeTeamId,
+              activeRole: context.activeRole,
+              fellBackFromStale: context.fellBackFromStale,
+            },
+          });
         }
-        scope.setTag('baseball_team', context.activeTeamId);
-        scope.setTag('baseball_role', context.activeRole);
-        scope.addBreadcrumb({
-          category: 'baseball.action',
-          message: `context resolved for ${name}`,
-          level: 'info',
-          data: {
-            activeTeamId: context.activeTeamId,
-            activeRole: context.activeRole,
-            fellBackFromStale: context.fellBackFromStale,
-          },
-        });
 
         // Resolve the team this action targets / is capability-checked against.
-        let targetTeamId = context.activeTeamId;
+        let targetTeamId = context?.activeTeamId ?? '';
         if (typeof teamFrom === 'function') {
           const resolved = teamFrom(...args);
           if (!resolved) {
@@ -260,12 +325,19 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           }
           targetTeamId = resolved;
           scope.setTag('baseball_target_team', targetTeamId);
+        } else if (context) {
+          targetTeamId = context.activeTeamId;
         }
 
         // -------------------------------------------------------------------
         // 3. CAPABILITY — enforce server-side when required.
         // -------------------------------------------------------------------
         if (requiredCapability) {
+          if (!targetTeamId) {
+            throw new BaseballNoActiveTeamError(
+              'Could not resolve a team for capability enforcement.',
+            );
+          }
           scope.setTag('baseball_capability', requiredCapability);
           await requireBaseballCapability(targetTeamId, requiredCapability);
           scope.addBreadcrumb({
@@ -282,6 +354,11 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         //     policy (their staff capability governs them, not the switch).
         // -------------------------------------------------------------------
         if (requiredPlayerAccess) {
+          if (!targetTeamId) {
+            throw new BaseballNoActiveTeamError(
+              'Could not resolve a team for player-access enforcement.',
+            );
+          }
           scope.setTag('baseball_player_access', requiredPlayerAccess);
           await requirePlayerAccess(targetTeamId, requiredPlayerAccess);
           scope.addBreadcrumb({
@@ -297,11 +374,18 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
         // -------------------------------------------------------------------
         const ctx: BaseballActionContext = {
           user,
-          context,
-          activeTeamId: context.activeTeamId,
-          activeRole: context.activeRole,
-          activeCoachId: context.activeCoachId,
-          activePlayerId: context.activePlayerId,
+          context: context ?? {
+            userId: user.id,
+            activeTeamId: '',
+            activeRole: 'coach',
+            activePlayerId: null,
+            activeCoachId: null,
+            fellBackFromStale: false,
+          },
+          activeTeamId: context?.activeTeamId ?? '',
+          activeRole: context?.activeRole ?? 'coach',
+          activeCoachId: context?.activeCoachId ?? null,
+          activePlayerId: context?.activePlayerId ?? null,
           targetTeamId,
         };
 
@@ -320,7 +404,9 @@ export function withBaseballAction<TArgs extends unknown[], TResult>(
           error instanceof BaseballUnauthorizedError ||
           error instanceof BaseballNoActiveTeamError ||
           error instanceof BaseballCapabilityError ||
-          error instanceof PlayerAccessError
+          error instanceof PlayerAccessError ||
+          error instanceof BaseballDisabledSourceError ||
+          error instanceof BaseballDemoReadOnlyError
         ) {
           await logServerException(
             error,

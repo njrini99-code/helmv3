@@ -536,7 +536,7 @@ function DnaRadar({ dimensions, height }: { dimensions: PlayerDnaDimension[]; he
                 x={cx + Math.cos(a) * (r + 14)}
                 y={cy + Math.sin(a) * (r + 14) + 3}
                 textAnchor="middle"
-                className="fill-warm-500 text-[9px] font-medium"
+                className="fill-warm-500 text-micro font-medium"
               >
                 {d.label}
               </text>

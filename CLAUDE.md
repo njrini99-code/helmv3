@@ -375,6 +375,11 @@ Approve and squash-merge.
 PRs into `main`, `develop`, and `release/*` are auto-reviewed by **two AI
 reviewers running in parallel**, plus a CI gate that mirrors them locally.
 
+> PR check is red or stuck pending? `docs/CI_RUNBOOK.md` classifies every
+> check as hard-gate vs. advisory, with expected wait windows and exact
+> GHA/CircleCI rerun commands. For a stale CodeRabbit `CHANGES_REQUESTED`
+> specifically, see `docs/operations/coderabbit-review-workflow.md`.
+
 **CodeRabbit** — line-level static-analysis view. Configuration at
 `.coderabbit.yaml`: assertive profile, pre-merge gate, every applicable
 linter enabled (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint,

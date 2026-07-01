@@ -452,6 +452,12 @@ BEGIN
   IF to_regclass('public.baseball_staff_invitations') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.baseball_staff_invitations ENABLE ROW LEVEL SECURITY';
 
+    -- #386: defensive guard so a fresh migration replay never breaks here —
+    -- the policies below reference accepted_by_user_id, but the column's
+    -- defining migration is not guaranteed to have run first on every
+    -- environment. Idempotent / no-op once the column already exists.
+    EXECUTE 'ALTER TABLE public.baseball_staff_invitations ADD COLUMN IF NOT EXISTS accepted_by_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL';
+
     EXECUTE 'DROP POLICY IF EXISTS "baseball_staff_invitations_select" ON public.baseball_staff_invitations';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_staff_invitations_insert" ON public.baseball_staff_invitations';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_staff_invitations_update" ON public.baseball_staff_invitations';
@@ -547,30 +553,36 @@ BEGIN
   IF to_regclass('public.baseball_event_acknowledgements') IS NOT NULL THEN
     EXECUTE 'ALTER TABLE public.baseball_event_acknowledgements ENABLE ROW LEVEL SECURITY';
 
+    EXECUTE 'REVOKE ALL ON public.baseball_event_acknowledgements FROM anon';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acks_select" ON public.baseball_event_acknowledgements';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acks_insert" ON public.baseball_event_acknowledgements';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acks_update" ON public.baseball_event_acknowledgements';
+    EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acks_delete" ON public.baseball_event_acknowledgements';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acknowledgements_select" ON public.baseball_event_acknowledgements';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acknowledgements_insert" ON public.baseball_event_acknowledgements';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acknowledgements_update" ON public.baseball_event_acknowledgements';
     EXECUTE 'DROP POLICY IF EXISTS "baseball_event_acknowledgements_delete" ON public.baseball_event_acknowledgements';
 
-    EXECUTE $p$CREATE POLICY "baseball_event_acknowledgements_select" ON public.baseball_event_acknowledgements
+    EXECUTE $p$CREATE POLICY "baseball_event_acks_select" ON public.baseball_event_acknowledgements
       FOR SELECT TO authenticated
       USING (
         user_id = auth.uid()
-        OR EXISTS (SELECT 1 FROM public.baseball_events e WHERE e.id = event_id AND public.is_baseball_team_staff(e.team_id))
+        OR EXISTS (
+          SELECT 1 FROM public.baseball_events e
+          WHERE e.id = baseball_event_acknowledgements.event_id
+            AND public.is_baseball_team_coach_v2(e.team_id)
+        )
       )$p$;
-    EXECUTE $p$CREATE POLICY "baseball_event_acknowledgements_insert" ON public.baseball_event_acknowledgements
+    EXECUTE $p$CREATE POLICY "baseball_event_acks_insert" ON public.baseball_event_acknowledgements
       FOR INSERT TO authenticated
       WITH CHECK (user_id = auth.uid())$p$;
-    EXECUTE $p$CREATE POLICY "baseball_event_acknowledgements_update" ON public.baseball_event_acknowledgements
+    EXECUTE $p$CREATE POLICY "baseball_event_acks_update" ON public.baseball_event_acknowledgements
       FOR UPDATE TO authenticated
       USING (user_id = auth.uid())
       WITH CHECK (user_id = auth.uid())$p$;
-    EXECUTE $p$CREATE POLICY "baseball_event_acknowledgements_delete" ON public.baseball_event_acknowledgements
+    EXECUTE $p$CREATE POLICY "baseball_event_acks_delete" ON public.baseball_event_acknowledgements
       FOR DELETE TO authenticated
-      USING (
-        user_id = auth.uid()
-        OR EXISTS (SELECT 1 FROM public.baseball_events e WHERE e.id = event_id AND public.is_baseball_primary_coach(e.team_id))
-      )$p$;
+      USING (user_id = auth.uid())$p$;
   END IF;
 END $$;
 

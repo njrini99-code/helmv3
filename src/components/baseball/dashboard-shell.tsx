@@ -118,6 +118,7 @@ export function BaseballDashboardShell({ children, role, navContext }: Props) {
     pathname,
     role,
     programType: navContext?.programType ?? null,
+    capabilities: navContext?.capabilities,
   });
 
   const mobileSidebarRef = useRef<HTMLDivElement>(null);
@@ -187,7 +188,7 @@ export function BaseballDashboardShell({ children, role, navContext }: Props) {
         Skip to main content
       </a>
 
-      <CommandPalette isCoach={role === 'coach'} />
+      <CommandPalette navContext={navContext ?? { role, capabilities: {} }} />
 
       <div className="hidden lg:block">
         <Sidebar navContext={navContext} />
