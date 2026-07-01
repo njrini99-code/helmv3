@@ -53,34 +53,20 @@ AS $function$
 $function$;
 
 -- ---------------------------------------------------------------------------
--- Issue 2 [CRIT]: public.baseball_coaches carried a stray, fully-permissive
--- SELECT policy `baseball_coaches_select_all` (USING (true)) alongside the
--- intended `baseball_coaches_select` policy. RLS policies are OR'd together
--- (permissive by default), so this stray policy alone made every coach's
--- name/email/phone readable by ANY authenticated user -- including players,
--- who have no legitimate reason to browse the coach directory.
+-- Issue 2 [CRIT] — baseball_coaches PII leak (baseball_coaches_select_all
+-- USING(true)) — is DELIBERATELY NOT fixed in this migration.
 --
--- Verified live pg_policies before dropping:
---   baseball_coaches_select:
---     USING ((auth.uid() = user_id) OR (get_my_coach_id() IS NOT NULL))
---   baseball_coaches_select_all:
---     USING (true)   <-- the leak; strictly broader than the policy above
---
--- The remaining `baseball_coaches_select` policy already covers every
--- legitimate read path once `baseball_coaches_select_all` is gone:
---   - self-reads (auth.uid() = user_id), used throughout onboarding/staff/
---     watchlist/discover action files, and
---   - the cross-program coach-directory read needed by the recruiting
---     feature (any signed-in coach -- college/juco -- can read another
---     program's coaching staff, including email, via
---     src/app/baseball/(public)/program/[id]/page.tsx and
---     src/app/baseball/(public)/team/[id]/page.tsx), gated by
---     `get_my_coach_id() IS NOT NULL`.
--- It does NOT extend that directory read to non-coach authenticated users
--- (players), which is exactly the excess `baseball_coaches_select_all`
--- introduced. No legitimate coach self-read or team/coach-directory lookup
--- is broken by this drop, so `baseball_coaches_select` is left as-is rather
--- than additionally narrowed or widened.
+-- The stray `baseball_coaches_select_all` policy does leak every coach's
+-- name/email/phone to any authenticated user. BUT a blanket DROP breaks the
+-- player->coach messaging flow: the remaining `baseball_coaches_select`
+-- (auth.uid()=user_id OR get_my_coach_id() IS NOT NULL) returns nothing for a
+-- PLAYER (no coach row), so NewMessageModal's "find a coach" search and
+-- use-messages.ts's conversation-participant coach embed both silently break
+-- for every player. The correct fix is column-scoped (players legitimately
+-- need id/full_name/avatar_url/coach_type/organization, NEVER email/phone):
+-- expose the non-PII fields via a SECURITY DEFINER RPC or a
+-- `baseball_coaches_public` view, repoint the messaging components at it, THEN
+-- narrow/drop `baseball_coaches_select_all`. That's a cross-component product
+-- change, escalated to the owner rather than shipped blind overnight — see
+-- docs/audits/AUTONOMOUS_RUN_STATUS_2026-07-01.md.
 -- ---------------------------------------------------------------------------
-
-DROP POLICY IF EXISTS "baseball_coaches_select_all" ON public.baseball_coaches;
