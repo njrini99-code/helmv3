@@ -1,0 +1,36 @@
+name: 🔒 Security hardening (non-exploit)
+description: Track defensive hardening — RLS coverage, anon grants, dependency CVEs. For an ACTIVE exploit/leak, use private advisory reporting instead (see the link on the chooser).
+labels: ["security", "high-risk"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **If this is a live, exploitable vulnerability or an exposed secret/PII, STOP** and report it privately:
+        https://github.com/njrini99-code/helmv3/security/advisories/new — do not describe the exploit in a public issue.
+        Use this template only for non-sensitive, defense-in-depth hardening work.
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - RLS policy gap / missing policy
+        - anon / role grant tightening (REVOKE)
+        - Dependency CVE / Dependabot alert
+        - Workflow / CI supply-chain (action pinning, curl|bash)
+        - Auth / session / token handling
+        - Secrets management
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: What needs hardening
+      description: Table/function/dependency/workflow affected, and the gap.
+    validations:
+      required: true
+  - type: textarea
+    id: fix
+    attributes:
+      label: Proposed mitigation
+      description: e.g. add policy X, REVOKE EXECUTE FROM anon, pin action to SHA, bump dep to N.
