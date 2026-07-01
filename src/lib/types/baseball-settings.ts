@@ -196,7 +196,8 @@ export type BaseballNotificationType =
   | 'task_due'
   | 'travel_changed'
   | 'player_profile_update'
-  | 'staff_meeting_item';
+  | 'staff_meeting_item'
+  | 'message';
 
 export const BASEBALL_NOTIFICATION_TYPES: readonly BaseballNotificationType[] = [
   'event_changed',
@@ -210,6 +211,7 @@ export const BASEBALL_NOTIFICATION_TYPES: readonly BaseballNotificationType[] = 
   'travel_changed',
   'player_profile_update',
   'staff_meeting_item',
+  'message',
 ] as const;
 
 /** The settings a coach may update (everything except identity/audit columns). */

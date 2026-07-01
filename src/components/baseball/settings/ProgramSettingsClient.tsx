@@ -243,7 +243,11 @@ export function ProgramSettingsClient({ data }: Props) {
     if (!hasUnsaved) return;
     startTransition(async () => {
       try {
-        await updateProgramSettings(dirty);
+        const result = await updateProgramSettings(dirty);
+        if (!result.success) {
+          showToast(result.error || 'Could not save settings. Check your access and try again.', 'error');
+          return;
+        }
         setDirty({});
         showToast('Settings saved', 'success');
       } catch {
