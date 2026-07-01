@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { CommandCenterClient } from '@/components/baseball/command-center/CommandCenterClient';
+import { CommandCenterFairway } from '@/components/baseball/command-center/CommandCenterFairway';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { getCommandCenter } from '@/lib/baseball/read-models/command-center';
 import { assembleCommandCenterClientProps } from '@/lib/baseball/read-models/command-center-adapter';
 import { getCoachDailyContracts } from '@/lib/baseball/read-models/coach-daily-contracts';
@@ -46,6 +48,21 @@ export default async function CommandCenterPage() {
   );
 
   if (!teamId) {
+    if (isRedesignEnabled()) {
+      return (
+        <div className={fairwayScope('min-h-full')}>
+          <CommandCenterFairway
+            team={{ id: '', name: 'Your Program', teamType: coach.coach_type, inviteCode: null }}
+            players={[]}
+            coachId={coach.id}
+            coachName={coach.full_name || 'Coach'}
+            calendarEvents={[]}
+            riskFeed={[]}
+            riskFeedError={null}
+          />
+        </div>
+      );
+    }
     return (
       <CommandCenterClient
         team={{ id: '', name: 'Your Program', teamType: coach.coach_type, inviteCode: null }}
@@ -83,6 +100,25 @@ export default async function CommandCenterPage() {
     model: commandCenter,
     coachDailyContracts,
   });
+
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full')}>
+        <CommandCenterFairway
+          team={assembled.team}
+          players={assembled.players}
+          coachId={coach.id}
+          coachName={coach.full_name || 'Coach'}
+          calendarEvents={assembled.calendarEvents}
+          riskFeed={assembled.riskFeed}
+          riskFeedError={assembled.riskFeedError}
+          coachDailyContracts={assembled.coachDailyContracts}
+          summary={assembled.summary}
+          loadState={assembled.loadState}
+        />
+      </div>
+    );
+  }
 
   return (
     <CommandCenterClient
