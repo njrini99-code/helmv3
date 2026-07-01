@@ -291,6 +291,41 @@ export async function getDiscoverPlayers(
 }
 
 /**
+ * Get organization IDs that have a named primary head coach.
+ * Discoverability rule: an org only appears in Discover if it has a primary
+ * coach on staff with a resolvable name. Pushed into the DB query (via `.in`)
+ * so the exact count / pagination reflects this filter instead of a JS
+ * post-filter after pagination.
+ */
+async function getOrgIdsWithNamedHeadCoach(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<string[] | null> {
+  const { data, error } = await supabase
+    .from('baseball_team_coach_staff')
+    .select(
+      `
+      team_id,
+      baseball_teams!inner(organization_id),
+      baseball_coaches!inner(full_name)
+    `
+    )
+    .eq('is_primary', true);
+
+  if (error) return null;
+
+  const orgIds = new Set<string>();
+  (data ?? []).forEach((row) => {
+    const team = row.baseball_teams as unknown as { organization_id: string | null } | null;
+    const coach = row.baseball_coaches as unknown as { full_name: string | null } | null;
+    if (!team?.organization_id || !coach) return;
+    const name = (coach.full_name ?? '').trim();
+    if (name) orgIds.add(team.organization_id);
+  });
+
+  return [...orgIds];
+}
+
+/**
  * Fetch teams/organizations for discover page with filters and pagination
  */
 export async function getDiscoverTeams(
@@ -324,11 +359,25 @@ export async function getDiscoverTeams(
       ? ['high_school']
       : ['high_school', 'showcase', 'juco'];
 
+  // Discoverability rule: only orgs with a named primary head coach.
+  // Resolved up front so it can be pushed into the DB query (`.in`) rather
+  // than filtered in JS after pagination, which would corrupt both the
+  // returned page and the count used to compute total pages.
+  const orgIdsWithHeadCoach = await getOrgIdsWithNamedHeadCoach(supabase);
+
+  if (orgIdsWithHeadCoach !== null && orgIdsWithHeadCoach.length === 0) {
+    return { teams: [], count: 0, pages: 0 };
+  }
+
   // Build base query for organizations
   let query = supabase
     .from('organizations')
     .select('*', { count: 'exact' })
     .in('type', discoverableOrgTypes);
+
+  if (orgIdsWithHeadCoach && orgIdsWithHeadCoach.length > 0) {
+    query = query.in('id', orgIdsWithHeadCoach);
+  }
 
   // Apply filters
   if (filters.teamType) {
@@ -351,8 +400,8 @@ export async function getDiscoverTeams(
     );
   }
 
-  // Execute query
-  const { data: orgs, error } = await query
+  // Execute query with DB-level pagination and exact count
+  const { data: orgs, count, error } = await query
     .order('name', { ascending: true })
     .range(offset, offset + perPage - 1);
 
@@ -361,8 +410,10 @@ export async function getDiscoverTeams(
     return { teams: [], count: 0, pages: 0 };
   }
 
+  const totalCount = count || 0;
+
   if (!orgs || orgs.length === 0) {
-    return { teams: [], count: 0, pages: 0 };
+    return { teams: [], count: totalCount, pages: Math.ceil(totalCount / perPage) };
   }
 
   // Get all org IDs
@@ -448,19 +499,23 @@ export async function getDiscoverTeams(
           .from('baseball_team_coach_staff')
           .select(`
             team_id,
-            baseball_coaches!inner(first_name, last_name)
+            baseball_coaches!inner(full_name)
           `)
           .eq('is_primary', true)
           .in('team_id', teamIds),
       ]);
 
-      // Map orgId → primary head coach name
+      // Map orgId → primary head coach name. baseball_coaches stores the name
+      // in a single `full_name` column (there is no first_name/last_name), so
+      // read that — using the wrong columns here left head_coach_name null for
+      // every org, and the trailing `.filter(Boolean(head_coach_name))` then
+      // dropped every result.
       if (primaryCoachRows) {
         primaryCoachRows.forEach((row) => {
           const orgId = teamToOrgMap[row.team_id];
-          const coach = row.baseball_coaches as unknown as { first_name: string | null; last_name: string | null } | null;
+          const coach = row.baseball_coaches as unknown as { full_name: string | null } | null;
           if (!orgId || !coach) return;
-          const name = `${coach.first_name ?? ''} ${coach.last_name ?? ''}`.trim();
+          const name = (coach.full_name ?? '').trim();
           if (name && !headCoachByOrg[orgId]) {
             headCoachByOrg[orgId] = name;
           }
@@ -536,8 +591,8 @@ export async function getDiscoverTeams(
 
   return {
     teams,
-    count: teams.length,
-    pages: Math.ceil(teams.length / perPage),
+    count: totalCount,
+    pages: Math.ceil(totalCount / perPage),
   };
 }
 
