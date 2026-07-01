@@ -112,6 +112,10 @@ export function PerformanceCommandCenter({
 }: Props) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  // Stale check-ins (8d+ old, low confidence) collapse into one summary row so
+  // the queue surfaces genuinely-actionable flags first instead of a wall of
+  // near-identical "check-in is 8d old · stale data" cards.
+  const [staleOpen, setStaleOpen] = useState(false);
   const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
 
@@ -193,6 +197,56 @@ export function PerformanceCommandCenter({
         .sort((a, b) => bandRank(b.band) - bandRank(a.band)),
     [readiness],
   );
+
+  // Split into actionable (fresh) flags vs stale check-ins. The stale group is
+  // dominated by identical "8d+ old, low-confidence" rows and gets collapsed.
+  const freshQueue = useMemo(() => queue.filter((r) => !r.stale), [queue]);
+  const staleQueue = useMemo(() => queue.filter((r) => r.stale), [queue]);
+  const boardEmpty = board.length === 0;
+
+  const renderQueueRow = (r: BaseballReadinessComputation) => {
+    const isSelected = selectedPlayerId === r.player_id;
+    return (
+      <li key={r.player_id}>
+        <Button
+          variant="ghost"
+          type="button"
+          onClick={() => handleRowClick(r.player_id)}
+          aria-pressed={isSelected}
+          aria-label={`Inspect ${playerNameById[r.player_id] ?? 'player'}`}
+          className={cn(
+            'w-full flex-col items-start rounded-xl border p-3 text-left transition-all duration-150 whitespace-normal',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
+            isSelected
+              ? 'border-primary-300 bg-primary-50/60 shadow-sm ring-1 ring-primary-200'
+              : 'border-warm-100 glass-standard hover:border-warm-200 hover:bg-cream-50',
+          )}
+        >
+          <div className="flex w-full items-center justify-between gap-2">
+            <span className={cn('text-sm font-medium', isSelected ? 'text-primary-800' : 'text-warm-900')}>
+              {playerNameById[r.player_id] ?? 'Player'}
+            </span>
+            <BandChip band={r.band} />
+          </div>
+          {r.reasons.length > 0 && (
+            <ul className="mt-1 list-inside list-disc text-xs text-warm-600">
+              {r.reasons.slice(0, 3).map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          )}
+          {r.suggested_action && (
+            <p className="mt-1.5 text-xs font-medium text-warm-700">→ {r.suggested_action}</p>
+          )}
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-warm-500">
+            <span className="capitalize">Confidence: {r.confidence}</span>
+            {r.stale && <span className="text-amber-600">· stale data</span>}
+            {r.missing_inputs.length > 0 && <span>· missing: {r.missing_inputs.join(', ')}</span>}
+          </div>
+        </Button>
+      </li>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -329,9 +383,9 @@ export function PerformanceCommandCenter({
         ))}
       </ul>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className={cn('grid gap-6', boardEmpty ? 'lg:grid-cols-2' : 'lg:grid-cols-3')}>
         {/* Today Weight Room board */}
-        <div className="lg:col-span-2">
+        <div className={boardEmpty ? undefined : 'lg:col-span-2'}>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -439,60 +493,41 @@ export function PerformanceCommandCenter({
               ) : queue.length === 0 ? (
                 <EmptyState title="All clear" description="No athletes flagged for review today." />
               ) : (
-                <ul className="space-y-3">
-                  {queue.map((r) => {
-                    const isSelected = selectedPlayerId === r.player_id;
-                    return (
-                      <li key={r.player_id}>
-                        <Button
-                          variant="ghost"
-                          type="button"
-                          onClick={() => handleRowClick(r.player_id)}
-                          aria-pressed={isSelected}
-                          aria-label={`Inspect ${playerNameById[r.player_id] ?? 'player'}`}
-                          className={cn(
-                            'w-full flex-col items-start rounded-xl border p-3 text-left transition-all duration-150 whitespace-normal',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-1',
-                            isSelected
-                              ? 'border-primary-300 bg-primary-50/60 shadow-sm ring-1 ring-primary-200'
-                              : 'border-warm-100 glass-standard hover:border-warm-200 hover:bg-cream-50',
-                          )}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span
-                              className={cn(
-                                'text-sm font-medium',
-                                isSelected ? 'text-primary-800' : 'text-warm-900',
-                              )}
-                            >
-                              {playerNameById[r.player_id] ?? 'Player'}
-                            </span>
-                            <BandChip band={r.band} />
-                          </div>
-                          {r.reasons.length > 0 && (
-                            <ul className="mt-1 list-inside list-disc text-xs text-warm-500">
-                              {r.reasons.slice(0, 3).map((reason) => (
-                                <li key={reason}>{reason}</li>
-                              ))}
-                            </ul>
-                          )}
-                          {r.suggested_action && (
-                            <p className="mt-1.5 text-xs font-medium text-warm-700">
-                              → {r.suggested_action}
-                            </p>
-                          )}
-                          <div className="mt-1 flex items-center gap-2 text-eyebrow text-warm-400">
-                            <span>Confidence: {r.confidence}</span>
-                            {r.stale && <span className="text-amber-600">· stale data</span>}
-                            {r.missing_inputs.length > 0 && (
-                              <span>· missing: {r.missing_inputs.join(', ')}</span>
-                            )}
-                          </div>
-                        </Button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="space-y-3">
+                  {freshQueue.length > 0 ? (
+                    <ul className="space-y-3">{freshQueue.map(renderQueueRow)}</ul>
+                  ) : (
+                    staleQueue.length > 0 && (
+                      <p className="rounded-xl border border-primary-100 bg-primary-50/50 px-3 py-2.5 text-xs leading-relaxed text-warm-600">
+                        No fresh flags today. The check-ins below are just out of date — nudge these
+                        athletes to re-report.
+                      </p>
+                    )
+                  )}
+
+                  {staleQueue.length > 0 && (
+                    <div className="rounded-xl border border-warm-100 glass-standard">
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        onClick={() => setStaleOpen((o) => !o)}
+                        aria-expanded={staleOpen}
+                        className="w-full items-center justify-between rounded-xl px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                      >
+                        <span className="text-sm font-medium text-warm-700">
+                          {staleQueue.length} athlete{staleQueue.length === 1 ? '' : 's'} with stale
+                          check-ins (8d+)
+                        </span>
+                        <span className="text-xs font-medium text-primary-700">
+                          {staleOpen ? 'Hide' : 'Review'}
+                        </span>
+                      </Button>
+                      {staleOpen && (
+                        <ul className="space-y-3 p-3 pt-0">{staleQueue.map(renderQueueRow)}</ul>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>

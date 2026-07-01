@@ -152,11 +152,15 @@ function SectionCard({
   index?: number;
   reduceMotion?: boolean | null;
 }) {
+  // Reveal on MOUNT, not on scroll. A settings form is a single tall document;
+  // gating each section behind `whileInView` left every card below the initial
+  // viewport stuck at opacity:0 (invisible but full-height) until the user
+  // scrolled to it — which read as ~6,900px of empty canvas below a short form
+  // in a full-page render. Animating on mount keeps all sections present.
   return (
     <m.div
-      initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
+      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+      animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
       transition={{ duration: 0.18, delay: reduceMotion ? 0 : Math.min(index * 0.04, 0.2) }}
     >
       <Card variant="glass" id={anchorId} className={anchorId ? 'scroll-mt-24' : undefined}>

@@ -4,18 +4,20 @@ import { render, screen, waitFor } from '@testing-library/react';
 import type { BaseballGame } from '@/lib/types';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Regression guard for #438: GamesList used to compute
-// `losses = completedGames.length - wins`, so a tied game (our_score ===
-// opponent_score) silently fell into the loss bucket and the header
-// ("X played · YW ZL") misstated the team record. The fix must treat ties
-// as their own bucket and only surface "-NT" in the header when N > 0.
+// Regression guard for #438 + the season W-L mismatch: the record header must
+// treat ties as their own bucket and only surface "-NT" when N > 0. The record
+// is now sourced from `getTeamSeasonRecord` (a full-season selector, independent
+// of any display `limit`) so the "Recent Games" widget and the full Games page
+// can never disagree — the header renders exactly what that selector returns.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const getTeamGames = vi.fn();
+const getTeamSeasonRecord = vi.fn();
 const deleteGame = vi.fn();
 
 vi.mock('@/app/baseball/actions/games', () => ({
   getTeamGames: (...args: unknown[]) => getTeamGames(...args),
+  getTeamSeasonRecord: (...args: unknown[]) => getTeamSeasonRecord(...args),
   deleteGame: (...args: unknown[]) => deleteGame(...args),
 }));
 
@@ -65,17 +67,25 @@ function makeGame(overrides: Partial<BaseballGame>): BaseballGame {
 
 beforeEach(() => {
   getTeamGames.mockReset();
+  getTeamSeasonRecord.mockReset();
   deleteGame.mockReset();
+  // Default: the display list carries the games; the record comes from its own
+  // selector. Individual tests override the record.
+  getTeamGames.mockResolvedValue({ success: true, data: [] });
 });
 
 describe('GamesList record summary', () => {
-  it('counts a tied game as a tie, not a loss', async () => {
+  it('renders a tie as its own bucket (never folded into losses)', async () => {
     const games: BaseballGame[] = [
       makeGame({ id: 'w-1', our_score: 5, opponent_score: 2 }),
       makeGame({ id: 'l-1', our_score: 1, opponent_score: 4 }),
       makeGame({ id: 't-1', our_score: 3, opponent_score: 3 }),
     ];
     getTeamGames.mockResolvedValue({ success: true, data: games });
+    getTeamSeasonRecord.mockResolvedValue({
+      success: true,
+      data: { played: 3, wins: 1, losses: 1, ties: 1 },
+    });
 
     render(<GamesList teamId="team-1" />);
 
@@ -85,16 +95,34 @@ describe('GamesList record summary', () => {
   });
 
   it('omits the tie segment when there are no ties', async () => {
-    const games: BaseballGame[] = [
-      makeGame({ id: 'w-1', our_score: 5, opponent_score: 2 }),
-      makeGame({ id: 'l-1', our_score: 1, opponent_score: 4 }),
-    ];
-    getTeamGames.mockResolvedValue({ success: true, data: games });
+    getTeamSeasonRecord.mockResolvedValue({
+      success: true,
+      data: { played: 2, wins: 1, losses: 1, ties: 0 },
+    });
 
     render(<GamesList teamId="team-1" />);
 
     await waitFor(() => {
       expect(screen.getByText('2 played · 1W-1L')).toBeInTheDocument();
+    });
+  });
+
+  it('reflects the FULL-season record even when the display list is limited', async () => {
+    // The "Recent Games" widget passes limit={5}; the record must still be the
+    // full-season figure from the selector, not derived from the shown games.
+    getTeamGames.mockResolvedValue({
+      success: true,
+      data: [makeGame({ id: 'w-1', our_score: 5, opponent_score: 2 })],
+    });
+    getTeamSeasonRecord.mockResolvedValue({
+      success: true,
+      data: { played: 6, wins: 5, losses: 0, ties: 1 },
+    });
+
+    render(<GamesList teamId="team-1" limit={5} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('6 played · 5W-0L-1T')).toBeInTheDocument();
     });
   });
 });
