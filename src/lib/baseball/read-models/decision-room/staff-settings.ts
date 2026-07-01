@@ -234,10 +234,13 @@ export async function loadStaffSettings(
     : ((inviteData ?? []) as unknown as InvitationRow[]);
   const invitations = invitationRows.map(mapInvitationRow);
 
-  // canManageStaff: the caller can manage staff if their own active staff row
-  // grants can_invite_staff or can_manage_settings, or they are head coach.
-  // We derive this from the caller's auth user → their coach row → their
-  // staff row for this team (all RLS-scoped).
+  // canManageStaff: mirror the server authority model exactly — every staff
+  // mutation (invite/update/remove) is gated on `can_invite_staff`, and the
+  // capability resolver grants ALL caps to primary and head coaches. So the
+  // caller can manage staff iff they are primary, head coach, or hold
+  // can_invite_staff. (can_manage_settings does NOT let you mutate staff, so
+  // surfacing the invite UI for it produced server-rejected actions.)
+  // Derived from the caller's auth user → coach row → staff row (all RLS-scoped).
   const canManageStaff = await resolveCanManageStaff(supabase, teamId);
 
   return { staff, invitations, canManageStaff };
@@ -266,7 +269,7 @@ async function resolveCanManageStaff(
 
   const { data: myStaff } = await supabase
     .from('baseball_team_coach_staff')
-    .select('is_head_coach, can_invite_staff, can_manage_settings, status')
+    .select('is_primary, is_head_coach, can_invite_staff, status')
     .eq('team_id', teamId)
     .eq('coach_id', coach.id)
     .eq('status', 'active')
@@ -274,8 +277,8 @@ async function resolveCanManageStaff(
   if (!myStaff) return false;
 
   return Boolean(
-    myStaff.is_head_coach ||
-      myStaff.can_invite_staff ||
-      myStaff.can_manage_settings,
+    myStaff.is_primary ||
+      myStaff.is_head_coach ||
+      myStaff.can_invite_staff,
   );
 }
