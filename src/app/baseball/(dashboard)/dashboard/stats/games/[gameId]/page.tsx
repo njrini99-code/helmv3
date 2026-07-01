@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getGameBoxScore } from '@/app/baseball/actions/games';
 import { BoxScoreView } from '@/components/baseball/box-score/BoxScoreView';
 import { BoxScoreUpload } from '@/components/baseball/box-score/BoxScoreUpload';
+import { mapBattingToInput, mapPitchingToInput } from '@/components/baseball/box-score/mappers';
 import type { BaseballGame } from '@/lib/types';
 
 interface PageProps {
@@ -72,6 +73,12 @@ export default async function GameDetailPage({ params }: PageProps) {
   const isCompleted = game.status === 'completed';
   const hasStats = batting.length > 0 || pitching.length > 0;
 
+  // Preload existing box-score lines into the manual entry form so editing
+  // a completed game doesn't open a blank form and risk overwriting the
+  // saved stats on the next save (#433).
+  const initialBatting = batting.map(mapBattingToInput);
+  const initialPitching = pitching.map(mapPitchingToInput);
+
   return (
     <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8 space-y-6">
       {/* Breadcrumb */}
@@ -96,12 +103,22 @@ export default async function GameDetailPage({ params }: PageProps) {
           {/* Option to re-enter stats */}
           <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
             <h3 className="text-sm font-semibold text-warm-700 mb-3">Update Box Score</h3>
-            <BoxScoreUpload game={game as BaseballGame} teamPlayers={teamPlayers} />
+            <BoxScoreUpload
+              game={game as BaseballGame}
+              teamPlayers={teamPlayers}
+              initialBatting={initialBatting}
+              initialPitching={initialPitching}
+            />
           </div>
         </div>
       ) : (
         /* Not completed or no stats: show entry form */
-        <BoxScoreUpload game={game as BaseballGame} teamPlayers={teamPlayers} />
+        <BoxScoreUpload
+          game={game as BaseballGame}
+          teamPlayers={teamPlayers}
+          initialBatting={initialBatting}
+          initialPitching={initialPitching}
+        />
       )}
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { uploadBoxScoreCSV, resolveBoxScoreUpload } from '@/app/baseball/actions/games';
-import type { BaseballGame } from '@/lib/types';
+import type { BaseballGame, BoxScoreBattingInput, BoxScorePitchingInput } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { IconUpload, IconCheck, IconRefresh } from '@/components/icons';
 import { BoxScoreEntry } from './BoxScoreEntry';
@@ -19,6 +19,8 @@ interface PlayerRow {
 interface BoxScoreUploadProps {
   game: BaseballGame;
   teamPlayers: PlayerRow[];
+  initialBatting?: BoxScoreBattingInput[];
+  initialPitching?: BoxScorePitchingInput[];
 }
 
 type UploadTab = 'manual' | 'csv' | 'pdf';
@@ -54,7 +56,7 @@ interface UnmatchedPlayer {
   resolvedPlayerId?: string;
 }
 
-export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
+export function BoxScoreUpload({ game, teamPlayers, initialBatting, initialPitching }: BoxScoreUploadProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<UploadTab>('manual');
   const [csvType, setCsvType] = useState<CSVType>('batting');
@@ -179,7 +181,12 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
 
       {/* Manual entry tab */}
       {activeTab === 'manual' && (
-        <BoxScoreEntry game={game} teamPlayers={teamPlayers} />
+        <BoxScoreEntry
+          game={game}
+          teamPlayers={teamPlayers}
+          initialBatting={initialBatting}
+          initialPitching={initialPitching}
+        />
       )}
 
       {/* CSV upload tab */}

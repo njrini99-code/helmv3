@@ -122,8 +122,17 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
     setSaving(true);
     setSaveError(null);
 
-    const nonZeroBatting = battingRows.filter(
-      (r) => r.ab > 0 || r.h > 0 || r.bb > 0 || r.r > 0
+    // Retain a batting row if ANY counting stat is non-zero — not just the
+    // narrow ab/h/bb/r check. That narrow check dropped valid preloaded or
+    // edited rows whose only stats were e.g. hbp/sac/sf/cs/lob, silently
+    // wiping them from the saved box score on the next save (#433).
+    const nonZeroBatting = battingRows.filter((r) =>
+      (
+        [
+          'ab', 'r', 'h', 'doubles', 'triples', 'hr', 'rbi',
+          'bb', 'k', 'sb', 'cs', 'hbp', 'sac', 'sf', 'lob',
+        ] as (keyof BoxScoreBattingInput)[]
+      ).some((field) => (r[field] as number) > 0)
     );
 
     const result = await saveFullBoxScore(
