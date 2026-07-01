@@ -929,12 +929,11 @@ function CalendarHeader({
         )}
 
         {/* Timezone Toggle — desktop only */}
+        {/* Secondary-timezone overlay toggle. De-emphasized ghost control (not
+            variant="primary", which competed with the Add Event CTA) with a
+            visible tooltip so the globe glyph isn't ambiguous. Shows the chosen
+            timezone label inline when active. */}
         {!isMobile && onSecondaryTimezoneChange && (
-          {/* Secondary-timezone overlay toggle. Rendered as a de-emphasized
-              ghost control (not `variant="primary"`, which painted it solid
-              green and made it compete with the Add Event CTA) and carries a
-              visible tooltip so the globe glyph isn't ambiguous. When active it
-              shows the chosen timezone label inline. */}
           <DropdownMenu open={tzDropdownOpen} onOpenChange={setTzDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost"
