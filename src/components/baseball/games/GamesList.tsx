@@ -189,7 +189,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       ) : (
         <div className="space-y-3">
           {games.map((game) => (
-            <div key={game.id} className="relative">
+            <div key={game.id} className="relative group">
               <GameCard game={game} />
               {deletingId === game.id && (
                 <div className="absolute inset-0 bg-cream-100/82 backdrop-blur-sm rounded-2xl flex items-center justify-center">
@@ -199,7 +199,8 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
               {/* Delete action - accessible via right-click context or small button */}
               <Button variant="danger"
                 onClick={() => handleDelete(game.id)}
-                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-warm-300 hover:text-red-500 transition-all text-xs hidden"
+                disabled={deletingId === game.id}
+                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-warm-300 hover:text-red-500 transition-all text-xs"
                 aria-label="Delete game"
               >
                 ×
