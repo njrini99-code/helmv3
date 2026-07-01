@@ -48,17 +48,26 @@ import {
 } from '@/lib/baseball/read-models/strength-groups';
 import { getLiveWeightRoomData } from '@/lib/baseball/read-models/live-weight-room';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
+import {
+  resolveBaseballLiftingOrg,
+  resolveBaseballAthleteIds,
+} from '@/lib/lifting/resolve-baseball-context';
 import type {
   BaseballStrengthGroupRules,
   BaseballStrengthGroupType,
   BaseballLiveWeightRoomData,
 } from '@/lib/types/baseball-lifting-v11';
+import type {
+  HelmLiftingSessionInsert,
+  HelmLiftingSessionExerciseInsert,
+} from '@/lib/types/helm-lifting-data';
 
 const PERFORMANCE = '/baseball/dashboard/performance';
 const PLAYER_LIFT = '/baseball/dashboard/lift';
-// The player Today screen mounts PlayerLiftToday, which now reads the SAME
-// materialized baseball_lift_sessions this file writes — so publishing/logging a
-// lift must revalidate Today too, not just the dedicated lift route.
+// The player Today screen (and PlayerLiftToday) reads the Helm Lifting Lab
+// tables (helm_lifting_sessions), not baseball_lift_sessions — see the
+// publishLiftDay Helm bridge (#486) below. Revalidate both surfaces on every
+// publish/log so neither goes stale.
 const PLAYER_TODAY = '/baseball/player/today';
 
 export interface ActionResult {
@@ -1426,9 +1435,29 @@ export const publishLiftDay = withBaseballAction(
       });
     }
 
-    // 2. Optional calendar event (spec "Calendar Integration" L876-897).
-    let eventId: string | null = null;
-    if (input.createCalendarEvent) {
+    // 2/3. Find-or-create the program assignment (#492 fix). Re-publishing the
+    // same programId + liftDayId + scheduledDate used to always INSERT a fresh
+    // assignment row, which minted a new assignmentId every time — so the step-4
+    // session upsert's onConflict('program_assignment_id,player_id') never
+    // actually matched a prior row and duplicate sessions piled up per re-publish.
+    // Look the assignment up first and UPDATE in place when it already exists
+    // (never delete-then-insert), so assignmentId — and therefore the session
+    // upsert target — stays stable across re-publishes.
+    const { data: existingAsg, error: existingAsgErr } = await supabase
+      .from('baseball_lift_program_assignments')
+      .select('id, event_id')
+      .eq('team_id', teamId)
+      .eq('program_id', input.programId)
+      .eq('lift_day_id', input.liftDayId)
+      .eq('scheduled_date', input.scheduledDate)
+      .maybeSingle();
+    if (existingAsgErr) throw existingAsgErr;
+
+    // Optional calendar event (spec "Calendar Integration" L876-897). Reuse the
+    // event already linked to this assignment on re-publish instead of minting a
+    // second "Lift" calendar event for the same program day/date.
+    let eventId: string | null = (existingAsg as { event_id: string | null } | null)?.event_id ?? null;
+    if (input.createCalendarEvent && !eventId) {
       const start = `${input.scheduledDate}T16:00:00Z`;
       const { data: ev, error: evErr } = await supabase
         .from('baseball_events')
@@ -1445,25 +1474,41 @@ export const publishLiftDay = withBaseballAction(
       eventId = (ev as { id: string }).id;
     }
 
-    // 3. Program assignment row.
-    const { data: asg, error: asgErr } = await supabase
-      .from('baseball_lift_program_assignments')
-      .insert({
-        team_id: teamId,
-        program_id: input.programId,
-        lift_day_id: input.liftDayId,
-        assigned_by_coach_id: ctx.activeCoachId,
-        assignment_type: input.assignmentType ?? 'group',
-        group_id: input.groupId ?? null,
-        event_id: eventId,
-        scheduled_date: input.scheduledDate,
-        status: 'published',
-        player_visible_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
-    if (asgErr) throw asgErr;
-    const assignmentId = (asg as { id: string }).id;
+    let assignmentId: string;
+    if (existingAsg) {
+      assignmentId = (existingAsg as { id: string }).id;
+      const { error: asgUpdErr } = await supabase
+        .from('baseball_lift_program_assignments')
+        .update({
+          assigned_by_coach_id: ctx.activeCoachId,
+          assignment_type: input.assignmentType ?? 'group',
+          group_id: input.groupId ?? null,
+          event_id: eventId,
+          status: 'published',
+          player_visible_at: new Date().toISOString(),
+        })
+        .eq('id', assignmentId);
+      if (asgUpdErr) throw asgUpdErr;
+    } else {
+      const { data: asg, error: asgErr } = await supabase
+        .from('baseball_lift_program_assignments')
+        .insert({
+          team_id: teamId,
+          program_id: input.programId,
+          lift_day_id: input.liftDayId,
+          assigned_by_coach_id: ctx.activeCoachId,
+          assignment_type: input.assignmentType ?? 'group',
+          group_id: input.groupId ?? null,
+          event_id: eventId,
+          scheduled_date: input.scheduledDate,
+          status: 'published',
+          player_visible_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+      if (asgErr) throw asgErr;
+      assignmentId = (asg as { id: string }).id;
+    }
 
     // 4. MATERIALIZE: one session per player (upsert; no delete-then-insert).
     const sessionRows = input.playerIds.map((pid) => ({
@@ -1521,6 +1566,116 @@ export const publishLiftDay = withBaseballAction(
           .insert(fresh);
         if (seErr) throw seErr;
       }
+    }
+
+    // 6. HELM LIFTING LAB BRIDGE (#486 fix): this action used to only materialize
+    // baseball_lift_sessions / baseball_lift_session_exercises. Live Weight Room
+    // (staff) reads those legacy tables, but the player-facing Lift Home
+    // (getPlayerLiftHome) and the Player Today lift card both read the unified
+    // helm_lifting_sessions / helm_lifting_session_exercises tables — so a
+    // published lift silently never showed up for the athlete. Bridge every
+    // materialized baseball session into its helm_lifting_sessions counterpart,
+    // keyed by legacy_baseball_id (a nullable, partial-unique column that exists
+    // specifically for this bridge), so Live Weight Room and the player surfaces
+    // show the same materialized session for a given publish.
+    //
+    // Idempotent + non-destructive: upsert on legacy_baseball_id — a re-publish
+    // updates the same helm rows instead of duplicating them. Best-effort: a team
+    // with no Helm Lifting organization configured yet, or a player not yet
+    // seeded into helm_lifting_athletes, degrades to skipping the bridge for that
+    // team/player — the legacy baseball_lift_sessions row (and Live Weight Room)
+    // is unaffected either way, so a Helm-Lab gap never blocks the coach's
+    // publish action.
+    try {
+      const liftCtx = await resolveBaseballLiftingOrg(teamId);
+      const baseballSessions = (sessions ?? []) as Array<{ id: string; player_id: string }>;
+      if (liftCtx && baseballSessions.length) {
+        const athleteMap = await resolveBaseballAthleteIds(
+          liftCtx.organizationId,
+          baseballSessions.map((s) => s.player_id),
+        );
+
+        const helmSessionInserts: HelmLiftingSessionInsert[] = [];
+        for (const s of baseballSessions) {
+          const athleteId = athleteMap[s.player_id];
+          if (!athleteId) continue; // player not yet seeded in Helm Lifting Lab — skip, never throw.
+          helmSessionInserts.push({
+            organization_id: liftCtx.organizationId,
+            sport: 'baseball',
+            team_id: teamId,
+            athlete_id: athleteId,
+            title: input.title ?? 'Lift',
+            scheduled_date: input.scheduledDate,
+            status: 'assigned',
+            legacy_baseball_id: s.id,
+          });
+        }
+
+        if (helmSessionInserts.length) {
+          const { data: helmSessions, error: helmSessErr } = await fromUntyped(supabase, 'helm_lifting_sessions')
+            .upsert(helmSessionInserts, { onConflict: 'legacy_baseball_id' })
+            .select('id, legacy_baseball_id') as {
+            data: Array<{ id: string; legacy_baseball_id: string }> | null;
+            error: { message: string } | null;
+          };
+          if (helmSessErr) throw helmSessErr;
+
+          const helmSessionIdByBaseballId = new Map(
+            (helmSessions ?? []).map((r) => [r.legacy_baseball_id, r.id]),
+          );
+
+          // Bridge every session_exercise row (both freshly-inserted and
+          // previously-seeded on an idempotent re-publish) so a re-published
+          // session's helm exercises stay in sync too.
+          const baseballSessionIds = baseballSessions.map((s) => s.id);
+          const { data: allSessionExercises, error: allSeErr } = await supabase
+            .from('baseball_lift_session_exercises')
+            .select(
+              'id, session_id, exercise_name_snapshot, section_name_snapshot, section_type_snapshot, order_index, prescribed_sets, prescribed_reps, prescribed_load, prescribed_load_unit, prescribed_rpe, status',
+            )
+            .in('session_id', baseballSessionIds);
+          if (allSeErr) throw allSeErr;
+
+          const helmSessionExerciseInserts: HelmLiftingSessionExerciseInsert[] = [];
+          for (const se of (allSessionExercises ?? []) as Array<{
+            id: string; session_id: string; exercise_name_snapshot: string;
+            section_name_snapshot: string | null; section_type_snapshot: string | null;
+            order_index: number; prescribed_sets: number | null; prescribed_reps: number | null;
+            prescribed_load: number | null; prescribed_load_unit: string | null;
+            prescribed_rpe: number | null; status: string;
+          }>) {
+            const helmSessionId = helmSessionIdByBaseballId.get(se.session_id);
+            if (!helmSessionId) continue; // that player's session was skipped above.
+            helmSessionExerciseInserts.push({
+              session_id: helmSessionId,
+              // No FK mapping exists from baseball_lift_exercises → helm_lifting_exercises
+              // (mirrors the "no FK reliance on read path" snapshot pattern above).
+              exercise_id: null,
+              exercise_name_snapshot: se.exercise_name_snapshot,
+              section_name_snapshot: se.section_name_snapshot,
+              section_type_snapshot: se.section_type_snapshot,
+              order_index: se.order_index,
+              prescribed_sets: se.prescribed_sets,
+              prescribed_reps: se.prescribed_reps,
+              prescribed_load: se.prescribed_load,
+              prescribed_load_unit: se.prescribed_load_unit,
+              prescribed_rpe: se.prescribed_rpe,
+              status: se.status as HelmLiftingSessionExerciseInsert['status'],
+              legacy_baseball_id: se.id,
+            });
+          }
+
+          if (helmSessionExerciseInserts.length) {
+            const { error: helmSeErr } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
+              .upsert(helmSessionExerciseInserts, { onConflict: 'legacy_baseball_id' });
+            if (helmSeErr) throw helmSeErr;
+          }
+        }
+      }
+    } catch {
+      // Best-effort bridge — never let a Helm Lifting Lab write (missing org,
+      // unseeded athlete, RLS gap) roll back or fail the coach's publish action.
+      // The legacy baseball_lift_sessions materialization above already succeeded.
     }
 
     revalidatePath(PERFORMANCE);
