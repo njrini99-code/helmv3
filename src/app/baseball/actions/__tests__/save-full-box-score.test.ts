@@ -141,4 +141,52 @@ describe('saveFullBoxScore', () => {
     expect(result.success).toBe(false);
     expect(result.error).toBeTruthy();
   });
+
+  // #433 — the manual edit form previously opened blank on an existing box
+  // score, so a re-save could silently drop rows. These cases prove that
+  // re-supplying the full existing set (as the preloaded form now does) is
+  // persisted without any reduction in row counts, including a row whose
+  // only non-zero stats fall outside the old narrow ab/h/bb/r save filter.
+  describe('regression — re-saving an existing box score preserves row counts', () => {
+    it('persists the same batting + pitching row counts on a no-op re-save', async () => {
+      let persistedBatting: Array<{ player_id: string }> = [];
+      let persistedPitching: Array<{ player_id: string }> = [];
+      rpc.mockImplementation(async (
+        name: string,
+        args: { p_batting: Array<{ player_id: string }>; p_pitching: Array<{ player_id: string }> },
+      ) => {
+        if (name === 'save_baseball_full_box_score') {
+          persistedBatting = args.p_batting;
+          persistedPitching = args.p_pitching;
+          return { data: { success: true }, error: null };
+        }
+        return { data: null, error: { message: `unexpected rpc ${name}` } };
+      });
+
+      // A row whose only non-zero counting stats are outside the old narrow
+      // ab/h/bb/r filter — e.g. a sac-fly/hit-by-pitch substitution with no
+      // at-bat recorded. Directly covers the data-loss bug.
+      const narrowFilterSurvivorRow = {
+        player_id: 'p3',
+        ab: 0, r: 0, h: 0, doubles: 0, triples: 0, hr: 0, rbi: 0, bb: 0, k: 0,
+        sb: 0, cs: 1, hbp: 1, sac: 1, sf: 1, lob: 1,
+      };
+      const existingBatting = [BATTING_LINE, narrowFilterSurvivorRow];
+      const existingPitching = [PITCHING_LINE];
+
+      // First save — establishes the existing box score.
+      const firstSave = await saveFullBoxScore('game-1', existingBatting, existingPitching, 5, 3);
+      expect(firstSave.success).toBe(true);
+      expect(persistedBatting).toHaveLength(2);
+      expect(persistedPitching).toHaveLength(1);
+
+      // Re-save without edits (the preloaded form resupplying the same set).
+      const reSave = await saveFullBoxScore('game-1', existingBatting, existingPitching, 5, 3);
+      expect(reSave.success).toBe(true);
+
+      expect(persistedBatting).toHaveLength(2);
+      expect(persistedPitching).toHaveLength(1);
+      expect(persistedBatting.some((b) => b.player_id === 'p3')).toBe(true);
+    });
+  });
 });
