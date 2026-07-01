@@ -109,6 +109,50 @@ function handleError(error: unknown): string {
 // DOCUMENT CRUD OPERATIONS
 // ============================================
 
+/**
+ * Re-sign each document's file_url from the latest version's storage_path.
+ * A document's stored file_url is a signed URL that expires after
+ * SIGNED_URL_TTL_SECONDS, so any list read must re-sign it fresh (mirrors
+ * the per-open signing done in getPreviewUrl) rather than serving the
+ * value persisted at upload time.
+ */
+async function withFreshDocumentUrls(
+  supabase: SupabaseServerClient,
+  documents: BaseballDocument[],
+): Promise<BaseballDocument[]> {
+  if (documents.length === 0) return documents;
+
+  const { data: versionsData } = await (supabase as any)
+    .from('baseball_document_versions')
+    .select('document_id, storage_path, version_number')
+    .in('document_id', documents.map((d) => d.id))
+    .order('version_number', { ascending: false });
+
+  const latestPathByDocument = new Map<string, string>();
+  for (const v of (versionsData as { document_id: string; storage_path: string; version_number: number }[] | null) || []) {
+    if (!latestPathByDocument.has(v.document_id)) {
+      latestPathByDocument.set(v.document_id, v.storage_path);
+    }
+  }
+
+  return Promise.all(
+    documents.map(async (document) => {
+      const storagePath = latestPathByDocument.get(document.id);
+      if (!storagePath) return document;
+      try {
+        const signedUrl = await signDocumentStoragePath(supabase, storagePath);
+        return { ...document, file_url: signedUrl };
+      } catch (error) {
+        void logServerError(
+          `Failed to re-sign document URL for document ${document.id}: ${error instanceof Error ? error.message : String(error)}`,
+          { action: 'documents.withFreshDocumentUrls' },
+        );
+        return document;
+      }
+    }),
+  );
+}
+
 export async function getTeamDocuments(
   teamId: string,
   isCoach: boolean
@@ -137,7 +181,9 @@ export async function getTeamDocuments(
 
     if (error) throw error;
 
-    return { data: data as unknown as BaseballDocument[], error: null };
+    const documents = await withFreshDocumentUrls(supabase, data as unknown as BaseballDocument[]);
+
+    return { data: documents, error: null };
   } catch (error) {
     return { data: null, error: handleError(error) };
   }

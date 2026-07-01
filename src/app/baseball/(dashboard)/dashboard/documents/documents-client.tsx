@@ -126,7 +126,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           file_url: result.version?.file_url || d.file_url,
           file_type: result.version?.mime_type || d.file_type,
           file_size: result.version?.file_size ?? d.file_size,
-          version_count: (d.version_count || 1) + 1,
+          version_count: result.version?.version_number ?? ((d.version_count || 1) + 1),
         }
       : d
     ));

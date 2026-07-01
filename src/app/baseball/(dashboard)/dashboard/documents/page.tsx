@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
 import { DocumentsClient } from './documents-client';
+import { getTeamDocuments } from '@/app/baseball/actions/documents';
 import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -36,30 +37,7 @@ export default async function BaseballDocumentsPage() {
   const isCoach = ctx.activeRole === 'coach';
   const teamId = ctx.activeTeamId;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const baseQuery = (supabase as any)
-    .from('baseball_documents')
-    .select(`
-      id,
-      team_id,
-      title,
-      description,
-      file_url,
-      file_type,
-      file_size,
-      category,
-      is_player_visible,
-      created_at,
-      uploaded_by,
-      version_count,
-      folder
-    `)
-    .eq('team_id', teamId)
-    .order('created_at', { ascending: false });
-
-  const { data: documents, error } = !isCoach
-    ? await baseQuery.eq('is_player_visible', true)
-    : await baseQuery;
+  const { data: documents, error } = await getTeamDocuments(teamId, isCoach);
 
   if (error) {
     return (
