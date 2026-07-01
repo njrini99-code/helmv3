@@ -9,6 +9,7 @@ import { JUCOModeToggle } from '@/components/baseball/coach/ModeToggle';
 import { useAuth } from '@/hooks/use-auth';
 import { useNotifications } from '@/hooks/use-notifications';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { isRedesignEnabled } from '@/lib/redesign/flag';
 import { getFullName, cn } from '@/lib/utils';
 import {
   IconUser,
@@ -81,6 +82,66 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
     await signOut();
     router.push('/baseball/login');
   };
+
+  // ---------------------------------------------------------------------------
+  // FAIRWAY REDESIGN (flag ON) — the shell (BaseballFairwayShell → AppShell)
+  // owns the ONE global top bar: sidebar toggle, global search, notification
+  // bell, user identity, and breadcrumb. Un-migrated pages that still mount
+  // this legacy <Header> were rendering that global chrome a SECOND time,
+  // producing the duplicate search box / notification bell / user menu stacked
+  // directly under the shell bar (Travel, Videos, Settings, Profile, dev-plans,
+  // academics, camps, my-stats, …).
+  //
+  // Fixing it here — once, in the shared component — degrades <Header> to a
+  // lightweight page-title bar in redesign mode: the page title, subtitle,
+  // back link, and page-specific action(s) ONLY. No global chrome, so there is
+  // exactly one search field, one bell, and one user menu per screen. The
+  // legacy (flag-OFF) path below is left byte-for-byte unchanged and fully
+  // reversible.
+  // ---------------------------------------------------------------------------
+  if (isRedesignEnabled()) {
+    const hasContent = Boolean(title || subtitle || children || backHref || isJucoCoach);
+    if (!hasContent) return null;
+
+    return (
+      <div className="px-4 pt-6 pb-1 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+          <div className="flex min-w-0 items-start gap-3">
+            {backHref && (
+              <Link
+                href={backHref}
+                aria-label="Go back"
+                className="mt-1 rounded-lg p-1.5 text-warm-400 transition-all duration-200 hover:bg-warm-100 hover:text-warm-600 active:scale-95 active:bg-warm-200"
+              >
+                <IconChevronLeft size={20} aria-hidden="true" />
+              </Link>
+            )}
+            <div className="min-w-0">
+              {title && (
+                <h1 className="text-2xl font-bold tracking-tight text-warm-900 truncate">
+                  {title}
+                </h1>
+              )}
+              {subtitle && (
+                <p className="mt-1 text-sm leading-relaxed text-warm-500">{subtitle}</p>
+              )}
+            </div>
+          </div>
+
+          {(children || isJucoCoach) && (
+            <div className="flex flex-shrink-0 items-center gap-2">
+              {isJucoCoach && (
+                <div className="hidden items-center rounded-lg bg-warm-100 p-1 md:flex">
+                  <JUCOModeToggle />
+                </div>
+              )}
+              {children}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <header className="h-16 glass-prominent border-b border-white/20 sticky top-0 z-30">
