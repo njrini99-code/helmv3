@@ -13,6 +13,8 @@ import { AnnouncementsCoachView } from '@/components/baseball/announcements/Anno
 import { AnnouncementsPlayerView } from '@/components/baseball/announcements/AnnouncementsPlayerView';
 import { CreateAnnouncementFlow } from '@/components/baseball/announcements/CreateAnnouncementFlow';
 import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
+import { AnnouncementsFairway } from '@/components/baseball/announcements/AnnouncementsFairway';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';
 
 interface RosterPlayer {
@@ -98,6 +100,24 @@ export default function BaseballAnnouncementsPage() {
     if (!a.published_at) return false;
     return (Date.now() - new Date(a.published_at).getTime()) < 7 * 86400000;
   }).length;
+
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <AnnouncementsFairway
+          announcements={announcements}
+          players={players}
+          selectedTeamId={selectedTeamId}
+          isCoach={isCoach}
+          playerId={player?.id || ''}
+          loading={loading}
+          loadError={loadError}
+          recentCount={recentCount}
+          onRefresh={fetchAnnouncements}
+        />
+      </div>
+    );
+  }
 
   return (
     <>
