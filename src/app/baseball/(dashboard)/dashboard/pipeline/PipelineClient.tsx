@@ -42,6 +42,11 @@ const gradYearOptions = [
 
 const statusOptions = PIPELINE_STAGES.map((s) => ({ value: s.id, label: s.label }));
 
+// Droppable columns use the stage id; draggable cards use the watchlist-row
+// UUID. This set lets the drag handler tell a real drop-target column apart
+// from a card that `closestCorners` happened to land on.
+const PIPELINE_STAGE_IDS = new Set<PipelineStage>(PIPELINE_STAGES.map((s) => s.id));
+
 const filterTabs = [
   { value: 'all', label: 'All' },
   ...PIPELINE_STAGES.map((s) => ({ value: s.id, label: s.label })),
@@ -243,20 +248,23 @@ export default function PipelinePage() {
       return;
     }
 
-    const activeItem = filteredByGradYear.find((item) => item.id === active.id);
-    const newStage = over.id as PipelineStage;
+    const draggedItem = filteredByGradYear.find((item) => item.id === active.id);
 
-    if (activeItem && activeItem.pipeline_stage !== newStage) {
-      try {
-        await updateStage(activeItem.player_id, newStage);
-        setError(null);
-        const playerName = getFullName(activeItem.player?.first_name, activeItem.player?.last_name);
-        const stageLabel = statusOptions.find(o => o.value === newStage)?.label || newStage;
-        showToast(`${playerName} moved to ${stageLabel}`, 'success');
-      } catch (err) {
-        console.error('Error updating pipeline stage:', err);
-        setError('Failed to update player stage. Please try again.');
-      }
+    // With closestCorners, `over` is often another card (a watchlist UUID),
+    // not a column. Resolve the target stage from the column id, falling back
+    // to the stage of the card being hovered; anything else is an invalid drop
+    // and must be a no-op (no DB write).
+    const overId = over.id as string;
+    const newStage: PipelineStage | null = PIPELINE_STAGE_IDS.has(overId as PipelineStage)
+      ? (overId as PipelineStage)
+      : (filteredByGradYear.find((item) => item.id === overId)?.pipeline_stage ?? null);
+
+    if (draggedItem && newStage && draggedItem.pipeline_stage !== newStage) {
+      // updateStage shows its own success/error toast and only refetches on
+      // success (so the card reverts to its column on failure). Just reflect
+      // the boolean return — never a second, unconditional success toast.
+      const ok = await updateStage(draggedItem.player_id, newStage);
+      setError(ok ? null : 'Failed to update player stage. Please try again.');
     }
 
     setActiveId(null);
@@ -265,7 +273,11 @@ export default function PipelinePage() {
   // Watchlist handlers
   async function handleStatusChange(watchlistId: string, newStatus: PipelineStage) {
     try {
-      await updateWatchlistStatus(watchlistId, newStatus);
+      const result = await updateWatchlistStatus(watchlistId, newStatus);
+      if (!result.success) {
+        showToast(result.error || 'Failed to update status', 'error');
+        return;
+      }
       refetch();
     } catch {
       showToast('Failed to update status', 'error');
@@ -336,11 +348,15 @@ export default function PipelinePage() {
     if (selectedPlayers.size === 0) return;
 
     try {
-      await Promise.all(
+      const results = await Promise.all(
         Array.from(selectedPlayers).map(watchlistId =>
           updateWatchlistStatus(watchlistId, newStatus)
         )
       );
+      const failed = results.filter(r => !r.success).length;
+      if (failed > 0) {
+        showToast(`Failed to update ${failed} player${failed !== 1 ? 's' : ''}`, 'error');
+      }
       refetch();
       setSelectedPlayers(new Set());
     } catch {
@@ -547,7 +563,7 @@ export default function PipelinePage() {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex lg:grid lg:grid-cols-7 gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:overflow-visible snap-x snap-mandatory lg:snap-none scroll-smooth">
+            <div className="flex lg:grid lg:grid-cols-5 gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:overflow-visible snap-x snap-mandatory lg:snap-none scroll-smooth">
               {PIPELINE_STAGES.map((s) => (
                 <PipelineColumn
                   key={s.id}

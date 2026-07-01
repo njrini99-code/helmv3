@@ -14,18 +14,10 @@ export const PIPELINE_STAGES = [
     color: 'amber',
     description: 'Top recruiting targets',
   },
-  {
-    id: 'contacted' as PipelineStage,
-    label: 'Contacted',
-    color: 'blue',
-    description: 'Reached out to player/family',
-  },
-  {
-    id: 'campus_visit' as PipelineStage,
-    label: 'Campus Visit',
-    color: 'purple',
-    description: 'Scheduled or completed visit',
-  },
+  // NOTE: only the 5 stages in the `baseball_pipeline_stage` DB enum (and the
+  // WatchlistSchemas.updateStatus server contract) are valid. `contacted` and
+  // `campus_visit` were surfaced in the UI but rejected server-side, so stage
+  // changes to them silently failed — they have been removed.
   {
     id: 'offer_extended' as PipelineStage,
     label: 'Offer Extended',
