@@ -28,8 +28,8 @@ import { useToast } from '@/components/ui/sonner';
 import { ReadModelStateNotice } from '@/components/baseball/ReadModelStateNotice';
 import {
   getActiveDevPlan,
-  completeGoal,
-  uncompleteGoal,
+  completeGoalAsPlayer,
+  uncompleteGoalAsPlayer,
   type DevelopmentalPlanWithGoals,
   type DevPlanGoal,
 } from '@/app/baseball/actions/dev-plans';
@@ -385,7 +385,7 @@ export default function PlayerDevPlanPage() {
 
       startTransition(async () => {
         try {
-          await completeGoal(plan.id, goalId);
+          await completeGoalAsPlayer(plan.id, goalId);
           await fetchPlan();
         } catch {
           showToast('Could not mark goal complete', 'error');
@@ -402,7 +402,7 @@ export default function PlayerDevPlanPage() {
 
       startTransition(async () => {
         try {
-          await uncompleteGoal(plan.id, goalId);
+          await uncompleteGoalAsPlayer(plan.id, goalId);
           await fetchPlan();
         } catch {
           showToast('Could not update goal', 'error');
