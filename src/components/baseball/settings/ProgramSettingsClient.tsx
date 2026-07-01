@@ -145,7 +145,7 @@ function SectionCard({
   /**
    * Optional stable anchor so the dedicated spec routes that fold into this page
    * (player-access, guardian-access, showcase-profile, ai, notifications,
-   * data-retention, demo-mode) can deep-link to their section via #anchor.
+   * data-retention) can deep-link to their section via #anchor.
    * scroll-mt keeps the section clear of the sticky header on jump.
    */
   anchorId?: string;
