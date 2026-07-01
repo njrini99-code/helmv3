@@ -17,7 +17,7 @@ The **buyer/tenant unit is the program/team**, not the individual coach and neve
 - **Players never buy anything.** They are provisioned by the coach/program and are tenant-scoped, read/write-limited users inside the team the coach manages.
 - **Admins** (`/golf/admin`) are Helm Sports Labs' own internal operators, not customer-side buyers.
 
-**Billing reality check (do not assume otherwise when reasoning about this doc):** there is no Stripe/billing/subscription/seat-pricing code anywhere in the repo, and no in-repo pricing document for Helm's own products (only competitors' pricing is researched, in `docs/v3-research-competitive-landscape.md`). Any packaging language below (e.g., "per-team," "per-seat") describes the *intended* buyer unit implied by the data model, not an implemented billing plan. The one real, enforced cost-control mechanism today is the **per-coach daily LLM spend cap** — see `src/lib/coachhelm/v3/llm/budget.ts`, backed by `golf_coachhelm_llm_budget` (`coach_id` + `date`, `budget_usd`/`spent_usd`, checked before every `compose()` call) and the team-level `golf_coachhelm_settings.llm_budget_usd_per_day` (`.greptile/instructions.md:139-146`). Demo/prospect accounts exist to support a sales-led adoption motion (see `src/app/golf/admin/demo-sessions`), which is consistent with a program-as-tenant model even though no checkout flow exists.
+**Billing reality check (do not assume otherwise when reasoning about this doc):** there is no Stripe/billing/subscription/seat-pricing code anywhere in the repo, and no in-repo pricing document for Helm's own products (only competitors' pricing is researched, in `docs/v3-research-competitive-landscape.md`). Any packaging language below (e.g., "per-team," "per-seat") describes the *intended* buyer unit implied by the data model, not an implemented billing plan. The one real, enforced cost-control mechanism today is the **per-coach daily LLM spend cap** — see `src/lib/coachhelm/v3/llm/budget.ts`, backed by `golf_coachhelm_llm_budget` (`coach_id` + `date`, `budget_usd`/`spent_usd`, checked before every `compose()` call) and the team-level `golf_coachhelm_settings.llm_budget_usd_per_day` (`.greptile/rules.md:139-146`). Demo/prospect accounts exist to support a sales-led adoption motion (see `src/app/golf/admin/demo-sessions`), which is consistent with a program-as-tenant model even though no checkout flow exists.
 
 ---
 
@@ -27,10 +27,10 @@ GolfHelm models exactly one coach persona type for golf — there is no separate
 
 ### Goals
 - Run a team's day-to-day operations: roster, calendar, messaging, announcements, documents, travel (`CLAUDE.md` role/feature ownership table; `memory/context/golfhelm-features.md` features #4–#10).
-- Track player performance objectively via Strokes Gained (SG) rather than raw scoring average, and get AI-generated, citation-backed narrative on rounds and trends (`docs/v3-research-golf-domain.md`; `.greptile/instructions.md:139-146`).
+- Track player performance objectively via Strokes Gained (SG) rather than raw scoring average, and get AI-generated, citation-backed narrative on rounds and trends (`docs/v3-research-golf-domain.md`; `.greptile/rules.md:139-146`).
 - Solve the qualifying/travel-roster selection workflow, explicitly called out in the competitive research as "the most-painful, most-frequent, most-poorly-tooled workflow in college golf" and a stated GolfHelm differentiator (`docs/v3-research-competitive-landscape.md:393`).
 - Set and approve player development Goals as a coach-endorsed, first-class object (v3 Goals system, `docs/v3-master-plan.md` Part VI) — a stated point of differentiation from competitors.
-- Get an AI assistant (CoachHelm) that behaves like an analyst, not a black box: every LLM-composed insight must cite underlying data and regenerate once before silently falling back to a template (`.greptile/instructions.md:139-146`).
+- Get an AI assistant (CoachHelm) that behaves like an analyst, not a black box: every LLM-composed insight must cite underlying data and regenerate once before silently falling back to a template (`.greptile/rules.md:139-146`).
 
 ### What they can do
 - Full CRUD on their own team's roster, calendar, tasks, messaging, announcements, documents, travel, qualifiers (`golf_qualifiers`, `golf_qualifier_entries`, `golf_qualifier_selections`) and qualifier statuses (`upcoming/in_progress/completed/cancelled`).
@@ -86,7 +86,7 @@ For baseball, coach *typing* is richer at the program level (College/HS/JUCO/Sho
 - **Account deletion exists** (`src/app/api/account/delete/route.ts`) but cascade cleanup across related tables is documented as incomplete — a retention gap that specifically matters for a minor's PII (see `03-product-invariants.md` for the deletion/retention invariant this implies).
 - **No cookie/consent banner** exists in-repo — relevant if/when COPPA-style parental-consent flows become required.
 - A cross-tenant RLS leak exposing one team's players to another team, or a broken player/coach RLS boundary exposing player data to the wrong coach, is the worst-case, business-ending failure mode for a student-athlete data product. There is a documented prior RLS incident (`docs/audits/COACH_DASHBOARD_AUDIT_REPORT.md`) — every new table touching player data must ship RLS per `docs/v3-rls-template.md`, and reviewers must treat missing/misconfigured RLS as the top-severity class of bug (see `03-product-invariants.md`).
-- Destructive-write risk is elevated on player-adjacent surfaces: roster, qualifier selections, and round-save are explicitly called out as the highest-risk surfaces for the DELETE-then-INSERT anti-pattern ban (`.greptile/instructions.md:69-72`) — a transient failure mid-sequence has previously caused permanent data loss.
+- Destructive-write risk is elevated on player-adjacent surfaces: roster, qualifier selections, and round-save are explicitly called out as the highest-risk surfaces for the DELETE-then-INSERT anti-pattern ban (`.greptile/rules.md:69-72`) — a transient failure mid-sequence has previously caused permanent data loss.
 
 ---
 

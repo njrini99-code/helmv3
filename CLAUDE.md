@@ -432,7 +432,7 @@ custom checks trip: service-role key in a client bundle, RLS missing
 on a new table, server action without an auth check, sport-prefixed
 table name violation, destructive DELETE-then-INSERT in a save/submit/
 sync path. The same hard-rule set is documented in
-`.greptile/instructions.md` "Hard rules" so Greptile blocks on them too.
+`.greptile/rules.md` "Hard rules" so Greptile blocks on them too.
 
 ---
 

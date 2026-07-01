@@ -23,7 +23,7 @@ rolls up into one of those. (The context name `all` is shared by both the
 | `Smoke checks` | `playwright.yml` | build-only smoke: `npm ci` + `next build` (no E2E) | **Hard gate** |
 | `CodeRabbit` | CodeRabbit GitHub App | assertive line-level review + blocking custom checks (`.coderabbit.yaml`) | **Hard gate** |
 | `CodeQL` | `codeql.yml` | code-scanning security analysis | **Hard gate** |
-| `Greptile Review` | Greptile GitHub App | whole-codebase review + hard rules (`.greptile/instructions.md`) | Advisory — *not* a required context; Greptile skips `dependabot` PRs, so requiring it would block the bot flow. CodeRabbit is the blocking AI reviewer. |
+| `Greptile Review` | Greptile GitHub App | whole-codebase review + hard rules (`.greptile/rules.md`) | Advisory — *not* a required context; Greptile skips `dependabot` PRs, so requiring it would block the bot flow. CodeRabbit is the blocking AI reviewer. |
 | `Playwright (chromium)` / `Course picker screenshots` | `playwright.yml` | full E2E suite — advisory until stable for a week (see `.github/branch-protection.md`) | Advisory |
 | `ci/circleci: lighthouse-preview` | CircleCI | Lighthouse against the Vercel preview URL; a11y + CLS are hard errors *within the job*, but the check itself is advisory | Advisory |
 | `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, only relevant when `ios/**` / `capacitor.config.ts` changed | Advisory unless the PR touches iOS |

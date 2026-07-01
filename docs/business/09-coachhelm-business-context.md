@@ -14,7 +14,7 @@ Turn raw performance data into trustworthy, cited, sport-specific coaching narra
 - `composeCoachChat` — natural-language Q&A about a player or trend, grounded in that player's actual data (`02-jobs-to-be-done.md` §3.2).
 - `composeHeroNarrative` — the lowest-priority composer in the fallback order (see §3 below).
 
-All three share the same LLM budget/citation/fallback contract (`.greptile/instructions.md:139-146`).
+All three share the same LLM budget/citation/fallback contract (`.greptile/rules.md:139-146`).
 
 **Why this is a genuine differentiator, not a me-too feature:** conversational LLM round review is named directly in competitive research as the product's clearest white space — "nobody has it." Clippd's round summaries are static dashboards, not narrative explanations, and Clippd has no native AI chat / no LLM round narrative; 18Birdies has an AI Coach for swing video, not round narrative (`02-jobs-to-be-done.md` §3.1, `08-golfhelm-business-context.md` §7). Treat any regression to citation-checking or fallback behavior on this path as high severity, not a routine bug.
 

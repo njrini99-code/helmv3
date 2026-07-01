@@ -82,7 +82,7 @@ The research is explicit: **do not try to out-stat Clippd, out-coach them.** Cli
 
 Nobody in the competitive set has this. Clippd renders static dashboards. 18Birdies does single-video swing feedback. TrackMan's Tracy gives a single drill suggestion. None of them "sit down with the player and narrate what happened in your round, why, and what to do tomorrow" — and there is direct evidence of unmet demand: GolfWRX has threads of players manually pasting their own stats into ChatGPT to get exactly this. (`docs/v3-research-competitive-landscape.md:333`)
 
-Implemented as `composeRoundReview` / `composeHeroNarrative` / `composeCoachChat` in the CoachHelm AI layer. Per `.greptile/instructions.md:139-146`, these MUST verify citations against real data and regenerate once before falling back to template — a review-critical invariant precisely because this is the differentiator. **A round review that is `summarize(stats)` with no causal claim is not a differentiator — it is a parlor trick a static dashboard already does better** (research's own words, `docs/v3-research-competitive-landscape.md:340`).
+Implemented as `composeRoundReview` / `composeHeroNarrative` / `composeCoachChat` in the CoachHelm AI layer. Per `.greptile/rules.md:139-146`, these MUST verify citations against real data and regenerate once before falling back to template — a review-critical invariant precisely because this is the differentiator. **A round review that is `summarize(stats)` with no causal claim is not a differentiator — it is a parlor trick a static dashboard already does better** (research's own words, `docs/v3-research-competitive-landscape.md:340`).
 
 ### 2.2 Coach-approved player Goals as a first-class object
 
@@ -92,7 +92,7 @@ Clippd's "What To Work On" surfaces data-derived weaknesses. DECADE has Combines
 
 Named directly in the research as "the most-painful, most-frequent, most-poorly-tooled workflow in college golf" — coaches are still running this in Google Sheets: ingest scores → top-4 + coach's-pick reasoning → travel roster → tournament prep packet. Nobody has built a first-class object for it. (`docs/v3-research-competitive-landscape.md:393`)
 
-GolfHelm implements this as `golf_qualifiers` / `golf_qualifier_entries` / `golf_qualifier_selections`, with `QualifierStatus` = `upcoming` / `in_progress` / `completed` / `cancelled`. This is the highest-stakes surface in the doc from an engineering-safety perspective, because it is both a stated differentiator AND on the destructive-write ban's named high-risk list (roster, qualifier selections, round-save) — see `.greptile/instructions.md:69-72`. A bug here does not just cost a feature, it costs the workflow coaches are supposed to switch tools for.
+GolfHelm implements this as `golf_qualifiers` / `golf_qualifier_entries` / `golf_qualifier_selections`, with `QualifierStatus` = `upcoming` / `in_progress` / `completed` / `cancelled`. This is the highest-stakes surface in the doc from an engineering-safety perspective, because it is both a stated differentiator AND on the destructive-write ban's named high-risk list (roster, qualifier selections, round-save) — see `.greptile/rules.md:69-72`. A bug here does not just cost a feature, it costs the workflow coaches are supposed to switch tools for.
 
 ### 2.4 Supporting/secondary differentiators named in the research
 
@@ -112,7 +112,7 @@ Each of these is a criticism leveled at a named competitor in the research. If a
 | Competitor weakness (source) | Do not recreate this in Helm |
 |---|---|
 | Clippd: manual entry required without Arccos/Garmin | Any workflow that requires a coach or player to hand-type round data when auto-ingest exists or is planned |
-| Clippd: "SG metrics are hard to interpret" | SG surfaced without explanation of what OTT/APP/ARG/PUTT mean or how the number was derived; SG math errors are the single highest numeric-correctness risk in this codebase (`.greptile/instructions.md:81-82`) |
+| Clippd: "SG metrics are hard to interpret" | SG surfaced without explanation of what OTT/APP/ARG/PUTT mean or how the number was derived; SG math errors are the single highest numeric-correctness risk in this codebase (`.greptile/rules.md:81-82`) |
 | Clippd: Advanced Analytics locked behind Pro tier with no visible reasoning | Silently downgrading a paid/premium AI feature to template output on budget exhaustion without surfacing that to the coach — see `src/lib/coachhelm/v3/llm/budget.ts` fallback priority (`round_review > coach_chat > hero_narrative > template`) |
 | Clippd: Coach Portal "first release, more coming" — coach-player interaction is comment-thread only | Coach chat that is a generic message thread with no data context is strictly worse than what CoachNow/Clippd already ship; it must reference the player's actual stats |
 | Clippd/DECADE: "What To Work On" / Combines are data-derived but not goals-aware | Insight ranking or practice suggestions that ignore an active coach-approved Goal |
@@ -141,9 +141,9 @@ This section exists so a reviewer can trace a positioning claim back to somethin
 
 | Positioning claim | Enforced by |
 |---|---|
-| "Round review must be causal, not a summary" | `composeRoundReview` citation-verification + regenerate-once-before-template rule, `.greptile/instructions.md:139-146` |
-| "SG correctness is the core value prop vs Clippd" | `docs/v3-research-golf-domain.md` as canonical SG reference; SG is cached (not recomputed) in `golf_player_stats_cache`; `.greptile/instructions.md:81-82`, `docs/v3-master-plan.md:98` |
-| "Qualifier workspace must be more trustworthy than a spreadsheet" | `golf_qualifiers` / `golf_qualifier_entries` / `golf_qualifier_selections`; destructive DELETE-then-INSERT banned on qualifier selections, `.greptile/instructions.md:69-72` |
+| "Round review must be causal, not a summary" | `composeRoundReview` citation-verification + regenerate-once-before-template rule, `.greptile/rules.md:139-146` |
+| "SG correctness is the core value prop vs Clippd" | `docs/v3-research-golf-domain.md` as canonical SG reference; SG is cached (not recomputed) in `golf_player_stats_cache`; `.greptile/rules.md:81-82`, `docs/v3-master-plan.md:98` |
+| "Qualifier workspace must be more trustworthy than a spreadsheet" | `golf_qualifiers` / `golf_qualifier_entries` / `golf_qualifier_selections`; destructive DELETE-then-INSERT banned on qualifier selections, `.greptile/rules.md:69-72` |
 | "Never silently downgrade a paid AI feature" | Per-coach daily LLM budget in `src/lib/coachhelm/v3/llm/budget.ts`, backed by `golf_coachhelm_llm_budget` and `golf_coachhelm_settings.llm_budget_usd_per_day`; fallback priority `round_review > coach_chat > hero_narrative > template` |
 | "Goals must actually change what surfaces, not just be stored" | No single enforced check exists today — this is a product-review, not lint-review, obligation; flag in PR review, see `## For the reviewer` below |
 
