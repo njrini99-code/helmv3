@@ -312,7 +312,10 @@ async function createSettingsRow(
 export const updateProgramSettings = withBaseballAction(
   'updateProgramSettings',
   { featureArea: 'baseball-settings', requiredCapability: 'can_manage_settings' },
-  async (ctx, patch: BaseballProgramSettingsUpdate): Promise<{ success: true }> => {
+  async (
+    ctx,
+    patch: BaseballProgramSettingsUpdate,
+  ): Promise<{ success: true } | { success: false; error: string }> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
 
@@ -331,13 +334,21 @@ export const updateProgramSettings = withBaseballAction(
 
     const sanitized = sanitizeSettingsPatch(patch);
 
-    await fromUntyped(supabase, 'baseball_program_settings')
+    // Check the real Supabase {error} rather than assuming success — a failed
+    // UPDATE (e.g. a column referenced in `sanitized` that doesn't exist yet on
+    // this environment's baseball_program_settings row, or an RLS denial) must
+    // never be reported to the caller as a successful save (#466's core bug).
+    const { error } = await fromUntyped(supabase, 'baseball_program_settings')
       .update({
         ...sanitized,
         updated_by: ctx.activeCoachId,
         updated_at: new Date().toISOString(),
       })
       .eq('team_id', teamId);
+
+    if (error) {
+      return { success: false, error: 'Could not save settings. Please try again.' };
+    }
 
     const after = await readSettingsRow(teamId);
 
