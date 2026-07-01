@@ -19,6 +19,7 @@ so a job split/rename does not silently break protection.
   - `Business contracts`
   - `Next build`
   - `Route Hygiene P0/P1`
+  - `Supabase lint + RLS tests`
 - `Review Gate / all` — hard aggregate for ast-grep, semgrep, gitleaks,
   actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, and
   hadolint.
@@ -38,9 +39,16 @@ Advisory checks:
 - `Playwright (chromium)`
 - `Course picker screenshots`
 - `migration-lockdown / block-historical-edits`
-- `Supabase lint + RLS tests` — temporarily advisory: the baseball pgTAP RLS
-  suite is red on `main`; its fix lands in PR #423. Promote back into the
-  `CI / all` aggregate once that suite is green on `main`.
+
+`Supabase lint + RLS tests` was promoted from advisory into the hard
+`CI / all` aggregate once the baseball pgTAP RLS suite went green on `main`
+(#517, supersedes #423). RLS regressions now block merge.
+
+`Greptile Review` is intentionally advisory, not a required check: Greptile's
+`.greptile/config.json` skips `dependabot`-titled PRs, so it never posts a
+passing `Greptile Review` on them — making it a required context would leave
+every Dependabot PR permanently un-mergeable without an admin override.
+CodeRabbit is the blocking AI reviewer.
 
 ## Other settings
 
