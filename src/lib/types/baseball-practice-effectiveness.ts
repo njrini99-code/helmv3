@@ -92,6 +92,16 @@ export type BaseballEffectivenessDisposition =
   | 'resolved'
   | 'converted_to_task';
 
+/**
+ * baseball_practice_effectiveness_reviews.verdict — the coach's ORTHOGONAL
+ * outcome call, set only when the coach resolves a review (disposition is
+ * the workflow state; verdict is what they concluded). Null until resolved.
+ */
+export type BaseballEffectivenessVerdict =
+  | 'worked'
+  | 'needs_more_time'
+  | 'not_enough_data';
+
 // ---- baseball_practice_block_objectives ------------------------------------
 
 export interface BaseballPracticeBlockObjectiveRow {
@@ -185,6 +195,8 @@ export interface BaseballEffectivenessReviewRow {
   source_refs: BaseballJson;
   visibility: BaseballEffectivenessVisibility;
   disposition: BaseballEffectivenessDisposition;
+  /** Coach's outcome verdict, set only once resolved; null otherwise. */
+  verdict: BaseballEffectivenessVerdict | null;
   generated_by: string | null;
   generated_by_model: string | null;
   generated_at: string;
@@ -219,6 +231,7 @@ export interface BaseballEffectivenessReviewInsert {
   source_refs?: BaseballJson;
   visibility?: BaseballEffectivenessVisibility;
   disposition?: BaseballEffectivenessDisposition;
+  verdict?: BaseballEffectivenessVerdict | null;
   generated_by?: string | null;
   generated_by_model?: string | null;
   generated_at?: string;
@@ -230,6 +243,7 @@ export interface BaseballEffectivenessReviewInsert {
 
 export interface BaseballEffectivenessReviewUpdate {
   disposition?: BaseballEffectivenessDisposition;
+  verdict?: BaseballEffectivenessVerdict | null;
   visibility?: BaseballEffectivenessVisibility;
   conclusion?: string;
   recommended_next_action?: BaseballJson | null;
