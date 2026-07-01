@@ -1016,12 +1016,19 @@ export function RosterClient({ teamId: serverTeamId, initialModel }: RosterClien
 
               setSavingLineup(true);
               try {
-                await saveLineup({
+                // saveLineup returns { success: false, error } for validation
+                // failures (duplicate orders, > 9 players, missing coach) without
+                // throwing, so check the result before claiming success.
+                const result = await saveLineup({
                   teamId: resolvedTeamId,
                   name: name || 'Untitled Lineup',
                   positions,
                 });
-                showToast('Lineup saved successfully', 'success');
+                if (result.success) {
+                  showToast('Lineup saved successfully', 'success');
+                } else {
+                  showToast(result.error || 'Failed to save lineup', 'error');
+                }
               } catch (error) {
                 showToast(
                   error instanceof Error ? error.message : 'Failed to save lineup',
