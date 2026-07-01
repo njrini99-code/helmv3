@@ -114,7 +114,7 @@ export default async function PlayerTodayPage() {
   //    We wrap each lifting fetch in try/catch so a lifting failure never breaks
   //    the baseball today page (the slot simply renders as null).
   const [today, dailyContract, passport, liftingCtx] = await Promise.all([
-    getPlayerToday(context.activeTeamId),
+    getPlayerToday(context.activeTeamId, { forDate: todayIso }),
     getPlayerDailyContract(context.activeTeamId, { forDate: todayIso }),
     getPlayerPassport(context.activeTeamId),
     resolveBaseballLiftingOrg(context.activeTeamId).catch(() => null),
