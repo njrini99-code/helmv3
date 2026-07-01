@@ -661,9 +661,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Illustrative only. The canonical, fully-guarded workflow is
+      # .github/workflows/claude-code.yml (unsafe-label precheck, auth guard,
+      # SHA-pinned actions). Copy from there, not from this snippet.
       - name: Run Claude Code
+        if: ${{ vars.ENABLE_CLAUDE_CODE_ACTION == 'true' }}
         uses: anthropics/claude-code-action@v1
         with:
+          # Provide ONE: subscription token (`claude setup-token`) OR API key.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
             --max-turns 10

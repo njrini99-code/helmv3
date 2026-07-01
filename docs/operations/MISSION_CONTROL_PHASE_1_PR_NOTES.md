@@ -32,7 +32,7 @@ This branch implements the docs/config foundation for Helm Mission Control.
 3. Start n8n on the Mac mini from `N8N_MAC_MINI_SETUP.md`.
 4. Build n8n workflows from `N8N_WORKFLOW_SPECS.md`.
 5. Keep Claude Code workflow disabled until ready.
-6. Add `ANTHROPIC_API_KEY` only after validating the workflow.
+6. Add `CLAUDE_CODE_OAUTH_TOKEN` (subscription, via `claude setup-token`) — or `ANTHROPIC_API_KEY` for API billing — only after validating the workflow.
 7. Set `ENABLE_CLAUDE_CODE_ACTION=true` only after testing on a dummy issue.
 
 ## Partner-readable summary

@@ -29,13 +29,15 @@ jobs:
     timeout-minutes: 45
 
     steps:
+      # Actions are pinned to a full commit SHA (mutable tags can be moved to
+      # attacker-controlled code); the trailing comment records the version.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           fetch-depth: 0
 
       - name: Refuse unsafe labels before agent run
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7
         with:
           script: |
             const issue = context.payload.issue;
@@ -54,17 +56,34 @@ jobs:
               core.setFailed(`Claude auto-run blocked by label(s): ${hit.join(', ')}. Nick must review this manually.`);
             }
 
-      # Enable by setting repository variable ENABLE_CLAUDE_CODE_ACTION=true
-      # and adding ANTHROPIC_API_KEY to repository secrets.
-      # Verify and pin the action version before broad use.
+      # Fail fast with a clear message if the agent is enabled but no auth secret
+      # is configured (secrets can't be read in `if:`, so check them here).
+      - name: Verify Claude auth is configured
+        if: ${{ vars.ENABLE_CLAUDE_CODE_ACTION == 'true' }}
+        env:
+          OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$OAUTH_TOKEN" ] && [ -z "$API_KEY" ]; then
+            echo "::error::ENABLE_CLAUDE_CODE_ACTION is true but no auth secret is set (need CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY)."
+            exit 1
+          fi
+          echo "Claude auth secret present."
+
+      # Disabled until repository variable ENABLE_CLAUDE_CODE_ACTION=true.
+      # Auth (provide ONE; the action uses whichever secret is set, ignores empty):
+      #   - Subscription (Pro/Max): `claude setup-token` -> secret CLAUDE_CODE_OAUTH_TOKEN
+      #     (subscription runs draw on your shared Claude usage limits), OR
+      #   - API billing: secret ANTHROPIC_API_KEY.
       - name: Run Claude Code
         if: ${{ vars.ENABLE_CLAUDE_CODE_ACTION == 'true' }}
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@fad22eb3fa582b7357fc0ea48af6645851b884fd  # v1
         with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: |
             --max-turns 10
-            --append-system-prompt "Follow CLAUDE.md and docs/operations/HELM_MISSION_CONTROL_OS.md. Never push to main. Create a branch and PR. Do not expose secrets. Do not perform high-risk auth, RLS, migration, payment, cron, secret, or destructive-data changes without human review. Include a partner-readable summary and a Git Activity Timeline note."
+            --append-system-prompt "Follow CLAUDE.md and docs/operations/HELM_MISSION_CONTROL_OS.md. Branch + PR only; never push to main. No secrets. High-risk changes require human review."
 
       - name: Agent safety reminder
         if: always()
