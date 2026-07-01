@@ -27,8 +27,10 @@ function CompareContent() {
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
-  // Get player IDs from URL
-  const playerIds = searchParams.get('players')?.split(',').filter(Boolean) || [];
+  // Get player IDs from URL, deduped but preserving first-occurrence order
+  const playerIds = Array.from(
+    new Set(searchParams.get('players')?.split(',').filter(Boolean) || [])
+  );
 
   useEffect(() => {
     async function fetchPlayers() {
@@ -47,7 +49,15 @@ function CompareContent() {
           .in('id', playerIds);
 
         if (error) throw error;
-        setPlayers(data || []);
+
+        // Supabase/Postgres does not guarantee `.in()` results match the
+        // order of the id list, so re-sort fetched players to match the
+        // URL's player order (falling back to omitting any id not found).
+        const byId = new Map((data || []).map((player) => [player.id, player]));
+        const ordered = playerIds
+          .map((id) => byId.get(id))
+          .filter((player): player is Player => Boolean(player));
+        setPlayers(ordered);
       } catch {
         setPlayers([]);
         setLoadError('Player comparison data could not be loaded.');
