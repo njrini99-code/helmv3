@@ -56,7 +56,7 @@ Submit dummy partner bug
 
 Only after dummy tests:
 
-- Add `ANTHROPIC_API_KEY` as repo secret.
+- Add `CLAUDE_CODE_OAUTH_TOKEN` as repo secret (generate with `claude setup-token`; uses your Claude Pro/Max subscription — runs draw on your shared usage limits). Alternatively add `ANTHROPIC_API_KEY` for pay-per-token API billing.
 - Set repo variable `ENABLE_CLAUDE_CODE_ACTION=true`.
 - Test on a docs-only issue.
 - Then test on a low-risk UI issue.

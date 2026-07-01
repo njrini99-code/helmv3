@@ -54,14 +54,19 @@ jobs:
               core.setFailed(`Claude auto-run blocked by label(s): ${hit.join(', ')}. Nick must review this manually.`);
             }
 
-      # Enable by setting repository variable ENABLE_CLAUDE_CODE_ACTION=true
-      # and adding ANTHROPIC_API_KEY to repository secrets.
+      # Enable by setting repository variable ENABLE_CLAUDE_CODE_ACTION=true.
+      # Auth uses a Claude Pro/Max subscription: generate a token locally with
+      #   `claude setup-token`
+      # and store it as the repository secret CLAUDE_CODE_OAUTH_TOKEN.
+      # (Alternative: pay-per-token API billing via `anthropic_api_key:
+      #  ${{ secrets.ANTHROPIC_API_KEY }}` instead of claude_code_oauth_token.)
+      # Note: subscription runs draw on your shared Claude usage limits.
       # Verify and pin the action version before broad use.
       - name: Run Claude Code
         if: ${{ vars.ENABLE_CLAUDE_CODE_ACTION == 'true' }}
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --max-turns 10
             --append-system-prompt "Follow CLAUDE.md and docs/operations/HELM_MISSION_CONTROL_OS.md. Never push to main. Create a branch and PR. Do not expose secrets. Do not perform high-risk auth, RLS, migration, payment, cron, secret, or destructive-data changes without human review. Include a partner-readable summary and a Git Activity Timeline note."

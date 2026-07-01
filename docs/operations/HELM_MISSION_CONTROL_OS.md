@@ -664,7 +664,9 @@ jobs:
       - name: Run Claude Code
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Claude Pro/Max subscription auth (generate with `claude setup-token`).
+          # Or use `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}` for API billing.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --max-turns 10
             --append-system-prompt "Follow CLAUDE.md. Create a branch and PR. Do not push to main. For high-risk changes, stop and ask for human review. Always include a partner-readable summary."
