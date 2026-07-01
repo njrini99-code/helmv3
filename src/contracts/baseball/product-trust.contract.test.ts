@@ -6,12 +6,15 @@ const repo = process.cwd();
 const read = (path: string) => readFileSync(join(repo, path), 'utf8');
 
 describe('Baseball product-trust surface contracts', () => {
-  it('Command Center client accepts explicit load/error props', () => {
-    const src = read('src/components/baseball/command-center/CommandCenterClient.tsx');
+  it('Command Center cover accepts explicit load/error props and renders honest states', () => {
+    const src = read('src/components/baseball/command-center/CommandCenterFairway.tsx');
     expect(src).toContain('riskFeedError');
     expect(src).toContain('loadState');
-    expect(src).toMatch(/loadState === 'error'/);
-    expect(src).toMatch(/loadState === 'unauthorized'/);
+    // Honest degraded/empty states come from the Living-Annual kit (EditorsLetter),
+    // never a yellow warning box: an error branch and a signed STANDING-BY letter.
+    expect(src).toMatch(/riskFeedError \?/);
+    expect(src).toContain('EditorsLetter');
+    expect(src).toMatch(/Standing by/i);
   });
 
   it('DailyBriefPanel distinguishes error vs empty insights', () => {

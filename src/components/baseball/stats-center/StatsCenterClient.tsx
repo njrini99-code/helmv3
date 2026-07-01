@@ -4,53 +4,31 @@
 // src/components/baseball/stats-center/StatsCenterClient.tsx
 //
 // Wave 7 / packet P7.1 — Stats Center hub, client surface.
+// MIGRATED to "The Living Annual" kit (design-system-living-annual.md §6 P1 #5,
+// the "Radar-Gun Stat Wall"): the old wall of identical per-player cards is now
+// an editorial record-book ROSTER SPREAD — a `SectionMasthead`, a team
+// `KPIContentsStrip`, and `PlayerRowPlate` rows under a `PlayerRowPlateHeader`.
+// Each row is a serif name plate + `PositionChip` + a run of `StatReadout`
+// figures for the active side; the team-leader in each column reads GREEN.
 //
-// The staff-facing, team-wide stats browser rendered from the Wave-7 read model
-// (StatsCenterReadModel). Responsibilities:
+// This is a PRESENTATION migration only. The data source (getStatsCenter read
+// model), the server action re-fetch (loadStatsCenter — auth + RLS enforced
+// there), the batting/pitching side switch, the official/all (scrimmage)
+// toggle, URL persistence, CSV export, and the honest authorized/error/empty
+// envelopes are all preserved exactly.
 //
-//   - BROWSE: a player grid (grid-cols-1 sm:2 xl:3) of per-player batting +
-//     pitching cards, each showing the read-model-derived OFFICIAL vs ALL-games
-//     splits with a single honest toggle between them.
-//   - FILTER: by position (multi), by side of the ball (batting / pitching /
-//     both), and by a game-date window, plus a season selector. Filters are
-//     URL-PERSISTED (router.replace with searchParams) so a shared link
-//     reproduces the view, and re-applied server-side via the loadStatsCenter
-//     action (auth + can_manage_stats enforced there) — never client-trusted.
-//   - OFFICIAL vs SCRIMMAGE: the read model derives both splits from per-game
-//     box scores joined on game_type; this surface only chooses which split to
-//     show. The season-stat reconcile flag is surfaced honestly per player.
-//   - EXPORT: client-side CSV of the currently-filtered rows for the chosen
-//     split — no server round-trip, no fabricated columns.
-//
-// HONEST STATES: unauthorized (not staff) / error / empty / loading are all
-// real, labeled, recoverable, and never use a black page background. Players
-// with zero captured lines render a "no data yet" card rather than a fake .000.
-//
-// UI: reuses GolfHelm primitives (Card / EmptyState / Button) + cream/green
-// tokens + glass/matte patterns. Motion via LazyMotion/domAnimation honoring
-// prefers-reduced-motion. tabular-nums on every stat.
+// HONEST STATES (spec §7, "no yellow warning boxes"): unauthorized (not staff),
+// whole-team-no-data, and per-spread empties render composed editorial letters
+// (`EditorsLetter` / `EmptyIssue`), never a fabricated .000 and never a yellow
+// alert box. Players with `noData` sort last and render as quiet ghost rows.
 // =============================================================================
 
-import { useCallback, useState, useTransition } from 'react';
-import Link from 'next/link';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
-import { Card } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import {
-  IconChartBar,
-  IconFilter,
-  IconDownload,
-  IconUsers,
-  IconBaseball,
-  IconDatabase,
-  IconAlertCircle,
-  IconCheckCircle2,
-  IconChevronRight,
-  IconX,
-} from '@/components/icons';
+import { IconDownload, IconFilter, IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { loadStatsCenter } from '@/app/baseball/actions/games';
 // V10 stat-visual chart gallery (stat-visuals packet). Mounted at team scope; it
@@ -58,19 +36,29 @@ import { loadStatsCenter } from '@/app/baseball/actions/games';
 // granular event inputs, so it is safe to ship before that wiring lands.
 import { StatVisualsSection, useStatVisualViews } from '@/components/baseball/stat-visuals';
 import type { StatVisualsData } from '@/components/baseball/stat-visuals/StatVisualsSection';
+import {
+  SectionMasthead,
+  KPIContentsStrip,
+  PlayerRowPlate,
+  PlayerRowPlateHeader,
+  EmptyIssue,
+  EditorsLetter,
+  Eyebrow,
+  HairlineRule,
+  formatRate,
+  formatRatio,
+} from '@/components/baseball/living-annual';
+import type { PlayerRowStat } from '@/components/baseball/living-annual';
 import type {
   StatsCenterReadModel,
   StatsCenterRow,
   BattingSplit,
   PitchingSplit,
-  CatchingSplit,
-  FieldingSplit,
-  BaserunningSplit,
   StatSide,
 } from '@/lib/baseball/read-models/stats-center';
 
 // -----------------------------------------------------------------------------
-// Props + local filter state
+// Props + local view state
 // -----------------------------------------------------------------------------
 
 interface InitialFilters {
@@ -92,37 +80,14 @@ interface StatsCenterClientProps {
   statVisualsData?: StatVisualsData;
 }
 
-/** Which game-set the grid currently shows. */
+/** Which game-set the wall currently shows. */
 type GameSet = 'official' | 'all';
 
+const EM_DASH = '—';
+
 // -----------------------------------------------------------------------------
-// Formatting
+// Formatting (CSV + labels)
 // -----------------------------------------------------------------------------
-
-/** Baseball rate display: .305 / 3.21. null -> em dash. */
-function rate(n: number | null, decimals = 3, dropLeadingZero = true): string {
-  if (n === null || Number.isNaN(n)) return '—';
-  const fixed = n.toFixed(decimals);
-  if (dropLeadingZero && fixed.startsWith('0.')) return fixed.slice(1);
-  if (dropLeadingZero && fixed.startsWith('-0.')) return `-${fixed.slice(2)}`;
-  return fixed;
-}
-
-function int(n: number | null | undefined): string {
-  if (n === null || n === undefined || Number.isNaN(n)) return '0';
-  return String(n);
-}
-
-/** Percent display from a 0..1 ratio: .182 -> "18.2%". null -> em dash. */
-function pct(n: number | null): string {
-  if (n === null || Number.isNaN(n)) return '—';
-  return `${(n * 100).toFixed(1)}%`;
-}
-
-function ip(n: number | null): string {
-  if (n === null || Number.isNaN(n)) return '0.0';
-  return n.toFixed(1);
-}
 
 function playerName(row: StatsCenterRow): string {
   const name = [row.firstName, row.lastName].filter(Boolean).join(' ').trim();
@@ -139,381 +104,139 @@ function prettyPosition(value: string | null): string {
 }
 
 // -----------------------------------------------------------------------------
-// Stat tiles
+// Record-book column specs — the headline "run" of figures per side. Rate stats
+// (AVG/OBP/SLG, ERA/WHIP) render pre-formatted the baseball way via
+// formatRate/formatRatio (static string); counting stats roll on the odometer
+// (numeric). Deep stats live on the per-player drill-in.
 // -----------------------------------------------------------------------------
 
-/** A compact label/value stat cell. `accent` highlights a headline rate. */
-function StatPair({
-  label,
-  value,
-  accent,
-  title,
-}: {
+type LeaderDir = 'high' | 'low' | null;
+
+interface StatColSpec<S> {
   label: string;
-  value: string;
-  accent?: boolean;
-  title?: string;
-}) {
-  return (
-    <div className="flex flex-col" title={title}>
-      <span className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
-        {label}
-      </span>
-      <span
-        className={cn(
-          'text-sm font-semibold tabular-nums',
-          accent ? 'text-primary-700' : 'text-warm-900',
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
+  /** Leader metric — `null` value or `null` reader excludes the column from leaders. */
+  read: (s: S) => number | null;
+  /** Which direction wins the column (`null` = no leader treatment). */
+  dir: LeaderDir;
+  /** The display figure (string → static, number → odometer). */
+  cell: (s: S) => number | string;
 }
 
-/** The headline four-stat "hero" row for a family (e.g. the slash line). */
-function HeroLine({ items }: { items: { label: string; value: string }[] }) {
-  return (
-    <div className="mb-2.5 grid grid-cols-4 gap-2 rounded-xl bg-warm-50/70 px-3 py-2">
-      {items.map((it) => (
-        <div key={it.label} className="flex flex-col items-center text-center">
-          <span className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
-            {it.label}
-          </span>
-          <span className="text-base font-bold tabular-nums text-warm-900">
-            {it.value}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
+const BATTING_COLS: ReadonlyArray<StatColSpec<BattingSplit>> = [
+  { label: 'AVG', read: (b) => b.avg, dir: 'high', cell: (b) => (b.avg === null ? EM_DASH : formatRate(b.avg, 3)) },
+  { label: 'OBP', read: (b) => b.obp, dir: 'high', cell: (b) => (b.obp === null ? EM_DASH : formatRate(b.obp, 3)) },
+  { label: 'SLG', read: (b) => b.slg, dir: 'high', cell: (b) => (b.slg === null ? EM_DASH : formatRate(b.slg, 3)) },
+  { label: 'HR', read: (b) => b.hr, dir: 'high', cell: (b) => b.hr },
+  { label: 'RBI', read: (b) => b.rbi, dir: 'high', cell: (b) => b.rbi },
+  { label: 'SB', read: (b) => b.sb, dir: 'high', cell: (b) => b.sb },
+];
+
+const PITCHING_COLS: ReadonlyArray<StatColSpec<PitchingSplit>> = [
+  { label: 'ERA', read: (p) => p.era, dir: 'low', cell: (p) => (p.era === null ? EM_DASH : formatRatio(p.era, 2)) },
+  { label: 'WHIP', read: (p) => p.whip, dir: 'low', cell: (p) => (p.whip === null ? EM_DASH : formatRatio(p.whip, 2)) },
+  // IP is stored in the .1/.2 (outs) convention already — display verbatim, no odometer.
+  { label: 'IP', read: () => null, dir: null, cell: (p) => p.ip.toFixed(1) },
+  { label: 'K', read: (p) => p.k, dir: 'high', cell: (p) => p.k },
+  { label: 'W-L', read: () => null, dir: null, cell: (p) => `${p.w}-${p.l}` },
+  { label: 'SV', read: (p) => p.sv, dir: 'high', cell: (p) => p.sv },
+];
+
+/**
+ * For each column, the set of player ids that lead it (green). A column needs at
+ * least two non-null values to have a meaningful "leader" — so a lone qualifier
+ * is never crowned. Ties are all marked.
+ */
+function computeLeaders<S>(
+  rows: StatsCenterRow[],
+  split: (r: StatsCenterRow) => S,
+  cols: ReadonlyArray<StatColSpec<S>>,
+): Array<Set<string>> {
+  return cols.map((col) => {
+    const ids = new Set<string>();
+    if (!col.dir) return ids;
+    const vals: Array<{ id: string; v: number }> = [];
+    for (const r of rows) {
+      const v = col.read(split(r));
+      if (v !== null && Number.isFinite(v)) vals.push({ id: r.playerId, v });
+    }
+    if (vals.length < 2) return ids;
+    let best: number | null = null;
+    for (const { v } of vals) best = best === null ? v : col.dir === 'high' ? Math.max(best, v) : Math.min(best, v);
+    if (best === null) return ids;
+    for (const { id, v } of vals) if (v === best) ids.add(id);
+    return ids;
+  });
 }
 
-/** Section header for a stat family inside a player card. */
-function FamilyHeading({
-  title,
-  meta,
-}: {
-  title: string;
-  meta?: string;
-}) {
-  return (
-    <div className="mb-1.5 flex items-baseline justify-between gap-2">
-      <p className="text-eyebrow font-semibold uppercase tracking-wide text-warm-500">
-        {title}
-      </p>
-      {meta && (
-        <p className="text-eyebrow font-medium tabular-nums text-warm-400">{meta}</p>
-      )}
-    </div>
-  );
-}
-
-function BattingBlock({ b }: { b: BattingSplit }) {
-  return (
-    <div>
-      <HeroLine
-        items={[
-          { label: 'AVG', value: rate(b.avg) },
-          { label: 'OBP', value: rate(b.obp) },
-          { label: 'SLG', value: rate(b.slg) },
-          { label: 'OPS', value: rate(b.ops) },
-        ]}
-      />
-      <div className="grid grid-cols-4 gap-x-3 gap-y-2.5">
-        <StatPair label="G" value={int(b.g)} />
-        <StatPair label="PA" value={int(b.pa)} />
-        <StatPair label="AB" value={int(b.ab)} />
-        <StatPair label="H" value={int(b.h)} />
-        <StatPair label="2B" value={int(b.doubles)} />
-        <StatPair label="3B" value={int(b.triples)} />
-        <StatPair label="HR" value={int(b.hr)} />
-        <StatPair label="TB" value={int(b.tb)} />
-        <StatPair label="RBI" value={int(b.rbi)} />
-        <StatPair label="R" value={int(b.r)} />
-        <StatPair label="BB" value={int(b.bb)} />
-        <StatPair label="K" value={int(b.k)} />
-        <StatPair label="HBP" value={int(b.hbp)} />
-        <StatPair label="SF" value={int(b.sf)} />
-        <StatPair label="SH" value={int(b.sac)} />
-        <StatPair label="GIDP" value={int(b.gidp)} />
-        <StatPair label="ISO" value={rate(b.iso)} title="Isolated power (SLG − AVG)" />
-        <StatPair label="BB%" value={pct(b.bbPct)} title="Walk rate (BB / PA)" />
-        <StatPair label="K%" value={pct(b.kPct)} title="Strikeout rate (K / PA)" />
-        <StatPair label="BB/K" value={rate(b.bbK, 2, false)} />
-        <StatPair label="XBH%" value={pct(b.xbhPct)} title="Extra-base-hit rate (XBH / H)" />
-        <StatPair label="SB" value={`${int(b.sb)}/${int(b.sb + b.cs)}`} title="Stolen bases / attempts" />
-        <StatPair label="SB%" value={pct(b.sbPct)} title="Stolen-base success" />
-        <StatPair label="2-out RBI" value={int(b.twoOutRbi)} />
-        <StatPair label="LOB" value={int(b.lob)} title="Left on base" />
-        <StatPair label="ROE" value={int(b.roe)} title="Reached on error" />
-        <StatPair label="RC" value={rate(b.rc, 1, false)} title="Runs created estimate" />
-        <StatPair label="wOBA*" value={rate(b.wobaEst)} title="wOBA estimate from box-score grain" />
-      </div>
-    </div>
-  );
-}
-
-function PitchingBlock({ p }: { p: PitchingSplit }) {
-  return (
-    <div>
-      <HeroLine
-        items={[
-          { label: 'ERA', value: rate(p.era, 2, false) },
-          { label: 'WHIP', value: rate(p.whip, 2, false) },
-          { label: 'K/9', value: rate(p.k9, 1, false) },
-          { label: 'oppBA', value: rate(p.oppBa) },
-        ]}
-      />
-      <div className="grid grid-cols-4 gap-x-3 gap-y-2.5">
-        <StatPair label="APP" value={int(p.g)} title="Appearances" />
-        <StatPair label="GS" value={int(p.gs)} />
-        <StatPair label="GF" value={int(p.gf)} />
-        <StatPair label="W-L" value={`${int(p.w)}-${int(p.l)}`} />
-        <StatPair label="SV" value={int(p.sv)} />
-        <StatPair label="HLD" value={int(p.holds)} title="Holds" />
-        <StatPair label="BS" value={int(p.blownSaves)} title="Blown saves" />
-        <StatPair label="CG" value={int(p.cg)} title="Complete games" />
-        <StatPair label="SHO" value={int(p.sho)} title="Shutouts" />
-        <StatPair label="IP" value={ip(p.ip)} />
-        <StatPair label="BF" value={int(p.bf)} title="Batters faced" />
-        <StatPair label="H" value={int(p.h)} />
-        <StatPair label="R" value={int(p.r)} />
-        <StatPair label="ER" value={int(p.er)} />
-        <StatPair label="BB" value={int(p.bb)} />
-        <StatPair label="K" value={int(p.k)} />
-        <StatPair label="HBP" value={int(p.hbp)} />
-        <StatPair label="WP" value={int(p.wp)} title="Wild pitches" />
-        <StatPair label="BK" value={int(p.balk)} title="Balks" />
-        <StatPair label="HR" value={int(p.hr)} />
-        <StatPair label="BB/9" value={rate(p.bb9, 1, false)} />
-        <StatPair label="HR/9" value={rate(p.hr9, 1, false)} />
-        <StatPair label="H/9" value={rate(p.h9, 1, false)} />
-        <StatPair label="K%" value={pct(p.kPct)} title="K / BF" />
-        <StatPair label="BB%" value={pct(p.bbPct)} title="BB / BF" />
-        <StatPair label="oppBA" value={rate(p.oppBa)} title="Opponent batting average" />
-        <StatPair label="Str%" value={pct(p.strikePct)} title="Strike percentage" />
-        <StatPair label="FPS%" value={pct(p.fpsPct)} title="First-pitch-strike %" />
-        <StatPair label="LOB%" value={pct(p.lobPct)} title="Left-on-base %" />
-        <StatPair label="IR-S" value={`${int(p.inheritedRunnersScored)}/${int(p.inheritedRunners)}`} title="Inherited runners scored / total" />
-      </div>
-    </div>
-  );
-}
-
-function CatchingBlock({ c }: { c: CatchingSplit }) {
-  return (
-    <div className="grid grid-cols-4 gap-x-3 gap-y-2.5">
-      <StatPair label="G" value={int(c.g)} />
-      <StatPair label="CS" value={int(c.caughtStealing)} title="Caught stealing" />
-      <StatPair label="SBA" value={int(c.stolenBasesAllowed)} title="Stolen bases allowed" />
-      <StatPair label="CS%" value={pct(c.csPct)} />
-      <StatPair label="PO" value={int(c.pickoffs)} title="Pickoffs" />
-      <StatPair label="BLK" value={`${int(c.blocksMade)}/${int(c.blockOpportunities)}`} title="Blocks made / opportunities" />
-      <StatPair label="BLK%" value={pct(c.blockPct)} />
-      <StatPair label="PB" value={int(c.passedBalls)} title="Passed balls" />
-      <StatPair label="Pop" value={c.popTimeAvg != null ? `${c.popTimeAvg.toFixed(2)}s` : '—'} title="Average pop time" />
-    </div>
-  );
-}
-
-function FieldingBlock({ f }: { f: FieldingSplit }) {
-  return (
-    <div className="grid grid-cols-4 gap-x-3 gap-y-2.5">
-      <StatPair label="G" value={int(f.g)} />
-      <StatPair label="PO" value={int(f.putouts)} title="Putouts" />
-      <StatPair label="A" value={int(f.assists)} title="Assists" />
-      <StatPair label="E" value={int(f.errors)} title="Errors" />
-      <StatPair label="TC" value={int(f.chances)} title="Total chances" />
-      <StatPair label="DP" value={int(f.doublePlays)} title="Double plays" />
-      <StatPair label="FLD%" value={rate(f.fldPct)} title="Fielding percentage" />
-      <StatPair label="Rtn%" value={pct(f.routinePct)} title="Routine-play conversion" />
-    </div>
-  );
-}
-
-function BaserunningBlock({ b }: { b: BaserunningSplit }) {
-  return (
-    <div className="grid grid-cols-4 gap-x-3 gap-y-2.5">
-      <StatPair label="G" value={int(b.g)} />
-      <StatPair label="SB" value={int(b.stolenBases)} />
-      <StatPair label="CS" value={int(b.caughtStealing)} />
-      <StatPair label="SB%" value={pct(b.sbPct)} />
-      <StatPair label="PO" value={int(b.pickoffs)} title="Picked off" />
-      <StatPair label="XBT" value={int(b.extraBasesTaken)} title="Extra bases taken" />
-      <StatPair label="OOB" value={int(b.outsOnBases)} title="Outs on bases" />
-      <StatPair label="H-1B" value={b.homeToFirstAvg != null ? `${b.homeToFirstAvg.toFixed(2)}s` : '—'} title="Average home-to-first" />
-    </div>
-  );
-}
+const playerHref = (row: StatsCenterRow) => `/baseball/dashboard/players/${row.playerId}/stats`;
 
 // -----------------------------------------------------------------------------
-// Player card — re-composed as a scannable per-player stat sheet. Hierarchy:
-// identity + reconcile badge → each stat FAMILY that has data, batting/pitching
-// first (box-score truth), then catching/fielding/baserunning (official events).
-// Families with no data are omitted, never shown as fake zeros.
+// One record-book spread (a header + the roster rows for one side of the ball).
 // -----------------------------------------------------------------------------
 
-function PlayerStatCard({
-  row,
-  gameSet,
-  side,
+function StatSpread({
+  heading,
+  columns,
+  realRows,
+  ghostRows,
+  buildStats,
+  emptyTitle,
+  emptyBody,
 }: {
-  row: StatsCenterRow;
-  gameSet: GameSet;
-  side: StatSide | null;
+  heading: string;
+  columns: string[];
+  realRows: StatsCenterRow[];
+  ghostRows: StatsCenterRow[];
+  buildStats: (row: StatsCenterRow) => PlayerRowStat[];
+  emptyTitle: string;
+  emptyBody: string;
 }) {
-  const batting = gameSet === 'official' ? row.battingOfficial : row.battingAll;
-  const pitching = gameSet === 'official' ? row.pitchingOfficial : row.pitchingAll;
-  const showBatting = side !== 'pitching';
-  const showPitching = side !== 'batting';
-
-  const hasPitching = pitching.g > 0;
-  const hasBatting = batting.g > 0;
-  // Defensive/baserunning splits are OFFICIAL-only (event-derived); show them
-  // regardless of the official/all toggle and only when events were captured.
-  const hasCatching = row.catchingOfficial.events > 0;
-  const hasFielding = row.fieldingOfficial.events > 0;
-  const hasBaserunning = row.baserunningOfficial.events > 0;
+  const hasRows = realRows.length > 0 || ghostRows.length > 0;
+  const ghostStats: PlayerRowStat[] = columns.map(() => ({ value: EM_DASH }));
 
   return (
-    <Card variant="raised" padding="md" className="flex h-full flex-col gap-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href={`/baseball/dashboard/players/${row.playerId}`}
-            className="group/name -m-1 flex min-w-0 items-center gap-2 rounded-lg p-1 transition-colors hover:bg-warm-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-            title={`Open ${playerName(row)}'s profile`}
-          >
-            {row.jerseyNumber !== null && (
-              <span className="flex h-7 min-w-7 items-center justify-center rounded-lg bg-primary-50 px-1.5 text-sm font-semibold tabular-nums text-primary-700">
-                {row.jerseyNumber}
-              </span>
-            )}
-            <h3 className="truncate text-base font-semibold text-warm-900 transition-colors group-hover/name:text-primary-700">
-              {playerName(row)}
-            </h3>
-            <IconChevronRight
-              size={16}
-              className="shrink-0 text-warm-300 opacity-0 transition-all group-hover/name:translate-x-0.5 group-hover/name:text-primary-600 group-hover/name:opacity-100 group-focus-visible/name:opacity-100"
-            />
-          </Link>
-          <p className="mt-0.5 pl-1 text-sm text-warm-500">
-            {prettyPosition(row.primaryPosition)}
-          </p>
-        </div>
-        {row.reconcile.hasSeasonRow && (
-          row.reconcile.reconciled ? (
-            <span
-              className="flex shrink-0 items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-eyebrow font-semibold text-primary-700"
-              title="Official totals match the stored season line."
-            >
-              <IconCheckCircle2 size={12} />
-              Reconciled
-            </span>
-          ) : (
-            <span
-              className="flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-eyebrow font-semibold text-amber-700"
-              title="Box-score-derived official totals differ from the stored season line — recalculate season stats."
-            >
-              <IconAlertCircle size={12} />
-              Needs recalc
-            </span>
-          )
-        )}
-      </div>
-
-      {row.noData ? (
-        <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-warm-200 bg-warm-50/60 px-4 py-6 text-center">
-          <p className="text-sm text-warm-500">
-            No box-score lines or events captured yet this season.
-          </p>
+    <section className="flex flex-col gap-3">
+      <Eyebrow ink="team">{heading}</Eyebrow>
+      {hasRows ? (
+        // Mobile: the fixed stat-column grid scrolls horizontally as one plate.
+        <div className="overflow-x-auto">
+          <div className="min-w-[680px]">
+            <PlayerRowPlateHeader columns={columns} />
+            {realRows.map((row) => (
+              <PlayerRowPlate
+                key={row.playerId}
+                firstName={row.firstName ?? ''}
+                lastName={row.lastName ?? ''}
+                jerseyNumber={row.jerseyNumber ?? undefined}
+                position={row.primaryPosition ?? undefined}
+                stats={buildStats(row)}
+                href={playerHref(row)}
+              />
+            ))}
+            {/* noData players — quiet ghost rows, honest em-dashes, sorted last. */}
+            {ghostRows.map((row) => (
+              <div key={row.playerId} className="opacity-45">
+                <PlayerRowPlate
+                  firstName={row.firstName ?? ''}
+                  lastName={row.lastName ?? ''}
+                  jerseyNumber={row.jerseyNumber ?? undefined}
+                  position={row.primaryPosition ?? undefined}
+                  stats={ghostStats}
+                  href={playerHref(row)}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
-        <div className="flex flex-1 flex-col gap-4">
-          {showBatting && (
-            <div>
-              <FamilyHeading
-                title="Batting"
-                meta={hasBatting ? `${int(batting.g)} G · ${int(batting.pa)} PA` : 'no appearances'}
-              />
-              {hasBatting ? (
-                <BattingBlock b={batting} />
-              ) : (
-                <p className="text-sm text-warm-400">No batting lines in this game set.</p>
-              )}
-            </div>
-          )}
-          {showPitching && (
-            <div>
-              <FamilyHeading
-                title="Pitching"
-                meta={hasPitching ? `${int(pitching.g)} APP · ${ip(pitching.ip)} IP` : 'no appearances'}
-              />
-              {hasPitching ? (
-                <PitchingBlock p={pitching} />
-              ) : (
-                <p className="text-sm text-warm-400">No pitching appearances in this game set.</p>
-              )}
-            </div>
-          )}
-          {hasCatching && (
-            <div>
-              <FamilyHeading
-                title="Catching"
-                meta={`${int(row.catchingOfficial.g)} G · official events`}
-              />
-              <CatchingBlock c={row.catchingOfficial} />
-            </div>
-          )}
-          {hasFielding && (
-            <div>
-              <FamilyHeading
-                title="Fielding"
-                meta={`${int(row.fieldingOfficial.g)} G · official events`}
-              />
-              <FieldingBlock f={row.fieldingOfficial} />
-            </div>
-          )}
-          {hasBaserunning && (
-            <div>
-              <FamilyHeading
-                title="Baserunning"
-                meta={`${int(row.baserunningOfficial.g)} G · official events`}
-              />
-              <BaserunningBlock b={row.baserunningOfficial} />
-            </div>
-          )}
-        </div>
+        <EditorsLetter ink="team" title={emptyTitle} body={emptyBody} />
       )}
-
-      {/* Drill-in footer — pinned to the bottom so every card aligns. Profile
-          drill lives on the name above; this is the explicit deep-stats route,
-          matching the roster card's "View stats" affordance. */}
-      <div className="mt-auto flex items-center justify-between gap-2 border-t border-warm-100 pt-3">
-        <Link
-          href={`/baseball/dashboard/players/${row.playerId}`}
-          className="rounded-lg px-2 py-1 text-sm font-medium text-warm-500 transition-colors hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-        >
-          View profile
-        </Link>
-        <Link
-          href={`/baseball/dashboard/players/${row.playerId}/stats`}
-          className="group/stats flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-primary-700 transition-colors hover:text-primary-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-        >
-          Full stats
-          <IconChevronRight
-            size={16}
-            className="transition-transform group-hover/stats:translate-x-0.5"
-          />
-        </Link>
-      </div>
-    </Card>
+    </section>
   );
 }
 
 // -----------------------------------------------------------------------------
-// CSV export (client-side, current filtered rows + chosen split)
+// CSV export (client-side, current filtered rows + chosen split) — UNCHANGED.
 // -----------------------------------------------------------------------------
 
 function csvCell(value: string | number | null): string {
@@ -604,79 +327,7 @@ function downloadCsv(filename: string, contents: string) {
 }
 
 // -----------------------------------------------------------------------------
-// Summary strip
-// -----------------------------------------------------------------------------
-
-function SummaryStrip({ model }: { model: StatsCenterReadModel }) {
-  const tiles = [
-    {
-      label: 'Players',
-      value: model.summary.rosterSize,
-      icon: <IconUsers size={18} />,
-      tone: 'text-warm-600',
-      bg: 'bg-warm-100',
-    },
-    {
-      label: 'With Data',
-      value: model.summary.playersWithData,
-      icon: <IconChartBar size={18} />,
-      tone: 'text-primary-600',
-      bg: 'bg-primary-50',
-    },
-    {
-      label: 'Official Games',
-      value: model.summary.officialGames,
-      icon: <IconBaseball size={18} />,
-      tone: 'text-warm-600',
-      bg: 'bg-warm-100',
-    },
-    {
-      label: 'Scrimmages',
-      value: model.summary.scrimmages,
-      icon: <IconDatabase size={18} />,
-      tone: 'text-warm-600',
-      bg: 'bg-warm-100',
-    },
-    {
-      label: 'Need Recalc',
-      value: model.summary.unreconciled,
-      icon: <IconAlertCircle size={18} />,
-      tone: model.summary.unreconciled > 0 ? 'text-amber-600' : 'text-warm-600',
-      bg: model.summary.unreconciled > 0 ? 'bg-amber-50' : 'bg-warm-100',
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-      {tiles.map((t) => (
-        <Card key={t.label} variant="raised" padding="md">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
-                {t.label}
-              </p>
-              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-warm-900">
-                {t.value}
-              </p>
-            </div>
-            <span
-              className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-xl',
-                t.bg,
-                t.tone,
-              )}
-            >
-              {t.icon}
-            </span>
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Filter controls
+// Filter controls (chrome) — behavior preserved from the pre-migration surface.
 // -----------------------------------------------------------------------------
 
 const SIDE_OPTIONS: { value: StatSide | 'both'; label: string }[] = [
@@ -685,9 +336,9 @@ const SIDE_OPTIONS: { value: StatSide | 'both'; label: string }[] = [
   { value: 'pitching', label: 'Pitching' },
 ];
 
-const GAME_SET_OPTIONS: { value: GameSet; label: string; hint: string }[] = [
-  { value: 'official', label: 'Official', hint: 'Games only' },
-  { value: 'all', label: 'All games', hint: 'Incl. scrimmages' },
+const GAME_SET_OPTIONS: { value: GameSet; label: string }[] = [
+  { value: 'official', label: 'Official' },
+  { value: 'all', label: 'All games' },
 ];
 
 function SegmentedControl<T extends string>({
@@ -705,7 +356,7 @@ function SegmentedControl<T extends string>({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className="inline-flex rounded-xl border border-warm-200 bg-cream-50 p-1"
+      className="inline-flex rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)] p-1"
     >
       {options.map((opt) => {
         const active = opt.value === value;
@@ -719,10 +370,10 @@ function SegmentedControl<T extends string>({
             onClick={() => onChange(opt.value)}
             haptic="none"
             className={cn(
-              'min-h-0 rounded-lg px-3 py-1.5 text-sm font-medium',
+              'min-h-0 rounded-md px-3 py-1.5 text-sm font-medium',
               active
-                ? 'bg-primary-600 text-white shadow-sm hover:bg-primary-600'
-                : 'text-warm-600 hover:bg-warm-100',
+                ? 'bg-grade-plus text-white shadow-sm hover:bg-grade-plus'
+                : 'text-text-secondary hover:bg-[color:var(--paper-canvas)]',
             )}
           >
             {opt.label}
@@ -740,7 +391,7 @@ function SegmentedControl<T extends string>({
 export function StatsCenterClient({ model: initialModel, initialFilters, statVisualsData }: StatsCenterClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const prefersReducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotion() ?? false;
   const [isPending, startTransition] = useTransition();
 
   // The model is refreshed in place when server-side filters change.
@@ -759,13 +410,11 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
   // Client-only view state (no re-query needed).
   const [gameSet, setGameSet] = useState<GameSet>('official');
 
-  // Position options come from the (always full-roster) server model.
   const positionOptions = model.positions;
 
-  // ---- URL persistence + server re-fetch -----------------------------------
+  // ---- URL persistence + server re-fetch (auth + RLS enforced server-side) ----
   const applyFilters = useCallback(
     (next: { seasonYear: number; positions: string[]; side: StatSide | 'both' }) => {
-      // 1. Persist to the URL so the view is shareable / bookmarkable.
       const params = new URLSearchParams(searchParams.toString());
       params.set('season', String(next.seasonYear));
       if (next.positions.length > 0) params.set('positions', next.positions.join(','));
@@ -774,7 +423,6 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
       else params.set('side', next.side);
       router.replace(`?${params.toString()}`, { scroll: false });
 
-      // 2. Re-query the read model server-side (auth + capability enforced there).
       startTransition(async () => {
         setRefetchError(null);
         try {
@@ -787,7 +435,6 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
           });
           setModel(fresh);
         } catch {
-          // withBaseballAction sanitizes the error; show a recoverable message.
           setRefetchError('We could not refresh the stats. Please try again.');
         }
       });
@@ -829,274 +476,288 @@ export function StatsCenterClient({ model: initialModel, initialFilters, statVis
     applyFilters({ seasonYear, positions: [], side: 'both' });
   }, [seasonYear, applyFilters]);
 
-  const sideForCards: StatSide | null = side === 'both' ? null : side;
   const hasActiveFilters = positions.length > 0 || side !== 'both';
 
   const rows = model.rows;
-  // When EVERY rostered player has zero captured box-score lines, a grid of N
-  // identical "no data" cards reads as broken. Collapse to one honest, premium
-  // team-level empty state (the moment any player has a line, the grid returns).
   const allNoData = rows.length > 0 && rows.every((r) => r.noData);
 
   const handleExport = useCallback(() => {
     const csv = buildCsv(rows, gameSet);
-    downloadCsv(
-      `stats-center-${model.seasonYear}-${gameSet}.csv`,
-      csv,
-    );
+    downloadCsv(`stats-center-${model.seasonYear}-${gameSet}.csv`, csv);
   }, [rows, gameSet, model.seasonYear]);
 
-  // ---- Unauthorized envelope (not staff) -----------------------------------
+  // ---- Derived record-book lists + column leaders --------------------------
+  const battingRows = useMemo(
+    () => rows.filter((r) => !r.noData && (gameSet === 'official' ? r.battingOfficial : r.battingAll).g > 0),
+    [rows, gameSet],
+  );
+  const pitchingRows = useMemo(
+    () => rows.filter((r) => !r.noData && (gameSet === 'official' ? r.pitchingOfficial : r.pitchingAll).g > 0),
+    [rows, gameSet],
+  );
+  const ghostRows = useMemo(() => rows.filter((r) => r.noData), [rows]);
+
+  const battingLeaders = useMemo(
+    () => computeLeaders(battingRows, (r) => (gameSet === 'official' ? r.battingOfficial : r.battingAll), BATTING_COLS),
+    [battingRows, gameSet],
+  );
+  const pitchingLeaders = useMemo(
+    () => computeLeaders(pitchingRows, (r) => (gameSet === 'official' ? r.pitchingOfficial : r.pitchingAll), PITCHING_COLS),
+    [pitchingRows, gameSet],
+  );
+
+  const buildBattingStats = useCallback(
+    (row: StatsCenterRow): PlayerRowStat[] => {
+      const b = gameSet === 'official' ? row.battingOfficial : row.battingAll;
+      return BATTING_COLS.map((col, i) => ({ value: col.cell(b), leader: battingLeaders[i]?.has(row.playerId) ?? false }));
+    },
+    [gameSet, battingLeaders],
+  );
+  const buildPitchingStats = useCallback(
+    (row: StatsCenterRow): PlayerRowStat[] => {
+      const p = gameSet === 'official' ? row.pitchingOfficial : row.pitchingAll;
+      return PITCHING_COLS.map((col, i) => ({ value: col.cell(p), leader: pitchingLeaders[i]?.has(row.playerId) ?? false }));
+    },
+    [gameSet, pitchingLeaders],
+  );
+
+  const showBatting = side !== 'pitching';
+  const showPitching = side !== 'batting';
+  // Ghost (noData) tail hangs on the primary spread only (batting when shown).
+  const battingGhosts = showBatting ? ghostRows : [];
+  const pitchingGhosts = showBatting ? [] : ghostRows;
+
+  const seasonContext = gameSet === 'official' ? 'OFFICIAL GAMES' : 'ALL GAMES · INCL. SCRIMMAGES';
+  const eyebrow = [`${model.seasonYear} SEASON`, seasonContext, side !== 'both' ? side.toUpperCase() : null]
+    .filter(Boolean)
+    .join(' · ');
+
+  const mastheadActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <SegmentedControl options={GAME_SET_OPTIONS} value={gameSet} onChange={setGameSet} ariaLabel="Game set" />
+      <Button
+        variant="secondary"
+        size="md"
+        leftIcon={<IconDownload size={16} />}
+        onClick={handleExport}
+        disabled={rows.length === 0}
+      >
+        Export CSV
+      </Button>
+    </div>
+  );
+
+  // ---- Unauthorized envelope (not staff) — honest editorial letter ----------
   if (!model.authorized) {
     return (
-      <div className="min-h-dvh bg-cream-100">
-        <div className="mx-auto max-w-[1536px] px-4 py-12 sm:px-6">
-          <EmptyState
-            variant="card"
-            icon={<IconChartBar size={48} className="text-warm-300" />}
-            title="Stats Center is for coaching staff"
-            description="Your account isn't a staff member on this team, so team-wide stats aren't available here."
-            action={{ label: 'Back to dashboard', href: '/baseball/dashboard' }}
+      <LazyMotion features={domAnimation}>
+        <div className="mx-auto w-full max-w-[1536px] px-4 py-12 sm:px-6">
+          <EditorsLetter
+            ink="team"
+            title="Stats Center is for coaching staff."
+            body="Your account isn’t a staff member on this team, so team-wide stats aren’t available here."
+            action={
+              <Button variant="secondary" size="md" onClick={() => router.push('/baseball/dashboard')}>
+                Back to dashboard
+              </Button>
+            }
           />
         </div>
-      </div>
+      </LazyMotion>
     );
   }
 
-  // ---- Authorized view ------------------------------------------------------
+  // ---- Authorized record-book spread ---------------------------------------
   return (
     <LazyMotion features={domAnimation}>
-      <div className="min-h-dvh bg-cream-100">
-        <div className="mx-auto max-w-[1536px] px-4 py-8 sm:px-6">
-          {/* Header */}
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-eyebrow font-semibold uppercase tracking-wide text-primary-600">
-                {model.seasonYear} Season
-              </p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-warm-900">
-                Stats Center
-              </h1>
-              <p className="mt-1 text-sm text-warm-500">
-                Team-wide production. Official games vs. all games, reconciled
-                against stored season totals.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <SegmentedControl
-                options={GAME_SET_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                value={gameSet}
-                onChange={setGameSet}
-                ariaLabel="Game set"
-              />
-              <Button
-                variant="secondary"
-                size="md"
-                leftIcon={<IconDownload size={16} />}
-                onClick={handleExport}
-                disabled={rows.length === 0}
-              >
-                Export CSV
-              </Button>
-            </div>
-          </div>
+      <div className="mx-auto w-full max-w-[1536px] px-4 py-8 sm:px-6">
+        <SectionMasthead eyebrow={eyebrow} title="Stats Center" actions={mastheadActions} />
 
-          {/* Summary */}
-          <div className="mb-6">
-            <SummaryStrip model={model} />
-          </div>
+        {/* Team contents strip — the magazine table of contents. */}
+        <div className="mt-6">
+          <KPIContentsStrip
+            columns={5}
+            items={[
+              { label: 'Roster', value: model.summary.rosterSize },
+              { label: 'On the Record', value: model.summary.playersWithData, emphasis: model.summary.playersWithData > 0 },
+              { label: 'Official Games', value: model.summary.officialGames },
+              { label: 'Scrimmages', value: model.summary.scrimmages },
+              { label: 'Needs Recalc', value: model.summary.unreconciled, emphasis: model.summary.unreconciled > 0 },
+            ]}
+          />
+        </div>
 
-          {/* Honest read-model error (degraded data) */}
-          {model.error && (
-            <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              <IconAlertCircle size={16} />
-              <span>{model.error}</span>
-            </div>
-          )}
-          {refetchError && (
-            <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <IconAlertCircle size={16} />
-              <span>{refetchError}</span>
-            </div>
-          )}
+        {/* Filters — season / side / position (server-re-queried, URL-persisted). */}
+        <div className="mt-6 flex flex-col gap-3 border-t border-[color:var(--hairline)] pt-5">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="inline-flex items-center gap-2 text-text-secondary">
+              <IconFilter size={16} />
+              <span className="text-eyebrow font-semibold uppercase tracking-[0.14em]">Filters</span>
+            </span>
 
-          {/* Filters */}
-          <Card variant="overlay" padding="md" className="mb-6">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2 text-warm-600">
-                <IconFilter size={16} />
-                <span className="text-sm font-medium">Filters</span>
-              </div>
-
-              {/* Season stepper */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
-                  Season
-                </span>
-                <div className="inline-flex items-center rounded-xl border border-warm-200 bg-cream-50">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    aria-label="Previous season"
-                    onClick={() => changeSeason(-1)}
-                    haptic="none"
-                    className="min-h-0 rounded-l-xl rounded-r-none px-2.5 py-1.5 text-warm-600"
-                  >
-                    −
-                  </Button>
-                  <span className="min-w-[3.5rem] px-2 text-center text-sm font-semibold tabular-nums text-warm-900">
-                    {seasonYear}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    aria-label="Next season"
-                    onClick={() => changeSeason(1)}
-                    haptic="none"
-                    className="min-h-0 rounded-r-xl rounded-l-none px-2.5 py-1.5 text-warm-600"
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-
-              {/* Side */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
-                  Side
-                </span>
-                <SegmentedControl
-                  options={SIDE_OPTIONS}
-                  value={side}
-                  onChange={changeSide}
-                  ariaLabel="Stat side"
-                />
-              </div>
-
-              {/* Clear */}
-              {hasActiveFilters && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">Season</span>
+              <div className="inline-flex items-center rounded-fw-md border border-[color:var(--hairline)] bg-[var(--paper)]">
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={clearFilters}
+                  aria-label="Previous season"
+                  onClick={() => changeSeason(-1)}
                   haptic="none"
-                  className="ml-auto min-h-0 gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-warm-500 hover:text-warm-700"
+                  className="min-h-0 rounded-l-md rounded-r-none px-2.5 py-1.5 text-text-secondary"
                 >
-                  <IconX size={14} />
-                  Clear
+                  −
                 </Button>
-              )}
+                <span className="min-w-[3.5rem] px-2 text-center font-annual text-sm font-semibold tabular-nums text-text-primary">
+                  {seasonYear}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  aria-label="Next season"
+                  onClick={() => changeSeason(1)}
+                  haptic="none"
+                  className="min-h-0 rounded-r-md rounded-l-none px-2.5 py-1.5 text-text-secondary"
+                >
+                  +
+                </Button>
+              </div>
             </div>
 
-            {/* Position chips */}
-            {positionOptions.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-eyebrow font-semibold uppercase tracking-wide text-warm-400">
-                  Position
-                </span>
-                {positionOptions.map((pos) => {
-                  const active = positions.includes(pos);
-                  return (
-                    <Button
-                      key={pos}
-                      type="button"
-                      variant="ghost"
-                      aria-pressed={active}
-                      onClick={() => togglePosition(pos)}
-                      haptic="none"
-                      className={cn(
-                        'min-h-0 rounded-full border px-3 py-1 text-sm font-medium',
-                        active
-                          ? 'border-primary-600 bg-primary-600 text-white hover:bg-primary-600'
-                          : 'border-warm-200 bg-cream-50 text-warm-600 hover:border-warm-300 hover:bg-warm-50',
-                      )}
-                    >
-                      {prettyPosition(pos)}
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
+            <div className="flex items-center gap-1.5">
+              <span className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">Side</span>
+              <SegmentedControl options={SIDE_OPTIONS} value={side} onChange={changeSide} ariaLabel="Stat side" />
+            </div>
 
-          {/* Grid */}
+            {hasActiveFilters && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={clearFilters}
+                haptic="none"
+                className="ml-auto min-h-0 gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium text-text-tertiary hover:text-text-secondary"
+              >
+                <IconX size={14} />
+                Clear
+              </Button>
+            )}
+          </div>
+
+          {positionOptions.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">Position</span>
+              {positionOptions.map((pos) => {
+                const active = positions.includes(pos);
+                return (
+                  <Button
+                    key={pos}
+                    type="button"
+                    variant="ghost"
+                    aria-pressed={active}
+                    onClick={() => togglePosition(pos)}
+                    haptic="none"
+                    className={cn(
+                      'min-h-0 rounded-full border px-3 py-1 text-sm font-medium',
+                      active
+                        ? 'border-grade-plus bg-grade-plus text-white hover:bg-grade-plus'
+                        : 'border-[color:var(--hairline)] bg-[var(--paper)] text-text-secondary hover:border-grade-plus/50',
+                    )}
+                  >
+                    {prettyPosition(pos)}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Degraded-data / refresh notes — quiet editorial lines, never yellow boxes. */}
+        {(model.error || refetchError) && (
+          <div className="mt-5 flex flex-col gap-2">
+            <HairlineRule ink="hairline" className="w-10" />
+            {model.error && <p className="font-annual text-body-sm text-text-secondary">{model.error}</p>}
+            {refetchError && <p className="font-annual text-body-sm text-text-secondary">{refetchError}</p>}
+          </div>
+        )}
+
+        {/* The record-book wall. */}
+        <m.div
+          key={`${side}-${gameSet}`}
+          initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          className={cn('mt-8', isPending && 'opacity-60 transition-opacity')}
+          aria-busy={isPending}
+        >
           {rows.length === 0 ? (
-            <EmptyState
-              variant="card"
-              icon={<IconUsers size={48} className="text-warm-300" />}
-              title={
+            <EditorsLetter
+              ink="team"
+              title={hasActiveFilters ? 'No players match these filters.' : 'No players on this roster yet.'}
+              body={
                 hasActiveFilters
-                  ? 'No players match these filters'
-                  : 'No players on this roster yet'
-              }
-              description={
-                hasActiveFilters
-                  ? 'Try clearing the position or side filter, or pick another season.'
-                  : 'Once players are rostered and box scores are captured, their stats will appear here.'
+                  ? 'Clear the position or side filter, or pick another season, and the spread returns.'
+                  : 'Your roster spread prints here the moment players join the program.'
               }
               action={
-                hasActiveFilters
-                  ? { label: 'Clear filters', onClick: clearFilters }
-                  : { label: 'Go to roster', href: '/baseball/dashboard/roster' }
+                hasActiveFilters ? (
+                  <Button variant="secondary" size="md" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="md" onClick={() => router.push('/baseball/dashboard/roster')}>
+                    Go to roster
+                  </Button>
+                )
               }
             />
           ) : allNoData ? (
-            <EmptyState
-              variant="card"
-              icon={<IconDatabase size={48} className="text-warm-300" />}
-              title={
-                hasActiveFilters
-                  ? 'No box scores for this filter yet'
-                  : `No box scores captured for ${model.seasonYear} yet`
-              }
-              description={
-                hasActiveFilters
-                  ? `All ${rows.length} matching players are without a captured line in this game set. Clear the filter or import a box score to populate production.`
-                  : `Your ${rows.length}-player roster is set, but no box-score lines have been captured this season. Import a box score or enter one to light up team-wide production, splits, and the source-backed charts below.`
-              }
-              action={{ label: 'Import stats', href: '/baseball/dashboard/import' }}
-              secondaryAction={
-                hasActiveFilters
-                  ? { label: 'Clear filters', onClick: clearFilters }
-                  : { label: 'Go to roster', href: '/baseball/dashboard/roster' }
+            <EmptyIssue
+              variant="stats"
+              action={
+                <Button variant="secondary" size="md" onClick={() => router.push('/baseball/dashboard/import')}>
+                  Import a box score
+                </Button>
               }
             />
           ) : (
-            <div
-              className={cn(
-                'grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3',
-                isPending && 'opacity-60 transition-opacity',
+            <div className="flex flex-col gap-10">
+              {showBatting && (
+                <StatSpread
+                  heading="Batting"
+                  columns={BATTING_COLS.map((c) => c.label)}
+                  realRows={battingRows}
+                  ghostRows={battingGhosts}
+                  buildStats={buildBattingStats}
+                  emptyTitle="No batting lines yet."
+                  emptyBody="Batting production prints here after your first captured box score in this game set."
+                />
               )}
-              aria-busy={isPending}
-            >
-              {rows.map((row, i) => (
-                <m.div
-                  key={row.playerId}
-                  initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    delay: prefersReducedMotion ? 0 : Math.min(i * 0.02, 0.2),
-                  }}
-                >
-                  <PlayerStatCard row={row} gameSet={gameSet} side={sideForCards} />
-                </m.div>
-              ))}
+              {showPitching && (
+                <StatSpread
+                  heading="Pitching"
+                  columns={PITCHING_COLS.map((c) => c.label)}
+                  realRows={pitchingRows}
+                  ghostRows={pitchingGhosts}
+                  buildStats={buildPitchingStats}
+                  emptyTitle="No pitching lines yet."
+                  emptyBody="Pitching lines print here after your first captured appearance in this game set."
+                />
+              )}
             </div>
           )}
+        </m.div>
 
-          {/* V10 stat-visual chart gallery — team scope, fed by the elite
-              stat-event read model (chase/whiff/EV-LA/spray/pitch-shape/...).
-              Honest: empty/insufficient frames when no events are captured. */}
-          <div className="mt-10">
-            <StatVisualsSection
-              scope="team"
-              data={statVisualsData}
-              savedViews={statVisualViews.savedViews}
-              onSaveView={statVisualViews.onSaveView}
-              onSetPinned={statVisualViews.onSetPinned}
-            />
-          </div>
+        {/* V10 stat-visual chart gallery — team scope, fed by the elite
+            stat-event read model. Honest empty/insufficient frames when no
+            events are captured. */}
+        <div className="mt-12">
+          <StatVisualsSection
+            scope="team"
+            data={statVisualsData}
+            savedViews={statVisualViews.savedViews}
+            onSaveView={statVisualViews.onSaveView}
+            onSetPinned={statVisualViews.onSetPinned}
+          />
         </div>
       </div>
     </LazyMotion>
