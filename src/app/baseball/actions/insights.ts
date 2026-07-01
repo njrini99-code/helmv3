@@ -300,7 +300,10 @@ function analyzePlayer(
   if (totalHits >= 50 && totalHits % 25 === 0) {
     insights.push({
       player_id: playerId,
-      insight_type: 'development_milestone',
+      // Distinct from the HR milestone so both survive reconciliation, which
+      // keys insights by `${playerId}::${insight_type}`. A player crossing both
+      // a hit and an HR milestone in one run now persists two independent rows.
+      insight_type: 'milestone_hits',
       priority: 'low',
       title: `${playerName} reached ${totalHits} hits!`,
       description: `Career milestone: ${totalHits} hits in ${aggregates?.total_sessions || 0} sessions.`,
@@ -316,7 +319,9 @@ function analyzePlayer(
   if (totalHR >= 10 && totalHR % 5 === 0) {
     insights.push({
       player_id: playerId,
-      insight_type: 'development_milestone',
+      // Distinct from the hits milestone (see above) so the HR milestone is
+      // reconciled and refreshed independently rather than overwriting it.
+      insight_type: 'milestone_hr',
       priority: 'low',
       title: `${playerName} hit ${totalHR} home runs!`,
       description: `Power milestone achieved.`,
