@@ -495,6 +495,29 @@ function analyzeTeam(
 }
 
 /**
+ * Resolve the caller's `baseball_coaches.id` from their auth user id.
+ *
+ * `baseball_coach_insights.coach_id` is a `baseball_coaches.id`, NOT the auth
+ * uid — the same distinction the player-profile page makes when it scopes
+ * insights with `coach.id` (src/app/baseball/(dashboard)/dashboard/players/[id]/page.tsx).
+ * Comparing an insight's `coach_id` directly against `supabase.auth.getUser().id`
+ * compares two different id domains and rejects every real coach. Returns
+ * null when the user has no coach row.
+ */
+async function resolveCallerCoachId(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+): Promise<string | null> {
+  const { data: coach } = await supabase
+    .from('baseball_coaches')
+    .select('id')
+    .eq('user_id', userId)
+    .single();
+  return (coach as { id: string } | null)?.id ?? null;
+}
+
+/**
  * Get default philosophy settings
  */
 function getDefaultPhilosophy(): BaseballCoachPhilosophy {
@@ -527,14 +550,21 @@ export async function dismissInsight(insightId: string): Promise<{ success: bool
     return { success: false, error: 'Unauthorized' };
   }
 
-  // Ownership check: verify user owns this insight
+  // Resolve the caller's baseball_coaches.id — coach_id on the insight is
+  // NEVER the auth uid.
+  const callerCoachId = await resolveCallerCoachId(supabase, user.id);
+  if (!callerCoachId) {
+    return { success: false, error: 'Forbidden: You can only dismiss your own insights' };
+  }
+
+  // Ownership check: verify caller's coach row owns this insight
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: insight } = await (supabase as any)
     .from('baseball_coach_insights')
     .select('coach_id')
     .eq('id', insightId)
     .single();
-  if (!insight || insight.coach_id !== user.id) {
+  if (!insight || insight.coach_id !== callerCoachId) {
     return { success: false, error: 'Forbidden: You can only dismiss your own insights' };
   }
 
@@ -564,14 +594,21 @@ export async function markInsightAddressed(insightId: string): Promise<{ success
     return { success: false, error: 'Unauthorized' };
   }
 
-  // Ownership check: verify user owns this insight
+  // Resolve the caller's baseball_coaches.id — coach_id on the insight is
+  // NEVER the auth uid.
+  const callerCoachId = await resolveCallerCoachId(supabase, user.id);
+  if (!callerCoachId) {
+    return { success: false, error: 'Forbidden: You can only update your own insights' };
+  }
+
+  // Ownership check: verify caller's coach row owns this insight
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: insight } = await (supabase as any)
     .from('baseball_coach_insights')
     .select('coach_id')
     .eq('id', insightId)
     .single();
-  if (!insight || insight.coach_id !== user.id) {
+  if (!insight || insight.coach_id !== callerCoachId) {
     return { success: false, error: 'Forbidden: You can only update your own insights' };
   }
 
@@ -604,7 +641,14 @@ export async function submitInsightFeedback(
     return { success: false, error: 'Unauthorized' };
   }
 
-  // Ownership check: verify user owns this insight
+  // Resolve the caller's baseball_coaches.id — coach_id on the insight is
+  // NEVER the auth uid.
+  const callerCoachId = await resolveCallerCoachId(supabase, user.id);
+  if (!callerCoachId) {
+    return { success: false, error: 'Forbidden: You can only provide feedback on your own insights' };
+  }
+
+  // Ownership check: verify caller's coach row owns this insight
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: insight } = await (supabase as any)
     .from('baseball_coach_insights')
@@ -612,7 +656,7 @@ export async function submitInsightFeedback(
     .eq('id', insightId)
     .single() as { data: { coach_id: string; metadata: Record<string, unknown> | null } | null };
 
-  if (!insight || insight.coach_id !== user.id) {
+  if (!insight || insight.coach_id !== callerCoachId) {
     return { success: false, error: 'Forbidden: You can only provide feedback on your own insights' };
   }
 
