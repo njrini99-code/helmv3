@@ -40,6 +40,13 @@ interface CreateEventInput {
    * organization (existing behaviour for attachPracticeToCalendar etc.).
    */
   teamId?: string;
+  /**
+   * Browser's `Date.getTimezoneOffset()` (minutes, positive west of UTC).
+   * Mirrors the golf calendar fix (src/app/golf/actions/golf.ts): without it,
+   * start_time/end_time (timestamptz columns) get stored assuming UTC wall
+   * time, shifting the event for any coach not in UTC.
+   */
+  timezoneOffset?: number;
 }
 
 interface UpdateEventInput {
@@ -57,6 +64,8 @@ interface UpdateEventInput {
   rsvpDeadline?: string | null;
   attendeeIds?: string[];
   requiresRsvp?: boolean;
+  /** Browser's `Date.getTimezoneOffset()` — see CreateEventInput. */
+  timezoneOffset?: number;
 }
 
 type ActionResult<T = unknown> = { success: boolean; error?: string; data?: T };
@@ -67,18 +76,59 @@ const CALENDAR_PATH = '/baseball/dashboard/calendar';
 // Helpers
 // ============================================================================
 
-function buildDateTime(date: string, time?: string | null): string {
-  return time ? `${date}T${time}` : `${date}T00:00:00`;
+/**
+ * Build a timezone offset string from minutes offset (from Date.getTimezoneOffset()).
+ * getTimezoneOffset() returns positive for west of UTC (e.g. 360 for UTC-6).
+ * We need the ISO 8601 format: "-06:00" for UTC-6, "+05:30" for UTC+5:30.
+ * Mirrors src/app/golf/actions/golf.ts formatTimezoneOffset.
+ */
+function formatTimezoneOffset(offsetMinutes: number): string {
+  const sign = offsetMinutes <= 0 ? '+' : '-';
+  const absMinutes = Math.abs(offsetMinutes);
+  const hours = Math.floor(absMinutes / 60);
+  const minutes = absMinutes % 60;
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+/**
+ * Build a full ISO datetime string from date, time, and optional timezone offset.
+ * If timezoneOffset is not provided, no offset is appended (Postgres treats
+ * the timestamptz columns as UTC — same fallback as the golf action).
+ */
+function buildDateTime(date: string, time?: string | null, timezoneOffset?: number): string {
+  if (!time) return `${date}T00:00:00+00:00`;
+  const tz = timezoneOffset !== undefined ? formatTimezoneOffset(timezoneOffset) : '+00:00';
+  return `${date}T${time}${tz}`;
 }
 
 function buildEndDateTime(
   endDate?: string | null,
   endTime?: string | null,
   fallbackDate?: string | null,
+  timezoneOffset?: number,
 ): string | null {
   const date = endDate || fallbackDate;
   if (!date) return null;
-  return endTime ? `${date}T${endTime}` : `${date}T23:59:59`;
+  const tz = timezoneOffset !== undefined ? formatTimezoneOffset(timezoneOffset) : '+00:00';
+  return endTime ? `${date}T${endTime}${tz}` : `${date}T23:59:59${tz}`;
+}
+
+/**
+ * Build the rsvp_deadline (timestamptz) value from the raw form input.
+ * The RSVP deadline picker is a `datetime-local` input, so it yields a
+ * wall-clock string like "2026-07-01T18:00" with no timezone info — same
+ * shape as startDate/startTime. Without routing it through the same
+ * timezoneOffset convention as start_time/end_time, the deadline drifts by
+ * the coach's UTC offset (mirrors buildRsvpDeadlineString in
+ * src/app/golf/actions/golf.ts).
+ */
+function buildRsvpDeadline(deadline?: string | null, timezoneOffset?: number): string | null {
+  if (!deadline) return null;
+  // Already has an explicit offset/Z — pass through as-is.
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/.test(deadline)) return deadline;
+  const [date, time] = deadline.split('T');
+  if (!date) return null;
+  return buildDateTime(date, time || '00:00', timezoneOffset);
 }
 
 function mapCalendarActionError(error: unknown): ActionResult {
@@ -126,8 +176,13 @@ const createBaseballEventAction = withBaseballAction(
       await requireBaseballCapability(input.teamId, 'can_manage_calendar');
     }
 
-    const startDateTime = buildDateTime(input.startDate, input.startTime);
-    const endDateTime = buildEndDateTime(input.endDate, input.endTime, input.startDate);
+    const startDateTime = buildDateTime(input.startDate, input.startTime, input.timezoneOffset);
+    const endDateTime = buildEndDateTime(
+      input.endDate,
+      input.endTime,
+      input.startDate,
+      input.timezoneOffset,
+    );
 
     const { data, error } = await supabase
       .from('baseball_events')
@@ -142,7 +197,7 @@ const createBaseballEventAction = withBaseballAction(
         description: input.description || null,
         is_mandatory: input.isMandatory ?? false,
         max_attendees: input.maxAttendees || null,
-        rsvp_deadline: input.rsvpDeadline || null,
+        rsvp_deadline: buildRsvpDeadline(input.rsvpDeadline, input.timezoneOffset),
         created_by_id: ctx.user.id,
       })
       .select()
@@ -216,14 +271,21 @@ const updateBaseballEventAction = withBaseballAction(
     if (input.description !== undefined) updateData.description = input.description;
     if (input.isMandatory !== undefined) updateData.is_mandatory = input.isMandatory;
     if (input.maxAttendees !== undefined) updateData.max_attendees = input.maxAttendees;
-    if (input.rsvpDeadline !== undefined) updateData.rsvp_deadline = input.rsvpDeadline;
+    if (input.rsvpDeadline !== undefined) {
+      updateData.rsvp_deadline = buildRsvpDeadline(input.rsvpDeadline, input.timezoneOffset);
+    }
 
     if (input.startDate !== undefined) {
-      updateData.start_time = buildDateTime(input.startDate, input.startTime);
+      updateData.start_time = buildDateTime(input.startDate, input.startTime, input.timezoneOffset);
     }
 
     if (input.endDate !== undefined || input.endTime !== undefined) {
-      updateData.end_time = buildEndDateTime(input.endDate, input.endTime, input.startDate);
+      updateData.end_time = buildEndDateTime(
+        input.endDate,
+        input.endTime,
+        input.startDate,
+        input.timezoneOffset,
+      );
     }
 
     const { data, error } = await fromUntyped(supabase, 'baseball_events')
