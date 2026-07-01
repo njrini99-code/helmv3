@@ -119,10 +119,11 @@ interface PlayerProfileClientProps {
   /** Count of timeline events filtered out by visibility. */
   timelineHiddenCount?: number;
   /**
-   * Per-event acknowledgement state for the CURRENT viewer (the coach), keyed by
-   * timeline event id, from getTimelineAcksForViewer(). Read-only display on this
-   * surface — coaches see whether an event has been acknowledged, they do not
-   * toggle it (no `onToggleAck` is wired to ProfileTimeline here).
+   * Per-event acknowledgement state for the SUBJECT PLAYER (not the viewing
+   * coach), keyed by timeline event id, from getTimelineAcksForSubjectPlayer().
+   * Read-only display on this surface — coaches see whether the player has
+   * acknowledged an event, they do not toggle it (no `onToggleAck` is wired to
+   * ProfileTimeline here).
    */
   timelineAcks?: Record<string, boolean>;
   /** True when the viewer may author new coach notes. */
