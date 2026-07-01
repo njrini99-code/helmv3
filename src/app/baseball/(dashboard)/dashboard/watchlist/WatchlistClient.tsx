@@ -234,7 +234,11 @@ export function WatchlistClient() {
 
     setRemoving(true);
     try {
-      await removeFromWatchlist(item.coach_id, item.player_id);
+      const result = await removeFromWatchlist(item.coach_id, item.player_id);
+      if (!result.success) {
+        showToast(result.message || 'Failed to remove player', 'error');
+        return;
+      }
       refetch();
       showToast('Player removed from watchlist', 'success');
     } catch {
@@ -249,12 +253,19 @@ export function WatchlistClient() {
     setRemoving(true);
     try {
       const itemsToRemove = watchlist.filter(item => selectedIds.has(item.id));
-      await Promise.all(
+      const results = await Promise.all(
         itemsToRemove.map(item => removeFromWatchlist(item.coach_id, item.player_id))
       );
       refetch();
       setSelectedIds(new Set());
-      showToast(`${selectedIds.size} player(s) removed`, 'success');
+      const failedCount = results.filter(r => !r.success).length;
+      if (failedCount > 0) {
+        showToast(`${failedCount} player(s) could not be removed`, 'error');
+      }
+      const succeededCount = results.length - failedCount;
+      if (succeededCount > 0) {
+        showToast(`${succeededCount} player(s) removed`, 'success');
+      }
     } catch {
       showToast('Failed to remove some players', 'error');
     } finally {
@@ -265,13 +276,20 @@ export function WatchlistClient() {
 
   const handleBulkStageChange = async (stage: PipelineStage) => {
     try {
-      await Promise.all(
+      const results = await Promise.all(
         Array.from(selectedIds).map(id => updateWatchlistStatus(id, stage))
       );
       refetch();
       setSelectedIds(new Set());
       setBulkStageModal(false);
-      showToast(`${selectedIds.size} player(s) moved to ${stageLabels[stage]}`, 'success');
+      const failedCount = results.filter(r => !r.success).length;
+      if (failedCount > 0) {
+        showToast(`${failedCount} player(s) could not be updated`, 'error');
+      }
+      const succeededCount = results.length - failedCount;
+      if (succeededCount > 0) {
+        showToast(`${succeededCount} player(s) moved to ${stageLabels[stage]}`, 'success');
+      }
     } catch {
       showToast('Failed to update some players', 'error');
     }
@@ -281,7 +299,11 @@ export function WatchlistClient() {
     if (!noteModal) return;
     setSavingNote(true);
     try {
-      await addWatchlistNote(noteModal.id, noteModal.note);
+      const result = await addWatchlistNote(noteModal.id, noteModal.note);
+      if (!result.success) {
+        showToast(result.error || 'Failed to save note', 'error');
+        return;
+      }
       refetch();
       setNoteModal(null);
       showToast('Note saved', 'success');
@@ -294,7 +316,11 @@ export function WatchlistClient() {
 
   const handleStageChange = async (watchlistId: string, stage: PipelineStage) => {
     try {
-      await updateWatchlistStatus(watchlistId, stage);
+      const result = await updateWatchlistStatus(watchlistId, stage);
+      if (!result.success) {
+        showToast(result.error || 'Failed to update stage', 'error');
+        return;
+      }
       refetch();
     } catch {
       showToast('Failed to update stage', 'error');
@@ -335,7 +361,11 @@ export function WatchlistClient() {
     if (!coach) return;
     setAddingPlayer(true);
     try {
-      await addToWatchlist(coach.id, player.id);
+      const result = await addToWatchlist(coach.id, player.id);
+      if (!result.success) {
+        showToast(result.message || 'Failed to add player', 'error');
+        return;
+      }
       refetch();
       setShowAddModal(false);
       setPlayerSearchQuery('');
@@ -536,10 +566,17 @@ export function WatchlistClient() {
                         if (note) {
                           Promise.all(
                             Array.from(selectedIds).map(id => addWatchlistNote(id, note))
-                          ).then(() => {
+                          ).then((results) => {
                             refetch();
                             setSelectedIds(new Set());
-                            showToast('Notes added', 'success');
+                            const failedCount = results.filter(r => !r.success).length;
+                            if (failedCount > 0) {
+                              showToast(`${failedCount} note(s) could not be saved`, 'error');
+                            }
+                            const succeededCount = results.length - failedCount;
+                            if (succeededCount > 0) {
+                              showToast('Notes added', 'success');
+                            }
                           });
                         }
                       }}
