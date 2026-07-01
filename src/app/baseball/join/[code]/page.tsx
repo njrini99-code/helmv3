@@ -216,6 +216,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
       playerId={player.id}
       playerName={`${player.first_name} ${player.last_name}`}
       playerType={player.player_type || 'high_school'}
+      isInvitationBased={isInvitationBased}
       team={{
         id: team.id,
         name: team.name,

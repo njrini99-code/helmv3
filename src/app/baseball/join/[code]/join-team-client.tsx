@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { processTeamInvitation } from '@/app/baseball/actions/teams';
+import { processTeamInvitation, joinTeamByCode } from '@/app/baseball/actions/teams';
 import Image from 'next/image';
 import { IconCheck, IconUsers, IconUser, IconX, IconArrowLeft } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -103,6 +103,12 @@ interface JoinTeamClientProps {
   playerId: string;
   playerName: string;
   playerType: string;
+  /**
+   * True when the code resolved from `baseball_team_invitations` (single-use /
+   * expiring invite with redemption accounting); false for a persistent
+   * `baseball_teams.join_code`. Determines which server action redeems the code.
+   */
+  isInvitationBased: boolean;
   team: {
     id: string;
     name: string;
@@ -124,6 +130,7 @@ export function JoinTeamClient({
   playerId,
   playerName,
   playerType,
+  isInvitationBased,
   team,
 }: JoinTeamClientProps) {
   const router = useRouter();
@@ -134,7 +141,13 @@ export function JoinTeamClient({
     setState('loading');
     setError(null);
 
-    const result = await processTeamInvitation(inviteCode, playerId);
+    // Invitation-table codes go through processTeamInvitation (redemption
+    // accounting on baseball_team_invitations); persistent team join codes go
+    // through joinTeamByCode, which resolves baseball_teams.join_code. Routing
+    // both to processTeamInvitation broke the primary college/JUCO invite path.
+    const result = isInvitationBased
+      ? await processTeamInvitation(inviteCode, playerId)
+      : await joinTeamByCode(inviteCode, playerId);
 
     if (!result.success) {
       setError(result.error || 'Failed to join team');
