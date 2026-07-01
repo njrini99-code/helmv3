@@ -4,7 +4,9 @@
  * Backs the Coach Room (Decision Room) "Insights" panel by reading the EXISTING
  * prod table `baseball_signals`. Only ACTIVE / UNRESOLVED signals that are
  * relevant to a staff decision review are surfaced (open disposition, not
- * expired, staff-visible).
+ * expired, staff-visible). The open-disposition set is shared with the Signal
+ * Inbox (`OPEN_SIGNAL_DISPOSITIONS`) so a signal is never visible in one
+ * surface and invisible in the other.
  *
  * RLS SAFETY: callers MUST pass the AUTHENTICATED server client
  * (`await createClient()` from '@/lib/supabase/server'). All rows returned here
@@ -17,6 +19,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { DecisionRoomInsight } from '@/app/baseball/actions/decision-room';
+import { OPEN_SIGNAL_DISPOSITIONS } from '@/lib/types/baseball-signals';
 
 /**
  * Hard server-side row cap. PostgREST also enforces a max-rows ceiling, but a
@@ -32,12 +35,6 @@ const ACTIVE_SIGNALS_LIMIT = 100;
  * (e.g. archived/resolved/dismissed) is excluded from the decision review.
  */
 const ACTIVE_STATUSES = ['active', 'open', 'new'];
-
-/**
- * `disposition` values treated as still requiring attention. A signal that has
- * already been acted on / dismissed should not resurface in the review.
- */
-const OPEN_DISPOSITIONS = ['pending', 'open', 'undecided', 'none'];
 
 /**
  * Severity ordering used for client-stable sort weighting (higher = more
@@ -88,7 +85,8 @@ interface SignalRow {
  * Relevance filters (a signal must satisfy all of these to surface):
  *  - belongs to the caller's team (`team_id`, also enforced by RLS)
  *  - `status` is still active (not archived/resolved)
- *  - `disposition` is still open (not already acted on / dismissed)
+ *  - `disposition` is still open per the Signal Inbox's own definition
+ *    (`OPEN_SIGNAL_DISPOSITIONS`: not already acted on / dismissed)
  *  - not expired (`expires_at` is null or in the future)
  *
  * @param supabase Authenticated server Supabase client (RLS-applied).
@@ -109,7 +107,7 @@ export async function loadInsights(
     )
     .eq('team_id', teamId)
     .in('status', ACTIVE_STATUSES)
-    .in('disposition', OPEN_DISPOSITIONS)
+    .in('disposition', OPEN_SIGNAL_DISPOSITIONS)
     .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .order('created_at', { ascending: false })
     .limit(ACTIVE_SIGNALS_LIMIT);
