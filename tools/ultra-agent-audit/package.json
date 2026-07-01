@@ -9,7 +9,7 @@
     "audit": "node -e \"fetch('http://localhost:3333/api/audit', {method:'POST'}).then(r=>r.json()).then(console.log)\""
   },
   "dependencies": {
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "express": "^4.18.2",
     "puppeteer": "^21.6.1",
     "ws": "^8.21.0"
