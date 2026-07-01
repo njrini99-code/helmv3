@@ -12,6 +12,32 @@ import {
 } from '@/lib/baseball/csv-utils';
 import { logServerError } from '@/lib/server-error-logger';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import {
+  withBaseballAction,
+  BaseballUnauthorizedError,
+  BaseballNoActiveTeamError,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
+import { BaseballCapabilityError } from '@/lib/baseball/capabilities';
+
+function mapStatsActionError(error: unknown): { success: false; error: string } {
+  if (error instanceof BaseballUnauthorizedError) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  if (error instanceof BaseballNoActiveTeamError) {
+    return { success: false, error: 'Coach or team not found' };
+  }
+  if (error instanceof BaseballCapabilityError) {
+    return { success: false, error: 'You do not have permission to manage stats for this team' };
+  }
+  if (error instanceof BaseballActionError) {
+    return { success: false, error: 'Could not complete the stats upload. Please try again.' };
+  }
+  if (error instanceof Error) {
+    return { success: false, error: error.message };
+  }
+  return { success: false, error: 'An unexpected error occurred' };
+}
 
 // Re-export types and utilities for backward compatibility
 export { parseCSV, findBestPlayerMatch, type CSVRow, type PlayerMatch };
@@ -105,29 +131,28 @@ async function verifyTeamAccess(
 
 /**
  * Process CSV stats upload
+ * SECURITY: Requires can_manage_imports capability on the target team,
+ * enforced server-side by withBaseballAction (see uploadStatsCSVAction below).
  */
-export async function uploadStatsCSV(
-  teamId: string,
-  csvContent: string,
-  statType: 'practice' | 'game' | 'other',
-  sessionDate: string,
-  sessionName?: string
-): Promise<UploadResult> {
+const uploadStatsCSVAction = withBaseballAction(
+  'uploadStatsCSV',
+  {
+    featureArea: 'baseball-stats',
+    requiredCapability: 'can_manage_imports',
+    teamFrom: (teamId: string) => teamId,
+  },
+  async (
+    ctx,
+    teamId: string,
+    csvContent: string,
+    statType: 'practice' | 'game' | 'other',
+    sessionDate: string,
+    sessionName?: string
+  ): Promise<UploadResult> => {
   const supabase = await createClient();
 
-  // Verify user is authenticated coach
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
-
-  const { data: coach } = await supabase
-    .from('baseball_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!coach) {
+  const coachId = ctx.activeCoachId;
+  if (!coachId) {
     return { success: false, error: 'Coach profile not found' };
   }
 
@@ -169,7 +194,7 @@ export async function uploadStatsCSV(
     .from('baseball_stat_uploads')
     .insert({
       team_id: teamId,
-      coach_id: coach.id,
+      coach_id: coachId,
       filename: `upload_${Date.now()}.csv`,
       stat_type: statType,
       session_date: sessionDate,
@@ -202,7 +227,7 @@ export async function uploadStatsCSV(
       const statRecord: Partial<BaseballPlayerStats> = {
         player_id: match.playerId,
         team_id: teamId,
-        coach_id: coach.id,
+        coach_id: coachId,
         stat_type: statType,
         session_date: sessionDate,
         session_name: sessionName || undefined,
@@ -292,6 +317,25 @@ export async function uploadStatsCSV(
     unmatchedRows: unmatchedNames.length,
     unmatchedNames,
   };
+  },
+);
+
+export async function uploadStatsCSV(
+  teamId: string,
+  csvContent: string,
+  statType: 'practice' | 'game' | 'other',
+  sessionDate: string,
+  sessionName?: string
+): Promise<UploadResult> {
+  try {
+    return await uploadStatsCSVAction(teamId, csvContent, statType, sessionDate, sessionName);
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_stats.uploadStatsCSV', featureArea: 'baseball-stats' },
+    );
+    return mapStatsActionError(error);
+  }
 }
 
 /**
