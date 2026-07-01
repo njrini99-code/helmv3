@@ -284,6 +284,12 @@ export const GRANDFATHERED_CONSUMERS: GrandfatheredStatLayerConsumer[] = [
     note: 'Exercises action-baseline.ts against a fake baseball_player_stats table; mirrors production until that file migrates.',
   },
   {
+    path: 'src/lib/baseball/__tests__/engine-run-coach-triage.test.ts',
+    group: 'test',
+    status: 'pending migration',
+    note: 'Exercises runBaseballEngineCore (#473 coach-triage skip) against a fake baseball_player_stats table; mirrors engine-run.ts until that file migrates.',
+  },
+  {
     path: 'src/lib/baseball/__tests__/ai-policy-enforcement.test.ts',
     group: 'test',
     status: 'pending migration',

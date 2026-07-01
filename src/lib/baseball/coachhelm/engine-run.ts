@@ -83,7 +83,7 @@ import type { RankingContext } from '@/lib/coachhelm/baseball/ranking';
 import type { BaseballInsightSourceRef } from '@/lib/types/baseball-coachhelm';
 import { MATURED_RETRACT_AFTER_DAYS } from '@/lib/coachhelm/shared/base-generator';
 import { signalFromInsightWithAudit } from '@/lib/baseball/signal-from-insight';
-import type { BaseballSignalInsert } from '@/lib/types/baseball-signals';
+import { OPEN_SIGNAL_DISPOSITIONS, type BaseballSignalInsert } from '@/lib/types/baseball-signals';
 import { decideAiGenerationAllowed, type AiPolicy } from '@/lib/baseball/ai-policy';
 import type { BaseballAiAuditInsert } from '@/lib/types/baseball-ai-audit';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -108,10 +108,34 @@ const EVENT_LOOKAHEAD_DAYS = 30;
 const MATURED_MIN_OBSERVATIONS = 3;
 const MATURED_MIN_AGE_DAYS = MATURED_RETRACT_AFTER_DAYS;
 
+/**
+ * `baseball_coach_insights.status` values that represent a COACH decision (as
+ * opposed to the engine's own 'active' default). A re-firing candidate whose
+ * prior row carries one of these must NEVER be upserted back to 'active' — the
+ * coach already triaged it. Mirrors the same "coach dismissed/resolved this
+ * insight — respect it, do not recreate" contract generateTeamInsights()
+ * already enforces above.
+ */
+const COACH_TRIAGED_STATUSES = new Set(['dismissed', 'addressed', 'resolved']);
+
+/**
+ * `baseball_signals.disposition` values that represent a terminal COACH
+ * decision on the SIGNAL side (as distinct from `OPEN_SIGNAL_DISPOSITIONS`,
+ * which is what the table's partial unique index covers). Used by the #473
+ * cross-surface fix below: a candidate whose paired signal already carries one
+ * of these, with no open row left for the same dedupe_key, must not be
+ * re-emitted as a fresh 'new' row.
+ */
+const SIGNAL_COACH_TRIAGED_DISPOSITIONS = new Set(['dismissed', 'resolved', 'converted']);
+
 /** Prior persisted state of an insight row, keyed by dedupe_key, used to (a) feed
- *  lifecycleState into the ranker and (b) carry the maturity counters forward on
- *  a re-fire (so a re-run INCREMENTS observation_count rather than resetting it). */
+ *  lifecycleState into the ranker, (b) carry the maturity counters forward on a
+ *  re-fire (so a re-run INCREMENTS observation_count rather than resetting it),
+ *  and (c) preserve a coach-set disposition (dismissed/addressed/resolved) across
+ *  re-runs so the engine can never resurrect a triaged insight back to 'active'. */
 export interface PriorInsightState {
+  /** The prior row's primary key, when one exists (undefined in pure unit tests). */
+  id?: string | null;
   lifecycle_state: string | null;
   observation_count: number | null;
   first_detected_at: string | null;
@@ -448,16 +472,22 @@ export async function runBaseballEngineCore(
   //     and those promotions were dead (the spec's "repeated trend (matured)" +
   //     evidence-backed PROMOTE terms). Both reads degrade honestly: a missing
   //     table / no rows simply yields an empty context (no false promotions).
+  //
+  //     NOT filtered to status='active': a coach-dismissed/addressed/resolved
+  //     row must still be visible here so step 3 below can see its status and
+  //     refuse to upsert it back to 'active' on a re-fire (#473). Filtering to
+  //     'active' only, as this used to, made every triaged row invisible to the
+  //     dedupe-key lookup, so the next run's upsert always overwrote it.
   const { data: priorInsightRows } = await db
     .from('baseball_coach_insights')
-    .select('dedupe_key, lifecycle_state, observation_count, first_detected_at, status')
+    .select('id, dedupe_key, lifecycle_state, observation_count, first_detected_at, status')
     .eq('team_id', teamId)
-    .in('insight_type', BASEBALL_ALL_INSIGHT_TYPES)
-    .eq('status', 'active');
+    .in('insight_type', BASEBALL_ALL_INSIGHT_TYPES);
   const priorByKey = new Map<string, PriorInsightState>();
   for (const r of (priorInsightRows ?? []) as Array<{ dedupe_key: string | null } & PriorInsightState>) {
     if (r.dedupe_key) {
       priorByKey.set(r.dedupe_key, {
+        id: r.id ?? null,
         lifecycle_state: r.lifecycle_state ?? null,
         observation_count: r.observation_count ?? null,
         first_detected_at: r.first_detected_at ?? null,
@@ -490,6 +520,10 @@ export async function runBaseballEngineCore(
   // Computed from the prior active set (the snapshot the engine is refreshing) so
   // the video_evidence generator can flag low coverage HONESTLY (real numerator/
   // denominator), replacing the hardcoded null that suppressed it entirely.
+  // priorByKey now carries EVERY prior status (see #473 fix above), so this must
+  // filter back down to 'active' itself to keep the coverage ratio meaning "share
+  // of currently-active diagnostic insights" — a dismissed/resolved insight was
+  // never part of this denominator.
   {
     const linkedSignalIds = new Set<string>();
     for (const v of (videoRows ?? []) as Array<{ linked_signal_id: string | null }>) {
@@ -506,8 +540,11 @@ export async function runBaseballEngineCore(
     for (const s of (activeSignalRows ?? []) as Array<{ id: string; dedupe_key: string | null }>) {
       if (s.dedupe_key) signalIdByKey.set(s.dedupe_key, s.id);
     }
-    videoActiveDiagnosticInsights = priorByKey.size;
-    for (const key of priorByKey.keys()) {
+    const activePriorKeys = Array.from(priorByKey.entries())
+      .filter(([, v]) => v.status === 'active')
+      .map(([key]) => key);
+    videoActiveDiagnosticInsights = activePriorKeys.length;
+    for (const key of activePriorKeys) {
       const sigId = signalIdByKey.get(key);
       if (sigId && linkedSignalIds.has(sigId)) videoInsightsWithClip += 1;
     }
@@ -575,22 +612,31 @@ export async function runBaseballEngineCore(
   );
 
   // 3. PERSIST — upsert by dedupe_key (NO delete-then-insert).
+  //
+  // #473: a re-firing candidate whose PRIOR row carries a coach-set disposition
+  // (dismissed / addressed / resolved) must NEVER be upserted — that would flip
+  // status back to 'active' and resurrect an insight the coach already triaged.
+  // This mirrors the identical "coach dismissed/resolved this insight — respect
+  // it, do not recreate" rule generateTeamInsights() already applies in
+  // src/app/baseball/actions/insights.ts. The candidate is still counted in
+  // byGenerator/emittedKeys (the underlying condition DID re-fire this run —
+  // we are only refusing to write over the coach's decision), it is simply
+  // excluded from the write batch.
   const byGenerator: Record<string, number> = {};
   const emittedKeys = new Set<string>();
-  const rows = candidates.map((c) => {
+  const rows: ReturnType<typeof buildInsightRow>[] = [];
+  for (const c of candidates) {
     const dedupeKey = `${c.generator}:${c.playerId ?? 'team'}`;
     emittedKeys.add(dedupeKey);
     byGenerator[c.generator] = (byGenerator[c.generator] ?? 0) + 1;
-    return buildInsightRow(
-      c,
-      teamId,
-      coachId,
-      dedupeKey,
-      nowIso,
-      rankByKey.get(dedupeKey) ?? null,
-      priorByKey.get(dedupeKey),
+    const prior = priorByKey.get(dedupeKey);
+    if (prior?.status && COACH_TRIAGED_STATUSES.has(prior.status)) {
+      continue;
+    }
+    rows.push(
+      buildInsightRow(c, teamId, coachId, dedupeKey, nowIso, rankByKey.get(dedupeKey) ?? null, prior),
     );
-  });
+  }
 
   let generated = 0;
   const insightIdByKey = new Map<string, string>();
@@ -628,6 +674,38 @@ export async function runBaseballEngineCore(
   }
 
   // 5. EMIT SIGNALS — promote medium+ ranked candidates into baseball_signals.
+  //
+  // Cross-surface companion to the #473 insight-skip above: `baseball_signals`
+  // only has a PARTIAL unique index on (team_id, dedupe_key) that covers OPEN
+  // dispositions (OPEN_SIGNAL_DISPOSITIONS: new/acknowledged/sample_too_small —
+  // see migration 20260624000092). Once a coach sets a signal to a terminal
+  // disposition (dismissed/resolved/converted) and NO open row remains for that
+  // dedupe_key, that row falls outside the upsert's conflict target. Re-emitting
+  // the same dedupe_key would then INSERT a brand-new 'new' row alongside the
+  // terminal one instead of updating it — resurrecting a signal the coach
+  // already triaged on the live Signals tab. We fetch the prior dispositions
+  // per dedupe_key up front and skip re-emission for any key whose ONLY rows
+  // are coach-triaged terminal ones (an open row still present means the normal
+  // upsert-refresh path is safe and correct).
+  const { data: priorSignalRows } = await db
+    .from('baseball_signals')
+    .select('dedupe_key, disposition')
+    .eq('team_id', teamId)
+    .not('dedupe_key', 'is', null);
+  const openSignalKeys = new Set<string>();
+  const terminalSignalKeys = new Set<string>();
+  for (const r of (priorSignalRows ?? []) as Array<{
+    dedupe_key: string | null;
+    disposition: string | null;
+  }>) {
+    if (!r.dedupe_key || !r.disposition) continue;
+    if ((OPEN_SIGNAL_DISPOSITIONS as readonly string[]).includes(r.disposition)) {
+      openSignalKeys.add(r.dedupe_key);
+    } else if (SIGNAL_COACH_TRIAGED_DISPOSITIONS.has(r.disposition)) {
+      terminalSignalKeys.add(r.dedupe_key);
+    }
+  }
+
   let signalsEmitted = 0;
   let aiWithheld = 0;
   const signalKeys = new Set<string>();
@@ -636,6 +714,13 @@ export async function runBaseballEngineCore(
 
   for (const c of candidates) {
     const key = `${c.generator}:${c.playerId ?? 'team'}`;
+
+    // Coach already triaged the paired signal to a terminal disposition and no
+    // open row exists to refresh — do not resurrect it as a fresh 'new' row.
+    if (terminalSignalKeys.has(key) && !openSignalKeys.has(key)) {
+      continue;
+    }
+
     const audit = signalFromInsightWithAudit(c, {
       teamId,
       createdByUserId,
