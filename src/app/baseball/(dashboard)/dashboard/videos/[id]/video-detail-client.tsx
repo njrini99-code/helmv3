@@ -13,6 +13,10 @@ interface VideoDetailClientProps {
   videoUrl: string | null;
   thumbnailUrl: string | null;
   title: string;
+  /** Clip bounds (seconds) when this row is a clip — url is the same file as
+   * the parent video, so the player must seek/clamp to these bounds itself. */
+  clipStart?: number | null;
+  clipEnd?: number | null;
 }
 
 export function VideoDetailClient({
@@ -20,6 +24,8 @@ export function VideoDetailClient({
   videoUrl,
   thumbnailUrl,
   title,
+  clipStart,
+  clipEnd,
 }: VideoDetailClientProps) {
   const { showToast } = useToast();
   const hasIncremented = useRef(false);
@@ -61,7 +67,13 @@ export function VideoDetailClient({
   return (
     <div className="space-y-3">
       <div className="rounded-2xl overflow-hidden bg-warm-900">
-        <VideoPlayer src={videoUrl} thumbnail={thumbnailUrl} title={title} />
+        <VideoPlayer
+          src={videoUrl}
+          thumbnail={thumbnailUrl}
+          title={title}
+          clipStart={clipStart ?? undefined}
+          clipEnd={clipEnd ?? undefined}
+        />
       </div>
       <div className="flex justify-end">
         <Button variant="secondary" size="sm" onClick={handleShare}>

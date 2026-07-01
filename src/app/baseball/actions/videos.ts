@@ -20,12 +20,23 @@
 // the actions return empty arrays and the views render honest empty states —
 // never fake data or a 500.
 //
-// NON-DESTRUCTIVE: no mutations here; this file is read-only.
+// Mostly read-only: the one mutation is createVideoClip (below), which moves
+// the previously-raw-client clip insert (VideoClipper.tsx) server-side so
+// ownership + bounds are re-validated before anything is written. It is
+// additive-only (a single INSERT), never a delete-then-reinsert.
 // =============================================================================
 
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+
 import { createClient } from '@/lib/supabase/server';
-import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
+import {
+  withBaseballAction,
+  BaseballActionError,
+} from '@/lib/baseball/with-baseball-action';
 import { getFullName } from '@/lib/utils';
+import { validateClipRange } from '@/lib/video/clipper';
+import type { Video } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -653,5 +664,114 @@ export const getEvidenceClips = withBaseballAction(
     });
 
     return { clips, totalCount: count ?? clips.length, hasVideoEvents: true };
+  },
+);
+
+// ===========================================================================
+// ACTION: createVideoClip
+//
+// Moves the clip-insert VideoClipper.tsx previously did as a raw client-side
+// supabase.from('baseball_videos').insert(...) call server-side (CLAUDE.md
+// mutation rule). Re-checks ownership of the parent video and re-validates
+// the requested clip bounds against the parent's stored duration before
+// writing — a client can no longer forge an out-of-range clip or clip
+// another player's video. Additive-only single INSERT (non-destructive).
+//
+// NOTE: this writes url = parent's url (same file, no re-encode) with
+// clip_start_time/clip_end_time as bounds; VideoPlayer enforces those bounds
+// at playback (video-player.tsx clipStart/clipEnd props).
+// ===========================================================================
+
+const VIDEOS_LIBRARY_PATH = '/baseball/dashboard/videos';
+
+const createClipSchema = z.object({
+  parentVideoId: z.string().uuid(),
+  title: z.string().trim().min(1).max(160),
+  description: z.string().trim().max(2000).optional().nullable(),
+  clipType: z.string().trim().max(40).optional().nullable(),
+  startTime: z.number().min(0),
+  endTime: z.number().min(0),
+  thumbnailDataUrl: z.string().optional().nullable(),
+});
+
+export interface CreateVideoClipResult {
+  success: boolean;
+  error?: string;
+  /** Full inserted row so callers (VideoClipper.tsx) can hand it straight to
+   * an onClipCreated(clip: Video) callback without a second round-trip. */
+  clip?: Video;
+}
+
+export const createVideoClip = withBaseballAction(
+  'createVideoClip',
+  { featureArea: 'baseball-video', requiredPlayerAccess: 'can_upload_video' },
+  async (
+    ctx,
+    input: z.input<typeof createClipSchema>,
+  ): Promise<CreateVideoClipResult> => {
+    if (!ctx.activePlayerId) {
+      throw new BaseballActionError('Only a player can create a clip.');
+    }
+    const parsed = createClipSchema.parse(input);
+    const supabase = await createClient();
+
+    // Re-load the parent video scoped to the caller's own player_id — never
+    // trust a client-supplied parentVideoId to belong to this player.
+    const { data: parent } = await supabase
+      .from('baseball_videos')
+      .select('id, url, player_id, team_id, duration')
+      .eq('id', parsed.parentVideoId)
+      .eq('player_id', ctx.activePlayerId)
+      .maybeSingle();
+    const parentRow = parent as
+      | { id: string; url: string | null; player_id: string; team_id: string | null; duration: number | null }
+      | null;
+    if (!parentRow) {
+      return { success: false, error: 'Video not found.' };
+    }
+    if (!parentRow.url) {
+      return { success: false, error: 'The source video has no file to clip.' };
+    }
+
+    // Re-validate bounds server-side against the parent's stored duration. If
+    // the parent row has no recorded duration (upload didn't capture it), skip
+    // only the "exceeds duration" check rather than trusting a client-supplied
+    // duration — every other bound (non-negative, start < end, 1s–5min) still
+    // applies.
+    const knownDuration = parentRow.duration ?? Number.POSITIVE_INFINITY;
+    const validationError = validateClipRange(
+      { startTime: parsed.startTime, endTime: parsed.endTime },
+      knownDuration,
+    );
+    if (validationError) {
+      return { success: false, error: validationError };
+    }
+
+    const { data: inserted, error } = await supabase
+      .from('baseball_videos')
+      .insert({
+        player_id: ctx.activePlayerId,
+        team_id: parentRow.team_id,
+        title: parsed.title,
+        description: parsed.description ?? null,
+        video_type: parsed.clipType || 'highlight',
+        url: parentRow.url,
+        thumbnail_url: parsed.thumbnailDataUrl ?? null,
+        is_clip: true,
+        parent_video_id: parentRow.id,
+        clip_start_time: parsed.startTime,
+        clip_end_time: parsed.endTime,
+        duration: parsed.endTime - parsed.startTime,
+      })
+      .select('*')
+      .single();
+
+    if (error || !inserted) {
+      return { success: false, error: 'Could not save the clip.' };
+    }
+
+    revalidatePath(VIDEOS_LIBRARY_PATH);
+    revalidatePath(`${VIDEOS_LIBRARY_PATH}/${parentRow.id}`);
+    return { success: true, clip: inserted as Video };
   },
 );

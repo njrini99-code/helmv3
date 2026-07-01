@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,10 +10,10 @@ import { cn } from '@/lib/utils';
 import {
   formatTime,
   validateClipRange,
-  createClipMetadataOnly,
   generateThumbnail,
   type ClipRange,
 } from '@/lib/video/clipper';
+import { createVideoClip } from '@/app/baseball/actions/videos';
 import type { Video } from '@/lib/types';
 
 interface VideoClipperProps {
@@ -34,7 +33,6 @@ const clipTypes = [
 
 export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperProps) {
   const { user } = useAuthStore();
-  const supabase = createClient();
   const videoRef = useRef<HTMLVideoElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -194,39 +192,28 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
     setError(null);
 
     try {
-      // Generate thumbnail at clip start
+      // Generate thumbnail at clip start (client-side canvas capture; unrelated
+      // to the actual clip write, which happens server-side below).
       const thumbnailDataUrl = await generateThumbnail(video.url, clipRange.startTime);
 
-      // Create clip metadata (referencing parent video with time range)
-      const clipData = await createClipMetadataOnly(video.id, clipRange, {
-        title: form.title,
-        description: form.description,
-        clipType: form.clipType,
+      // Server action: re-validates ownership + bounds and performs the
+      // single INSERT. Replaces the previous raw client-side supabase insert.
+      const res = await createVideoClip({
         parentVideoId: video.id,
+        title: form.title,
+        description: form.description || null,
+        clipType: form.clipType || null,
+        startTime: clipRange.startTime,
+        endTime: clipRange.endTime,
+        thumbnailDataUrl,
       });
 
-      // Save clip to database
-      const { data: newClip, error: insertError } = await supabase
-        .from('baseball_videos')
-        .insert({
-          player_id: video.player_id,
-          title: clipData.title,
-          description: clipData.description || null,
-          video_type: clipData.clip_type || 'highlight',
-          url: video.url, // Use same URL as parent
-          thumbnail_url: thumbnailDataUrl,
-          is_clip: true,
-          parent_video_id: clipData.parent_video_id,
-          clip_start_time: clipData.clip_start_time,
-          clip_end_time: clipData.clip_end_time,
-          duration: clipData.clip_end_time - clipData.clip_start_time,
-        })
-        .select()
-        .single();
+      if (!res.success || !res.clip) {
+        setError(res.error ?? 'Failed to save clip');
+        return;
+      }
 
-      if (insertError) throw insertError;
-
-      onClipCreated?.(newClip);
+      onClipCreated?.(res.clip);
     } catch (err) {
       console.error('Error saving clip:', err);
       setError(err instanceof Error ? err.message : 'Failed to save clip');

@@ -136,7 +136,14 @@ export default async function VideoDetailPage({ params }: PageProps) {
         </div>
 
         {/* Video player + actions (client component for view count increment + share) */}
-        <VideoDetailClient videoId={id} videoUrl={video.url as string | null} thumbnailUrl={video.thumbnail_url as string | null} title={video.title as string} />
+        <VideoDetailClient
+          videoId={id}
+          videoUrl={video.url as string | null}
+          thumbnailUrl={video.thumbnail_url as string | null}
+          title={video.title as string}
+          clipStart={video.clip_start_time as number | null}
+          clipEnd={video.clip_end_time as number | null}
+        />
 
         {/* Player info */}
         {video.player && playerName && (
