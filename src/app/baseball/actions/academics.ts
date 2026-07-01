@@ -111,116 +111,175 @@ const eligibilitySchema = z.object({
 // ============================================================================
 
 export async function getTeamAcademics(teamId: string) {
-  const supabase = await createClient();
-
-  // Get team members with player info
-  const { data: members, error: membersError } = await supabase
-    .from('baseball_team_members')
-    .select(`
-      id,
-      player_id,
-      baseball_players (
-        id,
-        first_name,
-        last_name,
-        avatar_url,
-        primary_position,
-        grad_year,
-        gpa
-      )
-    `)
-    .eq('team_id', teamId);
-
-  if (membersError) {
-    await logServerError(`[Baseball Academics] Team members error: ${membersError instanceof Error ? membersError.message : String(membersError)}`, { action: 'academics.getTeamAcademics' });
-    return { success: false as const, error: 'Failed to load team data.' };
+  try {
+    return await getTeamAcademicsAction(teamId);
+  } catch (error) {
+    await logServerError(
+      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'academics.getTeamAcademics', featureArea: 'baseball-academics' },
+    );
+    return mapAcademicsActionError(error);
   }
-
-  // Get eligibility records for all players
-  const playerIds = (members || []).map(m => m.player_id).filter(Boolean);
-  let eligibilityRecords: BaseballAcademicEligibility[] = [];
-
-  if (playerIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: eligData } = await (supabase as any)
-      .from('baseball_academic_eligibility')
-      .select('*')
-      .in('player_id', playerIds);
-    eligibilityRecords = (eligData || []) as BaseballAcademicEligibility[];
-  }
-
-  // Get class counts per player
-  let classCounts: Record<string, number> = {};
-  if (playerIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: classData } = await (supabase as any)
-      .from('baseball_player_classes')
-      .select('player_id')
-      .in('player_id', playerIds);
-
-    if (classData) {
-      classCounts = (classData as { player_id: string }[]).reduce((acc, c) => {
-        acc[c.player_id] = (acc[c.player_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-    }
-  }
-
-  type PlayerData = {
-    id?: string;
-    first_name?: string | null;
-    last_name?: string | null;
-    avatar_url?: string | null;
-    primary_position?: string | null;
-    grad_year?: number | null;
-    gpa?: number | null;
-  };
-
-  const teamData = (members || []).map(m => {
-    const player = m.baseball_players as PlayerData | null;
-    const eligibility = eligibilityRecords.find(e => e.player_id === m.player_id);
-    return {
-      member_id: m.id,
-      player_id: m.player_id,
-      first_name: player?.first_name || null,
-      last_name: player?.last_name || null,
-      avatar_url: player?.avatar_url || null,
-      primary_position: player?.primary_position || null,
-      grad_year: player?.grad_year || null,
-      gpa: eligibility?.gpa ?? player?.gpa ?? null,
-      credits_completed: eligibility?.credits_completed ?? null,
-      credits_required: eligibility?.credits_required ?? 60,
-      is_eligible: eligibility?.is_eligible ?? true,
-      academic_standing: eligibility?.academic_standing ?? 'good' as const,
-      class_count: classCounts[m.player_id] || 0,
-      eligibility_id: eligibility?.id ?? null,
-    };
-  });
-
-  return { success: true as const, data: teamData };
 }
+
+const getTeamAcademicsAction = withBaseballAction(
+  'getTeamAcademics',
+  {
+    featureArea: 'baseball-academics',
+    requiredCapability: 'can_view_academics',
+    teamFrom: (teamId: string) => teamId,
+    demoSafe: true,
+  },
+  async (_ctx, teamId: string) => {
+    const supabase = await createClient();
+
+    // Get team members with player info
+    const { data: members, error: membersError } = await supabase
+      .from('baseball_team_members')
+      .select(`
+        id,
+        player_id,
+        baseball_players (
+          id,
+          first_name,
+          last_name,
+          avatar_url,
+          primary_position,
+          grad_year,
+          gpa
+        )
+      `)
+      .eq('team_id', teamId);
+
+    if (membersError) {
+      await logServerError(`[Baseball Academics] Team members error: ${membersError instanceof Error ? membersError.message : String(membersError)}`, { action: 'academics.getTeamAcademics' });
+      return { success: false as const, error: 'Failed to load team data.' };
+    }
+
+    // Get eligibility records for all players
+    const playerIds = (members || []).map(m => m.player_id).filter(Boolean);
+    let eligibilityRecords: BaseballAcademicEligibility[] = [];
+
+    if (playerIds.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: eligData } = await (supabase as any)
+        .from('baseball_academic_eligibility')
+        .select('*')
+        .in('player_id', playerIds);
+      eligibilityRecords = (eligData || []) as BaseballAcademicEligibility[];
+    }
+
+    // Get class counts per player
+    let classCounts: Record<string, number> = {};
+    if (playerIds.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: classData } = await (supabase as any)
+        .from('baseball_player_classes')
+        .select('player_id')
+        .in('player_id', playerIds);
+
+      if (classData) {
+        classCounts = (classData as { player_id: string }[]).reduce((acc, c) => {
+          acc[c.player_id] = (acc[c.player_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+      }
+    }
+
+    type PlayerData = {
+      id?: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      avatar_url?: string | null;
+      primary_position?: string | null;
+      grad_year?: number | null;
+      gpa?: number | null;
+    };
+
+    const teamData = (members || []).map(m => {
+      const player = m.baseball_players as PlayerData | null;
+      const eligibility = eligibilityRecords.find(e => e.player_id === m.player_id);
+      return {
+        member_id: m.id,
+        player_id: m.player_id,
+        first_name: player?.first_name || null,
+        last_name: player?.last_name || null,
+        avatar_url: player?.avatar_url || null,
+        primary_position: player?.primary_position || null,
+        grad_year: player?.grad_year || null,
+        gpa: eligibility?.gpa ?? player?.gpa ?? null,
+        credits_completed: eligibility?.credits_completed ?? null,
+        credits_required: eligibility?.credits_required ?? 60,
+        is_eligible: eligibility?.is_eligible ?? true,
+        academic_standing: eligibility?.academic_standing ?? 'good' as const,
+        class_count: classCounts[m.player_id] || 0,
+        eligibility_id: eligibility?.id ?? null,
+      };
+    });
+
+    return { success: true as const, data: teamData };
+  },
+);
 
 // ============================================================================
 // PLAYER: CLASSES
 // ============================================================================
 
-export async function getPlayerClasses(playerId: string) {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('baseball_player_classes')
-    .select('*')
-    .eq('player_id', playerId)
-    .order('start_time', { ascending: true });
-
-  if (error) {
-    await logServerError(`[Baseball Academics] Fetch classes error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.getPlayerClasses' });
-    return { success: false as const, error: 'Failed to load classes.' };
+async function assertPlayerClassAccess(
+  ctx: { activeTeamId: string; activePlayerId: string | null },
+  playerId: string,
+): Promise<void> {
+  if (ctx.activePlayerId === playerId) {
+    return;
   }
-
-  return { success: true as const, data: (data || []) as BaseballPlayerClass[] };
+  await requireBaseballCapability(ctx.activeTeamId, 'can_view_academics');
+  const supabase = await createClient();
+  const { data: membership } = await supabase
+    .from('baseball_team_members')
+    .select('id')
+    .eq('team_id', ctx.activeTeamId)
+    .eq('player_id', playerId)
+    .maybeSingle();
+  if (!membership) {
+    throw new BaseballUnauthorizedError('This player is not on your active team.');
+  }
 }
+
+export async function getPlayerClasses(playerId: string) {
+  try {
+    return await getPlayerClassesAction(playerId);
+  } catch (error) {
+    await logServerError(
+      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'academics.getPlayerClasses', featureArea: 'baseball-academics' },
+    );
+    return mapAcademicsActionError<BaseballPlayerClass[]>(error);
+  }
+}
+
+const getPlayerClassesAction = withBaseballAction(
+  'getPlayerClasses',
+  { featureArea: 'baseball-academics', demoSafe: true },
+  async (ctx, playerId: string) => {
+    await assertPlayerClassAccess(ctx, playerId);
+
+    const supabase = await createClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('baseball_player_classes')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      await logServerError(`[Baseball Academics] Fetch classes error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.getPlayerClasses' });
+      return { success: false as const, error: 'Failed to load classes.' };
+    }
+
+    return { success: true as const, data: (data || []) as BaseballPlayerClass[] };
+  },
+);
 
 export async function addPlayerClass(playerId: string, data: {
   class_name: string;
@@ -237,6 +296,38 @@ export async function addPlayerClass(playerId: string, data: {
   notes?: string;
 }) {
   try {
+    return await addPlayerClassAction(playerId, data);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
+    }
+    await logServerError(
+      `[Baseball Academics] Unexpected error: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'academics.addPlayerClass', featureArea: 'baseball-academics' },
+    );
+    return mapAcademicsActionError<BaseballPlayerClass>(err);
+  }
+}
+
+const addPlayerClassAction = withBaseballAction(
+  'addPlayerClass',
+  { featureArea: 'baseball-academics' },
+  async (ctx, playerId: string, data: {
+    class_name: string;
+    instructor?: string;
+    days?: string[];
+    start_time?: string;
+    end_time?: string;
+    building?: string;
+    room?: string;
+    credits?: number;
+    semester?: string;
+    color?: string;
+    team_id?: string;
+    notes?: string;
+  }) => {
+    await assertPlayerClassAccess(ctx, playerId);
+
     const validated = addClassSchema.parse({
       player_id: playerId,
       team_id: data.team_id || null,
@@ -269,12 +360,23 @@ export async function addPlayerClass(playerId: string, data: {
 
     revalidatePath('/baseball/dashboard/academics');
     return { success: true as const, data: created as BaseballPlayerClass };
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
-    }
-    await logServerError(`[Baseball Academics] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'academics.addPlayerClass' });
-    return { success: false as const, error: 'An unexpected error occurred.' };
+  },
+);
+
+async function assertOwnPlayerClass(
+  ctx: { activePlayerId: string | null },
+  classId: string,
+): Promise<void> {
+  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (supabase as any)
+    .from('baseball_player_classes')
+    .select('player_id')
+    .eq('id', classId)
+    .maybeSingle();
+
+  if (!existing || existing.player_id !== ctx.activePlayerId) {
+    throw new BaseballUnauthorizedError('You can only edit your own classes.');
   }
 }
 
@@ -291,64 +393,133 @@ export async function updatePlayerClass(classId: string, data: {
   color?: string | null;
   notes?: string | null;
 }) {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: updated, error } = await (supabase as any)
-    .from('baseball_player_classes')
-    .update(data)
-    .eq('id', classId)
-    .select()
-    .single();
-
-  if (error) {
-    await logServerError(`[Baseball Academics] Update class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.updatePlayerClass' });
-    return { success: false as const, error: 'Failed to update class.' };
+  try {
+    return await updatePlayerClassAction(classId, data);
+  } catch (error) {
+    await logServerError(
+      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'academics.updatePlayerClass', featureArea: 'baseball-academics' },
+    );
+    return mapAcademicsActionError<BaseballPlayerClass>(error);
   }
-
-  revalidatePath('/baseball/dashboard/academics');
-  return { success: true as const, data: updated as BaseballPlayerClass };
 }
+
+const updatePlayerClassAction = withBaseballAction(
+  'updatePlayerClass',
+  { featureArea: 'baseball-academics' },
+  async (ctx, classId: string, data: {
+    class_name?: string;
+    instructor?: string | null;
+    days?: string[] | null;
+    start_time?: string | null;
+    end_time?: string | null;
+    building?: string | null;
+    room?: string | null;
+    credits?: number | null;
+    semester?: string | null;
+    color?: string | null;
+    notes?: string | null;
+  }) => {
+    await assertOwnPlayerClass(ctx, classId);
+
+    const supabase = await createClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: updated, error } = await (supabase as any)
+      .from('baseball_player_classes')
+      .update(data)
+      .eq('id', classId)
+      .select()
+      .single();
+
+    if (error) {
+      await logServerError(`[Baseball Academics] Update class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.updatePlayerClass' });
+      return { success: false as const, error: 'Failed to update class.' };
+    }
+
+    revalidatePath('/baseball/dashboard/academics');
+    return { success: true as const, data: updated as BaseballPlayerClass };
+  },
+);
 
 export async function deletePlayerClass(classId: string) {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
-    .from('baseball_player_classes')
-    .delete()
-    .eq('id', classId);
-
-  if (error) {
-    await logServerError(`[Baseball Academics] Delete class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.deletePlayerClass' });
-    return { success: false as const, error: 'Failed to delete class.' };
+  try {
+    return await deletePlayerClassAction(classId);
+  } catch (error) {
+    await logServerError(
+      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'academics.deletePlayerClass', featureArea: 'baseball-academics' },
+    );
+    return mapAcademicsActionError(error);
   }
-
-  revalidatePath('/baseball/dashboard/academics');
-  return { success: true as const };
 }
+
+const deletePlayerClassAction = withBaseballAction(
+  'deletePlayerClass',
+  { featureArea: 'baseball-academics' },
+  async (ctx, classId: string) => {
+    await assertOwnPlayerClass(ctx, classId);
+
+    const supabase = await createClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('baseball_player_classes')
+      .delete()
+      .eq('id', classId);
+
+    if (error) {
+      await logServerError(`[Baseball Academics] Delete class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.deletePlayerClass' });
+      return { success: false as const, error: 'Failed to delete class.' };
+    }
+
+    revalidatePath('/baseball/dashboard/academics');
+    return { success: true as const };
+  },
+);
 
 // ============================================================================
 // COACH: ELIGIBILITY
 // ============================================================================
 
 export async function getTeamEligibility(teamId: string) {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('baseball_academic_eligibility')
-    .select('*')
-    .eq('team_id', teamId)
-    .order('updated_at', { ascending: false });
-
-  if (error) {
-    await logServerError(`[Baseball Academics] Eligibility error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.getTeamEligibility' });
-    return { success: false as const, error: 'Failed to load eligibility data.' };
+  try {
+    return await getTeamEligibilityAction(teamId);
+  } catch (error) {
+    await logServerError(
+      `[Baseball Academics] Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'academics.getTeamEligibility', featureArea: 'baseball-academics' },
+    );
+    return mapAcademicsActionError<BaseballAcademicEligibility[]>(error);
   }
-
-  return { success: true as const, data: (data || []) as BaseballAcademicEligibility[] };
 }
+
+const getTeamEligibilityAction = withBaseballAction(
+  'getTeamEligibility',
+  {
+    featureArea: 'baseball-academics',
+    requiredCapability: 'can_view_academics',
+    teamFrom: (teamId: string) => teamId,
+    demoSafe: true,
+  },
+  async (_ctx, teamId: string) => {
+    const supabase = await createClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('baseball_academic_eligibility')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      await logServerError(`[Baseball Academics] Eligibility error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.getTeamEligibility' });
+      return { success: false as const, error: 'Failed to load eligibility data.' };
+    }
+
+    return { success: true as const, data: (data || []) as BaseballAcademicEligibility[] };
+  },
+);
 
 export async function updateEligibility(id: string, data: {
   gpa?: number | null;
