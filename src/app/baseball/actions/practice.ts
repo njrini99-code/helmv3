@@ -597,6 +597,28 @@ export interface PlayerPracticeView {
   myAttendanceStatus: string | null;
 }
 
+/** Format an ISO timestamptz (e.g. baseball_events.start_time) to a local
+ * "HH:mm" wall-clock string. Returns null on missing/unparseable input —
+ * never fabricates a time. */
+function isoToClock(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Format an ISO timestamptz to a local "YYYY-MM-DD" date string. Returns
+ * null on missing/unparseable input. */
+function isoToDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 /**
  * Get the most recent published practices for the active team, in the player's
  * personalized view. Blocks marked staff_only are hidden. Each block is
@@ -625,10 +647,16 @@ export async function getPlayerPractices(): Promise<
   const playerId = context.activePlayerId; // null for coaches
 
   // Fetch published practices + their player-visible blocks + attendance.
+  // event_id is nullable (a practice may be published without a calendar
+  // event attached), so baseball_events must be a LEFT embed (no `!inner`) —
+  // otherwise practices without a linked event would silently disappear from
+  // this list. This mirrors the join pattern in
+  // src/lib/baseball/read-models/player-today.ts, minus the `!inner`.
   const { data: practices, error: practiceErr } = await fromUntyped(supabase, 'baseball_practices')
     .select(
       `
       id, title, focus, published_at, status, event_id,
+      event:baseball_events(start_time, end_time, location),
       blocks:baseball_practice_blocks(
         id, start_offset_min, duration_min, activity, description,
         location, station_type, group_label, equipment, is_measured,
@@ -716,7 +744,15 @@ export async function getPlayerPractices(): Promise<
   // Shape the response.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const views: PlayerPracticeView[] = (practices ?? []).map((p: any) => {
-    const startTime: string | null = p.calendar_start_time ?? null;
+    // baseball_practices has no calendar_* columns of its own — those live on
+    // the linked baseball_events row (event_id -> baseball_events.id), joined
+    // above as `event`. The embed can come back as an object or a 1-item
+    // array depending on how PostgREST infers the relationship cardinality,
+    // so normalize both shapes the same way coach_owner is handled below.
+    const event = Array.isArray(p.event) ? p.event[0] : p.event;
+    const eventStartIso: string | null = event?.start_time ?? null;
+    const eventEndIso: string | null = event?.end_time ?? null;
+    const startTime: string | null = isoToClock(eventStartIso);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const visibleBlocks = (p.blocks ?? []).filter((b: any) => b.visibility !== 'staff_only');
@@ -765,10 +801,10 @@ export async function getPlayerPractices(): Promise<
       title: p.title,
       focus: p.focus ?? null,
       publishedAt: p.published_at ?? null,
-      calendarDate: p.calendar_date ?? null,
+      calendarDate: isoToDate(eventStartIso),
       calendarStartTime: startTime,
-      calendarEndTime: p.calendar_end_time ?? null,
-      location: p.location ?? null,
+      calendarEndTime: isoToClock(eventEndIso),
+      location: event?.location ?? null,
       totalMinutes,
       blocks,
       myAttendanceStatus: myAtt?.status ?? null,
