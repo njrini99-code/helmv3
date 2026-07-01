@@ -74,6 +74,7 @@ const CAPABILITY_DEFS: { key: string; label: string; help: string }[] = [
   { key: 'can_modify_availability', label: 'Modify availability', help: 'Set player availability status and return-to-play.' },
   { key: 'can_view_private_notes', label: 'View private notes', help: 'Read staff-only private notes.' },
   { key: 'can_export_reports', label: 'Export reports', help: 'Export performance and team reports.' },
+  { key: 'can_manage_documents', label: 'Manage documents', help: 'Upload, edit, and delete the team document library.' },
 ];
 
 const CAP_KEYS = CAPABILITY_DEFS.map((c) => c.key);
