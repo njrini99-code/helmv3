@@ -83,7 +83,7 @@ import type { RankingContext } from '@/lib/coachhelm/baseball/ranking';
 import type { BaseballInsightSourceRef } from '@/lib/types/baseball-coachhelm';
 import { MATURED_RETRACT_AFTER_DAYS } from '@/lib/coachhelm/shared/base-generator';
 import { signalFromInsightWithAudit } from '@/lib/baseball/signal-from-insight';
-import type { BaseballSignalInsert } from '@/lib/types/baseball-signals';
+import { OPEN_SIGNAL_DISPOSITIONS, type BaseballSignalInsert } from '@/lib/types/baseball-signals';
 import { decideAiGenerationAllowed, type AiPolicy } from '@/lib/baseball/ai-policy';
 import type { BaseballAiAuditInsert } from '@/lib/types/baseball-ai-audit';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -117,6 +117,16 @@ const MATURED_MIN_AGE_DAYS = MATURED_RETRACT_AFTER_DAYS;
  * already enforces above.
  */
 const COACH_TRIAGED_STATUSES = new Set(['dismissed', 'addressed', 'resolved']);
+
+/**
+ * `baseball_signals.disposition` values that represent a terminal COACH
+ * decision on the SIGNAL side (as distinct from `OPEN_SIGNAL_DISPOSITIONS`,
+ * which is what the table's partial unique index covers). Used by the #473
+ * cross-surface fix below: a candidate whose paired signal already carries one
+ * of these, with no open row left for the same dedupe_key, must not be
+ * re-emitted as a fresh 'new' row.
+ */
+const SIGNAL_COACH_TRIAGED_DISPOSITIONS = new Set(['dismissed', 'resolved', 'converted']);
 
 /** Prior persisted state of an insight row, keyed by dedupe_key, used to (a) feed
  *  lifecycleState into the ranker, (b) carry the maturity counters forward on a
@@ -664,6 +674,38 @@ export async function runBaseballEngineCore(
   }
 
   // 5. EMIT SIGNALS — promote medium+ ranked candidates into baseball_signals.
+  //
+  // Cross-surface companion to the #473 insight-skip above: `baseball_signals`
+  // only has a PARTIAL unique index on (team_id, dedupe_key) that covers OPEN
+  // dispositions (OPEN_SIGNAL_DISPOSITIONS: new/acknowledged/sample_too_small —
+  // see migration 20260624000092). Once a coach sets a signal to a terminal
+  // disposition (dismissed/resolved/converted) and NO open row remains for that
+  // dedupe_key, that row falls outside the upsert's conflict target. Re-emitting
+  // the same dedupe_key would then INSERT a brand-new 'new' row alongside the
+  // terminal one instead of updating it — resurrecting a signal the coach
+  // already triaged on the live Signals tab. We fetch the prior dispositions
+  // per dedupe_key up front and skip re-emission for any key whose ONLY rows
+  // are coach-triaged terminal ones (an open row still present means the normal
+  // upsert-refresh path is safe and correct).
+  const { data: priorSignalRows } = await db
+    .from('baseball_signals')
+    .select('dedupe_key, disposition')
+    .eq('team_id', teamId)
+    .not('dedupe_key', 'is', null);
+  const openSignalKeys = new Set<string>();
+  const terminalSignalKeys = new Set<string>();
+  for (const r of (priorSignalRows ?? []) as Array<{
+    dedupe_key: string | null;
+    disposition: string | null;
+  }>) {
+    if (!r.dedupe_key || !r.disposition) continue;
+    if ((OPEN_SIGNAL_DISPOSITIONS as readonly string[]).includes(r.disposition)) {
+      openSignalKeys.add(r.dedupe_key);
+    } else if (SIGNAL_COACH_TRIAGED_DISPOSITIONS.has(r.disposition)) {
+      terminalSignalKeys.add(r.dedupe_key);
+    }
+  }
+
   let signalsEmitted = 0;
   let aiWithheld = 0;
   const signalKeys = new Set<string>();
@@ -672,6 +714,13 @@ export async function runBaseballEngineCore(
 
   for (const c of candidates) {
     const key = `${c.generator}:${c.playerId ?? 'team'}`;
+
+    // Coach already triaged the paired signal to a terminal disposition and no
+    // open row exists to refresh — do not resurrect it as a fresh 'new' row.
+    if (terminalSignalKeys.has(key) && !openSignalKeys.has(key)) {
+      continue;
+    }
+
     const audit = signalFromInsightWithAudit(c, {
       teamId,
       createdByUserId,

@@ -504,7 +504,7 @@ function analyzeTeam(
  * compares two different id domains and rejects every real coach. Returns
  * null when the user has no coach row.
  */
-async function resolveCallerCoachId(
+export async function resolveCallerCoachId(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   userId: string,
