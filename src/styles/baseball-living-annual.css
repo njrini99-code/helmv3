@@ -28,11 +28,13 @@
  * ========================================================================== */
 
 :root {
-  /* ---- Base editorial neutrals ---- */
-  --paper:        #FFFEFA;   /* cream canvas (alias — not previously defined) */
-  --hairline:     #E7E3D8;   /* THE border — does the work of most cards */
+  /* ---- Base editorial neutrals — DEEP WARM CREAM (founder: "less white") ---- */
+  --paper:        #F3EAD6;   /* card cream — surfaces, never #fff/near-white */
+  --paper-canvas: #EAE1CE;   /* page cream — a shade deeper than the cards */
+  --hairline:     #D6CBB0;   /* THE border — warm, does the work of most cards */
 
   /* ---- Two inks ---- */
+  --team-ink:     #16A34A;   /* green — team & development (alias of grade-plus) */
   --pursuit-ink:  #C2703D;   /* infield-clay terracotta — recruiting & urgency */
   --pursuit-deep: #7A2E22;   /* oxblood — seals & stamps only */
 
@@ -45,4 +47,25 @@
   --clay:         #17130F;   /* warm dirt-black, never blue-black */
   --chalk:        #F4EFE6;   /* chalk hairlines/grid on clay */
   --sodium:       #F5A623;   /* PR / live / in-progress accent — sparingly */
+}
+
+/* ============================================================================
+ * .living-annual — the BaseballHelm cream scope (founder: "less white, more
+ * cream"). Applied on the baseball redesign shell root (BaseballFairwayShell)
+ * so it wraps every baseball surface WITHOUT touching golf: it re-points the
+ * Fairway surface tokens (--fw-color-*) to warm cream for descendants only.
+ * The dark recessive nav rail (--nav-bg) is a SEPARATE token and stays dark —
+ * "less white" targets the content surfaces, not the rail. Text tokens keep
+ * their dark values → graphite-on-cream contrast holds. Golf never carries this
+ * class, so its palette is unchanged.
+ * ========================================================================== */
+.living-annual {
+  --fw-color-canvas:        #EAE1CE;   /* page — deep warm cream */
+  --fw-color-surface:       #F3EAD6;   /* card — lighter cream, never white */
+  --fw-color-surface-tint:  #EDE4D0;
+  --fw-color-surface-sunken:#E1D7BF;
+  --fw-color-elevated:      #F6EFDF;
+  --fw-color-border-subtle: #D6CBB0;   /* warm hairline */
+  --fw-color-border-strong: #C6B994;
+  background-color: var(--fw-color-canvas);
 }

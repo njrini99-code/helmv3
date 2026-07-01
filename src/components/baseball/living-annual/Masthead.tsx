@@ -87,12 +87,12 @@ export function Masthead({
         </m.div>
       ) : null}
 
-      <m.div variants={item} className="font-serif text-3xl font-normal leading-[0.95] text-text-primary md:text-4xl">
+      <m.div variants={item} className="font-annual text-3xl font-normal leading-[0.95] text-text-primary md:text-4xl">
         {given}
       </m.div>
       <m.div
         variants={item}
-        className="font-serif text-5xl font-medium uppercase leading-[0.9] tracking-tight text-text-primary md:text-7xl"
+        className="font-annual text-5xl font-medium uppercase leading-[0.9] tracking-tight text-text-primary md:text-7xl"
         style={{ fontVariant: 'small-caps' }}
       >
         {surname}

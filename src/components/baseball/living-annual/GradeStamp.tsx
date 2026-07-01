@@ -70,7 +70,7 @@ export function GradeStamp({ value, tool, present = true, rotate, size = 'md', c
         />
       ) : null}
 
-      <span className={cn('relative font-fw-mono font-semibold leading-none tabular-nums', dims.num)}>{value}</span>
+      <span className={cn('relative font-annual font-semibold leading-none tabular-nums', dims.num)}>{value}</span>
       <span className={cn('relative mt-0.5 uppercase tracking-[0.14em] text-text-tertiary', dims.tool)}>{tool}</span>
     </m.div>
   );

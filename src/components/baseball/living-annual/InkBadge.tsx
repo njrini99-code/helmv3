@@ -40,7 +40,7 @@ export function InkBadge({ label, tone = 'neutral', variant = 'soft', className 
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-fw-sm px-1.5 py-0.5 font-fw-mono text-microbadge uppercase leading-none tracking-[0.12em]',
+        'inline-flex items-center rounded-fw-sm px-1.5 py-0.5 font-annual text-microbadge uppercase leading-none tracking-[0.12em]',
         text,
         solid && 'border',
         className,

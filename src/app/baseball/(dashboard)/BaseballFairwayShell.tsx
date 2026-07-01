@@ -307,7 +307,11 @@ function BaseballFairwayContent({
   );
 
   return (
-    <>
+    // `.living-annual` re-points the Fairway surface tokens to warm cream for
+    // the whole baseball subtree (founder: "less white, more cream"); golf never
+    // carries the class. `display:contents` so it only provides CSS-var
+    // inheritance — no extra box, no layout impact on AppShell.
+    <div className="living-annual" style={{ display: 'contents' }}>
       {skipLink}
 
       <AppShell
@@ -342,7 +346,7 @@ function BaseballFairwayContent({
 
       {/* Same global the legacy BaseballDashboardShell mounts unconditionally. */}
       <CommandPalette navContext={ctx} />
-    </>
+    </div>
   );
 }
 

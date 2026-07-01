@@ -125,13 +125,13 @@ export function ToolRail({ value, future, ink = 'team', label, compare, classNam
 
       {/* End + average labels */}
       <div className="relative mt-1 h-4">
-        <span className="absolute left-0 -translate-x-0 font-fw-mono text-eyebrow tabular-nums text-text-tertiary">20</span>
+        <span className="absolute left-0 -translate-x-0 font-annual text-eyebrow tabular-nums text-text-tertiary">20</span>
         <span
           className="absolute left-1/2 -translate-x-1/2 text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary"
         >
           MLB AVG
         </span>
-        <span className="absolute right-0 font-fw-mono text-eyebrow tabular-nums text-text-tertiary">80</span>
+        <span className="absolute right-0 font-annual text-eyebrow tabular-nums text-text-tertiary">80</span>
       </div>
     </div>
   );

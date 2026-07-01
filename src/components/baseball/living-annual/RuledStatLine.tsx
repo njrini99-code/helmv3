@@ -129,7 +129,7 @@ export function RuledStatLine({
           initial="hidden"
           animate="visible"
           variants={settle}
-          className={cn('flex items-baseline gap-2 pb-1 font-serif leading-none', numeralInk, numeralSize)}
+          className={cn('flex items-baseline gap-2 pb-1 font-annual leading-none', numeralInk, numeralSize)}
         >
           {ghost ? (
             <span aria-hidden className="tabular-nums">
@@ -139,7 +139,7 @@ export function RuledStatLine({
             <StatReadout value={value} decimals={decimals} className="text-[inherit]" ariaLabel={label} />
           )}
           {unit ? (
-            <span className="font-fw-mono text-[0.32em] uppercase tracking-[0.12em] text-text-tertiary">{unit}</span>
+            <span className="font-annual text-[0.32em] uppercase tracking-[0.12em] text-text-tertiary">{unit}</span>
           ) : null}
         </m.div>
         {/* Baseline rule carries the lane ink (green/clay), not a gray hairline;

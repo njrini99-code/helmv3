@@ -5,7 +5,7 @@
  *
  * "ODOMETER TRUTH" (spec §4.4 #3): a numeric value rolls mechanically via the
  * shared Number Flow odometer (wraps `<AnimatedNumber>`), locked to
- * `font-fw-mono tabular-nums` so digits never jitter. A string value (e.g. a
+ * `font-annual tabular-nums` so digits never jitter. A string value (e.g. a
  * slash-line fragment or an em-dash placeholder) renders statically in the
  * same mono figures.
  *
@@ -90,7 +90,7 @@ export function StatReadout({
   return (
     <span
       className={cn(
-        'relative inline-flex items-baseline font-fw-mono tabular-nums',
+        'relative inline-flex items-baseline font-annual tabular-nums',
         emphasis ? 'text-grade-plus' : 'text-text-primary',
         className,
       )}

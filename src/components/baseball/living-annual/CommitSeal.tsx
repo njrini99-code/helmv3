@@ -72,12 +72,12 @@ export function CommitSeal({ label, variant = 'commit', size = 'md', rotate = -1
 
         {variant === 'packet' ? (
           <span className="relative flex flex-col items-center leading-none">
-            <span className={cn('font-serif font-medium', dims.mono)}>H</span>
+            <span className={cn('font-annual font-medium', dims.mono)}>H</span>
             <span className={cn('mt-1 uppercase tracking-[0.16em] opacity-90', dims.label)}>{text}</span>
           </span>
         ) : (
           <span
-            className={cn('relative px-2 text-center font-serif font-medium uppercase leading-tight tracking-[0.08em]', dims.label)}
+            className={cn('relative px-2 text-center font-annual font-medium uppercase leading-tight tracking-[0.08em]', dims.label)}
           >
             {text}
           </span>

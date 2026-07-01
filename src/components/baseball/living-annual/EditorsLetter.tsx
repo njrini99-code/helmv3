@@ -77,11 +77,11 @@ export function EditorsLetter({
         className={cn('mb-4 h-[2px] w-14 origin-left rounded-full', tone.bg)}
       />
 
-      <h3 className="font-serif text-2xl font-normal leading-tight text-text-primary">{title}</h3>
+      <h3 className="font-annual text-2xl font-normal leading-tight text-text-primary">{title}</h3>
 
-      {body ? <div className="mt-3 max-w-prose font-serif text-body-lg leading-relaxed text-text-secondary">{body}</div> : null}
+      {body ? <div className="mt-3 max-w-prose font-annual text-body-lg leading-relaxed text-text-secondary">{body}</div> : null}
 
-      {signoff ? <p className="mt-4 font-serif text-sm italic text-text-tertiary">{signoff}</p> : null}
+      {signoff ? <p className="mt-4 font-annual text-sm italic text-text-tertiary">{signoff}</p> : null}
 
       {action ? <div className="mt-6">{action}</div> : null}
     </PaperCard>
