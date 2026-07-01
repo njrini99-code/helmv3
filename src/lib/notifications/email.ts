@@ -771,10 +771,14 @@ async function getRecipientGreeting(userId: string): Promise<string> {
       .maybeSingle() as { data: { first_name: string | null } | null };
     if (bbPlayer?.first_name) return `Hi ${bbPlayer.first_name},`;
 
-    // 4. Baseball coach → last name from full_name
+    // 4. Baseball coach → last name from full_name.
+    // Read from the baseball_coaches_public view (non-PII) so this greeting
+    // still resolves for the recipient coach once baseball_coaches RLS is
+    // narrowed away from blanket read. (Session-less/anon callers get null
+    // here either way and fall through to the default greeting.)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: bbCoach } = await (supabase as any)
-      .from('baseball_coaches')
+      .from('baseball_coaches_public')
       .select('full_name')
       .eq('user_id', userId)
       .maybeSingle() as { data: { full_name: string | null } | null };

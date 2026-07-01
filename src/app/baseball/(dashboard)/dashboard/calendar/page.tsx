@@ -109,11 +109,14 @@ export default async function BaseballCalendarPage() {
       requires_rsvp: false,
     }));
 
-    // Coaches on this team
+    // Coaches on this team. Read non-PII identity from the baseball_coaches_public
+    // view (not the base table) so this player-reachable roster panel keeps
+    // listing coaches after baseball_coaches RLS is narrowed away from blanket
+    // read — a player is not a teammate of every org coach on the base table.
     const orgId = teamOrgResult.data?.organization_id;
     const coachesResult = orgId
       ? await supabase
-          .from('baseball_coaches')
+          .from('baseball_coaches_public')
           .select('id, full_name, avatar_url')
           .eq('organization_id', orgId)
           .limit(20)
@@ -121,7 +124,9 @@ export default async function BaseballCalendarPage() {
 
     teamMembers = [
       // Parse coach full_name → first/last
-      ...(coachesResult.data || []).map((c) => {
+      ...(coachesResult.data || [])
+        .filter((c): c is typeof c & { id: string } => Boolean(c.id))
+        .map((c) => {
         const parts = (c.full_name || 'Coach').split(' ');
         return {
           id: c.id,
