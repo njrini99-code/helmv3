@@ -664,64 +664,124 @@ export type Database = {
       }
       baseball_ai_audit: {
         Row: {
+          confidence: number | null
           cost_usd: number | null
           created_at: string
+          created_by: string | null
           dedupe_key: string | null
+          desired_visibility: string | null
+          disposition: string | null
           error_message: string | null
+          generated_at: string
+          generator: string | null
+          guardrail_academic: boolean
+          guardrail_medical: boolean
+          guardrail_redacted: boolean
           id: string
           input_token_count: number | null
           latency_ms: number | null
           metadata: Json
+          model: string | null
           model_id: string | null
           outcome: string | null
           outcome_at: string | null
           outcome_by: string | null
           output_hash: string | null
+          output_id: string | null
           output_kind: string
+          output_table: string | null
           output_token_count: number | null
           player_id: string | null
           prompt_hash: string | null
+          prompt_version: string | null
+          provider: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_refs: Json
           team_id: string
+          updated_at: string
+          visibility: string | null
+          withheld_reason: string | null
         }
         Insert: {
+          confidence?: number | null
           cost_usd?: number | null
           created_at?: string
+          created_by?: string | null
           dedupe_key?: string | null
+          desired_visibility?: string | null
+          disposition?: string | null
           error_message?: string | null
+          generated_at?: string
+          generator?: string | null
+          guardrail_academic?: boolean
+          guardrail_medical?: boolean
+          guardrail_redacted?: boolean
           id?: string
           input_token_count?: number | null
           latency_ms?: number | null
           metadata?: Json
+          model?: string | null
           model_id?: string | null
           outcome?: string | null
           outcome_at?: string | null
           outcome_by?: string | null
           output_hash?: string | null
+          output_id?: string | null
           output_kind: string
+          output_table?: string | null
           output_token_count?: number | null
           player_id?: string | null
           prompt_hash?: string | null
+          prompt_version?: string | null
+          provider?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_refs?: Json
           team_id: string
+          updated_at?: string
+          visibility?: string | null
+          withheld_reason?: string | null
         }
         Update: {
+          confidence?: number | null
           cost_usd?: number | null
           created_at?: string
+          created_by?: string | null
           dedupe_key?: string | null
+          desired_visibility?: string | null
+          disposition?: string | null
           error_message?: string | null
+          generated_at?: string
+          generator?: string | null
+          guardrail_academic?: boolean
+          guardrail_medical?: boolean
+          guardrail_redacted?: boolean
           id?: string
           input_token_count?: number | null
           latency_ms?: number | null
           metadata?: Json
+          model?: string | null
           model_id?: string | null
           outcome?: string | null
           outcome_at?: string | null
           outcome_by?: string | null
           output_hash?: string | null
+          output_id?: string | null
           output_kind?: string
+          output_table?: string | null
           output_token_count?: number | null
           player_id?: string | null
           prompt_hash?: string | null
+          prompt_version?: string | null
+          provider?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_refs?: Json
           team_id?: string
+          updated_at?: string
+          visibility?: string | null
+          withheld_reason?: string | null
         }
         Relationships: [
           {
