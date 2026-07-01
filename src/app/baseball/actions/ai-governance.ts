@@ -26,6 +26,7 @@ import { revalidatePath } from 'next/cache';
 
 import { createClient } from '@/lib/supabase/server';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
+import { readAiPolicyWithClient } from '@/lib/baseball/ai-policy-server';
 import type { BaseballAiAuditRow } from '@/lib/types/baseball-ai-audit';
 
 // baseball_ai_audit + baseball_signals are not yet in the generated db types
@@ -117,6 +118,26 @@ export const approveAiOutput = withBaseballAction(
       // cannot be approved into player-visibility (its hard gate still applies).
       if (audit.disposition === 'approved') return { success: true };
       return { success: false, error: 'This AI output was withheld and cannot be approved.' };
+    }
+
+    // A 'pending' row can be pending for two different reasons that must NOT be
+    // treated the same: 'awaiting_approval' (a fresh player-visible candidate
+    // genuinely waiting on staff sign-off) vs 'player_visible_disabled' (the
+    // player-visible toggle itself is OFF — this row was downgraded to staff_only
+    // by the hard policy gate, not by a pending-approval workflow). Only the
+    // former is promotable; approving the latter would bypass the
+    // ai_player_visible_enabled switch entirely.
+    if (audit.withheld_reason !== 'awaiting_approval') {
+      return { success: false, error: 'This AI output was withheld and cannot be approved.' };
+    }
+
+    // Re-check the LIVE policy: a coach may have flipped player-visible AI off (or
+    // disabled AI entirely) since this row was generated. Approval must reflect the
+    // current toggle state, not a stale one captured at generation time — otherwise
+    // a delayed approval click could still leak output while the switch is off.
+    const policy = await readAiPolicyWithClient(supabase, ctx.targetTeamId);
+    if (!policy.enabled || !policy.playerVisibleEnabled) {
+      return { success: false, error: 'Player-visible AI is currently disabled for this team.' };
     }
 
     // The visibility the output should land at once approved is the visibility the
