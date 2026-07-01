@@ -32,6 +32,7 @@ jobs:
   ast-grep:
     name: ast-grep (project rules)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
@@ -40,7 +41,7 @@ jobs:
 
       - name: Install ast-grep
         run: |
-          curl -L https://github.com/ast-grep/ast-grep/releases/latest/download/app-x86_64-unknown-linux-gnu.zip -o ast-grep.zip
+          curl -L https://github.com/ast-grep/ast-grep/releases/download/0.44.0/app-x86_64-unknown-linux-gnu.zip -o ast-grep.zip
           unzip -q ast-grep.zip
           sudo mv ast-grep /usr/local/bin/sg
           sg --version
@@ -131,6 +132,7 @@ jobs:
   semgrep:
     name: semgrep (custom rules)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # The legacy `returntocorp/semgrep` namespace is deprecated and pinned to
     # an older semgrep that fails to parse `pattern-inside` blocks used by
     # helmv3-server-action-missing-auth-check and helmv3-destructive-write-pattern.
@@ -186,6 +188,7 @@ jobs:
   gitleaks:
     name: gitleaks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
@@ -199,6 +202,7 @@ jobs:
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
@@ -209,7 +213,10 @@ jobs:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          # Pinned to an immutable release tag (was `main`, a mutable branch —
+          # a compromised main could inject arbitrary code into this security
+          # gate via the piped install).
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash)
           mapfile -t workflows < <(bash .github/scripts/changed-files.sh '.github/workflows/*.yml' '.github/workflows/*.yaml')
           if [ "${#workflows[@]}" -eq 0 ]; then
             echo "No changed GitHub workflow files for actionlint."
@@ -220,6 +227,7 @@ jobs:
   yamllint:
     name: yamllint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
@@ -244,6 +252,7 @@ jobs:
   shellcheck:
     name: shellcheck
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
@@ -265,6 +274,7 @@ jobs:
   markdownlint:
     name: markdownlint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
@@ -289,6 +299,7 @@ jobs:
   python:
     name: ruff + pylint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
@@ -327,6 +338,7 @@ jobs:
   sqlfluff:
     name: sqlfluff
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
@@ -351,6 +363,7 @@ jobs:
   hadolint:
     name: hadolint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
@@ -363,7 +376,7 @@ jobs:
         run: |
           mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '(^|/)Dockerfile[^/]*$' || true)
           if [ "${#files[@]}" -gt 0 ]; then
-            curl -fsSL https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 -o hadolint
+            curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64 -o hadolint
             chmod +x hadolint
             ./hadolint --no-fail "${files[@]}"
           else
@@ -374,6 +387,7 @@ jobs:
     name: all
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs:
       - ast-grep
       - semgrep

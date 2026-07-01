@@ -22,6 +22,7 @@ jobs:
   database-types:
     name: Database types drift
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -46,6 +47,7 @@ jobs:
   schema-invariants:
     name: Schema invariants
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -58,6 +60,7 @@ jobs:
   feature-knowledge:
     name: Feature knowledge
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -80,6 +83,7 @@ jobs:
   typecheck:
     name: TypeScript
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -101,6 +105,7 @@ jobs:
   lint:
     name: ESLint
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -122,6 +127,7 @@ jobs:
   lint-ratchet:
     name: Lint ratchet
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -143,6 +149,7 @@ jobs:
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -164,6 +171,7 @@ jobs:
   business-contracts:
     name: Business contracts
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -185,6 +193,7 @@ jobs:
   next-build:
     name: Next build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -206,6 +215,7 @@ jobs:
   supabase:
     name: Supabase lint + RLS tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       SUPABASE_PROJECT_ID: helmv3
     steps:
@@ -250,6 +260,7 @@ jobs:
   route-hygiene:
     name: Route Hygiene P0/P1
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -274,6 +285,7 @@ jobs:
     name: all
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # NOTE: `supabase` (Supabase lint + RLS tests) is intentionally NOT in this
     # aggregate yet. The baseball pgTAP RLS suite is red on main today; its fix
     # lands in PR #423. The job still runs and stays visible as an advisory
