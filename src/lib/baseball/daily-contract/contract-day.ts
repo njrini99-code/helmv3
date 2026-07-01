@@ -79,6 +79,98 @@ export function todayIsoInTz(tz: string, now: Date = new Date()): string {
 }
 
 /**
+ * Minutes East of UTC the wall clock in IANA `tz` reads at instant `utcMs`.
+ * (e.g. America/New_York in July → -240, i.e. UTC-4/EDT.)
+ * Throws (RangeError) for an invalid IANA tz — callers catch this to degrade.
+ */
+function tzOffsetMinutesAt(utcMs: number, tz: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(utcMs));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? NaN);
+  const asUtcMs = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second'),
+  );
+  return (asUtcMs - utcMs) / 60_000;
+}
+
+/**
+ * The UTC instant (ms) of team-local midnight on `dateIso` in `tz`, or `null`
+ * on an invalid IANA tz.
+ *
+ * DST-SAFE: the tz offset can differ between the naive UTC-midnight guess and
+ * the true local-midnight instant when the day itself abuts a spring-forward/
+ * fall-back transition, so this resolves the offset TWICE — once at the naive
+ * guess, then again at the instant that guess implies — which converges to the
+ * correct wall-clock midnight even across a transition.
+ */
+function localMidnightUtcMs(dateIso: string, tz: string): number | null {
+  const [y, m, d] = dateIso.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  const naiveGuessMs = Date.UTC(y, m - 1, d, 0, 0, 0);
+  try {
+    const offset1 = tzOffsetMinutesAt(naiveGuessMs, tz);
+    const refinedGuessMs = naiveGuessMs - offset1 * 60_000;
+    const offset2 = tzOffsetMinutesAt(refinedGuessMs, tz);
+    return naiveGuessMs - offset2 * 60_000;
+  } catch {
+    // Invalid IANA tz (RangeError from Intl) — caller degrades to UTC.
+    return null;
+  }
+}
+
+/**
+ * The `[startUtcIso, endUtcIso]` instant range spanning the TEAM-LOCAL calendar
+ * day `dateIso` (YYYY-MM-DD) in IANA `tz` — team-local midnight through
+ * 23:59:59.999 team-local, expressed as UTC instants.
+ *
+ * THE GAP THIS CLOSES: a `.gte(dayStart).lte(dayEnd)` filter on a `timestamptz`
+ * event column previously used the literal `${day}T00:00:00.000Z` / `.999Z`,
+ * which silently assumes the team's midnight IS UTC midnight. For every
+ * non-UTC team that's wrong, and worst in the evening local time, when
+ * "today's" events fall just past the bogus UTC cutover and read as
+ * "tomorrow" (or vanish from "today").
+ *
+ * DST-SAFE (see `localMidnightUtcMs`). HONEST DEGRADE: an empty/invalid tz
+ * falls back to the literal UTC boundaries — the previous, pre-fix behavior —
+ * never throws.
+ */
+export function localDayBoundsUtc(
+  dateIso: string,
+  tz: string,
+): { startUtcIso: string; endUtcIso: string } {
+  const utcFallback = {
+    startUtcIso: `${dateIso}T00:00:00.000Z`,
+    endUtcIso: `${dateIso}T23:59:59.999Z`,
+  };
+  if (!tz) return utcFallback;
+
+  const startMs = localMidnightUtcMs(dateIso, tz);
+  if (startMs === null) return utcFallback;
+
+  const nextDayIso = isoMinusDays(dateIso, -1);
+  const nextMidnightMs = localMidnightUtcMs(nextDayIso, tz);
+  const endMs = (nextMidnightMs ?? startMs + 86_400_000) - 1;
+
+  return {
+    startUtcIso: new Date(startMs).toISOString(),
+    endUtcIso: new Date(endMs).toISOString(),
+  };
+}
+
+/**
  * Subtract n days from a bare ISO date (YYYY-MM-DD).
  *
  * UTC-noon-safe pure date arithmetic. This is correct to keep UTC: arithmetic on

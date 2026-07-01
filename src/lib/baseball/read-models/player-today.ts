@@ -50,6 +50,11 @@ import {
   resolveBaseballLiftingOrg,
   resolveMyBaseballAthleteId,
 } from '@/lib/lifting/resolve-baseball-context';
+import {
+  resolveTeamTimezone,
+  todayIsoInTz,
+  localDayBoundsUtc,
+} from '@/lib/baseball/daily-contract/contract-day';
 import { buildSourceRef, type SourceRef } from '@/lib/baseball/source-record';
 import {
   buildStampedSourceTrust,
@@ -504,11 +509,20 @@ export async function getPlayerToday(
   }
   const playerId = me.playerId;
 
-  const day = forDate ?? new Date().toISOString().slice(0, 10);
-  const dayStart = `${day}T00:00:00.000Z`;
-  const dayEnd = `${day}T23:59:59.999Z`;
+  // The TEAM's IANA tz is the single source of truth for "today" (mirrors the
+  // Daily Contract read/write — see contract-day.ts). `forDate` (when passed by
+  // the Today page) already carries this team-local calendar date; a caller
+  // that omits it still gets the team-local day, not the server's UTC day.
+  const teamTz = await resolveTeamTimezone(supabase, teamId);
+  const day = forDate ?? todayIsoInTz(teamTz);
+  // Event/practice filters below query a `timestamptz` column, so the boundary
+  // itself must be the team-local midnight expressed in UTC — not a literal
+  // `${day}T00:00:00.000Z`, which silently assumed the team's midnight IS UTC
+  // midnight (wrong for every non-UTC team, worst in the evening local time).
+  const { startUtcIso: dayStart, endUtcIso: dayEnd } = localDayBoundsUtc(day, teamTz);
   // Near-term upcoming window for assignments (today + next 6 days). Keeps the
   // daily loop forward-looking without dumping a whole program onto Today.
+  // (Bare calendar-date arithmetic is tz-independent — see isoMinusDays.)
   const horizon = new Date(`${day}T00:00:00.000Z`);
   horizon.setUTCDate(horizon.getUTCDate() + 6);
   const horizonYmd = horizon.toISOString().slice(0, 10);

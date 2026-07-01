@@ -13,6 +13,7 @@ import {
   todayIsoInTz,
   isoMinusDays,
   resolveTeamTimezone,
+  localDayBoundsUtc,
 } from '@/lib/baseball/daily-contract/contract-day';
 
 describe('todayIsoInTz', () => {
@@ -65,6 +66,49 @@ describe('isoMinusDays', () => {
   });
   it('subtracts across a year boundary', () => {
     expect(isoMinusDays('2026-01-01', 1)).toBe('2025-12-31');
+  });
+});
+
+describe('localDayBoundsUtc', () => {
+  it('resolves Pacific team-local midnight-to-midnight as UTC instants (PDT, UTC-7)', () => {
+    // 2026-06-23 local midnight PDT == 2026-06-23T07:00:00Z; the day ends just
+    // before the NEXT local midnight (2026-06-24T07:00:00Z), not 23:59:59Z.
+    expect(localDayBoundsUtc('2026-06-23', 'America/Los_Angeles')).toEqual({
+      startUtcIso: '2026-06-23T07:00:00.000Z',
+      endUtcIso: '2026-06-24T06:59:59.999Z',
+    });
+  });
+
+  it('resolves Eastern team-local midnight-to-midnight as UTC instants (EST, UTC-5)', () => {
+    expect(localDayBoundsUtc('2026-01-15', 'America/New_York')).toEqual({
+      startUtcIso: '2026-01-15T05:00:00.000Z',
+      endUtcIso: '2026-01-16T04:59:59.999Z',
+    });
+  });
+
+  it('is DST-safe across the spring-forward transition (each boundary resolves its own offset)', () => {
+    // 2026-03-08 is the US spring-forward day for America/New_York (2am EST ->
+    // 3am EDT). Local midnight AT THE START of the 8th is still EST (UTC-5);
+    // local midnight at the START of the 9th is already EDT (UTC-4) — a naive
+    // "add 24h" from the start boundary would land an hour off the true end.
+    expect(localDayBoundsUtc('2026-03-08', 'America/New_York')).toEqual({
+      startUtcIso: '2026-03-08T05:00:00.000Z',
+      endUtcIso: '2026-03-09T03:59:59.999Z',
+    });
+  });
+
+  it('honest degrade: an empty tz falls back to literal UTC boundaries (never throws)', () => {
+    expect(localDayBoundsUtc('2026-06-23', '')).toEqual({
+      startUtcIso: '2026-06-23T00:00:00.000Z',
+      endUtcIso: '2026-06-23T23:59:59.999Z',
+    });
+  });
+
+  it('honest degrade: an invalid IANA tz falls back to literal UTC boundaries (never throws)', () => {
+    expect(localDayBoundsUtc('2026-06-23', 'Not/A_Zone')).toEqual({
+      startUtcIso: '2026-06-23T00:00:00.000Z',
+      endUtcIso: '2026-06-23T23:59:59.999Z',
+    });
   });
 });
 
