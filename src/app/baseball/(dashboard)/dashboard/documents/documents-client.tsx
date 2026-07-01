@@ -16,6 +16,8 @@ import {
 } from '@/app/baseball/actions/documents';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
+import { DocumentsFairway } from '@/components/baseball/documents/DocumentsFairway';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 
 const UPLOAD_ACCEPT =
   'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,video/mp4,video/webm,video/quicktime';
@@ -131,6 +133,61 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       : d
     ));
     showToast('New version uploaded', 'success');
+  }
+
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <DocumentsFairway
+          filtered={filtered}
+          totalCount={documents.length}
+          isCoach={isCoach}
+          search={search}
+          onSearchChange={setSearch}
+          category={category}
+          onCategoryChange={setCategory}
+          isUploadingDocument={isUploadingDocument}
+          onUpload={openUploadPicker}
+          activeDropdown={activeDropdown}
+          setActiveDropdown={setActiveDropdown}
+          onPreview={(d) => setPreviewDoc(d)}
+          onUploadVersion={isCoach ? (d) => setVersionDoc(d) : undefined}
+          onDelete={isCoach ? handleDelete : undefined}
+          fileInputSlot={
+            isCoach ? (
+              // eslint-disable-next-line helm/no-raw-input -- hidden native file picker (no design-system equivalent)
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileSelected}
+                className="hidden"
+                accept={UPLOAD_ACCEPT}
+              />
+            ) : null
+          }
+          previewSlot={
+            <DocumentPreview
+              document={previewDoc}
+              open={!!previewDoc}
+              onOpenChange={(open) => {
+                if (!open) setPreviewDoc(null);
+              }}
+            />
+          }
+          versionSlot={
+            versionDoc && isCoach ? (
+              <UploadNewVersionModal
+                open={!!versionDoc}
+                onClose={() => setVersionDoc(null)}
+                documentTitle={versionDoc.title}
+                currentFileType={versionDoc.file_type || null}
+                onUpload={handleUploadNewVersion}
+              />
+            ) : null
+          }
+        />
+      </div>
+    );
   }
 
   return (
