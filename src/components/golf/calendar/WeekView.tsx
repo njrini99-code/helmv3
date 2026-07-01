@@ -341,7 +341,9 @@ export function WeekView({
         {/* Header row - Day names and dates */}
         <div
           className={cn(
-            'grid sticky top-0 z-20 bg-cream/85 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5',
+            // Near-opaque so scrolled time-axis labels (e.g. "11 AM") can't
+            // bleed through the frozen day-of-week row behind it.
+            'grid sticky top-0 z-20 bg-cream/95 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5 shadow-[0_1px_0_rgba(255,255,255,0.6)]',
             secondaryTimezone ? 'grid-cols-[72px_repeat(7,1fr)]' : 'grid-cols-[56px_repeat(7,1fr)]'
           )}
         >
@@ -389,7 +391,7 @@ export function WeekView({
         {hasAllDayEvents && (
           <div
             className={cn(
-              'grid sticky top-16 z-raised bg-cream/85 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5',
+              'grid sticky top-16 z-raised bg-cream/95 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5',
               secondaryTimezone ? 'grid-cols-[72px_repeat(7,1fr)]' : 'grid-cols-[56px_repeat(7,1fr)]'
             )}
           >

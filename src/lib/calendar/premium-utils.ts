@@ -16,8 +16,16 @@ function getEventTypeClass(eventType: string): string {
     practice: 'event-type-practice',
     match: 'event-type-match',
     tournament: 'event-type-tournament',
+    qualifier: 'event-type-qualifier',
     meeting: 'event-type-meeting',
+    travel: 'event-type-travel',
     social: 'event-type-social',
+    // Baseball event types — give games/scrimmages/camps/tryouts a distinct
+    // colored ribbon instead of falling back to the neutral "other" grey.
+    game: 'event-type-game',
+    scrimmage: 'event-type-scrimmage',
+    camp: 'event-type-camp',
+    tryout: 'event-type-tryout',
   };
   return typeMap[eventType] || 'event-type-other';
 }

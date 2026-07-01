@@ -930,25 +930,31 @@ function CalendarHeader({
 
         {/* Timezone Toggle — desktop only */}
         {!isMobile && onSecondaryTimezoneChange && (
+          {/* Secondary-timezone overlay toggle. Rendered as a de-emphasized
+              ghost control (not `variant="primary"`, which painted it solid
+              green and made it compete with the Add Event CTA) and carries a
+              visible tooltip so the globe glyph isn't ambiguous. When active it
+              shows the chosen timezone label inline. */}
           <DropdownMenu open={tzDropdownOpen} onOpenChange={setTzDropdownOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="primary"
+              <Button variant="ghost"
                 type="button"
                 onClick={() => void triggerHaptic('light')}
-                aria-label={secondaryTimezone ? `Secondary timezone: ${secondaryTimezone}` : 'Add secondary timezone'}
+                title={secondaryTimezone ? `Second timezone: ${secondaryTimezone}` : 'Show a second timezone'}
+                aria-label={secondaryTimezone ? `Second timezone: ${secondaryTimezone}. Change or remove` : 'Show a second timezone on the calendar'}
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-full text-[12.5px] font-medium transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                   secondaryTimezone
-                    ? 'px-3 py-1.5 bg-primary-50/70 text-primary-700'
+                    ? 'px-3 py-1.5 bg-primary-50/70 text-primary-700 hover:bg-primary-100/70'
                     : 'px-2.5 py-1.5 text-warm-400 hover:text-warm-700 hover:bg-cream-100/65'
                 )}
               >
                 <Globe className="w-3.5 h-3.5" />
-                {secondaryTimezone && (
-                  <span className="text-[11.5px]">
-                    {TZ_OPTIONS.find(t => t.value === secondaryTimezone)?.label ?? secondaryTimezone.split('/').pop()}
-                  </span>
-                )}
+                <span className={cn('text-[11.5px]', !secondaryTimezone && 'sr-only')}>
+                  {secondaryTimezone
+                    ? (TZ_OPTIONS.find(t => t.value === secondaryTimezone)?.label ?? secondaryTimezone.split('/').pop())
+                    : 'Timezone'}
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[200px]">

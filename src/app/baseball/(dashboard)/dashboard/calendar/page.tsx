@@ -74,10 +74,17 @@ export default async function BaseballCalendarPage() {
 
   if (teamId) {
     const [eventsResult, membersResult, teamOrgResult] = await Promise.all([
-      // Read via fromUntyped because requires_rsvp is not yet in the generated
-      // baseball_events types (schema drift — the column exists in the DB).
+      // Read via fromUntyped so the select is not type-checked against the
+      // generated baseball_events types (which drift from the live schema).
+      //
+      // IMPORTANT: the column list MUST match the live baseball_events schema.
+      // A previous revision selected `requires_rsvp`, which does NOT exist on
+      // baseball_events — PostgREST rejected the whole query, so `.data` came
+      // back null and the calendar rendered EMPTY even with seeded events.
+      // `all_day` / `status` / `recurring` DO exist and are needed so the grid
+      // places all-day events correctly and dims cancelled ones.
       fromUntyped(supabase, 'baseball_events')
-        .select('id, team_id, title, event_type, start_time, end_time, location, description, is_mandatory, max_attendees, rsvp_deadline, requires_rsvp, created_by')
+        .select('id, team_id, title, event_type, start_time, end_time, location, description, is_mandatory, max_attendees, rsvp_deadline, all_day, status, recurring, created_by')
         .eq('team_id', teamId)
         .order('start_time', { ascending: true }),
       supabase
@@ -93,7 +100,9 @@ export default async function BaseballCalendarPage() {
     ]);
 
     // Map baseball_events → CalendarEvent. Row is annotated because the query
-    // uses fromUntyped (requires_rsvp not yet in generated types).
+    // uses fromUntyped (the generated types drift from the live schema).
+    // All-day events are normalized to local midnight so the week/day grid
+    // places them in the all-day rail rather than at a UTC-shifted hour.
     events = (eventsResult.data || []).map((event: {
       id: string;
       team_id: string | null;
@@ -106,25 +115,38 @@ export default async function BaseballCalendarPage() {
       is_mandatory: boolean | null;
       max_attendees: number | null;
       rsvp_deadline: string | null;
-      requires_rsvp: boolean | null;
+      all_day: boolean | null;
+      status: string | null;
+      recurring: boolean | null;
       created_by: string | null;
-    }) => ({
-      id: event.id,
-      team_id: event.team_id || '',
-      title: event.title,
-      event_type: event.event_type || 'other',
-      start_date: event.start_time,
-      end_date: event.end_time || event.start_time,
-      start_time: event.start_time,
-      end_time: event.end_time,
-      location: event.location || undefined,
-      description: event.description || undefined,
-      is_mandatory: event.is_mandatory ?? false,
-      max_attendees: event.max_attendees,
-      rsvp_deadline: event.rsvp_deadline,
-      created_by: event.created_by,
-      requires_rsvp: event.requires_rsvp ?? false,
-    }));
+    }) => {
+      const normalizeAllDay = (d: string) => `${d.slice(0, 10)}T00:00:00`;
+      const startDate = event.all_day ? normalizeAllDay(event.start_time) : event.start_time;
+      const endDate = event.all_day
+        ? normalizeAllDay(event.end_time || event.start_time)
+        : event.end_time || event.start_time;
+      return {
+        id: event.id,
+        team_id: event.team_id || '',
+        title: event.title,
+        event_type: event.event_type || 'other',
+        start_date: startDate,
+        end_date: endDate,
+        start_time: event.start_time,
+        end_time: event.end_time,
+        location: event.location || undefined,
+        description: event.description || undefined,
+        is_mandatory: event.is_mandatory ?? false,
+        max_attendees: event.max_attendees,
+        rsvp_deadline: event.rsvp_deadline,
+        all_day: event.all_day ?? false,
+        status: event.status ?? undefined,
+        recurring: event.recurring ?? false,
+        created_by: event.created_by,
+        // baseball_events has no requires_rsvp column; RSVP is not modeled here.
+        requires_rsvp: false,
+      };
+    });
 
     // Coaches on this team. Read non-PII identity from the baseball_coaches_public
     // view (not the base table) so this player-reachable roster panel keeps
