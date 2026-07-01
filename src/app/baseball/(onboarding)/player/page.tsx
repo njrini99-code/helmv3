@@ -166,15 +166,18 @@ export default function BaseballPlayerOnboarding() {
     setError('');
 
     try {
-      // NOTE: profile_completion_percent only scores the fields this step
-      // actually persists via completePlayerOnboarding (bio + position). The
-      // Measurables step (bats/throws/height/weight/velo/sixty) is optional
-      // and saved later from the player's own profile settings
-      // (updateMyPlayerProfile) — not written here.
-      let completionScore = 60;
-      if (secondaryPosition) completionScore += 15;
-      if (city && state) completionScore += 15;
-      if (secondaryPosition && city && state) completionScore += 10;
+      // NOTE: profile_completion_percent only scores fields that are actually
+      // captured AND persisted via completePlayerOnboarding below — every
+      // field referenced here (secondaryPosition/city/state/bats/throws_/
+      // height/weight/velo/sixty) is part of that same upsert payload, so
+      // this score never overstates what got saved.
+      let completionScore = 40;
+      if (secondaryPosition) completionScore += 10;
+      if (city && state) completionScore += 10;
+      if (bats && throws_) completionScore += 10;
+      if (heightFeet && heightInches && weight) completionScore += 15;
+      if (pitchVelo || exitVelo || sixtyTime) completionScore += 10;
+      if (pitchVelo && exitVelo && sixtyTime) completionScore += 5;
 
       const result = await completePlayerOnboarding({
         playerType,
@@ -185,6 +188,14 @@ export default function BaseballPlayerOnboarding() {
         secondaryPosition: secondaryPosition || null,
         city: city || null,
         state: state || null,
+        bats: bats || null,
+        throws: throws_ || null,
+        heightFeet: heightFeet || null,
+        heightInches: heightInches || null,
+        weightLbs: weight ? parseInt(weight, 10) : null,
+        pitchVelo: pitchVelo ? parseFloat(pitchVelo) : null,
+        exitVelo: exitVelo ? parseFloat(exitVelo) : null,
+        sixtyTime: sixtyTime ? parseFloat(sixtyTime) : null,
         profileCompletionPercent: completionScore,
       });
 

@@ -104,4 +104,53 @@ describe('completePlayerOnboarding', () => {
     await completePlayerOnboarding({ ...BASE_INPUT, profileCompletionPercent: 999 });
     expect(upsert.mock.calls[0]![0].profile_completion_percent).toBe(100);
   });
+
+  // GUARD (verify mustFix regression test): height_feet, pitch_velo, exit_velo,
+  // and sixty_time have NO other write path in the app — updateMyPlayerProfile's
+  // whitelist omits all four, and bats/throws only recover via a coach-gated
+  // toggle. If these are dropped here they become permanently uncapturable on
+  // the normal happy path, silently breaking Discover's velo/exit filters, the
+  // recruiting match-calculator/min-standards, and the public profile headline.
+  it('persists all six measurables (height_feet, bats, throws, pitch_velo, exit_velo, sixty_time)', async () => {
+    await completePlayerOnboarding({
+      ...BASE_INPUT,
+      heightFeet: 6,
+      heightInches: 2,
+      weightLbs: 190,
+      bats: 'L',
+      throws: 'R',
+      pitchVelo: 88,
+      exitVelo: 95,
+      sixtyTime: 6.7,
+    });
+
+    const row = upsert.mock.calls[0]![0];
+    expect(row.height_feet).toBe(6);
+    expect(row.height_inches).toBe(2);
+    expect(row.weight_lbs).toBe(190);
+    expect(row.bats).toBe('L');
+    expect(row.throws).toBe('R');
+    expect(row.pitch_velo).toBe(88);
+    expect(row.exit_velo).toBe(95);
+    expect(row.sixty_time).toBe(6.7);
+  });
+
+  it('drops an invalid handedness value instead of persisting garbage', async () => {
+    await completePlayerOnboarding({ ...BASE_INPUT, bats: 'X', throws: 'Z' });
+    const row = upsert.mock.calls[0]![0];
+    expect(row.bats).toBeNull();
+    expect(row.throws).toBeNull();
+  });
+
+  it('omits measurables gracefully (all null) when not provided', async () => {
+    const res = await completePlayerOnboarding(BASE_INPUT);
+    expect(res.success).toBe(true);
+    const row = upsert.mock.calls[0]![0];
+    expect(row.height_feet).toBeNull();
+    expect(row.pitch_velo).toBeNull();
+    expect(row.exit_velo).toBeNull();
+    expect(row.sixty_time).toBeNull();
+    expect(row.bats).toBeNull();
+    expect(row.throws).toBeNull();
+  });
 });
