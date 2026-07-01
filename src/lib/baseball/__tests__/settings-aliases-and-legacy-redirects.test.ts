@@ -110,8 +110,8 @@ function extractRedirectLiterals(filePath: string): string[] {
 describe('BASEBALL_SETTINGS_ALIASES', () => {
   const aliasKeys = Object.keys(BASEBALL_SETTINGS_ALIASES) as BaseballSettingsAlias[];
 
-  it('declares all 8 known aliases', () => {
-    expect(aliasKeys).toHaveLength(8);
+  it('declares all 7 known aliases', () => {
+    expect(aliasKeys).toHaveLength(7);
     expect(aliasKeys.sort()).toEqual(
       [
         'appearance',
@@ -120,7 +120,6 @@ describe('BASEBALL_SETTINGS_ALIASES', () => {
         'notifications',
         'player-access',
         'data-retention',
-        'demo-mode',
         'showcase-profile',
       ].sort(),
     );
