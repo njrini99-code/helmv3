@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { PageLoading } from '@/components/ui/loading';
 import { IconTarget, IconUsers, IconChart, IconCheck, IconEye, IconLock } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
-import { createClient } from '@/lib/supabase/client';
+import { activateRecruitingExposure } from '@/app/baseball/actions/player-access';
 
 export default function ActivateRecruitingPage() {
   const { user, player, loading: authLoading, updatePlayer } = useAuth();
@@ -58,21 +58,11 @@ export default function ActivateRecruitingPage() {
     setError(null);
 
     try {
-      const supabase = createClient();
-
-      const { error: updateError } = await supabase
-        .from('baseball_players')
-        .update({
-          recruiting_activated: true,
-          recruiting_activated_at: new Date().toISOString(),
-        })
-        .eq('id', player.id);
-
-      if (updateError) {
-        setError(updateError.message);
-        setActivating(false);
-        return;
-      }
+      // Go through the gated server action so the team's
+      // recruiting_exposure_enabled toggle is enforced. The old raw client-side
+      // update bypassed it — a program with exposure disabled could still be
+      // activated from this page if RLS permitted the write.
+      await activateRecruitingExposure();
 
       // Update local state
       await updatePlayer?.({
@@ -81,8 +71,8 @@ export default function ActivateRecruitingPage() {
       });
 
       router.push('/baseball/player/today');
-    } catch {
-      setError('An error occurred. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
       setActivating(false);
     }
   };
