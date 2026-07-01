@@ -13,6 +13,8 @@ import { useToast } from '@/components/ui/sonner';
 import { createConversation } from '@/app/baseball/actions/messages';
 import type { ConversationWithMeta } from '@/lib/types/messages';
 import { getParticipantDetails } from '@/lib/types/messages';
+import { MessagesFairway } from '@/components/baseball/messages/MessagesFairway';
+import { isRedesignEnabled } from '@/lib/redesign/flag';
 
 function MessagesContent() {
   const searchParams = useSearchParams();
@@ -109,6 +111,51 @@ function MessagesContent() {
     }
     return success;
   };
+
+  if (isRedesignEnabled()) {
+    return (
+      <MessagesFairway
+        loading={conversationsLoading}
+        mobileShowChat={mobileShowChat}
+        listSlot={
+          <LazyConversationList
+            conversations={conversations as ConversationWithMeta[]}
+            selectedId={selectedConversationId}
+            currentUserId={user?.id || ''}
+            onSelect={handleSelectConversation}
+            onNewConversation={() => setShowNewMessageModal(true)}
+            className="h-full"
+          />
+        }
+        chatSlot={
+          selectedConversationId ? (
+            <LazyChatWindow
+              messages={messages}
+              participant={selectedParticipant}
+              currentUserId={user?.id || ''}
+              loading={messagesLoading}
+              onSend={handleSendMessage}
+              onBack={handleBack}
+              className="h-full"
+            />
+          ) : (
+            <EmptyChatState
+              onNewConversation={() => setShowNewMessageModal(true)}
+              className="h-full"
+            />
+          )
+        }
+        modalSlot={
+          <NewMessageModal
+            isOpen={showNewMessageModal}
+            onClose={() => setShowNewMessageModal(false)}
+            onSelect={handleNewConversation}
+            currentUserRole={currentUserRole}
+          />
+        }
+      />
+    );
+  }
 
   if (conversationsLoading) {
     return (
