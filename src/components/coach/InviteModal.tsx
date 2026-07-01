@@ -66,7 +66,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
   function copyToClipboard() {
     if (!inviteCode) return;
 
-    const inviteUrl = `${window.location.origin}/join/${inviteCode}`;
+    const inviteUrl = `${window.location.origin}/baseball/join/${inviteCode}`;
     navigator.clipboard.writeText(inviteUrl);
     setCopied(true);
 
@@ -158,7 +158,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
                   <Input
                     id={`${uid}-link`}
                     type="text"
-                    value={`${window.location.origin}/join/${inviteCode}`}
+                    value={`${window.location.origin}/baseball/join/${inviteCode}`}
                     readOnly
                     className="flex-1 font-mono text-sm"
                   />
