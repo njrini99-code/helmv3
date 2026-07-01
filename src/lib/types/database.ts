@@ -2460,6 +2460,42 @@ export type Database = {
           },
         ]
       }
+      baseball_demo_sessions: {
+        Row: {
+          email: string
+          entered_at: string
+          id: string
+          ip: string | null
+          metadata: Json
+          name: string
+          program: string | null
+          referrer: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          email: string
+          entered_at?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          name: string
+          program?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          email?: string
+          entered_at?: string
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          name?: string
+          program?: string | null
+          referrer?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       baseball_developmental_plans: {
         Row: {
           coach_id: string
@@ -5643,6 +5679,7 @@ export type Database = {
           hits_allowed: number | null
           home_runs: number | null
           id: string
+          import_run_id: string | null
           innings_pitched: number | null
           notes: string | null
           pitch_velocity: number | null
@@ -5680,6 +5717,7 @@ export type Database = {
           hits_allowed?: number | null
           home_runs?: number | null
           id?: string
+          import_run_id?: string | null
           innings_pitched?: number | null
           notes?: string | null
           pitch_velocity?: number | null
@@ -5717,6 +5755,7 @@ export type Database = {
           hits_allowed?: number | null
           home_runs?: number | null
           id?: string
+          import_run_id?: string | null
           innings_pitched?: number | null
           notes?: string | null
           pitch_velocity?: number | null
@@ -5747,6 +5786,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_player_stats_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_import_runs"
             referencedColumns: ["id"]
           },
           {
@@ -6568,7 +6614,10 @@ export type Database = {
           default_task_priority: string
           id: string
           max_roster_size: number | null
+          notification_defaults: Json
           player_visible_ai_enabled: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
           recruiting_active: boolean
           require_coach_review: boolean
           required_document_categories: string[]
@@ -6583,7 +6632,10 @@ export type Database = {
           default_task_priority?: string
           id?: string
           max_roster_size?: number | null
+          notification_defaults?: Json
           player_visible_ai_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           recruiting_active?: boolean
           require_coach_review?: boolean
           required_document_categories?: string[]
@@ -6598,7 +6650,10 @@ export type Database = {
           default_task_priority?: string
           id?: string
           max_roster_size?: number | null
+          notification_defaults?: Json
           player_visible_ai_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           recruiting_active?: boolean
           require_coach_review?: boolean
           required_document_categories?: string[]
@@ -8002,17 +8057,24 @@ export type Database = {
       baseball_team_coach_staff: {
         Row: {
           bio: string | null
+          can_export_reports: boolean
           can_invite_staff: boolean
           can_manage_calendar: boolean
+          can_manage_documents: boolean
           can_manage_imports: boolean
           can_manage_lifting: boolean
+          can_manage_lineups: boolean
           can_manage_practice: boolean
           can_manage_roster: boolean
           can_manage_settings: boolean
           can_manage_stats: boolean
+          can_message_players: boolean
           can_message_team: boolean
+          can_modify_availability: boolean
           can_view_academics: boolean
           can_view_medical: boolean
+          can_view_private_notes: boolean
+          can_view_readiness: boolean
           capabilities: Json
           coach_id: string
           created_at: string | null
@@ -8030,17 +8092,24 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          can_export_reports?: boolean
           can_invite_staff?: boolean
           can_manage_calendar?: boolean
+          can_manage_documents?: boolean
           can_manage_imports?: boolean
           can_manage_lifting?: boolean
+          can_manage_lineups?: boolean
           can_manage_practice?: boolean
           can_manage_roster?: boolean
           can_manage_settings?: boolean
           can_manage_stats?: boolean
+          can_message_players?: boolean
           can_message_team?: boolean
+          can_modify_availability?: boolean
           can_view_academics?: boolean
           can_view_medical?: boolean
+          can_view_private_notes?: boolean
+          can_view_readiness?: boolean
           capabilities?: Json
           coach_id: string
           created_at?: string | null
@@ -8058,17 +8127,24 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          can_export_reports?: boolean
           can_invite_staff?: boolean
           can_manage_calendar?: boolean
+          can_manage_documents?: boolean
           can_manage_imports?: boolean
           can_manage_lifting?: boolean
+          can_manage_lineups?: boolean
           can_manage_practice?: boolean
           can_manage_roster?: boolean
           can_manage_settings?: boolean
           can_manage_stats?: boolean
+          can_message_players?: boolean
           can_message_team?: boolean
+          can_modify_availability?: boolean
           can_view_academics?: boolean
           can_view_medical?: boolean
+          can_view_private_notes?: boolean
+          can_view_readiness?: boolean
           capabilities?: Json
           coach_id?: string
           created_at?: string | null
@@ -19455,6 +19531,13 @@ export type Database = {
           sg_total: number
         }[]
       }
+      can_insert_baseball_team_member: {
+        Args: {
+          p_status: Database["public"]["Enums"]["team_member_status"]
+          p_team_id: string
+        }
+        Returns: boolean
+      }
       can_manage_baseball_lift_group: {
         Args: { p_group_id: string; p_team_id: string }
         Returns: boolean
@@ -19934,6 +20017,20 @@ export type Database = {
         Args: { p_player_id: string }
         Returns: undefined
       }
+      release_baseball_team_invitation_redemption: {
+        Args: { p_invitation_id: string }
+        Returns: undefined
+      }
+      save_baseball_full_box_score: {
+        Args: {
+          p_batting: Json
+          p_game_id: string
+          p_opponent_score: number
+          p_our_score: number
+          p_pitching: Json
+        }
+        Returns: Json
+      }
       save_partial_round_atomic: {
         Args: {
           p_approach_details?: Json
@@ -19982,6 +20079,10 @@ export type Database = {
           p_shots: Json
         }
         Returns: Json
+      }
+      try_redeem_baseball_team_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: boolean
       }
       update_player_distance_proximity: {
         Args: { p_player_id: string }
