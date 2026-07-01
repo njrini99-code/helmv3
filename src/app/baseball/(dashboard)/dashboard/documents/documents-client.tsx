@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconFile, IconUpload, IconSearch } from '@/components/icons';
@@ -8,9 +8,17 @@ import { DocumentCard } from '@/components/baseball/documents/DocumentCard';
 import { DocumentPreview } from '@/components/baseball/documents/DocumentPreview';
 import { UploadNewVersionModal } from '@/components/baseball/documents/UploadNewVersionModal';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
-import { deleteBaseballDocument } from '@/app/baseball/actions/documents';
+import {
+  createBaseballDocument,
+  deleteBaseballDocument,
+  uploadBaseballDocument,
+  uploadNewVersion,
+} from '@/app/baseball/actions/documents';
 import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
+
+const UPLOAD_ACCEPT =
+  'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/*,text/plain,video/mp4,video/webm,video/quicktime';
 
 const CATEGORIES = [
   { value: 'all', label: 'All' },
@@ -31,14 +39,15 @@ interface DocumentsClientProps {
   isCoach: boolean;
 }
 
-export function DocumentsClient({ documents: initialDocuments, coachId: _coachId, teamId: _teamId, isCoach }: DocumentsClientProps) {
-  void _coachId; void _teamId; // Props kept for API compatibility
+export function DocumentsClient({ documents: initialDocuments, coachId, teamId, isCoach }: DocumentsClientProps) {
   const [documents, setDocuments] = useState(initialDocuments);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [previewDoc, setPreviewDoc] = useState<BaseballDocument | null>(null);
   const [versionDoc, setVersionDoc] = useState<BaseballDocument | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
   const filtered = documents.filter(doc => {
@@ -59,8 +68,85 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
     }
   }
 
+  function openUploadPicker() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Reset the input so selecting the same file again still fires onChange
+    e.target.value = '';
+    if (!file) return;
+
+    setIsUploadingDocument(true);
+    try {
+      const uploadResult = await uploadBaseballDocument(file, teamId);
+      if (!uploadResult.success || !uploadResult.file_url) {
+        showToast(uploadResult.error || 'Failed to upload file', 'error');
+        return;
+      }
+
+      const createResult = await createBaseballDocument({
+        team_id: teamId,
+        title: file.name.replace(/\.[^/.]+$/, '') || file.name,
+        file_url: uploadResult.file_url,
+        storage_path: uploadResult.storage_path,
+        file_type: file.type || 'application/octet-stream',
+        file_size: file.size,
+        category: 'general',
+        is_player_visible: true,
+        uploaded_by: coachId,
+      });
+
+      if (!createResult.success || !createResult.data) {
+        showToast(createResult.error || 'Failed to save document', 'error');
+        return;
+      }
+
+      setDocuments(prev => [createResult.data as BaseballDocument, ...prev]);
+      showToast('Document uploaded', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to upload document', 'error');
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  }
+
+  async function handleUploadNewVersion(file: File, changeNotes: string) {
+    if (!versionDoc) return;
+
+    const result = await uploadNewVersion(versionDoc.id, file, teamId, coachId, changeNotes);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to upload new version');
+    }
+
+    setDocuments(prev => prev.map(d => d.id === versionDoc.id
+      ? {
+          ...d,
+          file_url: result.version?.file_url || d.file_url,
+          file_type: result.version?.mime_type || d.file_type,
+          file_size: result.version?.file_size ?? d.file_size,
+          version_count: result.version?.version_number ?? ((d.version_count || 1) + 1),
+        }
+      : d
+    ));
+    showToast('New version uploaded', 'success');
+  }
+
   return (
     <div className="p-6 lg:p-8">
+      {/* Hidden file input driving both the header and empty-state upload triggers */}
+      {isCoach && (
+        // eslint-disable-next-line helm/no-raw-input -- hidden native file picker (no design-system equivalent)
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={handleFileSelected}
+          className="hidden"
+          accept={UPLOAD_ACCEPT}
+        />
+      )}
+
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
@@ -89,6 +175,17 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
             </Button>
           ))}
         </div>
+        {isCoach && (
+          <Button
+            variant="primary"
+            onClick={openUploadPicker}
+            isLoading={isUploadingDocument}
+            leftIcon={<IconUpload size={16} />}
+            className="whitespace-nowrap flex-shrink-0"
+          >
+            Upload
+          </Button>
+        )}
       </div>
 
       {/* Documents Grid */}
@@ -109,8 +206,11 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
                 : 'Try adjusting your search or filters.'}
             </p>
             {documents.length === 0 && isCoach && (
-              <Button>
-                <IconUpload size={16} className="mr-2" />
+              <Button
+                onClick={openUploadPicker}
+                isLoading={isUploadingDocument}
+                leftIcon={<IconUpload size={16} />}
+              >
                 Upload Document
               </Button>
             )}
@@ -147,10 +247,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
           onClose={() => setVersionDoc(null)}
           documentTitle={versionDoc.title}
           currentFileType={versionDoc.file_type || null}
-          onUpload={async () => {
-            setVersionDoc(null);
-            // Refresh would need router.refresh() in a server component context
-          }}
+          onUpload={handleUploadNewVersion}
         />
       )}
     </div>
