@@ -171,6 +171,12 @@ export default function EventsPage() {
 
     if (teams.length > 0) {
       fetchEvents();
+    } else if (!authLoading) {
+      // Auth is ready but the coach has no teams (e.g. a new showcase org):
+      // clear the skeleton and fall through to the honest empty state instead
+      // of spinning on `loading` forever.
+      setEvents([]);
+      setLoading(false);
     }
   }, [authLoading, coach?.id, teams]);
 
