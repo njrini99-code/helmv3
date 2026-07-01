@@ -6,6 +6,7 @@ import { getPlayerSnapshotCards } from '@/lib/baseball/read-models/player-snapsh
 import { getPlayerTimeline, getTimelineAcksForSubjectPlayer } from '@/lib/baseball/read-models/timeline';
 import { getPlayerCoachNotes } from '@/lib/baseball/read-models/coach-notes';
 import { getPlayerTasks } from '@/app/baseball/actions/tasks';
+import { resolveBaseballLiftingOrg, resolveBaseballAthleteIds } from '@/lib/lifting/resolve-baseball-context';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -122,13 +123,27 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .eq('status', 'active')
     .order('priority', { ascending: true }) as { data: BaseballCoachInsight[] | null };
 
-  // Parallel fetch: snapshot cards + timeline + coach notes + player tasks
-  const [snapshotResult, timelineResult, notesResult, tasksResult] = await Promise.all([
+  // Parallel fetch: snapshot cards + timeline + coach notes + player tasks +
+  // Helm Lifting Lab context (org + athlete mapping for the Performance tab).
+  const [snapshotResult, timelineResult, notesResult, tasksResult, liftingContext] = await Promise.all([
     getPlayerSnapshotCards(team.id, playerId),
     getPlayerTimeline(team.id, playerId),
     getPlayerCoachNotes(team.id, playerId),
     getPlayerTasks(playerId),
+    (async (): Promise<{ liftingOrgId: string | null; liftingAthleteId: string | null }> => {
+      const liftingCtx = await resolveBaseballLiftingOrg(team.id).catch(() => null);
+      if (!liftingCtx) return { liftingOrgId: null, liftingAthleteId: null };
+      const athleteMap = await resolveBaseballAthleteIds(
+        liftingCtx.organizationId,
+        [playerId],
+      ).catch(() => null);
+      return {
+        liftingOrgId: liftingCtx.organizationId,
+        liftingAthleteId: athleteMap ? (athleteMap[playerId] ?? null) : null,
+      };
+    })(),
   ]);
+  const { liftingOrgId, liftingAthleteId } = liftingContext;
 
   // Resolve which of the coach's-visible timeline events the SUBJECT PLAYER
   // (not the viewing coach) has acknowledged. The viewer here is always a
@@ -208,6 +223,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       timelineHiddenCount={timelineResult.hiddenCount}
       timelineAcks={timelineAcks}
       tasks={playerTasks}
+      liftingOrgId={liftingOrgId}
+      liftingAthleteId={liftingAthleteId}
     />
   );
 }
