@@ -26,6 +26,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { cn, getFullName, formatRelativeTime } from '@/lib/utils';
+import { formatCampDate } from '@/lib/baseball/camp-utils';
 
 interface CampRegistration {
   id: string;
@@ -66,14 +67,12 @@ interface Camp {
   } | null;
 }
 
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
+const CAMP_DETAIL_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+};
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   interested: { label: 'Interested', color: 'text-warm-600', bg: 'bg-warm-100' },
@@ -275,8 +274,8 @@ export default function CampDetailPage() {
               <div>
                 <p className="text-sm text-warm-500">Date</p>
                 <p className="font-medium text-warm-900">
-                  {formatDate(camp.start_date)}
-                  {camp.end_date !== camp.start_date && ` - ${formatDate(camp.end_date)}`}
+                  {formatCampDate(camp.start_date, CAMP_DETAIL_DATE_OPTIONS)}
+                  {camp.end_date !== camp.start_date && ` - ${formatCampDate(camp.end_date, CAMP_DETAIL_DATE_OPTIONS)}`}
                 </p>
               </div>
             </div>

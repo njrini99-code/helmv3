@@ -15,6 +15,8 @@ import { CreateCampModal } from '@/components/coach/CreateCampModal';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
+import { registerForCamp } from '@/app/baseball/actions/camps';
+import { activeCampCountsByCamp, formatCampDate } from '@/lib/baseball/camp-utils';
 
 interface Camp {
   id: string;
@@ -41,12 +43,37 @@ interface Camp {
   is_registered?: boolean;
 }
 
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+type CampSupabase = ReturnType<typeof createClient>;
+
+// Attach an ACTIVE (non-cancelled) registration count to each camp. Cancelled
+// rows must not consume capacity, so we can't use the raw embedded count. (#443)
+async function attachActiveCounts(supabase: CampSupabase, camps: Camp[]): Promise<Camp[]> {
+  const ids = camps.map((c) => c.id);
+  if (ids.length === 0) return camps;
+  const { data } = await supabase
+    .from('baseball_camp_registrations')
+    .select('camp_id, status')
+    .in('camp_id', ids);
+  const counts = activeCampCountsByCamp((data ?? []) as { camp_id: string; status: string | null }[]);
+  return camps.map((c) => ({ ...c, registrations: [{ count: counts.get(c.id) ?? 0 }] }));
+}
+
+// Single source of truth for loading camps + their active counts, shared by the
+// initial load, the error-retry, and the post-create refresh.
+async function loadCamps(
+  supabase: CampSupabase,
+  opts: { coachId: string } | { playerActive: true },
+): Promise<Camp[]> {
+  const base = supabase
+    .from('baseball_camps')
+    .select('*, organization:organizations(id, name, logo_url)');
+  const filtered =
+    'coachId' in opts
+      ? base.eq('coach_id', opts.coachId)
+      : base.eq('status', 'active').gte('end_date', new Date().toISOString());
+  const { data, error } = await filtered.order('start_date', { ascending: true });
+  if (error) throw error;
+  return attachActiveCounts(supabase, (data as Camp[]) ?? []);
 }
 
 function CampCard({
@@ -84,8 +111,8 @@ function CampCard({
               <div className="flex items-center gap-1.5">
                 <IconCalendar size={14} />
                 <span>
-                  {formatDate(camp.start_date)}
-                  {camp.end_date && ` - ${formatDate(camp.end_date)}`}
+                  {formatCampDate(camp.start_date)}
+                  {camp.end_date && ` - ${formatCampDate(camp.end_date)}`}
                 </span>
               </div>
               {camp.location && (
@@ -215,35 +242,10 @@ export default function CampsPage() {
 
       try {
       if (isCoach && coach) {
-        // Fetch coach's own camps
-        const { data, error } = await supabase
-          .from('baseball_camps')
-          .select(`
-            *,
-            organization:organizations(id, name, logo_url),
-            registrations:baseball_camp_registrations(count)
-          `)
-          .eq('coach_id', coach.id)
-          .order('start_date', { ascending: true });
-
-        if (error) throw error;
-        setCamps((data as Camp[]) || []);
+        setCamps(await loadCamps(supabase, { coachId: coach.id }));
       } else if (isPlayer && player) {
-        // Fetch all active camps for players
-        const { data, error } = await supabase
-          .from('baseball_camps')
-          .select(`
-            *,
-            organization:organizations(id, name, logo_url),
-            registrations:baseball_camp_registrations(count)
-          `)
-          .eq('status', 'active')
-          .gte('end_date', new Date().toISOString())
-          .order('start_date', { ascending: true });
-
-        if (error) throw error;
-
-        // Fetch player's registrations (filter out cancelled via status)
+        // Fetch player's active registrations (exclude cancelled) for the
+        // "Registered" badge, then load the active camps + their live counts.
         const { data: playerRegs } = await supabase
           .from('baseball_camp_registrations')
           .select('camp_id')
@@ -254,7 +256,7 @@ export default function CampsPage() {
           setRegisteredCamps(new Set(playerRegs.map(r => r.camp_id)));
         }
 
-        setCamps((data as Camp[]) || []);
+        setCamps(await loadCamps(supabase, { playerActive: true }));
       }
       } catch {
         setCamps([]);
@@ -271,16 +273,12 @@ export default function CampsPage() {
   const handleRegister = async (campId: string) => {
     if (!player) return;
 
-    const { error } = await supabase
-      .from('baseball_camp_registrations')
-      .insert({
-        camp_id: campId,
-        player_id: player.id,
-        status: 'registered',
-        created_at: new Date().toISOString(),
-      });
+    // Go through the server action so capacity is enforced atomically in the DB
+    // (a raw client insert could overbook a camp). Only update the UI on a
+    // confirmed registration; surface the reason (e.g. "This camp is full").
+    const result = await registerForCamp(campId);
 
-    if (!error) {
+    if (result.success) {
       setRegisteredCamps(prev => new Set(Array.from(prev).concat(campId)));
       setCamps(prev => prev.map(c =>
         c.id === campId
@@ -288,7 +286,7 @@ export default function CampsPage() {
           : c
       ));
     } else {
-      showToast('Failed to register for camp', 'error');
+      showToast(result.error || 'Failed to register for camp', 'error');
     }
   };
 
@@ -383,22 +381,9 @@ export default function CampsPage() {
               void (async () => {
                 try {
                   if (isCoach && coach) {
-                    const { data, error } = await supabase
-                      .from('baseball_camps')
-                      .select(`*, organization:organizations(id, name, logo_url), registrations:baseball_camp_registrations(count)`)
-                      .eq('coach_id', coach.id)
-                      .order('start_date', { ascending: true });
-                    if (error) throw error;
-                    setCamps((data as Camp[]) || []);
+                    setCamps(await loadCamps(supabase, { coachId: coach.id }));
                   } else if (isPlayer && player) {
-                    const { data, error } = await supabase
-                      .from('baseball_camps')
-                      .select(`*, organization:organizations(id, name, logo_url), registrations:baseball_camp_registrations(count)`)
-                      .eq('status', 'active')
-                      .gte('end_date', new Date().toISOString())
-                      .order('start_date', { ascending: true });
-                    if (error) throw error;
-                    setCamps((data as Camp[]) || []);
+                    setCamps(await loadCamps(supabase, { playerActive: true }));
                   }
                 } catch {
                   setLoadError('Camps could not be loaded.');
@@ -472,18 +457,9 @@ export default function CampsPage() {
           setEditingCamp(null);
           // Refresh camps list
           if (isCoach && coach) {
-            supabase
-              .from('baseball_camps')
-              .select(`
-                *,
-                organization:organizations(id, name, logo_url),
-                registrations:baseball_camp_registrations(count)
-              `)
-              .eq('coach_id', coach.id)
-              .order('start_date', { ascending: true })
-              .then(({ data }) => {
-                setCamps((data as Camp[]) || []);
-              });
+            void loadCamps(supabase, { coachId: coach.id })
+              .then(setCamps)
+              .catch(() => setLoadError('Camps could not be loaded.'));
           }
         }}
         camp={editingCamp}
