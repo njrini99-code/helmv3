@@ -60,7 +60,10 @@ import type {
 import type {
   HelmLiftingSessionInsert,
   HelmLiftingSessionExerciseInsert,
+  HelmLiftingSessionUpdate,
+  HelmLiftingSessionExerciseUpdate,
 } from '@/lib/types/helm-lifting-data';
+import { logServerError } from '@/lib/server-error-logger';
 
 const PERFORMANCE = '/baseball/dashboard/performance';
 const PLAYER_LIFT = '/baseball/dashboard/lift';
@@ -1443,6 +1446,16 @@ export const publishLiftDay = withBaseballAction(
     // Look the assignment up first and UPDATE in place when it already exists
     // (never delete-then-insert), so assignmentId — and therefore the session
     // upsert target — stays stable across re-publishes.
+    //
+    // KNOWN RACE (documented, not fixed here — would need a schema change out of
+    // this fix's scope): this is a check-then-act (SELECT then INSERT), not an
+    // atomic upsert, because baseball_lift_program_assignments has no unique
+    // constraint on (team_id, program_id, lift_day_id, scheduled_date) to target
+    // with .upsert({ onConflict }). Two concurrent publish calls for the same
+    // program day/date (e.g. a coach double-clicking "Publish") can both read
+    // existingAsg = null and both INSERT, producing two assignment rows. Closing
+    // this fully requires a migration adding that unique constraint (or an
+    // advisory lock), which is out of scope for a lifting-v11.ts-only fix.
     const { data: existingAsg, error: existingAsgErr } = await supabase
       .from('baseball_lift_program_assignments')
       .select('id, event_id')
@@ -1550,16 +1563,55 @@ export const publishLiftDay = withBaseballAction(
       }
     }
     if (sessionExerciseRows.length) {
-      // Insert snapshots; on idempotent re-publish the prior session_exercises
-      // remain valid (same prescription snapshot) — we skip duplicate inserts by
-      // only inserting when a session had none yet.
+      // Stage-and-swap (#492 second half): match each snapshot row to an
+      // already-materialized row for the SAME (session_id, prescription_id) and
+      // UPDATE it in place with the latest prescription values — never
+      // delete-then-reinsert. This used to skip exercise writes entirely once a
+      // session had any rows ("only inserting when a session had none yet"), so
+      // an edited-then-republished prescription never reached session_exercises
+      // (and therefore never reached the Helm Lifting Lab bridge below, which
+      // reads its snapshot straight from this table).
       const sessionIds = (sessions ?? []).map((s: { id: string }) => s.id);
-      const { data: existingSe } = await supabase
+      const { data: existingSe, error: existingSeErr } = await supabase
         .from('baseball_lift_session_exercises')
-        .select('session_id')
+        .select('id, session_id, prescription_id')
         .in('session_id', sessionIds);
-      const seeded = new Set((existingSe ?? []).map((r: { session_id: string }) => r.session_id));
-      const fresh = sessionExerciseRows.filter((r) => !seeded.has(r.session_id as string));
+      if (existingSeErr) throw existingSeErr;
+      const existingSeIdByKey = new Map(
+        (existingSe ?? []).map((r: { id: string; session_id: string; prescription_id: string | null }) => [
+          `${r.session_id}:${r.prescription_id}`,
+          r.id,
+        ]),
+      );
+
+      const fresh: Array<Record<string, unknown>> = [];
+      for (const row of sessionExerciseRows) {
+        const key = `${row.session_id}:${row.prescription_id}`;
+        const existingSeId = existingSeIdByKey.get(key);
+        if (existingSeId) {
+          // Status is intentionally NOT overwritten here — a player may have
+          // already progressed this session_exercise (started/completed) and a
+          // coach re-publish must not silently reset that progress.
+          const { error: seUpdErr } = await supabase
+            .from('baseball_lift_session_exercises')
+            .update({
+              exercise_id: row.exercise_id,
+              exercise_name_snapshot: row.exercise_name_snapshot,
+              section_name_snapshot: row.section_name_snapshot,
+              section_type_snapshot: row.section_type_snapshot,
+              order_index: row.order_index,
+              prescribed_sets: row.prescribed_sets,
+              prescribed_reps: row.prescribed_reps,
+              prescribed_load: row.prescribed_load,
+              prescribed_load_unit: row.prescribed_load_unit,
+              prescribed_rpe: row.prescribed_rpe,
+            })
+            .eq('id', existingSeId);
+          if (seUpdErr) throw seUpdErr;
+          continue;
+        }
+        fresh.push(row);
+      }
       if (fresh.length) {
         const { error: seErr } = await supabase
           .from('baseball_lift_session_exercises')
@@ -1575,17 +1627,28 @@ export const publishLiftDay = withBaseballAction(
     // helm_lifting_sessions / helm_lifting_session_exercises tables — so a
     // published lift silently never showed up for the athlete. Bridge every
     // materialized baseball session into its helm_lifting_sessions counterpart,
-    // keyed by legacy_baseball_id (a nullable, partial-unique column that exists
-    // specifically for this bridge), so Live Weight Room and the player surfaces
-    // show the same materialized session for a given publish.
+    // keyed by legacy_baseball_id (a nullable, PARTIAL unique index — see
+    // migration 20260625000020: `WHERE legacy_baseball_id IS NOT NULL`), so
+    // Live Weight Room and the player surfaces show the same materialized
+    // session for a given publish.
     //
-    // Idempotent + non-destructive: upsert on legacy_baseball_id — a re-publish
-    // updates the same helm rows instead of duplicating them. Best-effort: a team
-    // with no Helm Lifting organization configured yet, or a player not yet
-    // seeded into helm_lifting_athletes, degrades to skipping the bridge for that
-    // team/player — the legacy baseball_lift_sessions row (and Live Weight Room)
-    // is unaffected either way, so a Helm-Lab gap never blocks the coach's
-    // publish action.
+    // IMPORTANT: PostgREST's .upsert({ onConflict }) targets a real unique/
+    // exclusion CONSTRAINT and never emits a partial index's WHERE predicate,
+    // so `.upsert(rows, { onConflict: 'legacy_baseball_id' })` against a
+    // partial-unique index raises "there is no unique or exclusion constraint
+    // matching the ON CONFLICT specification" on every call — silently
+    // swallowed by a bare try/catch (the original #486 "fix" was a 100% no-op
+    // for exactly this reason). Mirroring createLiftAssignment's precedent in
+    // ./lifting.ts, we do a manual SELECT-by-legacy_baseball_id -> UPDATE (if
+    // found) / INSERT (if absent) instead of onConflict. Non-destructive:
+    // existing rows are updated in place, never deleted-then-reinserted.
+    //
+    // Best-effort: a team with no Helm Lifting organization configured yet, or
+    // a player not yet seeded into helm_lifting_athletes, degrades to skipping
+    // the bridge for that team/player — the legacy baseball_lift_sessions row
+    // (and Live Weight Room) is unaffected either way. Any *unexpected* failure
+    // is still logged via logServerError (never silently swallowed) so a
+    // regression here is visible instead of masquerading as success.
     try {
       const liftCtx = await resolveBaseballLiftingOrg(teamId);
       const baseballSessions = (sessions ?? []) as Array<{ id: string; player_id: string }>;
@@ -1595,10 +1658,50 @@ export const publishLiftDay = withBaseballAction(
           baseballSessions.map((s) => s.player_id),
         );
 
+        const baseballSessionIdsForBridge = baseballSessions
+          .filter((s) => Boolean(athleteMap[s.player_id]))
+          .map((s) => s.id);
+
+        // SELECT: which of these baseball sessions already have a bridged helm
+        // session (keyed by legacy_baseball_id)? Drives the insert-vs-update split.
+        const helmSessionIdByBaseballId = new Map<string, string>();
+        if (baseballSessionIdsForBridge.length) {
+          const { data: existingHelmSessions, error: existHelmSessErr } = await fromUntyped(
+            supabase,
+            'helm_lifting_sessions',
+          )
+            .select('id, legacy_baseball_id')
+            .in('legacy_baseball_id', baseballSessionIdsForBridge) as {
+            data: Array<{ id: string; legacy_baseball_id: string }> | null;
+            error: { message: string } | null;
+          };
+          if (existHelmSessErr) throw existHelmSessErr;
+          for (const r of existingHelmSessions ?? []) {
+            helmSessionIdByBaseballId.set(r.legacy_baseball_id, r.id);
+          }
+        }
+
         const helmSessionInserts: HelmLiftingSessionInsert[] = [];
         for (const s of baseballSessions) {
           const athleteId = athleteMap[s.player_id];
           if (!athleteId) continue; // player not yet seeded in Helm Lifting Lab — skip, never throw.
+          if (helmSessionIdByBaseballId.has(s.id)) {
+            // UPDATE in place — never delete-then-reinsert.
+            const updatePayload: HelmLiftingSessionUpdate = {
+              organization_id: liftCtx.organizationId,
+              sport: 'baseball',
+              team_id: teamId,
+              athlete_id: athleteId,
+              title: input.title ?? 'Lift',
+              scheduled_date: input.scheduledDate,
+              status: 'assigned',
+            };
+            const { error: helmSessUpdErr } = await fromUntyped(supabase, 'helm_lifting_sessions')
+              .update(updatePayload)
+              .eq('id', helmSessionIdByBaseballId.get(s.id));
+            if (helmSessUpdErr) throw helmSessUpdErr;
+            continue;
+          }
           helmSessionInserts.push({
             organization_id: liftCtx.organizationId,
             sport: 'baseball',
@@ -1612,22 +1715,27 @@ export const publishLiftDay = withBaseballAction(
         }
 
         if (helmSessionInserts.length) {
-          const { data: helmSessions, error: helmSessErr } = await fromUntyped(supabase, 'helm_lifting_sessions')
-            .upsert(helmSessionInserts, { onConflict: 'legacy_baseball_id' })
+          const { data: insertedHelmSessions, error: helmSessErr } = await fromUntyped(
+            supabase,
+            'helm_lifting_sessions',
+          )
+            .insert(helmSessionInserts)
             .select('id, legacy_baseball_id') as {
             data: Array<{ id: string; legacy_baseball_id: string }> | null;
             error: { message: string } | null;
           };
           if (helmSessErr) throw helmSessErr;
+          for (const r of insertedHelmSessions ?? []) {
+            helmSessionIdByBaseballId.set(r.legacy_baseball_id, r.id);
+          }
+        }
 
-          const helmSessionIdByBaseballId = new Map(
-            (helmSessions ?? []).map((r) => [r.legacy_baseball_id, r.id]),
-          );
-
-          // Bridge every session_exercise row (both freshly-inserted and
-          // previously-seeded on an idempotent re-publish) so a re-published
-          // session's helm exercises stay in sync too.
-          const baseballSessionIds = baseballSessions.map((s) => s.id);
+        if (helmSessionIdByBaseballId.size) {
+          // Bridge every session_exercise row (both freshly-bridged sessions and
+          // previously-bridged sessions on a re-publish) so a re-published
+          // session's helm exercises stay in sync too — including edited
+          // prescriptions (#492 second half: stage-and-swap UPDATE, not skip).
+          const baseballSessionIds = Array.from(helmSessionIdByBaseballId.keys());
           const { data: allSessionExercises, error: allSeErr } = await supabase
             .from('baseball_lift_session_exercises')
             .select(
@@ -1635,6 +1743,28 @@ export const publishLiftDay = withBaseballAction(
             )
             .in('session_id', baseballSessionIds);
           if (allSeErr) throw allSeErr;
+
+          const legacySeIds = (allSessionExercises ?? []).map((se: { id: string }) => se.id);
+
+          // SELECT existing bridged session_exercise rows (keyed by
+          // legacy_baseball_id = the baseball_lift_session_exercises.id they
+          // were bridged from) to decide insert-vs-update.
+          const helmSeIdByLegacyId = new Map<string, string>();
+          if (legacySeIds.length) {
+            const { data: existingHelmSe, error: existHelmSeErr } = await fromUntyped(
+              supabase,
+              'helm_lifting_session_exercises',
+            )
+              .select('id, legacy_baseball_id')
+              .in('legacy_baseball_id', legacySeIds) as {
+              data: Array<{ id: string; legacy_baseball_id: string }> | null;
+              error: { message: string } | null;
+            };
+            if (existHelmSeErr) throw existHelmSeErr;
+            for (const r of existingHelmSe ?? []) {
+              helmSeIdByLegacyId.set(r.legacy_baseball_id, r.id);
+            }
+          }
 
           const helmSessionExerciseInserts: HelmLiftingSessionExerciseInsert[] = [];
           for (const se of (allSessionExercises ?? []) as Array<{
@@ -1646,6 +1776,32 @@ export const publishLiftDay = withBaseballAction(
           }>) {
             const helmSessionId = helmSessionIdByBaseballId.get(se.session_id);
             if (!helmSessionId) continue; // that player's session was skipped above.
+
+            const existingHelmSeId = helmSeIdByLegacyId.get(se.id);
+            if (existingHelmSeId) {
+              // Stage-and-swap: UPDATE the existing bridged exercise row with
+              // the latest prescription snapshot in place — never delete then
+              // reinsert — so an edited-and-republished prescription actually
+              // reaches the player surface.
+              const updatePayload: HelmLiftingSessionExerciseUpdate = {
+                exercise_name_snapshot: se.exercise_name_snapshot,
+                section_name_snapshot: se.section_name_snapshot,
+                section_type_snapshot: se.section_type_snapshot,
+                order_index: se.order_index,
+                prescribed_sets: se.prescribed_sets,
+                prescribed_reps: se.prescribed_reps,
+                prescribed_load: se.prescribed_load,
+                prescribed_load_unit: se.prescribed_load_unit,
+                prescribed_rpe: se.prescribed_rpe,
+                status: se.status as HelmLiftingSessionExerciseUpdate['status'],
+              };
+              const { error: helmSeUpdErr } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
+                .update(updatePayload)
+                .eq('id', existingHelmSeId);
+              if (helmSeUpdErr) throw helmSeUpdErr;
+              continue;
+            }
+
             helmSessionExerciseInserts.push({
               session_id: helmSessionId,
               // No FK mapping exists from baseball_lift_exercises → helm_lifting_exercises
@@ -1667,15 +1823,23 @@ export const publishLiftDay = withBaseballAction(
 
           if (helmSessionExerciseInserts.length) {
             const { error: helmSeErr } = await fromUntyped(supabase, 'helm_lifting_session_exercises')
-              .upsert(helmSessionExerciseInserts, { onConflict: 'legacy_baseball_id' });
+              .insert(helmSessionExerciseInserts);
             if (helmSeErr) throw helmSeErr;
           }
         }
       }
-    } catch {
-      // Best-effort bridge — never let a Helm Lifting Lab write (missing org,
-      // unseeded athlete, RLS gap) roll back or fail the coach's publish action.
-      // The legacy baseball_lift_sessions materialization above already succeeded.
+    } catch (bridgeErr) {
+      // Best-effort bridge — a missing Helm Lifting org or an unseeded athlete
+      // is expected and already handled above (skip, never throw). But any
+      // OTHER failure here (RLS gap, unexpected DB error, etc.) must be visible,
+      // not silently swallowed — the original #486 "fix" was a no-op precisely
+      // because this catch block used to discard the error with no logging.
+      await logServerError(
+        `publishLiftDay Helm Lifting Lab bridge failed: ${
+          bridgeErr instanceof Error ? bridgeErr.message : String(bridgeErr)
+        }`,
+        { action: 'publishLiftDay.helmBridge', featureArea: 'lifting', handled: true },
+      );
     }
 
     revalidatePath(PERFORMANCE);
