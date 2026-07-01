@@ -382,7 +382,7 @@ export function DiscoverView({
   };
 
   const handleMessage = (playerId: string) => {
-    router.push(`/baseball/dashboard/messages/new?player=${playerId}`);
+    router.push(`/baseball/dashboard/messages?player=${playerId}`);
   };
 
   // Compare mode handlers

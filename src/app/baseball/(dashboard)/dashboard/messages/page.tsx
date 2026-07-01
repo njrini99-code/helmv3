@@ -10,7 +10,7 @@ import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { useConversations, useMessages } from '@/hooks/use-messages';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/components/ui/sonner';
-import { createConversation } from '@/app/baseball/actions/messages';
+import { createConversation, getPlayerUserId } from '@/app/baseball/actions/messages';
 import type { ConversationWithMeta } from '@/lib/types/messages';
 import { getParticipantDetails } from '@/lib/types/messages';
 import { MessagesFairway } from '@/components/baseball/messages/MessagesFairway';
@@ -20,6 +20,7 @@ function MessagesContent() {
   const searchParams = useSearchParams();
   const conversationIdParam = searchParams.get('conversation');
   const openNewParam = searchParams.get('new');
+  const playerIdParam = searchParams.get('player');
   const { showToast } = useToast();
 
   const { user } = useAuthStore();
@@ -99,6 +100,35 @@ function MessagesContent() {
       showToast('Failed to start conversation', 'error');
     }
   };
+
+  // Auto-start (or open) a conversation with a player when ?player=<playerId> is in URL
+  // (e.g. from the Discover peek panel's "Message" action).
+  useEffect(() => {
+    if (!playerIdParam) return;
+
+    let cancelled = false;
+
+    (async () => {
+      const resolvedUserId = await getPlayerUserId(playerIdParam);
+      if (cancelled) return;
+
+      if (resolvedUserId) {
+        await handleNewConversation(resolvedUserId);
+      } else {
+        showToast('Could not start conversation with this player', 'error');
+      }
+
+      // Strip the param so re-renders / back navigation don't re-trigger this.
+      const url = new URL(window.location.href);
+      url.searchParams.delete('player');
+      window.history.replaceState({}, '', url);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerIdParam]);
 
   // Handle sending a message
   const handleSendMessage = async (content: string) => {
