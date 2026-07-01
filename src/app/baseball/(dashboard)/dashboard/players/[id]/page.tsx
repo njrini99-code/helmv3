@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { PlayerProfileClient } from '@/components/baseball/player-profile/PlayerProfileClient';
 import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
 import { getPlayerSnapshotCards } from '@/lib/baseball/read-models/player-snapshot-cards';
-import { getPlayerTimeline } from '@/lib/baseball/read-models/timeline';
+import { getPlayerTimeline, getTimelineAcksForSubjectPlayer } from '@/lib/baseball/read-models/timeline';
 import { getPlayerCoachNotes } from '@/lib/baseball/read-models/coach-notes';
 import { getPlayerTasks } from '@/app/baseball/actions/tasks';
 
@@ -130,6 +130,19 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     getPlayerTasks(playerId),
   ]);
 
+  // Resolve which of the coach's-visible timeline events the SUBJECT PLAYER
+  // (not the viewing coach) has acknowledged. The viewer here is always a
+  // coach, so scoping by the viewer's own auth.uid() (getTimelineAcksForViewer)
+  // would always resolve to the coach's own empty ack set — we need the
+  // player's acks instead. Never throws, degrades to {}.
+  const timelineAcks =
+    timelineResult.events.length > 0
+      ? await getTimelineAcksForSubjectPlayer(
+          playerId,
+          timelineResult.events.map((e) => e.id),
+        )
+      : {};
+
   // Get player videos
   const { data: videos } = await supabase
     .from('baseball_videos')
@@ -193,6 +206,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       timelineEvents={timelineResult.events}
       timelineViewerRole={timelineResult.viewerRole}
       timelineHiddenCount={timelineResult.hiddenCount}
+      timelineAcks={timelineAcks}
       tasks={playerTasks}
     />
   );

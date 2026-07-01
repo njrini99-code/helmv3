@@ -321,3 +321,64 @@ export async function getTimelineAcksForViewer(
   for (const row of data) map[row.timeline_event_id] = true;
   return map;
 }
+
+// -----------------------------------------------------------------------------
+// getTimelineAcksForSubjectPlayer
+// -----------------------------------------------------------------------------
+
+/**
+ * Resolve which of the given timeline event ids have been acknowledged by the
+ * SUBJECT PLAYER — used on staff-facing surfaces (e.g. the coach player-profile
+ * Timeline tab) where the VIEWER is a coach but the ack chip should reflect
+ * whether the PLAYER being viewed has acknowledged the note, not whether the
+ * viewer has. `getTimelineAcksForViewer` is wrong for this case: it scopes by
+ * `auth.uid()`, which on a coach-viewed page is the coach's own (always-empty)
+ * ack set, never the player's.
+ *
+ * We resolve the subject player's own `user_id` (baseball_players.user_id for
+ * `playerId`) and filter baseball_timeline_event_acks by THAT user_id. This is
+ * readable under the coach's session because the table's SELECT policy
+ * (20260624000430) grants team coaches/staff visibility into ALL acks for
+ * events on their team, not just their own rows.
+ *
+ * Never throws — returns an empty map on any failure (unknown player, no
+ * linked user_id, query error), degrading to "no ack chip" rather than a 500.
+ */
+export async function getTimelineAcksForSubjectPlayer(
+  playerId: string,
+  eventIds: string[],
+): Promise<Record<string, boolean>> {
+  const ids = Array.from(new Set(eventIds.filter((id): id is string => !!id)));
+  if (!playerId || ids.length === 0) return {};
+
+  const supabase = await createClient();
+
+  // Resolve the SUBJECT player's user_id — never the viewer's. RLS on
+  // baseball_players already scopes this to players the caller may read.
+  const { data: playerRow } = await supabase
+    .from('baseball_players')
+    .select('user_id')
+    .eq('id', playerId)
+    .maybeSingle();
+
+  const subjectUserId = playerRow?.user_id ?? null;
+  if (!subjectUserId) return {};
+
+  // baseball_timeline_event_acks ships in migration 20260624000430 and is not in
+  // the generated database.ts (we cannot db:types regen against the shared DB).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = (await (supabase as any)
+    .from('baseball_timeline_event_acks')
+    .select('timeline_event_id')
+    .eq('user_id', subjectUserId)
+    .in('timeline_event_id', ids)) as {
+    data: { timeline_event_id: string }[] | null;
+    error: unknown;
+  };
+
+  if (error || !data) return {};
+
+  const map: Record<string, boolean> = {};
+  for (const row of data) map[row.timeline_event_id] = true;
+  return map;
+}
