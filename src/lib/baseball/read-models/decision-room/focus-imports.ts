@@ -19,6 +19,7 @@ import type {
   DecisionRoomImportIssue,
   DecisionRoomSummaryPlayer,
 } from '@/app/baseball/actions/decision-room';
+import { OPEN_SIGNAL_DISPOSITIONS } from '@/lib/types/baseball-signals';
 
 /**
  * Generic Supabase client alias. The Decision Room callers pass the
@@ -46,52 +47,17 @@ function fullName(
   return parts.length > 0 ? parts.join(' ') : null;
 }
 
-/** Row shape selected from `baseball_developmental_plans`. */
-interface PlanRow {
-  id: string;
+/** Row shape selected from `baseball_signals` for the open-signal aggregation. */
+interface OpenSignalRow {
   player_id: string | null;
-  team_id: string;
-  title: string | null;
-  description: string | null;
-  status: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  goals: unknown;
-  updated_at: string | null;
-  created_at: string | null;
+  severity: string | null;
 }
 
-/** Row shape selected from `baseball_coach_notes`. */
-interface NoteRow {
+/** Row shape selected from `baseball_players`, joined in a second round-trip. */
+interface PlayerNameRow {
   id: string;
-  player_id: string | null;
-  team_id: string;
-  scope: string | null;
-  title: string | null;
-  body: string | null;
-  tags: unknown;
-  pinned: boolean | null;
-  archived_at: string | null;
-  updated_at: string | null;
-  created_at: string | null;
-}
-
-/** Internal projection shared by the plan/note mappers below — note this
- * intentionally does NOT match `DecisionRoomPlayerFocus` (the canonical
- * action-module type); the final `as unknown as` cast is the documented
- * bridge between this read-model's richer shape and the UI type. */
-interface ProjectedPlayerFocus {
-  id: string;
-  playerId: string | null;
-  kind: 'plan' | 'note';
-  title: string;
-  summary: string | null;
-  status: string | null;
-  goals: unknown[];
-  pinned: boolean;
-  startDate: string | null;
-  endDate: string | null;
-  updatedAt: string | null;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 /** Row shape selected from `baseball_import_runs`. */
@@ -138,16 +104,16 @@ interface TeamMemberRow {
 }
 
 /**
- * PLAYER FOCUS — active developmental plans plus pinned/recent coach notes for
- * the team, surfaced as the "what to work on with each player" rail.
+ * PLAYER FOCUS — players with open signals that need staff attention,
+ * surfaced as the "who to discuss in this meeting" rail.
  *
- * Sources:
- *   - baseball_developmental_plans (team_id, player_id, title, description,
- *     status, start_date, end_date, goals, updated_at)
- *   - baseball_coach_notes (team_id, player_id, scope, title, body, tags,
- *     pinned, archived_at, updated_at) — non-archived, pinned-first.
- *
- * Both are scoped by team_id and ordered most-recent-first.
+ * Source: baseball_signals (team_id, player_id, severity, disposition),
+ * filtered to `OPEN_SIGNAL_DISPOSITIONS` (the same "still on the triage
+ * board" definition the signal inbox uses) and grouped by player_id to
+ * compute `openCount` (total open signals) and `criticalCount` (open signals
+ * with severity='critical'). Player names are resolved in a second
+ * round-trip to `baseball_players`. Sorted by criticalCount desc, then
+ * openCount desc, so the players most in need of discussion lead the rail.
  */
 export async function loadPlayerFocus(
   supabase: Client,
@@ -155,80 +121,58 @@ export async function loadPlayerFocus(
 ): Promise<DecisionRoomPlayerFocus[]> {
   if (!teamId) return [];
 
-  const [plansRes, notesRes] = await Promise.all([
-    supabase
-      .from('baseball_developmental_plans')
-      .select(
-        'id, player_id, team_id, title, description, status, start_date, end_date, goals, updated_at, created_at',
-      )
-      .eq('team_id', teamId)
-      .order('updated_at', { ascending: false, nullsFirst: false })
-      .limit(MAX_ROWS),
-    supabase
-      .from('baseball_coach_notes')
-      .select(
-        'id, player_id, team_id, scope, title, body, tags, pinned, archived_at, updated_at, created_at',
-      )
-      .eq('team_id', teamId)
-      .is('archived_at', null)
-      .order('pinned', { ascending: false })
-      .order('updated_at', { ascending: false, nullsFirst: false })
-      .limit(MAX_ROWS),
-  ]);
+  const { data, error } = await supabase
+    .from('baseball_signals')
+    .select('player_id, severity')
+    .eq('team_id', teamId)
+    .not('player_id', 'is', null)
+    .in('disposition', Array.from(OPEN_SIGNAL_DISPOSITIONS))
+    .limit(MAX_ROWS);
 
-  if (plansRes.error) {
-    throw new Error(
-      `loadPlayerFocus: developmental plans query failed — ${plansRes.error.message}`,
-    );
-  }
-  if (notesRes.error) {
-    throw new Error(
-      `loadPlayerFocus: coach notes query failed — ${notesRes.error.message}`,
-    );
+  if (error) {
+    throw new Error(`loadPlayerFocus: signals query failed — ${error.message}`);
   }
 
-  const planRows = plansRes.data ?? [];
-  const noteRows = notesRes.data ?? [];
+  const rows = (data ?? []) as OpenSignalRow[];
 
-  const fromPlans: ProjectedPlayerFocus[] = (planRows as PlanRow[]).map((row) => ({
-    id: row.id,
-    playerId: row.player_id ?? null,
-    kind: 'plan' as const,
-    title: nonEmpty(row.title) ?? 'Developmental plan',
-    summary: nonEmpty(row.description),
-    status: nonEmpty(row.status),
-    goals: Array.isArray(row.goals)
-      ? (row.goals as unknown[])
-      : row.goals != null
-        ? [row.goals]
-        : [],
-    pinned: false,
-    startDate: row.start_date ?? null,
-    endDate: row.end_date ?? null,
-    updatedAt: row.updated_at ?? row.created_at ?? null,
-  }));
+  const counts = new Map<string, { open: number; critical: number }>();
+  for (const row of rows) {
+    if (!row.player_id) continue;
+    const entry = counts.get(row.player_id) ?? { open: 0, critical: 0 };
+    entry.open += 1;
+    if (row.severity === 'critical') entry.critical += 1;
+    counts.set(row.player_id, entry);
+  }
 
-  const fromNotes: ProjectedPlayerFocus[] = (noteRows as NoteRow[]).map((row) => ({
-    id: row.id,
-    playerId: row.player_id ?? null,
-    kind: 'note' as const,
-    title: nonEmpty(row.title) ?? 'Coach note',
-    summary: nonEmpty(row.body),
-    status: nonEmpty(row.scope),
-    goals: Array.isArray(row.tags) ? (row.tags as unknown[]) : [],
-    pinned: row.pinned === true,
-    startDate: null,
-    endDate: null,
-    updatedAt: row.updated_at ?? row.created_at ?? null,
-  }));
+  if (counts.size === 0) return [];
 
-  // Pinned notes first, then everything by recency (nulls last).
-  return [...fromNotes, ...fromPlans].sort((a: ProjectedPlayerFocus, b: ProjectedPlayerFocus) => {
-    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    const at = a.updatedAt ? Date.parse(a.updatedAt) : 0;
-    const bt = b.updatedAt ? Date.parse(b.updatedAt) : 0;
-    return bt - at;
-  }) as unknown as DecisionRoomPlayerFocus[];
+  const playerIds = Array.from(counts.keys());
+  const { data: playerRows, error: playerErr } = await supabase
+    .from('baseball_players')
+    .select('id, first_name, last_name')
+    .in('id', playerIds);
+
+  if (playerErr) {
+    throw new Error(`loadPlayerFocus: players query failed — ${playerErr.message}`);
+  }
+
+  const names = new Map<string, string>();
+  for (const p of (playerRows ?? []) as PlayerNameRow[]) {
+    const name = fullName(p.first_name, p.last_name);
+    if (name) names.set(p.id, name);
+  }
+
+  return playerIds
+    .map((playerId) => {
+      const c = counts.get(playerId) as { open: number; critical: number };
+      return {
+        playerId,
+        name: names.get(playerId) ?? 'Unnamed player',
+        openCount: c.open,
+        criticalCount: c.critical,
+      };
+    })
+    .sort((a, b) => b.criticalCount - a.criticalCount || b.openCount - a.openCount);
 }
 
 /**

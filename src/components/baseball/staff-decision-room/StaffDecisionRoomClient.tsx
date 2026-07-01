@@ -1089,19 +1089,22 @@ function AgendaDetailPane({
           <p className="mb-4 text-sm leading-relaxed text-warm-700">{item.detail}</p>
         )}
 
-        {/* Source-backed evidence */}
+        {/* Source-backed evidence. `sourceRefs` may arrive null/undefined if a
+            row's jsonb column is absent — guard so a missing evidence array
+            renders the "no structured sources" empty state instead of
+            throwing on `.length`/`.map`. */}
         <div className="mb-4">
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-warm-400">
             Evidence · {item.sourceRefCount} source{item.sourceRefCount === 1 ? '' : 's'}
           </p>
-          {item.sourceRefs.length === 0 ? (
+          {(item.sourceRefs ?? []).length === 0 ? (
             <p className="rounded-lg border border-warm-100 bg-cream-50 p-2.5 text-xs text-warm-500">
               No structured sources attached. Decide with caution — this item is
               not backed by cited data.
             </p>
           ) : (
             <ul className="space-y-1.5">
-              {item.sourceRefs.map((ref, i) => (
+              {(item.sourceRefs ?? []).map((ref, i) => (
                 <li
                   key={i}
                   className="flex items-center justify-between gap-3 rounded-lg border border-warm-100 bg-cream-50 px-3 py-2"
