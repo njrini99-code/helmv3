@@ -74,10 +74,16 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
   }
 
   const completedGames = games.filter((g) => g.status === 'completed');
-  const wins = completedGames.filter(
-    (g) => g.our_score != null && g.opponent_score != null && g.our_score > g.opponent_score
-  ).length;
-  const losses = completedGames.length - wins;
+  const { wins, losses, ties } = completedGames.reduce(
+    (record, g) => {
+      if (g.our_score == null || g.opponent_score == null) return record;
+      if (g.our_score > g.opponent_score) record.wins += 1;
+      else if (g.our_score < g.opponent_score) record.losses += 1;
+      else record.ties += 1;
+      return record;
+    },
+    { wins: 0, losses: 0, ties: 0 }
+  );
 
   return (
     <div className="space-y-5">
@@ -87,7 +93,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
           <h2 className="text-xl font-bold text-warm-900">{title}</h2>
           {completedGames.length > 0 && (
             <p className="text-sm text-warm-500 mt-0.5">
-              {completedGames.length} played · {wins}W {losses}L
+              {completedGames.length} played · {wins}W-{losses}L{ties > 0 ? `-${ties}T` : ''}
             </p>
           )}
         </div>
