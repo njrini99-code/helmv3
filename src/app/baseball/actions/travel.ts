@@ -383,6 +383,18 @@ const addExpenseAction = withBaseballAction(
     }
 
     const supabase = await createClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: itinerary } = await (supabase as any)
+      .from('baseball_travel_itineraries')
+      .select('team_id')
+      .eq('id', itineraryId)
+      .single();
+
+    if (!itinerary?.team_id || String(itinerary.team_id) !== teamId) {
+      return { success: false as const, error: 'Itinerary not found.' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: created, error } = await (supabase as any)
       .from('baseball_travel_expenses')
