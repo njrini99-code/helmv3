@@ -579,10 +579,17 @@ async function measureForTeam(
     // lands as 'new'. Measurement fields (metric_before/after, confidence, etc.)
     // always refresh — only the coach-owned triage state is preserved.
     const dedupeKeys = [...new Set(reviews.map((r) => r.dedupeKey))];
-    const { data: existingRows } = await fromUntyped(supabase, 'baseball_practice_effectiveness_reviews')
+    const { data: existingRows, error: existingErr } = await fromUntyped(supabase, 'baseball_practice_effectiveness_reviews')
       .select('dedupe_key, disposition')
       .eq('team_id', teamId)
       .in('dedupe_key', dedupeKeys);
+    if (existingErr) {
+      // Fail closed: if we cannot read the current dispositions, we must NOT
+      // proceed — defaulting to 'new' would silently clobber coach-owned triage
+      // state (the exact #476 bug), just gated behind a DB error rather than
+      // firing on every run. Surface the failure instead of resetting.
+      return { success: false, measured: 0, improved: 0, worse: 0, tooEarly: 0, insufficient: 0, error: 'Could not load existing review dispositions.' };
+    }
     const existingDisposition = new Map<string, string>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const row of (existingRows ?? []) as any[]) {
