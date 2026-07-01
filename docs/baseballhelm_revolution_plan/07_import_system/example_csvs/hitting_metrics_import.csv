@@ -1,0 +1,3 @@
+session_date,player_name,bat_speed_mph,attack_angle_deg,exit_velocity_mph,launch_angle_deg,distance_ft,spray_direction,pitch_type,result,source_vendor
+2026-02-06,AJ Walker,72.5,9.4,96.8,18,335,RCF,FB,line_drive,Blast
+2026-02-06,AJ Walker,70.1,4.1,88.2,8,210,LF,SL,ground_ball,Blast
