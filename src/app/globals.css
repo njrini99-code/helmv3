@@ -2814,3 +2814,24 @@ select:-webkit-autofill {
   height: 0;
   display: none;
 }
+
+/* ============================================================================
+ * BaseballHelm program-brand accent consumer (settings-appearance completion).
+ * ----------------------------------------------------------------------------
+ * `BaseballProgramBrand` (src/components/baseball/settings/BaseballProgramBrand.tsx)
+ * sets --baseball-brand-accent + data-baseball-branded="true" on <html> once a
+ * coach's persisted brand_accent passes its readability clamp. Until now that
+ * variable had ZERO CSS consumers, so the setting was silently invisible.
+ *
+ * This is the ONE sanctioned consumer: the Fairway shell's active-nav
+ * indicator (--fw-color-nav-accent → `bg-nav-accent`/`text-nav-accent` in
+ * FairwaySidebar), re-pointed to the program's accent ONLY inside
+ * `.living-annual` (the baseball-only Fairway scope — golf never carries this
+ * class) AND only while data-baseball-branded="true" is present. Golf's
+ * identical --fw-color-nav-accent token at :root is never touched. No status
+ * color, no cream base token, no other accent is overridden here — exactly
+ * the single-variable guardrail the component's own comments describe.
+ * ========================================================================== */
+html[data-baseball-branded='true'] .living-annual {
+  --fw-color-nav-accent: var(--baseball-brand-accent, #16A34A);
+}

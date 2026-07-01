@@ -57,6 +57,7 @@ import { PageLoading } from '@/components/ui/loading';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { PeekPanelProvider } from '@/components/baseball/peek-panel';
 import { NotificationBell } from '@/components/baseball/NotificationBell';
+import { BaseballProgramBrand } from '@/components/baseball/settings/BaseballProgramBrand';
 
 import { useBaseballAuth } from '@/hooks/use-baseball-auth';
 import { useBaseballNavContext } from '@/hooks/use-baseball-nav-context';
@@ -372,6 +373,12 @@ export function BaseballFairwayShell({ children }: { children: React.ReactNode }
     <SidebarProvider>
       <SessionActivityProvider>
         <LastSeenUpdater />
+        {/* Render-null: fetches the program's brand + applies it as CSS vars /
+            data attrs on <html>. Mounted here too — this is a full parallel
+            duplicate of BaseballShellLayout's provider stack (not a wrapper),
+            so branding would otherwise silently die whenever the redesign
+            flag is on for this route group. */}
+        <BaseballProgramBrand />
         <PeekPanelProvider>
           <BaseballFairwayContent role={resolvedRole} navContext={navContext ?? undefined}>
             {children}
