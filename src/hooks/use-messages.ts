@@ -50,7 +50,30 @@ export function useMessages(conversationId: string) {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          setMessages(prev => [...prev, payload.new as Message]);
+          const newMessage = payload.new as Message;
+          setMessages(prev => {
+            if (prev.some(m => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
+        }
+      )
+      // Read-receipt updates (#455): when the recipient opens this thread,
+      // markMessagesAsRead flips `read=true` on our sent messages. Reflect
+      // that here so the single-check -> double-check upgrade happens live
+      // instead of requiring a full reload.
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'baseball_messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updatedMessage = payload.new as Message;
+          setMessages(prev => prev.map(m => (
+            m.id === updatedMessage.id ? { ...m, read: updatedMessage.read } : m
+          )));
         }
       )
       .subscribe();
@@ -63,7 +86,15 @@ export function useMessages(conversationId: string) {
 
   const sendMessage = async (content: string) => {
     try {
-      await sendMessageAction(conversationId, content);
+      const result = await sendMessageAction(conversationId, content);
+      // The server action never throws on failure -- it catches everything
+      // internally and returns `{ success: false, error }` (formatSafeErrorResponse).
+      // Without this check a rejected send (auth, validation, not-a-participant)
+      // was reported as sent: the input cleared and no error surfaced (#450).
+      if (!result.success) {
+        console.error('Error sending message:', 'error' in result ? result.error : 'Unknown error');
+        return false;
+      }
       return true;
     } catch (error) {
       console.error('Error sending message:', error);
@@ -80,6 +111,11 @@ export function useConversations() {
   const { user } = useAuthStore();
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+  const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks the current user's known conversation IDs so the
+  // baseball_conversations UPDATE listener (below) can ignore rows that
+  // belong to other users' conversations without a server-side filter.
+  const conversationIdsRef = useRef<Set<string>>(new Set());
 
   const fetchConversations = useCallback(async () => {
     if (!user) {
@@ -228,6 +264,7 @@ export function useConversations() {
     });
 
     setConversations(transformedConversations as unknown as ConversationWithMeta[]);
+    conversationIdsRef.current = new Set(conversationsData.map((c) => c.id));
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable across renders (useRef at line 79). Adding it would noise the dep array without changing behavior.
   }, [user]);
@@ -235,25 +272,71 @@ export function useConversations() {
   useEffect(() => {
     fetchConversations();
 
-    // Set up real-time subscription for new messages
+    // Set up real-time subscription for new messages and read-state changes
     if (user) {
+      // Debounced refetch: markMessagesAsRead can flip `read=true` on many
+      // rows at once (opening a busy thread), which fires one UPDATE event
+      // per row -- batch those into a single refetch instead of a stampede.
+      const debouncedFetch = () => {
+        if (fetchDebounceRef.current) {
+          clearTimeout(fetchDebounceRef.current);
+        }
+        fetchDebounceRef.current = setTimeout(() => {
+          fetchConversations();
+        }, 300);
+      };
+
+      // OPTIMIZED (#451): subscribe to baseball_conversation_participants
+      // filtered by user_id instead of ALL rows of baseball_messages. The old
+      // unfiltered `event: '*'` on baseball_messages fired a refetch for every
+      // message in every conversation, platform-wide, for every connected
+      // user -- the exact anti-pattern already fixed on the golf side (see
+      // src/hooks/golf/use-golf-messages.ts useGolfConversations). Opening a
+      // thread writes last_read_at on THIS participant row
+      // (markMessagesAsRead in src/app/actions/messages.ts), which clears the
+      // viewer's own unread badge without ever touching another user's rows.
       const channel = supabase
-        .channel('baseball_conversations')
+        .channel(`baseball_conversations:${user.id}`)
         .on(
           'postgres_changes',
           {
-            event: 'INSERT',
+            event: '*',
             schema: 'public',
-            table: 'baseball_messages',
+            table: 'baseball_conversation_participants',
+            filter: `user_id=eq.${user.id}`,
           },
           () => {
-            fetchConversations();
+            debouncedFetch();
+          }
+        )
+        // sendMessage() (src/app/actions/messages.ts) bumps
+        // baseball_conversations.updated_at on every new message but does NOT
+        // touch the recipient's participant row, so the listener above alone
+        // would miss "someone sent me a message" for conversations the viewer
+        // isn't currently reading. This table has no user_id column to filter
+        // on server-side, so -- same as golf's useGolfConversations -- accept
+        // the unfiltered UPDATE stream and discard rows outside the viewer's
+        // own conversations client-side via conversationIdsRef.
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'baseball_conversations',
+          },
+          (payload) => {
+            if (conversationIdsRef.current.has(payload.new.id as string)) {
+              debouncedFetch();
+            }
           }
         )
         .subscribe();
 
       return () => {
         supabase.removeChannel(channel);
+        if (fetchDebounceRef.current) {
+          clearTimeout(fetchDebounceRef.current);
+        }
       };
     }
     return undefined;
