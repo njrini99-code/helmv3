@@ -50,7 +50,30 @@ export function useMessages(conversationId: string) {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          setMessages(prev => [...prev, payload.new as Message]);
+          const newMessage = payload.new as Message;
+          setMessages(prev => {
+            if (prev.some(m => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
+        }
+      )
+      // Read-receipt updates (#455): when the recipient opens this thread,
+      // markMessagesAsRead flips `read=true` on our sent messages. Reflect
+      // that here so the single-check -> double-check upgrade happens live
+      // instead of requiring a full reload.
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'baseball_messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updatedMessage = payload.new as Message;
+          setMessages(prev => prev.map(m => (
+            m.id === updatedMessage.id ? { ...m, read: updatedMessage.read } : m
+          )));
         }
       )
       .subscribe();
@@ -63,7 +86,15 @@ export function useMessages(conversationId: string) {
 
   const sendMessage = async (content: string) => {
     try {
-      await sendMessageAction(conversationId, content);
+      const result = await sendMessageAction(conversationId, content);
+      // The server action never throws on failure -- it catches everything
+      // internally and returns `{ success: false, error }` (formatSafeErrorResponse).
+      // Without this check a rejected send (auth, validation, not-a-participant)
+      // was reported as sent: the input cleared and no error surfaced (#450).
+      if (!result.success) {
+        console.error('Error sending message:', 'error' in result ? result.error : 'Unknown error');
+        return false;
+      }
       return true;
     } catch (error) {
       console.error('Error sending message:', error);
@@ -80,6 +111,7 @@ export function useConversations() {
   const { user } = useAuthStore();
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
+  const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchConversations = useCallback(async () => {
     if (!user) {
@@ -235,25 +267,44 @@ export function useConversations() {
   useEffect(() => {
     fetchConversations();
 
-    // Set up real-time subscription for new messages
+    // Set up real-time subscription for new messages and read-state changes
     if (user) {
+      // Debounced refetch: markMessagesAsRead can flip `read=true` on many
+      // rows at once (opening a busy thread), which fires one UPDATE event
+      // per row -- batch those into a single refetch instead of a stampede.
+      const debouncedFetch = () => {
+        if (fetchDebounceRef.current) {
+          clearTimeout(fetchDebounceRef.current);
+        }
+        fetchDebounceRef.current = setTimeout(() => {
+          fetchConversations();
+        }, 300);
+      };
+
       const channel = supabase
         .channel('baseball_conversations')
         .on(
           'postgres_changes',
           {
-            event: 'INSERT',
+            // '*' (not just INSERT): unread_count is `COUNT(read = FALSE AND
+            // sender_id != viewer)` (get_baseball_conversations_with_details),
+            // so an UPDATE that flips `read` -- from markMessagesAsRead when a
+            // thread is opened -- must also refetch to clear the badge (#451).
+            event: '*',
             schema: 'public',
             table: 'baseball_messages',
           },
           () => {
-            fetchConversations();
+            debouncedFetch();
           }
         )
         .subscribe();
 
       return () => {
         supabase.removeChannel(channel);
+        if (fetchDebounceRef.current) {
+          clearTimeout(fetchDebounceRef.current);
+        }
       };
     }
     return undefined;
