@@ -280,14 +280,51 @@ export async function joinTeam(playerId: string, teamId: string) {
     };
   }
 
-  // Get team type to check if JUCO (auto-enable recruiting)
-  const { data: team } = await supabase
+  // Get team type + join policy to check if JUCO (auto-enable recruiting) and
+  // to enforce the team's join policy (invite_policy / require_coach_approval).
+  // SECURITY: the team lookup error is captured and checked (not discarded) —
+  // a schema mismatch (e.g. migration 20260624000095 not yet applied) must fail
+  // closed rather than silently falling through with team === undefined.
+  const { data: team, error: teamError } = await supabase
     .from('baseball_teams')
-    .select('team_type')
+    .select('team_type, invite_policy, require_coach_approval')
     .eq('id', teamId)
     .single();
 
-  if (team?.team_type === 'juco') {
+  if (teamError || !team) {
+    await logServerError(
+      `Error resolving team for join policy check: ${teamError instanceof Error ? teamError.message : String(teamError)}`,
+      { action: 'teams.joinTeam' },
+    );
+    return {
+      success: false,
+      error: 'Unable to verify this team right now. Please try again.',
+    };
+  }
+
+  // SECURITY: Enforce team join policy (#502).
+  // COALESCE-style defaults guard against the policy columns not being present
+  // yet on some environment: invite_policy defaults to 'invite_only' and
+  // require_coach_approval defaults to true — matching the column DEFAULTs in
+  // migration 20260624000095, and matching the fail-closed posture (approval
+  // required unless a coach has explicitly turned it off).
+  const invitePolicy = team.invite_policy ?? 'invite_only';
+  if (invitePolicy === 'closed') {
+    await logSecurityEvent({
+      event: 'team_join_denied_closed_roster',
+      action: 'team_join',
+      userId: user.id,
+      metadata: { teamId, playerId },
+    });
+    return {
+      success: false,
+      error: 'This roster is closed and is not accepting new members.',
+    };
+  }
+  const requiresApproval = team.require_coach_approval !== false;
+  const memberStatus: 'active' | 'pending' = requiresApproval ? 'pending' : 'active';
+
+  if (team.team_type === 'juco') {
     const { data: playerRow } = await supabase
       .from('baseball_players')
       .select('player_type')
@@ -308,6 +345,7 @@ export async function joinTeam(playerId: string, teamId: string) {
     .insert({
       team_id: teamId,
       player_id: playerId,
+      status: memberStatus,
       joined_at: new Date().toISOString(),
     });
 
