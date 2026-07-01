@@ -1,0 +1,59 @@
+name: 🐞 Bug report
+description: Something behaves incorrectly or regressed.
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which surface does this affect?
+      options:
+        - golf
+        - baseball
+        - coachhelm
+        - dashboard
+        - mobile
+        - stats
+        - import
+        - database
+        - auth
+        - ci
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Actual behavior, including any error text or screenshots.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Click …
+        3. See …
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: prod / preview / local · web / iOS · account or team
+  - type: checkboxes
+    id: severity
+    attributes:
+      label: Severity hints
+      options:
+        - label: Touches auth, RLS, secrets, or PII (add the `security` label)
+        - label: Data loss or incorrect stats/calculations
+        - label: Blocks a core flow (login, save round, onboarding)

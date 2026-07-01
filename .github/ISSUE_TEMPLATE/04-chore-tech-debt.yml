@@ -1,0 +1,31 @@
+name: 🧹 Chore / tech-debt
+description: Refactor, cleanup, CI/tooling, docs, or maintenance work (no user-facing behavior change).
+labels: ["tech-debt"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - ci
+        - database
+        - golf
+        - baseball
+        - coachhelm
+        - dashboard
+        - mobile
+        - documentation
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs doing
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters
+      description: What risk/friction does the current state cause?

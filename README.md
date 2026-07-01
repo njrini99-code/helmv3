@@ -1,5 +1,9 @@
 # Helm Intelligence
 
+[![CI](https://github.com/njrini99-code/helmv3/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/njrini99-code/helmv3/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/njrini99-code/helmv3/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/njrini99-code/helmv3/actions/workflows/codeql.yml)
+[![Review Gate](https://github.com/njrini99-code/helmv3/actions/workflows/review-gate.yml/badge.svg?branch=main)](https://github.com/njrini99-code/helmv3/actions/workflows/review-gate.yml)
+
 > **MAXIMUM POWER MODE** - Ultra-powerful multi-agent system with full 200K context windows.
 
 Built for **Helm Sports Labs** with a **$30 API budget** that enables ~7 comprehensive audits.
