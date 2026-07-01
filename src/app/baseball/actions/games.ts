@@ -636,6 +636,114 @@ export async function saveBoxScorePitching(
   }
 }
 
+interface CompleteGameScoreUpdate {
+  ourScore?: number;
+  opponentScore?: number;
+}
+
+/**
+ * Shared game-completion + season-stat-recalculation path.
+ *
+ * Marks the game `completed`, recalculates every player who appears in its
+ * box score via the `recalculate_baseball_season_stats` RPC, and revalidates
+ * the stats paths. Only score fields explicitly present in `scoreUpdate` are
+ * written — the CSV upload paths only know one side's runs per upload
+ * (batting rows → our runs, pitching rows → runs allowed), so the omitted
+ * side is left untouched rather than clobbered with a default.
+ *
+ * Used by `markGameCompleted` (manual entry, both scores always supplied)
+ * and by the CSV upload paths `uploadBoxScoreCSV` / `resolveBoxScoreUpload`
+ * (one side supplied per upload) so a successful CSV import reaches the same
+ * end-state as the manual `saveFullBoxScore` flow without a second action.
+ */
+async function completeGameAndRecalculate(
+  gameId: string,
+  scoreUpdate: CompleteGameScoreUpdate = {},
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  const { data: game } = await (supabase as unknown as SupabaseClient)
+    .from('baseball_games')
+    .select('team_id')
+    .eq('id', gameId)
+    .single();
+
+  if (!game) return { success: false, error: 'Game not found' };
+
+  await requireBaseballCapability(game.team_id, 'can_manage_stats');
+
+  const updatePayload: Record<string, unknown> = {
+    status: 'completed',
+    updated_at: new Date().toISOString(),
+  };
+  if (scoreUpdate.ourScore !== undefined) updatePayload.our_score = scoreUpdate.ourScore;
+  if (scoreUpdate.opponentScore !== undefined) updatePayload.opponent_score = scoreUpdate.opponentScore;
+
+  const { error } = await (supabase as unknown as SupabaseClient)
+    .from('baseball_games')
+    .update(updatePayload)
+    .eq('id', gameId);
+
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+
+  const { data: battingPlayers } = await (supabase as unknown as SupabaseClient)
+    .from('baseball_box_score_batting')
+    .select('player_id')
+    .eq('game_id', gameId);
+
+  const { data: pitchingPlayers } = await (supabase as unknown as SupabaseClient)
+    .from('baseball_box_score_pitching')
+    .select('player_id')
+    .eq('game_id', gameId);
+
+  const allPlayerIds = [
+    ...new Set([
+      ...(battingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
+      ...(pitchingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
+    ]),
+  ];
+
+  const currentYear = new Date().getFullYear();
+
+  const db2 = supabase as unknown as SupabaseClient;
+  const recalcResults = await Promise.all(
+    allPlayerIds.map((playerId) =>
+      db2.rpc('recalculate_baseball_season_stats', {
+        p_player_id: playerId,
+        p_team_id: game.team_id,
+        p_season_year: currentYear,
+      })
+    )
+  );
+
+  revalidateStatsPaths();
+  revalidatePath(`/baseball/dashboard/players`);
+
+  const recalcError = recalcResults.find((r) => r.error)?.error;
+  if (recalcError) {
+    return { success: false, error: sanitizeDbError(recalcError, 'games') };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Sum per-player runs from a CSV-derived batting/pitching batch into a
+ * partial game score update: batting rows → our runs scored, pitching rows
+ * → runs allowed (opponent's runs). Feeds `completeGameAndRecalculate` so
+ * CSV-driven completion can populate a meaningful score without new input.
+ */
+function deriveScoreUpdateFromCsv(
+  csvType: 'batting' | 'pitching',
+  battingRows: BoxScoreBattingInput[],
+  pitchingRows: BoxScorePitchingInput[],
+): CompleteGameScoreUpdate {
+  if (csvType === 'batting') {
+    return { ourScore: battingRows.reduce((total, row) => total + (row.r ?? 0), 0) };
+  }
+  return { opponentScore: pitchingRows.reduce((total, row) => total + (row.r ?? 0), 0) };
+}
+
 const markGameCompletedAction = withBaseballAction(
   'markGameCompleted',
   { featureArea: 'baseball-games' },
@@ -645,63 +753,7 @@ const markGameCompletedAction = withBaseballAction(
     ourScore: number,
     opponentScore: number,
   ): Promise<{ success: boolean; error?: string }> => {
-    const supabase = await createClient();
-
-    const { data: game } = await (supabase as unknown as SupabaseClient)
-      .from('baseball_games')
-      .select('team_id')
-      .eq('id', gameId)
-      .single();
-
-    if (!game) return { success: false, error: 'Game not found' };
-
-    await requireBaseballCapability(game.team_id, 'can_manage_stats');
-
-    const { error } = await (supabase as unknown as SupabaseClient)
-      .from('baseball_games')
-      .update({
-        status: 'completed',
-        our_score: ourScore,
-        opponent_score: opponentScore,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', gameId);
-
-    if (error) return { success: false, error: sanitizeDbError(error, 'games') };
-
-    const { data: battingPlayers } = await (supabase as unknown as SupabaseClient)
-      .from('baseball_box_score_batting')
-      .select('player_id')
-      .eq('game_id', gameId);
-
-    const { data: pitchingPlayers } = await (supabase as unknown as SupabaseClient)
-      .from('baseball_box_score_pitching')
-      .select('player_id')
-      .eq('game_id', gameId);
-
-    const allPlayerIds = [
-      ...new Set([
-        ...(battingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
-        ...(pitchingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
-      ]),
-    ];
-
-    const currentYear = new Date().getFullYear();
-
-    const db2 = supabase as unknown as SupabaseClient;
-    await Promise.all(
-      allPlayerIds.map((playerId) =>
-        db2.rpc('recalculate_baseball_season_stats', {
-          p_player_id: playerId,
-          p_team_id: game.team_id,
-          p_season_year: currentYear,
-        })
-      )
-    );
-
-    revalidateStatsPaths();
-    revalidatePath(`/baseball/dashboard/players`);
-    return { success: true };
+    return completeGameAndRecalculate(gameId, { ourScore, opponentScore });
   },
 );
 
@@ -852,6 +904,12 @@ export interface CSVUploadResult {
   pitchingRows: BoxScorePitchingInput[];
   allMatched: boolean;
   error?: string;
+  /**
+   * Set when the box-score rows saved but marking the game completed and/or
+   * recalculating season stats failed — the UI should surface this even
+   * though `success` is true, since the game is not yet finalized.
+   */
+  completionError?: string;
 }
 
 export async function uploadBoxScoreCSV(
@@ -986,12 +1044,26 @@ export async function uploadBoxScoreCSV(
     .select('id')
     .single();
 
-  // If all matched, auto-save the box score
+  let completionError: string | undefined;
+
+  // If all matched, auto-save the box score, then finalize the game and
+  // recalculate season stats — reusing the same completion path as the
+  // manual save flow so the game/season data doesn't sit stale until a
+  // second manual action runs.
   if (allMatched && rows.length > 0) {
-    if (csvType === 'batting') {
-      await saveBoxScoreBatting(gameId, battingRows);
+    const saveResult =
+      csvType === 'batting'
+        ? await saveBoxScoreBatting(gameId, battingRows)
+        : await saveBoxScorePitching(gameId, pitchingRows);
+
+    if (!saveResult.success) {
+      completionError = saveResult.error;
     } else {
-      await saveBoxScorePitching(gameId, pitchingRows);
+      const completion = await completeGameAndRecalculate(
+        gameId,
+        deriveScoreUpdateFromCsv(csvType, battingRows, pitchingRows),
+      );
+      if (!completion.success) completionError = completion.error;
     }
   }
 
@@ -1003,6 +1075,7 @@ export async function uploadBoxScoreCSV(
     battingRows,
     pitchingRows,
     allMatched,
+    completionError,
   };
 }
 
@@ -1130,6 +1203,16 @@ export async function resolveBoxScoreUpload(
       .from('baseball_box_score_uploads')
       .update({ status: 'completed' })
       .eq('id', uploadId);
+
+    // Rows are saved — finalize the game and recalc season stats too, so the
+    // manual-resolution path reaches the same end-state as the auto-save path.
+    const completion = await completeGameAndRecalculate(
+      gameId,
+      deriveScoreUpdateFromCsv(csvType, battingRows, pitchingRows),
+    );
+    if (!completion.success) {
+      return { success: false, error: completion.error };
+    }
   }
 
   return result;
@@ -1196,14 +1279,41 @@ export async function getPlayerSeasonStats(
 
   const db = supabase as unknown as SupabaseClient;
 
+  // Box-score tables carry no season_year/game_date of their own — season is
+  // derived from the parent baseball_games row. Resolve the season's game ids
+  // first, then constrain the batting/pitching logs with `.in('game_id', ...)`,
+  // matching the established pattern in operational-signals.ts.
+  const { data: seasonGames } = await db
+    .from('baseball_games')
+    .select('id')
+    .eq('team_id', teamId)
+    .gte('game_date', `${year}-01-01`)
+    .lte('game_date', `${year}-12-31`);
+
+  const seasonGameIds = ((seasonGames ?? []) as Array<{ id: string }>).map((g) => g.id);
+
+  const statsPromise = db
+    .from('baseball_player_season_stats')
+    .select('*')
+    .eq('player_id', playerId)
+    .eq('team_id', teamId)
+    .eq('season_year', year)
+    .single();
+
+  // Short-circuit when there are no games in the season — an empty `.in()`
+  // would otherwise still round-trip to the database for no rows.
+  if (seasonGameIds.length === 0) {
+    const statsResult = await statsPromise;
+    return {
+      success: true,
+      data: statsResult.data as BaseballPlayerSeasonStats | undefined,
+      gameLog: [],
+      pitchingLog: [],
+    };
+  }
+
   const [statsResult, battingLogResult, pitchingLogResult] = await Promise.all([
-    db
-      .from('baseball_player_season_stats')
-      .select('*')
-      .eq('player_id', playerId)
-      .eq('team_id', teamId)
-      .eq('season_year', year)
-      .single(),
+    statsPromise,
     db
       .from('baseball_box_score_batting')
       .select(`
@@ -1212,7 +1322,7 @@ export async function getPlayerSeasonStats(
       `)
       .eq('player_id', playerId)
       .eq('team_id', teamId)
-      .order('created_at', { ascending: false }),
+      .in('game_id', seasonGameIds),
     db
       .from('baseball_box_score_pitching')
       .select(`
@@ -1221,14 +1331,28 @@ export async function getPlayerSeasonStats(
       `)
       .eq('player_id', playerId)
       .eq('team_id', teamId)
-      .order('created_at', { ascending: false }),
+      .in('game_id', seasonGameIds),
   ]);
+
+  // PostgREST cannot reliably order a parent list by a to-many embedded
+  // column, so sort by the joined game's date descending in-memory.
+  const byGameDateDesc = (
+    a: { game: Partial<BaseballGame> | null },
+    b: { game: Partial<BaseballGame> | null },
+  ) => (b.game?.game_date ?? '').localeCompare(a.game?.game_date ?? '');
+
+  const gameLog = (
+    (battingLogResult.data ?? []) as Array<BaseballBoxScoreBatting & { game: Partial<BaseballGame> }>
+  ).sort(byGameDateDesc);
+  const pitchingLog = (
+    (pitchingLogResult.data ?? []) as Array<BaseballBoxScorePitching & { game: Partial<BaseballGame> }>
+  ).sort(byGameDateDesc);
 
   return {
     success: true,
     data: statsResult.data as BaseballPlayerSeasonStats | undefined,
-    gameLog: (battingLogResult.data ?? []) as Array<BaseballBoxScoreBatting & { game: Partial<BaseballGame> }>,
-    pitchingLog: (pitchingLogResult.data ?? []) as Array<BaseballBoxScorePitching & { game: Partial<BaseballGame> }>,
+    gameLog,
+    pitchingLog,
   };
 }
 
