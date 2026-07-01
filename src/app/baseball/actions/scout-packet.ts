@@ -385,7 +385,13 @@ export const getScoutPacketPreview = withBaseballAction(
  * Side effect: a successful, live resolution bumps the token's view telemetry
  * (best-effort; never blocks the packet).
  */
-export async function resolveScoutPacketByToken(token: string): Promise<ScoutPacketModel> {
+export async function resolveScoutPacketByToken(
+  token: string,
+  options: { trackView?: boolean } = {},
+): Promise<ScoutPacketModel> {
+  // A CSV export is data retrieval, not a human "view" of the packet, so callers
+  // like the CSV route pass trackView: false to avoid inflating view_count.
+  const { trackView = true } = options;
   const generatedAt = new Date().toISOString();
   const fail = (reason: ScoutPacketModel['reason']): ScoutPacketModel => ({
     ok: false,
@@ -439,8 +445,8 @@ export async function resolveScoutPacketByToken(token: string): Promise<ScoutPac
     recipientLabel: (row.recipient_label as string | null) ?? null,
   });
 
-  // Telemetry: only count a live, exposed open.
-  if (packet.ok) {
+  // Telemetry: only count a live, exposed open — and never for CSV exports.
+  if (packet.ok && trackView) {
     try {
       await fromUntyped(admin, 'baseball_player_passport_share_tokens')
         .update({
