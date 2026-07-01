@@ -118,6 +118,13 @@ interface PlayerProfileClientProps {
   timelineViewerRole?: 'staff' | 'player' | 'none';
   /** Count of timeline events filtered out by visibility. */
   timelineHiddenCount?: number;
+  /**
+   * Per-event acknowledgement state for the CURRENT viewer (the coach), keyed by
+   * timeline event id, from getTimelineAcksForViewer(). Read-only display on this
+   * surface — coaches see whether an event has been acknowledged, they do not
+   * toggle it (no `onToggleAck` is wired to ProfileTimeline here).
+   */
+  timelineAcks?: Record<string, boolean>;
   /** True when the viewer may author new coach notes. */
   notesCanAuthor?: boolean;
   /** Player tasks fetched from baseball_tasks via getPlayerTasks(). */
@@ -252,6 +259,7 @@ export function PlayerProfileClient({
   timelineEvents = [],
   timelineViewerRole,
   timelineHiddenCount = 0,
+  timelineAcks,
   notesCanAuthor = false,
   tasks = [],
 }: PlayerProfileClientProps) {
@@ -1333,6 +1341,7 @@ export function PlayerProfileClient({
             events={timelineEvents}
             viewerRole={timelineViewerRole}
             hiddenCount={timelineHiddenCount}
+            acknowledged={timelineAcks}
           />
         </motion.div>
         )}

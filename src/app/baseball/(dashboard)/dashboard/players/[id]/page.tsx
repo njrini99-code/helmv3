@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { PlayerProfileClient } from '@/components/baseball/player-profile/PlayerProfileClient';
 import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
 import { getPlayerSnapshotCards } from '@/lib/baseball/read-models/player-snapshot-cards';
-import { getPlayerTimeline } from '@/lib/baseball/read-models/timeline';
+import { getPlayerTimeline, getTimelineAcksForViewer } from '@/lib/baseball/read-models/timeline';
 import { getPlayerCoachNotes } from '@/lib/baseball/read-models/coach-notes';
 import { getPlayerTasks } from '@/app/baseball/actions/tasks';
 
@@ -130,6 +130,14 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     getPlayerTasks(playerId),
   ]);
 
+  // Resolve which of the coach's-visible timeline events THIS viewer (the coach)
+  // has acknowledged. Self-scoped (user_id = auth.uid()) via the same read model
+  // the player-side timeline surface already uses; never throws, degrades to {}.
+  const timelineAcks =
+    timelineResult.events.length > 0
+      ? await getTimelineAcksForViewer(timelineResult.events.map((e) => e.id))
+      : {};
+
   // Get player videos
   const { data: videos } = await supabase
     .from('baseball_videos')
@@ -193,6 +201,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       timelineEvents={timelineResult.events}
       timelineViewerRole={timelineResult.viewerRole}
       timelineHiddenCount={timelineResult.hiddenCount}
+      timelineAcks={timelineAcks}
       tasks={playerTasks}
     />
   );
