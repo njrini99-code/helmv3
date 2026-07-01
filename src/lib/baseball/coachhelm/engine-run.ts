@@ -770,16 +770,19 @@ export async function runBaseballEngineCore(
       .from('baseball_signals')
       .upsert(signalRows, { onConflict: 'team_id,dedupe_key', ignoreDuplicates: false })
       .select('id, dedupe_key');
-    if (!sigErr) {
-      signalsEmitted = signalRows.length;
-      const signalIdByKey = new Map<string, string>();
-      for (const s of (upsertedSignals ?? []) as Array<{ id: string; dedupe_key: string | null }>) {
-        if (s.dedupe_key) signalIdByKey.set(s.dedupe_key, s.id);
-      }
-      for (const a of auditRows) {
-        if (a.dedupe_key && a.output_table === 'baseball_signals') {
-          a.output_id = signalIdByKey.get(a.dedupe_key) ?? null;
-        }
+    // Surface the failure instead of silently continuing with signalsEmitted=0 —
+    // a swallowed error here (plus the DEFERRABLE-arbiter bug fixed in
+    // 20260701010000) is why baseball_signals sat empty in prod. Preserve the
+    // `generated` insight count, which was already persisted above.
+    if (sigErr) return emptyResult({ error: 'Could not save generated signals.', generated });
+    signalsEmitted = signalRows.length;
+    const signalIdByKey = new Map<string, string>();
+    for (const s of (upsertedSignals ?? []) as Array<{ id: string; dedupe_key: string | null }>) {
+      if (s.dedupe_key) signalIdByKey.set(s.dedupe_key, s.id);
+    }
+    for (const a of auditRows) {
+      if (a.dedupe_key && a.output_table === 'baseball_signals') {
+        a.output_id = signalIdByKey.get(a.dedupe_key) ?? null;
       }
     }
   }

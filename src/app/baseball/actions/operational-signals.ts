@@ -718,8 +718,10 @@ export const runOperationalSignalDetection = withBaseballAction(
       mergedConfig,
     );
 
-    // 3. UPSERT signals by (team_id, dedupe_key). One batched upsert; the partial
-    //    unique index baseball_signals_dedupe_open_uidx keeps re-runs in place.
+    // 3. UPSERT signals by (team_id, dedupe_key). One batched upsert; the
+    //    IMMEDIATE unique constraint uq_baseball_signal_dedupe (team_id,
+    //    dedupe_key) is the ON CONFLICT arbiter, so a re-emitted finding updates
+    //    (re-opens) its existing row rather than duplicating.
     const expiresAt = new Date(
       now.getTime() + OPERATIONAL_SIGNAL_TTL_DAYS * 86400000,
     ).toISOString();
@@ -731,7 +733,12 @@ export const runOperationalSignalDetection = withBaseballAction(
       const { error: upsertErr } = await db
         .from('baseball_signals')
         .upsert(rows, { onConflict: 'team_id,dedupe_key', ignoreDuplicates: false });
-      if (!upsertErr) emitted = rows.length;
+      // Surface the failure instead of silently reporting success — a swallowed
+      // upsert error here is exactly why the Signal Inbox sat empty in prod.
+      if (upsertErr) {
+        return { success: false, error: 'Could not save operational signals.' };
+      }
+      emitted = rows.length;
     }
 
     // 4. RECONCILE: auto-resolve open, untriaged rule signals not re-emitted this
