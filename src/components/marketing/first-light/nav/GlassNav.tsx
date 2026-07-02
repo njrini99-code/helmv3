@@ -22,6 +22,15 @@
  * trigger. Mobile (< `sm`): it becomes a small bottom sheet with a scrim,
  * per the lane brief ("popover becomes a small bottom sheet").
  *
+ * Brand lockup (Amendment 3 §A.3): `HelmMark` (18–20px, sage-ink) +
+ * "Helm Sports Labs" — no more type-only wordmark. The mark sits in its own
+ * `group`-hovered span so the wordmark link's hover/focus state turns it a
+ * few degrees on the house spring easing (§B.8's `cubic-bezier(0.34,1.56,
+ * 0.64,1)`) — a ship's wheel turning a notch. Transform-only; dead under
+ * `prefers-reduced-motion` via `motion-reduce:` (pure CSS, no JS state
+ * needed for a hover-only effect). The underline wipe (`fl-link-underline`)
+ * moves to just the text span so it doesn't run under the icon.
+ *
  * UI chrome uses `font-annual` (Space Grotesk) — Fraunces is reserved for
  * display/serif moments (see `../fonts.ts`).
  */
@@ -31,6 +40,7 @@ import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { HelmMark, SportGlyph } from '../brand';
 
 export interface GlassNavProps {
   className?: string;
@@ -40,8 +50,8 @@ export interface GlassNavProps {
 const EASE_GLIDE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 const SPORT_LINKS = [
-  { label: 'GolfHelm', tagline: 'Coastal season, dialed in.', href: '/golf/login' },
-  { label: 'BaseballHelm', tagline: 'Yard at dusk, ready to go.', href: '/baseball/login' },
+  { label: 'GolfHelm', sport: 'golf', tagline: 'Coastal season, dialed in.', href: '/golf/login' },
+  { label: 'BaseballHelm', sport: 'baseball', tagline: 'Yard at dusk, ready to go.', href: '/baseball/login' },
 ] as const;
 
 export function GlassNav({ className }: GlassNavProps) {
@@ -85,12 +95,17 @@ export function GlassNav({ className }: GlassNavProps) {
         className="fl-glass-1 flex items-center gap-0.5 rounded-full py-1.5 pl-4 pr-1.5 sm:gap-1 sm:pl-5 sm:pr-2"
       >
         <span className="relative z-10 flex items-center gap-0.5 sm:gap-1">
-          <Link
-            href="/"
-            className="fl-link-underline font-annual pr-2 text-body-sm font-semibold tracking-tight text-[var(--fl-sage-ink)] sm:pr-3 sm:text-sm"
-          >
-            Helm
-            <span className="hidden sm:inline"> Sports Labs</span>
+          <Link href="/" className="group flex items-center gap-2.5 pr-2 sm:pr-3">
+            <span
+              aria-hidden="true"
+              className="flex shrink-0 items-center justify-center text-[var(--fl-sage-ink)] transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-[15deg] group-focus-visible:rotate-[15deg] motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-focus-visible:rotate-0"
+            >
+              <HelmMark size={18} className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+            </span>
+            <span className="fl-link-underline font-annual text-body-sm font-semibold tracking-tight text-[var(--fl-sage-ink)] sm:text-sm">
+              Helm
+              <span className="hidden sm:inline"> Sports Labs</span>
+            </span>
           </Link>
 
           <span className="h-4 w-px bg-[rgba(var(--fl-brass-rgb),0.4)]" aria-hidden="true" />
@@ -163,8 +178,11 @@ export function GlassNav({ className }: GlassNavProps) {
                     onClick={() => setOpen(false)}
                     className="group flex flex-col rounded-xl px-3 py-2.5 transition-colors duration-200 hover:bg-[rgba(var(--fl-sage-ink-rgb),0.08)]"
                   >
-                    <span className="fl-link-underline font-annual text-sm font-semibold text-[var(--fl-sage-ink)]">{sport.label}</span>
-                    <span className="text-xs text-[rgba(var(--fl-sage-ink-rgb),0.6)]">{sport.tagline}</span>
+                    <span className="flex items-center gap-2">
+                      <SportGlyph sport={sport.sport} size={16} className="shrink-0 text-[var(--fl-sage-deep)]" />
+                      <span className="fl-link-underline font-annual text-sm font-semibold text-[var(--fl-sage-ink)]">{sport.label}</span>
+                    </span>
+                    <span className="pl-6 text-xs text-[rgba(var(--fl-sage-ink-rgb),0.6)]">{sport.tagline}</span>
                   </Link>
                 ))}
               </nav>
