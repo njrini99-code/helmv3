@@ -3,6 +3,10 @@
    Namespaced --clay, --chalk, --pursuit-*, --grade-*, --sodium, --paper, --hairline
    custom properties; consumed only by opted-in Living-Annual components. */
 @import '../styles/baseball-living-annual.css';
+/* BaseballHelm "Living Annual" front-door auth surface (ADDITIVE — namespaced
+   `.baseball-auth-*`). Used only by src/app/baseball/(auth)/* + the shared
+   BaseballAuthShell component; never touches golf's `.bg-auth-golf` chrome. */
+@import '../styles/baseball-auth.css';
 
 @tailwind base;
 @tailwind components;
