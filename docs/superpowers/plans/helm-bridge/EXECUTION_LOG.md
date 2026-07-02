@@ -144,7 +144,22 @@ Running record of what was actually applied per wave, plus any deviations from t
 
 **★ TAB PHASE COMPLETE (W5–W13, minus W9 baseball-held).** Overview, Errors, Auth, Golf+Tracer+CoachHelm, Users+impersonation, Jobs+Integrity, Deploys, Digest — all built, all gates green. Remaining: W15 total coverage → W16 Feature Health board → mobile+ratchet polish sweep → draft-PR push. W14 retirement + W9 baseball HELD.
 
-## W15 — Total Error-Capture Coverage (golf+coachhelm; migration applied) — foundation starting
+## ⚑ TWO-PR SPLIT (owner directive 2026-07-02 — de-risk the invasive part)
+- **PR A "Helm Bridge command center"** = branch `feat/helm-bridge-command-center` (current): W0–W13 + W15 FOUNDATION (Tasks 2-4: registry, additive logger `feature` field + flood throttle, coverage harness) + W16 board. New `/admin` files + only additive/bounded/fire-and-forget touches to shared infra. Board shows neutral "not-yet-instrumented" dots until PR B. LOW risk. Targets `main`.
+- **PR B "Total feature instrumentation"** = NEW branch `feat/helm-bridge-instrumentation` off PR-A tip: W15 batches (Tasks 5-14, the 424 action wraps across 76 golf/coachhelm action files) + Task 15 (RLS centralization in fetch-all-rows) + Task 16 (verification). The ONLY at-scale edits to existing feature code — isolated for scrutiny + preview. Stacks on PR A.
+- Both pushed as DRAFTS; owner merges A first, then B. Nothing auto-merges.
+
+## W15 — Total Error-Capture Coverage (golf+coachhelm; migration applied)
+### Foundation (Tasks 2-4, PR-A branch) — DONE
+- Commits `419c33dce` (feature-registry.ts + database.ts feature col/get_feature_health types), `fd2e227b8` (emitters + emit-throttle), `fbe275181` (coverage harness).
+- 50 new/extended tests; typecheck exit 0; lint 0 errors; backward-compat proven (179 existing emitter callers unchanged, green).
+- feature-registry.ts: 38 FeatureKey union + FEATURE_REGISTRY; re-derived exports = exactly 424 (287 golf + 137 coachhelm) matching spec; TABLE_TO_FEATURE collision resolve; rpcInput() builds get_feature_health payload.
+- emit-throttle.ts: per-process flood-collapse (LRU 500, key action:errCode, collapsed_count metadata) — noise-discipline. feature threaded additively into observed-action/server-error-logger/admin-logger/rls-denial (featureForTable default). savePartialRound retro-tagged round_tracking.
+- coverage-scanner + assertAreaFullyWrapped: self-test throws listing round-drafts.ts's 4 unwrapped exports; distinguishes wrapped savePartialRound from unwrapped submitGolfRoundComprehensive. Global tripwire = it.todo (flips in Task 16/PR-B).
+### Batches (Tasks 5-14) + RLS centralization (15) + verification (16) → PR-B branch `feat/helm-bridge-instrumentation` (after W16 + polish)
+
+## W16 — Feature Health Board (green-dot grid; PR-A branch)
+**Status:** in progress (Sonnet).
 
 ## W7 — Auth & Sign-ins (golf-scoped; baseball/lifting emitters DEFERRED) + migration
 - Task 1 migration `20260701140000_revoke_user_sessions_rpc.sql` applied to prod (SECURITY DEFINER, is_super_admin-gated, DELETEs auth.sessions + writes audit_log; anon denied, authenticated granted — asserted). Verified audit_log col types (record_id/user_id uuid, new_data jsonb) before apply.
