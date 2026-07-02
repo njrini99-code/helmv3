@@ -183,6 +183,19 @@ async function resolveSourceId(
       team_id: teamId,
       source_key: sourceKey,
       source_name: sourceName,
+      // Dual-write the legacy `name` column — still NOT NULL with no default
+      // on baseball_stat_sources (see the #651b reconcile migration), so
+      // this insert fails without it. `source_type`/`trust_level` (the other
+      // two legacy NOT NULL columns) are intentionally left at their own
+      // DEFAULTs ('manual' / 'unreviewed') rather than mapped from
+      // source_category/trust_tier: the legacy CHECK vocabularies
+      // (manual/device/api/import/official/partner,
+      // official/device_export/staff_entered/player_entered/ai_derived/
+      // unreviewed) don't correspond 1:1 to the designed ones
+      // (official_game/player_development/tracking/... ,
+      // official/verified_vendor/coach_reviewed/...) — a wrong guess would
+      // be worse than an honest default.
+      name: sourceName,
       source_category: entry.category,
       trust_tier: entry.defaultTrustTier,
       is_enabled: true,
