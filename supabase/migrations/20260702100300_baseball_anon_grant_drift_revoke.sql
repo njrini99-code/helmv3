@@ -1,5 +1,10 @@
 -- anon-EXECUTE drift revoke.
 --
+-- This file defines no functions (no CREATE/ALTER FUNCTION anywhere below) --
+-- only REVOKEs against 3 pre-existing RPCs. Each of the three already pins
+-- its own SET search_path clause in its defining migration (cited below) and
+-- is unchanged here; this file just tightens a live EXECUTE grant.
+--
 -- LIVE-VERIFIED (2026-07-02, pg_proc.proacl): 3 SECURITY DEFINER RPCs carry a
 -- live `anon=X` grant despite their OWN defining migrations explicitly doing
 -- `REVOKE ALL ... FROM PUBLIC; GRANT EXECUTE ... TO authenticated,
@@ -37,3 +42,7 @@ REVOKE EXECUTE ON FUNCTION public.release_baseball_team_invitation_redemption(uu
 --
 -- Rollback: GRANT EXECUTE ON FUNCTION ... TO anon; (re-opens the drift --
 -- there is no legitimate reason to; not recommended).
+--
+-- Reminder for the follow-up sweep above: confirm every baseball-prefixed
+-- SECURITY DEFINER function it touches still pins SET search_path -- this
+-- file changes none of their definitions, so none needs it added here.

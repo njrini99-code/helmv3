@@ -67,7 +67,22 @@ ALTER TABLE public.baseball_stat_sources
 -- Amendment (b): relax the legacy `name` column so new-schema inserts (which
 -- target source_name, not name) don't fail a NOT NULL they no longer need to
 -- satisfy. Table confirmed empty -- no data loss.
-ALTER TABLE public.baseball_stat_sources ALTER COLUMN name DROP NOT NULL;
+--
+-- Guarded: `name` only exists on prod's older baseball_stat_sources schema
+-- (drift -- never created by the migration chain). A fresh database's
+-- baseball_stat_sources (20260624000080_baseball_elite_stat_event_model.sql)
+-- has no `name` column at all, so the bare ALTER COLUMN fails there with
+-- "column \"name\" does not exist". Skip cleanly when absent.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'baseball_stat_sources'
+      AND column_name = 'name'
+  ) THEN
+    ALTER TABLE public.baseball_stat_sources ALTER COLUMN name DROP NOT NULL;
+  END IF;
+END $$;
 
 DO $$
 BEGIN
