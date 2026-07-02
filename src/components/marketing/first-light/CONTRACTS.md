@@ -21,12 +21,13 @@ Scaffold for the "First Light" landing redesign
 | `nav/GlassNav.tsx` | `landing-hero+nav` | LIVE (NEW) — G1 glass pill, sport-chooser popover (desktop dropdown / mobile bottom sheet) |
 | `moments/M2Clarity.tsx` | `landing-editorial` | STUB — replace in place |
 | `moments/M3ProductCinema.tsx` | `landing-cinema` | LIVE — rebuilt 2026-07-02 to a film-strip column + hardware bezel + ledger captions (see the dedicated M3 section below) + palette-true placeholder screens (`screens/` below) |
-| `moments/M4TwoFields.tsx` | `landing-portals+cta` | STUB — replace in place |
+| `moments/M4TwoFields.tsx` | `landing-portals+cta` | LIVE (2026-07-02) — sage/cream diptych, scrub + hover, real logins |
 | `moments/M5Intelligence.tsx` | `landing-editorial` | STUB — replace in place |
 | `moments/M6ForThePlayer.tsx` | `landing-editorial` | STUB — replace in place |
 | `moments/M7Honesty.tsx` | `landing-editorial` | STUB — replace in place |
-| `moments/M8FinalCTA.tsx` | `landing-portals+cta` | STUB — replace in place |
-| `moments/M9Footer.tsx` | `landing-portals+cta` | STUB — replace in place |
+| `moments/M8FinalCTA.tsx` | `landing-portals+cta` | LIVE (2026-07-02) — sage/cream misty inset, real CTA pair |
+| `moments/M9Footer.tsx` | `landing-portals+cta` | LIVE (2026-07-02) — sage-ink footer, real links only |
+| `src/app/join/{page.tsx,join-client.tsx,actions.ts}` | `landing-portals+cta` | LIVE (2026-07-02) — sport-agnostic invite-code entry, new (not in the original scaffold) |
 | `src/app/page.tsx` | shared — composition only, keep diffs small | LIVE — composes `LenisRoot` + M1..M9 |
 
 **Rule for downstream lanes:** replace a `moments/M*.tsx` file's internals
@@ -427,11 +428,18 @@ the contract downstream lanes should hold to if they touch the file again.
 are the REAL photography paths, ultimately sourced by a parallel lane.
 **Never** render photography as a plain `<img>`/`next/image` for these
 hero backgrounds — a 404 shows a visibly broken image. Use
-`photoLayerStyle({ src, fallbackGradient })` (`lib/photoBg.ts`): it
-returns a `backgroundImage` with the gradient UNDER the photo `url(...)`
-layer, so a missing file just leaves the graded gradient showing — always
-on-brand, never broken. Every moment that uses photography (M1, M4, M8)
-already does this; keep the pattern when you replace those files.
+`photoLayerStyle({ src, fallbackGradient })` (`lib/photoBg.ts`): the
+`fallbackGradient` is listed FIRST in the `backgroundImage` list, which
+per the CSS background-image spec paints it CLOSEST to the viewer — i.e.
+**over** the photo `url(...)` layer beneath it, not under it (corrected
+2026-07-02 — this section previously had the stacking backwards). Two
+consequences: (1) a missing/404 photo just leaves the graded gradient
+showing — always on-brand, never broken; (2) the gradient is also the
+*grading* pass on a real photo once one lands — keep every fallback
+gradient's stops honest to the current palette (sage-ink/sage/cream-high,
+a trace of clay on baseball only) since it will visibly tint whatever
+photography loads underneath it. Every moment that uses photography (M1,
+M4, M8) already does this; keep the pattern when you replace those files.
 
 **Placeholder files checked in by this lane:** to keep the dev console
 clean (zero 404s) during this PR's live verification, this lane generated
@@ -440,6 +448,13 @@ Pillow, one-off, not committed as a script). They are intentionally
 generic — the parallel photo lane should overwrite them in place with
 real graded photography; no code changes are needed on either side, it's
 a pure asset swap.
+
+**2026-07-02 update (`landing-portals+cta`):** regenerated `golf.jpg`,
+`baseball.jpg`, and `mist.jpg` (not `hero.jpg` — M1's, out of this lane's
+scope) as airy sage/cream-graded placeholders — the originals were
+generated pre-respec and were dark pine-toned gradients that read murky
+under live verification even with the (now-fixed) sage/cream
+`fallbackGradient` overlay on top. Same pure-asset-swap contract applies.
 
 ## Screenshot asset contract
 
@@ -504,32 +519,40 @@ screenshots were never actually committed despite this doc's earlier
   `EASE_GLIDE` in `src/components/baseball/living-annual/motion.ts`) or
   `cubic-bezier(0.22, 0.7, 0, 1)`. Never invent a new easing curve.
 
-## CTA architecture (already wired in the stubs — keep these targets or
-update deliberately)
+## CTA architecture (updated 2026-07-02 by `landing-portals+cta` — M8/M9/M4
+now match this table; M1's own coach/player CTA pair is that lane's call)
 
 - **M1 hero CTAs** ("See it in action" — sage-deep `--fl-sage-deep`,
   cream text / "Join your team" — ghost on glass) **and `GlassNav`'s
   "See it in action"** target `#cta` (a same-page anchor,
   smooth-scrolled via `LenisRoot`'s `anchors: true` Lenis option — falls
-  back to a plain instant jump when Lenis is disabled). **`landing-hero+nav`
-  does not own a real handler** — `#cta` only resolves to something once
-  the `landing-portals+cta` lane adds `id="cta"` to `M8FinalCTA` and wires
-  its own differentiated demo-request/invite-code handlers there (per the
-  design doc's M1/M8 choreography: the hero's job is to get you to the CTA
-  section, not to duplicate its handlers). Until that lands, `#cta` is an
-  inert same-page anchor with no matching `id` — expected, not a bug, for
-  this PR in isolation.
+  back to a plain instant jump when Lenis is disabled). `#cta` now
+  resolves to `M8FinalCTA` — the `landing-portals+cta` lane has added
+  `id="cta"` there and wired its own differentiated demo-request/
+  invite-code handlers (below), per the design doc's M1/M8 choreography:
+  the hero's job is to get you to the CTA section, not to duplicate its
+  handlers.
 - **`GlassNav`'s "Log in"** → sport-chooser popover → `/golf/login` /
   `/baseball/login` (real handlers, wired in this lane).
-- M4 portal cards → `/products#golfhelm`, `/products#baseballhelm`.
+- **M8's "See it in action"** (sage-deep `--fl-sage-deep` fill, cream
+  text) → the live calendar booking link
+  (`https://calendar.app.google/s9DBb3bKD2teLLBT7`), `target="_blank"` —
+  a real `<a href>`, not a JS handler, so it degrades correctly with JS
+  disabled. Per the design doc's "demo request w/ calendar" CTA
+  architecture note. **Flagged for Nick's confirmation** this is the
+  calendar he wants coach demo requests landing on (see PR body).
+- **M8's "Join your team"** (ghost / `fl-glass-1`) → `/join` (the new
+  sport-agnostic invite-code entry page — resolves golf vs. baseball
+  server-side, then hands off to the existing untouched `/golf/join/[code]`
+  / `/baseball/join/[code]` flows).
+- M4 portal cards → `/golf/login`, `/baseball/login` directly (not
+  `/products#...`) — the two fields ARE the sport choice; routing straight
+  into each product's real login is the more honest "portal fork" per the
+  design doc's M4 language ("enter-arrows into the real sport login").
 - M9 footer → real `/golf/login`, `/baseball/login`, `/golf/signup`,
-  `/baseball/signup`, `/privacy`, `/terms` — no golf-only bias, no dead
-  "Request Demo" button.
-
-If a downstream lane wires a calendar-link demo-request flow instead
-(per the design doc's "demo request w/ calendar" CTA architecture note),
-update this section and keep both a functioning fallback for JS-disabled
-contexts.
+  `/baseball/signup`, `/join` (both sport columns — sport-agnostic, not
+  `/golf/join`), `/products`, `/about`, `/privacy`, `/terms` — no golf-only
+  bias, no dead "Request Demo" button.
 
 ## `src/app/page.tsx`
 
