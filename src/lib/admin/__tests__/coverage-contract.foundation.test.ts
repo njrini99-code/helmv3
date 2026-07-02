@@ -16,30 +16,18 @@ describe('coverage-scanner', () => {
   });
 
   it('exports list matches a fresh regex scan (sanity: scanner is not hard-coded)', () => {
-    // documents.ts is untouched until W15 Batch 3 — a stable fully-unwrapped
-    // fixture for this scanner sanity check (round-drafts.ts moved to fully
-    // wrapped in Batch 1, so it no longer fits this assertion).
-    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/documents.ts'));
+    // message-attachments.ts is untouched until W15 Batch 4 (messaging) — a
+    // stable fully-unwrapped fixture for this scanner sanity check
+    // (documents.ts moved to fully wrapped in Batch 3, so it no longer fits
+    // this assertion — same handoff round-drafts.ts → documents.ts did after
+    // Batch 1).
+    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/message-attachments.ts'));
     expect(scanned.exports.sort()).toEqual(
       [
-        'getDocuments',
-        'getDocument',
-        'createDocument',
-        'saveTextDocument',
-        'updateDocument',
-        'deleteDocument',
-        'uploadNewVersion',
-        'getDocumentVersions',
-        'revertToVersion',
-        'compareVersions',
-        'getPreviewUrl',
-        'uploadGolfDocument',
-        'createGolfDocument',
-        'deleteGolfDocument',
-        'updateGolfDocument',
-        'getVersionHistory',
-        'deleteVersion',
-        'getTextFileContent',
+        'sendGolfMessageWithAttachments',
+        'getGolfMessageAttachments',
+        'deleteGolfMessageAttachment',
+        'getSignedUrlsForAttachments',
       ].sort(),
     );
     expect(scanned.wrapped.size).toBe(0);
@@ -71,22 +59,24 @@ describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)
     ).not.toThrow();
   });
 
-  it('THROWS listing every unwrapped export in documents.ts (still bare — W15 Batch 3)', () => {
-    // documents.ts is untouched until Batch 3; round-drafts.ts (the original
-    // fixture here) moved to fully wrapped in Batch 1, so it no longer proves
-    // gap-detection — documents.ts takes over that role.
+  it('THROWS listing every unwrapped export in message-attachments.ts (still bare — W15 Batch 4)', () => {
+    // message-attachments.ts is untouched until Batch 4; documents.ts (the
+    // fixture here through Batch 2) moved to fully wrapped in Batch 3, so it
+    // no longer proves gap-detection — message-attachments.ts takes over
+    // that role (same handoff round-drafts.ts → documents.ts did after
+    // Batch 1).
     let thrown: Error | null = null;
     try {
-      assertAreaFullyWrapped(['src/app/golf/actions/documents.ts']);
+      assertAreaFullyWrapped(['src/app/golf/actions/message-attachments.ts']);
     } catch (err) {
       thrown = err instanceof Error ? err : new Error(String(err));
     }
     expect(thrown).not.toBeNull();
     const message = thrown?.message ?? '';
-    expect(message).toContain('getDocuments');
-    expect(message).toContain('createDocument');
-    expect(message).toContain('deleteVersion');
-    expect(message).toContain('18 coverage gap(s)');
+    expect(message).toContain('sendGolfMessageWithAttachments');
+    expect(message).toContain('getGolfMessageAttachments');
+    expect(message).toContain('deleteGolfMessageAttachment');
+    expect(message).toContain('4 coverage gap(s)');
   });
 
   it('throws when a wrap carries an invalid feature key', () => {

@@ -5,6 +5,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import type { ReminderType, TaskReminderWithTask, GolfTask } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   sendWebPush as v3SendWebPush,
   isWebPushAvailable,
@@ -89,7 +90,7 @@ async function resolveTaskRecipients(
 /**
  * Set a reminder on a task
  */
-export async function setTaskReminder(
+async function setTaskReminderImpl(
   taskId: string,
   reminderAt: string,
   reminderType: ReminderType = 'in_app'
@@ -140,10 +141,24 @@ export async function setTaskReminder(
   }
 }
 
+const observedSetTaskReminder = withAdminObserved(
+  'setTaskReminder',
+  { sport: 'golf', feature: 'task_management' },
+  setTaskReminderImpl,
+);
+
+export async function setTaskReminder(
+  taskId: string,
+  reminderAt: string,
+  reminderType: ReminderType = 'in_app'
+): Promise<{ success: boolean; error?: string }> {
+  return observedSetTaskReminder(taskId, reminderAt, reminderType);
+}
+
 /**
  * Cancel/remove a reminder from a task
  */
-export async function cancelTaskReminder(
+async function cancelTaskReminderImpl(
   taskId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -186,10 +201,22 @@ export async function cancelTaskReminder(
   }
 }
 
+const observedCancelTaskReminder = withAdminObserved(
+  'cancelTaskReminder',
+  { sport: 'golf', feature: 'task_management' },
+  cancelTaskReminderImpl,
+);
+
+export async function cancelTaskReminder(
+  taskId: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedCancelTaskReminder(taskId);
+}
+
 /**
  * Get upcoming reminders for a user
  */
-export async function getUpcomingReminders(
+async function getUpcomingRemindersImpl(
   userId: string,
   limit: number = 10
 ): Promise<{ data: TaskReminderWithTask[] | null; error?: string }> {
@@ -250,11 +277,24 @@ export async function getUpcomingReminders(
   }
 }
 
+const observedGetUpcomingReminders = withAdminObserved(
+  'getUpcomingReminders',
+  { sport: 'golf', feature: 'task_management' },
+  getUpcomingRemindersImpl,
+);
+
+export async function getUpcomingReminders(
+  userId: string,
+  limit: number = 10
+): Promise<{ data: TaskReminderWithTask[] | null; error?: string }> {
+  return observedGetUpcomingReminders(userId, limit);
+}
+
 /**
  * Get reminders that are due to be sent
  * Called by cron/edge function
  */
-export async function getDueReminders(
+async function getDueRemindersImpl(
   batchSize: number = 100,
   client?: TaskReminderClient,
 ): Promise<{ data: TaskReminderWithTask[] | null; error?: string }> {
@@ -291,10 +331,23 @@ export async function getDueReminders(
   }
 }
 
+const observedGetDueReminders = withAdminObserved(
+  'getDueReminders',
+  { sport: 'golf', feature: 'task_management' },
+  getDueRemindersImpl,
+);
+
+export async function getDueReminders(
+  batchSize: number = 100,
+  client?: TaskReminderClient,
+): Promise<{ data: TaskReminderWithTask[] | null; error?: string }> {
+  return observedGetDueReminders(batchSize, client);
+}
+
 /**
  * Mark a reminder as sent
  */
-export async function markReminderSent(
+async function markReminderSentImpl(
   reminderId: string,
   error?: string,
   client?: TaskReminderClient,
@@ -342,11 +395,25 @@ export async function markReminderSent(
   }
 }
 
+const observedMarkReminderSent = withAdminObserved(
+  'markReminderSent',
+  { sport: 'golf', feature: 'task_management' },
+  markReminderSentImpl,
+);
+
+export async function markReminderSent(
+  reminderId: string,
+  error?: string,
+  client?: TaskReminderClient,
+): Promise<{ success: boolean; error?: string }> {
+  return observedMarkReminderSent(reminderId, error, client);
+}
+
 /**
  * Process all due reminders
  * Called by cron/edge function
  */
-export async function processReminders(
+async function processRemindersImpl(
   client?: TaskReminderClient,
 ): Promise<{
   sent: number;
@@ -394,6 +461,22 @@ export async function processReminders(
     results.errors.push('Failed to process reminders');
     return results;
   }
+}
+
+const observedProcessReminders = withAdminObserved(
+  'processReminders',
+  { sport: 'golf', feature: 'task_management' },
+  processRemindersImpl,
+);
+
+export async function processReminders(
+  client?: TaskReminderClient,
+): Promise<{
+  sent: number;
+  failed: number;
+  errors: string[];
+}> {
+  return observedProcessReminders(client);
 }
 
 /**
@@ -706,7 +789,7 @@ async function sendPushNotification(task: GolfTask, client?: TaskReminderClient)
 /**
  * Get reminder statistics for a team
  */
-export async function getReminderStats(
+async function getReminderStatsImpl(
   teamId: string
 ): Promise<{
   pendingReminders: number;
@@ -763,4 +846,20 @@ export async function getReminderStats(
     sentToday: sentToday || 0,
     failedToday: failedToday || 0,
   };
+}
+
+const observedGetReminderStats = withAdminObserved(
+  'getReminderStats',
+  { sport: 'golf', feature: 'task_management' },
+  getReminderStatsImpl,
+);
+
+export async function getReminderStats(
+  teamId: string
+): Promise<{
+  pendingReminders: number;
+  sentToday: number;
+  failedToday: number;
+}> {
+  return observedGetReminderStats(teamId);
 }
