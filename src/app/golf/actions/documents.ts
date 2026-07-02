@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache';
 import type { GolfDocument, DocumentVersion, VersionComparison } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // Type helper for golf_document_versions table (until types are regenerated)
 interface DocumentVersionRow {
@@ -119,7 +120,7 @@ async function verifyTeamAccess(
 // DOCUMENT CRUD OPERATIONS
 // ============================================
 
-export async function getDocuments(teamId: string): Promise<{ data: GolfDocument[] | null; error: string | null }> {
+async function getDocumentsImpl(teamId: string): Promise<{ data: GolfDocument[] | null; error: string | null }> {
   try {
     const supabase = await createClient();
 
@@ -162,7 +163,17 @@ export async function getDocuments(teamId: string): Promise<{ data: GolfDocument
   }
 }
 
-export async function getDocument(documentId: string): Promise<{ data: GolfDocument | null; error: string | null }> {
+const observedGetDocuments = withAdminObserved(
+  'getDocuments',
+  { sport: 'golf', feature: 'documents' },
+  getDocumentsImpl,
+);
+
+export async function getDocuments(teamId: string): Promise<{ data: GolfDocument[] | null; error: string | null }> {
+  return observedGetDocuments(teamId);
+}
+
+async function getDocumentImpl(documentId: string): Promise<{ data: GolfDocument | null; error: string | null }> {
   try {
     const supabase = await createClient();
 
@@ -223,7 +234,17 @@ export async function getDocument(documentId: string): Promise<{ data: GolfDocum
   }
 }
 
-export async function createDocument(
+const observedGetDocument = withAdminObserved(
+  'getDocument',
+  { sport: 'golf', feature: 'documents' },
+  getDocumentImpl,
+);
+
+export async function getDocument(documentId: string): Promise<{ data: GolfDocument | null; error: string | null }> {
+  return observedGetDocument(documentId);
+}
+
+async function createDocumentImpl(
   teamId: string,
   title: string,
   file: File,
@@ -306,6 +327,25 @@ export async function createDocument(
   }
 }
 
+const observedCreateDocument = withAdminObserved(
+  'createDocument',
+  { sport: 'golf', feature: 'documents' },
+  createDocumentImpl,
+);
+
+export async function createDocument(
+  teamId: string,
+  title: string,
+  file: File,
+  options: {
+    description?: string;
+    category?: string;
+    playerVisible?: boolean;
+  } = {}
+): Promise<{ data: GolfDocument | null; error: string | null }> {
+  return observedCreateDocument(teamId, title, file, options);
+}
+
 /**
  * Save a markdown/plain-text document directly from a string — no File handle.
  * Used by the team-CoachHelm "Add to Documents" flow, which materializes an
@@ -316,7 +356,7 @@ export async function createDocument(
  * this team) — a server action without an auth check is a hard CI rule, and a
  * player should never be able to write a coaching plan into the team library.
  */
-export async function saveTextDocument(
+async function saveTextDocumentImpl(
   teamId: string,
   title: string,
   content: string,
@@ -404,7 +444,28 @@ export async function saveTextDocument(
   }
 }
 
-export async function updateDocument(
+const observedSaveTextDocument = withAdminObserved(
+  'saveTextDocument',
+  { sport: 'golf', feature: 'documents' },
+  saveTextDocumentImpl,
+);
+
+export async function saveTextDocument(
+  teamId: string,
+  title: string,
+  content: string,
+  options: {
+    description?: string;
+    category?: string;
+    playerVisible?: boolean;
+    /** File extension + mime; defaults to markdown. */
+    extension?: 'md' | 'txt';
+  } = {}
+): Promise<{ data: GolfDocument | null; error: string | null }> {
+  return observedSaveTextDocument(teamId, title, content, options);
+}
+
+async function updateDocumentImpl(
   documentId: string,
   updates: {
     title?: string;
@@ -465,7 +526,26 @@ export async function updateDocument(
   }
 }
 
-export async function deleteDocument(documentId: string): Promise<{ success: boolean; error: string | null }> {
+const observedUpdateDocument = withAdminObserved(
+  'updateDocument',
+  { sport: 'golf', feature: 'documents' },
+  updateDocumentImpl,
+);
+
+export async function updateDocument(
+  documentId: string,
+  updates: {
+    title?: string;
+    description?: string;
+    category?: string;
+    playerVisible?: boolean;
+    folder?: string | null;
+  }
+): Promise<{ data: GolfDocument | null; error: string | null }> {
+  return observedUpdateDocument(documentId, updates);
+}
+
+async function deleteDocumentImpl(documentId: string): Promise<{ success: boolean; error: string | null }> {
   try {
     const supabase = await createClient();
 
@@ -518,11 +598,21 @@ export async function deleteDocument(documentId: string): Promise<{ success: boo
   }
 }
 
+const observedDeleteDocument = withAdminObserved(
+  'deleteDocument',
+  { sport: 'golf', feature: 'documents' },
+  deleteDocumentImpl,
+);
+
+export async function deleteDocument(documentId: string): Promise<{ success: boolean; error: string | null }> {
+  return observedDeleteDocument(documentId);
+}
+
 // ============================================
 // VERSION MANAGEMENT
 // ============================================
 
-export async function uploadNewVersion(
+async function uploadNewVersionImpl(
   documentId: string,
   file: File,
   _teamId?: string,  // Not used, kept for backwards compatibility
@@ -622,7 +712,23 @@ export async function uploadNewVersion(
   }
 }
 
-export async function getDocumentVersions(documentId: string): Promise<{ data: DocumentVersion[] | null; error: string | null }> {
+const observedUploadNewVersion = withAdminObserved(
+  'uploadNewVersion',
+  { sport: 'golf', feature: 'documents' },
+  uploadNewVersionImpl,
+);
+
+export async function uploadNewVersion(
+  documentId: string,
+  file: File,
+  _teamId?: string,  // Not used, kept for backwards compatibility
+  _coachId?: string, // Not used, uses authenticated user
+  changeNotes?: string
+): Promise<{ success: boolean; version?: DocumentVersion & { file_url?: string }; error?: string }> {
+  return observedUploadNewVersion(documentId, file, _teamId, _coachId, changeNotes);
+}
+
+async function getDocumentVersionsImpl(documentId: string): Promise<{ data: DocumentVersion[] | null; error: string | null }> {
   try {
     const supabase = await createClient();
 
@@ -679,7 +785,17 @@ export async function getDocumentVersions(documentId: string): Promise<{ data: D
   }
 }
 
-export async function revertToVersion(
+const observedGetDocumentVersions = withAdminObserved(
+  'getDocumentVersions',
+  { sport: 'golf', feature: 'documents' },
+  getDocumentVersionsImpl,
+);
+
+export async function getDocumentVersions(documentId: string): Promise<{ data: DocumentVersion[] | null; error: string | null }> {
+  return observedGetDocumentVersions(documentId);
+}
+
+async function revertToVersionImpl(
   documentId: string,
   versionId: string,
    
@@ -763,7 +879,22 @@ export async function revertToVersion(
   }
 }
 
-export async function compareVersions(
+const observedRevertToVersion = withAdminObserved(
+  'revertToVersion',
+  { sport: 'golf', feature: 'documents' },
+  revertToVersionImpl,
+);
+
+export async function revertToVersion(
+  documentId: string,
+  versionId: string,
+   
+  _coachId?: string  // Not used, uses authenticated user
+): Promise<{ success: boolean; error: string | null }> {
+  return observedRevertToVersion(documentId, versionId, _coachId);
+}
+
+async function compareVersionsImpl(
   documentId: string,
   version1: number,
   version2: number
@@ -829,11 +960,25 @@ export async function compareVersions(
   }
 }
 
+const observedCompareVersions = withAdminObserved(
+  'compareVersions',
+  { sport: 'golf', feature: 'documents' },
+  compareVersionsImpl,
+);
+
+export async function compareVersions(
+  documentId: string,
+  version1: number,
+  version2: number
+): Promise<{ data: VersionComparison | null; error: string | null }> {
+  return observedCompareVersions(documentId, version1, version2);
+}
+
 // ============================================
 // PREVIEW URL GENERATION
 // ============================================
 
-export async function getPreviewUrl(
+async function getPreviewUrlImpl(
   documentId: string,
   versionNumber?: number
 ): Promise<{ data: { url: string; mimeType: string } | null; error: string | null }> {
@@ -915,6 +1060,19 @@ export async function getPreviewUrl(
   }
 }
 
+const observedGetPreviewUrl = withAdminObserved(
+  'getPreviewUrl',
+  { sport: 'golf', feature: 'documents' },
+  getPreviewUrlImpl,
+);
+
+export async function getPreviewUrl(
+  documentId: string,
+  versionNumber?: number
+): Promise<{ data: { url: string; mimeType: string } | null; error: string | null }> {
+  return observedGetPreviewUrl(documentId, versionNumber);
+}
+
 // ============================================
 // EXPORT ALIASES for backwards compatibility
 // ============================================
@@ -923,7 +1081,7 @@ export async function getPreviewUrl(
  * Upload a file to storage (separate from creating the document record)
  * Returns { success, file_url, error }
  */
-export async function uploadGolfDocument(
+async function uploadGolfDocumentImpl(
   file: File,
   teamId: string
 ): Promise<{ success: boolean; file_url?: string; storage_path?: string; error?: string }> {
@@ -963,11 +1121,24 @@ export async function uploadGolfDocument(
   }
 }
 
+const observedUploadGolfDocument = withAdminObserved(
+  'uploadGolfDocument',
+  { sport: 'golf', feature: 'documents' },
+  uploadGolfDocumentImpl,
+);
+
+export async function uploadGolfDocument(
+  file: File,
+  teamId: string
+): Promise<{ success: boolean; file_url?: string; storage_path?: string; error?: string }> {
+  return observedUploadGolfDocument(file, teamId);
+}
+
 /**
  * Create a document record (after file has been uploaded)
  * Returns { success, data, error }
  */
-export async function createGolfDocument(data: {
+async function createGolfDocumentImpl(data: {
   team_id: string;
   title: string;
   description?: string;
@@ -1048,22 +1219,60 @@ export async function createGolfDocument(data: {
   }
 }
 
+const observedCreateGolfDocument = withAdminObserved(
+  'createGolfDocument',
+  { sport: 'golf', feature: 'documents' },
+  createGolfDocumentImpl,
+);
+
+export async function createGolfDocument(data: {
+  team_id: string;
+  title: string;
+  description?: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
+  category?: string;
+  player_visible: boolean;
+  uploaded_by: string;
+  folder?: string;
+  // Real storage object path (e.g. 'golf-documents/{teamId}/{fileName}') returned
+  // by uploadGolfDocument. Persisted verbatim so preview/download can sign it.
+  storage_path?: string;
+}): Promise<{ success: boolean; data?: GolfDocument; error?: string }> {
+  return observedCreateGolfDocument(data);
+}
+
 /**
  * Delete a document and all its versions
  */
+async function deleteGolfDocumentImpl(
+  documentId: string,
+   
+  _filePath?: string
+): Promise<{ success: boolean; error?: string }> {
+  const result = await deleteDocumentImpl(documentId);
+  return { success: result.success, error: result.error || undefined };
+}
+
+const observedDeleteGolfDocument = withAdminObserved(
+  'deleteGolfDocument',
+  { sport: 'golf', feature: 'documents' },
+  deleteGolfDocumentImpl,
+);
+
 export async function deleteGolfDocument(
   documentId: string,
    
   _filePath?: string
 ): Promise<{ success: boolean; error?: string }> {
-  const result = await deleteDocument(documentId);
-  return { success: result.success, error: result.error || undefined };
+  return observedDeleteGolfDocument(documentId, _filePath);
 }
 
 /**
  * Update a document's metadata
  */
-export async function updateGolfDocument(data: {
+async function updateGolfDocumentImpl(data: {
   id: string;
   title?: string;
   description?: string;
@@ -1071,7 +1280,7 @@ export async function updateGolfDocument(data: {
   player_visible?: boolean;
   folder?: string | null;
 }): Promise<{ success: boolean; data?: GolfDocument; error?: string }> {
-  const result = await updateDocument(data.id, {
+  const result = await updateDocumentImpl(data.id, {
     title: data.title,
     description: data.description,
     category: data.category,
@@ -1085,22 +1294,51 @@ export async function updateGolfDocument(data: {
   };
 }
 
+const observedUpdateGolfDocument = withAdminObserved(
+  'updateGolfDocument',
+  { sport: 'golf', feature: 'documents' },
+  updateGolfDocumentImpl,
+);
+
+export async function updateGolfDocument(data: {
+  id: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  player_visible?: boolean;
+  folder?: string | null;
+}): Promise<{ success: boolean; data?: GolfDocument; error?: string }> {
+  return observedUpdateGolfDocument(data);
+}
+
 /**
  * Get version history for a document
  * Returns { success, versions, error }
  */
-export async function getVersionHistory(
+async function getVersionHistoryImpl(
   documentId: string
 ): Promise<{ success: boolean; versions?: DocumentVersion[]; error?: string }> {
-  const result = await getDocumentVersions(documentId);
+  const result = await getDocumentVersionsImpl(documentId);
   if (result.error) {
     return { success: false, error: result.error };
   }
   return { success: true, versions: result.data || [] };
 }
 
+const observedGetVersionHistory = withAdminObserved(
+  'getVersionHistory',
+  { sport: 'golf', feature: 'documents' },
+  getVersionHistoryImpl,
+);
+
+export async function getVersionHistory(
+  documentId: string
+): Promise<{ success: boolean; versions?: DocumentVersion[]; error?: string }> {
+  return observedGetVersionHistory(documentId);
+}
+
 // Delete a specific version
-export async function deleteVersion(
+async function deleteVersionImpl(
   documentId: string,
   versionId: string
 ): Promise<{ success: boolean; error: string | null }> {
@@ -1172,9 +1410,22 @@ export async function deleteVersion(
   }
 }
 
+const observedDeleteVersion = withAdminObserved(
+  'deleteVersion',
+  { sport: 'golf', feature: 'documents' },
+  deleteVersionImpl,
+);
+
+export async function deleteVersion(
+  documentId: string,
+  versionId: string
+): Promise<{ success: boolean; error: string | null }> {
+  return observedDeleteVersion(documentId, versionId);
+}
+
 // Re-export type for backwards compatibility
 
-export async function getTextFileContent(
+async function getTextFileContentImpl(
   documentId: string,
   versionNumber?: number
 ): Promise<{ data: string | null; error: string | null }> {
@@ -1247,4 +1498,17 @@ export async function getTextFileContent(
     );
     return { data: null, error: handleError(error) };
   }
+}
+
+const observedGetTextFileContent = withAdminObserved(
+  'getTextFileContent',
+  { sport: 'golf', feature: 'documents' },
+  getTextFileContentImpl,
+);
+
+export async function getTextFileContent(
+  documentId: string,
+  versionNumber?: number
+): Promise<{ data: string | null; error: string | null }> {
+  return observedGetTextFileContent(documentId, versionNumber);
 }

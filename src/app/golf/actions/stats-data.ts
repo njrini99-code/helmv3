@@ -39,6 +39,7 @@ import type {
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 
 // ============================================================================
@@ -63,7 +64,7 @@ async function requireAuth() {
  * Verify the authenticated user has access to the given player's stats.
  * Access is granted if the user IS the player, or is a coach on their team.
  */
-export async function verifyPlayerAccess(
+async function verifyPlayerAccessImpl(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   playerId: string
@@ -101,6 +102,20 @@ export async function verifyPlayerAccess(
   return false;
 }
 
+const observedVerifyPlayerAccess = withAdminObserved(
+  'verifyPlayerAccess',
+  { sport: 'golf', feature: 'stats_analytics' },
+  verifyPlayerAccessImpl,
+);
+
+export async function verifyPlayerAccess(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  playerId: string
+): Promise<boolean> {
+  return observedVerifyPlayerAccess(supabase, userId, playerId);
+}
+
 /**
  * Resolve a player's display name for the stats header, gated by the SAME
  * authorization as the stats read (verifyPlayerAccess: the viewer is the player,
@@ -110,7 +125,7 @@ export async function verifyPlayerAccess(
  * / generic "Player stats" — the name is otherwise never available client-side
  * (golfUser.name is the *coach*, and the cockpit fetches stats, not identity).
  */
-export async function getPlayerDisplayName(playerId: string): Promise<string | null> {
+async function getPlayerDisplayNameImpl(playerId: string): Promise<string | null> {
   if (!playerId) return null;
   const { supabase, user } = await requireAuth();
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) return null;
@@ -125,6 +140,16 @@ export async function getPlayerDisplayName(playerId: string): Promise<string | n
   if (!data) return null;
   const name = `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim();
   return name || null;
+}
+
+const observedGetPlayerDisplayName = withAdminObserved(
+  'getPlayerDisplayName',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPlayerDisplayNameImpl,
+);
+
+export async function getPlayerDisplayName(playerId: string): Promise<string | null> {
+  return observedGetPlayerDisplayName(playerId);
 }
 
 // ============================================================================
@@ -606,7 +631,7 @@ function buildSprayChartGroup(
  * This uses pre-aggregated data from rounds table - no shot queries
  * Typically 10-50ms vs 500-2000ms for full shot analysis
  */
-export async function getStatsSummary(
+async function getStatsSummaryImpl(
   playerId: string,
   filter?: StatsFilter
 ): Promise<SummaryStatsResponse> {
@@ -698,7 +723,7 @@ export async function getStatsSummary(
     .not('score', 'is', null)
     .eq('gir', false)
     .order('id', { ascending: true })
-    .range(from, to)); // paginate past PostgREST 1000-row cap
+    .range(from, to), undefined, { table: 'golf_holes', action: 'getStatsSummary', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
   let scramblingAttempts = 0;
   let scramblingMade = 0;
@@ -793,6 +818,19 @@ export async function getStatsSummary(
   }));
 
   return { summary, rounds };
+}
+
+const observedGetStatsSummary = withAdminObserved(
+  'getStatsSummary',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getStatsSummaryImpl,
+);
+
+export async function getStatsSummary(
+  playerId: string,
+  filter?: StatsFilter
+): Promise<SummaryStatsResponse> {
+  return observedGetStatsSummary(playerId, filter);
 }
 
 // ============================================================================
@@ -931,7 +969,7 @@ async function queryDetailedStatsWithClient(
         .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir, sand_save')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
-        .range(from, to)), // paginate past PostgREST 1000-row cap
+        .range(from, to), undefined, { table: 'golf_holes', action: 'queryDetailedStats', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
       fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
@@ -964,7 +1002,7 @@ async function queryDetailedStatsWithClient(
         .order('hole_number')
         .order('shot_number')
         .order('id', { ascending: true })
-        .range(from, to)), // paginate past PostgREST 1000-row cap
+        .range(from, to), undefined, { table: 'golf_shots', action: 'queryDetailedStats', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
     ]);
 
     if (holesError) throw holesError;
@@ -1105,7 +1143,7 @@ async function queryDetailedStatsWithClient(
  * Get detailed shot-level stats for comprehensive analysis
  * This is the expensive query - only call when user clicks a detailed tab
  */
-export async function getDetailedStats(
+async function getDetailedStatsImpl(
   playerId: string,
   roundId?: string | 'overall',
   filter?: StatsFilter
@@ -1135,6 +1173,20 @@ export async function getDetailedStats(
   }
 }
 
+const observedGetDetailedStats = withAdminObserved(
+  'getDetailedStats',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getDetailedStatsImpl,
+);
+
+export async function getDetailedStats(
+  playerId: string,
+  roundId?: string | 'overall',
+  filter?: StatsFilter
+): Promise<GolfStats> {
+  return observedGetDetailedStats(playerId, roundId, filter);
+}
+
 /**
  * Trusted-server variant of `getDetailedStats` for callers that don't have a
  * user session on the request — specifically the CoachHelm engine's
@@ -1146,7 +1198,7 @@ export async function getDetailedStats(
  * DO NOT call this from client-reachable code — always prefer
  * `getDetailedStats` when a user session exists.
  */
-export async function getDetailedStatsAsAdmin(
+async function getDetailedStatsAsAdminImpl(
   playerId: string,
   roundId?: string | 'overall',
   filter?: StatsFilter,
@@ -1168,7 +1220,21 @@ export async function getDetailedStatsAsAdmin(
   }
 }
 
-export async function getSprayChartData(
+const observedGetDetailedStatsAsAdmin = withAdminObserved(
+  'getDetailedStatsAsAdmin',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getDetailedStatsAsAdminImpl,
+);
+
+export async function getDetailedStatsAsAdmin(
+  playerId: string,
+  roundId?: string | 'overall',
+  filter?: StatsFilter,
+): Promise<GolfStats> {
+  return observedGetDetailedStatsAsAdmin(playerId, roundId, filter);
+}
+
+async function getSprayChartDataImpl(
   playerId: string,
   roundId?: string | 'overall',
   filter?: StatsFilter
@@ -1252,7 +1318,7 @@ export async function getSprayChartData(
         .select('id, round_id, hole_number, par')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
-        .range(from, to)), // paginate past PostgREST 1000-row cap
+        .range(from, to), undefined, { table: 'golf_holes', action: 'getSprayChartData', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
       fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
@@ -1281,7 +1347,7 @@ export async function getSprayChartData(
         .order('hole_number')
         .order('shot_number')
         .order('id', { ascending: true })
-        .range(from, to)), // paginate past PostgREST 1000-row cap
+        .range(from, to), undefined, { table: 'golf_shots', action: 'getSprayChartData', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
     ]);
 
     if (holesError) throw holesError;
@@ -1421,6 +1487,20 @@ export async function getSprayChartData(
   }
 }
 
+const observedGetSprayChartData = withAdminObserved(
+  'getSprayChartData',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getSprayChartDataImpl,
+);
+
+export async function getSprayChartData(
+  playerId: string,
+  roundId?: string | 'overall',
+  filter?: StatsFilter
+): Promise<SprayChartResponse> {
+  return observedGetSprayChartData(playerId, roundId, filter);
+}
+
 // ============================================================================
 // TREND DATA - For charts and analysis
 // ============================================================================
@@ -1431,7 +1511,7 @@ export async function getSprayChartData(
  * Get trend analysis data for visualizations
  * Includes round-by-round data, rolling averages, and period comparisons
  */
-export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisResponse> {
+async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResponse> {
   const emptyResponse: TrendAnalysisResponse = {
     rounds: [],
     trends: { score: [], gir: [], fairway: [], putts: [] },
@@ -1681,6 +1761,16 @@ function findBest<T extends { date: string; courseName: string }>(
   };
 }
 
+const observedGetTrendAnalysis = withAdminObserved(
+  'getTrendAnalysis',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getTrendAnalysisImpl,
+);
+
+export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisResponse> {
+  return observedGetTrendAnalysis(playerId);
+}
+
 // ============================================================================
 // TEAM COMPARISON DATA
 // ============================================================================
@@ -1690,7 +1780,7 @@ function findBest<T extends { date: string; courseName: string }>(
 /**
  * Get team comparison data for a player
  */
-export async function getTeamComparison(
+async function getTeamComparisonImpl(
   playerId: string,
   teamId: string
 ): Promise<TeamComparisonResponse> {
@@ -1802,7 +1892,7 @@ export async function getTeamComparison(
     .not('total_score', 'is', null)
     .gte('round_date', seasonStartDate)
     .order('id', { ascending: true })
-    .range(from, to));
+    .range(from, to), undefined, { table: 'golf_rounds', action: 'getTeamComparison', feature: 'stats_analytics', sport: 'golf' });
 
   if (!roundsData || roundsData.length === 0 || !playersData) {
     return {
@@ -1823,7 +1913,7 @@ export async function getTeamComparison(
     .not('score', 'is', null)
     .eq('gir', false)
     .order('id', { ascending: true })
-    .range(from, to)); // paginate past PostgREST 1000-row cap
+    .range(from, to), undefined, { table: 'golf_holes', action: 'getTeamComparison', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
   // Build a map of round_id -> player_id for scrambling aggregation
   const roundToPlayer = new Map<string, string>();
@@ -2001,6 +2091,19 @@ export async function getTeamComparison(
   };
 }
 
+const observedGetTeamComparison = withAdminObserved(
+  'getTeamComparison',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getTeamComparisonImpl,
+);
+
+export async function getTeamComparison(
+  playerId: string,
+  teamId: string
+): Promise<TeamComparisonResponse> {
+  return observedGetTeamComparison(playerId, teamId);
+}
+
 // ============================================================================
 // FILTER OPTIONS DATA
 // ============================================================================
@@ -2010,7 +2113,7 @@ export async function getTeamComparison(
 /**
  * Get available filter options for a player
  */
-export async function getFilterOptions(playerId: string): Promise<FilterOptions> {
+async function getFilterOptionsImpl(playerId: string): Promise<FilterOptions> {
   try {
   const { supabase, user } = await requireAuth();
 
@@ -2055,6 +2158,16 @@ export async function getFilterOptions(playerId: string): Promise<FilterOptions>
   }
 }
 
+const observedGetFilterOptions = withAdminObserved(
+  'getFilterOptions',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getFilterOptionsImpl,
+);
+
+export async function getFilterOptions(playerId: string): Promise<FilterOptions> {
+  return observedGetFilterOptions(playerId);
+}
+
 // ============================================================================
 // COURSE-SPECIFIC BREAKDOWN
 // ============================================================================
@@ -2064,7 +2177,7 @@ export async function getFilterOptions(playerId: string): Promise<FilterOptions>
 /**
  * Get stats broken down by course
  */
-export async function getCourseBreakdown(playerId: string): Promise<CourseBreakdownResponse> {
+async function getCourseBreakdownImpl(playerId: string): Promise<CourseBreakdownResponse> {
   try {
   const { supabase, user } = await requireAuth();
 
@@ -2170,6 +2283,16 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
   }
 }
 
+const observedGetCourseBreakdown = withAdminObserved(
+  'getCourseBreakdown',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getCourseBreakdownImpl,
+);
+
+export async function getCourseBreakdown(playerId: string): Promise<CourseBreakdownResponse> {
+  return observedGetCourseBreakdown(playerId);
+}
+
 // ============================================================================
 // WORST HOLE ANALYSIS
 // ============================================================================
@@ -2179,7 +2302,7 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
 /**
  * Get worst hole analysis
  */
-export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleResponse> {
+async function getWorstHoleAnalysisImpl(playerId: string): Promise<WorstHoleResponse> {
   try {
   const { supabase, user } = await requireAuth();
 
@@ -2208,7 +2331,7 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
     .order('round_id')
     .order('hole_number')
     .order('id', { ascending: true })
-    .range(from, to)); // paginate past PostgREST 1000-row cap
+    .range(from, to), undefined, { table: 'golf_holes', action: 'getWorstHoleAnalysis', feature: 'stats_analytics', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
   if (!holesData || holesData.length === 0) {
     return {
@@ -2318,6 +2441,16 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
   }
 }
 
+const observedGetWorstHoleAnalysis = withAdminObserved(
+  'getWorstHoleAnalysis',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getWorstHoleAnalysisImpl,
+);
+
+export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleResponse> {
+  return observedGetWorstHoleAnalysis(playerId);
+}
+
 // ============================================================================
 // STATISTICAL STRENGTHS & WEAKNESSES
 // ============================================================================
@@ -2329,7 +2462,7 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
  * Returns top 3 strengths and top 3 weaknesses with stroke impact,
  * benchmarks, and coaching recommendations.
  */
-export async function getPlayerStrengthsWeaknesses(
+async function getPlayerStrengthsWeaknessesImpl(
   playerId: string,
   filter?: StatsFilter
 ): Promise<{
@@ -2354,6 +2487,22 @@ export async function getPlayerStrengthsWeaknesses(
     await logServerError(`[Stats] getPlayerStrengthsWeaknesses failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getPlayerStrengthsWeaknesses' });
     return null;
   }
+}
+
+const observedGetPlayerStrengthsWeaknesses = withAdminObserved(
+  'getPlayerStrengthsWeaknesses',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPlayerStrengthsWeaknessesImpl,
+);
+
+export async function getPlayerStrengthsWeaknesses(
+  playerId: string,
+  filter?: StatsFilter
+): Promise<{
+  strengths: StatisticalStrengthWeakness[];
+  weaknesses: StatisticalStrengthWeakness[];
+} | null> {
+  return observedGetPlayerStrengthsWeaknesses(playerId, filter);
 }
 
 // ============================================================================
@@ -2389,7 +2538,7 @@ export interface CoachRosterPlayer {
  * Uses server-side Supabase client (bypasses RLS restrictions that may block
  * client-side reads of golf_team_members for coaches).
  */
-export async function getCoachRosterStats(teamId: string): Promise<CoachRosterPlayer[]> {
+async function getCoachRosterStatsImpl(teamId: string): Promise<CoachRosterPlayer[]> {
   if (!teamId) return [];
 
   const supabase = await createClient();
@@ -2427,7 +2576,7 @@ export async function getCoachRosterStats(teamId: string): Promise<CoachRosterPl
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
       .order('id', { ascending: true })
-      .range(from, to)), // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_rounds', action: 'getCoachRosterStats', feature: 'stats_analytics', sport: 'golf' }), // paginate past PostgREST 1000-row cap
   ]);
 
   if (!teamPlayers || teamPlayers.length === 0) return [];
@@ -2514,4 +2663,14 @@ export async function getCoachRosterStats(teamId: string): Promise<CoachRosterPl
       },
     };
   });
+}
+
+const observedGetCoachRosterStats = withAdminObserved(
+  'getCoachRosterStats',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getCoachRosterStatsImpl,
+);
+
+export async function getCoachRosterStats(teamId: string): Promise<CoachRosterPlayer[]> {
+  return observedGetCoachRosterStats(teamId);
 }

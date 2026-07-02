@@ -31,6 +31,14 @@ vi.mock('@/lib/auth/verify-player-access', () => ({
     verifyPlayerAccessMock(...(args as Parameters<typeof verifyPlayerAccessMock>)),
 }));
 
+// markCelebrationShownImpl calls revalidatePath(...) after persisting the
+// flag. Outside a real Next.js request, that throws "Invariant: static
+// generation store missing" — mock it out like the other action test
+// suites (program-onboarding, travel, etc.) do.
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}));
+
 import { markCelebrationShown } from '@/app/golf/actions/insight-celebration';
 
 interface LoadRow {

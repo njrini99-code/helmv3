@@ -14,6 +14,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface CommandPalettePlayer {
   id: string;
@@ -54,7 +55,7 @@ export interface CommandPaletteData {
  * player role gets only their own rounds (and zero insights — players
  * see insights through the CoachHelm surface, not through ⌘K).
  */
-export async function getCommandPaletteData(): Promise<CommandPaletteData> {
+async function getCommandPaletteDataImpl(): Promise<CommandPaletteData> {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -237,4 +238,14 @@ export async function getCommandPaletteData(): Promise<CommandPaletteData> {
   }));
 
   return { players, recentRounds, recentInsights };
+}
+
+const observedGetCommandPaletteData = withAdminObserved(
+  'getCommandPaletteData',
+  { sport: 'golf', feature: 'coach_dashboard' },
+  getCommandPaletteDataImpl,
+);
+
+export async function getCommandPaletteData(): Promise<CommandPaletteData> {
+  return observedGetCommandPaletteData();
 }

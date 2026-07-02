@@ -20,6 +20,7 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { buildWeeklyRecap } from '@/lib/coachhelm/v3/recap/builder';
 import { buildWeeklyRecapHtml } from '@/lib/coachhelm/v3/recap/template';
 import { sendEmail } from '@/lib/coachhelm/v3/foundation/email';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -37,12 +38,12 @@ interface SendSummary {
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-weekly-coach-email', () => handle());
 }
 export async function POST(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
-  return handle();
+  return recordJobRun('v3-weekly-coach-email', () => handle());
 }
 
 async function handle(): Promise<NextResponse> {

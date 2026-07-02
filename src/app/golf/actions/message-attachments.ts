@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 /**
  * Attachment data from upload
@@ -23,7 +24,7 @@ export interface AttachmentUploadData {
  * This action saves the message and attachment metadata to the database.
  * SEMGREP-ALLOW: realtime-subscribed messages UI; revalidate would cause reload loop
  */
-export async function sendGolfMessageWithAttachments(
+async function sendGolfMessageWithAttachmentsImpl(
   conversationId: string,
   content: string,
   attachments: AttachmentUploadData[]
@@ -113,10 +114,24 @@ export async function sendGolfMessageWithAttachments(
   }
 }
 
+const observedSendGolfMessageWithAttachments = withAdminObserved(
+  'sendGolfMessageWithAttachments',
+  { sport: 'golf', feature: 'messaging' },
+  sendGolfMessageWithAttachmentsImpl,
+);
+
+export async function sendGolfMessageWithAttachments(
+  conversationId: string,
+  content: string,
+  attachments: AttachmentUploadData[]
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  return observedSendGolfMessageWithAttachments(conversationId, content, attachments);
+}
+
 /**
  * Get attachments for a message
  */
-export async function getGolfMessageAttachments(messageId: string): Promise<{
+async function getGolfMessageAttachmentsImpl(messageId: string): Promise<{
   attachments?: Array<{
     id: string;
     fileName: string;
@@ -185,10 +200,35 @@ export async function getGolfMessageAttachments(messageId: string): Promise<{
   }
 }
 
+const observedGetGolfMessageAttachments = withAdminObserved(
+  'getGolfMessageAttachments',
+  { sport: 'golf', feature: 'messaging' },
+  getGolfMessageAttachmentsImpl,
+);
+
+export async function getGolfMessageAttachments(messageId: string): Promise<{
+  attachments?: Array<{
+    id: string;
+    fileName: string;
+    fileType: string;
+    mimeType: string;
+    fileSize: number;
+    storagePath: string;
+    url?: string;
+    thumbnailUrl?: string | null;
+    width?: number | null;
+    height?: number | null;
+    durationSeconds?: number | null;
+  }>;
+  error?: string;
+}> {
+  return observedGetGolfMessageAttachments(messageId);
+}
+
 /**
  * Delete an attachment (only by sender)
  */
-export async function deleteGolfMessageAttachment(attachmentId: string): Promise<{
+async function deleteGolfMessageAttachmentImpl(attachmentId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -251,11 +291,24 @@ export async function deleteGolfMessageAttachment(attachmentId: string): Promise
   }
 }
 
+const observedDeleteGolfMessageAttachment = withAdminObserved(
+  'deleteGolfMessageAttachment',
+  { sport: 'golf', feature: 'messaging' },
+  deleteGolfMessageAttachmentImpl,
+);
+
+export async function deleteGolfMessageAttachment(attachmentId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  return observedDeleteGolfMessageAttachment(attachmentId);
+}
+
 /**
  * Get signed URLs for multiple attachments (batch operation)
  * Used when loading messages with attachments
  */
-export async function getSignedUrlsForAttachments(
+async function getSignedUrlsForAttachmentsImpl(
   storagePaths: string[]
 ): Promise<Record<string, string>> {
   try {
@@ -288,4 +341,16 @@ export async function getSignedUrlsForAttachments(
     await logServerError(`[Attachments] Failed to get signed URLs: ${err instanceof Error ? err.message : String(err)}`, { action: 'message_attachments.getSignedUrlsForAttachments' });
     return {};
   }
+}
+
+const observedGetSignedUrlsForAttachments = withAdminObserved(
+  'getSignedUrlsForAttachments',
+  { sport: 'golf', feature: 'messaging' },
+  getSignedUrlsForAttachmentsImpl,
+);
+
+export async function getSignedUrlsForAttachments(
+  storagePaths: string[]
+): Promise<Record<string, string>> {
+  return observedGetSignedUrlsForAttachments(storagePaths);
 }

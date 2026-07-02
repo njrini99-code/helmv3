@@ -724,7 +724,10 @@ export async function getPlayerToday(
       .eq('user_id', userId)
       .in('event_id', eventIds);
     if (ackErr) {
-      error = error ?? 'Acknowledgement status could not be loaded.';
+      // Direct assignment: this branch is mutually exclusive with the
+      // schedule-error branch above, so `error` is provably still null here
+      // (CodeQL js/trivial-conditional flagged the dead `error ??`).
+      error = 'Acknowledgement status could not be loaded.';
     } else {
       ackByEvent = new Map(
         (acks ?? []).map((a) => [a.event_id, a.acknowledged_at]),

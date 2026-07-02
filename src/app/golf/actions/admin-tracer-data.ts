@@ -3,8 +3,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
-import { logServerError } from '@/lib/server-error-logger';
 import { normalizeIncidentRoute } from '@/lib/admin/incident-grouping';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================
 // TYPES
@@ -647,7 +647,7 @@ function buildTracerIncidents(events: TracerAdminEventRecord[]): TracerIncident[
 // MAIN DATA FETCHER
 // ============================================
 
-export async function getTracerData(): Promise<TracerData> {
+async function getTracerDataImpl(): Promise<TracerData> {
   // Auth check
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -730,7 +730,8 @@ export async function getTracerData(): Promise<TracerData> {
     console.warn('[Tracer] golf_players query failed:', allPlayersResult.error.message);
   }
   if (allRoundsResult.error) {
-    await logServerError(`[Tracer] golf_rounds query failed: ${allRoundsResult.error.message}`, { action: 'admin_tracer_data.getTracerData' });
+    // W15: inline logServerError removed here — withAdminObserved now
+    // captures this throw at the export boundary (no more double-log).
     throw new Error(`Tracer: golf_rounds query failed — ${allRoundsResult.error.message}`);
   }
   if (statsAccuracyResult.error) {
@@ -1141,6 +1142,23 @@ export async function getTracerData(): Promise<TracerData> {
   };
 }
 
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedGetTracerData = withAdminObserved(
+  'getTracerData',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  getTracerDataImpl,
+);
+
+export async function getTracerData(): Promise<TracerData> {
+  return observedGetTracerData();
+}
+
 // ============================================
 // ENRICHED DATA (sparklines, trends, stuck rounds)
 // ============================================
@@ -1160,7 +1178,7 @@ export interface TracerEnrichedData {
   }[];
 }
 
-export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
+async function getTracerEnrichedDataImpl(): Promise<TracerEnrichedData> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
@@ -1255,6 +1273,23 @@ export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
   };
 }
 
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedGetTracerEnrichedData = withAdminObserved(
+  'getTracerEnrichedData',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  getTracerEnrichedDataImpl,
+);
+
+export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
+  return observedGetTracerEnrichedData();
+}
+
 // ============================================
 // ROUND DIAGNOSTIC (lazy-loaded for drill-down modal)
 // ============================================
@@ -1283,7 +1318,7 @@ export interface TracerRoundDiagnosticData {
   playerName: string;
 }
 
-export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerRoundDiagnosticData> {
+async function getTracerRoundDiagnosticImpl(roundId: string): Promise<TracerRoundDiagnosticData> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
@@ -1365,11 +1400,28 @@ export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerR
   };
 }
 
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedGetTracerRoundDiagnostic = withAdminObserved(
+  'getTracerRoundDiagnostic',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  getTracerRoundDiagnosticImpl,
+);
+
+export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerRoundDiagnosticData> {
+  return observedGetTracerRoundDiagnostic(roundId);
+}
+
 // ============================================
 // AUTO-FIX ACTIONS (admin only)
 // ============================================
 
-export async function fixRoundData(
+async function fixRoundDataImpl(
   roundId: string,
   fixType: 'recalculate_round_totals' | 'recalculate_round_gir' | 'refresh_player_stats_cache' | 'recalculate_strokes_gained' | 'resolve_stuck_round',
   playerId?: string
@@ -1664,4 +1716,32 @@ export async function fixRoundData(
     default:
       return { success: false, fix_type: fixType, round_id: roundId, player_id: playerId || null, message: `Unknown fix type: ${fixType}` };
   }
+}
+
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedFixRoundData = withAdminObserved(
+  'fixRoundData',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  fixRoundDataImpl,
+);
+
+export async function fixRoundData(
+  roundId: string,
+  fixType: 'recalculate_round_totals' | 'recalculate_round_gir' | 'refresh_player_stats_cache' | 'recalculate_strokes_gained' | 'resolve_stuck_round',
+  playerId?: string
+): Promise<{
+  success: boolean;
+  fix_type: string;
+  round_id: string | null;
+  player_id: string | null;
+  message: string;
+  changes?: Record<string, { before: string | number | null; after: string | number | null }>;
+}> {
+  return observedFixRoundData(roundId, fixType, playerId);
 }

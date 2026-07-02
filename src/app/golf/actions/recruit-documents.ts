@@ -18,6 +18,8 @@ import { logServerError } from '@/lib/server-error-logger';
 // Category vocabulary lives in a plain module — a 'use server' file may only
 // export async functions, so the const array cannot be exported from here.
 import { RECRUIT_DOC_CATEGORIES, type RecruitDocCategory } from './recruit-documents-categories';
+import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 const BUCKET = 'recruit-documents';
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB — matches the bucket file_size_limit
@@ -82,7 +84,7 @@ function fileExtension(name: string): string {
  * empty array on missing recruit / no permission so the panel can render an
  * empty state without try/catch noise on the client.
  */
-export async function getRecruitDocuments(
+async function getRecruitDocumentsImpl(
   recruitId: string,
 ): Promise<ActionResult<RecruitDocument[]>> {
   if (!recruitId) return { success: true, data: [] };
@@ -117,12 +119,24 @@ export async function getRecruitDocuments(
   }
 }
 
+const observedGetRecruitDocuments = withAdminObserved(
+  'getRecruitDocuments',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  getRecruitDocumentsImpl,
+);
+
+export async function getRecruitDocuments(
+  recruitId: string,
+): Promise<ActionResult<RecruitDocument[]>> {
+  return observedGetRecruitDocuments(recruitId);
+}
+
 /**
  * Upload a file and attach it to a recruit. team_id is taken from the recruit's
  * own row (RLS on golf_recruits already limits what the coach can see), so a
  * coach can only file documents under a recruit they own.
  */
-export async function uploadRecruitDocument(
+async function uploadRecruitDocumentImpl(
   recruitId: string,
   file: File,
   opts: { title?: string; category?: string } = {},
@@ -206,6 +220,13 @@ export async function uploadRecruitDocument(
         featureArea: 'recruiting',
         extra: { recruitId, code: insertError.code },
       });
+      maybeCaptureRlsDenial(insertError, {
+        table: 'golf_recruit_documents',
+        verb: 'insert',
+        action: 'uploadRecruitDocument',
+        feature: 'recruiting_prospect_tracking',
+        sport: 'golf',
+      });
       return {
         success: false,
         error: insertError.code === '42501'
@@ -227,8 +248,22 @@ export async function uploadRecruitDocument(
   }
 }
 
+const observedUploadRecruitDocument = withAdminObserved(
+  'uploadRecruitDocument',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  uploadRecruitDocumentImpl,
+);
+
+export async function uploadRecruitDocument(
+  recruitId: string,
+  file: File,
+  opts: { title?: string; category?: string } = {},
+): Promise<ActionResult<{ id: string }>> {
+  return observedUploadRecruitDocument(recruitId, file, opts);
+}
+
 /** Delete a recruit document (storage object + row). RLS gates to team coaches. */
-export async function deleteRecruitDocument(documentId: string): Promise<ActionResult> {
+async function deleteRecruitDocumentImpl(documentId: string): Promise<ActionResult> {
   if (!documentId) return { success: false, error: 'Document id required' };
 
   try {
@@ -259,6 +294,13 @@ export async function deleteRecruitDocument(documentId: string): Promise<ActionR
         featureArea: 'recruiting',
         extra: { documentId, code: deleteError.code },
       });
+      maybeCaptureRlsDenial(deleteError, {
+        table: 'golf_recruit_documents',
+        verb: 'delete',
+        action: 'deleteRecruitDocument',
+        feature: 'recruiting_prospect_tracking',
+        sport: 'golf',
+      });
       return {
         success: false,
         error: deleteError.code === '42501'
@@ -288,11 +330,21 @@ export async function deleteRecruitDocument(documentId: string): Promise<ActionR
   }
 }
 
+const observedDeleteRecruitDocument = withAdminObserved(
+  'deleteRecruitDocument',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  deleteRecruitDocumentImpl,
+);
+
+export async function deleteRecruitDocument(documentId: string): Promise<ActionResult> {
+  return observedDeleteRecruitDocument(documentId);
+}
+
 /**
  * Short-lived (1h) signed URL for downloading/previewing a recruit document.
  * The bucket is private, so we never return a public URL.
  */
-export async function getRecruitDocumentUrl(
+async function getRecruitDocumentUrlImpl(
   documentId: string,
 ): Promise<ActionResult<{ url: string; fileName: string; fileType: string | null }>> {
   if (!documentId) return { success: false, error: 'Document id required' };
@@ -330,4 +382,16 @@ export async function getRecruitDocumentUrl(
     );
     return { success: false, error: 'Failed to open document' };
   }
+}
+
+const observedGetRecruitDocumentUrl = withAdminObserved(
+  'getRecruitDocumentUrl',
+  { sport: 'golf', feature: 'recruiting_prospect_tracking' },
+  getRecruitDocumentUrlImpl,
+);
+
+export async function getRecruitDocumentUrl(
+  documentId: string,
+): Promise<ActionResult<{ url: string; fileName: string; fileType: string | null }>> {
+  return observedGetRecruitDocumentUrl(documentId);
 }

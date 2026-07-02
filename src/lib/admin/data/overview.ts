@@ -1,0 +1,181 @@
+import 'server-only';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchSentryIssues } from '@/lib/admin/sentry-api';
+import { fetchVercelDeployments, deployAgeMinutes } from '@/lib/admin/vercel-api';
+import { excludeAuthNoise } from '@/lib/admin/data/triage';
+import {
+  fetchFeatureHealth,
+  summarizeFeatureHealth,
+  computeFeatureHealthBanner,
+  type FeatureHealthSummary,
+} from '@/lib/admin/data/feature-health';
+
+export interface OverviewKpis {
+  sentryUnresolved: number | null;
+  eventErrors24h: number;
+  authFailures24h: number;
+  activeUsersToday: number;
+  activityToday: { golf: number; baseball: number; lifting: number };
+  lastDeploy: { state: string; ageMinutes: number } | null;
+}
+
+export interface WatcherSignal {
+  label: string;
+  lastSeenAt: string | null;
+  staleAfterHours: number;
+}
+
+export function computeBannerState(input: {
+  criticalCount: number;
+  attentionCount: number;
+  anyFeedStale: boolean;
+}): { state: 'nominal' | 'attention' | 'critical' | 'stale'; attentionCount: number } {
+  const total = input.criticalCount + input.attentionCount;
+  if (input.criticalCount > 0) return { state: 'critical', attentionCount: total };
+  if (total > 0) return { state: 'attention', attentionCount: total };
+  if (input.anyFeedStale) return { state: 'stale', attentionCount: 0 };
+  return { state: 'nominal', attentionCount: 0 };
+}
+
+export function isSignalStale(signal: WatcherSignal, now: Date): boolean {
+  if (!signal.lastSeenAt) return true;
+  const ageMs = now.getTime() - new Date(signal.lastSeenAt).getTime();
+  return ageMs > signal.staleAfterHours * 60 * 60 * 1000;
+}
+
+export type KpiTone = 'neutral' | 'warning' | 'danger';
+
+/**
+ * KPI-tile escalation for raw 24h counts (already noise-filtered). Signal-
+ * not-noise: zero is calm (neutral); any occurrence deserves a look (amber);
+ * a sustained/high volume in a single day is unambiguously worth a red flag.
+ * Mirrors the feature-health classifier's spirit (computeFeatureStatus:
+ * escalate hard once a line is crossed) without borrowing its per-feature
+ * fingerprint thresholds, which are calibrated to one feature's traffic —
+ * not a platform-wide raw event count.
+ */
+export function classifyKpiTone(count: number, redAt: number): KpiTone {
+  if (count <= 0) return 'neutral';
+  if (count >= redAt) return 'danger';
+  return 'warning';
+}
+
+/** "Sustained/high" lines for the Overview KPI tiles (classifyKpiTone). */
+export const ERRORS_24H_RED_AT = 10;
+export const AUTH_FAILURES_24H_RED_AT = 5;
+
+function isoHoursAgo(hours: number): string {
+  return new Date(Date.now() - hours * 3600_000).toISOString();
+}
+function isoStartOfToday(): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+/** CALLER must have passed requireSuperAdmin() (service-role reads). */
+export async function fetchOverviewSnapshot() {
+  const admin = createAdminClient();
+  const ago24h = isoHoursAgo(24);
+  const today = isoStartOfToday();
+
+  const [
+    sentry,
+    deploys,
+    errors24h,
+    criticals24h,
+    security24h,
+    activeToday,
+    golfToday,
+    baseballToday,
+    liftsToday,
+    lastLogin,
+    lastError,
+    lastCron,
+    featureHealthRaw,
+  ] = await Promise.all([
+    fetchSentryIssues({ limit: 1 }),
+    fetchVercelDeployments(5),
+    excludeAuthNoise(
+      admin.from('admin_events').select('id', { count: 'exact', head: true })
+        .eq('event_type', 'error').gte('created_at', ago24h),
+    ),
+    admin.from('admin_events').select('id', { count: 'exact', head: true })
+      .eq('event_type', 'error').eq('severity', 'critical').eq('resolved', false),
+    admin.from('admin_events').select('id', { count: 'exact', head: true })
+      .eq('event_type', 'security').gte('created_at', ago24h),
+    admin.from('users').select('id', { count: 'exact', head: true })
+      .gte('last_seen', today),
+    admin.from('golf_rounds').select('id', { count: 'exact', head: true })
+      .gte('created_at', today),
+    admin.from('baseball_games').select('id', { count: 'exact', head: true })
+      .gte('created_at', today),
+    admin.from('helm_lifting_sessions').select('id', { count: 'exact', head: true })
+      .gte('created_at', today),
+    admin.from('admin_events').select('created_at')
+      .eq('event_type', 'login').order('created_at', { ascending: false }).limit(1),
+    admin.from('admin_events').select('created_at')
+      .eq('event_type', 'error').order('created_at', { ascending: false }).limit(1),
+    admin.from('background_job_logs').select('started_at')
+      .order('started_at', { ascending: false }).limit(1),
+    // Additive (W16 Task 5): fetchFeatureHealth manages its OWN user-scoped
+    // client internally (the RPC gates on auth.uid()) and never throws —
+    // RPC failure degrades to an all-neutral, all-degraded snapshot rather
+    // than blocking the rest of Overview.
+    fetchFeatureHealth(),
+  ]);
+
+  const lastDeployRow = deploys.data?.[0] ?? null;
+  const kpis: OverviewKpis = {
+    sentryUnresolved: sentry.status === 'ok' ? (sentry.data?.length ?? 0) : null,
+    eventErrors24h: errors24h.count ?? 0,
+    authFailures24h: security24h.count ?? 0,
+    activeUsersToday: activeToday.count ?? 0,
+    activityToday: {
+      golf: golfToday.count ?? 0,
+      baseball: baseballToday.count ?? 0,
+      lifting: liftsToday.count ?? 0,
+    },
+    lastDeploy: lastDeployRow
+      ? {
+          state: lastDeployRow.state,
+          ageMinutes: deployAgeMinutes(lastDeployRow.createdAt),
+        }
+      : null,
+  };
+
+  const now = new Date();
+  const watcherBase: WatcherSignal[] = [
+    // Sign-ins definitely happen daily — 24h of silence means LOGGING broke.
+    { label: 'Login events', lastSeenAt: lastLogin.data?.[0]?.created_at ?? null, staleAfterHours: 24 },
+    { label: 'Error pipeline', lastSeenAt: lastError.data?.[0]?.created_at ?? null, staleAfterHours: 48 },
+    // Crons run at least daily once W11 lands; until then this reads
+    // "stale" honestly — background_job_logs has zero writers today.
+    { label: 'Cron outcomes', lastSeenAt: lastCron.data?.[0]?.started_at ?? null, staleAfterHours: 26 },
+  ];
+  const watcher = watcherBase.map((s) => ({ ...s, stale: isSignalStale(s, now) }));
+
+  // Additive (W16 Task 5) — compact Feature Health rollup + banner
+  // discipline (Noise Charter N6): only a RED feature escalates the banner
+  // to 'critical'; a fresh fingerprint on an otherwise-clean feature is a
+  // softer 'attention' signal; amber/warnings alone contribute NOTHING.
+  const featureHealth: FeatureHealthSummary = summarizeFeatureHealth(featureHealthRaw, now);
+  const featureHealthBanner = computeFeatureHealthBanner(featureHealth);
+  const featureHealthCriticalCount = featureHealth.red;
+  const featureHealthAttentionCount = featureHealth.red === 0 && featureHealth.newFingerprints24h > 0 ? 1 : 0;
+
+  const attentionFromDeploy = kpis.lastDeploy?.state === 'ERROR' ? 1 : 0;
+  const banner = {
+    ...computeBannerState({
+      criticalCount: (criticals24h.count ?? 0) + featureHealthCriticalCount,
+      attentionCount: attentionFromDeploy + featureHealthAttentionCount,
+      anyFeedStale: sentry.status === 'error' || watcher.some((w) => w.stale) || featureHealth.degraded,
+    }),
+    checkedAt: now.toISOString(),
+    // Single-line banner detail per N6 (never a wall of routine noise) —
+    // null when the rollup contributes nothing (0 red, no new fingerprints).
+    featureHealthLine: featureHealthBanner.line,
+  };
+
+  return { kpis, banner, watcher, featureHealth };
+}

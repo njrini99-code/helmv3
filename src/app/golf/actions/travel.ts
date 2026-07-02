@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { logServerError } from '@/lib/server-error-logger';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // VALIDATION SCHEMAS (Zod)
@@ -128,7 +129,7 @@ export interface UpdateTravelItineraryInput {
 /**
  * Create a new golf travel itinerary
  */
-export async function createGolfTravelItinerary(input: CreateTravelItineraryInput) {
+async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) {
   try {
     // Validate input
     const validatedData = createTravelItinerarySchema.parse(input);
@@ -218,10 +219,20 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
   }
 }
 
+const observedCreateGolfTravelItinerary = withAdminObserved(
+  'createGolfTravelItinerary',
+  { sport: 'golf', feature: 'travel' },
+  createGolfTravelItineraryImpl,
+);
+
+export async function createGolfTravelItinerary(input: CreateTravelItineraryInput) {
+  return observedCreateGolfTravelItinerary(input);
+}
+
 /**
  * Update a golf travel itinerary
  */
-export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInput) {
+async function updateGolfTravelItineraryImpl(input: UpdateTravelItineraryInput) {
   try {
     // Validate input
     const validatedData = updateTravelItinerarySchema.parse(input);
@@ -327,10 +338,20 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
   }
 }
 
+const observedUpdateGolfTravelItinerary = withAdminObserved(
+  'updateGolfTravelItinerary',
+  { sport: 'golf', feature: 'travel' },
+  updateGolfTravelItineraryImpl,
+);
+
+export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInput) {
+  return observedUpdateGolfTravelItinerary(input);
+}
+
 /**
  * Delete a golf travel itinerary
  */
-export async function deleteGolfTravelItinerary(itineraryId: string) {
+async function deleteGolfTravelItineraryImpl(itineraryId: string) {
   const parsed = uuidSchema.safeParse(itineraryId);
   if (!parsed.success) {
     return { success: false, error: 'Invalid itinerary ID.' };
@@ -382,6 +403,16 @@ export async function deleteGolfTravelItinerary(itineraryId: string) {
   return {
     success: true,
   };
+}
+
+const observedDeleteGolfTravelItinerary = withAdminObserved(
+  'deleteGolfTravelItinerary',
+  { sport: 'golf', feature: 'travel' },
+  deleteGolfTravelItineraryImpl,
+);
+
+export async function deleteGolfTravelItinerary(itineraryId: string) {
+  return observedDeleteGolfTravelItinerary(itineraryId);
 }
 
 // ============================================================================
@@ -471,7 +502,7 @@ export interface ExpenseSummary {
 /**
  * Create a new travel expense
  */
-export async function createTravelExpense(input: CreateExpenseInput) {
+async function createTravelExpenseImpl(input: CreateExpenseInput) {
   try {
     const validatedData = createExpenseSchema.parse(input);
     const supabase = await createClient();
@@ -528,10 +559,20 @@ export async function createTravelExpense(input: CreateExpenseInput) {
   }
 }
 
+const observedCreateTravelExpense = withAdminObserved(
+  'createTravelExpense',
+  { sport: 'golf', feature: 'travel' },
+  createTravelExpenseImpl,
+);
+
+export async function createTravelExpense(input: CreateExpenseInput) {
+  return observedCreateTravelExpense(input);
+}
+
 /**
  * Update an existing travel expense
  */
-export async function updateTravelExpense(input: UpdateExpenseInput) {
+async function updateTravelExpenseImpl(input: UpdateExpenseInput) {
   try {
     const validatedData = updateExpenseSchema.parse(input);
     const supabase = await createClient();
@@ -579,10 +620,20 @@ export async function updateTravelExpense(input: UpdateExpenseInput) {
   }
 }
 
+const observedUpdateTravelExpense = withAdminObserved(
+  'updateTravelExpense',
+  { sport: 'golf', feature: 'travel' },
+  updateTravelExpenseImpl,
+);
+
+export async function updateTravelExpense(input: UpdateExpenseInput) {
+  return observedUpdateTravelExpense(input);
+}
+
 /**
  * Delete a travel expense
  */
-export async function deleteTravelExpense(expenseId: string) {
+async function deleteTravelExpenseImpl(expenseId: string) {
   const parsed = uuidSchema.safeParse(expenseId);
   if (!parsed.success) {
     return { success: false, error: 'Invalid expense ID.' };
@@ -619,10 +670,20 @@ export async function deleteTravelExpense(expenseId: string) {
   return { success: true };
 }
 
+const observedDeleteTravelExpense = withAdminObserved(
+  'deleteTravelExpense',
+  { sport: 'golf', feature: 'travel' },
+  deleteTravelExpenseImpl,
+);
+
+export async function deleteTravelExpense(expenseId: string) {
+  return observedDeleteTravelExpense(expenseId);
+}
+
 /**
  * Get expenses for an itinerary
  */
-export async function getExpensesForItinerary(itineraryId: string): Promise<{ success: boolean; data?: TravelExpense[]; error?: string }> {
+async function getExpensesForItineraryImpl(itineraryId: string): Promise<{ success: boolean; data?: TravelExpense[]; error?: string }> {
   const parsed = uuidSchema.safeParse(itineraryId);
   if (!parsed.success) {
     return { success: false, error: 'Invalid itinerary ID.' };
@@ -649,10 +710,20 @@ export async function getExpensesForItinerary(itineraryId: string): Promise<{ su
   return { success: true, data: data || [] };
 }
 
+const observedGetExpensesForItinerary = withAdminObserved(
+  'getExpensesForItinerary',
+  { sport: 'golf', feature: 'travel' },
+  getExpensesForItineraryImpl,
+);
+
+export async function getExpensesForItinerary(itineraryId: string): Promise<{ success: boolean; data?: TravelExpense[]; error?: string }> {
+  return observedGetExpensesForItinerary(itineraryId);
+}
+
 /**
  * Get all expenses for a team
  */
-export async function getExpensesForTeam(teamId: string): Promise<{ success: boolean; data?: TravelExpense[]; error?: string }> {
+async function getExpensesForTeamImpl(teamId: string): Promise<{ success: boolean; data?: TravelExpense[]; error?: string }> {
   const parsed = uuidSchema.safeParse(teamId);
   if (!parsed.success) {
     return { success: false, error: 'Invalid team ID.' };
@@ -679,10 +750,20 @@ export async function getExpensesForTeam(teamId: string): Promise<{ success: boo
   return { success: true, data: data || [] };
 }
 
+const observedGetExpensesForTeam = withAdminObserved(
+  'getExpensesForTeam',
+  { sport: 'golf', feature: 'travel' },
+  getExpensesForTeamImpl,
+);
+
+export async function getExpensesForTeam(teamId: string): Promise<{ success: boolean; data?: TravelExpense[]; error?: string }> {
+  return observedGetExpensesForTeam(teamId);
+}
+
 /**
  * Get expense summary for an itinerary
  */
-export async function getExpenseSummary(itineraryId: string): Promise<{ success: boolean; data?: ExpenseSummary; error?: string }> {
+async function getExpenseSummaryImpl(itineraryId: string): Promise<{ success: boolean; data?: ExpenseSummary; error?: string }> {
   const parsed = uuidSchema.safeParse(itineraryId);
   if (!parsed.success) {
     return { success: false, error: 'Invalid itinerary ID.' };
@@ -739,13 +820,23 @@ export async function getExpenseSummary(itineraryId: string): Promise<{ success:
   return { success: true, data: summary };
 }
 
+const observedGetExpenseSummary = withAdminObserved(
+  'getExpenseSummary',
+  { sport: 'golf', feature: 'travel' },
+  getExpenseSummaryImpl,
+);
+
+export async function getExpenseSummary(itineraryId: string): Promise<{ success: boolean; data?: ExpenseSummary; error?: string }> {
+  return observedGetExpenseSummary(itineraryId);
+}
+
 /**
  * Upload receipt to Supabase Storage
  */
 const ALLOWED_RECEIPT_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'pdf', 'heic']);
 const MAX_RECEIPT_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
-export async function uploadExpenseReceipt(
+async function uploadExpenseReceiptImpl(
   file: File,
   teamId: string,
   expenseId?: string
@@ -798,10 +889,24 @@ export async function uploadExpenseReceipt(
   return { success: true, url: urlData.publicUrl };
 }
 
+const observedUploadExpenseReceipt = withAdminObserved(
+  'uploadExpenseReceipt',
+  { sport: 'golf', feature: 'travel' },
+  uploadExpenseReceiptImpl,
+);
+
+export async function uploadExpenseReceipt(
+  file: File,
+  teamId: string,
+  expenseId?: string
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  return observedUploadExpenseReceipt(file, teamId, expenseId);
+}
+
 /**
  * Export expenses to CSV format
  */
-export async function exportExpensesToCSV(itineraryId: string): Promise<{ success: boolean; csv?: string; error?: string }> {
+async function exportExpensesToCSVImpl(itineraryId: string): Promise<{ success: boolean; csv?: string; error?: string }> {
   const parsed = uuidSchema.safeParse(itineraryId);
   if (!parsed.success) {
     return { success: false, error: 'Invalid itinerary ID.' };
@@ -864,6 +969,16 @@ export async function exportExpensesToCSV(itineraryId: string): Promise<{ succes
   return { success: true, csv };
 }
 
+const observedExportExpensesToCSV = withAdminObserved(
+  'exportExpensesToCSV',
+  { sport: 'golf', feature: 'travel' },
+  exportExpensesToCSVImpl,
+);
+
+export async function exportExpensesToCSV(itineraryId: string): Promise<{ success: boolean; csv?: string; error?: string }> {
+  return observedExportExpensesToCSV(itineraryId);
+}
+
 // ============================================================================
 // BUDGET TRACKING
 // ============================================================================
@@ -884,7 +999,7 @@ export interface TravelBudget {
 /**
  * Set or update budget for a category
  */
-export async function setBudget(input: { itinerary_id: string; category: ExpenseCategory; budgeted_amount: number }) {
+async function setBudgetImpl(input: { itinerary_id: string; category: ExpenseCategory; budgeted_amount: number }) {
   try {
     const validatedData = budgetSchema.parse(input);
     const supabase = await createClient();
@@ -935,10 +1050,20 @@ export async function setBudget(input: { itinerary_id: string; category: Expense
   }
 }
 
+const observedSetBudget = withAdminObserved(
+  'setBudget',
+  { sport: 'golf', feature: 'travel' },
+  setBudgetImpl,
+);
+
+export async function setBudget(input: { itinerary_id: string; category: ExpenseCategory; budgeted_amount: number }) {
+  return observedSetBudget(input);
+}
+
 /**
  * Get budgets for an itinerary
  */
-export async function getBudgetsForItinerary(itineraryId: string): Promise<{ success: boolean; data?: TravelBudget[]; error?: string }> {
+async function getBudgetsForItineraryImpl(itineraryId: string): Promise<{ success: boolean; data?: TravelBudget[]; error?: string }> {
   const parsed = uuidSchema.safeParse(itineraryId);
   if (!parsed.success) {
     return { success: false, error: 'Invalid itinerary ID.' };
@@ -964,6 +1089,16 @@ export async function getBudgetsForItinerary(itineraryId: string): Promise<{ suc
   return { success: true, data: data || [] };
 }
 
+const observedGetBudgetsForItinerary = withAdminObserved(
+  'getBudgetsForItinerary',
+  { sport: 'golf', feature: 'travel' },
+  getBudgetsForItineraryImpl,
+);
+
+export async function getBudgetsForItinerary(itineraryId: string): Promise<{ success: boolean; data?: TravelBudget[]; error?: string }> {
+  return observedGetBudgetsForItinerary(itineraryId);
+}
+
 /**
  * The travel itinerary linked to a calendar event (calendar→travel cross-link).
  * The join already exists on the itinerary side (`event_id`); this is the reverse
@@ -972,7 +1107,7 @@ export async function getBudgetsForItinerary(itineraryId: string): Promise<{ suc
  * the event has no linked trip (honest: the caller hides the link entirely).
  * RLS on golf_travel_itineraries already scopes the read to the team.
  */
-export async function getItineraryForEvent(
+async function getItineraryForEventImpl(
   eventId: string,
 ): Promise<{ success: boolean; data?: { id: string; event_name: string; destination: string } | null; error?: string }> {
   const parsed = uuidSchema.safeParse(eventId);
@@ -1001,4 +1136,16 @@ export async function getItineraryForEvent(
   }
 
   return { success: true, data: data ?? null };
+}
+
+const observedGetItineraryForEvent = withAdminObserved(
+  'getItineraryForEvent',
+  { sport: 'golf', feature: 'travel' },
+  getItineraryForEventImpl,
+);
+
+export async function getItineraryForEvent(
+  eventId: string,
+): Promise<{ success: boolean; data?: { id: string; event_name: string; destination: string } | null; error?: string }> {
+  return observedGetItineraryForEvent(eventId);
 }

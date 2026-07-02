@@ -18,6 +18,7 @@ import {
 } from '@/lib/coachhelm/v2/reasoning/confidence-calibrator';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { recordJobRun } from '@/lib/admin/job-log';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -30,6 +31,10 @@ export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
   if (unauthorized) return unauthorized;
 
+  return recordJobRun('coachhelm-calibration', () => handleCalibration());
+}
+
+async function handleCalibration(): Promise<NextResponse> {
   const supabase = createAdminClient();
   const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
 

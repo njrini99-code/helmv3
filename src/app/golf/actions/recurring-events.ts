@@ -46,6 +46,7 @@ import {
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -171,7 +172,7 @@ async function fetchSeriesRows(
     }
     if (opts.fromStart) query = query.gte('start_time', opts.fromStart);
     return query.order('id', { ascending: true }).range(from, to);
-  });
+  }, undefined, { table: 'golf_events', action: 'recurringEventsSeriesLookup', feature: 'calendar_events', sport: 'golf' });
 }
 
 /**
@@ -413,7 +414,7 @@ async function applySeriesRuleUpdate(
 // CREATE RECURRING EVENT
 // ============================================================================
 
-export async function createRecurringEvent(
+async function createRecurringEventImpl(
   input: CreateRecurringEventInput
 ): Promise<ActionResult<{ eventId: string }>> {
   try {
@@ -546,11 +547,23 @@ export async function createRecurringEvent(
   }
 }
 
+const observedCreateRecurringEvent = withAdminObserved(
+  'createRecurringEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  createRecurringEventImpl,
+);
+
+export async function createRecurringEvent(
+  input: CreateRecurringEventInput
+): Promise<ActionResult<{ eventId: string }>> {
+  return observedCreateRecurringEvent(input);
+}
+
 // ============================================================================
 // EDIT RECURRING EVENT
 // ============================================================================
 
-export async function editRecurringEvent(
+async function editRecurringEventImpl(
   input: EditRecurringEventInput
 ): Promise<ActionResult> {
   try {
@@ -825,6 +838,18 @@ export async function editRecurringEvent(
   }
 }
 
+const observedEditRecurringEvent = withAdminObserved(
+  'editRecurringEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  editRecurringEventImpl,
+);
+
+export async function editRecurringEvent(
+  input: EditRecurringEventInput
+): Promise<ActionResult> {
+  return observedEditRecurringEvent(input);
+}
+
 // ============================================================================
 // DELETE RECURRING EVENT
 // ============================================================================
@@ -843,7 +868,7 @@ export async function editRecurringEvent(
  * child is promoted to root first — so the parent_event_id ON DELETE CASCADE
  * can never wipe occurrences the coach asked to keep.
  */
-export async function deleteRecurringEvent(
+async function deleteRecurringEventImpl(
   eventId: string,
   scopeOrOriginalStartDate: RecurringEditScope | string,
   maybeScope?: RecurringEditScope
@@ -1100,6 +1125,20 @@ export async function deleteRecurringEvent(
   }
 }
 
+const observedDeleteRecurringEvent = withAdminObserved(
+  'deleteRecurringEvent',
+  { sport: 'golf', feature: 'calendar_events' },
+  deleteRecurringEventImpl,
+);
+
+export async function deleteRecurringEvent(
+  eventId: string,
+  scopeOrOriginalStartDate: RecurringEditScope | string,
+  maybeScope?: RecurringEditScope
+): Promise<ActionResult> {
+  return observedDeleteRecurringEvent(eventId, scopeOrOriginalStartDate, maybeScope);
+}
+
 // ============================================================================
 // GET EXPANDED EVENTS
 // ============================================================================
@@ -1109,7 +1148,7 @@ export async function deleteRecurringEvent(
  * Since we store individual occurrences (no recurrence_rule column),
  * this is a simple date-range query.
  */
-export async function getExpandedEvents(
+async function getExpandedEventsImpl(
   startDate: string,
   endDate: string,
   teamId?: string
@@ -1167,6 +1206,20 @@ export async function getExpandedEvents(
   }
 }
 
+const observedGetExpandedEvents = withAdminObserved(
+  'getExpandedEvents',
+  { sport: 'golf', feature: 'calendar_events' },
+  getExpandedEventsImpl,
+);
+
+export async function getExpandedEvents(
+  startDate: string,
+  endDate: string,
+  teamId?: string
+): Promise<ActionResult<ExpandedEvent[]>> {
+  return observedGetExpandedEvents(startDate, endDate, teamId);
+}
+
 // ============================================================================
 // ACADEMIC EXCLUSIONS
 // ============================================================================
@@ -1175,7 +1228,7 @@ export async function getExpandedEvents(
  * Create an academic exclusion period.
  * golf_academic_exclusions schema: player_id, start_date, end_date, reason, excluded_by
  */
-export async function createAcademicExclusion(input: {
+async function createAcademicExclusionImpl(input: {
   name: string;
   startDate: string;
   endDate: string;
@@ -1260,7 +1313,26 @@ export async function createAcademicExclusion(input: {
   }
 }
 
-export async function deleteAcademicExclusion(id: string): Promise<ActionResult> {
+const observedCreateAcademicExclusion = withAdminObserved(
+  'createAcademicExclusion',
+  { sport: 'golf', feature: 'academics_classes' },
+  createAcademicExclusionImpl,
+);
+
+export async function createAcademicExclusion(input: {
+  name: string;
+  startDate: string;
+  endDate: string;
+  excludePractices: boolean;
+  excludeMatches: boolean;
+  excludeAllEvents: boolean;
+  teamId?: string;
+  playerIds?: string[]; // Players to exclude
+}): Promise<ActionResult<{ id: string }>> {
+  return observedCreateAcademicExclusion(input);
+}
+
+async function deleteAcademicExclusionImpl(id: string): Promise<ActionResult> {
   try {
     const supabase = await createClient();
 
@@ -1285,4 +1357,14 @@ export async function deleteAcademicExclusion(id: string): Promise<ActionResult>
     await logServerError(`[deleteAcademicExclusion Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.deleteAcademicExclusion' });
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedDeleteAcademicExclusion = withAdminObserved(
+  'deleteAcademicExclusion',
+  { sport: 'golf', feature: 'academics_classes' },
+  deleteAcademicExclusionImpl,
+);
+
+export async function deleteAcademicExclusion(id: string): Promise<ActionResult> {
+  return observedDeleteAcademicExclusion(id);
 }

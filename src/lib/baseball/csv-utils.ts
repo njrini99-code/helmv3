@@ -168,7 +168,10 @@ export function parseCSV(content: string): CSVRow[] {
 
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i]!.split(',').map(v => v.trim());
-    const row: CSVRow = {};
+    // Null prototype: header text comes from the uploaded file, so a column
+    // named __proto__/constructor must land as a plain own property, never
+    // walk the prototype chain (CodeQL js/remote-property-injection).
+    const row: CSVRow = Object.create(null);
 
     headers.forEach((header, index) => {
       row[header] = values[index] || '';

@@ -23,6 +23,7 @@ import type { CoachTeamOption } from '@/lib/golf/resolve-team';
 // 'use server' modules may only export async functions — the cookie constants
 // live in a plain sibling module.
 import { ACTIVE_TEAM_COOKIE, ACTIVE_TEAM_COOKIE_MAX_AGE } from './team-switcher.constants';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 /**
  * Switch the signed-in coach's active team.
@@ -41,7 +42,7 @@ import { ACTIVE_TEAM_COOKIE, ACTIVE_TEAM_COOKIE_MAX_AGE } from './team-switcher.
  *
  * @returns `{ success: true }` on valid switch; `{ success: false, reason }` otherwise.
  */
-export async function setActiveTeam(
+async function setActiveTeamImpl(
   teamId: string,
 ): Promise<{ success: true } | { success: false; reason: string }> {
   const session = await getGolfSessionProfile();
@@ -76,6 +77,18 @@ export async function setActiveTeam(
   return { success: true };
 }
 
+const observedSetActiveTeam = withAdminObserved(
+  'setActiveTeam',
+  { sport: 'golf', feature: 'team_info' },
+  setActiveTeamImpl,
+);
+
+export async function setActiveTeam(
+  teamId: string,
+): Promise<{ success: true } | { success: false; reason: string }> {
+  return observedSetActiveTeam(teamId);
+}
+
 /**
  * Return all teams available to the signed-in coach.
  * Safe to call from Server Components as a data-fetch (no mutation).
@@ -84,7 +97,7 @@ export async function setActiveTeam(
  *   - The caller is not an authenticated coach, or
  *   - The coach has no team assignments.
  */
-export async function listCoachTeams(): Promise<CoachTeamOption[]> {
+async function listCoachTeamsImpl(): Promise<CoachTeamOption[]> {
   const session = await getGolfSessionProfile();
   if (!session?.coach) return [];
 
@@ -94,13 +107,33 @@ export async function listCoachTeams(): Promise<CoachTeamOption[]> {
   return getCoachTeams(supabase, coach.id, coach.organization_id);
 }
 
+const observedListCoachTeams = withAdminObserved(
+  'listCoachTeams',
+  { sport: 'golf', feature: 'team_info' },
+  listCoachTeamsImpl,
+);
+
+export async function listCoachTeams(): Promise<CoachTeamOption[]> {
+  return observedListCoachTeams();
+}
+
 /**
  * Read the currently active team cookie value without validating it.
  * Validation happens inside `resolveCoachActiveTeamId`.
  */
-export async function getActiveTeamCookie(): Promise<string | null> {
+async function getActiveTeamCookieImpl(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get(ACTIVE_TEAM_COOKIE)?.value ?? null;
+}
+
+const observedGetActiveTeamCookie = withAdminObserved(
+  'getActiveTeamCookie',
+  { sport: 'golf', feature: 'team_info' },
+  getActiveTeamCookieImpl,
+);
+
+export async function getActiveTeamCookie(): Promise<string | null> {
+  return observedGetActiveTeamCookie();
 }
 
 /**
@@ -112,7 +145,17 @@ export async function getActiveTeamCookie(): Promise<string | null> {
  * cookie cannot grant cross-coach access — this is hygiene, ensuring a fresh
  * login starts on the coach's own default team rather than a stale selection.
  */
-export async function clearActiveTeam(): Promise<void> {
+async function clearActiveTeamImpl(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(ACTIVE_TEAM_COOKIE);
+}
+
+const observedClearActiveTeam = withAdminObserved(
+  'clearActiveTeam',
+  { sport: 'golf', feature: 'team_info' },
+  clearActiveTeamImpl,
+);
+
+export async function clearActiveTeam(): Promise<void> {
+  return observedClearActiveTeam();
 }

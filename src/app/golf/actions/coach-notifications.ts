@@ -9,6 +9,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -25,7 +26,7 @@ export interface CoachNotificationCounts {
  * Returns badge counts for a coach.
  * Queries golf_calendar_notifications and golf_messages.
  */
-export async function getCoachNotificationCounts(
+async function getCoachNotificationCountsImpl(
   userId: string,
   _teamId?: string,
 ): Promise<ActionResult<CoachNotificationCounts>> {
@@ -82,4 +83,17 @@ export async function getCoachNotificationCounts(
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch coach notification counts' };
   }
+}
+
+const observedGetCoachNotificationCounts = withAdminObserved(
+  'getCoachNotificationCounts',
+  { sport: 'golf', feature: 'notifications' },
+  getCoachNotificationCountsImpl,
+);
+
+export async function getCoachNotificationCounts(
+  userId: string,
+  _teamId?: string,
+): Promise<ActionResult<CoachNotificationCounts>> {
+  return observedGetCoachNotificationCounts(userId, _teamId);
 }

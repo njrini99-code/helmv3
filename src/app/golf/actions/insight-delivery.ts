@@ -22,6 +22,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
 import type {
   InsightCategory,
@@ -335,7 +336,7 @@ function recordExposureForReturned(
  * Returns `null` when the player has no evidence-backed insights in a
  * visible lifecycle state.
  */
-export async function getTopInsightForPlayer(
+async function getTopInsightForPlayerImpl(
   playerId: string,
   supabaseOverride?: SupabaseClient,
 ): Promise<EvidenceInsight | null> {
@@ -412,6 +413,8 @@ export async function getTopInsightForPlayer(
     )
       .order('id', { ascending: true })
       .range(from, to),
+    undefined,
+    { table: 'golf_coach_insights', action: 'getTopInsightForPlayer', feature: 'coachhelm_ai_engine', sport: 'golf' },
   );
 
   if (error) {
@@ -449,6 +452,18 @@ export async function getTopInsightForPlayer(
   return top;
 }
 
+const observedGetTopInsightForPlayer = withAdminObserved(
+  'getTopInsightForPlayer',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getTopInsightForPlayerImpl,
+);
+export async function getTopInsightForPlayer(
+  playerId: string,
+  supabaseOverride?: SupabaseClient,
+): Promise<EvidenceInsight | null> {
+  return observedGetTopInsightForPlayer(playerId, supabaseOverride);
+}
+
 /**
  * Returns the full list of evidence-backed insights for a player, newest
  * first. Used by the CoachHelm dashboard feed and `My Insights` redirects.
@@ -458,7 +473,7 @@ export async function getTopInsightForPlayer(
  * returns `[]` on final failure so the dashboard renders an empty feed
  * instead of throwing.
  */
-export async function getInsightsForPlayer(
+async function getInsightsForPlayerImpl(
   playerId: string,
   opts: GetInsightsForPlayerOptions = {},
   supabaseOverride?: SupabaseClient,
@@ -518,7 +533,7 @@ export async function getInsightsForPlayer(
         query = query.in('category', opts.categories);
       }
       return query.range(from, to);
-    });
+    }, undefined, { table: 'golf_coach_insights', action: 'getInsightsForPlayer', feature: 'coachhelm_ai_engine', sport: 'golf' });
 
   let data: unknown = null;
   let error: { message: string } | null = null;
@@ -611,6 +626,19 @@ export async function getInsightsForPlayer(
   return shown;
 }
 
+const observedGetInsightsForPlayer = withAdminObserved(
+  'getInsightsForPlayer',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getInsightsForPlayerImpl,
+);
+export async function getInsightsForPlayer(
+  playerId: string,
+  opts: GetInsightsForPlayerOptions = {},
+  supabaseOverride?: SupabaseClient,
+): Promise<EvidenceInsight[]> {
+  return observedGetInsightsForPlayer(playerId, opts, supabaseOverride);
+}
+
 /**
  * Returns evidence-backed insights for ANY player on the coach's teams. When
  * `opts.player_id` is provided, narrows to just that player (after access
@@ -620,7 +648,7 @@ export async function getInsightsForPlayer(
  * player variants, we trust `is_golf_team_coach` RLS to pre-filter rows —
  * we call `verifyPlayerAccess` only when a specific player_id is supplied.
  */
-export async function getInsightsForCoach(
+async function getInsightsForCoachImpl(
   coachId: string,
   opts: GetInsightsForCoachOptions = {},
   supabaseOverride?: SupabaseClient,
@@ -631,6 +659,19 @@ export async function getInsightsForCoach(
   return result.ok ? result.data : [];
 }
 
+const observedGetInsightsForCoach = withAdminObserved(
+  'getInsightsForCoach',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getInsightsForCoachImpl,
+);
+export async function getInsightsForCoach(
+  coachId: string,
+  opts: GetInsightsForCoachOptions = {},
+  supabaseOverride?: SupabaseClient,
+): Promise<EvidenceInsight[]> {
+  return observedGetInsightsForCoach(coachId, opts, supabaseOverride);
+}
+
 /**
  * P2-15 / P058 — the meta-returning team sweep. Identical read/rank/dedupe to
  * `getInsightsForCoach` but it (a) distinguishes a DB error from an empty feed
@@ -638,7 +679,7 @@ export async function getInsightsForCoach(
  * true eligible `total` (the full ranked+deduped set before the limit slice) so
  * a capped page can honestly say "showing N of TOTAL".
  */
-export async function getInsightsForCoachWithMeta(
+async function getInsightsForCoachWithMetaImpl(
   coachId: string,
   opts: GetInsightsForCoachOptions = {},
   supabaseOverride?: SupabaseClient,
@@ -699,7 +740,7 @@ export async function getInsightsForCoachWithMeta(
       }
 
       return query.range(from, to);
-    });
+    }, undefined, { table: 'golf_coach_insights', action: 'getInsightsForCoachWithMeta', feature: 'coachhelm_ai_engine', sport: 'golf' });
     data = result.data;
     error = result.error;
   } else {
@@ -725,7 +766,7 @@ export async function getInsightsForCoachWithMeta(
       }
 
       return query.range(from, to);
-    });
+    }, undefined, { table: 'golf_coach_insights', action: 'getInsightsForCoachWithMeta', feature: 'coachhelm_ai_engine', sport: 'golf' });
     data = result.data;
     error = result.error;
 
@@ -786,6 +827,19 @@ export async function getInsightsForCoachWithMeta(
   return { ok: true, data: data_, total: ranked.length, capped: ranked.length > data_.length };
 }
 
+const observedGetInsightsForCoachWithMeta = withAdminObserved(
+  'getInsightsForCoachWithMeta',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getInsightsForCoachWithMetaImpl,
+);
+export async function getInsightsForCoachWithMeta(
+  coachId: string,
+  opts: GetInsightsForCoachOptions = {},
+  supabaseOverride?: SupabaseClient,
+): Promise<CoachInsightsResult> {
+  return observedGetInsightsForCoachWithMeta(coachId, opts, supabaseOverride);
+}
+
 /**
  * Batched top-insight fetcher for a roster (P446). Returns a Map keyed by
  * player_id → that player's top insight(s) (head-only by default), built from a
@@ -811,7 +865,7 @@ export async function getInsightsForCoachWithMeta(
  * applies. Returns `[]` for any player with no visible rows (Map omits absent
  * players → callers use `map.get(pid) ?? []`).
  */
-export async function getTopInsightsForPlayers(
+async function getTopInsightsForPlayersImpl(
   playerIds: string[],
   opts: { limit?: number } = {},
   supabaseOverride?: SupabaseClient,
@@ -852,6 +906,8 @@ export async function getTopInsightsForPlayers(
       )
         .order('id', { ascending: true })
         .range(from, to),
+      undefined,
+      { table: 'golf_coach_insights', action: 'getTopInsightsForPlayers', feature: 'coachhelm_ai_engine', sport: 'golf' },
     );
 
   let data: unknown = null;
@@ -919,6 +975,19 @@ export async function getTopInsightsForPlayers(
   return out;
 }
 
+const observedGetTopInsightsForPlayers = withAdminObserved(
+  'getTopInsightsForPlayers',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getTopInsightsForPlayersImpl,
+);
+export async function getTopInsightsForPlayers(
+  playerIds: string[],
+  opts: { limit?: number } = {},
+  supabaseOverride?: SupabaseClient,
+): Promise<Map<string, EvidenceInsight[]>> {
+  return observedGetTopInsightsForPlayers(playerIds, opts, supabaseOverride);
+}
+
 /**
  * Returns the single insight to feature on a round-review takeaway card.
  *
@@ -931,7 +1000,7 @@ export async function getTopInsightsForPlayers(
  * always fell through to the temporal window below. Re-introduce a primary tag
  * match here only once a generator actually writes `related_round_ids`.
  */
-export async function getRoundTakeawayInsight(
+async function getRoundTakeawayInsightImpl(
   playerId: string,
   roundId: string,
   supabaseOverride?: SupabaseClient,
@@ -1000,6 +1069,19 @@ export async function getRoundTakeawayInsight(
   // Only the single takeaway insight the round-review card shows is recorded.
   if (takeaway) recordExposureForReturned([takeaway], 'round_review');
   return takeaway;
+}
+
+const observedGetRoundTakeawayInsight = withAdminObserved(
+  'getRoundTakeawayInsight',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getRoundTakeawayInsightImpl,
+);
+export async function getRoundTakeawayInsight(
+  playerId: string,
+  roundId: string,
+  supabaseOverride?: SupabaseClient,
+): Promise<EvidenceInsight | null> {
+  return observedGetRoundTakeawayInsight(playerId, roundId, supabaseOverride);
 }
 
 // ---------------------------------------------------------------------------
@@ -1286,7 +1368,7 @@ function mapRowLoose(row: RawInsightRowWithDrills): EvidenceInsight | null {
  * themes; honest `thin`/`strength`/`leak` states). Self or coach-staffing-team
  * access via `verifyPlayerAccess`, mirroring the existing player fetchers.
  */
-export async function getThemesForPlayer(
+async function getThemesForPlayerImpl(
   playerId: string,
   _opts: { window_days?: number } = {},
 ): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
@@ -1311,13 +1393,25 @@ export async function getThemesForPlayer(
   }
 }
 
+const observedGetThemesForPlayer = withAdminObserved(
+  'getThemesForPlayer',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getThemesForPlayerImpl,
+);
+export async function getThemesForPlayer(
+  playerId: string,
+  _opts: { window_days?: number } = {},
+): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
+  return observedGetThemesForPlayer(playerId, _opts);
+}
+
 /**
  * Coach-side variant. Themes are inherently per-player, so a `player_id` is
  * required. Authorizes the coach exactly as `getInsightsForCoach` does when a
  * specific player is requested (`verifyPlayerAccess`), then delegates to the
  * same per-player query + assemble.
  */
-export async function getThemesForCoach(
+async function getThemesForCoachImpl(
   opts: { player_id: string; window_days?: number },
 ): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
   const playerId = opts?.player_id;
@@ -1341,6 +1435,17 @@ export async function getThemesForCoach(
     );
     return { success: false, error: 'Failed to assemble themes' };
   }
+}
+
+const observedGetThemesForCoach = withAdminObserved(
+  'getThemesForCoach',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getThemesForCoachImpl,
+);
+export async function getThemesForCoach(
+  opts: { player_id: string; window_days?: number },
+): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
+  return observedGetThemesForCoach(opts);
 }
 
 // ---------------------------------------------------------------------------

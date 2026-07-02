@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { computeD7Retention, type RoundForRetention } from '@/lib/admin/metrics';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================
 // TYPES
@@ -67,7 +68,7 @@ function daysAgo(n: number): string {
 // MAIN FETCH
 // ============================================
 
-export async function getEnhancedBIData(): Promise<EnhancedBIData> {
+async function getEnhancedBIDataImpl(): Promise<EnhancedBIData> {
   const supabase = await createClient();
 
   // Auth check
@@ -322,4 +323,21 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
     await logServerError(`[admin-bi-data] Failed to fetch BI data: ${error instanceof Error ? error.message : String(error)}`, { action: 'admin_bi_data.getEnhancedBIData' });
     return emptyBIData();
   }
+}
+
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedGetEnhancedBIData = withAdminObserved(
+  'getEnhancedBIData',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  getEnhancedBIDataImpl,
+);
+
+export async function getEnhancedBIData(): Promise<EnhancedBIData> {
+  return observedGetEnhancedBIData();
 }

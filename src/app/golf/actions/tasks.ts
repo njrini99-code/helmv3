@@ -15,6 +15,7 @@ import { CACHE_TAGS } from '@/lib/cache/tags';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { notifyTaskAssigned } from '@/lib/notifications';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -34,7 +35,7 @@ interface ActionResult<T = void> {
  * Complete a task as a player
  * Updates the golf_task_assignments record with status='completed'
  */
-export async function completeTask(
+async function completeTaskImpl(
   taskId: string,
   _uploadUrl?: string,
   notes?: string
@@ -149,6 +150,20 @@ export async function completeTask(
   }
 }
 
+const observedCompleteTask = withAdminObserved(
+  'completeTask',
+  { sport: 'golf', feature: 'task_management' },
+  completeTaskImpl,
+);
+
+export async function completeTask(
+  taskId: string,
+  _uploadUrl?: string,
+  notes?: string
+): Promise<ActionResult> {
+  return observedCompleteTask(taskId, _uploadUrl, notes);
+}
+
 // ============================================================================
 // CREATE TASK (Coach only)
 // ============================================================================
@@ -156,7 +171,7 @@ export async function completeTask(
 /**
  * Create a new task and assign to players (coach only)
  */
-export async function createTask(
+async function createTaskImpl(
   teamId: string,
   title: string,
   description?: string,
@@ -282,6 +297,23 @@ export async function createTask(
   }
 }
 
+const observedCreateTask = withAdminObserved(
+  'createTask',
+  { sport: 'golf', feature: 'task_management' },
+  createTaskImpl,
+);
+
+export async function createTask(
+  teamId: string,
+  title: string,
+  description?: string,
+  dueDate?: string,
+  priority?: string,
+  assignToPlayerIds?: string[]
+): Promise<ActionResult<{ taskId: string }>> {
+  return observedCreateTask(teamId, title, description, dueDate, priority, assignToPlayerIds);
+}
+
 // ============================================================================
 // DELETE TASK (Coach only)
 // ============================================================================
@@ -289,7 +321,7 @@ export async function createTask(
 /**
  * Delete a task (coach only)
  */
-export async function deleteTask(taskId: string): Promise<ActionResult> {
+async function deleteTaskImpl(taskId: string): Promise<ActionResult> {
   try {
     const supabase = await createClient();
 
@@ -357,6 +389,16 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
   }
 }
 
+const observedDeleteTask = withAdminObserved(
+  'deleteTask',
+  { sport: 'golf', feature: 'task_management' },
+  deleteTaskImpl,
+);
+
+export async function deleteTask(taskId: string): Promise<ActionResult> {
+  return observedDeleteTask(taskId);
+}
+
 // ============================================================================
 // TASK REMINDERS
 // ============================================================================
@@ -364,7 +406,7 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
 /**
  * Set a reminder for a task
  */
-export async function setTaskReminder(
+async function setTaskReminderImpl(
   taskId: string,
   reminderAt: string
 ): Promise<ActionResult> {
@@ -436,10 +478,23 @@ export async function setTaskReminder(
   }
 }
 
+const observedSetTaskReminder = withAdminObserved(
+  'setTaskReminder',
+  { sport: 'golf', feature: 'task_management' },
+  setTaskReminderImpl,
+);
+
+export async function setTaskReminder(
+  taskId: string,
+  reminderAt: string
+): Promise<ActionResult> {
+  return observedSetTaskReminder(taskId, reminderAt);
+}
+
 /**
  * Clear a task reminder
  */
-export async function clearTaskReminder(taskId: string): Promise<ActionResult> {
+async function clearTaskReminderImpl(taskId: string): Promise<ActionResult> {
   try {
     const supabase = await createClient();
 
@@ -508,6 +563,16 @@ export async function clearTaskReminder(taskId: string): Promise<ActionResult> {
   }
 }
 
+const observedClearTaskReminder = withAdminObserved(
+  'clearTaskReminder',
+  { sport: 'golf', feature: 'task_management' },
+  clearTaskReminderImpl,
+);
+
+export async function clearTaskReminder(taskId: string): Promise<ActionResult> {
+  return observedClearTaskReminder(taskId);
+}
+
 // ============================================================================
 // TASK TEMPLATES
 // ============================================================================
@@ -527,7 +592,7 @@ export interface TaskTemplate {
 /**
  * Get all task templates for a team
  */
-export async function getTaskTemplates(
+async function getTaskTemplatesImpl(
   teamId: string
 ): Promise<ActionResult<TaskTemplate[]>> {
   try {
@@ -558,10 +623,22 @@ export async function getTaskTemplates(
   }
 }
 
+const observedGetTaskTemplates = withAdminObserved(
+  'getTaskTemplates',
+  { sport: 'golf', feature: 'task_management' },
+  getTaskTemplatesImpl,
+);
+
+export async function getTaskTemplates(
+  teamId: string
+): Promise<ActionResult<TaskTemplate[]>> {
+  return observedGetTaskTemplates(teamId);
+}
+
 /**
  * Create a new task template
  */
-export async function createTaskTemplate(
+async function createTaskTemplateImpl(
   teamId: string,
   title: string,
   description?: string,
@@ -638,10 +715,28 @@ export async function createTaskTemplate(
   }
 }
 
+const observedCreateTaskTemplate = withAdminObserved(
+  'createTaskTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  createTaskTemplateImpl,
+);
+
+export async function createTaskTemplate(
+  teamId: string,
+  title: string,
+  description?: string,
+  defaultAssigneeType?: string,
+  category?: string,
+  defaultPriority?: string,
+  defaultDueDays?: number
+): Promise<ActionResult<{ templateId: string }>> {
+  return observedCreateTaskTemplate(teamId, title, description, defaultAssigneeType, category, defaultPriority, defaultDueDays);
+}
+
 /**
  * Update a task template
  */
-export async function updateTaskTemplate(
+async function updateTaskTemplateImpl(
   templateId: string,
   updates: {
     title?: string;
@@ -728,10 +823,30 @@ export async function updateTaskTemplate(
   }
 }
 
+const observedUpdateTaskTemplate = withAdminObserved(
+  'updateTaskTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  updateTaskTemplateImpl,
+);
+
+export async function updateTaskTemplate(
+  templateId: string,
+  updates: {
+    title?: string;
+    description?: string;
+    defaultAssigneeType?: string;
+    category?: string;
+    defaultPriority?: string;
+    defaultDueDays?: number | null;
+  }
+): Promise<ActionResult> {
+  return observedUpdateTaskTemplate(templateId, updates);
+}
+
 /**
  * Delete a task template
  */
-export async function deleteTaskTemplate(templateId: string): Promise<ActionResult> {
+async function deleteTaskTemplateImpl(templateId: string): Promise<ActionResult> {
   try {
     const supabase = await createClient();
 
@@ -796,10 +911,20 @@ export async function deleteTaskTemplate(templateId: string): Promise<ActionResu
   }
 }
 
+const observedDeleteTaskTemplate = withAdminObserved(
+  'deleteTaskTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  deleteTaskTemplateImpl,
+);
+
+export async function deleteTaskTemplate(templateId: string): Promise<ActionResult> {
+  return observedDeleteTaskTemplate(templateId);
+}
+
 /**
  * Create a task from a template
  */
-export async function createTaskFromTemplate(
+async function createTaskFromTemplateImpl(
   templateId: string,
   teamId: string,
   assignToPlayerIds?: string[],
@@ -911,10 +1036,26 @@ export async function createTaskFromTemplate(
   }
 }
 
+const observedCreateTaskFromTemplate = withAdminObserved(
+  'createTaskFromTemplate',
+  { sport: 'golf', feature: 'task_management' },
+  createTaskFromTemplateImpl,
+);
+
+export async function createTaskFromTemplate(
+  templateId: string,
+  teamId: string,
+  assignToPlayerIds?: string[],
+  customTitle?: string,
+  customDueDate?: string
+): Promise<ActionResult<{ taskId: string }>> {
+  return observedCreateTaskFromTemplate(templateId, teamId, assignToPlayerIds, customTitle, customDueDate);
+}
+
 /**
  * Seed default templates for a team (called once when feature is first used)
  */
-export async function seedDefaultTemplates(teamId: string): Promise<ActionResult> {
+async function seedDefaultTemplatesImpl(teamId: string): Promise<ActionResult> {
   try {
     const supabase = await createClient();
 
@@ -1027,4 +1168,14 @@ export async function seedDefaultTemplates(teamId: string): Promise<ActionResult
     await logServerError(`[seedDefaultTemplates Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.seedDefaultTemplates' });
     return formatSafeErrorResponse(error);
   }
+}
+
+const observedSeedDefaultTemplates = withAdminObserved(
+  'seedDefaultTemplates',
+  { sport: 'golf', feature: 'task_management' },
+  seedDefaultTemplatesImpl,
+);
+
+export async function seedDefaultTemplates(teamId: string): Promise<ActionResult> {
+  return observedSeedDefaultTemplates(teamId);
 }

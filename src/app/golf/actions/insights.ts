@@ -74,6 +74,8 @@ async function gateCoachHelmEngineCall(userId: string | undefined): Promise<{ al
 }
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
+import { maybeCaptureRlsDenial } from '@/lib/admin/rls-denial';
 
 // ============================================================================
 // TYPES
@@ -562,13 +564,25 @@ function weightInsightsByPhilosophy(
  * Gets insights sorted by stroke impact (highest first)
  * For the "Top Insights by Stroke Impact" section
  */
-export async function getTopInsightsByStrokeImpact(
+async function getTopInsightsByStrokeImpactImpl(
   weightedInsights: WeightedInsight[],
   limit: number = 5
 ): Promise<WeightedInsight[]> {
   return [...weightedInsights]
     .sort((a, b) => b.strokeImpactScore - a.strokeImpactScore)
     .slice(0, limit);
+}
+
+const observedGetTopInsightsByStrokeImpact = withAdminObserved(
+  'getTopInsightsByStrokeImpact',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getTopInsightsByStrokeImpactImpl,
+);
+export async function getTopInsightsByStrokeImpact(
+  weightedInsights: WeightedInsight[],
+  limit: number = 5
+): Promise<WeightedInsight[]> {
+  return observedGetTopInsightsByStrokeImpact(weightedInsights, limit);
 }
 
 // ============================================================================
@@ -755,7 +769,7 @@ function convertV2ToInsightRecord(
 // GENERATE INSIGHTS FOR TEAM (V2 Engine)
 // ============================================================================
 
-export async function generateTeamInsights() {
+async function generateTeamInsightsImpl() {
   const supabase = await createClient();
   const startTime = Date.now();
 
@@ -1080,11 +1094,20 @@ export async function generateTeamInsights() {
   }
 }
 
+const observedGenerateTeamInsights = withAdminObserved(
+  'generateTeamInsights',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  generateTeamInsightsImpl,
+);
+export async function generateTeamInsights() {
+  return observedGenerateTeamInsights();
+}
+
 // ============================================================================
 // GET ACTIVE INSIGHTS FOR COACH
 // ============================================================================
 
-export async function getActiveInsights(limit: number = 10) {
+async function getActiveInsightsImpl(limit: number = 10) {
   const supabase = await createClient();
 
   try {
@@ -1147,11 +1170,20 @@ export async function getActiveInsights(limit: number = 10) {
   }
 }
 
+const observedGetActiveInsights = withAdminObserved(
+  'getActiveInsights',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getActiveInsightsImpl,
+);
+export async function getActiveInsights(limit: number = 10) {
+  return observedGetActiveInsights(limit);
+}
+
 // ============================================================================
 // ACKNOWLEDGE INSIGHT
 // ============================================================================
 
-export async function acknowledgeInsight(insightId: string) {
+async function acknowledgeInsightImpl(insightId: string) {
   const supabase = await createClient();
 
   try {
@@ -1227,11 +1259,20 @@ export async function acknowledgeInsight(insightId: string) {
   }
 }
 
+const observedAcknowledgeInsight = withAdminObserved(
+  'acknowledgeInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  acknowledgeInsightImpl,
+);
+export async function acknowledgeInsight(insightId: string) {
+  return observedAcknowledgeInsight(insightId);
+}
+
 // ============================================================================
 // DISMISS INSIGHT
 // ============================================================================
 
-export async function dismissInsight(insightId: string) {
+async function dismissInsightImpl(insightId: string) {
   const supabase = await createClient();
 
   try {
@@ -1298,6 +1339,15 @@ export async function dismissInsight(insightId: string) {
   }
 }
 
+const observedDismissInsight = withAdminObserved(
+  'dismissInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  dismissInsightImpl,
+);
+export async function dismissInsight(insightId: string) {
+  return observedDismissInsight(insightId);
+}
+
 // ============================================================================
 // REACTIVATE INSIGHT (undo for acknowledge / dismiss)
 // ============================================================================
@@ -1312,7 +1362,7 @@ export async function dismissInsight(insightId: string) {
  * row reappears in the canonical V3 feed). Same auth + ownership boundary as the
  * forward actions. Additive — no existing action's contract changes.
  */
-export async function reactivateInsight(
+async function reactivateInsightImpl(
   insightId: string,
   priorLifecycleState?: 'detected' | 'matured' | 'addressed' | 'resolved',
 ) {
@@ -1373,11 +1423,23 @@ export async function reactivateInsight(
   }
 }
 
+const observedReactivateInsight = withAdminObserved(
+  'reactivateInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  reactivateInsightImpl,
+);
+export async function reactivateInsight(
+  insightId: string,
+  priorLifecycleState?: 'detected' | 'matured' | 'addressed' | 'resolved',
+) {
+  return observedReactivateInsight(insightId, priorLifecycleState);
+}
+
 // ============================================================================
 // RESOLVE INSIGHT
 // ============================================================================
 
-export async function resolveInsight(insightId: string) {
+async function resolveInsightImpl(insightId: string) {
   const supabase = await createClient();
 
   try {
@@ -1443,6 +1505,15 @@ export async function resolveInsight(insightId: string) {
   }
 }
 
+const observedResolveInsight = withAdminObserved(
+  'resolveInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  resolveInsightImpl,
+);
+export async function resolveInsight(insightId: string) {
+  return observedResolveInsight(insightId);
+}
+
 // ============================================================================
 // RATE INSIGHT (feedback mechanism)
 // ============================================================================
@@ -1451,7 +1522,7 @@ export async function resolveInsight(insightId: string) {
  * Allows coaches to rate an insight as helpful or not helpful.
  * Feeds the rating back to the behavior learner to improve future insights.
  */
-export async function rateInsight(
+async function rateInsightImpl(
   insightId: string,
   rating: 'helpful' | 'not_helpful' | 'actionable'
 ): Promise<{ success: boolean; error?: string }> {
@@ -1532,11 +1603,23 @@ export async function rateInsight(
   }
 }
 
+const observedRateInsight = withAdminObserved(
+  'rateInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  rateInsightImpl,
+);
+export async function rateInsight(
+  insightId: string,
+  rating: 'helpful' | 'not_helpful' | 'actionable'
+): Promise<{ success: boolean; error?: string }> {
+  return observedRateInsight(insightId, rating);
+}
+
 // ============================================================================
 // GET PLAYER FOCUS AREAS
 // ============================================================================
 
-export async function getPlayerFocusAreas(playerId: string) {
+async function getPlayerFocusAreasImpl(playerId: string) {
   const supabase = await createClient();
 
   try {
@@ -1556,6 +1639,13 @@ export async function getPlayerFocusAreas(playerId: string) {
     if (error) {
       // PGRST116 = no rows, 42501 = RLS permission denied - both are expected for players without focus areas
       // Return empty array instead of error to show graceful empty state
+      maybeCaptureRlsDenial(error, {
+        table: 'golf_player_focus_areas',
+        verb: 'select',
+        action: 'getPlayerFocusAreas',
+        feature: 'my_development',
+        sport: 'golf',
+      });
       if (error.code === 'PGRST116' || error.code === '42501' || error.code === '42P01') {
         return { success: true, focus_areas: [] };
       }
@@ -1579,11 +1669,20 @@ export async function getPlayerFocusAreas(playerId: string) {
   }
 }
 
+const observedGetPlayerFocusAreas = withAdminObserved(
+  'getPlayerFocusAreas',
+  { sport: 'golf', feature: 'my_development' },
+  getPlayerFocusAreasImpl,
+);
+export async function getPlayerFocusAreas(playerId: string) {
+  return observedGetPlayerFocusAreas(playerId);
+}
+
 // ============================================================================
 // ANALYZE PLAYER (Full Analysis)
 // ============================================================================
 
-export async function analyzePlayer(
+async function analyzePlayerImpl(
   playerId: string,
   options?: {
     includePatterns?: boolean;
@@ -1642,11 +1741,29 @@ export async function analyzePlayer(
   }
 }
 
+const observedAnalyzePlayer = withAdminObserved(
+  'analyzePlayer',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  analyzePlayerImpl,
+);
+export async function analyzePlayer(
+  playerId: string,
+  options?: {
+    includePatterns?: boolean;
+    includeCausal?: boolean;
+    includePredictions?: boolean;
+    includeTrajectory?: boolean;
+    depth?: 'quick' | 'standard' | 'deep';
+  }
+): Promise<{ success: boolean; analysis?: PlayerAnalysis; error?: string }> {
+  return observedAnalyzePlayer(playerId, options);
+}
+
 // ============================================================================
 // GENERATE PLAYER INSIGHT
 // ============================================================================
 
-export async function generatePlayerInsight(playerId: string): Promise<{
+async function generatePlayerInsightImpl(playerId: string): Promise<{
   success: boolean;
   insight?: ComposedInsight;
   patterns?: MinedPattern[];
@@ -1701,6 +1818,21 @@ export async function generatePlayerInsight(playerId: string): Promise<{
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedGeneratePlayerInsight = withAdminObserved(
+  'generatePlayerInsight',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  generatePlayerInsightImpl,
+);
+export async function generatePlayerInsight(playerId: string): Promise<{
+  success: boolean;
+  insight?: ComposedInsight;
+  patterns?: MinedPattern[];
+  prediction?: PerformancePrediction;
+  error?: string;
+}> {
+  return observedGeneratePlayerInsight(playerId);
 }
 
 // ============================================================================
@@ -1962,7 +2094,7 @@ function extractIssueFromHeadline(headline: string, fallback: string): string {
 // GENERATE TEAM INSIGHT (Returns insights, patterns, predictions)
 // ============================================================================
 
-export async function generateTeamInsight(): Promise<{
+async function generateTeamInsightImpl(): Promise<{
   success: boolean;
   insights?: TeamComposedInsight[];
   insightGroups?: InsightGroup[];
@@ -2322,11 +2454,30 @@ export async function generateTeamInsight(): Promise<{
   }
 }
 
+const observedGenerateTeamInsight = withAdminObserved(
+  'generateTeamInsight',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  generateTeamInsightImpl,
+);
+export async function generateTeamInsight(): Promise<{
+  success: boolean;
+  insights?: TeamComposedInsight[];
+  insightGroups?: InsightGroup[];
+  patterns?: MinedPattern[];
+  predictions?: Array<PerformancePrediction & { playerName?: string }>;
+  playersAnalyzed?: number;
+  playersWithoutData?: number;
+  playersMissingData?: string[];
+  error?: string;
+}> {
+  return observedGenerateTeamInsight();
+}
+
 // ============================================================================
 // GENERATE PRACTICE RECOMMENDATIONS
 // ============================================================================
 
-export async function generatePracticeRecommendations(playerId: string): Promise<{
+async function generatePracticeRecommendationsImpl(playerId: string): Promise<{
   success: boolean;
   recommendations?: string[];
   focusAreas?: Array<{
@@ -2381,11 +2532,34 @@ export async function generatePracticeRecommendations(playerId: string): Promise
   }
 }
 
+const observedGeneratePracticeRecommendations = withAdminObserved(
+  'generatePracticeRecommendations',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  generatePracticeRecommendationsImpl,
+);
+export async function generatePracticeRecommendations(playerId: string): Promise<{
+  success: boolean;
+  recommendations?: string[];
+  focusAreas?: Array<{
+    area: string;
+    strokesGained: number;
+    /** Display magnitude in the row's native unit (defaults to strokesGained). */
+    value?: number;
+    /** Native unit for `value`. Only 'strokes/round' traces to strokes_impact. */
+    unit?: 'strokes/round' | 'yd from target' | 'opportunity';
+    trend: 'improving' | 'stable' | 'declining';
+    recommendation: string;
+  }>;
+  error?: string;
+}> {
+  return observedGeneratePracticeRecommendations(playerId);
+}
+
 // ============================================================================
 // GENERATE TOURNAMENT PREP
 // ============================================================================
 
-export async function generateTournamentPrep(playerId: string): Promise<{
+async function generateTournamentPrepImpl(playerId: string): Promise<{
   success: boolean;
   prediction?: PerformancePrediction;
   keyFactors?: string[];
@@ -2434,11 +2608,26 @@ export async function generateTournamentPrep(playerId: string): Promise<{
   }
 }
 
+const observedGenerateTournamentPrep = withAdminObserved(
+  'generateTournamentPrep',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  generateTournamentPrepImpl,
+);
+export async function generateTournamentPrep(playerId: string): Promise<{
+  success: boolean;
+  prediction?: PerformancePrediction;
+  keyFactors?: string[];
+  recommendations?: string[];
+  error?: string;
+}> {
+  return observedGenerateTournamentPrep(playerId);
+}
+
 // ============================================================================
 // GET PLAYER PATTERNS
 // ============================================================================
 
-export async function getPlayerPatterns(playerId: string): Promise<{
+async function getPlayerPatternsImpl(playerId: string): Promise<{
   success: boolean;
   patterns?: MinedPattern[];
   error?: string;
@@ -2508,11 +2697,24 @@ export async function getPlayerPatterns(playerId: string): Promise<{
   }
 }
 
+const observedGetPlayerPatterns = withAdminObserved(
+  'getPlayerPatterns',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getPlayerPatternsImpl,
+);
+export async function getPlayerPatterns(playerId: string): Promise<{
+  success: boolean;
+  patterns?: MinedPattern[];
+  error?: string;
+}> {
+  return observedGetPlayerPatterns(playerId);
+}
+
 // ============================================================================
 // GENERATE ROUND REVIEW
 // ============================================================================
 
-export async function generateRoundReview(
+async function generateRoundReviewImpl(
   roundId: string,
   playerId: string
 ): Promise<{
@@ -2557,11 +2759,27 @@ export async function generateRoundReview(
   }
 }
 
+const observedGenerateRoundReview = withAdminObserved(
+  'generateRoundReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  generateRoundReviewImpl,
+);
+export async function generateRoundReview(
+  roundId: string,
+  playerId: string
+): Promise<{
+  success: boolean;
+  review?: Awaited<ReturnType<typeof coachHelmIntelligence.generateRoundReview>>;
+  error?: string;
+}> {
+  return observedGenerateRoundReview(roundId, playerId);
+}
+
 // ============================================================================
 // RECORD USER INTERACTION (LEARNING)
 // ============================================================================
 
-export async function recordInteraction(
+async function recordInteractionImpl(
   entityId: string,
   entityType: 'coach' | 'player',
   interactionType: 'view' | 'click' | 'expand' | 'collapse' | 'dismiss' | 'action' | 'share' | 'feedback',
@@ -2588,11 +2806,26 @@ export async function recordInteraction(
   }
 }
 
+const observedRecordInteraction = withAdminObserved(
+  'recordInteraction',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  recordInteractionImpl,
+);
+export async function recordInteraction(
+  entityId: string,
+  entityType: 'coach' | 'player',
+  interactionType: 'view' | 'click' | 'expand' | 'collapse' | 'dismiss' | 'action' | 'share' | 'feedback',
+  targetType?: string,
+  metadata?: Record<string, unknown>
+): Promise<{ success: boolean }> {
+  return observedRecordInteraction(entityId, entityType, interactionType, targetType, metadata);
+}
+
 // ============================================================================
 // GET COACHHELM STATUS
 // ============================================================================
 
-export async function getCoachHelmStatus(
+async function getCoachHelmStatusImpl(
   entityType: 'coach' | 'player',
   entityId: string
 ): Promise<{
@@ -2617,6 +2850,22 @@ export async function getCoachHelmStatus(
     });
     return { success: false, enabled: true };
   }
+}
+
+const observedGetCoachHelmStatus = withAdminObserved(
+  'getCoachHelmStatus',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getCoachHelmStatusImpl,
+);
+export async function getCoachHelmStatus(
+  entityType: 'coach' | 'player',
+  entityId: string
+): Promise<{
+  success: boolean;
+  enabled: boolean;
+  disabledReason?: string | null;
+}> {
+  return observedGetCoachHelmStatus(entityType, entityId);
 }
 
 // ============================================================================
@@ -2665,7 +2914,7 @@ export interface PlayerCoachHelmDashboardData {
   alertLevel: 'none' | 'info' | 'warning' | 'critical';
 }
 
-export async function getPlayerCoachHelmDashboard(
+async function getPlayerCoachHelmDashboardImpl(
   playerId: string
 ): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' }> {
   const supabase = await createClient();
@@ -2779,6 +3028,17 @@ export async function getPlayerCoachHelmDashboard(
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedGetPlayerCoachHelmDashboard = withAdminObserved(
+  'getPlayerCoachHelmDashboard',
+  { sport: 'golf', feature: 'player_coachhelm_dashboard' },
+  getPlayerCoachHelmDashboardImpl,
+);
+export async function getPlayerCoachHelmDashboard(
+  playerId: string
+): Promise<{ success: boolean; data?: PlayerCoachHelmDashboardData; error?: string; errorCode?: 'COACHHELM_DISABLED' | 'UNAUTHORIZED' | 'NOT_FOUND' }> {
+  return observedGetPlayerCoachHelmDashboard(playerId);
 }
 
 /**
@@ -3258,7 +3518,7 @@ function buildStatInsightsForTeam(
  * it as acknowledged in one operation. Used for V2 insights that are generated
  * in-memory and don't have a database ID yet.
  */
-export async function acknowledgeComposedInsight(
+async function acknowledgeComposedInsightImpl(
   insight: ComposedInsight,
   playerId?: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -3342,6 +3602,18 @@ export async function acknowledgeComposedInsight(
   }
 }
 
+const observedAcknowledgeComposedInsight = withAdminObserved(
+  'acknowledgeComposedInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  acknowledgeComposedInsightImpl,
+);
+export async function acknowledgeComposedInsight(
+  insight: ComposedInsight,
+  playerId?: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedAcknowledgeComposedInsight(insight, playerId);
+}
+
 // ============================================================================
 // DISMISS COMPOSED INSIGHT (For V2 in-memory insights)
 // ============================================================================
@@ -3351,7 +3623,7 @@ export async function acknowledgeComposedInsight(
  * it as dismissed in one operation. Used for V2 insights that are generated
  * in-memory and don't have a database ID yet.
  */
-export async function dismissComposedInsight(
+async function dismissComposedInsightImpl(
   insight: ComposedInsight,
   playerId?: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -3436,6 +3708,18 @@ export async function dismissComposedInsight(
   }
 }
 
+const observedDismissComposedInsight = withAdminObserved(
+  'dismissComposedInsight',
+  { sport: 'golf', feature: 'insights_management' },
+  dismissComposedInsightImpl,
+);
+export async function dismissComposedInsight(
+  insight: ComposedInsight,
+  playerId?: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedDismissComposedInsight(insight, playerId);
+}
+
 // ============================================================================
 // TRIGGER INSIGHTS FOR SINGLE PLAYER (called after round submission)
 // ============================================================================
@@ -3446,7 +3730,7 @@ export async function dismissComposedInsight(
  * Designed to be called fire-and-forget (errors are logged, not thrown).
  * SEMGREP-ALLOW: fire-and-forget post-response; caller submitGolfRoundComprehensive already revalidates dashboards
  */
-export async function triggerPlayerInsightsAfterRound(
+async function triggerPlayerInsightsAfterRoundImpl(
   playerId: string
 ): Promise<{ success: boolean; insights_created?: number; error?: string; partial?: boolean }> {
   const startTime = Date.now();
@@ -3791,12 +4075,28 @@ export async function triggerPlayerInsightsAfterRound(
   }
 }
 
+// Post-round trigger is async fan-out fired FIRE-AND-FORGET from
+// postRoundTrigger (src/lib/coachhelm/v2/post-round-trigger.ts) after the
+// round-submit response is sent — the delegator below must keep returning
+// the SAME promise the caller does (or doesn't) await, never converting the
+// call into an awaited path (W15 B7 batch note).
+const observedTriggerPlayerInsightsAfterRound = withAdminObserved(
+  'triggerPlayerInsightsAfterRound',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  triggerPlayerInsightsAfterRoundImpl,
+);
+export async function triggerPlayerInsightsAfterRound(
+  playerId: string
+): Promise<{ success: boolean; insights_created?: number; error?: string; partial?: boolean }> {
+  return observedTriggerPlayerInsightsAfterRound(playerId);
+}
+
 /**
  * Coach-initiated manual refresh of a player's CoachHelm analysis.
  * Called from the coach's player-detail page. Awaits the engine (unlike the
  * fire-and-forget post-round trigger) so the UI can re-fetch immediately.
  */
-export async function refreshPlayerAnalysisAsCoach(
+async function refreshPlayerAnalysisAsCoachImpl(
   playerId: string,
 ): Promise<{ success: boolean; insightsCreated?: number; error?: string }> {
   const session = await getGolfSessionProfile();
@@ -3840,6 +4140,17 @@ export async function refreshPlayerAnalysisAsCoach(
     insightsCreated: result.insights_created,
     error: result.error,
   };
+}
+
+const observedRefreshPlayerAnalysisAsCoach = withAdminObserved(
+  'refreshPlayerAnalysisAsCoach',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  refreshPlayerAnalysisAsCoachImpl,
+);
+export async function refreshPlayerAnalysisAsCoach(
+  playerId: string,
+): Promise<{ success: boolean; insightsCreated?: number; error?: string }> {
+  return observedRefreshPlayerAnalysisAsCoach(playerId);
 }
 
 // ============================================================================
@@ -3926,7 +4237,7 @@ async function ensureCoachInTeamOrg(
  * assistant coaches (error prevention, Nielsen #5) instead of letting them flip
  * it and watch it revert with a permission error.
  */
-export async function getTeamCoachHelmAccess(
+async function getTeamCoachHelmAccessImpl(
   teamId: string,
 ): Promise<{ success: boolean; isHeadCoach: boolean; error?: string }> {
   if (!teamId) return { success: false, isHeadCoach: false, error: 'Team id required' };
@@ -3937,7 +4248,18 @@ export async function getTeamCoachHelmAccess(
   return { success: true, isHeadCoach: access.isHeadCoach };
 }
 
-export async function getOrCreateTeamCoachHelmSettings(
+const observedGetTeamCoachHelmAccess = withAdminObserved(
+  'getTeamCoachHelmAccess',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getTeamCoachHelmAccessImpl,
+);
+export async function getTeamCoachHelmAccess(
+  teamId: string,
+): Promise<{ success: boolean; isHeadCoach: boolean; error?: string }> {
+  return observedGetTeamCoachHelmAccess(teamId);
+}
+
+async function getOrCreateTeamCoachHelmSettingsImpl(
   teamId: string,
 ): Promise<{ success: boolean; settings?: TeamCoachHelmSettings; error?: string }> {
   if (!teamId) return { success: false, error: 'Team id required' };
@@ -3994,7 +4316,18 @@ export async function getOrCreateTeamCoachHelmSettings(
   return { success: true, settings: inserted as TeamCoachHelmSettings };
 }
 
-export async function updateTeamCoachHelmSettings(
+const observedGetOrCreateTeamCoachHelmSettings = withAdminObserved(
+  'getOrCreateTeamCoachHelmSettings',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  getOrCreateTeamCoachHelmSettingsImpl,
+);
+export async function getOrCreateTeamCoachHelmSettings(
+  teamId: string,
+): Promise<{ success: boolean; settings?: TeamCoachHelmSettings; error?: string }> {
+  return observedGetOrCreateTeamCoachHelmSettings(teamId);
+}
+
+async function updateTeamCoachHelmSettingsImpl(
   teamId: string,
   patch: TeamCoachHelmSettingsPatch,
 ): Promise<{ success: boolean; settings?: TeamCoachHelmSettings; error?: string }> {
@@ -4059,4 +4392,16 @@ export async function updateTeamCoachHelmSettings(
   revalidatePath('/golf/dashboard/intelligence');
 
   return { success: true, settings: updated as TeamCoachHelmSettings };
+}
+
+const observedUpdateTeamCoachHelmSettings = withAdminObserved(
+  'updateTeamCoachHelmSettings',
+  { sport: 'golf', feature: 'coachhelm_ai_engine' },
+  updateTeamCoachHelmSettingsImpl,
+);
+export async function updateTeamCoachHelmSettings(
+  teamId: string,
+  patch: TeamCoachHelmSettingsPatch,
+): Promise<{ success: boolean; settings?: TeamCoachHelmSettings; error?: string }> {
+  return observedUpdateTeamCoachHelmSettings(teamId, patch);
 }

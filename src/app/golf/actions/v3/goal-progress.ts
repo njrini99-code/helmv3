@@ -45,6 +45,7 @@ import {
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { MetricDirection, MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface GoalProgressSummary {
   /** Active goals examined. */
@@ -144,7 +145,7 @@ async function evaluatePlayerGoals(
  * Evaluate + persist progress for every active goal of one player. Returns a
  * small summary (counts only) so callers can log/celebrate without re-querying.
  */
-export async function evaluateAndPersistGoals(playerId: string): Promise<GoalProgressSummary> {
+async function evaluateAndPersistGoalsImpl(playerId: string): Promise<GoalProgressSummary> {
   if (!playerId) return { evaluated: 0, updated: 0, achieved: 0 };
 
   const [goals, standing] = await Promise.all([
@@ -163,6 +164,16 @@ export async function evaluateAndPersistGoals(playerId: string): Promise<GoalPro
   return { evaluated: goals.length, updated, achieved };
 }
 
+const observedEvaluateAndPersistGoals = withAdminObserved(
+  'evaluateAndPersistGoals',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  evaluateAndPersistGoalsImpl,
+);
+
+export async function evaluateAndPersistGoals(playerId: string): Promise<GoalProgressSummary> {
+  return observedEvaluateAndPersistGoals(playerId);
+}
+
 export interface BatchGoalProgressSummary extends GoalProgressSummary {
   /** Distinct players that had ≥1 active goal evaluated this pass. */
   players_with_goals: number;
@@ -176,7 +187,7 @@ export interface BatchGoalProgressSummary extends GoalProgressSummary {
  * moves even if nobody opens the app) and the coach development page (so the
  * coach sees fresh progress, not stale-since-the-player-last-looked).
  */
-export async function runGoalProgressForPlayers(
+async function runGoalProgressForPlayersImpl(
   playerIds: string[],
 ): Promise<BatchGoalProgressSummary> {
   const empty: BatchGoalProgressSummary = {
@@ -225,4 +236,14 @@ export async function runGoalProgressForPlayers(
     achieved,
     players_with_goals: goalsByPlayer.size,
   };
+}
+
+const observedRunGoalProgressForPlayers = withAdminObserved(
+  'runGoalProgressForPlayers',
+  { sport: 'golf', feature: 'coachhelm_v3_goals' },
+  runGoalProgressForPlayersImpl,
+);
+
+export async function runGoalProgressForPlayers(playerIds: string[]): Promise<BatchGoalProgressSummary> {
+  return observedRunGoalProgressForPlayers(playerIds);
 }

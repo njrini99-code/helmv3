@@ -22,6 +22,7 @@ import { composeHeroNarrative } from '@/lib/coachhelm/v3/llm/hero-narrative';
 import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
 import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
 import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface LlmRoundReviewActionResult {
   ok: boolean;
@@ -38,7 +39,7 @@ export interface LlmRoundReviewActionResult {
  * Auth: caller must be the player who owns the round, or a coach of
  * the player's team. RLS on golf_rounds enforces this independently.
  */
-export async function generateLlmRoundReview(
+async function generateLlmRoundReviewImpl(
   roundId: string,
   fallback_summary: string,
 ): Promise<LlmRoundReviewActionResult> {
@@ -138,6 +139,16 @@ export async function generateLlmRoundReview(
   }
 }
 
+const observedGenerateLlmRoundReview = withAdminObserved(
+  'generateLlmRoundReview',
+  { sport: 'golf', feature: 'round_review_ai' },
+  generateLlmRoundReviewImpl,
+);
+
+export async function generateLlmRoundReview(roundId: string, fallback_summary: string): Promise<LlmRoundReviewActionResult> {
+  return observedGenerateLlmRoundReview(roundId, fallback_summary);
+}
+
 // ---------------------------------------------------------------------------
 // W31 — Hero narrative for the player dashboard
 // ---------------------------------------------------------------------------
@@ -163,7 +174,7 @@ export interface LlmHeroNarrativeActionResult {
   error?: string;
 }
 
-export async function generateHeroNarrative(
+async function generateHeroNarrativeImpl(
   input: HeroNarrativeInput,
 ): Promise<LlmHeroNarrativeActionResult> {
   try {
@@ -233,6 +244,16 @@ export async function generateHeroNarrative(
     );
     return { ok: false, error: 'Internal error' };
   }
+}
+
+const observedGenerateHeroNarrative = withAdminObserved(
+  'generateHeroNarrative',
+  { sport: 'golf', feature: 'round_review_ai' },
+  generateHeroNarrativeImpl,
+);
+
+export async function generateHeroNarrative(input: HeroNarrativeInput): Promise<LlmHeroNarrativeActionResult> {
+  return observedGenerateHeroNarrative(input);
 }
 
 // ---------------------------------------------------------------------------

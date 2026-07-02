@@ -1,0 +1,232 @@
+import { describe, it, expect } from 'vitest';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { scanActionFile } from './coverage-scanner';
+import { assertAreaFullyWrapped } from './coverage-contract.shared';
+
+describe('coverage-scanner', () => {
+  it('parses golf.ts and finds savePartialRound wrapped with feature round_tracking', () => {
+    const scanned = scanActionFile(join(process.cwd(), 'src/app/golf/actions/golf.ts'));
+    expect(scanned.exports).toContain('savePartialRound');
+    expect(scanned.exports).toContain('invitePlayerToTeam');
+    expect(scanned.wrapped.get('savePartialRound')).toEqual({ feature: 'round_tracking' });
+    // invitePlayerToTeam is now wrapped (roster_management, W15 Batch 5) —
+    // proves the scanner distinguishes wrapped from unwrapped exports within
+    // the same file. golf.ts's LAST 4 exports (getPlayerSavedCourses et al.)
+    // landed in Batch 6, so as of B6 the whole file is fully wrapped.
+    expect(scanned.wrapped.get('invitePlayerToTeam')).toEqual({ feature: 'roster_management' });
+    expect(scanned.wrapped.get('getPlayerSavedCourses')).toEqual({ feature: 'course_library' });
+  });
+
+  it('exports list matches a fresh regex scan (sanity: scanner is not hard-coded)', () => {
+    // alerts.ts served as this scanner's stable fully-unwrapped fixture
+    // through W15 Batch 6, then got wrapped itself in Batch 7 (alerts_system)
+    // — by Task 16a every real golf action file is fully wrapped, so this
+    // sanity check now uses a synthetic fixture that can never legitimately
+    // get wrapped (see fixtures/unwrapped-actions.fixture.ts for the handoff
+    // history: round-drafts.ts → course-library.ts → alerts.ts → fixture).
+    const scanned = scanActionFile(
+      join(process.cwd(), 'src/lib/admin/__tests__/fixtures/unwrapped-actions.fixture.ts'),
+    );
+    expect(scanned.exports.sort()).toEqual(
+      ['unwrappedFixtureFnOne', 'unwrappedFixtureFnTwo'].sort(),
+    );
+    expect(scanned.wrapped.size).toBe(0);
+  });
+
+  it('flags a wrap whose export never calls the observed const (audit N4 — dead wrapper)', () => {
+    // See fixtures/broken-delegation.fixture.ts: `withAdminObserved` textually
+    // co-occurs with the export name (the pre-hardening scanner's only
+    // check), but the export body calls the Impl directly instead of the
+    // observed const, so the registration is dead code that would silently
+    // never log. `wrapped` still records the (name, feature) pair — the new
+    // `undelegatedWraps` set is what surfaces the gap.
+    const scanned = scanActionFile(
+      join(process.cwd(), 'src/lib/admin/__tests__/fixtures/broken-delegation.fixture.ts'),
+    );
+    expect(scanned.exports).toEqual(['brokenDelegationFn']);
+    expect(scanned.wrapped.get('brokenDelegationFn')).toEqual({ feature: 'admin_dashboard' });
+    expect(scanned.undelegatedWraps.has('brokenDelegationFn')).toBe(true);
+  });
+});
+
+describe('assertAreaFullyWrapped — self-test (proves the harness detects gaps)', () => {
+  it('does NOT throw for golf.ts — fully wrapped as of Batch 6', () => {
+    // Batch 1 (round_tracking/qualifiers/my_qualifiers, 13 exports incl. the
+    // pre-existing savePartialRound exemplar) + Batch 2 (calendar_events/
+    // notifications, 18 exports) + Batch 4 (createAnnouncement) + Batch 5
+    // (roster_management: invitePlayerToTeam, updatePlayerStatus,
+    // getPendingInvitations) + Batch 6 (course_library: getPlayerSavedCourses,
+    // savePlayerCourse, touchSavedCourse, getRecentCoursesForPlayer) cover all
+    // 39 golf.ts exports — no exclusions needed anymore.
+    expect(() =>
+      assertAreaFullyWrapped(['src/app/golf/actions/golf.ts']),
+    ).not.toThrow();
+  });
+
+  it('THROWS listing every unwrapped export in the synthetic fixture (W15 Task 16a)', () => {
+    // See fixtures/unwrapped-actions.fixture.ts — a permanently-unwrapped
+    // stand-in now that every real golf action file (alerts.ts included,
+    // as of Batch 7) is fully wrapped.
+    let thrown: Error | null = null;
+    try {
+      assertAreaFullyWrapped(['src/lib/admin/__tests__/fixtures/unwrapped-actions.fixture.ts']);
+    } catch (err) {
+      thrown = err instanceof Error ? err : new Error(String(err));
+    }
+    expect(thrown).not.toBeNull();
+    const message = thrown?.message ?? '';
+    expect(message).toContain('unwrappedFixtureFnOne');
+    expect(message).toContain('unwrappedFixtureFnTwo');
+    expect(message).toContain('2 coverage gap(s)');
+  });
+
+  it('throws when an export is not wrapped', () => {
+    // The synthetic fixture is entirely unwrapped by design — asserting it
+    // proves the harness surfaces a gap rather than a false pass.
+    expect(() =>
+      assertAreaFullyWrapped(['src/lib/admin/__tests__/fixtures/unwrapped-actions.fixture.ts']),
+    ).toThrow(/NOT wrapped with withAdminObserved/);
+  });
+
+  it('THROWS for a wrap whose export never calls the observed const (audit N4)', () => {
+    // See fixtures/broken-delegation.fixture.ts — proves the delegation
+    // check is wired into the actual gap-reporting path, not just exposed
+    // as an unused field on ScannedFile.
+    expect(() =>
+      assertAreaFullyWrapped(['src/lib/admin/__tests__/fixtures/broken-delegation.fixture.ts']),
+    ).toThrow(/dead wrapper/);
+  });
+});
+
+// Flipped ON in W15 Task 16a: every non-CRM 'use server' action file under
+// src/app/golf/actions/** (minus the spec §1.3 exclusion manifest) + the 10
+// golf exports of src/app/actions/messages.ts + src/app/admin/actions/
+// triage.ts is fully wrapped with a valid FeatureKey. This is a permanent
+// invariant, not a one-time batch check — the file list below is DISCOVERED
+// by walking the directory tree (not hard-coded), so a future PR that adds a
+// new action file to src/app/golf/actions/** without wrapping it fails this
+// test automatically, with no manual list maintenance required.
+
+// spec §1.3 "Also not wrapped" manifest — files that are NOT action
+// boundaries (helpers/types/re-export shims) and are therefore excluded from
+// the coverage math by design, not by omission.
+const NOT_ACTION_BOUNDARY_FILES = new Set<string>([
+  'src/app/golf/actions/messages.ts', // re-export shim, no 'use server' logic
+  'src/app/golf/actions/insight-delivery-ranking.ts',
+  'src/app/golf/actions/team-category-insights-helpers.ts',
+  'src/app/golf/actions/player-fingerprint-types.ts',
+  'src/app/golf/actions/stats-data-types.ts',
+  'src/app/golf/actions/stats-leak-maps-types.ts',
+  'src/app/golf/actions/recruit-documents-categories.ts',
+  'src/app/golf/actions/team-switcher.constants.ts',
+  'src/app/golf/actions/admin/rollup-a.ts',
+  'src/app/golf/actions/admin/rollup-b.ts',
+  'src/app/golf/actions/admin/rollup-c.shared.ts',
+]);
+
+// spec §1.3 CRM exclusion — owner directive: never touch CRM. Filename
+// exclusion `crm-*.ts` PLUS the one CRM-adjacent file that misses the
+// filename rule.
+const CRM_PREFIX_RE = /^crm-/;
+const CRM_ADJACENT_FILES = new Set<string>(['src/app/golf/actions/resend-activity.ts']);
+
+/**
+ * Discover every non-CRM, non-excluded `'use server'` action file under
+ * `src/app/golf/actions/**` (recursing, skipping `__tests__`). A file only
+ * needs to be added to `NOT_ACTION_BOUNDARY_FILES` above if it is a helper/
+ * types/shim file that happens to live in this directory — genuine new
+ * action files are picked up automatically and must be wrapped or this
+ * test fails.
+ */
+function discoverGolfActionFiles(): string[] {
+  const root = process.cwd();
+  const actionsDir = join(root, 'src/app/golf/actions');
+  const found: string[] = [];
+
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      if (entry === '__tests__') continue;
+      const abs = join(dir, entry);
+      const st = statSync(abs);
+      if (st.isDirectory()) {
+        walk(abs);
+        continue;
+      }
+      if (!entry.endsWith('.ts') || entry.endsWith('.d.ts')) continue;
+
+      const rel = relative(root, abs).split('\\').join('/');
+      if (CRM_PREFIX_RE.test(entry)) continue;
+      if (CRM_ADJACENT_FILES.has(rel)) continue;
+      if (NOT_ACTION_BOUNDARY_FILES.has(rel)) continue;
+
+      const source = readFileSync(abs, 'utf8');
+      if (!source.includes("'use server'") && !source.includes('"use server"')) continue;
+
+      found.push(rel);
+    }
+  };
+
+  walk(actionsDir);
+  return found.sort();
+}
+
+// The 10 golf-named exports of src/app/actions/messages.ts (spec §2.1) — the
+// generic sport-branching exports (sendMessage, createConversation, etc.)
+// and every `*Baseball*` export in that file stay UNTOUCHED (baseball hold)
+// and must be excluded here so this test does not demand they be wrapped.
+const MESSAGES_TS_NON_GOLF_EXPORTS = [
+  'sendMessage',
+  'createConversation',
+  'markMessagesAsRead',
+  'sendBaseballMessage',
+  'createBaseballConversation',
+  'markBaseballMessagesAsRead',
+  'updateMessage',
+  'deleteMessage',
+  'updateBaseballMessage',
+  'deleteBaseballMessage',
+];
+
+describe('global tripwire', () => {
+  it('every non-CRM golf action export is wrapped with a valid FeatureKey (W15 Task 16)', () => {
+    const golfActionFiles = discoverGolfActionFiles();
+
+    // Sanity floor: fails loudly if directory discovery breaks (e.g. someone
+    // reorganizes src/app/golf/actions/** so the walk finds nothing) rather
+    // than silently passing an empty-file no-op.
+    expect(golfActionFiles.length).toBeGreaterThanOrEqual(76);
+
+    expect(() =>
+      assertAreaFullyWrapped([
+        ...golfActionFiles,
+        'src/app/admin/actions/triage.ts',
+      ]),
+    ).not.toThrow();
+
+    expect(() =>
+      assertAreaFullyWrapped(['src/app/actions/messages.ts'], {
+        exclude: { 'src/app/actions/messages.ts': MESSAGES_TS_NON_GOLF_EXPORTS },
+      }),
+    ).not.toThrow();
+  });
+
+  it('total wrapped-and-valid action count across the discovered area is exactly 424', () => {
+    const golfActionFiles = discoverGolfActionFiles();
+    let total = 0;
+
+    for (const relFile of [...golfActionFiles, 'src/app/admin/actions/triage.ts']) {
+      const scanned = scanActionFile(join(process.cwd(), relFile));
+      total += scanned.exports.length;
+    }
+
+    const messagesScanned = scanActionFile(join(process.cwd(), 'src/app/actions/messages.ts'));
+    const golfMessageExports = messagesScanned.exports.filter(
+      (name) => !MESSAGES_TS_NON_GOLF_EXPORTS.includes(name),
+    );
+    total += golfMessageExports.length;
+
+    expect(golfMessageExports.length).toBe(10);
+    expect(total).toBe(424);
+  });
+});

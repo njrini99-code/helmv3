@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================
 // TYPES
@@ -80,7 +81,7 @@ function emptyPeopleTabData(): PeopleTabData {
 // MAIN FETCH
 // ============================================
 
-export async function getPeopleTabData(): Promise<PeopleTabData> {
+async function getPeopleTabDataImpl(): Promise<PeopleTabData> {
   const supabase = await createClient();
 
   // Auth check
@@ -188,4 +189,21 @@ export async function getPeopleTabData(): Promise<PeopleTabData> {
     await logServerError(`[admin-people-data] Failed to fetch people tab data: ${error instanceof Error ? error.message : String(error)}`, { action: 'admin_people_data.getPeopleTabData' });
     return emptyPeopleTabData();
   }
+}
+
+/**
+ * Observed wrapper — logging never alters behavior (see observed-action
+ * tests). `'use server'` requires exported server actions to be async
+ * function declarations (const-export form breaks Next's build), so the
+ * wrapped closure is built once at module scope and the export just
+ * delegates to it.
+ */
+const observedGetPeopleTabData = withAdminObserved(
+  'getPeopleTabData',
+  { sport: 'shared', feature: 'admin_dashboard' },
+  getPeopleTabDataImpl,
+);
+
+export async function getPeopleTabData(): Promise<PeopleTabData> {
+  return observedGetPeopleTabData();
 }

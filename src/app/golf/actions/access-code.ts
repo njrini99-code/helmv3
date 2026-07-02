@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 /**
  * Validates the code entered at the signup gate.
@@ -17,7 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
  * accepted charset in sync with the signup input's `pattern` in
  * golf/(auth)/signup/page.tsx.
  */
-export async function validateAccessCode(code: string): Promise<boolean> {
+async function validateAccessCodeImpl(code: string): Promise<boolean> {
   const candidate = code.trim();
   if (!candidate) return false; // never let a blank code authorize signup
 
@@ -28,6 +29,16 @@ export async function validateAccessCode(code: string): Promise<boolean> {
 
   // Otherwise accept a real team join code so coach-invited players get in.
   return isValidTeamJoinCode(candidate);
+}
+
+const observedValidateAccessCode = withAdminObserved(
+  'validateAccessCode',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  validateAccessCodeImpl,
+);
+
+export async function validateAccessCode(code: string): Promise<boolean> {
+  return observedValidateAccessCode(code);
 }
 
 /**

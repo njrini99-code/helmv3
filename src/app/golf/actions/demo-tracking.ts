@@ -11,6 +11,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 export interface DemoSession {
   id: string;
@@ -33,7 +34,7 @@ export interface GetDemoSessionsResult {
  * Return the most-recent demo session rows (limit 200), ordered newest first.
  * Throws 'Forbidden' if the caller is not an admin.
  */
-export async function getDemoSessions(): Promise<GetDemoSessionsResult> {
+async function getDemoSessionsImpl(): Promise<GetDemoSessionsResult> {
   // 1. Verify caller is authenticated and has admin role
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -66,4 +67,14 @@ export async function getDemoSessions(): Promise<GetDemoSessionsResult> {
     sessions: (data ?? []) as DemoSession[],
     total: count ?? 0,
   };
+}
+
+const observedGetDemoSessions = withAdminObserved(
+  'getDemoSessions',
+  { sport: 'golf', feature: 'auth_onboarding' },
+  getDemoSessionsImpl,
+);
+
+export async function getDemoSessions(): Promise<GetDemoSessionsResult> {
+  return observedGetDemoSessions();
 }

@@ -20,6 +20,7 @@ import {
 } from '@/app/golf/actions/insight-delivery';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -207,7 +208,7 @@ async function resolveTeamForPlayer(
 // Player stats intelligence
 // ---------------------------------------------------------------------------
 
-export async function getPlayerStatsIntelligence(
+async function getPlayerStatsIntelligenceImpl(
   playerId: string,
 ): Promise<{ success: boolean; data?: PlayerStatsIntelligence; error?: string }> {
   try {
@@ -294,11 +295,23 @@ export async function getPlayerStatsIntelligence(
   }
 }
 
+const observedGetPlayerStatsIntelligence = withAdminObserved(
+  'getPlayerStatsIntelligence',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getPlayerStatsIntelligenceImpl,
+);
+
+export async function getPlayerStatsIntelligence(
+  playerId: string,
+): Promise<{ success: boolean; data?: PlayerStatsIntelligence; error?: string }> {
+  return observedGetPlayerStatsIntelligence(playerId);
+}
+
 // ---------------------------------------------------------------------------
 // Team stats intelligence — one row per active roster player.
 // ---------------------------------------------------------------------------
 
-export async function getTeamStatsIntelligence(
+async function getTeamStatsIntelligenceImpl(
   teamIdArg?: string,
 ): Promise<{ success: boolean; data?: TeamStatsIntelligence; error?: string }> {
   try {
@@ -387,4 +400,16 @@ export async function getTeamStatsIntelligence(
     await logServerError(message, { action: 'getTeamStatsIntelligence' }, 'error');
     return { success: false, error: message };
   }
+}
+
+const observedGetTeamStatsIntelligence = withAdminObserved(
+  'getTeamStatsIntelligence',
+  { sport: 'golf', feature: 'stats_analytics' },
+  getTeamStatsIntelligenceImpl,
+);
+
+export async function getTeamStatsIntelligence(
+  teamIdArg?: string,
+): Promise<{ success: boolean; data?: TeamStatsIntelligence; error?: string }> {
+  return observedGetTeamStatsIntelligence(teamIdArg);
 }

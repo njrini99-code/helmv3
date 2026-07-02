@@ -5,6 +5,7 @@ import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -48,7 +49,7 @@ async function getCoachTeamId(
  * - Coach must have a team
  * - Player must be on coach's team
  */
-export async function removePlayerFromTeam(playerId: string): Promise<RosterActionResult> {
+async function removePlayerFromTeamImpl(playerId: string): Promise<RosterActionResult> {
   const supabase = await createClient();
 
   // 1. Verify user is authenticated
@@ -106,6 +107,16 @@ export async function removePlayerFromTeam(playerId: string): Promise<RosterActi
   return { success: true };
 }
 
+const observedRemovePlayerFromTeam = withAdminObserved(
+  'removePlayerFromTeam',
+  { sport: 'golf', feature: 'roster_management' },
+  removePlayerFromTeamImpl,
+);
+
+export async function removePlayerFromTeam(playerId: string): Promise<RosterActionResult> {
+  return observedRemovePlayerFromTeam(playerId);
+}
+
 /**
  * Get all players on the coach's team
  *
@@ -113,7 +124,7 @@ export async function removePlayerFromTeam(playerId: string): Promise<RosterActi
  * - Must be authenticated
  * - Must be a coach with a team
  */
-export async function getTeamPlayers(): Promise<{
+async function getTeamPlayersImpl(): Promise<{
   success: boolean;
   data?: Array<{
     id: string;
@@ -186,6 +197,28 @@ export async function getTeamPlayers(): Promise<{
   }));
 
   return { success: true, data: result };
+}
+
+const observedGetTeamPlayers = withAdminObserved(
+  'getTeamPlayers',
+  { sport: 'golf', feature: 'roster_management' },
+  getTeamPlayersImpl,
+);
+
+export async function getTeamPlayers(): Promise<{
+  success: boolean;
+  data?: Array<{
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    status: string | null;
+    handicap: number | null;
+    avatar_url: string | null;
+  }>;
+  error?: string;
+}> {
+  return observedGetTeamPlayers();
 }
 
 // NOTE: updatePlayerStatus is in golf.ts

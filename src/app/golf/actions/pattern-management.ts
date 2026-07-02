@@ -19,6 +19,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // OWNERSHIP HELPER
@@ -234,7 +235,7 @@ function transformPatternRow(
 // GET TEAM PATTERNS
 // ============================================================================
 
-export async function getTeamPatterns(
+async function getTeamPatternsImpl(
   filters?: PatternFilters
 ): Promise<{
   success: boolean;
@@ -418,6 +419,26 @@ export async function getTeamPatterns(
   }
 }
 
+const observedGetTeamPatterns = withAdminObserved(
+  'getTeamPatterns',
+  { sport: 'golf', feature: 'patterns_dashboard' },
+  getTeamPatternsImpl,
+);
+export async function getTeamPatterns(
+  filters?: PatternFilters
+): Promise<{
+  success: boolean;
+  patterns?: ExtendedPattern[];
+  error?: string;
+  counts?: {
+    returned: number;
+    contextualHidden: number;
+    capped: boolean;
+  };
+}> {
+  return observedGetTeamPatterns(filters);
+}
+
 // ============================================================================
 // GET PLAYER PATTERNS (WITH EXTENDED DATA) — REMOVED 2026-04-27
 // ============================================================================
@@ -430,7 +451,7 @@ export async function getTeamPatterns(
 // VALIDATE PATTERN
 // ============================================================================
 
-export async function validatePattern(
+async function validatePatternImpl(
   patternId: string,
   validation: PatternValidation
 ): Promise<{ success: boolean; error?: string }> {
@@ -512,11 +533,23 @@ export async function validatePattern(
   }
 }
 
+const observedValidatePattern = withAdminObserved(
+  'validatePattern',
+  { sport: 'golf', feature: 'patterns_dashboard' },
+  validatePatternImpl,
+);
+export async function validatePattern(
+  patternId: string,
+  validation: PatternValidation
+): Promise<{ success: boolean; error?: string }> {
+  return observedValidatePattern(patternId, validation);
+}
+
 // ============================================================================
 // DISMISS PATTERN
 // ============================================================================
 
-export async function dismissPattern(
+async function dismissPatternImpl(
   patternId: string,
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -566,11 +599,23 @@ export async function dismissPattern(
   }
 }
 
+const observedDismissPattern = withAdminObserved(
+  'dismissPattern',
+  { sport: 'golf', feature: 'patterns_dashboard' },
+  dismissPatternImpl,
+);
+export async function dismissPattern(
+  patternId: string,
+  reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedDismissPattern(patternId, reason);
+}
+
 // ============================================================================
 // MARK PATTERN AS ADDRESSED
 // ============================================================================
 
-export async function markPatternAddressed(
+async function markPatternAddressedImpl(
   patternId: string,
   notes?: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -626,11 +671,23 @@ export async function markPatternAddressed(
   }
 }
 
+const observedMarkPatternAddressed = withAdminObserved(
+  'markPatternAddressed',
+  { sport: 'golf', feature: 'patterns_dashboard' },
+  markPatternAddressedImpl,
+);
+export async function markPatternAddressed(
+  patternId: string,
+  notes?: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedMarkPatternAddressed(patternId, notes);
+}
+
 // ============================================================================
 // RESOLVE PATTERN
 // ============================================================================
 
-export async function resolvePattern(
+async function resolvePatternImpl(
   patternId: string,
   notes?: string
 ): Promise<{ success: boolean; error?: string }> {
@@ -687,6 +744,18 @@ export async function resolvePattern(
   }
 }
 
+const observedResolvePattern = withAdminObserved(
+  'resolvePattern',
+  { sport: 'golf', feature: 'patterns_dashboard' },
+  resolvePatternImpl,
+);
+export async function resolvePattern(
+  patternId: string,
+  notes?: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedResolvePattern(patternId, notes);
+}
+
 // ============================================================================
 // REOPEN PATTERN (undo for dismiss / address / resolve)
 // ============================================================================
@@ -700,7 +769,7 @@ export async function resolvePattern(
  * clears the dismiss/resolve stamps. Same auth + ownership boundary as the
  * forward actions. Additive — no existing action's contract changes.
  */
-export async function reopenPattern(
+async function reopenPatternImpl(
   patternId: string,
   priorLifecycleState?: 'detected' | 'confirmed' | 'addressed',
 ): Promise<{ success: boolean; error?: string }> {
@@ -751,6 +820,18 @@ export async function reopenPattern(
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedReopenPattern = withAdminObserved(
+  'reopenPattern',
+  { sport: 'golf', feature: 'patterns_dashboard' },
+  reopenPatternImpl,
+);
+export async function reopenPattern(
+  patternId: string,
+  priorLifecycleState?: 'detected' | 'confirmed' | 'addressed',
+): Promise<{ success: boolean; error?: string }> {
+  return observedReopenPattern(patternId, priorLifecycleState);
 }
 
 // ============================================================================
@@ -855,7 +936,7 @@ async function createFocusAreaFromPatternInternal(
 // GET PATTERN STATS
 // ============================================================================
 
-export async function getPatternStats(): Promise<{
+async function getPatternStatsImpl(): Promise<{
   success: boolean;
   stats?: {
     total: number;
@@ -1013,4 +1094,31 @@ export async function getPatternStats(): Promise<{
     });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedGetPatternStats = withAdminObserved(
+  'getPatternStats',
+  { sport: 'golf', feature: 'patterns_dashboard' },
+  getPatternStatsImpl,
+);
+export async function getPatternStats(): Promise<{
+  success: boolean;
+  stats?: {
+    total: number;
+    detected: number;
+    confirmed: number;
+    addressed: number;
+    resolved: number;
+    dismissed: number;
+    byPlayer: Array<{
+      playerId: string;
+      playerName: string;
+      count: number;
+    }>;
+    byType: Record<string, number>;
+    bySeverity: Record<PatternSeverity, number>;
+  };
+  error?: string;
+}> {
+  return observedGetPatternStats();
 }

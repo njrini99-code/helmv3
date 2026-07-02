@@ -21,6 +21,7 @@ import {
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { logServerError } from '@/lib/server-error-logger';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -50,7 +51,7 @@ export interface PlayerProfileStatsResponse {
  * Get comprehensive stats for a player's profile page
  * Supports filtering by specific round or overall (all rounds)
  */
-export async function getPlayerProfileStats(
+async function getPlayerProfileStatsImpl(
   playerId: string,
   roundId: string | 'overall' = 'overall'
 ): Promise<PlayerProfileStatsResponse> {
@@ -139,7 +140,7 @@ export async function getPlayerProfileStats(
       .order('hole_number')
       .order('shot_number')
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_shots', action: 'getPlayerProfileStats', feature: 'my_game_profile', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     if (shotsError) {
       await logServerError(`[getPlayerProfileStats] Error fetching shots: ${shotsError instanceof Error ? shotsError.message : String(shotsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
@@ -164,7 +165,7 @@ export async function getPlayerProfileStats(
       .select('round_id, hole_number, par, yardage, gir, score, putts, fairway_hit, sand_save')
       .in('round_id', roundIdsToFetch)
       .order('id', { ascending: true })
-      .range(from, to)); // paginate past PostgREST 1000-row cap
+      .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerProfileStats', feature: 'my_game_profile', sport: 'golf' }); // paginate past PostgREST 1000-row cap
 
     // 5. Build data structures for calculator
     const selectedRounds = roundId === 'overall'
@@ -275,6 +276,19 @@ export async function getPlayerProfileStats(
   }
 }
 
+const observedGetPlayerProfileStats = withAdminObserved(
+  'getPlayerProfileStats',
+  { sport: 'golf', feature: 'my_game_profile' },
+  getPlayerProfileStatsImpl,
+);
+
+export async function getPlayerProfileStats(
+  playerId: string,
+  roundId: string | 'overall' = 'overall'
+): Promise<PlayerProfileStatsResponse> {
+  return observedGetPlayerProfileStats(playerId, roundId);
+}
+
 // ============================================================================
 // FAST SUMMARY - For initial page load (no shots needed)
 // ============================================================================
@@ -298,7 +312,7 @@ export interface QuickSummary {
  * Get lightweight summary stats without shot data
  * Uses aggregated data from rounds table - much faster
  */
-export async function getPlayerQuickSummary(playerId: string): Promise<QuickSummaryResponse> {
+async function getPlayerQuickSummaryImpl(playerId: string): Promise<QuickSummaryResponse> {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
@@ -413,4 +427,14 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
       fairwayPercentage: totalFairwayOpps > 0 ? Math.round((totalFairwaysHit / totalFairwayOpps) * 100 * 10) / 10 : null,
     },
   };
+}
+
+const observedGetPlayerQuickSummary = withAdminObserved(
+  'getPlayerQuickSummary',
+  { sport: 'golf', feature: 'my_game_profile' },
+  getPlayerQuickSummaryImpl,
+);
+
+export async function getPlayerQuickSummary(playerId: string): Promise<QuickSummaryResponse> {
+  return observedGetPlayerQuickSummary(playerId);
 }

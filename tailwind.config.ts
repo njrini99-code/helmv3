@@ -69,6 +69,8 @@ const config: Config = {
         'fw-warning-bg':  'var(--fw-color-warning-bg)',
         'fw-danger':      'var(--fw-color-danger)',
         'fw-danger-bg':   'var(--fw-color-danger-bg)',
+        // Helm Bridge sport inks (W4) — baseball clay, beside the fw-* trio.
+        'team-baseball':  'var(--fw-color-team-baseball)',
         // Dark chrome (sidebar) aliases
         'nav-bg':       'var(--fw-color-nav-bg)',
         'nav-surface':  'var(--fw-color-nav-surface)',
