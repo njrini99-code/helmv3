@@ -111,8 +111,19 @@ Running record of what was actually applied per wave, plus any deviations from t
 
 ## W9 — Baseball Tab — SKIPPED (baseball hold; build when prod stabilizes)
 
-## W10 — Users & Teams + Drill-downs + Read-Only Impersonation (no migration)
-**Status:** in progress (Sonnet).
+## W10 — Users & Teams + Drill-downs + Read-Only Impersonation (no migration) — DONE
+- Commits `40818e06e` (data/users.ts), `f5dc8d9a4` (view-as core), `9e21cc682` (pages). 7 new tests; typecheck exit 0; gate-coverage passes; 0 new warnings in new files.
+- Read-only impersonation SAFE: HMAC marker cookie (not a session), service-role read-only render, zero write buttons except Exit, 15min TTL, enter+exit both audit_log'd + logSecurityEvent, fail-soft (disabled w/o ADMIN_IMPERSONATION_SECRET), sticky InlineNotice banner.
+- Plan bugs FIXED: (1) view-as token base64 made the tamper test a no-op → switched to plaintext userId.expiresMs.hmac (real HMAC tamper-evidence); (2) Teams table hard-coded playerCount:0/dormant for every team (false alarm) → real counts/activity/7d-errors.
+- Schema corrections (vs database.ts): baseball_team_members.player_id (no user_id); golf_players no team_id (→ golf_team_members.player_id + golf_team_coach_staff); golf_rounds.player_id→golf_players.id; helm_lifting_sessions.athlete_id→helm_lifting_athletes; baseball_games no per-athlete attribution.
+- CRM severed to a plain `Open in CRM →` link (no BulkEmailModal). Owner env (fail-soft): ADMIN_IMPERSONATION_SECRET (32+ char).
+- ★ Confirms the ratchet +10 drift is pre-existing (from W5/W6 bg-white) — FINAL POLISH SWEEP owns it.
+
+## W11 — Jobs & Integrity (migration applied ahead; code pending) + a REAL security fix
+- Migration `20260701150000_run_integrity_checks_rpc.sql` applied to prod (SECURITY DEFINER, service_role-only, STATIC SQL no injection surface; 4 checks: orphaned members / stale stats-cache / bridge schema canaries / anon-grant drift). Verified it runs.
+- ★ **Integrity check immediately found a REAL prod security drift:** `anon_grant_drift` FAIL — `audit_log`, `background_job_logs`, `error_logs`, `login_attempts` carried legacy anon table-grants (RLS-mitigated but latent). Verified each has RLS on + ZERO anon policies (safe to revoke; authenticated admin-read/self-insert policies kept).
+- **Fixed** via `20260702093000_revoke_anon_grant_drift_log_tables.sql` (applied to prod, ACL-asserted). Re-ran integrity → **0 failing checks, all 4 green.** The command center caught + closed real drift on day one.
+- W11 code (recordJobRun + cron-registry + wire 14 crons + integrity/retention cron routes + /admin/jobs tab) pending (dispatch after W10).
 
 ## W7 — Auth & Sign-ins (golf-scoped; baseball/lifting emitters DEFERRED) + migration
 - Task 1 migration `20260701140000_revoke_user_sessions_rpc.sql` applied to prod (SECURITY DEFINER, is_super_admin-gated, DELETEs auth.sessions + writes audit_log; anon denied, authenticated granted — asserted). Verified audit_log col types (record_id/user_id uuid, new_data jsonb) before apply.
