@@ -1,0 +1,63 @@
+# Entry World frames — cloud visual-proof capture (Fable review gate).
+#
+# Why this exists: the Entry World build runs browser-free on the local
+# machine (stability mandate), so rendered proof frames are captured HERE,
+# in CI, on every push to the integration branch. Fable downloads the
+# artifact and judges every frame against the IMMACULATE final gate
+# (docs/LANDING_ENTRY_WORLD_DESIGN.md, Amendment 2 §E) before anything
+# reaches Nick.
+name: Entry World frames
+
+on:
+  push:
+    branches: [chore/entry-world-integration]
+  workflow_dispatch:
+
+env:
+  # Same secretless-fallback pattern as playwright.yml — the landing/auth
+  # pages render without live Supabase data.
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy-ci-build.supabase.co' }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-anon-key-ci-build-only' }}
+  NEXT_PUBLIC_REDESIGN: 'true'
+  NODE_OPTIONS: --max-old-space-size=8192
+
+jobs:
+  frames:
+    name: Capture landing + auth frames
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Start server
+        run: |
+          npx next start -p 3000 &
+          npx wait-on -t 60000 http://localhost:3000
+
+      - name: Capture frames
+        run: node scripts/ci/capture-entry-world.mjs
+
+      - name: Upload frames artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: entry-world-frames-${{ github.sha }}
+          path: entry-world-frames/
+          retention-days: 7
