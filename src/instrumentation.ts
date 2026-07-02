@@ -87,6 +87,11 @@ export async function register() {
       release: release ?? 'none',
       hasDsn: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN),
     });
+
+    // Helm Bridge: record a deploy marker once per production sha (idempotent).
+    import('@/lib/admin/deploy-marker')
+      .then((m) => m.recordDeployMarker())
+      .catch(() => {});
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {
