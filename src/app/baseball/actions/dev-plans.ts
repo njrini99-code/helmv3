@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import type { Json } from '@/lib/types/database';
 import { logServerError } from '@/lib/server-error-logger';
 import { BaseballCapabilityError } from '@/lib/baseball/capabilities';
+import { isBaseballDemoCoachEmail } from '@/lib/demo/baseball-config.server';
 import {
   withBaseballAction,
   BaseballUnauthorizedError,
@@ -47,6 +48,9 @@ function mapDevPlanCoachError(error: unknown): never {
 export async function getPlayerDevPlans(playerId: string): Promise<DevelopmentalPlanWithGoals[]> {
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { data, error } = await supabase
     .from('baseball_developmental_plans')
     .select(`
@@ -61,11 +65,15 @@ export async function getPlayerDevPlans(playerId: string): Promise<Developmental
     throw error;
   }
 
-  // Parse the goals JSON field
-  return (data || []).map((plan) => ({
-    ...plan,
-    goals: parseGoals(plan.goals),
-  }));
+  // Parse the goals JSON field, lazily backfilling+persisting any missing
+  // `id` so a subsequent complete/uncomplete mutation resolves to the same
+  // id the UI was handed here (see parseGoalsAndPersistIds).
+  return Promise.all(
+    (data || []).map(async (plan) => ({
+      ...plan,
+      goals: await parseGoalsAndPersistIds(supabase, plan.id, plan.goals),
+    })),
+  );
 }
 
 /**
@@ -73,6 +81,9 @@ export async function getPlayerDevPlans(playerId: string): Promise<Developmental
  */
 export async function getActiveDevPlan(playerId: string): Promise<DevelopmentalPlanWithGoals | null> {
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await supabase
     .from('baseball_developmental_plans')
@@ -95,7 +106,7 @@ export async function getActiveDevPlan(playerId: string): Promise<DevelopmentalP
 
   return {
     ...row,
-    goals: parseGoals(row.goals),
+    goals: await parseGoalsAndPersistIds(supabase, row.id, row.goals),
   };
 }
 
@@ -121,7 +132,15 @@ export async function getDevPlanForCoach(planId: string): Promise<DevPlanWithPla
 
 const getDevPlanForCoachAction = withBaseballAction(
   'getDevPlanForCoach',
-  { featureArea: 'baseball-dev-plans', requiredCapability: 'can_manage_settings' },
+  {
+    featureArea: 'baseball-dev-plans',
+    requiredCapability: 'can_manage_settings',
+    // Read-only (a single .select().single(), no mutation) so it's safe for
+    // the shared BaseballHelm demo coach session — without this the demo
+    // coach gets BaseballDemoReadOnlyError on every /dev-plans/[id] detail
+    // page it can navigate to from the (unguarded) dev-plans list page.
+    demoSafe: true,
+  },
   async (ctx, planId: string): Promise<DevPlanWithPlayer> => {
     const supabase = await createClient();
     const coachId = ctx.activeCoachId;
@@ -152,9 +171,15 @@ const getDevPlanForCoachAction = withBaseballAction(
       throw new Error('You do not have permission to view this plan');
     }
 
+    // demoSafe means this action must never write — skip the id backfill
+    // persist for the shared demo coach session (it still gets stable,
+    // freshly-minted ids for the current read; they just aren't written
+    // back, matching the "no state visible to other visitors" guarantee).
+    const isDemo = isBaseballDemoCoachEmail(ctx.user.email);
+
     return {
       ...plan,
-      goals: parseGoals(plan.goals),
+      goals: await parseGoalsAndPersistIds(supabase, plan.id, plan.goals, { persist: !isDemo }),
     };
   },
 );
@@ -196,7 +221,7 @@ async function assertPlayerOwnsDevPlan(
     throw new Error('You do not have permission to update this plan');
   }
 
-  return { goals: parseGoals(plan.goals) };
+  return { goals: await parseGoalsAndPersistIds(supabase, planId, plan.goals) };
 }
 
 /**
@@ -368,7 +393,7 @@ const completeGoalAction = withBaseballAction(
       throw fetchError;
     }
 
-    const goals = parseGoals(plan.goals);
+    const goals = await parseGoalsAndPersistIds(supabase, planId, plan.goals);
     const goalIndex = goals.findIndex((g) => g.id === goalId);
     const currentGoal = goals[goalIndex];
 
@@ -447,7 +472,7 @@ const uncompleteGoalAction = withBaseballAction(
       throw fetchError;
     }
 
-    const goals = parseGoals(plan.goals);
+    const goals = await parseGoalsAndPersistIds(supabase, planId, plan.goals);
     const goalIndex = goals.findIndex((g) => g.id === goalId);
     const currentGoal = goals[goalIndex];
 
@@ -507,6 +532,71 @@ function parseGoals(goalsJson: Json | null): DevPlanGoal[] {
       }));
   }
   return [];
+}
+
+/**
+ * Parse a plan's `goals` JSONB column, lazily backfilling and PERSISTING any
+ * missing `id` so it survives round-trips.
+ *
+ * Root cause this fixes: before goal ids were persisted at creation time
+ * (see `CreateDevPlanModal.handleSubmit`), `goals` rows in the database were
+ * stored with no `id` field at all. `parseGoals()` alone mints a brand-new
+ * random id on *every* call — so a goal id captured by one read (e.g. the
+ * page render) never matches the id a later, independent read computes
+ * inside `completeGoalAction`/`uncompleteGoalAction`/`assertPlayerOwnsDevPlan`,
+ * and the mutation always throws "Goal not found" for any plan whose goals
+ * predate that fix.
+ *
+ * This backfills once per plan: the first read after this change generates
+ * stable ids for any goal missing one and writes the FULL parsed array back
+ * with a plain `.update()` on the existing row (never delete-then-insert —
+ * see the hard rule against destructive save paths). Every subsequent
+ * read/mutation then sees the same, already-persisted ids straight out of
+ * `parseGoals()`, so no further writes happen and the ids never change again.
+ *
+ * `persist: false` opts a caller out of the write (kept in-memory only) —
+ * used by `getDevPlanForCoachAction`, which is marked `demoSafe: true` for
+ * the shared BaseballHelm demo coach session and therefore must never
+ * perform a mutation a visitor could trigger.
+ */
+async function parseGoalsAndPersistIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  planId: string,
+  goalsJson: Json | null,
+  options: { persist?: boolean } = {},
+): Promise<DevPlanGoal[]> {
+  const { persist = true } = options;
+
+  if (!goalsJson || !Array.isArray(goalsJson)) {
+    return parseGoals(goalsJson);
+  }
+
+  const rawGoals = goalsJson.filter(
+    (g): g is Record<string, Json | undefined> =>
+      typeof g === 'object' && g !== null && !Array.isArray(g),
+  );
+  const hasMissingId = rawGoals.some((g) => !g.id);
+
+  const goals = parseGoals(goalsJson);
+
+  if (persist && hasMissingId && goals.length > 0) {
+    const { error: backfillError } = await supabase
+      .from('baseball_developmental_plans')
+      .update({ goals: goals as unknown as Json })
+      .eq('id', planId);
+
+    if (backfillError) {
+      await logServerError(
+        `Error backfilling goal ids: ${backfillError instanceof Error ? backfillError.message : String(backfillError)}`,
+        { action: 'dev_plans.parseGoalsAndPersistIds' },
+      );
+      // Non-fatal: the caller still gets goals with freshly-minted ids so
+      // the current request succeeds; the backfill is simply retried on the
+      // next read of this plan.
+    }
+  }
+
+  return goals;
 }
 
 function validateGoalStatus(status: unknown): GoalStatus {
