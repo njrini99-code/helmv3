@@ -112,23 +112,6 @@ export default async function TeamProfilePage({ params }: PageProps) {
       website_url: string | null;
       location_city: string | null;
       location_state: string | null;
-      organization_staff?: Array<{
-        id: string;
-        name: string;
-        title: string;
-        bio: string | null;
-        headshot_url: string | null;
-        is_public: boolean;
-        display_order: number;
-      }>;
-      organization_facilities?: Array<{
-        id: string;
-        name: string;
-        facility_type: string | null;
-        description: string | null;
-        image_url: string | null;
-        display_order: number;
-      }>;
     } | null;
   }
 
@@ -151,24 +134,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
         conference,
         website_url,
         location_city,
-        location_state,
-        organization_staff (
-          id,
-          name,
-          title,
-          bio,
-          headshot_url,
-          is_public,
-          display_order
-        ),
-        organization_facilities (
-          id,
-          name,
-          facility_type,
-          description,
-          image_url,
-          display_order
-        )
+        location_state
       )
     `)
     .eq('id', id)
@@ -182,22 +148,21 @@ export default async function TeamProfilePage({ params }: PageProps) {
   }
 
   // Type assertions for organization data
-  type OrgStaff = {
-    id: string;
-    name: string;
-    title: string;
-    bio: string | null;
-    headshot_url: string | null;
-    is_public: boolean;
-    display_order: number;
-  };
-
   type OrgFacility = {
     id: string;
     name: string;
     facility_type: string | null;
     description: string | null;
     image_url: string | null;
+    display_order: number;
+  };
+
+  type StaffMember = {
+    id: string;
+    name: string;
+    title: string;
+    bio: string | null;
+    headshot_url: string | null;
     display_order: number;
   };
 
@@ -211,8 +176,6 @@ export default async function TeamProfilePage({ params }: PageProps) {
     website_url: string | null;
     location_city: string | null;
     location_state: string | null;
-    organization_staff?: OrgStaff[];
-    organization_facilities?: OrgFacility[];
   }
 
   const org = team.organization as TeamOrganization | null;
@@ -291,14 +254,54 @@ export default async function TeamProfilePage({ params }: PageProps) {
       return firstA.localeCompare(firstB);
     });
 
-  // Get staff from organization
-  const staff = (org?.organization_staff || [])
-    .filter((s) => s.is_public)
-    .sort((a, b) => a.display_order - b.display_order);
+  // Fetch coaching staff via baseball_team_coach_staff -> baseball_coaches (scoped to this team)
+  // NOTE: baseball_coaches has `full_name`, not first_name/last_name — do not select
+  // first_name/last_name here, PostgREST will 400 (see database.ts baseball_coaches.Row).
+  const { data: staffRows } = await supabase
+    .from('baseball_team_coach_staff')
+    .select(`
+      is_primary,
+      role,
+      baseball_coaches!inner(
+        id,
+        full_name,
+        bio,
+        avatar_url
+      )
+    `)
+    .eq('team_id', id);
+
+  const staff: StaffMember[] = [];
+  if (staffRows) {
+    const seen = new Set<string>();
+    // Sort: primary coaches first
+    const sortedStaffRows = [...staffRows].sort(
+      (a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0)
+    );
+    sortedStaffRows.forEach((row, index) => {
+      const c = row.baseball_coaches as unknown as {
+        id: string;
+        full_name: string | null;
+        bio: string | null;
+        avatar_url: string | null;
+      } | null;
+      if (!c || seen.has(c.id)) return;
+      seen.add(c.id);
+      staff.push({
+        id: c.id,
+        name: c.full_name?.trim() || 'Coach',
+        title: row.is_primary ? 'Head Coach' : (row.role ?? 'Assistant Coach'),
+        bio: c.bio,
+        headshot_url: c.avatar_url,
+        display_order: index,
+      });
+    });
+  }
 
   // Get facilities from organization (only for college/juco)
+  // organization_facilities has no backing table yet — always empty until it exists.
   const showFacilities = team.team_type === 'college' || team.team_type === 'juco';
-  const facilities = showFacilities ? (org?.organization_facilities || []).sort((a, b) => a.display_order - b.display_order) : [];
+  const facilities: OrgFacility[] = [];
 
   // Location - use org location (teams don't have city/state directly)
   const location = {
