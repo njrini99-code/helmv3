@@ -21,6 +21,11 @@ export type { MaskedRevealProps } from './scroll/MaskedReveal';
 export { photoLayerStyle } from './lib/photoBg';
 export type { PhotoLayerOptions } from './lib/photoBg';
 
+// Brand — Helm mark line-art (Amendment 3 §A/§B). See CONTRACTS.md "Brand
+// components" for the consumer map.
+export { HelmMark, HelmRosette, SportGlyph } from './brand';
+export type { HelmMarkProps, HelmRosetteProps, SportGlyphProps, SportGlyphSport } from './brand';
+
 // Moments — M1..M9 (each lane replaces its own file in place; see
 // CONTRACTS.md for the ownership map)
 export { M1Hero } from './moments/M1Hero';
