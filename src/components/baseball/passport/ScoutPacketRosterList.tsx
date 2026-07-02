@@ -3,30 +3,37 @@
 // =============================================================================
 // src/components/baseball/passport/ScoutPacketRosterList.tsx
 //
-// V5 Scout Packet — the Showcase "event roster -> scout packet" list. A coach
+// V5 Scout Packet — the Showcase "event roster -> scout packet" list, composed
+// from the "Living Annual" kit (War Room lane, clay `ink="pursuit"`). A coach
 // scans the roster, sees each player's exposure + live-link status at a glance,
-// and jumps straight into managing a player's packet. This is the entry point
-// the V5 Showcase variant calls for ("scout packet export · event roster").
+// and jumps straight into managing a player's packet.
 //
 // Honest density: exposure + live-link count are the two facts that decide a
-// player's recruiting-share readiness, so they lead each row. No fabricated
-// status. Cream/green primitives; no golf labels.
+// player's recruiting-share readiness, so they lead each row via the same
+// honest 3-state chip as before (now an `<InkBadge>`). No fabricated status —
+// `<PacketSeal>` (the wax "ISSUED" ceremony) only ever renders on a row that
+// genuinely has a live share link; it never marks a merely-exposed or
+// internal-only player as issued.
 // =============================================================================
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 
-import {
-  IconSearch,
-  IconShieldCheck,
-  IconLock,
-  IconArrowRight,
-  IconCheckCircle2,
-  IconUsers,
-} from '@/components/icons';
+import { IconSearch, IconShieldCheck, IconLock, IconChevronRight } from '@/components/icons';
 import type { ScoutPacketRosterEntry } from '@/app/baseball/actions/scout-packet';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/fairway';
+import {
+  PaperCard,
+  HairlineRule,
+  Eyebrow,
+  InkBadge,
+  PacketSeal,
+  EditorsLetter,
+  EmptyIssue,
+  Reveal,
+  HoverReveal,
+  pressableClass,
+} from '@/components/baseball/living-annual';
 
 interface Props {
   entries: ScoutPacketRosterEntry[];
@@ -37,7 +44,6 @@ type Filter = 'all' | 'exposed' | 'shared';
 export function ScoutPacketRosterList({ entries }: Props) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
-  const reduceMotion = useReducedMotion();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -52,11 +58,12 @@ export function ScoutPacketRosterList({ entries }: Props) {
   const exposedCount = entries.filter((e) => e.exposed).length;
   const sharedCount = entries.filter((e) => e.liveLinkCount > 0).length;
 
+  const isFiltered = filter !== 'all' || query.trim().length > 0;
+
   return (
-    <LazyMotion features={domAnimation} strict>
     <div>
-      {/* Summary chips */}
-      <div className="mb-4 flex flex-wrap gap-2">
+      {/* Summary chips — filter tabs, clay ink for the active state */}
+      <div className="mb-4 flex flex-wrap gap-2" role="tablist" aria-label="Filter scout packets">
         {(
           [
             { key: 'all', label: `All · ${entries.length}` },
@@ -67,14 +74,11 @@ export function ScoutPacketRosterList({ entries }: Props) {
           <Button
             key={f.key}
             type="button"
-            variant="ghost"
+            role="tab"
+            aria-selected={filter === f.key}
+            variant={filter === f.key ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setFilter(f.key)}
-            haptic="none"
-            className={`min-h-0 rounded-full px-3 py-1.5 text-sm font-medium ${
-              filter === f.key
-                ? 'bg-primary-600 text-white hover:bg-primary-600'
-                : 'bg-cream-50 text-warm-600 ring-1 ring-warm-200 hover:bg-warm-50'
-            }`}
           >
             {f.label}
           </Button>
@@ -85,110 +89,99 @@ export function ScoutPacketRosterList({ entries }: Props) {
       <div className="relative mb-4">
         <IconSearch
           size={16}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-warm-400"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary"
         />
+        <label htmlFor="scout-packet-search" className="sr-only">
+          Search players
+        </label>
         <input
+          id="scout-packet-search"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search players"
-          className="w-full rounded-xl border border-warm-200 bg-cream-50 py-2.5 pl-9 pr-3 text-sm text-warm-900 placeholder:text-warm-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+          className="w-full rounded-card border border-[color:var(--hairline)] bg-[var(--paper)] py-2.5 pl-9 pr-3 font-annual text-body-sm text-text-primary placeholder:text-text-tertiary focus:border-pursuit focus:outline-none focus:ring-2 focus:ring-pursuit/20"
         />
       </div>
 
       {filtered.length === 0 ? (
         entries.length === 0 ? (
-          <m.div
-            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.24 }}
-            className="flex flex-col items-center rounded-2xl border border-dashed border-warm-200 bg-warm-50/70 px-6 py-12 text-center"
-          >
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
-              <IconUsers size={22} />
-            </span>
-            <h3 className="mt-4 text-base font-semibold text-warm-900">
-              No players on the roster yet
-            </h3>
-            <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-warm-500">
-              Add players to your roster to build source-backed scout packets and share
-              verified profiles with college coaches.
-            </p>
-            <Link
-              href="/baseball/dashboard/roster"
-              className="mt-5 inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
-            >
-              Go to Roster
-              <IconArrowRight size={15} />
-            </Link>
-          </m.div>
+          <EmptyIssue
+            variant="roster"
+            ink="pursuit"
+            action={
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/baseball/dashboard/roster">Go to Roster</Link>
+              </Button>
+            }
+          />
         ) : (
-          <m.div
-            initial={reduceMotion ? false : { opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
-            className="flex flex-col items-center rounded-2xl border border-dashed border-warm-200 bg-warm-50/70 px-6 py-10 text-center"
-          >
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-warm-100 text-warm-400">
-              <IconSearch size={18} />
-            </span>
-            <p className="mt-3 text-sm font-medium text-warm-600">No players match this filter</p>
-            <p className="mt-1 text-sm text-warm-400">
-              Try a different filter or clear your search.
-            </p>
-          </m.div>
+          <EditorsLetter
+            ink="pursuit"
+            title="No players match this filter."
+            body="Try a different filter or clear your search."
+          />
         )
       ) : (
-        <ul className="divide-y divide-warm-100 overflow-hidden rounded-2xl border border-warm-200 bg-cream-50 shadow-card">
-          {filtered.map((e, idx) => (
-            <m.li
-              key={e.playerId}
-              initial={reduceMotion ? false : { opacity: 0, x: -6 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.18, delay: reduceMotion ? 0 : idx * 0.03 }}
-            >
-              <Link
-                href={`/baseball/dashboard/players/${e.playerId}/scout-packet`}
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-cream-50"
-              >
-                <span
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                    e.exposed ? 'bg-primary-50 text-primary-600' : 'bg-warm-100 text-warm-400'
-                  }`}
-                >
-                  {e.exposed ? <IconShieldCheck size={16} /> : <IconLock size={16} />}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-warm-900">{e.name}</p>
-                  <p className="text-eyebrow text-warm-400">
-                    {[e.position, e.gradYear ? `Class of ${e.gradYear}` : null]
-                      .filter(Boolean)
-                      .join(' · ') || 'No position on file'}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  {e.liveLinkCount > 0 ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-eyebrow font-semibold text-primary-700">
-                      <IconCheckCircle2 size={11} />
-                      {e.liveLinkCount} live
-                    </span>
-                  ) : e.exposed ? (
-                    <span className="rounded-full bg-warm-100 px-2.5 py-1 text-eyebrow font-medium text-warm-500">
-                      Ready to share
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-warm-100 px-2.5 py-1 text-eyebrow font-medium text-warm-500">
-                      Internal
-                    </span>
-                  )}
-                  <IconArrowRight size={16} className="text-warm-300" />
-                </div>
-              </Link>
-            </m.li>
-          ))}
-        </ul>
+        <PaperCard className="overflow-hidden p-0">
+          <ul>
+            {filtered.map((e, idx) => (
+              <li key={e.playerId}>
+                <Reveal staggerIndex={Math.min(idx, 10)}>
+                  <Link
+                    href={`/baseball/dashboard/players/${e.playerId}/scout-packet`}
+                    className={pressableClass({ ink: 'pursuit', className: 'block' })}
+                  >
+                    <HoverReveal
+                      className="flex items-center gap-3 px-4 py-3"
+                      revealClassName="flex w-4 shrink-0 justify-center"
+                      reveal={<IconChevronRight size={16} className="text-pursuit" aria-hidden />}
+                    >
+                      {e.liveLinkCount > 0 ? (
+                        <PacketSeal size="sm" className="shrink-0" />
+                      ) : (
+                        <span
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-fw-md ${
+                            e.exposed ? 'bg-pursuit/10 text-pursuit' : 'bg-[color:var(--hairline)]/40 text-text-tertiary'
+                          }`}
+                        >
+                          {e.exposed ? <IconShieldCheck size={16} /> : <IconLock size={16} />}
+                        </span>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-annual text-body-lg font-medium text-text-primary">
+                          {e.name}
+                        </p>
+                        <Eyebrow ink="muted">
+                          {[e.position, e.gradYear ? `Class of ${e.gradYear}` : null]
+                            .filter(Boolean)
+                            .join(' · ') || 'No position on file'}
+                        </Eyebrow>
+                      </div>
+                      <div className="shrink-0">
+                        {e.liveLinkCount > 0 ? (
+                          <InkBadge label={`${e.liveLinkCount} LIVE`} tone="sodium" />
+                        ) : e.exposed ? (
+                          <InkBadge label="Ready to share" tone="pursuit" />
+                        ) : (
+                          <InkBadge label="Internal" tone="neutral" />
+                        )}
+                      </div>
+                    </HoverReveal>
+                  </Link>
+                  <HairlineRule ink="hairline" />
+                </Reveal>
+              </li>
+            ))}
+          </ul>
+        </PaperCard>
       )}
+
+      {isFiltered && filtered.length > 0 && filtered.length < entries.length ? (
+        <p className="mt-3 text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+          Showing {filtered.length} of {entries.length}
+        </p>
+      ) : null}
     </div>
-    </LazyMotion>
   );
 }

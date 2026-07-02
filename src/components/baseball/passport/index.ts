@@ -11,3 +11,4 @@ export { ScoutPacketView } from './ScoutPacketView';
 export { ScoutPacketManager } from './ScoutPacketManager';
 export { ScoutPacketRosterList } from './ScoutPacketRosterList';
 export { ScoutPacketCsvButton } from './ScoutPacketCsvButton';
+export { ScoutPacketsFairway } from './ScoutPacketsFairway';
