@@ -20011,6 +20011,7 @@ export type Database = {
       }
       current_coach_id: { Args: never; Returns: string }
       current_player_id: { Args: never; Returns: string }
+      get_active_sessions: { Args: Record<string, never>; Returns: Json }
       get_admin_analytics_rollup: {
         Args: { p_ago12w: string; p_ago30d: string; p_ago7d: string }
         Returns: Json
@@ -20480,6 +20481,10 @@ export type Database = {
       release_baseball_team_invitation_redemption: {
         Args: { p_invitation_id: string }
         Returns: undefined
+      }
+      resolve_admin_event: {
+        Args: { p_event_ids: string[] }
+        Returns: number
       }
       save_baseball_full_box_score: {
         Args: {
