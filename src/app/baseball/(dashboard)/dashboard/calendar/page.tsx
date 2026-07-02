@@ -190,10 +190,26 @@ export default async function BaseballCalendarPage() {
   }
 
   // ── Event summary strip ─────────────────────────────────────────────────────
-
+  //
+  // "Upcoming" = start time at or after local midnight TODAY (not the exact
+  // `now` instant) — an event scheduled earlier today still counts as
+  // upcoming for the rest of the day, and the boundary can't drift mid-render
+  // between the two numbers below.
+  //
+  // Both the headline count and the per-type badges are derived from the SAME
+  // filtered list. Previously `upcomingEvents` filtered by date while
+  // `eventTypeCounts` summed EVERY event this team has ever had (no date
+  // filter at all) — on a team with only past/demo events that showed the
+  // contradictory "0 upcoming events · 1 Practice · 1 Meeting · 1 Game" (the
+  // badges counting events the headline had already excluded). Single source
+  // of truth below so the two numbers can never disagree again.
   const now = new Date();
-  const upcomingEvents = events.filter((e) => new Date(e.start_time || e.start_date) >= now).length;
-  const eventTypeCounts = events.reduce<Record<string, number>>((acc, e) => {
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const upcomingEventsList = events.filter(
+    (e) => new Date(e.start_time || e.start_date) >= startOfToday
+  );
+  const upcomingEvents = upcomingEventsList.length;
+  const eventTypeCounts = upcomingEventsList.reduce<Record<string, number>>((acc, e) => {
     const t = e.event_type || 'other';
     acc[t] = (acc[t] || 0) + 1;
     return acc;
@@ -277,14 +293,19 @@ export default async function BaseballCalendarPage() {
         background: 'linear-gradient(180deg, #F7F5F2 0%, #F4EFE6 33%, #F1ECE0 66%, #ECE5D6 100%)',
       }}
     >
-      {/* Event summary strip — only shown when there are events */}
-      {events.length > 0 && (
+      {/* Event summary strip — only shown when there's an upcoming event to
+          summarize. Gating on `upcomingEvents` (not `events.length`) matches
+          what the strip actually says: a team with only past events has
+          nothing "upcoming" to report, so showing "0 upcoming events ·"
+          with no badges after it would just be a second, quieter version of
+          the same contradiction this strip exists to avoid. */}
+      {upcomingEvents > 0 && (
         <div className="flex-shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-2">
-          <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
             <span className="text-sm font-medium text-warm-600 whitespace-nowrap">
               {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}
             </span>
-            <span className="text-warm-300">|</span>
+            <span className="text-warm-300" aria-hidden="true">|</span>
             {Object.entries(eventTypeCounts).map(([type, count]) => {
               const cfg = EVENT_TYPE_CONFIG[type] ?? { label: type, dot: 'bg-warm-400' };
               return (

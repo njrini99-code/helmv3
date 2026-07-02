@@ -47,6 +47,36 @@ function ViewLoadingSkeleton() {
   );
 }
 
+// Mobile day-view chunk mirrors CalendarDayViewSwipeable's own shell (compact
+// date header + stacked event-card rows) instead of the generic
+// ViewLoadingSkeleton above. The generic skeleton reads as two blank, empty
+// panels with no relation to a calendar (visual-verify audit
+// coach-ops__calendar__mobile, 2026-07: two gray blocks, no event content) —
+// this one keeps the header row and card outlines recognizable while the
+// chunk/data load, so the transition into real content has no visual jump.
+function DayViewSwipeableLoadingSkeleton() {
+  return (
+    <div className="flex h-full flex-col" aria-busy="true" aria-label="Loading day view">
+      <div className="px-4 pt-2 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 space-y-2">
+            <div className="h-5 w-20 rounded-md bg-warm-100/70 animate-pulse" />
+            <div className="h-3.5 w-32 rounded-md bg-warm-100/50 animate-pulse" />
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-10 w-10 rounded-xl bg-warm-100/60 animate-pulse" />
+            <div className="h-10 w-10 rounded-xl bg-warm-100/60 animate-pulse" />
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 space-y-3 px-4 py-3">
+        <div className="h-24 rounded-2xl bg-warm-100/60 animate-pulse" />
+        <div className="h-24 rounded-2xl bg-warm-100/50 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 const WeekView = dynamic(
   () => import('@/components/golf/calendar/WeekView').then((mod) => mod.WeekView),
   { loading: () => <ViewLoadingSkeleton /> },
@@ -65,7 +95,7 @@ const AvailabilityDayView = dynamic(
 );
 const CalendarDayViewSwipeable = dynamic(
   () => import('@/components/golf/calendar/CalendarDayViewSwipeable').then((mod) => mod.CalendarDayViewSwipeable),
-  { loading: () => <ViewLoadingSkeleton /> },
+  { loading: () => <DayViewSwipeableLoadingSkeleton /> },
 );
 const EventDetailModal = dynamic(
   () => import('@/components/golf/calendar/EventDetailModal').then((mod) => mod.EventDetailModal),
@@ -278,6 +308,16 @@ export function PremiumCalendarClient({
 
   // For backward compatibility - flatten all player busy periods
   const playerBusyPeriods = Array.from(multiPlayerBusyPeriods.values()).flat();
+
+  // Warm the mobile swipeable day-view chunk as soon as we know we're on a
+  // mobile viewport, ahead of the auto-switch effect below flipping `view`
+  // to 'day'. Shrinks (often eliminates) the Suspense loading window a
+  // mobile visitor would otherwise see on the very first render.
+  useEffect(() => {
+    if (showMobileUI) {
+      void import('@/components/golf/calendar/CalendarDayViewSwipeable');
+    }
+  }, [showMobileUI]);
 
   // Auto-switch to list view on mobile (more touch-friendly than day view)
   useEffect(() => {
