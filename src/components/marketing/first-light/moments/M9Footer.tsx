@@ -73,7 +73,7 @@ export function M9Footer({ className }: M9FooterProps) {
                 Helm Sports Labs
               </span>
             </div>
-            <p className="mt-3 max-w-xs text-body-sm leading-relaxed text-[rgba(var(--fl-cream-rgb),0.55)]">
+            <p className="mt-3 max-w-xs text-pretty text-body-sm leading-relaxed text-[rgba(var(--fl-cream-rgb),0.55)]">
               One Helm. Two fields. The operating system for college programs — golf and baseball.
             </p>
           </div>
@@ -83,7 +83,7 @@ export function M9Footer({ className }: M9FooterProps) {
               <h4 className="text-eyebrow font-semibold uppercase tracking-[0.2em] text-[rgba(var(--fl-cream-rgb),0.45)]">
                 {column.sport}
               </h4>
-              <p className="mt-2 text-body-sm leading-relaxed text-[rgba(var(--fl-cream-rgb),0.5)]">
+              <p className="mt-2 text-pretty text-body-sm leading-relaxed text-[rgba(var(--fl-cream-rgb),0.5)]">
                 {column.tagline}
               </p>
               <ul className="mt-3 space-y-2.5">
@@ -91,7 +91,7 @@ export function M9Footer({ className }: M9FooterProps) {
                   <li key={link.name}>
                     <Link
                       href={link.href}
-                      className="text-body-sm text-[rgba(var(--fl-cream-rgb),0.7)] transition-colors hover:text-[var(--fl-cream)]"
+                      className="fl-link-underline text-body-sm text-[rgba(var(--fl-cream-rgb),0.7)] transition-colors hover:text-[var(--fl-cream)]"
                     >
                       {link.name}
                     </Link>
@@ -109,7 +109,7 @@ export function M9Footer({ className }: M9FooterProps) {
               <Link
                 key={link.name}
                 href={link.href}
-                className="transition-colors hover:text-[rgba(var(--fl-cream-rgb),0.7)]"
+                className="fl-link-underline transition-colors hover:text-[rgba(var(--fl-cream-rgb),0.7)]"
               >
                 {link.name}
               </Link>

@@ -152,26 +152,45 @@ export function M4TwoFields({ className }: M4TwoFieldsProps) {
                   animate={{
                     opacity: dimmed ? 0.55 : 1,
                     scale: hovered === field.key ? 1.02 : 1,
-                    filter: hovered === field.key ? 'brightness(1.08)' : 'brightness(1)',
+                    filter:
+                      hovered === field.key
+                        ? 'brightness(1.08) saturate(0.92) contrast(1.02)'
+                        : 'brightness(1) saturate(0.92) contrast(1.02)',
                   }}
                   transition={{ duration: prefersReduced ? 0 : 0.4, ease: EASE }}
                   className="absolute inset-0"
                   style={photoLayerStyle({ src: `/marketing/first-light/photos/${field.key}.jpg`, fallbackGradient: field.fallbackGradient })}
                 />
+                {/* Directional corner light — one per photo moment (Amendment
+                    2 §C.13, "the morning sun you never see"), opposite
+                    corners across the diptych: golf top-left, baseball
+                    top-right. Anchored to this field's own `relative` Link,
+                    so each half gets its own light pocket. */}
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    'pointer-events-none absolute -top-16 h-96 w-96 rounded-full blur-2xl',
+                    field.key === 'golf' ? '-left-16' : '-right-16',
+                  )}
+                  style={{ background: 'radial-gradient(circle, rgba(var(--fl-sage-rgb),0.18), transparent 70%)' }}
+                />
                 {/* Double-bezel: a brass hairline outer frame wrapping the
                     G2 glass card, matching the design system's bezel idiom
                     elsewhere (glass grammar #4, first-light.css). */}
                 <div className="relative w-full max-w-sm rounded-[1.1rem] border border-[rgba(var(--fl-brass-rgb),0.4)] p-[3px]">
-                  <div className="fl-glass-2 rounded-[0.9rem] p-6">
+                  <div
+                    className="fl-glass-2 rounded-[0.9rem] p-6"
+                    style={{ boxShadow: 'inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.35), var(--fl-specular), var(--fl-shadow-lg)' }}
+                  >
                     <div className="relative z-10">
-                      <h3 className={cn(flFraunces.className, 'text-2xl font-medium text-[var(--fl-cream)] sm:text-3xl')}>
+                      <h3 className={cn(flFraunces.className, 'text-balance text-2xl font-medium text-[var(--fl-cream)] sm:text-3xl')}>
                         {field.title}
                       </h3>
                       {/* Baseline row: brass rule segment + one-line
                           description + enter arrow, all on one line. */}
                       <div className="mt-3 flex items-center gap-3">
                         <span aria-hidden="true" className="fl-rule w-8 shrink-0" />
-                        <p className="flex-1 text-body text-[rgba(var(--fl-cream-rgb),0.7)]">{field.line}</p>
+                        <p className="flex-1 text-pretty text-body text-[rgba(var(--fl-cream-rgb),0.7)]">{field.line}</p>
                         {/* Sage (not sage-deep) for legibility — sage-deep
                             reads as a CTA-fill color and is too low-contrast
                             as an icon over this card; sage is the spec's
