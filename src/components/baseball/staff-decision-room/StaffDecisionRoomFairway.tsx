@@ -109,11 +109,13 @@ import {
   InkBadge,
   PaperCard,
   EditorsLetter,
+  CommitSeal,
   Reveal,
   HoverReveal,
   pressableClass,
   GRADE_TEXT_CLASS,
   GRADE_VAR,
+  PACE,
 } from '@/components/baseball/living-annual';
 import type { GradeBand } from '@/components/baseball/living-annual';
 
@@ -779,24 +781,58 @@ function AgendaListRow({
   );
 }
 
+// --- Ceremony: the decision-made stamp. `<CommitSeal label="DECIDED">`
+// presses over the pane for one PACE.cinematic beat (spec §4.4 #5 "STAMP
+// PRESS", §9 north-star #2) right after a resolve / decision-note mutation
+// succeeds, before the item leaves the agenda and the pane re-keys. ---------
+function DecisionSeal({ label }: { label: string }) {
+  return (
+    <div
+      aria-hidden
+      className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--paper)]/92 backdrop-blur-[1px]"
+    >
+      <CommitSeal label={label} size="md" />
+    </div>
+  );
+}
+
 function AgendaDetailPane({ item, onDone }: { item: DecisionRoomAgendaItem; onDone: () => void }) {
   const [pending, startTransition] = useTransition();
   const [mode, setMode] = useState<'idle' | 'resolve' | 'note' | 'task' | 'practice'>('idle');
   const [text, setText] = useState('');
+  const [sealed, setSealed] = useState<string | null>(null);
   const isMeetingItem = item.kind === 'meeting_item';
   const discussed = item.status === 'discussed';
 
-  function run(fn: () => Promise<{ success: boolean; error?: string }>, okMsg: string) {
+  function run(
+    fn: () => Promise<{ success: boolean; error?: string }>,
+    okMsg: string,
+    sealLabel?: string,
+  ) {
     startTransition(async () => {
       try {
         const res = await fn();
-        if (res.success) {
+        if (!res.success) {
+          toast.error('Could not complete that', res.error);
+          return;
+        }
+        if (sealLabel) {
+          // Ceremony: press the seal, THEN settle the mode/refresh — the
+          // pane holds the "decided" moment for one cinematic beat before
+          // the item leaves the agenda.
+          setSealed(sealLabel);
+          window.setTimeout(() => {
+            toast.success(okMsg);
+            setMode('idle');
+            setText('');
+            setSealed(null);
+            onDone();
+          }, PACE.cinematic * 1000);
+        } else {
           toast.success(okMsg);
           setMode('idle');
           setText('');
           onDone();
-        } else {
-          toast.error('Could not complete that', res.error);
         }
       } catch {
         toast.error('Something went wrong', 'Please try again.');
@@ -832,7 +868,7 @@ function AgendaDetailPane({ item, onDone }: { item: DecisionRoomAgendaItem; onDo
 
   function submitResolve() {
     if (!isMeetingItem) return;
-    run(() => resolveMeetingItem({ itemId: item.id, resolution: text }), 'Resolved');
+    run(() => resolveMeetingItem({ itemId: item.id, resolution: text }), 'Resolved', 'DECIDED');
   }
 
   function submitNote() {
@@ -847,6 +883,7 @@ function AgendaDetailPane({ item, onDone }: { item: DecisionRoomAgendaItem; onDo
           playerId: item.playerId,
         }),
       'Decision recorded',
+      'DECIDED',
     );
   }
 
@@ -908,7 +945,9 @@ function AgendaDetailPane({ item, onDone }: { item: DecisionRoomAgendaItem; onDo
   }
 
   return (
-    <PaperCard registrationTick className="p-6 lg:sticky lg:top-4">
+    <PaperCard registrationTick className="relative p-6 lg:sticky lg:top-4">
+      {sealed ? <DecisionSeal label={sealed} /> : null}
+
       {/* Header */}
       <div className="mb-4 flex items-start gap-3">
         <div
@@ -1227,26 +1266,26 @@ function LedgerItem({ entry }: { entry: DecisionRoomLedgerEntry }) {
 
   return (
     <div className="flex items-start gap-3 px-4 py-3">
-      <div
-        className={cn(
-          'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
-          isResolved
-            ? 'bg-pursuit text-white'
-            : isInvite
+      {isResolved ? (
+        <CommitSeal label="DECIDED" size="sm" className="shrink-0" />
+      ) : (
+        <div
+          className={cn(
+            'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
+            isInvite
               ? accepted
                 ? 'bg-pursuit/10 text-pursuit'
                 : 'bg-[color:var(--hairline)]/60 text-text-tertiary'
               : 'bg-pursuit/10 text-pursuit',
-        )}
-      >
-        {isInvite ? (
-          accepted ? <IconCheckCircle2 size={15} /> : <IconUserPlus size={15} />
-        ) : isResolved ? (
-          <IconCheckCheck size={15} />
-        ) : (
-          <IconNote size={15} />
-        )}
-      </div>
+          )}
+        >
+          {isInvite ? (
+            accepted ? <IconCheckCircle2 size={15} /> : <IconUserPlus size={15} />
+          ) : (
+            <IconNote size={15} />
+          )}
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate font-annual text-body-sm font-medium text-text-primary">{entry.label}</p>
