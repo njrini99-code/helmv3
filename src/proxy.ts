@@ -9,6 +9,7 @@ const NATIVE_UA_MARKER = 'HelmSportsLabsApp';
 const APP_ROUTE_PREFIXES = [
   '/golf',
   '/baseball',
+  '/admin',
   '/api',
   '/auth',
   '/support',
