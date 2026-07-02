@@ -1,0 +1,460 @@
+/**
+ * first-light.css — "First Light" landing palette + the 3-grade glass
+ * grammar (docs/LANDING_ENTRY_WORLD_DESIGN.md #2, #4).
+ *
+ * Imported directly by `src/app/page.tsx` — NOT globals.css. Scoped to the
+ * marketing landing surface (and, later, the login/onboarding scene world
+ * per docs/baseball/ENTRY_SCENES_DESIGN.md — "same glass tokens across
+ * landing/login/onboarding"). See CONTRACTS.md for the full ownership map.
+ *
+ * NOTE on `.fl-glass-*`'s `position: relative` default: it's wrapped in
+ * `:where(...)` (zero specificity) instead of `@layer components`. Next.js
+ * runs each imported `.css` file through its own independent PostCSS
+ * pass — Tailwind's `@layer components` requires a matching
+ * `@tailwind components` directive IN THE SAME FILE (globals.css has one,
+ * this file doesn't), so `@layer` here throws a build error rather than
+ * reordering anything. `:where()` sidesteps the whole layering question:
+ * a zero-specificity selector always loses to a normal one, so any
+ * consumer that also applies a Tailwind position utility (`.absolute`,
+ * `.fixed`, `.sticky`) wins regardless of file/import order. Confirmed
+ * the hard way (2026-07-02): un-`:where()`'d `.fl-glass-2 { position:
+ * relative }` silently beat a consumer's `absolute` utility, collapsing
+ * `PhoneArc` (M3ProductCinema) back to static-in-flow.
+ */
+
+/**
+ * ── 2026-07-02 SAGE & CREAM RESPEC ──────────────────────────────────────
+ * Nick (2026-07-02): "I want sage and cream on the landing page." The
+ * landing moves from dusk-pine drama to morning sage-and-cream calm — see
+ * the ⚠ AMENDMENT at the top of docs/LANDING_ENTRY_WORLD_DESIGN.md (THE
+ * contract; overrides the original palette spec #2 in that doc).
+ *
+ * `--fl-pine` and `--fl-green` KEEP THEIR NAMES but are REPOINTED below
+ * (pine → sage-ink #2E3A2C, green → sage-deep #5C6E58) so every in-flight
+ * lane still referencing the old var names recolors automatically — no
+ * find/replace needed in moment files that already shipped. They are now
+ * LEGACY ALIASES; new work should reach for the first-class `--fl-sage-*`
+ * / `--fl-cream*` names below instead. Never hardcode the retired hexes
+ * `#143527` (old pine) or `#16A34A` (kelly, now product-only — it appears
+ * inside real app screenshots and the M5 signal-card replica, never on
+ * landing/auth chrome).
+ *
+ * Mood: the page lives in daylight now. If a frame reads dark, moody, or
+ * murky, it's off-spec — fix it before shipping.
+ * ────────────────────────────────────────────────────────────────────── */
+:root {
+  /* ── Palette (the bridge — spec #2, sage & cream respec above) ─────── */
+  --fl-ecru: #f5f1e6;
+  --fl-ecru-rgb: 245, 241, 230;
+  /* Legacy alias — repointed 2026-07-02: was deep pine #143527, now sage-ink. */
+  --fl-pine: #2e3a2c;
+  --fl-pine-rgb: 46, 58, 44;
+  --fl-clay: #b0703c;
+  --fl-clay-rgb: 176, 112, 60;
+  /* Legacy alias — repointed 2026-07-02: was kelly #16A34A, now sage-deep.
+     Kelly is demoted to product-only (real app screenshots + the M5
+     signal-card replica) — landing/auth chrome never uses it directly. */
+  --fl-green: #5c6e58;
+  --fl-green-rgb: 92, 110, 88;
+  --fl-brass: #b08d57;
+  --fl-brass-rgb: 176, 141, 87;
+
+  /* ── Sage & cream — first-class tokens (2026-07-02 respec) ──────────── */
+  /* Cream field — alias of --fl-ecru, same value, first-class name. */
+  --fl-cream: #f5f1e6;
+  --fl-cream-rgb: 245, 241, 230;
+  /* Cream high — glass highlights, replaces white. */
+  --fl-cream-high: #fbf9f2;
+  --fl-cream-high-rgb: 251, 249, 242;
+  /* Sage mist — section tints, glass tint. */
+  --fl-sage-mist: #e4e9dd;
+  --fl-sage-mist-rgb: 228, 233, 221;
+  /* Sage — rules, icons, decorative/large type ONLY (not body text). */
+  --fl-sage: #94a38a;
+  --fl-sage-rgb: 148, 163, 138;
+  /* Sage deep — CTAs + emphasis, cream text. Same value as --fl-green. */
+  --fl-sage-deep: #5c6e58;
+  --fl-sage-deep-rgb: 92, 110, 88;
+  /* Sage ink — dark bands + all body/display ink. Same value as --fl-pine. */
+  --fl-sage-ink: #2e3a2c;
+  --fl-sage-ink-rgb: 46, 58, 44;
+
+  /* ── Shadow tokens (⚠ AMENDMENT 2 — IMMACULATE §B.5, research §0) ───
+     Stacked warm shadows tinted with --fl-sage-ink-rgb — never a single
+     hard rgba(0,0,0,x). Pair with --fl-specular on every elevated light
+     surface (the "80% move" — research §1.3A). */
+  --fl-shadow-xs: 0 1px 2px rgba(var(--fl-sage-ink-rgb), 0.04);
+  --fl-shadow-sm: 0 1px 2px rgba(var(--fl-sage-ink-rgb), 0.04),
+    0 2px 6px rgba(var(--fl-sage-ink-rgb), 0.04);
+  --fl-shadow-md: 0 2px 4px rgba(var(--fl-sage-ink-rgb), 0.04),
+    0 8px 20px rgba(var(--fl-sage-ink-rgb), 0.06);
+  --fl-shadow-lg: 0 4px 8px rgba(var(--fl-sage-ink-rgb), 0.05),
+    0 18px 40px rgba(var(--fl-sage-ink-rgb), 0.08);
+  --fl-specular: inset 0 1px 0 rgba(var(--fl-cream-high-rgb), 0.9);
+}
+
+/* ---------------------------------------------------------------------
+ * Grain — one perf-tuned static noise recipe (feTurbulence data-URI,
+ * numOctaves 1, static — no animation), reused as a fixed full-bleed
+ * overlay (.fl-grain) AND baked low-opacity into every glass grade below.
+ * `pointer-events: none` always; consumers add `aria-hidden="true"`.
+ * ------------------------------------------------------------------- */
+.fl-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.04;
+  /* ⚠ AMENDMENT 2 — IMMACULATE §A.4 (research §3.2): flipped from
+     overlay → multiply on 2026-07-02. Multiply sinks grain INTO the
+     cream warmly; overlay read digital/screen-like on the sage & cream
+     field. Scoped to this standalone full-bleed .fl-grain plate only —
+     the baked-in grain inside .fl-glass-*::before (below) sits over
+     mixed photo/glass backgrounds and is intentionally left on overlay. */
+  mix-blend-mode: multiply;
+  background-repeat: repeat;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='1' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Grain itself is static (no keyframes) — nothing to disable here, but
+     keep the hook so a future animated-grain variant can't slip past
+     reduced-motion review. */
+  .fl-grain {
+    opacity: 0.03;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Glass grammar — 3 grades (spec #4, "the cookbook"). Every grade shares:
+ *   1. backdrop-filter blur + saturate
+ *   2. a 1px top edge-light (inset highlight), brass-tinted
+ *   3. faint grain baked into the surface via a ::before layer
+ *   4. an @supports fallback (solid translucent) for engines without
+ *      backdrop-filter (older WKWebView, some Firefox builds)
+ *
+ * Budget: at most 2 blurring (fl-glass-*) layers visible in a single
+ * viewport — see docs/LANDING_ENTRY_WORLD_DESIGN.md #4 + CLAUDE.md motion
+ * rules. Content placed inside a glass surface needs `position: relative`
+ * (or `isolate`) and a z-index above 1 to sit above the grain ::before.
+ * `position: relative` below is only the DEFAULT (zero-specificity via
+ * `:where()`) — a consumer that needs `absolute`/`fixed`/`sticky` instead
+ * (e.g. `PhoneArc` in M3ProductCinema) just adds that Tailwind utility
+ * alongside `fl-glass-*` and it wins — see the file-header note.
+ * ------------------------------------------------------------------- */
+
+:where(.fl-glass-1, .fl-glass-2, .fl-glass-3) {
+  position: relative;
+}
+
+.fl-glass-1,
+.fl-glass-2,
+.fl-glass-3 {
+  isolation: isolate;
+  /* Top edge-light — 1px inset highlight, brass-tinted, on all grades. */
+  box-shadow: inset 0 1px 0 0 rgba(var(--fl-brass-rgb), 0.35);
+}
+
+.fl-glass-1::before,
+.fl-glass-2::before,
+.fl-glass-3::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-repeat: repeat;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='1' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* G1 — hairline glass nav pill (always visible, lightest touch). */
+.fl-glass-1 {
+  background: rgba(var(--fl-ecru-rgb), 0.55);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(var(--fl-brass-rgb), 0.22);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .fl-glass-1 {
+    background: rgba(var(--fl-ecru-rgb), 0.94);
+  }
+}
+
+/* G2 — floating glass card over photography (product proof, sport portals). */
+.fl-glass-2 {
+  background: rgba(var(--fl-ecru-rgb), 0.14);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid rgba(var(--fl-brass-rgb), 0.28);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .fl-glass-2 {
+    background: rgba(var(--fl-pine-rgb), 0.74);
+  }
+}
+
+/* G3 — deep glass panel (auth forms, dense product-cinema frame). */
+.fl-glass-3 {
+  background: rgba(var(--fl-pine-rgb), 0.55);
+  backdrop-filter: blur(24px) saturate(1.2) brightness(0.92);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2) brightness(0.92);
+  border: 1px solid rgba(var(--fl-brass-rgb), 0.3);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .fl-glass-3 {
+    background: rgba(var(--fl-pine-rgb), 0.92);
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * Small shared utilities used across moments.
+ * ------------------------------------------------------------------- */
+
+/* A brass hairline rule (ledger lines, glass edges, diptych seam flash). */
+.fl-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(var(--fl-brass-rgb), 0.55),
+    rgba(var(--fl-brass-rgb), 0.12)
+  );
+}
+
+/* Line-mask wrapper for MaskedReveal — overflow-hidden per visual line. */
+.fl-line-mask {
+  display: block;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-glass-1,
+  .fl-glass-2,
+  .fl-glass-3 {
+    transition: none !important;
+  }
+}
+
+/* =====================================================================
+ * ⚠ AMENDMENT 2 — IMMACULATE (docs/LANDING_ENTRY_WORLD_DESIGN.md, the
+ * "⚠ AMENDMENT 2 — IMMACULATE" section, 2026-07-02 PM). Translates
+ * docs/redesign/marketing-overhaul-2026-06-18/research/
+ * 04_premium_aesthetic_system.md (§ numbers below cite THAT doc) to
+ * sage & cream — helm-green/kelly → sage-deep throughout. Foundation
+ * lane owns every utility below; moment lanes consume them. See
+ * CONTRACTS.md → "IMMACULATE utilities" for the per-moment consumer map
+ * and the §E final-gate checklist.
+ * ===================================================================== */
+
+/* ---------------------------------------------------------------------
+ * .fl-aurora — cream aurora field (Amendment 2 §A.1, research §3.1).
+ * The page's cream background is never a flat fill: 4 low-chroma sage
+ * radial blobs (each fading to transparent at 70-75%) sit under
+ * whatever moment renders on top. Apply to the section/page background
+ * layer — content stacks above it in normal flow (background-image
+ * paints behind box content; no z-index needed).
+ * ------------------------------------------------------------------- */
+.fl-aurora {
+  background-color: var(--fl-cream);
+  background-image: radial-gradient(
+      40% 50% at 15% 20%,
+      rgba(var(--fl-sage-rgb), 0.1),
+      transparent 70%
+    ),
+    radial-gradient(45% 55% at 85% 15%, rgba(var(--fl-sage-mist-rgb), 0.55), transparent 72%),
+    radial-gradient(50% 60% at 75% 85%, rgba(var(--fl-sage-deep-rgb), 0.07), transparent 75%),
+    /* ⚠ AMENDMENT 2 §D2 (2026-07-02, Nick — "more cream, no white"): this
+       blob was cream-high; demoted to cream so no fill larger than a 1px
+       specular lip reads near-white. */
+    radial-gradient(40% 45% at 25% 90%, rgba(var(--fl-cream-rgb), 0.9), transparent 70%);
+  background-attachment: fixed;
+  /* Optional 32s drift — killed outright under reduced-motion below. */
+  animation: fl-aurora-drift 32s ease-in-out infinite;
+}
+
+@keyframes fl-aurora-drift {
+  0%,
+  100% {
+    background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%;
+  }
+  50% {
+    background-position: 3% 4%, 96% 5%, 94% 95%, 5% 96%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-aurora {
+    animation: none;
+  }
+}
+
+/* Mobile: drop background-attachment: fixed (continuous-repaint cost on
+   scroll) and the drift animation — Amendment 2 §A.1's mobile carve-out. */
+@media (max-width: 767px) {
+  .fl-aurora {
+    background-attachment: scroll;
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * .fl-light-pool — soft radial light pool (Amendment 2 §A.2, research
+ * §3.3). Behind hero copy and each section anchor (M2 statement, M5
+ * card, M7 stats). Positioned by the CONSUMER: this utility supplies
+ * only the visual recipe + a `position: absolute` default via :where()
+ * (zero specificity — same discipline as .fl-glass-* above), so a
+ * consumer's own Tailwind position utility wins if it needs one.
+ * Consumer sets size/placement (width, height, inset/top/left).
+ * Uses `filter: blur`, not `backdrop-filter` — no @supports fallback
+ * needed (near-universal support). Static gradient, no keyframes — no
+ * reduced-motion story needed.
+ * ------------------------------------------------------------------- */
+:where(.fl-light-pool) {
+  position: absolute;
+}
+
+.fl-light-pool {
+  z-index: -10;
+  pointer-events: none;
+  /* ⚠ AMENDMENT 2 §D2 (2026-07-02, Nick — "more cream, no white"): cream-high
+     demoted to cream — this pool is a large fill, not a 1px specular lip. */
+  background: radial-gradient(ellipse at center, rgba(var(--fl-cream-rgb), 0.9), transparent 60%);
+  filter: blur(40px);
+}
+
+/* ---------------------------------------------------------------------
+ * .fl-cta-glow — sage bloom under primary CTAs only (Amendment 2 §A.3 +
+ * §B.8, research §3.4). M1 + M8 primaries. ≤2 glows per viewport, ever
+ * (Amendment 2 §E final gate). Parent needs `position: relative` for
+ * the ::after to anchor against — supplied as a zero-specificity
+ * :where() default so a consumer's own position utility still wins.
+ * Uses `filter: blur`, not `backdrop-filter` — no @supports fallback
+ * needed.
+ * ------------------------------------------------------------------- */
+:where(.fl-cta-glow) {
+  position: relative;
+}
+
+.fl-cta-glow::after {
+  content: '';
+  position: absolute;
+  inset: -40% -20%;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(var(--fl-sage-deep-rgb), 0.28), transparent 65%);
+  filter: blur(28px);
+  opacity: 0;
+  transition: opacity 420ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.fl-cta-glow:hover::after,
+.fl-cta-glow:focus-visible::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-cta-glow::after {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * .fl-card — solid lit card recipe (Amendment 2 §B.5/§B.6, research
+ * §1.3A + §6.1). Replaces glass on cards-of-record: M6's three
+ * vignettes convert from .fl-glass-2 to this (Amendment 2 §B.6 — glass
+ * is chrome-only; content sits on solid lit cream). Pair with
+ * .fl-card-lift for the hover swell.
+ *
+ * ⚠ AMENDMENT 2 §D2 (2026-07-02, Nick — "more cream, no white"): a flat
+ * cream-high fill reads too pale across a whole card. Background is now a
+ * short top-to-18% gradient — only the top edge catches cream-high light,
+ * the card body resolves to true cream by 18%. --fl-specular (the 1px
+ * inset highlight) is unaffected — it's the hairline lip §D2 exempts.
+ * ------------------------------------------------------------------- */
+.fl-card {
+  background: linear-gradient(180deg, rgba(var(--fl-cream-high-rgb), 0.55) 0%, var(--fl-cream) 18%);
+  border-radius: 20px;
+  border: 1px solid rgba(var(--fl-sage-mist-rgb), 0.6);
+  box-shadow: var(--fl-specular), var(--fl-shadow-sm);
+}
+
+/* .fl-card-lift — hover swell (Amendment 2 §B.6, research §5.3):
+   translateY(-4px) + shadow grows to --fl-shadow-lg. */
+.fl-card-lift {
+  transition: transform 240ms cubic-bezier(0.33, 1, 0.68, 1),
+    box-shadow 240ms cubic-bezier(0.33, 1, 0.68, 1);
+  will-change: transform;
+}
+
+.fl-card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--fl-specular), var(--fl-shadow-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-card-lift {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+ * .fl-gradient-ring — masked 1px conic ring (Amendment 2 §B.7, research
+ * §5.6). THE page's single gradient-ring moment — used on exactly ONE
+ * element per page (M5's signal card). Do not reuse elsewhere.
+ * `border-radius: inherit` on ::before follows whatever radius the
+ * consumer already set on this same element (e.g. via .fl-card or
+ * .fl-glass-3) — this utility declares no radius of its own. Static
+ * conic gradient, no motion — no reduced-motion story needed.
+ * ------------------------------------------------------------------- */
+:where(.fl-gradient-ring) {
+  position: relative;
+}
+
+.fl-gradient-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(
+    from 180deg,
+    rgba(var(--fl-sage-deep-rgb), 0.5),
+    rgba(var(--fl-sage-rgb), 0.15),
+    rgba(var(--fl-brass-rgb), 0.4),
+    rgba(var(--fl-sage-deep-rgb), 0.5)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* ---------------------------------------------------------------------
+ * .fl-link-underline — the editorial wipe (Amendment 2 §B.10, research
+ * §5.5). Footer + nav text links: sage-deep 2px underline,
+ * background-size 0%→100% on hover/focus-visible.
+ * ------------------------------------------------------------------- */
+.fl-link-underline {
+  background-image: linear-gradient(rgba(var(--fl-sage-deep-rgb), 1), rgba(var(--fl-sage-deep-rgb), 1));
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.fl-link-underline:hover,
+.fl-link-underline:focus-visible {
+  background-size: 100% 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-link-underline {
+    transition: none;
+  }
+}
