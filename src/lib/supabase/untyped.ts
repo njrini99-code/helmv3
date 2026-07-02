@@ -50,6 +50,13 @@ export type UntypedTable =
   | 'helm_lifting_weight_checkin_requests'
   | 'helm_lifting_nutrition_plans'
   | 'helm_lifting_nutrition_plan_assignments'
+  // Public team/program profile views (db_gated — see
+  // supabase/migrations/20260702110000_baseball_public_team_program_profile_views.sql)
+  // Anon-readable, allowlisted-column views backing the (public) team/program
+  // profile pages for logged-out visitors.
+  | 'organizations_public_profile'
+  | 'baseball_teams_public_profile'
+  | 'baseball_team_coach_staff_public'
   // fallback: any other table not yet in generated types
   | (string & Record<never, never>);
 
