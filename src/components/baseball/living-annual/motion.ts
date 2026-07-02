@@ -24,6 +24,14 @@ import type { Variants } from 'framer-motion';
 export const EASE_GLIDE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 /** Gentle decelerate for default reveals (mirrors --fw-ease-soft). */
 export const EASE_SOFT: [number, number, number, number] = [0.22, 0.61, 0.36, 1];
+/**
+ * Quick, decisive curve for the INTERACTION layer — press feedback + hover
+ * reveals (spec §7's `pressable`/`HoverReveal` primitives). Distinct family
+ * from the two settle curves above: those choreograph content ARRIVING,
+ * this one choreographs a hand touching the page. No overshoot — a press
+ * should feel immediate, not cinematic.
+ */
+export const EASE_PRESS: [number, number, number, number] = [0.4, 0, 0.2, 1];
 
 /** Duration budget (seconds) for the six motion principles. */
 export const DUR = {
@@ -33,6 +41,26 @@ export const DUR = {
   stampSettle: 0.26, // STAMP PRESS — slow settle ~260ms
   trace: 0.5, // TRACES DRAW
 } as const;
+
+/**
+ * Generic duration ladder for the interaction layer (press / hover-reveal /
+ * section reveal). `DUR` above stays principle-named (rule/ink/stamp/trace)
+ * and untouched — reach for `PACE` when a primitive needs a plain "how long"
+ * rather than a named spec principle. The middle two tiers are pinned to the
+ * existing principles so nothing forks into a second timing scale:
+ * `PACE.base === DUR.rule`, `PACE.slow === DUR.ink`.
+ */
+export const PACE = {
+  fast: 0.12, // press / tap feedback
+  base: DUR.rule, // hover lift/tint, rule draws — 0.2
+  slow: DUR.ink, // section reveal, ink settling — 0.4
+  cinematic: 0.6, // hero masthead / stamp ceremony
+} as const;
+
+/** Sibling-to-sibling delay (seconds) for any staggered entrance in the kit —
+ *  {@link inkColumn} and {@link Reveal}'s `staggerIndex` both key off this so
+ *  a ruled column and a card grid settle at the same cadence. */
+export const STAGGER_STEP = 0.06;
 
 /** Vertical settle distance for serif numerals/names (spec "translateY ~2px";
  *  nudged to 6px so it reads on 80–160px hero figures without feeling springy). */
@@ -80,7 +108,7 @@ export function inkColumn(reduced = false): Variants {
   return {
     hidden: {},
     visible: {
-      transition: reduced ? {} : { staggerChildren: 0.06, delayChildren: 0.04 },
+      transition: reduced ? {} : { staggerChildren: STAGGER_STEP, delayChildren: 0.04 },
     },
   };
 }

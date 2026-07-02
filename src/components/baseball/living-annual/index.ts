@@ -55,6 +55,14 @@ export type { EditorsLetterProps } from './EditorsLetter';
 export { CommitSeal, PacketSeal } from './CommitSeal';
 export type { CommitSealProps } from './CommitSeal';
 
+// ── Interaction layer (Stage-0 — the shared micro-interaction vocabulary) ──
+export { Reveal } from './Reveal';
+export type { RevealProps } from './Reveal';
+export { HoverReveal } from './HoverReveal';
+export type { HoverRevealProps } from './HoverReveal';
+export { pressableClass } from './pressable';
+export type { PressableOptions, PressableInk } from './pressable';
+
 // ── Shared motion + grade helpers ──
 export {
   rulesDraw,
@@ -66,7 +74,10 @@ export {
   useSettleStagger,
   EASE_GLIDE,
   EASE_SOFT,
+  EASE_PRESS,
   DUR,
+  PACE,
+  STAGGER_STEP,
 } from './motion';
 export {
   gradeColor,
