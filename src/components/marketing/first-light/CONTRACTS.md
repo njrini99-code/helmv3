@@ -137,6 +137,37 @@ for `rgba(var(--fl-sage-ink-rgb), 0.5)` compositing.
 **Never hardcode** `#143527` or `#16A34A` (or any other retired hex) —
 always reach for the token.
 
+## IMMACULATE utilities (⚠ AMENDMENT 2, `first-light.css`)
+
+Added by the foundation lane 2026-07-02 PM per the ⚠ AMENDMENT 2 —
+IMMACULATE section of `docs/LANDING_ENTRY_WORLD_DESIGN.md` (Nick: "I
+don't want basic cards and basic components… we did research on this,
+we need to use it"). Translates
+`docs/redesign/marketing-overhaul-2026-06-18/research/04_premium_aesthetic_system.md`
+to sage & cream. Same edit-with-care rule as the rest of this file —
+grep `fl-aurora\|fl-light-pool\|fl-cta-glow\|fl-card\|fl-gradient-ring\|fl-link-underline`
+before restyling.
+
+| Utility | Recipe | Consumer (per Amendment 2's M-moment map) |
+|---|---|---|
+| `.fl-aurora` | Cream field + 4 low-chroma sage radial blobs, optional 32s drift | Page/section background behind **M2, M5, M6, M7** (§A.1) |
+| `.fl-light-pool` | Radial cream-high pool, blurred, `position: absolute` default | Behind hero copy + section anchors: **M2** statement, **M5** signal card, **M7** stats (§A.2) |
+| `.fl-cta-glow` | Sage bloom `::after`, opacity 0→1 on hover/focus-visible | Primary CTAs only: **M1** + **M8** (§A.3, §B.8) |
+| `--fl-shadow-xs/sm/md/lg` + `--fl-specular` | Stacked warm shadows + 1px cream-high top highlight | Every elevated light surface sitewide (§B.5) |
+| `.fl-card` + `.fl-card-lift` | Solid `--fl-cream-high` card, specular + ring, hover swell | **M6**'s three vignettes (converted from `.fl-glass-2`, §B.6) + any other solid card |
+| `.fl-gradient-ring` | Masked 1px conic ring (sage-deep → sage → brass → sage-deep) | **M5**'s signal card ONLY — the page's single gradient-ring moment (§B.7) |
+| `.fl-link-underline` | Sage-deep 2px wipe on hover/focus-visible | Footer + nav text links (§B.10) |
+| `.fl-grain` (flipped) | `mix-blend-mode` overlay → multiply | Sitewide standalone grain plate (§A.4) — glass-baked grain (`.fl-glass-*::before`) unchanged |
+
+**Budgets (Amendment 2 §E final gate — Fable judges rendered frames
+against this, code review alone does not pass a moment):**
+- ≤2 `.fl-glass-*` layers per viewport (unchanged, existing rule above).
+- ≤2 sage glows per viewport — every `.fl-cta-glow` instance counts.
+- Exactly ONE `.fl-gradient-ring` per page (M5's signal card).
+- Exactly one hero moment per viewport-story.
+- Grayscale test, effects-off test, squint test, 8px audit,
+  reduced-motion audit all pass.
+
 ## Fonts (`fonts.ts`)
 
 `flFraunces` — `next/font/google` Fraunces, weights 400/500/600/700,
