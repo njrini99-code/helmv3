@@ -4,7 +4,7 @@ export interface AdminNavEntry {
   key: string;
 }
 
-/** The 8 tabs. Order is the keyboard map (1-8). */
+/** The 9 tabs. Order is the keyboard map (1-9). */
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Overview', href: '/admin', key: '1' },
   { label: 'Errors', href: '/admin/errors', key: '2' },
@@ -14,6 +14,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Users & Teams', href: '/admin/users', key: '6' },
   { label: 'Jobs & Integrity', href: '/admin/jobs', key: '7' },
   { label: 'Deploys & Infra', href: '/admin/deploys', key: '8' },
+  { label: 'Health', href: '/admin/health', key: '9' },
 ] as const;
 
 export function hrefForShortcut(key: string): string | null {

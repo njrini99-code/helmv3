@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, AlertTriangle, KeyRound, Flag, CircleDot,
-  Users, Timer, Rocket, ExternalLink,
+  Users, Timer, Rocket, HeartPulse, ExternalLink,
 } from 'lucide-react';
 import { AppShell, CommandMenu, type NavSection, type CommandGroup, type CommandItem } from '@/components/fairway';
 import { ADMIN_NAV, hrefForShortcut } from './admin-nav';
 
 const NAV_ICONS = [
-  LayoutDashboard, AlertTriangle, KeyRound, Flag, CircleDot, Users, Timer, Rocket,
+  LayoutDashboard, AlertTriangle, KeyRound, Flag, CircleDot, Users, Timer, Rocket, HeartPulse,
 ] as const;
 
 /**
