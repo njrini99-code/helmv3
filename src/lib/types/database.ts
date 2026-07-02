@@ -146,6 +146,7 @@ export type Database = {
           browser_info: Json | null
           created_at: string | null
           event_type: string
+          feature: string | null
           fingerprint: string | null
           id: string
           message: string | null
@@ -167,6 +168,7 @@ export type Database = {
           browser_info?: Json | null
           created_at?: string | null
           event_type: string
+          feature?: string | null
           fingerprint?: string | null
           id?: string
           message?: string | null
@@ -188,6 +190,7 @@ export type Database = {
           browser_info?: Json | null
           created_at?: string | null
           event_type?: string
+          feature?: string | null
           fingerprint?: string | null
           id?: string
           message?: string | null
@@ -20190,6 +20193,7 @@ export type Database = {
           total_count: number
         }[]
       }
+      get_feature_health: { Args: { p_features: Json }; Returns: Json }
       get_golf_conversations_with_details: {
         Args: { p_user_id: string }
         Returns: {
