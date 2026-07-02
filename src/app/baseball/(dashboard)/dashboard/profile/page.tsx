@@ -3,15 +3,15 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/header';
-import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
-import { EmptyState } from '@/components/ui/empty-state';
 import { ProfileEditor } from '@/components/features/profile-editor';
 import { CollegeProfileEditor } from '@/components/baseball/profile';
 import { useAuth } from '@/hooks/use-auth';
-import { IconGlobe, IconUser } from '@/components/icons';
+import { IconGlobe } from '@/components/icons';
 import { Player } from '@/lib/types';
+import { fairwayScope } from '@/lib/redesign/flag';
+import { Button } from '@/components/fairway';
+import { SectionMasthead, EditorsLetter, Reveal } from '@/components/baseball/living-annual';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -34,22 +34,18 @@ export default function ProfilePage() {
 
   if (user?.role !== 'player' || !player) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <EmptyState
-          variant="card"
-          glass
-          className="mx-auto max-w-lg"
-          icon={<IconUser size={40} />}
-          title="Profile unavailable"
-          description="We couldn't load a player profile for this account. If you're a player, refresh to try again — otherwise head back to your dashboard."
-          action={
-            <Link href="/baseball/dashboard/command-center">
-              <Button variant="primary" size="md">
-                Go to Command Center
+      <div className={fairwayScope('min-h-full')}>
+        <div className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+          <EditorsLetter
+            title="Profile unavailable"
+            body="We couldn't load a player profile for this account. If you're a player, refresh to try again — otherwise head back to your dashboard."
+            action={
+              <Button asChild variant="primary" size="md">
+                <Link href="/baseball/dashboard/command-center">Go to Command Center</Link>
               </Button>
-            </Link>
-          }
-        />
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -64,28 +60,35 @@ export default function ProfilePage() {
   const isCollegePlayer = player.player_type === 'college';
 
   return (
-    <>
-      <Header 
-        title="Edit Profile" 
-        subtitle={isCollegePlayer 
-          ? "Manage your player profile and team information" 
-          : "Update your information and showcase your talents"
-        }
-      >
-        <Link href={`/baseball/player/${player.id}`} target="_blank">
-          <Button variant="secondary" size="sm" className="gap-2">
-            <IconGlobe size={14} />
-            View Public Profile
-          </Button>
-        </Link>
-      </Header>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-[720px] mx-auto">
+    <div className={fairwayScope('min-h-full')}>
+      <div className="mx-auto w-full max-w-[820px] space-y-8 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <Reveal>
+          <SectionMasthead
+            eyebrow={isCollegePlayer ? 'THE PASSPORT · EDIT PROFILE' : 'RECRUITING FILE · EDIT PROFILE'}
+            title="Edit Profile"
+            ink="team"
+            actions={
+              <Button asChild variant="secondary" size="sm" leftIcon={<IconGlobe size={14} />}>
+                <Link href={`/baseball/player/${player.id}`} target="_blank">
+                  View Public Profile
+                </Link>
+              </Button>
+            }
+          >
+            <p className="max-w-2xl font-annual text-body-lg leading-relaxed text-text-secondary">
+              {isCollegePlayer
+                ? 'Manage your player profile and team information.'
+                : 'Update your information and showcase your talents.'}
+            </p>
+          </SectionMasthead>
+        </Reveal>
+
         {isCollegePlayer ? (
           <CollegeProfileEditor player={player} onUpdate={handleUpdate} />
         ) : (
           <ProfileEditor player={player} onUpdate={handleUpdate} />
         )}
       </div>
-    </>
+    </div>
   );
 }
