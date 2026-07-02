@@ -53,22 +53,27 @@ const EASE_GLIDE: [number, number, number, number] = [0.16, 1, 0.3, 1];
  * The permanent sage→cream grade, painted ON TOP of the photo (or, if the
  * photo is missing, standing alone as the fallback — see file header).
  * Three stacked layers, first-listed = topmost:
- *  1. A TIGHT sage-ink vignette pocketed behind the content stack (~66%
- *     down) for cream-text legibility — tapers to nothing well before the
- *     edges, so most of the frame stays bright (kept deliberately small;
+ *  1. A TIGHT sage-ink legibility pocket behind the content stack (~62%
+ *     down) for cream-text contrast — tapers to nothing by ~60% of its own
+ *     radius, so most of the frame stays bright (kept deliberately small;
  *     an early wider pass read as a flat, uniform grey-green wash across
  *     the whole photo — off-spec "murky", not "airy morning").
- *  2. A bright cream bloom spilling down from just above the frame (the
- *     nav zone) — the morning sun you never see directly, per the
- *     entry-scenes family rule. Cream, not cream-high (⚠ AMENDMENT 2 §D2,
- *     2026-07-02 — a fill this large can't read near-white).
- *  3. A full-bleed sage-mist → cream base wash, so the fallback (no photo)
- *     reads as a complete, airy, on-brand frame with zero blank edges.
+ *  2. A cream bloom spilling down from just above the frame (the morning
+ *     sun you never see directly, per the entry-scenes family rule),
+ *     pulled in and dimmed so it warms the nav zone only — it no longer
+ *     bleaches the whole upper half. Cream, not cream-high (⚠ AMENDMENT 2
+ *     §D2, 2026-07-02 — a fill this large can't read near-white).
+ *  3. A full-bleed sage-mist → cream base wash at HALF its original
+ *     opacity — it should warm the photo, not blanket it; the earlier
+ *     full-strength pass compounded with layers 1-2 into uniform fog that
+ *     buried the real photo underneath (pixel-review 2026-07-02 hard
+ *     fail). Still reads as a complete, airy, on-brand frame with zero
+ *     blank edges when the photo is missing.
  */
 const HERO_GRADE = [
-  'radial-gradient(ellipse 62% 40% at 50% 66%, rgba(var(--fl-sage-ink-rgb),0.6) 0%, rgba(var(--fl-sage-ink-rgb),0.26) 55%, rgba(var(--fl-sage-ink-rgb),0) 100%)',
-  'radial-gradient(ellipse 85% 55% at 50% -6%, rgba(var(--fl-cream-rgb),0.55) 0%, rgba(var(--fl-cream-rgb),0.18) 50%, rgba(var(--fl-cream-rgb),0) 82%)',
-  'linear-gradient(165deg, rgba(var(--fl-sage-mist-rgb),0.9) 0%, rgba(var(--fl-cream-rgb),0.95) 100%)',
+  'radial-gradient(ellipse 50% 34% at 50% 62%, rgba(var(--fl-sage-ink-rgb),0.45) 0%, rgba(var(--fl-sage-ink-rgb),0.18) 38%, rgba(var(--fl-sage-ink-rgb),0) 60%)',
+  'radial-gradient(ellipse 62% 38% at 50% -8%, rgba(var(--fl-cream-rgb),0.4) 0%, rgba(var(--fl-cream-rgb),0.14) 40%, rgba(var(--fl-cream-rgb),0) 62%)',
+  'linear-gradient(165deg, rgba(var(--fl-sage-mist-rgb),0.45) 0%, rgba(var(--fl-cream-rgb),0.48) 100%)',
 ].join(', ');
 
 export function M1Hero({ className }: M1HeroProps) {
