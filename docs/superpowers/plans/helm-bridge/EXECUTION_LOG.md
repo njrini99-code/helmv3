@@ -81,5 +81,10 @@ Running record of what was actually applied per wave, plus any deviations from t
 
 **★ FOUNDATION (W0–W4) COMPLETE ★** — 4 prod migrations, 3-layer auth gate, gated /admin shell + ops chrome + data layer. All gates green. Building tabs next (W5–W13); W14 retirement held for prod verification.
 
-## W5 — Overview Tab (no migration)
+## W5 — Overview Tab (no migration) — DONE
+- Commits `1c38db3c8` (overview data layer + banner/staleness), `fa35f9fcd` (triage queue inline resolve + optimistic hide), `d37d9458b` (overview page: banner, 6-KPI strip, watcher chips, triage queue, regressed callout, deploy rail).
+- 11 new tests; typecheck exit 0; lint 0 errors; gate-coverage passes. All column/RPC/Fairway-prop names verified vs real source.
+- CLEANUP TODO (polish pass): 2 lint warnings in TriageQueue.tsx (helm/no-arbitrary-text-px, helm/no-raw-button) from verbatim doc code — under ceiling, tidy later.
+
+## W6 — Errors Tab + RLS-Denial Capture + withAdminObserved (no migration)
 **Status:** in progress (Sonnet).
