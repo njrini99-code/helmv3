@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
-import { randomBytes } from 'crypto';
+import { randomInt } from 'crypto';
 import {
   formatSafeErrorResponse,
   logSecurityEvent
@@ -569,19 +569,19 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
  * Generate a readable invite code
  * Uses uppercase letters and numbers, excluding ambiguous characters (O, 0, I, 1, L)
  *
- * HARDENED: backed by crypto.randomBytes (CSPRNG), not Math.random(). chars has
- * exactly 32 entries so `byte % 32` is perfectly uniform (256 / 32 = 8) — no
- * modulo bias. Math.random() is neither cryptographically secure nor safe
- * against collisions under concurrent generation; every call site pairs this
- * with an insert/update retry-on-collision loop (isUniqueViolation) rather
- * than trusting uniqueness up front.
+ * HARDENED: backed by crypto.randomInt (CSPRNG with built-in rejection
+ * sampling), not Math.random(). The alphabet has 31 entries, so a plain
+ * `byte % 31` would bias A–H (256 % 31 ≠ 0); randomInt draws uniformly
+ * for any bound. Math.random() is neither cryptographically secure nor
+ * safe against collisions under concurrent generation; every call site
+ * pairs this with an insert/update retry-on-collision loop
+ * (isUniqueViolation) rather than trusting uniqueness up front.
  */
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const bytes = randomBytes(8);
   let code = '';
   for (let i = 0; i < 8; i++) {
-    code += chars.charAt(bytes.readUInt8(i) % chars.length);
+    code += chars.charAt(randomInt(chars.length));
   }
   return code;
 }

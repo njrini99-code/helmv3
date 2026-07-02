@@ -21,11 +21,12 @@
  * One coherent field drawing now, not two overlays: `HOME`/`FIRST`/
  * `SECOND`/`THIRD` below are the four corners of a real rotated-square
  * base path (each side equal length, right angles at every corner —
- * see the constants' own comment for the math), and each foul line's
- * cubic-bezier start tangent is set to exactly match the base path's
- * own home→first / home→third edge slope, so the foul line reads as
- * that edge continuing outward to the fence rather than an unrelated
- * curve. `HOME` sits lower-center-LEFT (not dead-center) so it clears
+ * see the constants' own comment for the math), and each foul line is
+ * a STRAIGHT ray exactly collinear with the base path's own home→first
+ * / home→third edge (Nick, second pass: "the square isn't flush with
+ * the foul line" — the previous curved lines matched the edge only at
+ * home, then bent away). One chalk geometry, no drift possible.
+ * `HOME` sits lower-center-LEFT (not dead-center) so it clears
  * the auth panel, which floats right on desktop; `SECOND` (the diamond's
  * top vertex) lands mid-frame (y≈540 of 900) so the diamond's full body
  * is clearly visible, not scrunched into the bottom edge behind the
@@ -104,28 +105,29 @@ const THIRD = { x: HOME.x - DIAMOND_R, y: HOME.y - DIAMOND_R };
 const DIAMOND_PATH = `M ${HOME.x} ${HOME.y} L ${FIRST.x} ${FIRST.y} L ${SECOND.x} ${SECOND.y} L ${THIRD.x} ${THIRD.y} Z`;
 
 /**
- * The two foul lines, redrawn so they're the SAME geometry as the
- * diamond rather than a second unrelated overlay: both start exactly
- * at `HOME` and each cubic's first control point is placed to match
- * the initial tangent of the corresponding base-path edge (home→first
- * for the right/first-base line, home→third for the left/third-base
- * line — both true 45° diagonals), then the curve sweeps on outward
- * and up toward the fence/foul-pole area off-canvas, exactly mirrored
- * left/right around `HOME.x`. This reads as the base path's own edges
- * continuing to the outfield, not a separate decorative line.
+ * The two foul lines: STRAIGHT rays, exactly collinear with the
+ * diamond's own edges. On a real field the foul line IS the base
+ * path extended — home→first continues through first base to the
+ * right-field foul pole, home→third through third to left field.
+ * So each ray starts at `HOME`, passes exactly through `FIRST` /
+ * `THIRD` (slope ±1, true 45°), and runs off-canvas. Derived from
+ * HOME so the chalk can never drift out of register with the
+ * diamond: endpoint x is fixed at the frame overshoot, endpoint y
+ * falls out of the 45° constraint (Δy = −Δx).
  */
-const RIGHT_FOUL_LINE = `M ${HOME.x} ${HOME.y} C 840 720, 1150 480, 1660 100`;
-const LEFT_FOUL_LINE = `M ${HOME.x} ${HOME.y} C 640 720, 330 480, -180 100`;
+const RIGHT_FOUL_X = 1660;
+const LEFT_FOUL_X = -180;
+const RIGHT_FOUL_LINE = `M ${HOME.x} ${HOME.y} L ${RIGHT_FOUL_X} ${HOME.y - (RIGHT_FOUL_X - HOME.x)}`;
+const LEFT_FOUL_LINE = `M ${HOME.x} ${HOME.y} L ${LEFT_FOUL_X} ${HOME.y - (HOME.x - LEFT_FOUL_X)}`;
 
-/** Chalk-dust drift points, hand-placed along `RIGHT_FOUL_LINE`'s curve
- * (t ≈ 0.3, 0.5, 0.7, 0.85) so the "living detail" still visibly rides
- * the redrawn line rather than floating off it. */
-const DUST_POINTS = [
-  { cx: 886, cy: 692 },
-  { cx: 1046, cy: 565 },
-  { cx: 1255, cy: 404 },
-  { cx: 1444, cy: 262 },
-] as const;
+/** Chalk-dust drift points, computed ON `RIGHT_FOUL_LINE`'s straight
+ * ray (t ≈ 0.18, 0.32, 0.48, 0.62 of home→foul-pole) so the "living
+ * detail" visibly rides the chalk rather than floating off it. */
+const dustAt = (t: number) => ({
+  cx: Math.round(HOME.x + (RIGHT_FOUL_X - HOME.x) * t),
+  cy: Math.round(HOME.y - (RIGHT_FOUL_X - HOME.x) * t),
+});
+const DUST_POINTS = [dustAt(0.18), dustAt(0.32), dustAt(0.48), dustAt(0.62)] as const;
 
 export interface EntryFieldProps {
   /** Optional className on the root decorative wrapper. */
@@ -301,9 +303,8 @@ export function EntryField({ className, idSuffix = 'entry', stage = 'full', vari
         </g>
 
         {/* Layer 5 — the living detail: chalk-dust drifting up the right
-            (first-base) foul line, hand-placed along RIGHT_FOUL_LINE's
-            redrawn curve (see DUST_POINTS). Only once that line has
-            drawn in. */}
+            (first-base) foul line, computed on RIGHT_FOUL_LINE's straight
+            ray (see DUST_POINTS). Only once that line has drawn in. */}
         {line2On && (
           <g opacity="0.85">
             {DUST_POINTS.map((point, i) => (
