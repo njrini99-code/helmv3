@@ -22,21 +22,62 @@
  * `PhoneArc` (M3ProductCinema) back to static-in-flow.
  */
 
+/**
+ * ── 2026-07-02 SAGE & CREAM RESPEC ──────────────────────────────────────
+ * Nick (2026-07-02): "I want sage and cream on the landing page." The
+ * landing moves from dusk-pine drama to morning sage-and-cream calm — see
+ * the ⚠ AMENDMENT at the top of docs/LANDING_ENTRY_WORLD_DESIGN.md (THE
+ * contract; overrides the original palette spec #2 in that doc).
+ *
+ * `--fl-pine` and `--fl-green` KEEP THEIR NAMES but are REPOINTED below
+ * (pine → sage-ink #2E3A2C, green → sage-deep #5C6E58) so every in-flight
+ * lane still referencing the old var names recolors automatically — no
+ * find/replace needed in moment files that already shipped. They are now
+ * LEGACY ALIASES; new work should reach for the first-class `--fl-sage-*`
+ * / `--fl-cream*` names below instead. Never hardcode the retired hexes
+ * `#143527` (old pine) or `#16A34A` (kelly, now product-only — it appears
+ * inside real app screenshots and the M5 signal-card replica, never on
+ * landing/auth chrome).
+ *
+ * Mood: the page lives in daylight now. If a frame reads dark, moody, or
+ * murky, it's off-spec — fix it before shipping.
+ * ────────────────────────────────────────────────────────────────────── */
 :root {
-  /* ── Palette (the bridge — spec #2) ───────────────────────────────── */
+  /* ── Palette (the bridge — spec #2, sage & cream respec above) ─────── */
   --fl-ecru: #f5f1e6;
   --fl-ecru-rgb: 245, 241, 230;
-  --fl-pine: #143527;
-  --fl-pine-rgb: 20, 53, 39;
+  /* Legacy alias — repointed 2026-07-02: was deep pine #143527, now sage-ink. */
+  --fl-pine: #2e3a2c;
+  --fl-pine-rgb: 46, 58, 44;
   --fl-clay: #b0703c;
   --fl-clay-rgb: 176, 112, 60;
-  /* Kelly green — the ONLY saturated accent (CTAs + live signals). Mirrors
-     Tailwind's primary-600 (#16A34A) so first-light CTAs and app chrome
-     read as the same green. */
-  --fl-green: #16a34a;
-  --fl-green-rgb: 22, 163, 74;
+  /* Legacy alias — repointed 2026-07-02: was kelly #16A34A, now sage-deep.
+     Kelly is demoted to product-only (real app screenshots + the M5
+     signal-card replica) — landing/auth chrome never uses it directly. */
+  --fl-green: #5c6e58;
+  --fl-green-rgb: 92, 110, 88;
   --fl-brass: #b08d57;
   --fl-brass-rgb: 176, 141, 87;
+
+  /* ── Sage & cream — first-class tokens (2026-07-02 respec) ──────────── */
+  /* Cream field — alias of --fl-ecru, same value, first-class name. */
+  --fl-cream: #f5f1e6;
+  --fl-cream-rgb: 245, 241, 230;
+  /* Cream high — glass highlights, replaces white. */
+  --fl-cream-high: #fbf9f2;
+  --fl-cream-high-rgb: 251, 249, 242;
+  /* Sage mist — section tints, glass tint. */
+  --fl-sage-mist: #e4e9dd;
+  --fl-sage-mist-rgb: 228, 233, 221;
+  /* Sage — rules, icons, decorative/large type ONLY (not body text). */
+  --fl-sage: #94a38a;
+  --fl-sage-rgb: 148, 163, 138;
+  /* Sage deep — CTAs + emphasis, cream text. Same value as --fl-green. */
+  --fl-sage-deep: #5c6e58;
+  --fl-sage-deep-rgb: 92, 110, 88;
+  /* Sage ink — dark bands + all body/display ink. Same value as --fl-pine. */
+  --fl-sage-ink: #2e3a2c;
+  --fl-sage-ink-rgb: 46, 58, 44;
 }
 
 /* ---------------------------------------------------------------------
