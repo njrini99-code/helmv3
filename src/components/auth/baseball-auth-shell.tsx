@@ -30,7 +30,6 @@
  */
 import type { ReactNode, CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { Eyebrow, HairlineRule, Reveal } from '@/components/baseball/living-annual';
@@ -175,17 +174,31 @@ export function BaseballAuthShell({
                     className="absolute inset-0 rounded-full blur-2xl scale-150"
                     style={{ background: 'rgba(var(--fl-sage-deep-rgb), 0.15)' }}
                   />
-                  <div className="relative flex h-11 w-11 items-center justify-center">
-                    <Image
-                      src="/helm-baseball-logo.png"
-                      alt=""
-                      width={44}
-                      height={44}
-                      className="h-11 w-11 object-contain"
-                      priority
-                      unoptimized
-                    />
-                  </div>
+                  {/* The helm-wheel mark itself is a raster PNG baked in kelly
+                      team-green (also used, correctly, on the baseball
+                      onboarding pages — src/app/baseball/(onboarding)/
+                      coach-onboarding + player — so the source file can't be
+                      recolored without affecting those). SAGE & CREAM demotes
+                      kelly to product-only chrome, so THIS masthead usage
+                      renders it via a CSS alpha mask instead of <Image>: a
+                      sage-deep-filled div clipped to the PNG's own shape,
+                      not the PNG's baked pixel color (pixel-review 2026-07-02
+                      fix — was rendering saturated kelly green here). */}
+                  <div
+                    aria-hidden="true"
+                    className="relative h-11 w-11"
+                    style={{
+                      backgroundColor: 'var(--fl-sage-deep)',
+                      maskImage: 'url(/helm-baseball-logo.png)',
+                      WebkitMaskImage: 'url(/helm-baseball-logo.png)',
+                      maskSize: 'contain',
+                      WebkitMaskSize: 'contain',
+                      maskRepeat: 'no-repeat',
+                      WebkitMaskRepeat: 'no-repeat',
+                      maskPosition: 'center',
+                      WebkitMaskPosition: 'center',
+                    }}
+                  />
                 </div>
 
                 {eyebrow ? (
