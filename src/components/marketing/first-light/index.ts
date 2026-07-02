@@ -7,6 +7,10 @@
 // Fonts
 export { flFraunces } from './fonts';
 
+// Nav
+export { GlassNav } from './nav/GlassNav';
+export type { GlassNavProps } from './nav/GlassNav';
+
 // Scroll primitives
 export { LenisRoot } from './scroll/LenisRoot';
 export { usePrefersReducedMotion } from './scroll/usePrefersReducedMotion';
