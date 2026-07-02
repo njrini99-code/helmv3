@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess as sharedVerifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -211,7 +212,7 @@ async function verifyInsightAccess(
 // GET TEAM INSIGHTS SUMMARY
 // ============================================================================
 
-export async function getTeamInsightsSummary(
+async function getTeamInsightsSummaryImpl(
   teamId: string,
   pagination?: PaginationParams
 ): Promise<{ success: boolean; data?: IntelligenceDashboardData; error?: string }> {
@@ -447,11 +448,24 @@ export async function getTeamInsightsSummary(
   }
 }
 
+const observedGetTeamInsightsSummary = withAdminObserved(
+  'getTeamInsightsSummary',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  getTeamInsightsSummaryImpl,
+);
+
+export async function getTeamInsightsSummary(
+  teamId: string,
+  pagination?: PaginationParams
+): Promise<{ success: boolean; data?: IntelligenceDashboardData; error?: string }> {
+  return observedGetTeamInsightsSummary(teamId, pagination);
+}
+
 // ============================================================================
 // GENERATE TEAM CORRELATIONS
 // ============================================================================
 
-export async function generateTeamCorrelations(
+async function generateTeamCorrelationsImpl(
   teamId: string
 ): Promise<{ success: boolean; correlations?: CorrelationDiscovery[]; error?: string }> {
   // 2026-04-27: hardcoded defaults removed; real correlations from
@@ -470,13 +484,25 @@ export async function generateTeamCorrelations(
   }
 }
 
+const observedGenerateTeamCorrelations = withAdminObserved(
+  'generateTeamCorrelations',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  generateTeamCorrelationsImpl,
+);
+
+export async function generateTeamCorrelations(
+  teamId: string
+): Promise<{ success: boolean; correlations?: CorrelationDiscovery[]; error?: string }> {
+  return observedGenerateTeamCorrelations(teamId);
+}
+
 // ============================================================================
 // DISMISS INSIGHT
 // ============================================================================
 
-export async function dismissInsight(
+async function dismissInsightImpl(
   insightId: string,
-   
+
   _reason?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -527,11 +553,24 @@ export async function dismissInsight(
   }
 }
 
+const observedDismissInsight = withAdminObserved(
+  'dismissInsight',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  dismissInsightImpl,
+);
+
+export async function dismissInsight(
+  insightId: string,
+  _reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedDismissInsight(insightId, _reason);
+}
+
 // ============================================================================
 // ACKNOWLEDGE INSIGHT
 // ============================================================================
 
-export async function acknowledgeInsight(
+async function acknowledgeInsightImpl(
   insightId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -582,4 +621,16 @@ export async function acknowledgeInsight(
     await logServerError(`Error in acknowledgeInsight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });
     return { success: false, error: 'Internal server error' };
   }
+}
+
+const observedAcknowledgeInsight = withAdminObserved(
+  'acknowledgeInsight',
+  { sport: 'golf', feature: 'intelligence_dashboard' },
+  acknowledgeInsightImpl,
+);
+
+export async function acknowledgeInsight(
+  insightId: string
+): Promise<{ success: boolean; error?: string }> {
+  return observedAcknowledgeInsight(insightId);
 }

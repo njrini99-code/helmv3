@@ -20,6 +20,7 @@ import type {
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 // ============================================================================
 // TYPES
@@ -73,7 +74,7 @@ export interface ExportInsightsResult {
 // SEARCH INSIGHTS
 // ============================================================================
 
-export async function searchInsights({
+async function searchInsightsImpl({
   coachId,
   query,
   filters,
@@ -236,11 +237,21 @@ export async function searchInsights({
   }
 }
 
+const observedSearchInsights = withAdminObserved(
+  'searchInsights',
+  { sport: 'golf', feature: 'insights_management' },
+  searchInsightsImpl,
+);
+
+export async function searchInsights(params: SearchInsightsParams): Promise<SearchInsightsResult> {
+  return observedSearchInsights(params);
+}
+
 // ============================================================================
 // BULK DISMISS INSIGHTS
 // ============================================================================
 
-export async function bulkDismissInsights(
+async function bulkDismissInsightsImpl(
   insightIds: string[]
 ): Promise<BulkActionResult> {
   const supabase = await createClient();
@@ -302,11 +313,21 @@ export async function bulkDismissInsights(
   }
 }
 
+const observedBulkDismissInsights = withAdminObserved(
+  'bulkDismissInsights',
+  { sport: 'golf', feature: 'insights_management' },
+  bulkDismissInsightsImpl,
+);
+
+export async function bulkDismissInsights(insightIds: string[]): Promise<BulkActionResult> {
+  return observedBulkDismissInsights(insightIds);
+}
+
 // ============================================================================
 // BULK ACKNOWLEDGE INSIGHTS
 // ============================================================================
 
-export async function bulkAcknowledgeInsights(
+async function bulkAcknowledgeInsightsImpl(
   insightIds: string[]
 ): Promise<BulkActionResult> {
   const supabase = await createClient();
@@ -363,11 +384,21 @@ export async function bulkAcknowledgeInsights(
   }
 }
 
+const observedBulkAcknowledgeInsights = withAdminObserved(
+  'bulkAcknowledgeInsights',
+  { sport: 'golf', feature: 'insights_management' },
+  bulkAcknowledgeInsightsImpl,
+);
+
+export async function bulkAcknowledgeInsights(insightIds: string[]): Promise<BulkActionResult> {
+  return observedBulkAcknowledgeInsights(insightIds);
+}
+
 // ============================================================================
 // BULK RESOLVE INSIGHTS
 // ============================================================================
 
-export async function bulkResolveInsights(
+async function bulkResolveInsightsImpl(
   insightIds: string[]
 ): Promise<BulkActionResult> {
   const supabase = await createClient();
@@ -422,11 +453,21 @@ export async function bulkResolveInsights(
   }
 }
 
+const observedBulkResolveInsights = withAdminObserved(
+  'bulkResolveInsights',
+  { sport: 'golf', feature: 'insights_management' },
+  bulkResolveInsightsImpl,
+);
+
+export async function bulkResolveInsights(insightIds: string[]): Promise<BulkActionResult> {
+  return observedBulkResolveInsights(insightIds);
+}
+
 // ============================================================================
 // EXPORT INSIGHTS
 // ============================================================================
 
-export async function exportInsights(
+async function exportInsightsImpl(
   insightIds: string[],
   format: 'csv' | 'json'
 ): Promise<ExportInsightsResult> {
@@ -597,6 +638,19 @@ export async function exportInsights(
   }
 }
 
+const observedExportInsights = withAdminObserved(
+  'exportInsights',
+  { sport: 'golf', feature: 'insights_management' },
+  exportInsightsImpl,
+);
+
+export async function exportInsights(
+  insightIds: string[],
+  format: 'csv' | 'json'
+): Promise<ExportInsightsResult> {
+  return observedExportInsights(insightIds, format);
+}
+
 // ============================================================================
 // GET FILTER OPTIONS (for dynamic dropdowns)
 // ============================================================================
@@ -608,7 +662,7 @@ export interface FilterOptions {
   statuses: InsightStatus[];
 }
 
-export async function getInsightFilterOptions(
+async function getInsightFilterOptionsImpl(
   coachId: string
 ): Promise<{ success: boolean; options?: FilterOptions; error?: string }> {
   const supabase = await createClient();
@@ -678,6 +732,18 @@ export async function getInsightFilterOptions(
   }
 }
 
+const observedGetInsightFilterOptions = withAdminObserved(
+  'getInsightFilterOptions',
+  { sport: 'golf', feature: 'insights_management' },
+  getInsightFilterOptionsImpl,
+);
+
+export async function getInsightFilterOptions(
+  coachId: string
+): Promise<{ success: boolean; options?: FilterOptions; error?: string }> {
+  return observedGetInsightFilterOptions(coachId);
+}
+
 // ============================================================================
 // GET INSIGHTS STATS (for dashboard summary)
 // ============================================================================
@@ -692,7 +758,7 @@ export interface InsightsStats {
   byType: Record<string, number>;
 }
 
-export async function getInsightsStats(
+async function getInsightsStatsImpl(
   coachId: string
 ): Promise<{ success: boolean; stats?: InsightsStats; error?: string }> {
   const supabase = await createClient();
@@ -763,4 +829,16 @@ export async function getInsightsStats(
     await logServerError(`Error getting insights stats: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_management.getInsightsStats' });
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+const observedGetInsightsStats = withAdminObserved(
+  'getInsightsStats',
+  { sport: 'golf', feature: 'insights_management' },
+  getInsightsStatsImpl,
+);
+
+export async function getInsightsStats(
+  coachId: string
+): Promise<{ success: boolean; stats?: InsightsStats; error?: string }> {
+  return observedGetInsightsStats(coachId);
 }

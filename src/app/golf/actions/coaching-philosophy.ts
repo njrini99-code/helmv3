@@ -12,6 +12,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 type PhilosophyDbPatch = Record<string, unknown>;
 
@@ -64,12 +65,22 @@ export interface SaveCoachingPhilosophyResult {
   error?: string;
 }
 
-export async function revalidateCoachingPhilosophyPaths(): Promise<void> {
+async function revalidateCoachingPhilosophyPathsImpl(): Promise<void> {
   revalidatePath('/golf/dashboard/settings/coaching-intelligence');
   revalidatePath('/golf/dashboard/insights');
   revalidatePath('/golf/dashboard/alerts');
   revalidatePath('/golf/dashboard/patterns');
   revalidatePath('/golf/dashboard/intelligence');
+}
+
+const observedRevalidateCoachingPhilosophyPaths = withAdminObserved(
+  'revalidateCoachingPhilosophyPaths',
+  { sport: 'golf', feature: 'coaching_intelligence_settings' },
+  revalidateCoachingPhilosophyPathsImpl,
+);
+
+export async function revalidateCoachingPhilosophyPaths(): Promise<void> {
+  return observedRevalidateCoachingPhilosophyPaths();
 }
 
 /**
@@ -81,7 +92,7 @@ export async function revalidateCoachingPhilosophyPaths(): Promise<void> {
  * by src/test/golf/actions/coaching-philosophy.test.ts) as the hardened,
  * server-side save path; do not delete without migrating the hook first.
  */
-export async function saveCoachingPhilosophy(
+async function saveCoachingPhilosophyImpl(
   coachId: string,
   patch: Record<string, unknown>,
 ): Promise<SaveCoachingPhilosophyResult> {
@@ -138,4 +149,17 @@ export async function saveCoachingPhilosophy(
   await revalidateCoachingPhilosophyPaths();
 
   return { success: true };
+}
+
+const observedSaveCoachingPhilosophy = withAdminObserved(
+  'saveCoachingPhilosophy',
+  { sport: 'golf', feature: 'coaching_intelligence_settings' },
+  saveCoachingPhilosophyImpl,
+);
+
+export async function saveCoachingPhilosophy(
+  coachId: string,
+  patch: Record<string, unknown>,
+): Promise<SaveCoachingPhilosophyResult> {
+  return observedSaveCoachingPhilosophy(coachId, patch);
 }
