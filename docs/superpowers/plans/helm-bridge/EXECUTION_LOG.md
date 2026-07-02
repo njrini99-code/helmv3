@@ -103,6 +103,17 @@ Running record of what was actually applied per wave, plus any deviations from t
 - Migration (to review+apply at W15): `20260702090000_admin_events_feature_health.sql` — admin_events.feature col + 2 partial indexes + get_feature_health(jsonb) SECURITY DEFINER RPC (is_super_admin-gated; heartbeat via HARD-allowlisted dynamic SQL golf_% only; only error/critical → dots; re-asserts W2 ACL). Additive.
 - Maps found real scale: golf 34 feat/487 actions (docs badly undercounted), none wrapped yet; fetchAllRowsResult drops .code (widen first); annotate known "looks-broken-but-isn't" gaps so dots don't false-red. Baseball 52/362 + lifting 15/137 = deferred.
 
+## W8 — Golf Tab + Tracer + CoachHelm (no migration) — DONE
+- Commits `e788ee8a` (data/golf.ts + classifyTeamHealth tests), `cc0a1fd8` (golf-tracer actions), `bace83b6` (TeamHealthTable + golf page + tracer page).
+- Tracer guard PRESERVED byte-for-byte (admin-tracer-data.ts empty diff); Tracer UI shipped read-only MVP (fix buttons deferred to W14 per doc fallback); double-gate (requireSuperAdmin + legacy role check).
+- Accuracy corrections vs plan (verified in database.ts): golf_demo_sessions.entered_at (not created_at); golf_coachhelm_llm_budget is per-(coach,date) budget_usd/spent_usd → remaining summed, honest null; golf_team_members status='active'; no fabricated quality score.
+- UI: Surface/StatusPill/StatTile/TrendChart/PanelStates; rollups via user-scoped fetchAdminRollupA (never service_role); 0 new ratchet warnings. typecheck exit 0; gate-coverage passes.
+
+## W9 — Baseball Tab — SKIPPED (baseball hold; build when prod stabilizes)
+
+## W10 — Users & Teams + Drill-downs + Read-Only Impersonation (no migration)
+**Status:** in progress (Sonnet).
+
 ## W7 — Auth & Sign-ins (golf-scoped; baseball/lifting emitters DEFERRED) + migration
 - Task 1 migration `20260701140000_revoke_user_sessions_rpc.sql` applied to prod (SECURITY DEFINER, is_super_admin-gated, DELETEs auth.sessions + writes audit_log; anon denied, authenticated granted — asserted). Verified audit_log col types (record_id/user_id uuid, new_data jsonb) before apply.
 - Code DONE (Sonnet): commits `88f2dc056` (capture coverage: internal log-auth-failure route, middleware bridge fire-and-forget, anonymous log-error relax, AuthApiError ignore narrowed, golf password-reset event), `b83419344` (auth tab: funnel MetricCards, 7d sign-in TrendChart, lockouts, sessions+revoke). 6 new tests; typecheck exit 0; **lint-ratchet delta 0** (agent used Fairway Surface/MetricCard/TrendChart/StatusPill/InlineNotice/Button — no raw bg-white); gate-coverage passes. **DEFERRED per baseball-hold:** baseball/lifting auth emitters (confirmed never opened).
